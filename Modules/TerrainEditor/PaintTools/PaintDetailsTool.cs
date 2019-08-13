@@ -118,6 +118,11 @@ namespace UnityEditor.Experimental.TerrainAPI
             terrain.terrainData.RefreshPrototypes();
             return newDetailPrototypesArray.Length - 1;
         }
+
+        public static int GetMaxDetailInstances(TerrainData terrainData)
+        {
+            return terrainData.detailResolutionPerPatch * terrainData.detailResolutionPerPatch * TerrainData.maxDetailsPerRes;
+        }
     }
 
     internal class PaintDetailsTool : TerrainPaintTool<PaintDetailsTool>
@@ -128,8 +133,20 @@ namespace UnityEditor.Experimental.TerrainAPI
         private Terrain m_TargetTerrain;
         private BrushRep m_BrushRep;
 
+        private float m_DetailsStrength = 0.8f;
+
         public float detailOpacity { get; set; }
-        public float detailStrength { get; set; }
+        public float detailStrength
+        {
+            get
+            {
+                return m_DetailsStrength;
+            }
+            set
+            {
+                m_DetailsStrength = Mathf.Clamp01(Mathf.Round(value * TerrainData.maxDetailsPerRes) / TerrainData.maxDetailsPerRes);
+            }
+        }
         public int selectedDetail { get; set; }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
@@ -202,7 +219,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     int width = xmax - xmin;
                     int height = ymax - ymin;
 
-                    float targetStrength = detailStrength;
+                    float targetStrength = m_DetailsStrength;
                     if (Event.current.shift || Event.current.control)
                         targetStrength = -targetStrength;
 
@@ -222,8 +239,8 @@ namespace UnityEditor.Experimental.TerrainAPI
                                 int yBrushOffset = (ymin + y) - (yCenter - intRadius + intFraction);
                                 float opa = detailOpacity * m_BrushRep.GetStrengthInt(xBrushOffset, yBrushOffset);
 
-                                float targetValue = Mathf.Lerp(alphamap[y, x], targetStrength, opa);
-                                alphamap[y, x] = Mathf.RoundToInt(targetValue - .5f + Random.value);
+                                float targetValue = Mathf.Lerp(alphamap[y, x], targetStrength * TerrainData.maxDetailsPerRes, opa);
+                                alphamap[y, x] = Mathf.Min(Mathf.RoundToInt(targetValue - .5f + Random.value), TerrainData.maxDetailsPerRes);
                             }
                         }
 

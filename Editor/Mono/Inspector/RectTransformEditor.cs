@@ -462,7 +462,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             EditorGUI.BeginProperty(anchorRect, null, m_AnchorMin);
             EditorGUI.BeginProperty(anchorRect, null, m_AnchorMax);
-            m_ShowLayoutOptions = EditorGUI.Foldout(anchorRect, m_ShowLayoutOptions, styles.anchorsContent);
+            m_ShowLayoutOptions = EditorGUI.Foldout(anchorRect, m_ShowLayoutOptions, styles.anchorsContent, true);
             EditorGUI.EndProperty();
             EditorGUI.EndProperty();
             if (EditorGUI.EndChangeCheck())

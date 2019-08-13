@@ -56,12 +56,13 @@ namespace UnityEditor.StyleSheets
             StyleState[] states;
             if (!s_StatesCache.TryGetValue(stateFlags, out states))
             {
-                states = new[] { stateFlags & StyleState.disabled,
-                                                         stateFlags & StyleState.active,
-                                                         stateFlags & StyleState.@checked,
-                                                         stateFlags & StyleState.hover,
-                                                         stateFlags & StyleState.focus,
-                                                         StyleState.normal }.Distinct().Where(s => s != StyleState.none).ToArray();
+                states = new[] { stateFlags,
+                                 stateFlags & StyleState.disabled,
+                                 stateFlags & StyleState.active,
+                                 stateFlags & StyleState.@checked,
+                                 stateFlags & StyleState.hover,
+                                 stateFlags & StyleState.focus,
+                                 StyleState.normal}.Distinct().Where(s => s != StyleState.none).ToArray();
                 s_StatesCache.Add(stateFlags, states);
             }
 

@@ -251,6 +251,7 @@ namespace UnityEditor.PackageManager.UI
                 Clear();
 
                 AssetStore.AssetStoreClient.instance.Reset();
+                UpmClient.instance.Reset();
 
                 m_Packages.Clear();
                 m_SerializedUpmPackages = new List<UpmPackage>();

@@ -23,7 +23,7 @@ namespace UnityEditor.AssetImporters
 
     [RequiredByNativeCode]
     [NativeHeader("Editor/Src/AssetPipeline/ModelImporting/MaterialDescription.h")]
-    public class MaterialDescription
+    public class MaterialDescription : IDisposable
     {
         internal IntPtr m_Ptr;
 
@@ -34,11 +34,27 @@ namespace UnityEditor.AssetImporters
 
         ~MaterialDescription()
         {
-            Internal_Destroy(m_Ptr);
+            Destroy();
+        }
+
+        public void Dispose()
+        {
+            Destroy();
+            GC.SuppressFinalize(this);
+        }
+
+        void Destroy()
+        {
+            if (m_Ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
         }
 
         [NativeProperty("materialName", TargetType.Field)]
         public extern string materialName { get; }
+
         public bool TryGetProperty(string propertyName, out float value) => TryGetFloatProperty(propertyName, out value);
         public bool TryGetProperty(string propertyName, out Vector4 value) => TryGetVector4Property(propertyName, out value);
         public bool TryGetProperty(string propertyName, out string value) => TryGetStringProperty(propertyName, out value);

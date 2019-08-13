@@ -33,6 +33,7 @@ namespace UnityEditor.PackageManager.UI
                 new PackageStatusBar.UxmlFactory(),
                 new PackageToolbar.UxmlFactory(),
                 new ProgressBar.UxmlFactory(),
+                new SplitView.UxmlFactory()
             };
 
             foreach (IUxmlFactory factory in factories)

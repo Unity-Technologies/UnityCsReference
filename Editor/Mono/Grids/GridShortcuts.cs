@@ -18,32 +18,13 @@ namespace UnityEditor.Snap
         [Shortcut("Grid/Increase Grid Size", typeof(SceneView), KeyCode.RightBracket, ShortcutModifiers.Action)]
         internal static void IncreaseGridSize()
         {
-            if (!EditorSnapSettings.enabled)
-                return;
-            var val = EditorSnapSettings.snapMultiplier;
-            if (val.x < int.MaxValue / 2)
-                val.x *= 2;
-            if (val.y < int.MaxValue / 2)
-                val.y *= 2;
-            if (val.z < int.MaxValue / 2)
-                val.z *= 2;
-            EditorSnapSettings.snapMultiplier = val;
+            EditorSnapSettingsData.instance.snapSettings.IncrementSnapMultiplier();
         }
 
         [Shortcut("Grid/Decrease Grid Size", typeof(SceneView), KeyCode.LeftBracket, ShortcutModifiers.Action)]
         internal static void DecreaseGridSize()
         {
-            if (!EditorSnapSettings.enabled)
-                return;
-
-            var val = EditorSnapSettings.snapMultiplier;
-            if (val.x > 1)
-                val.x /= 2;
-            if (val.y > 1)
-                val.y /= 2;
-            if (val.z > 1)
-                val.z /= 2;
-            EditorSnapSettings.snapMultiplier = val;
+            EditorSnapSettingsData.instance.snapSettings.DecrementSnapMultiplier();
         }
 
         [Shortcut("Grid/Reset Grid", typeof(SceneView))]
@@ -55,9 +36,6 @@ namespace UnityEditor.Snap
 
         internal static void ResetGridSize()
         {
-            if (!EditorSnapSettings.enabled)
-                return;
-
             EditorSnapSettings.ResetMultiplier();
         }
 
@@ -114,6 +92,12 @@ namespace UnityEditor.Snap
             SceneView sv = SceneView.lastActiveSceneView;
             sv.ResetGrid();
             sv.Repaint();
+        }
+
+        [Shortcut("Grid/Push To Grid", typeof(SceneView), KeyCode.Backslash, ShortcutModifiers.Action)]
+        internal static void PushToGrid()
+        {
+            SnapSettingsWindow.SnapSelectionToGrid();
         }
     }
 }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling;
 using UnityEngine.Profiling;
 using UnityEngine.UIElements.UIR;
 
@@ -17,10 +18,10 @@ namespace UnityEngine.UIElements
             panelChanged += OnPanelChanged;
         }
 
-        public override string description
-        {
-            get { return "UIRepaint"; }
-        }
+        private static readonly string s_Description = "UIRepaint";
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        public override ProfilerMarker profilerMarker => s_ProfilerMarker;
+
 
         public event Action<UIRenderDevice> BeforeDrawChain
         {

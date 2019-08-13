@@ -639,7 +639,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Array.Sort(scriptAssembly.Files, StringComparer.Ordinal);
             }
 
-            AutoReferencedPackageAssemblies.AddReferences(assemblies.CustomTargetAssemblies, settings.CompilationOptions, t => !UnityCodeGenHelpers.IsCodeGen(t.Filename));
+            // Don't add the auto-referenced engine assemblies if the assembly either has the flag set, or
+            // is a codegen assembly
+            AutoReferencedPackageAssemblies.AddReferences(assemblies.CustomTargetAssemblies, settings.CompilationOptions,
+                t => !(((t.Flags & AssemblyFlags.NoEngineReferences) == AssemblyFlags.NoEngineReferences) ||
+                    UnityCodeGenHelpers.IsCodeGen(t.Filename)));
 
             // Setup ScriptAssembly references
             bool hasCodeGenScriptAssembly = false;
@@ -680,10 +684,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var scriptAssemblyReferences = new List<ScriptAssembly>();
             var references = new List<string>();
             bool buildingForEditor = settings.BuildingForEditor;
+            bool noEngineReferences = (targetAssembly.Flags & AssemblyFlags.NoEngineReferences) == AssemblyFlags.NoEngineReferences;
 
-            // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
-            var unityReferences = GetUnityReferences(scriptAssembly, assemblies.UnityAssemblies, settings.CompilationOptions, UnityReferencesOptions.None);
-            references.AddRange(unityReferences);
+            // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) references, as long as the target
+            // doesn't specify that it doesn't want them.
+            if (!noEngineReferences)
+            {
+                var unityReferences = GetUnityReferences(scriptAssembly, assemblies.UnityAssemblies, settings.CompilationOptions, UnityReferencesOptions.None);
+                references.AddRange(unityReferences);
+            }
 
             AddTestRunnerCustomReferences(ref targetAssembly, assemblies.CustomTargetAssemblies);
 
@@ -736,13 +745,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             List<PrecompiledAssembly> precompiledReferences = new List<PrecompiledAssembly>();
             if ((targetAssembly.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences)
             {
-                var precompiledAssemblies = allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.UserAssembly) != AssemblyFlags.UserAssembly).ToList();
-                precompiledAssemblies.AddRange(targetAssembly.PrecompiledReferences ?? Enumerable.Empty<PrecompiledAssembly>());
-                precompiledReferences.AddRange(precompiledAssemblies);
+                if (!noEngineReferences)
+                    precompiledReferences.AddRange(allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.UserAssembly) != AssemblyFlags.UserAssembly));
+                precompiledReferences.AddRange(targetAssembly.PrecompiledReferences ?? Enumerable.Empty<PrecompiledAssembly>());
             }
             else
             {
-                precompiledReferences.AddRange(allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.ExplicitlyReferenced) != AssemblyFlags.ExplicitlyReferenced));
+                var precompiledAssemblies = allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.ExplicitlyReferenced) != AssemblyFlags.ExplicitlyReferenced).ToList();
+                // if noEngineReferences, add just the non-explicitly-referenced user assemblies
+                if (noEngineReferences)
+                    precompiledReferences.AddRange(precompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.UserAssembly) == AssemblyFlags.UserAssembly));
+                else
+                    precompiledReferences.AddRange(precompiledAssemblies);
             }
 
             AddTestRunnerPrecompiledReferences(targetAssembly, allPrecompiledAssemblies, ref precompiledReferences);

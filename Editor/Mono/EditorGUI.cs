@@ -90,6 +90,7 @@ namespace UnityEditor
         internal const float kSliderMinW = 50;
         internal const float kSliderMaxW = 100;
         internal const float kSingleLineHeight = 18f;
+        internal const float kSingleSmallLineHeight = 16f;
         internal const float kStructHeaderLineHeight = 18;
         internal const float kObjectFieldThumbnailHeight = 64;
         internal const float kObjectFieldMiniThumbnailHeight = 18f;
@@ -5148,15 +5149,19 @@ namespace UnityEditor
 
         internal static bool FoldoutTitlebar(Rect position, GUIContent label, bool foldout, bool skipIconSpacing)
         {
+            return FoldoutTitlebar(position, label, foldout, skipIconSpacing,
+                EditorStyles.inspectorTitlebar, EditorStyles.inspectorTitlebarText);
+        }
+
+        internal static bool FoldoutTitlebar(Rect position, GUIContent label, bool foldout, bool skipIconSpacing, GUIStyle baseStyle, GUIStyle textStyle)
+        {
             // Important to get controlId for the foldout first, so it gets keyboard focus before the toggle does.
             int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
 
             if (Event.current.type == EventType.Repaint)
             {
-                GUIStyle baseStyle = EditorStyles.inspectorTitlebar;
-                GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
                 GUIStyle foldoutStyle = EditorStyles.foldout;
-                Rect textRect = new Rect(position.x + baseStyle.padding.left + kInspTitlebarSpacing + (skipIconSpacing ? 0 : kInspTitlebarIconWidth), position.y + baseStyle.padding.top, EditorGUIUtility.labelWidth, kInspTitlebarIconWidth);
+                Rect textRect = new Rect(position.x + baseStyle.padding.left + (skipIconSpacing ? 0 : (kInspTitlebarIconWidth + kInspTitlebarSpacing)), position.y + baseStyle.padding.top, EditorGUIUtility.labelWidth, kInspTitlebarIconWidth);
 
                 baseStyle.Draw(position, GUIContent.none, id, foldout);
                 foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none, id, foldout);
@@ -6475,6 +6480,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return StatelessAdvancedDropdown.DoSearchablePopup(rect, selectedIndex, displayedOptions, style);
         }
 
+        internal static int AdvancedLazyPopup(Rect rect, string displayedOption, int selectedIndex, Func<Tuple<int, string[]>> displayedOptionsFunc, GUIStyle style)
+        {
+            return StatelessAdvancedDropdown.DoLazySearchablePopup(rect, displayedOption, selectedIndex, displayedOptionsFunc, style);
+        }
+
         // Draws the alpha channel of a texture within a rectangle.
         public static void DrawTextureAlpha(Rect position, Texture image, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode, [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel)
         {
@@ -7425,6 +7435,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         internal const float kPlatformTabWidth = 30;
 
         internal static SavedBool s_SelectedDefault = new SavedBool("Platform.ShownDefaultTab", true);
+
+        static GUIStyle s_TabOnlyOne;
+        static GUIStyle s_TabFirst;
+        static GUIStyle s_TabMiddle;
+        static GUIStyle s_TabLast;
+        const float kTabButtonHeight = 22;
 
         [ExcludeFromDocs]
         public static bool Foldout(bool foldout, string content)
@@ -8966,7 +8982,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static bool FoldoutTitlebar(bool foldout, GUIContent label, bool skipIconSpacing)
         {
-            return EditorGUI.FoldoutTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), label, foldout, skipIconSpacing);
+            return FoldoutTitlebar(foldout, label, skipIconSpacing, EditorStyles.inspectorTitlebar, EditorStyles.inspectorTitlebarText);
+        }
+
+        internal static bool FoldoutTitlebar(bool foldout, GUIContent label, bool skipIconSpacing, GUIStyle baseStyle, GUIStyle textStyle)
+        {
+            return EditorGUI.FoldoutTitlebar(GUILayoutUtility.GetRect(GUIContent.none, baseStyle), label, foldout, skipIconSpacing, baseStyle, textStyle);
         }
 
         // Make a label with a foldout arrow to the left of it.
@@ -9484,9 +9505,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static Rect GetToggleRect(bool hasLabel, params GUILayoutOption[] options)
         {
-            // Toggle is 10 pixels wide while float fields are EditorGUIUtility.fieldWidth pixels wide.
+            // Toggle is 14 pixels wide while float fields are EditorGUIUtility.fieldWidth pixels wide.
             // Store difference in variable and add to min and max width values used for float fields.
-            float toggleAdjust = (10 - EditorGUIUtility.fieldWidth);
+            float toggleAdjust = (14 - EditorGUIUtility.fieldWidth);
             return GUILayoutUtility.GetRect(
                 hasLabel ? kLabelFloatMinW + toggleAdjust : EditorGUIUtility.fieldWidth + toggleAdjust,
                 kLabelFloatMaxW + toggleAdjust,
@@ -9514,20 +9535,25 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             GUILayoutFadeGroup g = (GUILayoutFadeGroup)GUILayoutUtility.BeginLayoutGroup(GUIStyle.none, null, typeof(GUILayoutFadeGroup));
             g.isVertical = true;
-            g.resetCoords = true;
+            g.resetCoords = false;
             g.fadeValue = value;
             g.wasGUIEnabled = GUI.enabled;
             g.guiColor = GUI.color;
             g.consideredForMargin = value > 0;
 
-            if (value != 0.0f && value != 1.0f && Event.current.type == EventType.MouseDown)
-            {
-                Event.current.Use();
-            }
-
             // We don't want the fade group gui clip to be used for calculating the label width of controls in this fade group, so we lock the context width.
             EditorGUIUtility.LockContextWidth();
-            GUI.BeginGroup(g.rect);
+
+            if (value != 0.0f && value != 1.0f)
+            {
+                g.resetCoords = true;
+                GUI.BeginGroup(g.rect);
+
+                if (Event.current.type == EventType.MouseDown)
+                {
+                    Event.current.Use();
+                }
+            }
 
             return value != 0;
         }
@@ -9544,7 +9570,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 return;
             }
 
-            GUI.EndGroup();
+            if (g.fadeValue != 0.0f && g.fadeValue != 1.0f)
+            {
+                GUI.EndGroup();
+            }
 
             EditorGUIUtility.UnlockContextWidth();
             GUI.enabled = g.wasGUIEnabled;
@@ -9566,7 +9595,38 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static int BeginPlatformGrouping(BuildPlatform[] platforms, GUIContent defaultTab)
         {
-            return BeginPlatformGrouping(platforms, defaultTab, GUI.skin.box);
+            return BeginPlatformGrouping(platforms, defaultTab, EditorStyles.frameBox);
+        }
+
+        static Rect GetTabRect(Rect rect, int tabIndex, int tabCount, out GUIStyle tabStyle)
+        {
+            if (s_TabOnlyOne == null)
+            {
+                s_TabOnlyOne = "Tab onlyOne";
+                s_TabFirst = "Tab first";
+                s_TabMiddle = "Tab middle";
+                s_TabLast = "Tab last";
+            }
+
+            tabStyle = s_TabMiddle;
+
+            if (tabCount == 1)
+            {
+                tabStyle = s_TabOnlyOne;
+            }
+            else if (tabIndex == 0)
+            {
+                tabStyle = s_TabFirst;
+            }
+            else if (tabIndex == (tabCount - 1))
+            {
+                tabStyle = s_TabLast;
+            }
+
+            float tabWidth = rect.width / tabCount;
+            int left = Mathf.RoundToInt(tabIndex * tabWidth);
+            int right = Mathf.RoundToInt((tabIndex + 1) * tabWidth);
+            return new Rect(rect.x + left, rect.y, right - left, kTabButtonHeight);
         }
 
         internal static int BeginPlatformGrouping(BuildPlatform[] platforms, GUIContent defaultTab, GUIStyle style)
@@ -9589,37 +9649,41 @@ This warning only shows up in development builds.", helpTopic, pageName);
             GUI.enabled = true;
             EditorGUI.BeginChangeCheck();
             Rect r = BeginVertical(style);
-            r.width--;
-            int buttonCount = platforms.Length;
-            int buttonHeight = 18;
-            GUIStyle buttonStyle = EditorStyles.toolbarButton;
+            int platformCount = platforms.Length;
+            int buttonCount = platformCount;
+            int startIndex = 0;
 
-            // Make the widget that shows what is available
             if (defaultTab != null)
             {
-                if (GUI.Toggle(new Rect(r.x, r.y, r.width - buttonCount * kPlatformTabWidth, buttonHeight), selected == -1, defaultTab, buttonStyle))
-                    selected = -1;
+                buttonCount++;
+                startIndex = -1;
             }
-            for (int i = 0; i < buttonCount; i++)
+
+            float buttonWidth = buttonCount > 0 ? r.width / buttonCount : 0;
+
+            int buttonIndex = 0;
+            for (int i = startIndex; i < platformCount; i++, buttonIndex++)
             {
-                Rect buttonRect;
-                if (defaultTab != null)
+                GUIContent content = GUIContent.none;
+
+                if (i == -1)
                 {
-                    buttonRect = new Rect(r.xMax - (buttonCount - i) * kPlatformTabWidth, r.y, kPlatformTabWidth, buttonHeight);
+                    content = defaultTab;
                 }
                 else
                 {
-                    int left = Mathf.RoundToInt(i * r.width / buttonCount);
-                    int right = Mathf.RoundToInt((i + 1) * r.width / buttonCount);
-                    buttonRect = new Rect(r.x + left, r.y, right - left, buttonHeight);
+                    content = new GUIContent(platforms[i].smallIcon, platforms[i].tooltip);
                 }
 
-                if (GUI.Toggle(buttonRect, selected == i, new GUIContent(platforms[i].smallIcon, platforms[i].tooltip), buttonStyle))
+                GUIStyle buttonStyle = null;
+                Rect buttonRect = GetTabRect(r, buttonIndex, buttonCount, out buttonStyle);
+
+                if (GUI.Toggle(buttonRect, selected == i, content, buttonStyle))
                     selected = i;
             }
 
             // GUILayout.Space doesn't expand to available width, so use GetRect instead
-            GUILayoutUtility.GetRect(10, buttonHeight);
+            GUILayoutUtility.GetRect(10, kTabButtonHeight);
 
             GUI.enabled = tempEnabled;
 
@@ -9772,6 +9836,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
             return EditorGUI.AdvancedPopup(r, selectedIndex, displayedOptions, style);
+        }
+
+        internal static int AdvancedLazyPopup(string displayedOption, int selectedIndex, Func<Tuple<int, string[]>> displayedOptionsFunc, GUIStyle style, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
+            return EditorGUI.AdvancedLazyPopup(r, displayedOption, selectedIndex, displayedOptionsFunc, style);
         }
 
         internal class HyperLinkClickedEventArgs : EventArgs

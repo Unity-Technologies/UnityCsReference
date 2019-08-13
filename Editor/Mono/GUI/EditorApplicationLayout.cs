@@ -67,6 +67,7 @@ namespace UnityEditor
             // Mark this preview window as the start preview so the backend
             // can set size and mouseoffset properly for this preview
             m_PreviewWindow.m_Parent.SetAsStartView();
+            m_PreviewWindow.m_Parent.SetAsLastPlayModeView();
 
             Toolbar.RepaintToolbar();
         }

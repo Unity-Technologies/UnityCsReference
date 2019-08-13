@@ -73,12 +73,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // We cache the clipping rect during regular painting so that we can reuse it
+        // We cache the clipping rect and transform during regular painting so that we can reuse them
         // during the DoMeasure call to DoOnGUI(). It's still important to not
         // pass Rect.zero for the clipping rect as this eventually sets the
         // global GUIClip.visibleRect which IMGUI code could be using to influence
-        // size. See case 1111923.
-        private Rect m_CachedClippingRect;
+        // size. See case 1111923 and 1158089.
+        private Rect m_CachedClippingRect = Rect.zero;
+        private Matrix4x4 m_CachedTransform = Matrix4x4.identity;
 
         private float layoutMeasuredWidth
         {
@@ -185,13 +186,6 @@ namespace UnityEngine.UIElements
 
         private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, bool eventIsPropagatedFromNonFocusableVisualElement = false)
         {
-            // If we are computing the layout, we should not try to get the worldTransform...
-            // it is dependant on the layout, which is being calculated (thus, not good)
-            // therefore, we should be passing in the identity matrix as our parent transform
-            // we use this below to push a clip scope, we used to simply not push this assuming it had already been done somewhere,
-            // this is not the case for all IMGUIContainers which can lead to attempts to access the root clipping scope
-            Debug.Assert(!isComputingLayout || parentTransform == Matrix4x4.identity);
-
             // Extra checks are needed here because client code might have changed the IMGUIContainer
             // since we enter HandleIMGUIEvent()
             if (onGUIHandler == null
@@ -394,7 +388,7 @@ namespace UnityEngine.UIElements
 
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
             // if the IMGUI content resizes.
-            if (evt.type == EventType.Layout &&
+            if (!isComputingLayout && evt.type == EventType.Layout &&
                 (!Mathf.Approximately(previousMeasuredWidth, layoutMeasuredWidth) || !Mathf.Approximately(previousMeasuredHeight, layoutMeasuredHeight)))
             {
                 IncrementVersion(VersionChangeType.Layout);
@@ -465,7 +459,10 @@ namespace UnityEngine.UIElements
         private void DoIMGUIRepaint()
         {
             var offset = elementPanel.repaintData.currentOffset;
-            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, offset * worldTransform, ComputeAAAlignedBound(worldClip, offset), false);
+            m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
+            m_CachedTransform = offset * worldTransform;
+
+            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, false);
         }
 
         internal bool SendEventToIMGUI(EventBase evt)
@@ -486,10 +483,9 @@ namespace UnityEngine.UIElements
 
         internal bool HandleIMGUIEvent(Event e, bool eventIsPropagatedFromNonFocusableVisualElement = false)
         {
-            Matrix4x4 currentTransform;
-            GetCurrentTransformAndClip(this, e, out currentTransform, out m_CachedClippingRect);
+            GetCurrentTransformAndClip(this, e, out m_CachedTransform, out m_CachedClippingRect);
 
-            return HandleIMGUIEvent(e, currentTransform, m_CachedClippingRect, eventIsPropagatedFromNonFocusableVisualElement);
+            return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, eventIsPropagatedFromNonFocusableVisualElement);
         }
 
         private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, bool eventIsPropagatedFromNonFocusableVisualElement)
@@ -618,11 +614,11 @@ namespace UnityEngine.UIElements
                 // When computing layout it's important to not call GetCurrentTransformAndClip
                 // because it will remove the dirty flag on the container transform which might
                 // set the transform in an invalid state. That's why we have to pass
-                // identity and a cached clipping state here. It's still important to not
+                // cached transform and clipping state here. It's still important to not
                 // pass Rect.zero for the clipping rect as this eventually sets the
                 // global GUIClip.visibleRect which IMGUI code could be using to influence
-                // size. See case 1111923.
-                DoOnGUI(evt, Matrix4x4.identity, m_CachedClippingRect, true, layoutRect);
+                // size. See case 1111923 and 1158089.
+                DoOnGUI(evt, m_CachedTransform, m_CachedClippingRect, true, layoutRect);
                 measuredWidth = layoutMeasuredWidth;
                 measuredHeight = layoutMeasuredHeight;
             }

@@ -95,48 +95,31 @@ namespace UnityEditor
             CompressCubemapTexture(texture, format, TextureCompressionQuality.Normal);
         }
 
-        static bool IsBuiltinResource(Texture icon)
-        {
-            return AssetDatabase.GetAssetPath(icon) != EditorResources.GetAssetPath(icon);
-        }
-
+        private static System.Collections.Generic.Dictionary<int, string> s_ActiveIconPathLUT = new System.Collections.Generic.Dictionary<int, string>();
         internal static Texture GetIconInActiveState(Texture icon)
         {
-            if (icon != null)
+            if (icon == null)
+                return null;
+
+            string selectedIconPath;
+            var iconInstanceId = icon.GetInstanceID();
+            if (!s_ActiveIconPathLUT.TryGetValue(iconInstanceId, out selectedIconPath))
             {
-                string path = "";
-                bool isBuilding = IsBuiltinResource(icon);
-                string iconText = isBuilding ? " icon" : " Icon";
-                string onText = isBuilding ? " on" : " On";
+                const string iconText = " icon";
+                const string onText = " on";
 
-                if (isBuilding)
-                {
-                    path = EditorResources.GetAssetPath(icon);
-                }
-                else
-                {
-                    path = AssetDatabase.GetAssetPath(icon);
-                }
-
-                string selectedIconPath = "";
-
+                string path = EditorResources.GetAssetPath(icon).ToLowerInvariant();
                 if (path.Contains(iconText))
-                {
                     selectedIconPath = path.Replace(iconText, onText + iconText);
-                }
-                else if (path.Contains("@"))
-                {
+                else if (path.Contains('@'))
                     selectedIconPath = path.Replace("@", onText + "@");
-                }
-                else if (path.Contains(".png"))
-                {
+                else if (path.EndsWith(".png"))
                     selectedIconPath = path.Replace(".png", onText + ".png");
-                }
 
-                return EditorResources.Load<Texture>(selectedIconPath, false);
+                s_ActiveIconPathLUT[iconInstanceId] = selectedIconPath;
             }
 
-            return null;
+            return EditorResources.Load<Texture>(selectedIconPath, false);
         }
 
         public static string SaveFilePanelInProject(string title, string defaultName, string extension, string message)

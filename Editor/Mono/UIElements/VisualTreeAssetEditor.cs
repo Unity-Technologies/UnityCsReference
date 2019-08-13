@@ -71,7 +71,6 @@ namespace UnityEditor.UIElements
                 var visualTree = m_Panel.visualTree;
                 visualTree.pseudoStates |= PseudoStates.Root;
                 UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
-                m_Panel.allowPixelCaching = false;
                 dirty = true;
             }
 

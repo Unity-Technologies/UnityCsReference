@@ -50,17 +50,22 @@ namespace UnityEngine
         public partial struct SubEmittersModule
         {
             [Obsolete("birth0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            extern public ParticleSystem birth0 { get; set; }
+            public ParticleSystem birth0 { get { ThrowNotImplemented(); return null; } set { ThrowNotImplemented(); } }
             [Obsolete("birth1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            extern public ParticleSystem birth1 { get; set; }
+            public ParticleSystem birth1 { get { ThrowNotImplemented(); return null; } set { ThrowNotImplemented(); } }
             [Obsolete("collision0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            extern public ParticleSystem collision0 { get; set; }
+            public ParticleSystem collision0 { get { ThrowNotImplemented(); return null; } set { ThrowNotImplemented(); } }
             [Obsolete("collision1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            extern public ParticleSystem collision1 { get; set; }
+            public ParticleSystem collision1 { get { ThrowNotImplemented(); return null; } set { ThrowNotImplemented(); } }
             [Obsolete("death0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            extern public ParticleSystem death0 { get; set; }
+            public ParticleSystem death0 { get { ThrowNotImplemented(); return null; } set { ThrowNotImplemented(); } }
             [Obsolete("death1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
-            extern public ParticleSystem death1 { get; set; }
+            public ParticleSystem death1 { get { ThrowNotImplemented(); return null; } set { ThrowNotImplemented(); } }
+
+            static void ThrowNotImplemented()
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public partial struct TextureSheetAnimationModule

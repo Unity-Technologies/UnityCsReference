@@ -160,16 +160,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         if (buildingNode)
                         {
                             var strippedClassname = StripClassName(token);
-                            if (buildingClass && strippedClassname.Equals(className))
+                            if (buildingClass)
                             {
                                 buildingClass = false;
-                                var foundNamespace = CollectNamespace(parent);
-                                if (classAlreadyFoundInOtherNamespace && foundNamespace != resNamespace)
+                                if (strippedClassname.Equals(className))
                                 {
-                                    s_LogWarningAction($"Class {className} can not exist in multiple namespaces in the same file, even if one is excluded with preprocessor directives. Please move these to separate files if this is the case.");
+                                    var foundNamespace = CollectNamespace(parent);
+                                    if (classAlreadyFoundInOtherNamespace && foundNamespace != resNamespace)
+                                    {
+                                        s_LogWarningAction(
+                                            $"Class {className} can not exist in multiple namespaces in the same file, even if one is excluded with preprocessor directives. Please move these to separate files if this is the case.");
+                                    }
+
+                                    resNamespace = foundNamespace;
+                                    classAlreadyFoundInOtherNamespace = true;
                                 }
-                                resNamespace = foundNamespace;
-                                classAlreadyFoundInOtherNamespace = true;
                             }
                             else
                             {

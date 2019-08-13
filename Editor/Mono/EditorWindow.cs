@@ -135,6 +135,7 @@ namespace UnityEditor
         Rect m_GameViewClippedRect;
         Vector2 m_GameViewTargetSize;
 
+        bool m_IsPlayModeView;
         bool m_DontClearBackground;
         EventInterests m_EventInterests = new EventInterests();
         bool m_DisableInputEvents;
@@ -466,6 +467,8 @@ namespace UnityEditor
             m_Parent.disableInputEvents = m_DisableInputEvents;
             Vector2 parentBorderSizes = new Vector2(m_Parent.borderSize.left + m_Parent.borderSize.right, m_Parent.borderSize.top + m_Parent.borderSize.bottom);
             m_Parent.SetMinMaxSizes(minSize + parentBorderSizes, maxSize + parentBorderSizes);
+            if (m_IsPlayModeView)
+                m_Parent.SetPlayModeView();
             if (parentChanged)
                 m_Parent.RecreateContext();
         }
@@ -1011,6 +1014,17 @@ namespace UnityEditor
             m_GameViewClippedRect = clippedRect;
             m_GameViewTargetSize = targetSize;
             m_Parent.SetInternalGameViewDimensions(m_GameViewRect, m_GameViewClippedRect, m_GameViewTargetSize);
+        }
+
+        internal void SetPlayModeViewSize(Vector2 targetSize)
+        {
+            m_GameViewTargetSize = targetSize;
+            m_Parent.SetInternalGameViewDimensions(m_GameViewRect, m_GameViewClippedRect, m_GameViewTargetSize);
+        }
+
+        internal void SetPlayModeView()
+        {
+            m_IsPlayModeView = true;
         }
 
         [Obsolete("AA is not supported on EditorWindows", false)]

@@ -1101,6 +1101,8 @@ namespace UnityEditor
 
                 if (m_HasPreview && Event.current.type == EventType.Repaint)
                 {
+                    // workaround: To properly center the image because it already has a 1px bottom padding
+                    dragIconRect.y += 1;
                     Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
                 }
 
@@ -1450,22 +1452,33 @@ namespace UnityEditor
 
                 var editor = editors[editorIndex];
                 Object editorTarget = editor.targets[0];
+
                 string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
                 EditorElement editorContainer;
 
-                if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
+                try
                 {
-                    editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
-                    editorsElement.Add(editorContainer);
-                }
+                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
+                    {
+                        editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
+                        editorsElement.Add(editorContainer);
+                    }
 
-                if (prefabsComponentElement.childCount > 0)
-                {
-                    editorContainer.AddPrefabComponent(prefabsComponentElement);
+                    if (prefabsComponentElement.childCount > 0)
+                    {
+                        editorContainer.AddPrefabComponent(prefabsComponentElement);
+                    }
+                    else
+                    {
+                        editorContainer.AddPrefabComponent(null);
+                    }
                 }
-                else
+                catch (Editor.SerializedObjectNotCreatableException)
                 {
-                    editorContainer.AddPrefabComponent(null);
+                    // This can happen after a domain reload when the
+                    // target is a pure c# object, like a MonoBehaviour
+                    // We'll just attempt to recreate the EditorElement on the next frame
+                    // see case 1147234
                 }
             }
 

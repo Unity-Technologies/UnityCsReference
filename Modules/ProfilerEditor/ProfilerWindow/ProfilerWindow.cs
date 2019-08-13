@@ -108,9 +108,6 @@ namespace UnityEditor
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
         [SerializeField]
-        ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
-
-        [SerializeField]
         ProfilerArea? m_CurrentArea = ProfilerArea.CPU;
 
         int m_CurrentFrame = -1;
@@ -149,6 +146,7 @@ namespace UnityEditor
 
         HierarchyFrameDataView m_FrameDataView;
 
+        // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
         [SerializeField]
         ProfilerModuleBase[] m_ProfilerModules;
 
@@ -174,9 +172,14 @@ namespace UnityEditor
 
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
+        const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
 
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
         public event SelectionChangedCallback selectionChanged = delegate {};
+        internal event Action<int, bool> currentFrameChanged = delegate {};
+        internal event Action<bool> recordingStateChanged = delegate {};
+        internal event Action<bool> deepProfileChanged = delegate {};
+        internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
 
         public void SetSelectedPropertyPath(string path)
         {
@@ -212,7 +215,7 @@ namespace UnityEditor
             }
 
             var property = new ProfilerProperty();
-            property.SetRoot(targetedFrame, sortType, (int)m_ViewType);
+            property.SetRoot(targetedFrame, sortType, (int)ProfilerViewType.Hierarchy);
             property.onlyShowGPUSamples = m_CurrentArea == ProfilerArea.GPU;
             return property;
         }
@@ -494,7 +497,10 @@ namespace UnityEditor
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
         static void ShowProfilerWindow()
         {
-            EditorWindow.GetWindow<ProfilerWindow>(false);
+            if (ProfilerUserSettings.useOutOfProcessProfiler)
+                ProfilerRoleProvider.LaunchProfilerSlave();
+            else
+                EditorWindow.GetWindow<ProfilerWindow>(false);
         }
 
         [RequiredByNativeCode]
@@ -514,7 +520,7 @@ namespace UnityEditor
             }
         }
 
-        static void SetProfileDeepScripts(bool deep)
+        void SetProfileDeepScripts(bool deep)
         {
             bool currentDeep = ProfilerDriver.deepProfiling;
             if (currentDeep == deep)
@@ -522,27 +528,13 @@ namespace UnityEditor
 
             if (ProfilerDriver.IsConnectionEditor())
             {
-                // When enabling / disabling deep script profiling we need to reload scripts.
-                // In play mode this might be intrusive. So ask the user first.
-                bool doApply = true;
-                if (EditorApplication.isPlaying)
-                {
-                    if (deep)
-                        doApply = EditorUtility.DisplayDialog(Styles.enableDeepProfilingWarningDialogTitle, Styles.enableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton);
-                    else
-                        doApply = EditorUtility.DisplayDialog(Styles.disableDeepProfilingWarningDialogTitle, Styles.disableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton);
-                }
-
-                if (doApply)
-                {
-                    ProfilerDriver.deepProfiling = deep;
-                    InternalEditorUtility.RequestScriptReload();
-                }
+                SetEditorDeepProfiling(deep);
             }
             else
             {
                 // When connected to the player, we send deep profiler mode command immediately.
                 ProfilerDriver.deepProfiling = deep;
+                deepProfileChanged?.Invoke(deep);
             }
         }
 
@@ -783,11 +775,20 @@ namespace UnityEditor
                 m_Charts[selected].active = true;
         }
 
-        void MemRecordModeClick(object userData, string[] options, int selected)
+        void SetRecordMode(ProfilerMemoryRecordMode memRecordMode)
         {
-            m_SelectedMemRecordMode = (ProfilerMemoryRecordMode)selected;
+            if (memRecordMode == m_SelectedMemRecordMode)
+                return;
+            m_SelectedMemRecordMode = memRecordMode;
             if (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None)
                 m_LastSelectedMemRecordMode = m_SelectedMemRecordMode;
+            ProfilerDriver.memoryRecordMode = memRecordMode;
+            memoryRecordingModeChanged?.Invoke(memRecordMode);
+        }
+
+        void MemRecordModeClick(object userData, string[] options, int selected)
+        {
+            SetRecordMode((ProfilerMemoryRecordMode)selected);
         }
 
         void SaveProfilingData()
@@ -834,6 +835,15 @@ namespace UnityEditor
             EditorGUIUtility.ExitGUI();
         }
 
+        public void SetRecordingEnabled(bool profilerEnabled)
+        {
+            ProfilerDriver.enabled = profilerEnabled;
+            m_Recording = profilerEnabled;
+            SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
+            recordingStateChanged?.Invoke(m_Recording);
+            Repaint();
+        }
+
         private void DrawMainToolbar()
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
@@ -861,11 +871,7 @@ namespace UnityEditor
             // Record
             var profilerEnabled = GUILayout.Toggle(m_Recording, m_Recording ? Styles.profilerRecordOn : Styles.profilerRecordOff, EditorStyles.toolbarButton);
             if (profilerEnabled != m_Recording)
-            {
-                ProfilerDriver.enabled = profilerEnabled;
-                m_Recording = profilerEnabled;
-                SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
-            }
+                SetRecordingEnabled(profilerEnabled);
 
             FrameNavigationControls();
 
@@ -941,6 +947,7 @@ namespace UnityEditor
 
         void AllocationCallstacksToolbarItem()
         {
+            var selectedMemRecordMode = m_SelectedMemRecordMode;
             if (Unsupported.IsDeveloperMode())
             {
                 bool toggled = m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None;
@@ -962,16 +969,17 @@ namespace UnityEditor
                 }
                 if (toggled != oldToggleState)
                 {
-                    m_SelectedMemRecordMode = (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None) ? ProfilerMemoryRecordMode.None :
+                    selectedMemRecordMode = (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None) ? ProfilerMemoryRecordMode.None :
                         (m_LastSelectedMemRecordMode == ProfilerMemoryRecordMode.None ? ProfilerMemoryRecordMode.ManagedAllocations : m_LastSelectedMemRecordMode);
                 }
             }
             else
             {
-                m_SelectedMemRecordMode = GUILayout.Toggle(m_SelectedMemRecordMode == ProfilerMemoryRecordMode.ManagedAllocations, Styles.recordCallstacks, EditorStyles.toolbarButton) ? ProfilerMemoryRecordMode.ManagedAllocations : ProfilerMemoryRecordMode.None;
+                selectedMemRecordMode = GUILayout.Toggle(m_SelectedMemRecordMode == ProfilerMemoryRecordMode.ManagedAllocations, Styles.recordCallstacks, EditorStyles.toolbarButton) ? ProfilerMemoryRecordMode.ManagedAllocations : ProfilerMemoryRecordMode.None;
             }
 
-            ProfilerDriver.memoryRecordMode = m_SelectedMemRecordMode;
+            if (selectedMemRecordMode != m_SelectedMemRecordMode)
+                SetRecordMode(selectedMemRecordMode);
         }
 
         void Clear()
@@ -1033,8 +1041,11 @@ namespace UnityEditor
 
         void SetCurrentFrame(int frame)
         {
-            if (frame != -1 && ProfilerDriver.enabled && !ProfilerDriver.profileEditor && m_CurrentFrame != frame && EditorApplication.isPlayingOrWillChangePlaymode)
+            bool shouldPause = frame != -1 && ProfilerDriver.enabled && !ProfilerDriver.profileEditor && m_CurrentFrame != frame;
+            if (shouldPause && EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorApplication.isPaused = true;
+
+            currentFrameChanged?.Invoke(frame, shouldPause);
 
             if (ProfilerInstrumentationPopup.InstrumentationEnabled)
                 ProfilerInstrumentationPopup.UpdateInstrumentableFunctions();
@@ -1150,14 +1161,36 @@ namespace UnityEditor
             {
                 case EditorConnectionTarget.None:
                 case EditorConnectionTarget.MainEditorProcessPlaymode:
-                    return ProfilerDriver.profileEditor == false;
                 case EditorConnectionTarget.MainEditorProcessEditmode:
-                    return ProfilerDriver.profileEditor == true;
+                    return ProfilerDriver.profileEditor;
                 default:
                     if (Unsupported.IsDeveloperMode())
                         Debug.LogError($"{connection} is not implemented!");
                     return ProfilerDriver.profileEditor == false;
             }
+        }
+
+        internal static bool SetEditorDeepProfiling(bool deep)
+        {
+            var doApply = true;
+
+            // When enabling / disabling deep script profiling we need to reload scripts.
+            // In play mode this might be intrusive. So ask the user first.
+            if (EditorApplication.isPlaying)
+            {
+                if (deep)
+                    doApply = EditorUtility.DisplayDialog(Styles.enableDeepProfilingWarningDialogTitle, Styles.enableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton, DialogOptOutDecisionType.ForThisSession, kProfilerDeepProfilingWarningSessionKey);
+                else
+                    doApply = EditorUtility.DisplayDialog(Styles.disableDeepProfilingWarningDialogTitle, Styles.disableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton, DialogOptOutDecisionType.ForThisSession, kProfilerDeepProfilingWarningSessionKey);
+            }
+
+            if (doApply)
+            {
+                ProfilerDriver.deepProfiling = deep;
+                InternalEditorUtility.RequestScriptReload();
+            }
+
+            return doApply;
         }
     }
 }

@@ -13,6 +13,7 @@ namespace UnityEditor.Profiling
         // User setting keys. Don't localize!
         const string k_SettingsPrefix = "Profiler.";
         public const string k_FrameCountSettingKey = k_SettingsPrefix + "FrameCount";
+        public const string k_ProfilerOutOfProcessSettingKey = k_SettingsPrefix + "OutOfProcess";
 
         public const int kMinFrameCount = 300;
         public const int kMaxFrameCount = 2000;
@@ -43,6 +44,12 @@ namespace UnityEditor.Profiling
                         settingsChanged.Invoke();
                 }
             }
+        }
+
+        public static bool useOutOfProcessProfiler
+        {
+            get { return EditorPrefs.GetBool(k_ProfilerOutOfProcessSettingKey, false); }
+            set { EditorPrefs.SetBool(k_ProfilerOutOfProcessSettingKey, value); }
         }
 
         public static void Refresh()

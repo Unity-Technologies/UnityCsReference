@@ -101,7 +101,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/ShaderData.h")]
     [NativeHeader("Editor/Src/ShaderMenu.h")]
     [NativeHeader("Runtime/Shaders/GpuPrograms/GpuProgramManager.h")]
-    public partial class ShaderUtil
+    public sealed partial class ShaderUtil
     {
         public enum ShaderPropertyType
         {
@@ -303,5 +303,47 @@ namespace UnityEditor
         extern public static void RestoreAsyncCompilation([NotNull] CommandBuffer cmd);
         extern public static bool IsPassCompiled([NotNull] Material material, int pass);
         extern public static void CompilePass([NotNull] Material material, int pass, bool forceSync = false);
+
+        internal static MaterialProperty[] GetMaterialProperties(UnityEngine.Object[] mats)
+        {
+            return (MaterialProperty[])GetMaterialPropertiesImpl(mats);
+        }
+
+        extern private static System.Object GetMaterialPropertiesImpl(System.Object mats);
+
+        internal static MaterialProperty GetMaterialProperty(UnityEngine.Object[] mats, string name)
+        {
+            return (MaterialProperty)GetMaterialPropertyImpl(mats, name);
+        }
+
+        extern private static System.Object GetMaterialPropertyImpl(System.Object mats, string name);
+
+        internal static MaterialProperty GetMaterialProperty(UnityEngine.Object[] mats, int propertyIndex)
+        {
+            return (MaterialProperty)GetMaterialPropertyByIndex(mats, propertyIndex);
+        }
+
+        extern private static System.Object GetMaterialPropertyByIndex(System.Object mats, int propertyIndex);
+
+        internal static void ApplyProperty(MaterialProperty prop, int propertyMask, string undoName)
+        {
+            ApplyPropertyImpl(prop, propertyMask, undoName);
+        }
+
+        extern private static void ApplyPropertyImpl(System.Object prop, int propertyMask, string undoName);
+
+        internal static void ApplyMaterialPropertyBlockToMaterialProperty(MaterialPropertyBlock propertyBlock, MaterialProperty materialProperty)
+        {
+            ApplyMaterialPropertyBlockToMaterialPropertyImpl(propertyBlock, materialProperty);
+        }
+
+        extern private static void ApplyMaterialPropertyBlockToMaterialPropertyImpl(System.Object propertyBlock, System.Object materialProperty);
+
+        internal static void ApplyMaterialPropertyToMaterialPropertyBlock(MaterialProperty materialProperty, int propertyMask, MaterialPropertyBlock propertyBlock)
+        {
+            ApplyMaterialPropertyToMaterialPropertyBlockImpl(materialProperty, propertyMask, propertyBlock);
+        }
+
+        extern private static void ApplyMaterialPropertyToMaterialPropertyBlockImpl(System.Object materialProperty, int propertyMask, System.Object propertyBlock);
     }
 }

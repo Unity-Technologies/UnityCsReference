@@ -48,11 +48,26 @@ namespace UnityEditor.PackageManager.UI
             itemLabel.OnLeftClick(SelectMainItem);
             seeAllVersionsLabel.OnLeftClick(SeeAllVersionsClick);
             expander.OnLeftClick(ToggleExpansion);
+            nameLabel.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
 
             UpdateExpanderUI(false);
 
             SetPackage(package);
             UpdateVisualState();
+        }
+
+        private void OnSizeChange(GeometryChangedEvent evt)
+        {
+            if (evt.newRect.width == evt.oldRect.width)
+                return;
+
+            var target = evt.target as TextElement;
+            if (target == null)
+                return;
+
+            var size = target.MeasureTextSize(target.text, float.MaxValue, MeasureMode.AtMost, evt.newRect.height, MeasureMode.Undefined);
+            var width = evt.newRect.width - target.resolvedStyle.paddingRight;
+            target.tooltip = width < size.x ? target.text : string.Empty;
         }
 
         public void UpdateVisualState(VisualState newVisualState = null)

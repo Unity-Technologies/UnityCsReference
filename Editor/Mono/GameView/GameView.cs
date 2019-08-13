@@ -114,7 +114,7 @@ namespace UnityEditor
             clearColor = kClearBlack;
             showGizmos = m_Gizmos;
             targetDisplay = 0;
-            targetSize = Vector2.zero;
+            targetSize = new Vector2(640f, 480f);
             textureFilterMode = FilterMode.Point;
             textureHideFlags = HideFlags.HideAndDontSave;
         }
@@ -171,7 +171,15 @@ namespace UnityEditor
         GameViewSize currentGameViewSize => GameViewSizes.instance.currentGroup.GetGameViewSize(selectedSizeIndex);
 
         // The area of the window that the rendered game view is limited to
-        Rect viewInWindow => new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight);
+        Rect viewInWindow
+        {
+            get
+            {
+                if (showToolbar)
+                    return new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight);
+                return new Rect(0, 0, position.width, position.height);
+            }
+        }
 
         internal Vector2 targetRenderSize // Size of render target in pixels
         {
@@ -252,6 +260,8 @@ namespace UnityEditor
 
         float gameMouseScale { get { return EditorGUIUtility.pixelsPerPoint / m_ZoomArea.scale.y; } }
 
+        private bool showToolbar { get; set; }
+
         void InitializeZoomArea()
         {
             m_ZoomArea = new ZoomableArea(true, false) {uniformScale = true, upDirection = ZoomableArea.YDirection.Negative};
@@ -263,12 +273,15 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             UpdateZoomAreaAndParent();
             dontClearBackground = true;
+            showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
 
+            ModeService.modeChanged += OnEditorModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
+            ModeService.modeChanged -= OnEditorModeChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             if (m_RenderTexture)
             {
@@ -462,14 +475,16 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                var types = GetAvailableWindowTypes();
-                if (types.Count > 1)
+                var availableTypes = GetAvailableWindowTypes();
+                if (availableTypes.Count > 1)
                 {
-                    int viewIndex = EditorGUILayout.Popup(types.IndexOf(typeof(GameView)), types.Select(viewTypes => viewTypes.Name).ToArray(),
+                    var typeNames = availableTypes.Values.ToList();
+                    var types = availableTypes.Keys.ToList();
+                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
                         EditorStyles.toolbarPopup,
                         GUILayout.Width(90));
                     EditorGUILayout.Space();
-                    if (types[viewIndex].Name != typeof(GameView).Name)
+                    if (types[viewIndex] != typeof(GameView))
                     {
                         SwapMainWindow(types[viewIndex]);
                     }
@@ -501,7 +516,7 @@ namespace UnityEditor
                     Color oldCol = GUI.color;
                     // This has nothing to do with animation recording.  Can we replace this color with something else?
                     GUI.color *= AnimationMode.recordedPropertyColor;
-                    GUILayout.Label(Styles.frameDebuggerOnContent, EditorStyles.miniLabel);
+                    GUILayout.Label(Styles.frameDebuggerOnContent, EditorStyles.toolbarLabel);
                     GUI.color = oldCol;
                     // Make frame debugger windows repaint after each time game view repaints.
                     // We want them to always display the latest & greatest game view
@@ -667,6 +682,13 @@ namespace UnityEditor
             }
         }
 
+        private void OnEditorModeChanged(ModeService.ModeChangedArgs args)
+        {
+            showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
+
+            Repaint();
+        }
+
         private void OnGUI()
         {
             if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
@@ -674,7 +696,8 @@ namespace UnityEditor
                 UpdateZoomAreaAndParent();
             }
 
-            DoToolbarGUI();
+            if (showToolbar)
+                DoToolbarGUI();
 
             // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.
             // To fix this we should probably stop using the global custom cursor (intended for runtime) for custom editor cursors.

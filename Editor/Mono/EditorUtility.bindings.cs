@@ -232,5 +232,8 @@ namespace UnityEditor
                 prjBrowser.SendEvent(commandEvent);
             }
         }
+
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        extern public static void RequestScriptReload();
     }
 }

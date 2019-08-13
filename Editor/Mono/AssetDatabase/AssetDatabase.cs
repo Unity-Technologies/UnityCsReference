@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -52,6 +54,17 @@ namespace UnityEditor
         {
             if (importPackageFailed != null)
                 importPackageFailed(packageName, errorMessage);
+        }
+
+        public static void IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
+        {
+            if (assetOrMetaFilePaths == null)
+                throw new ArgumentNullException(nameof(assetOrMetaFilePaths));
+            if (outNotEditablePaths == null)
+                throw new ArgumentNullException(nameof(outNotEditablePaths));
+            UnityEngine.Profiling.Profiler.BeginSample("AssetDatabase.IsOpenForEdit");
+            AssetModificationProcessorInternal.IsOpenForEdit(assetOrMetaFilePaths, outNotEditablePaths, statusQueryOptions);
+            UnityEngine.Profiling.Profiler.EndSample();
         }
     }
 }

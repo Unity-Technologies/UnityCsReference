@@ -242,8 +242,6 @@ namespace UnityEngine.UIElements
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
         internal bool disposed { get; private set; }
-        internal bool allowPixelCaching { get; set; }
-        public abstract bool keepPixelCacheOnWorldBoundChange { get; set; }
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
@@ -447,30 +445,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool m_KeepPixelCacheOnWorldBoundChange;
-        public override bool keepPixelCacheOnWorldBoundChange
-        {
-            get { return m_KeepPixelCacheOnWorldBoundChange; }
-            set
-            {
-                if (m_KeepPixelCacheOnWorldBoundChange == value)
-                    return;
-
-                m_KeepPixelCacheOnWorldBoundChange = value;
-
-                // We only need to force a repaint if this flag was set from
-                // true (do NOT update pixel cache) to false (update pixel cache).
-                // When it was true, the pixel cache was just being transformed and
-                // now we want to regenerate it at the correct resolution. Going from
-                // false to true does not need a repaint because the pixel cache is
-                // already valid (was being updated each transform repaint).
-                if (!value)
-                {
-                    m_RootContainer.IncrementVersion(VersionChangeType.Transform | VersionChangeType.Repaint);
-                }
-            }
-        }
-
         public override int IMGUIContainersCount { get; set; }
 
         internal override uint version
@@ -527,7 +501,6 @@ namespace UnityEngine.UIElements
             m_ProfileBindingsName = "PanelBindings";
             m_ProfileAnimationsName = "PanelAnimations";
 
-            allowPixelCaching = true;
             InvokeHierarchyChanged(visualTree, HierarchyChangeType.Add);
         }
 

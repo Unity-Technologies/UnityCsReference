@@ -251,7 +251,9 @@ namespace UnityEditor
             // Right spacing side
             ReserveWidthLeft(space, ref pos);
             ReserveWidthLeft(dropdownWidth, ref pos);
-            DoLayoutDropDown(EditorToolGUI.GetThinArea(pos));
+
+            if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
+                DoLayoutDropDown(EditorToolGUI.GetThinArea(pos));
 
             if (ModeService.HasCapability(ModeCapability.Layers, true))
             {
@@ -283,7 +285,6 @@ namespace UnityEditor
                 ReserveWidthLeft(subToolbar.Width, ref pos);
                 subToolbar.OnGUI(EditorToolGUI.GetThinArea(pos));
             }
-
 
             if (ModeService.modeCount > 1 && Unsupported.IsDeveloperBuild())
             {

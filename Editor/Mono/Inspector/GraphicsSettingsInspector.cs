@@ -109,11 +109,11 @@ namespace UnityEditor
         {
             bool enabled = GUI.enabled;
             GUI.enabled = true; // we don't want to disable the expand behavior
-            EditorGUILayout.BeginVertical(GUI.skin.box, GUILayout.Height(30));
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Height(20));
 
             EditorGUILayout.BeginHorizontal();
-            Rect r = GUILayoutUtility.GetRect(20, 26); r.x += 3; r.width += 6;
-            showTierSettingsUI = GUI.Toggle(r, showTierSettingsUI, Styles.tierSettings, EditorStyles.inspectorTitlebarText);
+            Rect r = GUILayoutUtility.GetRect(20, 21); r.x += 3; r.width += 6;
+            showTierSettingsUI = EditorGUI.FoldoutTitlebar(r, Styles.tierSettings, showTierSettingsUI, true, EditorStyles.inspectorTitlebarFlat, EditorStyles.inspectorTitlebarText);
             HandleEditorWindowButton();
             EditorGUILayout.EndHorizontal();
 

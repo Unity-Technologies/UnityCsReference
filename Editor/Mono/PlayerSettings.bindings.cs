@@ -965,7 +965,17 @@ namespace UnityEditor
         [NativeProperty("GPUSkinning")]
         public static extern bool gpuSkinning { get; set; }
 
-        public static extern bool graphicsJobs { get; set; }
+        public static bool graphicsJobs
+        {
+            get { return GetGraphicsJobsForPlatform(EditorUserBuildSettings.activeBuildTarget); }
+            set { SetGraphicsJobsForPlatform(EditorUserBuildSettings.activeBuildTarget, value); }
+        }
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool GetGraphicsJobsForPlatform(BuildTarget platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetGraphicsJobsForPlatform(BuildTarget platform, bool graphicsJobs);
 
         public static extern GraphicsJobMode graphicsJobMode { get; set; }
 

@@ -393,13 +393,11 @@ namespace UnityEditor
                     throw new ArgumentException(string.Format("The provided camera mode {0} is not registered!", value));
                 }
                 m_CameraMode = value;
-                SetupPBRValidation();
+
                 if (onCameraModeChanged != null)
                     onCameraModeChanged(m_CameraMode);
             }
         }
-
-        private DrawCameraMode lastRenderMode = 0;
 
         [Obsolete("m_ValidateTrueMetals has been deprecated. Use validateTrueMetals instead (UnityUpgradable) -> validateTrueMetals", true)]
         public bool m_ValidateTrueMetals = false;
@@ -423,7 +421,10 @@ namespace UnityEditor
 
         [SerializeField]
         float m_ExposureSliderValue = 0.0f;
-        const float kExposureSliderMax = 23.0f;
+        [SerializeField]
+        float m_ExposureSliderMax = 10f; // this value can be altered by the user
+        // no point of allowing the user to go over this
+        const float kExposureSliderAbsoluteMax = 23.0f;
 
         [SerializeField]
         private SceneViewState m_SceneViewState;
@@ -1127,13 +1128,6 @@ namespace UnityEditor
                 RefreshAudioPlay();
         }
 
-        private bool SelectedDrawModeNeedExposureControl()
-        {
-            // it only make sense to allow the user to adjust the exposure on these debug view
-            return cameraMode.drawMode == DrawCameraMode.BakedEmissive || cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
-                cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || cameraMode.drawMode == DrawCameraMode.RealtimeIndirect;
-        }
-
         void ToolbarDisplayStateGUI()
         {
             // render mode popup
@@ -1156,20 +1150,6 @@ namespace UnityEditor
             m_SceneIsLit = GUILayout.Toggle(m_SceneIsLit, Styles.lighting, EditorStyles.toolbarButton);
             if (cameraMode.drawMode == DrawCameraMode.ShadowCascades)     // cascade visualization requires actual lights with shadows
                 m_SceneIsLit = true;
-
-            EditorGUILayout.Space();
-
-            float labelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 21;
-            var rect2 = GUILayoutUtility.GetRect(65, EditorGUI.kWindowToolbarHeight);
-
-            using (new EditorGUI.DisabledScope(!SelectedDrawModeNeedExposureControl()))
-            {
-                m_ExposureSliderValue = EditorGUI.FloatField(rect2, Styles.exposureIcon, m_ExposureSliderValue);
-                m_ExposureSliderValue = Mathf.Min(Mathf.Max(m_ExposureSliderValue, -kExposureSliderMax), kExposureSliderMax);
-                Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
-            }
-            EditorGUIUtility.labelWidth = labelWidth;
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
@@ -1221,7 +1201,7 @@ namespace UnityEditor
 
         void ToolbarSnapSettingsDropdownGUI()
         {
-            bool toggled = EditorSnapSettings.enabled;
+            bool toggled = EditorSnapSettings.active;
 
             GUIContent content = Styles.snapMoveValue;
 
@@ -1234,7 +1214,8 @@ namespace UnityEditor
                 GUIUtility.ExitGUI();
             }
 
-            EditorSnapSettings.enabled = toggled;
+            if (!EditorSnapSettings.hotkeyActive)
+                EditorSnapSettings.enabled = toggled;
         }
 
         string GetSnapMoveValueString(string format)
@@ -1913,34 +1894,6 @@ namespace UnityEditor
                 Repaint();
         }
 
-        void SetupPBRValidation()
-        {
-            DrawCameraMode renderMode = m_CameraMode.drawMode;
-            if (renderMode == DrawCameraMode.ValidateAlbedo)
-            {
-                CreateAlbedoSwatchData();
-                UpdateAlbedoSwatch();
-            }
-
-            if (renderMode == DrawCameraMode.ValidateAlbedo || renderMode == DrawCameraMode.ValidateMetalSpecular)
-            {
-                UpdatePBRColorLegend();
-            }
-
-            if ((renderMode == DrawCameraMode.ValidateAlbedo || renderMode == DrawCameraMode.ValidateMetalSpecular) &&
-                lastRenderMode != DrawCameraMode.ValidateAlbedo && lastRenderMode != DrawCameraMode.ValidateMetalSpecular)
-            {
-                duringSceneGui += DrawValidateAlbedoSwatches;
-            }
-            else if ((renderMode != DrawCameraMode.ValidateAlbedo && renderMode != DrawCameraMode.ValidateMetalSpecular) &&
-                     (lastRenderMode == DrawCameraMode.ValidateAlbedo || lastRenderMode == DrawCameraMode.ValidateMetalSpecular))
-            {
-                duringSceneGui -= DrawValidateAlbedoSwatches;
-            }
-
-            lastRenderMode = renderMode;
-        }
-
         void DoClearCamera(Rect cameraRect)
         {
             // Clear (color/skybox)
@@ -2205,7 +2158,7 @@ namespace UnityEditor
 
         void UpdatePBRColorLegend()
         {
-            if (m_TooLowColorStyle == null)
+            if (m_TooLowColorStyle == null || m_TooLowColorStyle.normal.background == null)
             {
                 m_TooLowColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateLow.Color);
                 m_TooHighColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateHigh.Color);
@@ -2329,7 +2282,10 @@ namespace UnityEditor
         internal void PrepareValidationUI()
         {
             if (m_AlbedoSwatchInfos == null)
+            {
                 CreateAlbedoSwatchData();
+                UpdatePBRColorLegend();
+            }
 
             if (PlayerSettings.colorSpace != m_LastKnownColorSpace)
             {
@@ -2345,12 +2301,40 @@ namespace UnityEditor
             sceneView.DrawPBRSettingsForScene();
         }
 
-        void DrawValidateAlbedoSwatches(SceneView sceneView)
+        internal void DrawLightmapExposureSlider()
+        {
+            float labelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 20;
+            m_ExposureSliderValue = EditorGUILayout.Slider(Styles.exposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax,
+                m_ExposureSliderMax, -kExposureSliderAbsoluteMax, kExposureSliderAbsoluteMax, EditorStyles.toolbarSlider);
+
+            // This will allow the user to set a new max value for the current session
+            if (m_ExposureSliderValue >= 0)
+                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue);
+            else
+                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue * -1);
+
+            EditorGUIUtility.labelWidth = labelWidth;
+            Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
+        }
+
+        static void DrawLightmapSettings(Object target, SceneView sceneView)
+        {
+            sceneView.DrawLightmapExposureSlider();
+        }
+
+        void DrawSceneViewSwatch(SceneView sceneView)
         {
             if (sceneView.cameraMode.drawMode == DrawCameraMode.ValidateAlbedo || sceneView.cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular)
             {
                 sceneView.PrepareValidationUI();
                 SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            }
+
+            if (sceneView.cameraMode.drawMode == DrawCameraMode.BakedEmissive || sceneView.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
+                sceneView.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || sceneView.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect)
+            {
+                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Lightmap Exposure"), DrawLightmapSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             }
         }
 
@@ -2508,6 +2492,8 @@ namespace UnityEditor
 
             if (displayToolModes)
                 EditorToolGUI.DrawSceneViewTools(this);
+
+            DrawSceneViewSwatch(this);
 
             // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
             HandleSelectionAndOnSceneGUI();
@@ -3531,8 +3517,6 @@ namespace UnityEditor
             HandleUtility.handleMaterial.SetColor("_SkyColor", kSceneViewUpLight * 1.5f);
             HandleUtility.handleMaterial.SetColor("_GroundColor", kSceneViewDownLight * 1.5f);
             HandleUtility.handleMaterial.SetColor("_Color", kSceneViewFrontLight * 1.5f);
-
-            SetupPBRValidation();
         }
 
         void CallOnSceneGUI()

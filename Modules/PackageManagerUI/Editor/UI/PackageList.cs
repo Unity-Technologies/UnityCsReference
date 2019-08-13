@@ -49,6 +49,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageItemsLookup = new Dictionary<string, PackageItem>();
 
             m_RefreshInProgress = false;
+            focusable = true;
         }
 
         public void OnEnable()
@@ -239,12 +240,6 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnKeyDownShortcut(KeyDownEvent evt)
         {
-            if (evt.keyCode == KeyCode.Tab)
-            {
-                evt.StopPropagation();
-                return;
-            }
-
             if (evt.keyCode == KeyCode.RightArrow)
             {
                 SetSelectedItemExpanded(true);

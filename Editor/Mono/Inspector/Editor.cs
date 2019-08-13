@@ -552,12 +552,31 @@ namespace UnityEditor
         {
             if (m_SerializedObject == null)
             {
+                CreateSerializedObject();
+            }
+
+            return m_SerializedObject;
+        }
+
+        internal class SerializedObjectNotCreatableException : Exception
+        {
+            public SerializedObjectNotCreatableException(string msg) : base(msg) {}
+        }
+
+        private void CreateSerializedObject()
+        {
+            try
+            {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
                 m_SerializedObject.inspectorMode = inspectorMode;
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
             }
-
-            return m_SerializedObject;
+            catch (ArgumentException e)
+            {
+                m_SerializedObject = null;
+                m_EnabledProperty = null;
+                throw new SerializedObjectNotCreatableException(e.Message);
+            }
         }
 
         internal virtual void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
@@ -1049,7 +1068,7 @@ namespace UnityEditor
                 return true;
 
             if (m_SerializedObject == null)
-                m_SerializedObject = new SerializedObject(targets, m_Context);
+                CreateSerializedObject();
             else
                 m_SerializedObject.Update();
             m_SerializedObject.inspectorMode = inspectorMode;

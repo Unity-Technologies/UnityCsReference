@@ -386,18 +386,37 @@ namespace UnityEditor.VFX
 
         public extern bool compileInitialVariants { get; set; }
 
-        public void SetRuntimeData(VFXExpressionSheet sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc, VFXTemporaryGPUBufferDesc[] temporaryBufferDesc = null)
+        public void SetRuntimeData(VFXExpressionSheet sheet,
+            VFXEditorSystemDesc[] systemDesc,
+            VFXEventDesc[] eventDesc,
+            VFXGPUBufferDesc[] bufferDesc,
+            VFXCPUBufferDesc[] cpuBufferDesc,
+            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc = null,
+            VFXShaderSourceDesc[] shaderSourceDesc = null)
         {
             var internalSheet = new VFXExpressionSheetInternal();
             internalSheet.expressions = sheet.expressions;
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 
-            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc);
+            //Ensure compatibility with the actual visual effect compilation behavior.
+            //This code and default value can be removed with 2020.1
+            if (shaderSourceDesc == null)
+            {
+                shaderSourceDesc = shaderSources;
+            }
+
+            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc);
         }
 
         [NativeThrows]
-        extern private void SetRuntimeData(VFXExpressionSheetInternal sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXTemporaryGPUBufferDesc[] temporaryBufferDesc, VFXCPUBufferDesc[] cpuBufferDesc);
+        extern private void SetRuntimeData(VFXExpressionSheetInternal sheet,
+            VFXEditorSystemDesc[] systemDesc,
+            VFXEventDesc[] eventDesc,
+            VFXGPUBufferDesc[] bufferDesc,
+            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
+            VFXCPUBufferDesc[] cpuBufferDesc,
+            VFXShaderSourceDesc[] shaderSourceDesc);
         extern public VFXRendererSettings rendererSettings { get; set; }
         extern public VFXUpdateMode updateMode { get; set; }
         extern public float preWarmDeltaTime { get; set; }

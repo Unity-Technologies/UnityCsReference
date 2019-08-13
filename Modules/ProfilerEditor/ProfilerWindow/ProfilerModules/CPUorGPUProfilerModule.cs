@@ -19,8 +19,15 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         protected ProfilerFrameDataHierarchyView m_FrameDataHierarchyView;
 
-        // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests.SelectAndDisplayDetailsForAFrame_WithSearchFiltering to avoid brittle tests due to reflection
+        // Used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests.SelectAndDisplayDetailsForAFrame_WithSearchFiltering to avoid brittle tests due to reflection
         internal ProfilerFrameDataHierarchyView FrameDataHierarchyView => m_FrameDataHierarchyView;
+
+        // Used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests
+        internal ProfilerViewType ViewType
+        {
+            get { return m_ViewType; }
+            set { m_ViewType = value; }
+        }
 
         public override void OnEnable(IProfilerWindowController profilerWindow)
         {

@@ -1525,6 +1525,9 @@ namespace UnityEngine
         public static void EndScrollView(bool handleScrollWheel)
         {
             GUIUtility.CheckOnGUI();
+
+            if (scrollViewStates.Count == 0)
+                return;
             ScrollViewState state = (ScrollViewState)scrollViewStates.Peek();
 
             GUIClip.Pop();
@@ -1546,7 +1549,6 @@ namespace UnityEngine
                     state.scrollPosition.x = 0f;
                 if (state.scrollPosition.y < 0f)
                     state.scrollPosition.y = 0f;
-
                 state.apply = true;
                 Event.current.Use();
             }

@@ -36,7 +36,18 @@ namespace UnityEditor
         public static void StatusChanged()
         {
             if (s_AppStatusBar)
+            {
                 s_AppStatusBar.Repaint();
+            }
+        }
+
+        [RequiredByNativeCode]
+        internal static void StatusChangedImmediate()
+        {
+            if (s_AppStatusBar)
+            {
+                s_AppStatusBar.RepaintImmediately();
+            }
         }
 
         void OnInspectorUpdate()

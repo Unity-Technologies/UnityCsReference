@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -55,6 +56,8 @@ namespace UnityEngine.UIElements
         }
 
         static List<Panel> panelsIteration = new List<Panel>();
+        internal static readonly string s_RepaintProfilerMarkerName = "UIElementsRuntimeUtility.DoDispatch(Repaint Event)";
+        private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
 
         [RequiredByNativeCode]
         public static void RepaintOverlayPanels()
@@ -65,7 +68,11 @@ namespace UnityEngine.UIElements
                 // at the moment, all runtime panels who do not use a rendertexure are rendered as overlays.
                 // later on, they'll be filtered based on render mode
                 if (panel.contextType == ContextType.Player && (panel as RuntimePanel).targetTexture == null)
+                {
+                    s_RepaintProfilerMarker.Begin();
                     panel.Repaint(Event.current);
+                    s_RepaintProfilerMarker.End();
+                }
             }
         }
 
@@ -313,13 +320,20 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static readonly string s_RepaintProfilerMarkerName = "UIElementsUtility.DoDispatch(Repaint Event)";
+        internal static readonly string s_EventProfilerMarkerName = "UIElementsUtility.DoDispatch(Non Repaint Event)";
+        private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
+        private static readonly ProfilerMarker s_EventProfilerMarker = new ProfilerMarker(s_EventProfilerMarkerName);
+
         static bool DoDispatch(BaseVisualElementPanel panel)
         {
             bool usesEvent = false;
 
             if (s_EventInstance.type == EventType.Repaint)
             {
+                s_RepaintProfilerMarker.Begin();
                 panel.Repaint(s_EventInstance);
+                s_RepaintProfilerMarker.End();
 
                 // TODO get rid of this when we wrap every GUIView inside IMGUIContainers
                 // here we pretend to use the repaint event
@@ -334,7 +348,10 @@ namespace UnityEngine.UIElements
                 using (EventBase evt = CreateEvent(s_EventInstance))
                 {
                     bool immediate = s_EventInstance.type == EventType.Used || s_EventInstance.type == EventType.Layout || s_EventInstance.type == EventType.ExecuteCommand || s_EventInstance.type == EventType.ValidateCommand;
+
+                    s_EventProfilerMarker.Begin();
                     panel.SendEvent(evt, immediate ? DispatchMode.Immediate : DispatchMode.Queued);
+                    s_EventProfilerMarker.End();
 
                     // The dispatcher should have finished processing the event,
                     // otherwise we cannot return a value for usesEvent.

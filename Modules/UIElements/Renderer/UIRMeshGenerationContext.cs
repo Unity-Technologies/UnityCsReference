@@ -295,17 +295,14 @@ namespace UnityEngine.UIElements
                 mgc.painter.DrawText(textParams, handle, pixelsPerPoint);
         }
 
-        public static Vector2 GetVisualElementRadius(Length length, VisualElement parent)
+        static Vector2 ConvertBorderRadiusPercentToPoints(Vector2 borderRectSize, Length length)
         {
             float x = length.value;
             float y = length.value;
             if (length.unit == LengthUnit.Percent)
             {
-                if (parent == null)
-                    return Vector2.zero;
-
-                x = parent.resolvedStyle.width * length.value / 100;
-                y = parent.resolvedStyle.height * length.value / 100;
+                x = borderRectSize.x * length.value / 100;
+                y = borderRectSize.y * length.value / 100;
             }
 
             // Make sure to not return negative radius
@@ -313,6 +310,18 @@ namespace UnityEngine.UIElements
             y = Mathf.Max(y, 0);
 
             return new Vector2(x, y);
+        }
+
+        public static void GetVisualElementRadii(VisualElement ve, out Vector2 topLeft, out Vector2 bottomLeft, out Vector2 topRight, out Vector2 bottomRight)
+        {
+            IResolvedStyle style = ve.resolvedStyle;
+            var borderRectSize = new Vector2(style.width, style.height);
+
+            var computedStyle = ve.computedStyle;
+            topLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopLeftRadius.value);
+            bottomLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomLeftRadius.value);
+            topRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopRightRadius.value);
+            bottomRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomRightRadius.value);
         }
     }
 

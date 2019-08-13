@@ -94,11 +94,20 @@ namespace UnityEngine
 
         public TSubsystem Create()
         {
-            TSubsystem susbsystemImpl = Activator.CreateInstance(subsystemImplementationType) as TSubsystem;
+            TSubsystem existingImpl = Internal_SubsystemInstances.Internal_FindStandaloneSubsystemInstanceGivenDescriptor(this) as TSubsystem;
 
-            susbsystemImpl.m_subsystemDescriptor = this;
-            Internal_SubsystemInstances.Internal_AddStandaloneSubsystem(susbsystemImpl);
-            return susbsystemImpl;
+            if (existingImpl != null)
+            {
+                return existingImpl;
+            }
+            else
+            {
+                TSubsystem susbsystemImpl = Activator.CreateInstance(subsystemImplementationType) as TSubsystem;
+
+                susbsystemImpl.m_subsystemDescriptor = this;
+                Internal_SubsystemInstances.Internal_AddStandaloneSubsystem(susbsystemImpl);
+                return susbsystemImpl;
+            }
         }
     }
 
@@ -153,6 +162,17 @@ namespace UnityEngine
         internal static void Internal_AddStandaloneSubsystem(Subsystem inst)
         {
             s_StandaloneSubsystemInstances.Add(inst);
+        }
+
+        internal static Subsystem Internal_FindStandaloneSubsystemInstanceGivenDescriptor(SubsystemDescriptor descriptor)
+        {
+            foreach (Subsystem subsystemInstance in s_StandaloneSubsystemInstances)
+            {
+                if (subsystemInstance.m_subsystemDescriptor == descriptor)
+                    return subsystemInstance;
+            }
+
+            return null;
         }
     }
 

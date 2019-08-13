@@ -382,6 +382,9 @@ namespace UnityEngine.VFX
         extern public int aliveParticleCount { get; }
 
         extern public void Simulate(float stepDeltaTime, uint stepCount = 1);
+
+        //Could be exposed publicly but requires a specific function from bindings which doesn't call BaseObject::Reset (because it also resets the awake flags)
+        //extern internal void Reset();
     }
 
     // Bindings for VFXRenderer is needed but we dont want it to be accessible to users

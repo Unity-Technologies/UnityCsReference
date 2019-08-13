@@ -54,6 +54,13 @@ namespace UnityEditor.PackageManager.UI
             PackageFiltering.instance.onFilterTabChanged -= SetFilter;
         }
 
+        public void FocusOnSearch()
+        {
+            searchToolbar.Focus();
+            // Line below is required to make sure focus is in textfield
+            searchToolbar.Q<TextField>()?.visualInput?.Focus();
+        }
+
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
             // If nothing in the change list is related to `in development` packages

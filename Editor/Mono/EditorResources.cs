@@ -18,6 +18,7 @@ namespace UnityEditor.Experimental
     public partial class EditorResources
     {
         private static StyleCatalog s_StyleCatalog;
+        private static bool s_RefreshGlobalStyleCatalog = false;
         private static Dictionary<string, string> s_BuiltInFonts = null;
 
         // Global editor styles
@@ -25,7 +26,7 @@ namespace UnityEditor.Experimental
         {
             get
             {
-                if (s_StyleCatalog == null)
+                if (s_StyleCatalog == null || s_RefreshGlobalStyleCatalog)
                     BuildCatalog();
                 return s_StyleCatalog;
             }
@@ -233,10 +234,13 @@ namespace UnityEditor.Experimental
         internal static void BuildCatalog()
         {
             s_StyleCatalog = new StyleCatalog();
+            s_RefreshGlobalStyleCatalog = false;
+
             var paths = GetDefaultStyleCatalogPaths();
             foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
                 paths.Add(editorUssPath);
 
+            Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
             styleCatalog.Load(paths);
         }
 
@@ -389,6 +393,24 @@ namespace UnityEditor.Experimental
             var catalog = new StyleCatalog();
             catalog.Load(ussPaths);
             return catalog;
+        }
+
+        [UsedImplicitly]
+        private class StyleCatalogPostProcessor : AssetPostprocessor
+        {
+            [UsedImplicitly]
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                if (styleCatalog == null)
+                    return;
+
+                foreach (var assetPath in importedAssets.Concat(deletedAssets))
+                {
+                    if (!IsEditorStyleSheet(assetPath))
+                        continue;
+                    s_RefreshGlobalStyleCatalog = true;
+                }
+            }
         }
     }
 }

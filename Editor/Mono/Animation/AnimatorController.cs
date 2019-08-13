@@ -206,7 +206,9 @@ namespace UnityEditor.Animations
             if (string.IsNullOrEmpty(path))
                 return null;
 
-            path = Path.Combine(FileUtil.DeleteLastPathNameComponent(path), animatedObject.name + "." + kControllerExtension);
+            string name = System.Text.RegularExpressions.Regex.Replace(animatedObject.name, @"[\\\./]", "_");
+
+            path = Path.Combine(FileUtil.DeleteLastPathNameComponent(path), name + "." + kControllerExtension);
             path = AssetDatabase.GenerateUniqueAssetPath(path);
 
             if (string.IsNullOrEmpty(path))

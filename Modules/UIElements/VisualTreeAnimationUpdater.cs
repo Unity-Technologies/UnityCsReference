@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -22,13 +23,9 @@ namespace UnityEngine.UIElements
         bool m_HasNewAnimations = false;
         bool m_IterationListDirty = false;
 
-        public override string description
-        {
-            get
-            {
-                return "Animation Update";
-            }
-        }
+        private static readonly string s_Description = "Animation Update";
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         public void UnregisterAnimation(IValueAnimationUpdate anim)
         {

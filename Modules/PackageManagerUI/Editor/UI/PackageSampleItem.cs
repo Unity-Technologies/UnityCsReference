@@ -33,26 +33,30 @@ namespace UnityEditor.PackageManager.UI
             var warningMessage = string.Empty;
             if (previousImports.Count > 1)
             {
-                warningMessage = "Different versions of the sample are already imported at\n\n"
-                    + previousImportPaths + "\nThey will be deleted when you update.";
+                warningMessage = L10n.Tr("Different versions of the sample are already imported at") + "\n\n"
+                    + previousImportPaths + "\n" + L10n.Tr("They will be deleted when you update.");
             }
             else if (previousImports.Count == 1)
             {
                 if (m_Sample.isImported)
                 {
-                    warningMessage = "The sample is already imported at\n\n" + previousImportPaths
-                        + "\nImporting again will override all changes you have made to it.";
+                    warningMessage = L10n.Tr("The sample is already imported at") + "\n\n"
+                        + previousImportPaths + "\n" + L10n.Tr("Importing again will override all changes you have made to it.");
                 }
                 else
                 {
-                    warningMessage = "A different version of the sample is already imported at\n\n"
-                        + previousImportPaths + "\nIt will be deleted when you update.";
+                    warningMessage = L10n.Tr("A different version of the sample is already imported at") + "\n\n"
+                        + previousImportPaths + "\n" + L10n.Tr("It will be deleted when you update.");
                 }
             }
 
             if (!string.IsNullOrEmpty(warningMessage) &&
-                EditorUtility.DisplayDialog("Unity Package Manager", warningMessage + " Are you sure you want to continue?", "No", "Yes"))
+                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"),
+                    warningMessage + L10n.Tr(" Are you sure you want to continue?"),
+                    L10n.Tr("No"), L10n.Tr("Yes")))
+            {
                 return;
+            }
 
             PackageManagerWindowAnalytics.SendEvent("importSample", m_Version.uniqueId);
 
@@ -75,17 +79,17 @@ namespace UnityEditor.PackageManager.UI
             if (m_Sample.isImported)
             {
                 importStatus.AddToClassList("imported");
-                importButton.text = "Import again";
+                importButton.text = L10n.Tr("Import again");
             }
             else if (m_Sample.previousImports.Count != 0)
             {
                 importStatus.AddToClassList("imported");
-                importButton.text = "Update";
+                importButton.text = L10n.Tr("Update");
             }
             else
             {
                 importStatus.RemoveFromClassList("imported");
-                importButton.text = "Import in project";
+                importButton.text = L10n.Tr("Import into Project");
             }
         }
 

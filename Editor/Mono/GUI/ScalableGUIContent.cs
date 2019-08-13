@@ -48,6 +48,7 @@ namespace UnityEditor
             var dpi = EditorGUIUtility.pixelsPerPoint;
             var resourcePath = gc.m_CurrentResourcePath;
             var resourceDpi = 1.0f;
+            var normalResourcePath = gc.m_TextureResources[0].resourcePath;
 
             for (int i = 0, count = gc.m_TextureResources.Count; i < count; ++i)
             {
@@ -59,8 +60,7 @@ namespace UnityEditor
             }
             if (resourcePath != gc.m_CurrentResourcePath)
             {
-                Texture2D loadedResource =
-                    StyleSheetResourceUtil.LoadResource(resourcePath, typeof(Texture2D), false) as Texture2D;
+                Texture2D loadedResource = EditorGUIUtility.LoadIconRequired(normalResourcePath);
                 loadedResource.pixelsPerPoint = resourceDpi;
 
                 gc.m_GuiContent.image = loadedResource;

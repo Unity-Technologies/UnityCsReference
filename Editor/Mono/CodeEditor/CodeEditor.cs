@@ -53,35 +53,7 @@ namespace Unity.CodeEditor
             }
 
             var assetFilePath = Path.GetFullPath(assetPath);
-            var assetExtension = Path.GetExtension(assetFilePath);
-            if (string.IsNullOrEmpty(assetExtension))
-            {
-                return false;
-            }
-
-            if (!(selected.GetType().ToString() == "UnityEditor.MonoScript" ||
-                  selected.GetType().ToString() == "UnityEngine.Shader" ||
-                  selected.GetType().ToString() == "UnityEngine.Experimental.UIElements.VisualTreeAsset" ||
-                  selected.GetType().ToString() == "UnityEngine.StyleSheets.StyleSheet" ||
-                  GetExtensionStrings().Contains(assetExtension.Substring(1))
-            ))
-            {
-                return false;
-            }
-
             return Editor.Current.OpenProject(assetFilePath, line, column);
-        }
-
-        static List<string> GetExtensionStrings()
-        {
-            var userExtensions = EditorSettings.projectGenerationUserExtensions;
-            var extensionStrings = userExtensions != null
-                ? userExtensions.ToList()
-                : new List<string> {"ts", "bjs", "javascript", "json", "html", "shader"};
-
-            extensionStrings.AddRange(new[] {"template", "compute", "cginc", "hlsl", "glslinc"});
-
-            return extensionStrings;
         }
 
         internal Installation EditorInstallation
@@ -168,7 +140,6 @@ namespace Unity.CodeEditor
         {
             EditorPrefs.SetString("kScriptsDefaultApp", path);
             Editor.Current.Initialize(path);
-            InternalEditorUtility.RequestScriptReload();
         }
 
         public static void Register(IExternalCodeEditor externalCodeEditor)

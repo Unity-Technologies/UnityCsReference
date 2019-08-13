@@ -17,11 +17,13 @@ namespace UnityEngine.UIElements.UIR
         IsAtlasTexturedPoint = 2,
         IsAtlasTexturedBilinear = 3,
         IsCustomTextured = 4,
-        IsEdge = 5,
-        IsSVGGradients = 6,
-        IsCustomSVGGradients = 7,
+        IsEdge = 5, // X and Y can grow/shrink according to displacement
+        IsEdgeNoShrinkX = 6,
+        IsEdgeNoShrinkY = 7,
+        IsSVGGradients = 8,
+        IsCustomSVGGradients = 9,
 
-        LastType = 8,
+        LastType = 10,
     }
 
     internal struct State

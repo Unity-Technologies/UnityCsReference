@@ -356,10 +356,10 @@ namespace UnityEditor
             ShowGenericMenu(position.width - genericMenuLeftOffset, tabAreaRect.y + genericMenuTopOffset);
 
             DrawTabs(tabAreaRect);
+            HandleSplitView(); //fogbugz 1169963: in order to easily use the splitter in the gameView, it must be prioritized over DrawView(). Side effect for touch is that splitter picking zones might overlap other controls but the tabs still have higher priority so the user can undock the window in that case
             DrawView(viewRect, dockAreaRect);
 
             DrawTabScrollers(tabAreaRect);
-            HandleSplitView();
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);
@@ -1064,8 +1064,11 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIStyle dragTab = "dragTab";
+            public static readonly GUIStyle titleBackground = "dockHeader";
+            public static readonly GUIStyle titleLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
             public static readonly GUIStyle background = "dockarea";
+            public static SVC<float> genericMenuLeftOffset = new SVC<float>("--window-generic-menu-left-offset", 20f);
+            public static SVC<float> genericMenuTopOffset = new SVC<float>("--window-generic-menu-top-offset", 20f);
         }
 
         protected override void OldOnGUI()
@@ -1074,22 +1077,23 @@ namespace UnityEditor
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
 
-            Rect maximizedViewRect = new Rect(-2, 0, position.width + 4, position.height);
+            Rect maximizedViewRect = position;
             maximizedViewRect = Styles.background.margin.Remove(maximizedViewRect);
 
             Rect backRect = new Rect(maximizedViewRect.x + 1, maximizedViewRect.y, maximizedViewRect.width - 2, DockArea.kTabHeight);
             if (Event.current.type == EventType.Repaint)
             {
                 Styles.background.Draw(maximizedViewRect, GUIContent.none, false, false, false, false);
-                Styles.dragTab.Draw(backRect, actualView.titleContent, false, false, true, hasFocus);
+                Styles.titleBackground.Draw(backRect, false, false, true, hasFocus);
+                GUI.Label(backRect, actualView.titleContent, Styles.titleLabel);
             }
 
             if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition))
                 PopupGenericMenu(actualView, new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 0, 0));
 
-            ShowGenericMenu(position.width - 20, backRect.yMin + 6f);
+            ShowGenericMenu(position.width - Styles.genericMenuLeftOffset, backRect.yMin + Styles.genericMenuTopOffset);
 
-            const float topBottomPadding = 3f;
+            const float topBottomPadding = 0f;
             Rect viewRect = maximizedViewRect;
             viewRect.y = backRect.yMax - topBottomPadding;
             viewRect.height = position.height - backRect.yMax + topBottomPadding;

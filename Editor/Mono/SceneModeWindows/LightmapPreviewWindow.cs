@@ -26,7 +26,9 @@ namespace UnityEditor
         [SerializeField]
         float m_ExposureSliderValue = 0.0f;
         [SerializeField]
-        float m_ExposureSliderMax = 10f;
+        float m_ExposureSliderMax = 10f; // this value can be altered by the user
+        // no point of allowing the user to go over this
+        const float kExposureSliderAbsoluteMax = 23.0f;
 
         // Lightmap specifiers
         [SerializeField]
@@ -140,7 +142,7 @@ namespace UnityEditor
 
         private float exposure
         {
-            get { return SelectedTextureNeedExposureControl() ? m_ExposureSliderValue : 0.0f; }
+            get { return SelectedTextureTypeNeedExposureControl() ? m_ExposureSliderValue : 0.0f; }
         }
 
         public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased)
@@ -187,7 +189,7 @@ namespace UnityEditor
             GUILayout.Label(lightmapTitle, "BoldLabel");
             GUILayout.FlexibleSpace();
 
-            PreviewSettings();
+            DrawPreviewSettings();
 
             EditorGUILayout.EndHorizontal();
 
@@ -203,47 +205,14 @@ namespace UnityEditor
             EditorGUILayout.EndVertical();
         }
 
-        private void UpdateActiveGameObjectSelection()
+        private void DrawPreviewSettings()
         {
-            MeshRenderer renderer;
-            Terrain terrain = null;
-
-            // if the active object in the selection is a renderer or a terrain, we're interested in it's lightmapIndex
-            if (Selection.activeGameObject == null ||
-                ((renderer = Selection.activeGameObject.GetComponent<MeshRenderer>()) == null &&
-                 (terrain = Selection.activeGameObject.GetComponent<Terrain>()) == null))
-            {
-                m_ActiveGameObjectLightmapIndex = -1;
-                m_ActiveGameObjectInstanceId = -1;
-                m_ActiveGameObjectTextureHash = new Hash128();
-                return;
-            }
-            if (isRealtimeLightmap)
-            {
-                Hash128 inputSystemHash;
-                if ((renderer != null && LightmapEditorSettings.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
-                    || (terrain != null && LightmapEditorSettings.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
-                {
-                    m_ActiveGameObjectTextureHash = inputSystemHash;
-                }
-                else
-                    m_ActiveGameObjectTextureHash = new Hash128();
-            }
-            else
-            {
-                m_ActiveGameObjectLightmapIndex = renderer != null ? renderer.lightmapIndex : terrain.lightmapIndex;
-                m_ActiveGameObjectInstanceId = renderer != null ? renderer.GetInstanceID() : terrain.GetInstanceID();
-            }
-        }
-
-        private void PreviewSettings()
-        {
-            using (new EditorGUI.DisabledScope(!SelectedTextureNeedExposureControl()))
+            using (new EditorGUI.DisabledScope(!SelectedTextureTypeNeedExposureControl()))
             {
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 20;
                 m_ExposureSliderValue = EditorGUILayout.Slider(Styles.ExposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax,
-                    m_ExposureSliderMax, float.MinValue, float.MaxValue, EditorStyles.toolbarSlider);
+                    m_ExposureSliderMax, -kExposureSliderAbsoluteMax, kExposureSliderAbsoluteMax, EditorStyles.toolbarSlider);
 
                 // This will allow the user to set a new max value for the current session
                 if (m_ExposureSliderValue >= 0)
@@ -345,7 +314,7 @@ namespace UnityEditor
                 case EventType.ValidateCommand:
                 case EventType.ExecuteCommand:
 
-                    if (Event.current.commandName == EventCommandNames.FrameSelected && IsSelectedObjectInLightmap(textureType))
+                    if (Event.current.commandName == EventCommandNames.FrameSelected && IsActiveGameObjectInLightmap(textureType))
                     {
                         // There are instance based baked textures where we don't get any STs and can't do the framing
                         if (!isRealtimeLightmap && !LightmapVisualizationUtility.IsAtlasTextureType(textureType))
@@ -402,7 +371,7 @@ namespace UnityEditor
                         texture.filterMode = FilterMode.Point;
 
                         LightmapVisualizationUtility.DrawTextureWithUVOverlay(texture,
-                            (m_ShowUVOverlay && IsSelectedObjectInLightmap(textureType)) ? Selection.activeGameObject : null,
+                            (m_ShowUVOverlay && IsActiveGameObjectInLightmap(textureType)) ? Selection.activeGameObject : null,
                             m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] {}, drawableArea, textureRect, textureType, exposure);
                         texture.filterMode = prevMode;
                     }
@@ -420,17 +389,6 @@ namespace UnityEditor
             m_SelectedPreviewTextureOptionIndex = Array.IndexOf(options, textureOption);
         }
 
-        private bool IsSelectedObjectInLightmap(GITextureType textureType)
-        {
-            if (isRealtimeLightmap)
-                return (m_ActiveGameObjectTextureHash == m_RealtimeTextureHash);
-
-            if (LightmapVisualizationUtility.IsAtlasTextureType(textureType))
-                return (m_ActiveGameObjectLightmapIndex == m_LightmapIndex);
-
-            return (m_ActiveGameObjectInstanceId == m_InstanceID);
-        }
-
         private GITextureType GetSelectedTextureType()
         {
             GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
@@ -444,13 +402,59 @@ namespace UnityEditor
             return types[m_SelectedPreviewTextureOptionIndex];
         }
 
-        private bool SelectedTextureNeedExposureControl()
+        private bool SelectedTextureTypeNeedExposureControl()
         {
             var textureType = GetSelectedTextureType();
 
             // it only make sense to allow the user to adjust the exposure on these textures
             return textureType == GITextureType.BakedEmissive || textureType == GITextureType.Baked ||
                 textureType == GITextureType.Emissive || textureType == GITextureType.Irradiance;
+        }
+
+        private bool IsActiveGameObjectInLightmap(GITextureType textureType)
+        {
+            if (isRealtimeLightmap)
+                return (m_ActiveGameObjectTextureHash == m_RealtimeTextureHash);
+
+            if (LightmapVisualizationUtility.IsAtlasTextureType(textureType))
+                return (m_ActiveGameObjectLightmapIndex == m_LightmapIndex);
+
+            return (m_ActiveGameObjectInstanceId == m_InstanceID);
+        }
+
+        private void UpdateActiveGameObjectSelection()
+        {
+            MeshRenderer renderer = null;
+            Terrain terrain = null;
+
+            // if the selected active object (also active in the hierarchy) is a renderer or a terrain, we check its index etc.
+            // otherwise bail
+            if (Selection.activeGameObject == null || !Selection.activeGameObject.activeInHierarchy ||
+                (!Selection.activeGameObject.TryGetComponent(out renderer) &&
+                 !Selection.activeGameObject.TryGetComponent(out terrain)))
+            {
+                m_ActiveGameObjectLightmapIndex = -1;
+                m_ActiveGameObjectInstanceId = -1;
+                m_ActiveGameObjectTextureHash = new Hash128();
+                return;
+            }
+
+            if (isRealtimeLightmap)
+            {
+                Hash128 inputSystemHash;
+                if ((renderer != null && LightmapEditorSettings.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
+                    || (terrain != null && LightmapEditorSettings.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
+                {
+                    m_ActiveGameObjectTextureHash = inputSystemHash;
+                }
+                else
+                    m_ActiveGameObjectTextureHash = new Hash128();
+            }
+            else
+            {
+                m_ActiveGameObjectLightmapIndex = renderer != null ? renderer.lightmapIndex : terrain.lightmapIndex;
+                m_ActiveGameObjectInstanceId = renderer != null ? renderer.GetInstanceID() : terrain.GetInstanceID();
+            }
         }
 
         private void UpdateCachedTexture(GITextureType textureType)

@@ -24,15 +24,6 @@ namespace UnityEditor.PackageManager.UI
             cache = new VisualElementCache(root);
 
             m_LastErrorMessages = new string[Enum.GetNames(typeof(PackageFilterTab)).Length];
-
-
-            var refreshIconButton = new IconButton(Resources.GetIconPath("refresh"));
-            refreshIconButton.clickable.clicked += () =>
-            {
-                if (!EditorApplication.isPlaying)
-                    PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
-            };
-            refreshButtonContainer.Add(refreshIconButton);
         }
 
         public void OnEnable()
@@ -64,6 +55,12 @@ namespace UnityEditor.PackageManager.UI
             PackageFiltering.instance.onFilterTabChanged += UpdateStatusMessage;
 
             ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
+
+            refreshButton.clickable.clicked += () =>
+            {
+                if (!EditorApplication.isPlaying)
+                    PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
+            };
         }
 
         public void OnDisable()
@@ -129,6 +126,6 @@ namespace UnityEditor.PackageManager.UI
         private LoadingSpinner loadingSpinner { get { return cache.Get<LoadingSpinner>("loadingSpinner"); }}
         private Label errorIcon { get { return cache.Get<Label>("errorIcon"); }}
         private Label statusLabel { get { return cache.Get<Label>("statusLabel"); }}
-        private VisualElement refreshButtonContainer { get { return cache.Get<VisualElement>("refreshButtonContainer"); } }
+        private Button refreshButton { get { return cache.Get<Button>("refreshButton"); } }
     }
 }

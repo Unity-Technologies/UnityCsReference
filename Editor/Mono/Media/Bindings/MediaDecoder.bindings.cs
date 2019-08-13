@@ -7,6 +7,7 @@ using UnityEditor.Media;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Video;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("VideoTesting")]
@@ -19,6 +20,11 @@ namespace UnityEditorInternal.Media
         public MediaDecoder(string filePath)
         {
             m_Ptr = Create(filePath);
+        }
+
+        public MediaDecoder(VideoClip clip)
+        {
+            m_Ptr = Create(clip);
         }
 
         ~MediaDecoder()
@@ -55,9 +61,22 @@ namespace UnityEditorInternal.Media
             return ptr;
         }
 
+        private IntPtr Create(VideoClip clip)
+        {
+            IntPtr ptr = Internal_MediaDecoder_CreateFromClip(clip);
+            if (ptr == IntPtr.Zero)
+                throw new InvalidOperationException(
+                    "MediaDecoder: Could not open clip " + clip.name);
+            return ptr;
+        }
+
         [NativeHeader("Editor/Mono/Media/Bindings/MediaDecoder.bindings.h")]
         [FreeFunction]
         extern private static IntPtr Internal_MediaDecoder_Create(string filePath);
+
+        [NativeHeader("Editor/Mono/Media/Bindings/MediaDecoder.bindings.h")]
+        [FreeFunction]
+        extern private static IntPtr Internal_MediaDecoder_CreateFromClip(VideoClip clip);
 
         [NativeHeader("Modules/Video/Public/Base/VideoClipMedia.h")]
         [FreeFunction("VideoClipMedia::Release")]

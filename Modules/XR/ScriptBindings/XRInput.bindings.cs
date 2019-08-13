@@ -143,7 +143,6 @@ namespace UnityEngine.XR
     {
         internal string m_Name;
         [NativeName("m_FeatureType")] internal InputFeatureType m_InternalType;
-
         public string name { get { return m_Name; } internal set { m_Name = value; } }
         internal InputFeatureType internalType { get { return m_InternalType; } set { m_InternalType = value; } }
         public Type type
@@ -152,7 +151,7 @@ namespace UnityEngine.XR
             {
                 switch (m_InternalType)
                 {
-                    case InputFeatureType.Custom: throw new InvalidCastException("No valid managed type for Custom native types.");
+                    case InputFeatureType.Custom: return typeof(byte[]);
                     case InputFeatureType.Binary: return typeof(bool);
                     case InputFeatureType.DiscreteStates: return typeof(uint);
                     case InputFeatureType.Axis1D: return typeof(float);
@@ -162,7 +161,6 @@ namespace UnityEngine.XR
                     case InputFeatureType.Hand: return typeof(Hand);
                     case InputFeatureType.Bone: return typeof(Bone);
                     case InputFeatureType.Eyes: return typeof(Eyes);
-
                     default: throw new InvalidCastException("No valid managed type for unknown native type.");
                 }
             }
@@ -178,7 +176,6 @@ namespace UnityEngine.XR
         {
             if (!(obj is InputFeatureUsage))
                 return false;
-
             return Equals((InputFeatureUsage)obj);
         }
 
@@ -213,14 +210,11 @@ namespace UnityEngine.XR
     public struct InputFeatureUsage<T> : IEquatable<InputFeatureUsage<T>>
     {
         public string name { get; set; }
-
         public InputFeatureUsage(string usageName) { name = usageName; }
-
         public override bool Equals(object obj)
         {
             if (!(obj is InputFeatureUsage<T>))
                 return false;
-
             return Equals((InputFeatureUsage<T>)obj);
         }
 
@@ -242,6 +236,38 @@ namespace UnityEngine.XR
         public static bool operator!=(InputFeatureUsage<T> a, InputFeatureUsage<T> b)
         {
             return !(a == b);
+        }
+
+        private Type usageType { get { return typeof(T); } }
+        public static explicit operator InputFeatureUsage(InputFeatureUsage<T> self)
+        {
+            InputFeatureType featureType = InputFeatureType.kUnityXRInputFeatureTypeInvalid;
+            Type usageType = self.usageType;
+            if (usageType == typeof(bool))
+                featureType = InputFeatureType.Binary;
+            else if (usageType == typeof(uint))
+                featureType = InputFeatureType.DiscreteStates;
+            else if (usageType == typeof(float))
+                featureType = InputFeatureType.Axis1D;
+            else if (usageType == typeof(Vector2))
+                featureType = InputFeatureType.Axis2D;
+            else if (usageType == typeof(Vector3))
+                featureType = InputFeatureType.Axis3D;
+            else if (usageType == typeof(Quaternion))
+                featureType = InputFeatureType.Rotation;
+            else if (usageType == typeof(Hand))
+                featureType = InputFeatureType.Hand;
+            else if (usageType == typeof(Bone))
+                featureType = InputFeatureType.Bone;
+            else if (usageType == typeof(Eyes))
+                featureType = InputFeatureType.Eyes;
+            else if (usageType == typeof(byte[]))
+                featureType = InputFeatureType.Custom;
+            else if (usageType.IsEnum)
+                featureType = InputFeatureType.DiscreteStates;
+            if (featureType != InputFeatureType.kUnityXRInputFeatureTypeInvalid)
+                return new InputFeatureUsage(self.name, featureType);
+            throw new InvalidCastException($"No valid InputFeatureType for {self.name}.");
         }
     }
 

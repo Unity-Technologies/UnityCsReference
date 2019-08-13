@@ -153,9 +153,9 @@ namespace UnityEngine.Experimental.TerrainAPI
             }
         }
 
-        internal static PaintContext InitializePaintContext(Terrain terrain, int targetWidth, int targetHeight, RenderTextureFormat pcFormat, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
+        internal static PaintContext InitializePaintContext(Terrain terrain, int targetWidth, int targetHeight, RenderTextureFormat pcFormat, Rect boundsInTerrainSpace, int extraBorderPixels = 0, bool texelPadding = true)
         {
-            PaintContext ctx = PaintContext.CreateFromBounds(terrain, boundsInTerrainSpace, targetWidth, targetHeight, extraBorderPixels);
+            PaintContext ctx = PaintContext.CreateFromBounds(terrain, boundsInTerrainSpace, targetWidth, targetHeight, extraBorderPixels, texelPadding);
             ctx.CreateRenderTargets(pcFormat);
             return ctx;
         }
@@ -182,7 +182,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         public static PaintContext BeginPaintHoles(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
             int holesResolution = terrain.terrainData.holesResolution;
-            PaintContext ctx = InitializePaintContext(terrain, holesResolution, holesResolution, Terrain.holesRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
+            PaintContext ctx = InitializePaintContext(terrain, holesResolution, holesResolution, Terrain.holesRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels, false);
             ctx.GatherHoles();
             return ctx;
         }
@@ -282,10 +282,10 @@ namespace UnityEngine.Experimental.TerrainAPI
             }
         }
 
-        internal static RectInt CalcPixelRectFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int textureWidth, int textureHeight, int extraBorderPixels)
+        internal static RectInt CalcPixelRectFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int textureWidth, int textureHeight, int extraBorderPixels, bool texelPadding)
         {
-            float scaleX = (textureWidth - 1.0f) / terrain.terrainData.size.x;
-            float scaleY = (textureHeight - 1.0f) / terrain.terrainData.size.z;
+            float scaleX = (textureWidth - (texelPadding ? 1.0f : 0.0f)) / terrain.terrainData.size.x;
+            float scaleY = (textureHeight - (texelPadding ? 1.0f : 0.0f)) / terrain.terrainData.size.z;
             int xMin = Mathf.FloorToInt(boundsInTerrainSpace.xMin * scaleX) - extraBorderPixels;
             int yMin = Mathf.FloorToInt(boundsInTerrainSpace.yMin * scaleY) - extraBorderPixels;
             int xMax = Mathf.CeilToInt(boundsInTerrainSpace.xMax * scaleX) + extraBorderPixels;

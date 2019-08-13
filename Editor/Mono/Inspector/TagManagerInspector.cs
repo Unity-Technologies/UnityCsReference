@@ -196,7 +196,9 @@ namespace UnityEditor
 
         private void DrawTagListElement(Rect rect, int index, bool selected, bool focused)
         {
-            rect.height -= 2; // nicer looking with selected list row and a text field in it
+            // nicer looking with selected list row and a text field in it
+            rect.yMin += 1;
+            rect.yMax -= 1;
 
             // De-indent by the drag handle width, so the text field lines up with others in the inspector.
             // Will have space in front of label for more space between it and the drag handle.
@@ -243,7 +245,9 @@ namespace UnityEditor
 
         private void DrawSortLayerListElement(Rect rect, int index, bool selected, bool focused)
         {
-            rect.height -= 2; // nicer looking with selected list row and a text field in it
+            // nicer looking with selected list row and a text field in it
+            rect.yMin += 1;
+            rect.yMax -= 1;
 
             // De-indent by the drag handle width, so the text field lines up with others in the inspector.
             // Will have space in front of label for more space between it and the drag handle.
@@ -266,7 +270,9 @@ namespace UnityEditor
 
         private void DrawLayerListElement(Rect rect, int index, bool selected, bool focused)
         {
-            rect.height -= 2; // nicer looking with selected list row and a text field in it
+            // nicer looking with selected list row and a text field in it
+            rect.yMin += 1;
+            rect.yMax -= 1;
 
             // De-indent by the drag handle width, so the text field lines up with others in the inspector.
             // Will have space in front of label for more space between it and the drag handle.

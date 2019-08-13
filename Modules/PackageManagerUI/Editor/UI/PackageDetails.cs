@@ -107,14 +107,11 @@ namespace UnityEditor.PackageManager.UI
             removeButton.clickable.clicked += RemoveClick;
             importButton.clickable.clicked += ImportClick;
             downloadButton.clickable.clicked += DownloadOrCancelClick;
+            editButton.clickable.clicked += EditPackageManifestClick;
             detailDescMore.clickable.clicked += DescMoreClick;
             detailDescLess.clickable.clicked += DescLessClick;
 
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
-
-            var editManifestIconButton = new IconButton(Resources.GetIconPath("edit"));
-            editManifestIconButton.clickable.clicked += EditPackageManifestClick;
-            editPackageManifestButton.Add(editManifestIconButton);
 
             GetTagLabel(PackageTag.Verified).text = ApplicationUtil.instance.shortUnityVersion + " verified";
         }
@@ -126,7 +123,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var onlyContainsCurrentPackageManifest = Selection.count == 1 && Selection.Contains(manifestAsset);
-            editPackageManifestButton.SetEnabled(!onlyContainsCurrentPackageManifest);
+            editButton.SetEnabled(!onlyContainsCurrentPackageManifest);
         }
 
         public UnityEngine.Object GetDisplayPackageManifestAsset()
@@ -280,7 +277,7 @@ namespace UnityEditor.PackageManager.UI
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag), displayVersion.HasTag(tag));
 
-                UIUtils.SetElementDisplay(editPackageManifestButton, displayVersion.isInstalled && !displayVersion.HasTag(PackageTag.BuiltIn));
+                UIUtils.SetElementDisplay(editButton, displayVersion.isInstalled && !displayVersion.HasTag(PackageTag.BuiltIn));
 
                 sampleList.SetPackageVersion(displayVersion);
 
@@ -930,7 +927,7 @@ namespace UnityEditor.PackageManager.UI
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
         private Button importButton { get { return cache.Get<Button>("import"); } }
         private Button downloadButton { get { return cache.Get<Button>("download"); } }
-        private VisualElement editPackageManifestButton { get { return cache.Get<VisualElement>("editPackageManifest"); } }
+        private Button editButton { get { return cache.Get<Button>("editButton"); } }
         private ProgressBar downloadProgress { get { return cache.Get<ProgressBar>("downloadProgress"); } }
         private VisualElement detailCategories { get { return cache.Get<VisualElement>("detailCategories"); } }
         private VisualElement detailUnityVersionsContainer { get { return cache.Get<VisualElement>("detailUnityVersionsContainer"); } }

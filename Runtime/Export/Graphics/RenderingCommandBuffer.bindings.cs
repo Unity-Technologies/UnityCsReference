@@ -628,6 +628,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::IncrementUpdateCount", HasExplicitThis = true)]
         extern public void IncrementUpdateCount(UnityEngine.Rendering.RenderTargetIdentifier dest);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetInstanceMultiplier", HasExplicitThis = true)]
+        extern public void SetInstanceMultiplier(uint multiplier);
+
         public void SetRenderTarget(RenderTargetIdentifier rt)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);

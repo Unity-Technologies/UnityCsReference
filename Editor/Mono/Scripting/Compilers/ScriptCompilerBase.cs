@@ -93,23 +93,13 @@ namespace UnityEditor.Scripting.Compilers
             }
 
             arguments.AddRange(responseFileData.Defines.Distinct().Select(define => "/define:" + define));
-            arguments.AddRange(responseFileData.References.Select(reference =>
-                $"/reference:{GetAliasString(reference)}{PrepareFileName(reference.FullPathReference)}"));
+            arguments.AddRange(responseFileData.FullPathReferences.Select(reference =>
+                "/reference:" + PrepareFileName(reference)));
             if (responseFileData.Unsafe)
             {
                 arguments.Add("/unsafe");
             }
             arguments.AddRange(responseFileData.OtherArguments);
-        }
-
-        private static string GetAliasString(ResponseFileReference responseFileReference)
-        {
-            if (string.IsNullOrEmpty(responseFileReference.Alias))
-            {
-                return string.Empty;
-            }
-
-            return $"{responseFileReference.Alias}=";
         }
 
         public static ResponseFileData ParseResponseFileFromFile(
@@ -139,7 +129,6 @@ namespace UnityEditor.Scripting.Compilers
                 {
                     Defines = new string[0],
                     FullPathReferences = new string[0],
-                    References = new ResponseFileReference[0],
                     Unsafe = false,
                     Errors = new string[0],
                     OtherArguments = new string[0],
@@ -263,7 +252,7 @@ namespace UnityEditor.Scripting.Compilers
 
             var responseArguments = new List<string>();
             var defines = new List<string>();
-            var references = new List<ResponseFileReference>();
+            var references = new List<string>();
             bool unsafeDefined = false;
             var errors = new List<string>();
 
@@ -314,7 +303,6 @@ namespace UnityEditor.Scripting.Compilers
 
                         int index = reference.IndexOf('=');
                         var responseReference = index > -1 ? reference.Substring(index + 1) : reference;
-                        var alias = index > -1 ? reference.Substring(0, index) : string.Empty;
 
                         var fullPathReference = responseReference;
                         bool isRooted = Path.IsPathRooted(responseReference);
@@ -347,11 +335,7 @@ namespace UnityEditor.Scripting.Compilers
                         }
 
                         responseReference = fullPathReference.Replace('\\', '/');
-                        references.Add(new ResponseFileReference
-                        {
-                            FullPathReference = responseReference,
-                            Alias = alias,
-                        });
+                        references.Add(responseReference);
                     }
                     break;
 
@@ -377,8 +361,7 @@ namespace UnityEditor.Scripting.Compilers
             var responseFileData = new ResponseFileData
             {
                 Defines = defines.ToArray(),
-                FullPathReferences = references.Select(x => x.FullPathReference).ToArray(),
-                References = references.ToArray(),
+                FullPathReferences = references.ToArray(),
                 Unsafe = unsafeDefined,
                 Errors = errors.ToArray(),
                 OtherArguments = responseArguments.ToArray(),

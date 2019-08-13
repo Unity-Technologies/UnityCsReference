@@ -20,7 +20,8 @@ namespace UnityEditor
 
         [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("m_MainView")] View m_RootView;
         [SerializeField] Vector2 m_MinSize = new Vector2(120, 80);
-        [SerializeField] Vector2 m_MaxSize = new Vector2(4000, 4000);
+        [SerializeField] Vector2 m_MaxSize = new Vector2(8192, 8192);
+        [SerializeField] bool m_Maximized;
 
         internal bool m_DontSaveToLayout = false;
         private int m_ButtonCount;
@@ -93,7 +94,7 @@ namespace UnityEditor
             Internal_SetTitle(m_Title);
             Save();
             //  only set focus if mode is a popupMenu.
-            Internal_BringLiveAfterCreation(false, giveFocus);
+            Internal_BringLiveAfterCreation(true, giveFocus, false);
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, false);
@@ -118,6 +119,8 @@ namespace UnityEditor
             if (!isPopup)
                 Load(loadPosition);
 
+            var initialMaximizedState = m_Maximized;
+
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
 
             // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
@@ -127,7 +130,7 @@ namespace UnityEditor
 
             SetBackgroundColor(skinBackgroundColor);
 
-            Internal_BringLiveAfterCreation(displayImmediately, setFocus);
+            Internal_BringLiveAfterCreation(displayImmediately, setFocus, initialMaximizedState);
 
             // Window could be killed by now in user callbacks...
             if (!this)
@@ -141,6 +144,9 @@ namespace UnityEditor
 
             // save position right away
             Save();
+
+            // Restore the initial maximized state since Internal_BringLiveAfterCreation might not be reflected right away and Save() might alter it.
+            m_Maximized = initialMaximizedState;
         }
 
         public void OnEnable()
@@ -192,7 +198,7 @@ namespace UnityEditor
             return ( // hallelujah
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
-                (m_ShowMode == (int)ShowMode.MainWindow && rootView is HostView) ||
+                (m_ShowMode == (int)ShowMode.MainWindow && (rootView is HostView || rootView is MainView)) ||
                 (rootView is SplitView &&
                     rootView.children.Length == 1 &&
                     rootView.children[0] is DockArea &&
@@ -226,11 +232,15 @@ namespace UnityEditor
 
         public bool IsMainWindow()
         {
-            return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
+            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
+                return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
+            return false;
         }
 
         public void Save()
         {
+            m_Maximized = IsZoomed();
+
             // only save it if its not docked and its not the MainWindow
             if (!IsMainWindow() && IsNotDocked() && !IsZoomed())
             {
@@ -241,12 +251,13 @@ namespace UnityEditor
                 EditorPrefs.SetFloat(ID + "y", m_PixelRect.y);
                 EditorPrefs.SetFloat(ID + "w", m_PixelRect.width);
                 EditorPrefs.SetFloat(ID + "h", m_PixelRect.height);
+                EditorPrefs.SetBool(ID + "z", m_Maximized);
             }
         }
 
         private void Load(bool loadPosition)
         {
-            if (!IsMainWindow() &&  IsNotDocked())
+            if (!IsMainWindow() && IsNotDocked())
             {
                 string ID = NotDockedWindowID();
 
@@ -258,6 +269,7 @@ namespace UnityEditor
                     p.y = EditorPrefs.GetFloat(ID + "y", m_PixelRect.y);
                     p.width = EditorPrefs.GetFloat(ID + "w", m_PixelRect.width);
                     p.height = EditorPrefs.GetFloat(ID + "h", m_PixelRect.height);
+                    m_Maximized = EditorPrefs.GetBool(ID + "z");
                 }
                 p.width = Mathf.Min(Mathf.Max(p.width, m_MinSize.x), m_MaxSize.x);
                 p.height = Mathf.Min(Mathf.Max(p.height, m_MinSize.y), m_MaxSize.y);
@@ -377,8 +389,11 @@ namespace UnityEditor
                 if (macEditor && TitleBarButton(min))
                     Minimize();
 
+                var canMaximize = m_MaxSize.x == 0 || m_MaxSize.y == 0 || m_MaxSize.x >= Screen.currentResolution.width || m_MaxSize.y >= Screen.currentResolution.height;
+                EditorGUI.BeginDisabled(!canMaximize);
                 if (TitleBarButton(maxOrRestore))
                     ToggleMaximize();
+                EditorGUI.EndDisabled();
             }
 
             DragTitleBar(new Rect(0, 0, position.width, kTitleHeight));

@@ -365,6 +365,9 @@ namespace UnityEditor.IMGUI.Controls
                 }
             }
 
+            // Do additional ui controls (menu button, prefab arrow etc)
+            OnAdditionalGUI(rect, row, item, selected, focused);
+
             // Do row content (icon, label, controls etc)
             OnContentGUI(rect, row, item, label, selected, focused, useBoldFont, false);
 
@@ -430,6 +433,10 @@ namespace UnityEditor.IMGUI.Controls
         protected virtual bool DoFoldoutButton(Rect foldoutRect, bool expandedState, GUIStyle foldoutStyle)
         {
             return GUI.Toggle(foldoutRect, expandedState, GUIContent.none, foldoutStyle);
+        }
+
+        protected virtual void OnAdditionalGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
+        {
         }
 
         protected virtual void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)

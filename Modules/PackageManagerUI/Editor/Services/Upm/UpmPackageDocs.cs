@@ -159,8 +159,7 @@ namespace UnityEditor.PackageManager.UI
 
         public static bool HasChangelog(IPackageVersion version)
         {
-            // Packages with no docs have no third party notice
-            return version != null && version.source != PackageSource.BuiltIn && string.IsNullOrEmpty(GetPackageUrlRedirect(version));
+            return version != null && !version.HasTag(PackageTag.BuiltIn) && string.IsNullOrEmpty(GetPackageUrlRedirect(version));
         }
     }
 }

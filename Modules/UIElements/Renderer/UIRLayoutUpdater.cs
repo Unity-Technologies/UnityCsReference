@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -16,10 +17,10 @@ namespace UnityEngine.UIElements
     {
         const int kMaxValidateLayoutCount = 5;
 
-        public override string description
-        {
-            get { return "UIR Update Layout"; }
-        }
+
+        private static readonly string s_Description = "UIR Update Layout";
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {

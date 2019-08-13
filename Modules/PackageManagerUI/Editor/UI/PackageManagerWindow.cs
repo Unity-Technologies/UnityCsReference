@@ -14,6 +14,27 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.PackageManager.UI
 {
+    /// <summary>
+    /// PackageManager Window helper class
+    /// </summary>
+    public static class Window
+    {
+        [MenuItem("Window/Package Manager", priority = 1500)]
+        internal static void ShowPackageManagerWindow(MenuCommand item)
+        {
+            Open(item.context?.name);
+        }
+
+        /// <summary>
+        /// Open Package Manager Window and select specified package (if any)
+        /// </summary>
+        /// <param name="packageNameOrDisplayName">Id or display name of package to select, can be null</param>
+        public static void Open(string packageNameOrDisplayName)
+        {
+            PackageManagerWindow.OpenPackageManager(packageNameOrDisplayName);
+        }
+    }
+
     internal class PackageManagerWindow : EditorWindow
     {
         [NonSerialized]
@@ -21,6 +42,9 @@ namespace UnityEditor.PackageManager.UI
 
         [NonSerialized]
         private PackageFilterTab? m_FilterToSelectAfterLoad;
+
+        [SerializeField]
+        private float m_SplitPaneLeftWidth;
 
         private static PackageManagerWindow s_Window;
 
@@ -65,7 +89,42 @@ namespace UnityEditor.PackageManager.UI
                 if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.All && !PageManager.instance.HasFetchedPageForFilterTab(PackageFilterTab.All))
                     PageManager.instance.Refresh(RefreshOptions.All);
 
+                mainContainer.leftWidth = m_SplitPaneLeftWidth;
+                mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
+
                 EditorApplication.focusChanged += OnFocusChanged;
+
+                rootVisualElement.focusable = true;
+                rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+                rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            }
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            rootVisualElement.RegisterCallback<ValidateCommandEvent>(OnValidateCommandEvent);
+            rootVisualElement.RegisterCallback<ExecuteCommandEvent>(OnExecuteCommandEvent);
+            packageList.Focus();
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            rootVisualElement.UnregisterCallback<ValidateCommandEvent>(OnValidateCommandEvent);
+            rootVisualElement.UnregisterCallback<ExecuteCommandEvent>(OnExecuteCommandEvent);
+        }
+
+        private void OnValidateCommandEvent(ValidateCommandEvent evt)
+        {
+            if (evt.commandName == EventCommandNames.Find)
+                evt.StopPropagation();
+        }
+
+        private void OnExecuteCommandEvent(ExecuteCommandEvent evt)
+        {
+            if (evt.commandName == EventCommandNames.Find)
+            {
+                packageManagerToolbar.FocusOnSearch();
+                evt.StopPropagation();
             }
         }
 
@@ -179,12 +238,6 @@ namespace UnityEditor.PackageManager.UI
             packageDetails.packageToolbarContainer.SetEnabled(true);
         }
 
-        [MenuItem("Window/Package Manager", priority = 1500)]
-        internal static void ShowPackageManagerWindow(MenuCommand item)
-        {
-            OpenPackageManager(item.context?.name);
-        }
-
         [UsedByNativeCode]
         internal static void OpenURL(string url)
         {
@@ -246,5 +299,6 @@ namespace UnityEditor.PackageManager.UI
         private PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
         private PackageManagerToolbar packageManagerToolbar { get {return cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
         private PackageStatusBar packageStatusbar { get {return cache.Get<PackageStatusBar>("packageStatusBar");} }
+        private SplitView mainContainer { get {return cache.Get<SplitView>("mainContainer");} }
     }
 }

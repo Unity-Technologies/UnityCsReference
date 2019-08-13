@@ -132,7 +132,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         // TerrainPaintUtilityEditor hooks to this event to do automatic undo
         internal static event Action<PaintContext.ITerrainInfo, ToolAction, string /*editorUndoName*/> onTerrainTileBeforePaint;
 
-        public PaintContext(Terrain terrain, RectInt pixelRect, int targetTextureWidth, int targetTextureHeight)
+        public PaintContext(Terrain terrain, RectInt pixelRect, int targetTextureWidth, int targetTextureHeight, bool texelPadding = true)
         {
             this.originTerrain = terrain;
             this.pixelRect = pixelRect;
@@ -140,21 +140,21 @@ namespace UnityEngine.Experimental.TerrainAPI
             this.targetTextureHeight = targetTextureHeight;
             TerrainData terrainData = terrain.terrainData;
             this.pixelSize = new Vector2(
-                terrainData.size.x / (targetTextureWidth - 1.0f),
-                terrainData.size.z / (targetTextureHeight - 1.0f));
+                terrainData.size.x / (targetTextureWidth - (texelPadding ? 1.0f : 0.0f)),
+                terrainData.size.z / (targetTextureHeight - (texelPadding ? 1.0f : 0.0f)));
 
-            FindTerrainTilesUnlimited();
+            FindTerrainTilesUnlimited(texelPadding);
         }
 
-        public static PaintContext CreateFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int inputTextureWidth, int inputTextureHeight, int extraBorderPixels = 0)
+        public static PaintContext CreateFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int inputTextureWidth, int inputTextureHeight, int extraBorderPixels = 0, bool texelPadding = true)
         {
             return new PaintContext(
                 terrain,
-                TerrainPaintUtility.CalcPixelRectFromBounds(terrain, boundsInTerrainSpace, inputTextureWidth, inputTextureHeight, extraBorderPixels),
-                inputTextureWidth, inputTextureHeight);
+                TerrainPaintUtility.CalcPixelRectFromBounds(terrain, boundsInTerrainSpace, inputTextureWidth, inputTextureHeight, extraBorderPixels, texelPadding),
+                inputTextureWidth, inputTextureHeight, texelPadding);
         }
 
-        private void FindTerrainTilesUnlimited()
+        private void FindTerrainTilesUnlimited(bool texelPadding)
         {
             // pixel rect bounds (in world space)
             float minX = originTerrain.transform.position.x + pixelSize.x * pixelRect.xMin;
@@ -193,8 +193,8 @@ namespace UnityEngine.Experimental.TerrainAPI
                     var coord = cur.Key;
                     Terrain terrain = cur.Value;
 
-                    int minPixelX = coord.tileX * (targetTextureWidth - 1);
-                    int minPixelZ = coord.tileZ * (targetTextureHeight - 1);
+                    int minPixelX = coord.tileX * (targetTextureWidth - (texelPadding ? 1 : 0));
+                    int minPixelZ = coord.tileZ * (targetTextureHeight - (texelPadding ? 1 : 0));
                     RectInt terrainPixelRect = new RectInt(minPixelX, minPixelZ, targetTextureWidth, targetTextureHeight);
                     if (pixelRect.Overlaps(terrainPixelRect))
                     {
@@ -596,18 +596,17 @@ namespace UnityEngine.Experimental.TerrainAPI
                 if ((pt.action & ToolAction.PaintHeightmap) != 0)
                 {
                     terrainData.SyncHeightmap();
-                    pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
                 }
                 if ((pt.action & ToolAction.PaintHoles) != 0)
                 {
                     terrainData.SyncTexture(TerrainData.HolesTextureName);
-                    pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
                 }
                 if ((pt.action & ToolAction.PaintTexture) != 0)
                 {
                     terrainData.SetBaseMapDirty();
                     terrainData.SyncTexture(TerrainData.AlphamapTextureName);
                 }
+                pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
             }
             s_PaintedTerrain.Clear();
         }

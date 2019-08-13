@@ -129,6 +129,8 @@ namespace Unity.MPE
      StaticAccessor("Unity::MPE::ChannelService", StaticAccessorType.DoubleColon)]
     internal static partial class ChannelService
     {
+        public static extern string GetAddress();
+        public static extern int GetPort();
         public static extern void Start();
         public static extern void Stop();
         public static extern bool IsRunning();
@@ -167,11 +169,15 @@ namespace Unity.MPE
     {
         public static extern ProcessLevel level { get; }
         public static extern string roleName { get; }
+        public static extern bool IsChannelServiceStarted();
         public static extern string ReadParameter(string paramName);
         public static extern void LaunchSlave(string roleName, params string[] keyValuePairs);
+        public static extern bool HasCapability(string capName);
         public static extern void ApplyPropertyModifications(PropertyModification[] modifications);
         public static extern byte[] SerializeObject(int instanceId);
         public static extern UnityEngine.Object DeserializeObject(byte[] bytes);
+        public static extern int EnableProfileConnection(string dataPath);
+        public static extern void DisableProfileConnection();
     }
 
     [NativeHeader("Modules/UMPE/TestClient.h"),

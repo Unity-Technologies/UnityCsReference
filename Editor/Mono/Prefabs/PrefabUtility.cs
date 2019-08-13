@@ -1207,7 +1207,7 @@ namespace UnityEditor
             return SavePrefabAsset_Internal(root, out savedSuccessfully);
         }
 
-        private static void ValidatePath(GameObject instanceRoot, string path)
+        internal static void ValidatePath(GameObject instanceRoot, string path)
         {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException("path is null or empty");

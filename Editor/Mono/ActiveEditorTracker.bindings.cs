@@ -111,6 +111,19 @@ namespace UnityEditor
         }
 
         [FreeFunction]
+        static extern bool Internal_GetDelayFlushDirtyRebuild();
+
+        [FreeFunction]
+        static extern void Internal_SetDelayFlushDirtyRebuild(bool value);
+
+        // Enable or disable the ActiveEditorTracker rebuilding from ISceneInspector.DidFlushDirty calls.
+        internal static bool delayFlushDirtyRebuild
+        {
+            get { return Internal_GetDelayFlushDirtyRebuild(); }
+            set { Internal_SetDelayFlushDirtyRebuild(value); }
+        }
+
+        [FreeFunction]
         static extern InspectorMode Internal_GetInspectorMode(ActiveEditorTracker self);
         [FreeFunction]
         static extern void Internal_SetInspectorMode(ActiveEditorTracker self, InspectorMode value);
@@ -130,6 +143,10 @@ namespace UnityEditor
         [FreeFunction]
         static extern void Internal_RebuildIfNecessary(ActiveEditorTracker self);
         public void RebuildIfNecessary() { Internal_RebuildIfNecessary(this); }
+
+        [FreeFunction]
+        static extern void Internal_RebuildAllIfNecessary();
+        internal static void RebuildAllIfNecessary() { Internal_RebuildAllIfNecessary(); }
 
         [FreeFunction]
         static extern void Internal_ForceRebuild(ActiveEditorTracker self);

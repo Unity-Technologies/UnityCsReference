@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI
         public static IUpmClient instance { get { return s_Instance ?? UpmClientInternal.instance; } }
 
         [Serializable]
-        private class UpmClientInternal : ScriptableSingleton<UpmClientInternal>, IUpmClient, ISerializationCallbackReceiver
+        internal class UpmClientInternal : ScriptableSingleton<UpmClientInternal>, IUpmClient, ISerializationCallbackReceiver
         {
             public event Action<IOperation> onListOperation = delegate {};
             public event Action<IOperation> onSearchAllOperation = delegate {};
@@ -515,7 +515,10 @@ namespace UnityEditor.PackageManager.UI
                 m_SetupDone = false;
 
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
+            }
 
+            public void Reset()
+            {
                 m_InstalledPackageInfos.Clear();
                 m_SearchPackageInfos.Clear();
                 m_ExtraPackageInfo.Clear();

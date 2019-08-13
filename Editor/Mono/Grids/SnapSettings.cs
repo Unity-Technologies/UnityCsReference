@@ -17,7 +17,7 @@ namespace UnityEditor
 
         // If handle movement is aligned with grid coordinates, snap to grid instead of incremental from handle origin
         [SerializeField]
-        bool m_PreferGrid;
+        bool m_PreferGrid = true;
 
         [SerializeField]
         Vector3 m_SnapValue = new Vector3(k_DefaultSnapValue, k_DefaultSnapValue, k_DefaultSnapValue);
@@ -68,16 +68,36 @@ namespace UnityEditor
             set { m_Scale = value; }
         }
 
-        Vector3Int SnapMultiplierFrac()
+        Vector3 SnapMultiplierFrac()
         {
             var val = 1.0f / (float)k_DefaultSnapMultiplier;
-            return new Vector3Int((int)(m_SnapMultiplier.x * val), (int)(m_SnapMultiplier.y * val), (int)(m_SnapMultiplier.z * val));
+            return new Vector3(m_SnapMultiplier.x * val, m_SnapMultiplier.y * val, m_SnapMultiplier.z * val);
         }
 
         Vector3 SnapValueInUnityUnits()
         {
-            var frac = SnapMultiplierFrac();
+            Vector3 frac = SnapMultiplierFrac();
             return new Vector3(m_SnapValue.x * frac.x, m_SnapValue.y * frac.y, m_SnapValue.z * frac.z);
+        }
+
+        internal void IncrementSnapMultiplier()
+        {
+            if (m_SnapMultiplier.x < int.MaxValue / 2)
+                m_SnapMultiplier.x *= 2;
+            if (m_SnapMultiplier.y < int.MaxValue / 2)
+                m_SnapMultiplier.y *= 2;
+            if (m_SnapMultiplier.z < int.MaxValue / 2)
+                m_SnapMultiplier.z *= 2;
+        }
+
+        internal void DecrementSnapMultiplier()
+        {
+            if (m_SnapMultiplier.x > 1)
+                m_SnapMultiplier.x /= 2;
+            if (m_SnapMultiplier.y > 1)
+                m_SnapMultiplier.y /= 2;
+            if (m_SnapMultiplier.z > 1)
+                m_SnapMultiplier.z /= 2;
         }
     }
 }

@@ -1778,6 +1778,18 @@ namespace UnityEngine.Rendering
         Stencil = 2,
         Default = 3
     }
+
+    // Tries to follow naming from https://unity3d.com/learn/tutorials/topics/best-practices/multithreaded-rendering-graphics-jobs
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
+    public enum RenderingThreadingMode
+    {
+        Direct = 0,
+        SingleThreaded = 1,
+        MultiThreaded = 2,
+        LegacyJobified = 3,
+        NativeGraphicsJobs = 4,
+        NativeGraphicsJobsWithoutRenderThread = 5,
+    };
 } // namespace UnityEngine.Rendering
 
 namespace UnityEngineInternal

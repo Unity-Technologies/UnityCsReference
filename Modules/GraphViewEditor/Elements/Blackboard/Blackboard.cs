@@ -149,7 +149,8 @@ namespace UnityEditor.Experimental.GraphView
 
         public Blackboard(GraphView associatedGraphView = null)
         {
-            var tpl = EditorGUIUtility.Load("UXML/GraphView/Blackboard.uxml") as VisualTreeAsset; AddStyleSheetPath(StyleSheetPath);
+            var tpl = EditorGUIUtility.Load("UXML/GraphView/Blackboard.uxml") as VisualTreeAsset;
+            AddStyleSheetPath(StyleSheetPath);
 
             m_MainContainer = tpl.CloneTree();
             m_MainContainer.AddToClassList("mainContainer");

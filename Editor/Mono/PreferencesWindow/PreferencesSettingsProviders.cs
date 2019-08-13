@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System;
 using System.IO;
 using System.Linq;
+using JetBrains.Annotations;
 using Unity.CodeEditor;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
@@ -239,15 +240,17 @@ namespace UnityEditor
             return settings;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateGICacheProvider()
         {
+            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_SLAVE && !Unity.MPE.ProcessService.HasCapability("enable-gi"))
+                return null;
             var settings = new PreferencesProvider("Preferences/GI Cache", GetSearchKeywordsFromGUIContentProperties<GICacheProperties>());
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGICache); };
             return settings;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider Create2DProvider()
         {
             var settings = new PreferencesProvider("Preferences/2D", GetSearchKeywordsFromGUIContentProperties<TwoDProperties>());
@@ -255,7 +258,7 @@ namespace UnityEditor
             return settings;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateLanguagesProvider()
         {
             var editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
@@ -306,7 +309,7 @@ namespace UnityEditor
             return null;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateUIScalingProvider()
         {
             if (Application.platform == RuntimePlatform.WindowsEditor)
@@ -319,7 +322,7 @@ namespace UnityEditor
             return null;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateUnityServicesProvider()
         {
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
@@ -330,6 +333,7 @@ namespace UnityEditor
             }
             return null;
         }
+
 
         // Group Preference sections with the same name
         private static void OnGUI(string searchContext, Action<string> drawAction)

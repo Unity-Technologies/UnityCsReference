@@ -1372,7 +1372,8 @@ namespace UnityEditor
             col++;
             if (EditorGUI.EndChangeCheck())
             {
-                if (prevMotion is BlendTree && prevMotion != (motion.objectReferenceValue as Motion))
+                // [case 1028113] Delete previous Motion only if it serialized in the same asset file
+                if (prevMotion is BlendTree && prevMotion != (motion.objectReferenceValue as Motion) && MecanimUtilities.AreSameAsset(m_BlendTree, prevMotion))
                 {
                     if (EditorUtility.DisplayDialog("Changing BlendTree will delete previous BlendTree", "You cannot undo this action.", "Delete", "Cancel"))
                     {
@@ -1765,7 +1766,10 @@ namespace UnityEditor
         {
             m_BlendTree.AddChild(null);
             int numChildren = m_BlendTree.children.Length;
-            m_BlendTree.SetDirectBlendTreeParameter(numChildren - 1, currentController.GetDefaultBlendTreeParameter());
+            if (currentController != null)
+            {
+                m_BlendTree.SetDirectBlendTreeParameter(numChildren - 1, currentController.GetDefaultBlendTreeParameter());
+            }
             SetNewThresholdAndPosition(numChildren - 1);
             m_ReorderableList.index = numChildren - 1;
         }

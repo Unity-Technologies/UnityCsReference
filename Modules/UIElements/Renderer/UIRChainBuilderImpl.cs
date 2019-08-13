@@ -1604,17 +1604,18 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var style = currentElement.computedStyle;
             if (style.backgroundColor != Color.clear)
             {
-                var parent = currentElement.hierarchy.parent;
-                DrawRectangle(new MeshGenerationContextUtils.RectangleParams
+                var rectParams = new MeshGenerationContextUtils.RectangleParams
                 {
                     rect = GUIUtility.AlignRectToDevice(currentElement.rect),
                     color = style.backgroundColor.value,
-                    topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent),
-                    topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent),
-                    bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent),
-                    bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent),
                     playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
-                });
+                };
+                MeshGenerationContextUtils.GetVisualElementRadii(currentElement,
+                    out rectParams.topLeftRadius,
+                    out rectParams.bottomLeftRadius,
+                    out rectParams.topRightRadius,
+                    out rectParams.bottomRightRadius);
+                DrawRectangle(rectParams);
             }
 
             var background = style.backgroundImage.value;
@@ -1640,11 +1641,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         currentElement.panel.contextType);
                 }
 
-                var parent = currentElement.hierarchy.parent;
-                rectParams.topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent);
-                rectParams.topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent);
-                rectParams.bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent);
-                rectParams.bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent);
+                MeshGenerationContextUtils.GetVisualElementRadii(currentElement,
+                    out rectParams.topLeftRadius,
+                    out rectParams.bottomLeftRadius,
+                    out rectParams.topRightRadius,
+                    out rectParams.bottomRightRadius);
                 rectParams.leftSlice = style.unitySliceLeft.value;
                 rectParams.topSlice = style.unitySliceTop.value;
                 rectParams.rightSlice = style.unitySliceRight.value;
@@ -1665,24 +1666,25 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     style.borderRightColor != Color.clear &&  style.borderRightWidth.value > 0.0f ||
                     style.borderBottomColor != Color.clear && style.borderBottomWidth.value > 0.0f)
                 {
-                    var parent = currentElement.hierarchy.parent;
-                    DrawBorder(new MeshGenerationContextUtils.BorderParams
+                    var borderParams = new MeshGenerationContextUtils.BorderParams
                     {
                         rect = GUIUtility.AlignRectToDevice(currentElement.rect),
                         leftColor = style.borderLeftColor.value,
                         topColor = style.borderTopColor.value,
                         rightColor = style.borderRightColor.value,
                         bottomColor = style.borderBottomColor.value,
-                        topLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value, parent),
-                        topRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value, parent),
-                        bottomRightRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value, parent),
-                        bottomLeftRadius = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value, parent),
                         leftWidth = style.borderLeftWidth.value,
                         topWidth = style.borderTopWidth.value,
                         rightWidth = style.borderRightWidth.value,
                         bottomWidth = style.borderBottomWidth.value,
                         playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
-                    });
+                    };
+                    MeshGenerationContextUtils.GetVisualElementRadii(currentElement,
+                        out borderParams.topLeftRadius,
+                        out borderParams.bottomLeftRadius,
+                        out borderParams.topRightRadius,
+                        out borderParams.bottomRightRadius);
+                    DrawBorder(borderParams);
                 }
             }
         }
@@ -1777,12 +1779,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
                 return;
 
-            var parent = currentElement.hierarchy.parent;
             ComputedStyle style = currentElement.computedStyle;
-            Vector2 radTL = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopLeftRadius.value.value, parent);
-            Vector2 radTR = MeshGenerationContextUtils.GetVisualElementRadius(style.borderTopRightRadius.value.value, parent);
-            Vector2 radBL = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomLeftRadius.value.value, parent);
-            Vector2 radBR = MeshGenerationContextUtils.GetVisualElementRadius(style.borderBottomRightRadius.value.value, parent);
+            Vector2 radTL, radTR, radBL, radBR;
+            MeshGenerationContextUtils.GetVisualElementRadii(currentElement, out radTL, out radBL, out radTR, out radBR);
             float widthT = style.borderTopWidth.value;
             float widthL = style.borderLeftWidth.value;
             float widthB = style.borderBottomWidth.value;

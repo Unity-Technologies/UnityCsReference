@@ -74,9 +74,16 @@ namespace UnityEngine
 
             var thumbZone = ThumbSelectionRect();
             var mouseOverThumb = GUIUtility.HitTest(thumbZone, CurrentEvent());
+            var boundingRect = Rect.zero;
+
+            // Bounding box that includes the slider and its thumb.
+            boundingRect.xMin = Math.Min(position.xMin, thumbZone.xMin);
+            boundingRect.xMax = Math.Max(position.xMax, thumbZone.xMax);
+            boundingRect.yMin = Math.Min(position.yMin, thumbZone.yMin);
+            boundingRect.yMax = Math.Max(position.yMax, thumbZone.yMax);
 
             // if the click is outside this control, just bail out...
-            if (IsEmptySlider() || (!GUIUtility.HitTest(position, CurrentEvent()) && !mouseOverThumb))
+            if (IsEmptySlider() || (!GUIUtility.HitTest(boundingRect, CurrentEvent()) && !mouseOverThumb))
                 return currentValue;
 
             GUI.scrollTroughSide = 0;
@@ -262,7 +269,7 @@ namespace UnityEngine
 
         private Rect ThumbExtRect()
         {
-            var rect = new Rect(0, 0, thumbExtent.fixedWidth, thumbExtent.fixedHeight) {center = ThumbRect().center};
+            var rect = new Rect(0, 0, thumbExtent.fixedWidth, thumbExtent.fixedHeight) { center = ThumbRect().center };
             return rect;
         }
 
