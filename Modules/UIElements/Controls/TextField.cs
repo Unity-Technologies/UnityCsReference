@@ -148,10 +148,10 @@ namespace UnityEngine.UIElements
                         multiline = false;
                 }
             }
-            internal TextInput()
+
+            protected override string StringToValue(string str)
             {
-                generateVisualContent = null; // Wipe base class's handler
-                generateVisualContent += OnOnGenerateVisualContentTextInput;
+                return str;
             }
 
             public void SelectRange(int cursorIndex, int selectionIndex)
@@ -172,34 +172,6 @@ namespace UnityEngine.UIElements
                 }
 
                 base.SyncTextEngine();
-            }
-
-            private void OnOnGenerateVisualContentTextInput(MeshGenerationContext mgc)
-            {
-                if (isPasswordField)
-                {
-                    // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
-                    // so before drawing make sure we hide them ourselves
-                    string drawText = "".PadRight(text.Length, parentTextField.maskChar);
-                    if (!hasFocus)
-                    {
-                        // We don't have the focus, don't draw the selection and cursor
-                        if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
-                        {
-                            var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
-                            textParams.text = drawText;
-                            mgc.Text(textParams, parentTextField.textHandle);
-                        }
-                    }
-                    else
-                    {
-                        DrawWithTextSelectionAndCursor(mgc, drawText);
-                    }
-                }
-                else
-                {
-                    base.OnGenerateVisualContent(mgc);
-                }
             }
 
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)

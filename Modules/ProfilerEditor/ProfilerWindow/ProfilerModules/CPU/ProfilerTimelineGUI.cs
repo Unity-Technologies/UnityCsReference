@@ -327,23 +327,18 @@ namespace UnityEditorInternal
             if (Event.current.type == EventType.Repaint)
             {
                 styles.rightPane.Draw(rightRect, false, false, false, false);
-                const float shrinkHeight = 25;
-                bool shrinkName = height < shrinkHeight;
                 GUIContent content = GUIContent.Temp(name);
-                if (shrinkName)
-                    styles.leftPane.padding.top -= (int)(shrinkHeight - height) / 2;
                 if (indent)
                     styles.leftPane.padding.left += 10;
                 styles.leftPane.Draw(leftRect, content, false, false, false, false);
                 if (indent)
                     styles.leftPane.padding.left -= 10;
-                if (shrinkName)
-                    styles.leftPane.padding.top += (int)(shrinkHeight - height) / 2;
             }
             if (group)
             {
                 leftRect.width -= 1.0f; // text should not draw ontop of right border
-                leftRect.xMin += 1.0f; // shift toggle arrow right
+                leftRect.xMin += 3.0f; // shift toggle arrow right
+                leftRect.yMin += 1.0f;
                 return GUI.Toggle(leftRect, expanded, GUIContent.none, styles.foldout);
             }
             return false;
@@ -826,7 +821,7 @@ namespace UnityEditorInternal
 
         public void DoTimeRulerGUI(Rect timeRulerRect, float sideWidth, float frameTime)
         {
-            Rect sidebarLeftOfTimeRulerRect = new Rect(timeRulerRect.x - sideWidth, timeRulerRect.y + 1, sideWidth, k_LineHeight);
+            Rect sidebarLeftOfTimeRulerRect = new Rect(timeRulerRect.x - sideWidth, timeRulerRect.y, sideWidth, k_LineHeight);
             timeRulerRect.width -= m_TimeArea.vSliderWidth;
             Rect spaceRightOftimeRulerRect = new Rect(timeRulerRect.xMax, timeRulerRect.y, m_TimeArea.vSliderWidth, timeRulerRect.height);
 
@@ -835,12 +830,12 @@ namespace UnityEditorInternal
 
             styles.leftPane.Draw(sidebarLeftOfTimeRulerRect, GUIContent.none, false, false, false, false);
 
-            EditorStyles.toolbarButton.Draw(spaceRightOftimeRulerRect, GUIContent.none, false, false, false, false);
+            styles.leftPane.Draw(spaceRightOftimeRulerRect, GUIContent.none, false, false, false, false);
 
             GUI.BeginClip(timeRulerRect);
             timeRulerRect.x = timeRulerRect.y = 0;
 
-            GUI.Box(timeRulerRect, GUIContent.none, EditorStyles.toolbarButton);
+            GUI.Box(timeRulerRect, GUIContent.none, styles.leftPane);
 
             var baseColor = styles.timelineTick.normal.textColor;
             baseColor.a *= 0.75f;
@@ -1118,28 +1113,28 @@ namespace UnityEditorInternal
                 fullThreadsRectWithoutSidebar.y = 0;
 
                 bool expandOnButtonClick = true;
-                GUIStyle expandCollapsButtonStyle = styles.digDownArrow;
+                GUIStyle expandCollapseButtonStyle = styles.digDownArrow;
                 if (roundedLineCount >= thread.maxDepth)
                 {
-                    expandCollapsButtonStyle = styles.rollUpArrow;
+                    expandCollapseButtonStyle = styles.rollUpArrow;
                     expandOnButtonClick = false;
                 }
 
                 float threadYMax = CalculateMaxYPositionForThread(roundedLineCount, fullThreadsRectWithoutSidebar.y, yOffsetForThisThread);
-                Vector2 expandCollapsButtonSize = expandCollapsButtonStyle.CalcSize(GUIContent.none);
-                Rect expandCollapsButtonRect = new Rect(
+                Vector2 expandCollapsButtonSize = expandCollapseButtonStyle.CalcSize(GUIContent.none);
+                Rect expandCollapseButtonRect = new Rect(
                     fullThreadsRectWithoutSidebar.x + fullThreadsRectWithoutSidebar.width / 2 - expandCollapsButtonSize.x / 2,
                     threadYMax - expandCollapsButtonSize.y,
                     expandCollapsButtonSize.x,
                     expandCollapsButtonSize.y);
 
                 // only do the button if it is visible
-                if (GUIClip.visibleRect.Overlaps(expandCollapsButtonRect))
+                if (GUIClip.visibleRect.Overlaps(expandCollapseButtonRect))
                 {
                     switch (command)
                     {
                         case HandleThreadSplitterFoldoutButtonsCommand.OnlyHandleInput:
-                            if (GUI.Button(expandCollapsButtonRect, GUIContent.none, GUIStyle.none))
+                            if (GUI.Button(expandCollapseButtonRect, GUIContent.none, GUIStyle.none))
                             {
                                 // Expand or collapse button expands to show all or collapses to default line height
                                 if (expandOnButtonClick)
@@ -1161,7 +1156,12 @@ namespace UnityEditorInternal
                                 float height = styles.bottomShadow.CalcHeight(GUIContent.none, fullThreadsRectWithoutSidebar.width);
                                 styles.bottomShadow.Draw(new Rect(fullThreadsRectWithoutSidebar.x, threadYMax - height, fullThreadsRectWithoutSidebar.width, height), GUIContent.none, 0);
                             }
-                            GUI.Label(expandCollapsButtonRect, GUIContent.none, expandCollapsButtonStyle);
+                            if (Event.current.type == EventType.Repaint)
+                            {
+                                expandCollapseButtonStyle.Draw(expandCollapseButtonRect, GUIContent.none,
+                                    expandCollapseButtonRect.Contains(Event.current.mousePosition), false, false, false);
+                            }
+
                             break;
                         default:
                             break;
@@ -1177,7 +1177,7 @@ namespace UnityEditorInternal
             int threadCount = iter.GetThreadCount(frameIndex);
             iter.SetRoot(frameIndex, 0);
 
-            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             DrawToolbar(iter);
 
@@ -1191,13 +1191,13 @@ namespace UnityEditorInternal
                     return;
                 }
 
+                position.yMin -= 1; // Workaround: Adjust the y position as a temporary fix to a 1px vertical offset that need to be investigated.
                 Rect fullRect = position;
                 float sideWidth = Chart.kSideWidth - 1;
 
                 Rect timeRulerRect = new Rect(fullRect.x + sideWidth, fullRect.y, fullRect.width - sideWidth, k_LineHeight);
 
                 Rect timeAreaRect = new Rect(fullRect.x + sideWidth, fullRect.y + timeRulerRect.height, fullRect.width - sideWidth, fullRect.height - timeRulerRect.height);
-                timeAreaRect.yMin += 1;
 
                 bool initializing = false;
                 if (m_TimeArea == null)
@@ -1224,13 +1224,11 @@ namespace UnityEditorInternal
 
                 m_TimeArea.rect = timeAreaRect;
 
-                Rect bottomLeftFillRect = new Rect(0, position.yMax - m_TimeArea.vSliderWidth, sideWidth, m_TimeArea.vSliderWidth);
+                Rect bottomLeftFillRect = new Rect(0, position.yMax - m_TimeArea.vSliderWidth, sideWidth - 1, m_TimeArea.vSliderWidth);
 
                 if (Event.current.type == EventType.Repaint)
                 {
                     styles.profilerGraphBackground.Draw(fullRect, false, false, false, false);
-                    // The bar in the lower left side that fills the space next to the horizontal scrollbar.
-                    EditorStyles.toolbar.Draw(bottomLeftFillRect, false, false, false, false);
                 }
 
                 if (initializing)
@@ -1277,7 +1275,6 @@ namespace UnityEditorInternal
                 // frame the selection if needed and before drawing the time area
                 if (initializing)
                     PerformFrameSelected(iter.frameTimeMS);
-
                 DoTimeRulerGUI(timeRulerRect, sideWidth, iter.frameTimeMS);
                 DoTimeArea();
 
@@ -1295,6 +1292,15 @@ namespace UnityEditorInternal
                 DrawGrid(barsUIRect, iter.frameTimeMS);
 
                 Rect barsAndSidebarUIRect = new Rect(barsUIRect.x - sideWidth, barsUIRect.y, barsUIRect.width + sideWidth, barsUIRect.height);
+
+                if (Event.current.type == EventType.Repaint)
+                {
+                    Rect leftSideRect = new Rect(0, position.y, sideWidth, position.height);
+
+                    styles.leftPane.Draw(leftSideRect, false, false, false, false);
+                    // The bar in the lower left side that fills the space next to the horizontal scrollbar.
+                    EditorStyles.toolbar.Draw(bottomLeftFillRect, false, false, false, false);
+                }
 
                 GUI.BeginClip(barsAndSidebarUIRect);
 

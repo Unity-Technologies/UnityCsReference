@@ -434,6 +434,9 @@ namespace UnityEditorInternal
             if (m_PlatformProvider.enableDivideByZeroCheck)
                 arguments.Add("--enable-divide-by-zero-check");
 
+            if (m_PlatformProvider.development && m_PlatformProvider.enableDeepProfilingSupport)
+                arguments.Add("--enable-deep-profiler");
+
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
@@ -573,6 +576,7 @@ namespace UnityEditorInternal
         bool enableStackTraces { get; }
         bool enableArrayBoundsCheck { get; }
         bool enableDivideByZeroCheck { get; }
+        bool enableDeepProfilingSupport { get; }
         string nativeLibraryFileName { get; }
         bool supportsManagedDebugging { get; }
         bool supportsUsingIl2cppCore { get; }
@@ -623,6 +627,16 @@ namespace UnityEditorInternal
         public virtual bool enableDivideByZeroCheck
         {
             get { return false; }
+        }
+
+        public virtual bool enableDeepProfilingSupport
+        {
+            get
+            {
+                if (buildReport != null)
+                    return (buildReport.summary.options & BuildOptions.EnableDeepProfilingSupport) == BuildOptions.EnableDeepProfilingSupport;
+                return false;
+            }
         }
 
         public virtual bool supportsManagedDebugging

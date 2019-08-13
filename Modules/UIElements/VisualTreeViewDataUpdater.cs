@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -16,10 +17,9 @@ namespace UnityEngine.UIElements
         private uint m_Version = 0;
         private uint m_LastVersion = 0;
 
-        public override string description
-        {
-            get { return "Update ViewData"; }
-        }
+        private static readonly string s_Description = "Update ViewData";
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {

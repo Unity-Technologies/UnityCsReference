@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     internal interface ITextInputField : IEventHandler, ITextElement
@@ -13,10 +15,17 @@ namespace UnityEngine.UIElements
 
         bool isReadOnly { get; }
 
+        bool isDelayed { get; }
+
+        bool isPasswordField { get; }
+
+        TextEditorEngine editorEngine { get; }
+
         void SyncTextEngine();
         bool AcceptCharacter(char c);
         string CullString(string s);
         void UpdateText(string value);
+        void UpdateValueFromText();
     }
 
     public abstract class TextInputBaseField<TValueType> : BaseField<TValueType>
@@ -108,7 +117,11 @@ namespace UnityEngine.UIElements
             set { m_TextInputBase.tripleClickSelectsLine = value; }
         }
 
-        public bool isDelayed { get; set; }
+        public bool isDelayed
+        {
+            get { return m_TextInputBase.isDelayed; }
+            set { m_TextInputBase.isDelayed = value; }
+        }
 
         public char maskChar
         {
@@ -136,7 +149,7 @@ namespace UnityEngine.UIElements
 
         internal void DrawWithTextSelectionAndCursor(MeshGenerationContext mgc, string newText)
         {
-            m_TextInputBase.DrawWithTextSelectionAndCursor(mgc, newText);
+            m_TextInputBase.DrawWithTextSelectionAndCursor(mgc, newText, scaledPixelsPerPoint);
         }
 
         protected TextInputBaseField(int maxLength, char maskChar, TextInputBase textInputBase)
@@ -228,6 +241,18 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            protected virtual TValueType StringToValue(string str)
+            {
+                throw new NotSupportedException();
+            }
+
+            internal void UpdateValueFromText()
+            {
+                var newValue = StringToValue(text);
+                TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
+                parentTextField.value = newValue;
+            }
+
             public int cursorIndex
             {
                 get { return editorEngine.cursorIndex; }
@@ -248,6 +273,7 @@ namespace UnityEngine.UIElements
 
             public bool doubleClickSelectsWord { get; set; }
             public bool tripleClickSelectsLine { get; set; }
+            internal bool isDelayed { get; set; }
 
             internal bool isDragging { get; set; }
 
@@ -401,43 +427,34 @@ namespace UnityEngine.UIElements
 
             internal void OnGenerateVisualContent(MeshGenerationContext mgc)
             {
-                // When this is used, we can get rid of the content.text trick and use mask char directly in the text to print
+                string drawText = text;
+                if (isPasswordField)
+                {
+                    drawText = "".PadRight(text.Length, maskChar);
+                }
+
                 if (touchScreenTextField)
                 {
                     var touchScreenEditor = editorEventHandler as TouchScreenTextEditorEventHandler;
-                    if (touchScreenEditor != null && editorEngine.keyboardOnScreen != null)
+                    if (touchScreenEditor != null)
                     {
-                        UpdateText(CullString(editorEngine.keyboardOnScreen.text));
-
-                        if (editorEngine.keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
-                        {
-                            editorEngine.keyboardOnScreen = null;
-                            GUI.changed = true;
-                        }
+                        mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, drawText), m_TextHandle, scaledPixelsPerPoint);
                     }
-
-                    // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
-                    // so before drawing make sure we hide them ourselves
-                    string drawText = text;
-                    if (touchScreenEditor != null && !string.IsNullOrEmpty(touchScreenEditor.secureText))
-                        drawText = "".PadRight(touchScreenEditor.secureText.Length, maskChar);
-
-                    text = drawText;
                 }
                 else
                 {
                     if (!hasFocus)
                     {
-                        mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text), m_TextHandle);
+                        mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, drawText), m_TextHandle, scaledPixelsPerPoint);
                     }
                     else
                     {
-                        DrawWithTextSelectionAndCursor(mgc, text);
+                        DrawWithTextSelectionAndCursor(mgc, drawText, scaledPixelsPerPoint);
                     }
                 }
             }
 
-            internal void DrawWithTextSelectionAndCursor(MeshGenerationContext mgc, string newText)
+            internal void DrawWithTextSelectionAndCursor(MeshGenerationContext mgc, string newText, float pixelsPerPoint)
             {
                 var playmodeTintColor = panel.contextType == ContextType.Editor
                     ? UIElementsUtility.editorPlayModeTintColor
@@ -454,7 +471,7 @@ namespace UnityEngine.UIElements
                 Rect localPosition = editorEngine.localPosition;
                 var scrollOffset = editorEngine.scrollOffset;
 
-                float textScaling = TextHandle.ComputeTextScaling(worldTransform, GUIUtility.pixelsPerPoint);
+                float textScaling = TextHandle.ComputeTextScaling(worldTransform, pixelsPerPoint);
 
                 var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
                 textParams.text = " ";
@@ -555,7 +572,7 @@ namespace UnityEngine.UIElements
                     textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width + scrollOffset.x, contentRect.height + scrollOffset.y);
                     textParams.text = editorEngine.text;
 
-                    mgc.Text(textParams, m_TextHandle);
+                    mgc.Text(textParams, m_TextHandle, scaledPixelsPerPoint);
                 }
 
                 // Draw the cursor
@@ -715,6 +732,15 @@ namespace UnityEngine.UIElements
             void ITextInputField.UpdateText(string value)
             {
                 UpdateText(value);
+            }
+
+            TextEditorEngine ITextInputField.editorEngine => editorEngine;
+
+            bool ITextInputField.isDelayed => isDelayed;
+
+            void ITextInputField.UpdateValueFromText()
+            {
+                UpdateValueFromText();
             }
 
             private void DeferGUIStyleRectSync()

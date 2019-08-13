@@ -41,5 +41,7 @@ namespace UnityEditor.PackageManager.UI
         void Setup();
 
         void Clear();
+
+        void Reset();
     }
 }

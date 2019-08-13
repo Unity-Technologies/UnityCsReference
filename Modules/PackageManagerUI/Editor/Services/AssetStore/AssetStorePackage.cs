@@ -23,14 +23,14 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         [SerializeField]
         private List<AssetStorePackageVersion> m_Versions;
 
-        internal AssetStorePackageVersion m_FirstInstalledVersion => m_Versions.FirstOrDefault(pv => pv.isAvailableOnDisk);
-        internal AssetStorePackageVersion m_FirstVersion => m_Versions.FirstOrDefault();
-        internal AssetStorePackageVersion m_LastVersion => m_Versions.LastOrDefault();
+        internal AssetStorePackageVersion m_InstalledVersion => m_Versions.FirstOrDefault(pv => pv.isAvailableOnDisk);
+        internal AssetStorePackageVersion m_FetchedVersion => m_Versions.FirstOrDefault();
+        internal AssetStorePackageVersion m_LocalVersion => m_Versions.LastOrDefault();
 
         public IEnumerable<IPackageVersion> versions => m_Versions.Cast<IPackageVersion>();
         public IEnumerable<IPackageVersion> keyVersions => m_Versions.Cast<IPackageVersion>();
-        public IPackageVersion installedVersion => m_Versions.FirstOrDefault(pv => pv.isAvailableOnDisk);
-        public IPackageVersion latestVersion => m_Versions.FirstOrDefault();
+        public IPackageVersion installedVersion => m_InstalledVersion;
+        public IPackageVersion latestVersion => m_FetchedVersion;
         public IPackageVersion latestPatch => latestVersion;
         public IPackageVersion recommendedVersion => latestVersion;
         public IPackageVersion primaryVersion => installedVersion ?? latestVersion;

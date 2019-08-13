@@ -14,6 +14,7 @@ namespace UnityEditor.Profiling
         {
             public static readonly GUIContent k_FrameCountText = EditorGUIUtility.TrTextContent("Frame Count", "Maximum of visible frames in the Profiler Window.");
             public static readonly GUIContent k_FrameCountWarningText = EditorGUIUtility.TrTextContent("Profiler overhead and memory usage can increase significantly the more frames are kept visible in the Profiler Window through the 'Frame Count' setting.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public static readonly GUIContent k_EnableOutOfProcessProfiler = EditorGUIUtility.TrTextContent("Enable Out-Of-Process Profiler (Experimental)", "The out-of-process profiler is a new workflow that spawns the profiler window in its own process. The profiler in its own process has the advantage of not impacting the main editor performances and vice-versa. Spawning the profiler out-of-process can take around 3-4 seconds to launch.");
         }
 
         public ProfilerSettingsProvider()
@@ -23,9 +24,15 @@ namespace UnityEditor.Profiling
 
         public override void OnGUI(string searchContext)
         {
+            EditorGUIUtility.labelWidth = 300;
             ProfilerUserSettings.frameCount = EditorGUILayout.IntSlider(Content.k_FrameCountText, ProfilerUserSettings.frameCount, ProfilerUserSettings.kMinFrameCount, ProfilerUserSettings.kMaxFrameCount);
             if (ProfilerUserSettings.frameCount > 600)
                 EditorGUILayout.HelpBox(Content.k_FrameCountWarningText);
+            if (Unsupported.IsDeveloperMode() || Unsupported.IsSourceBuild())
+            {
+                ProfilerUserSettings.useOutOfProcessProfiler =
+                    EditorGUILayout.Toggle(Content.k_EnableOutOfProcessProfiler, ProfilerUserSettings.useOutOfProcessProfiler);
+            }
         }
 
         [SettingsProvider]

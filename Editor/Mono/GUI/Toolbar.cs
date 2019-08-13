@@ -74,6 +74,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrIconContent("ViewToolOrbit On", viewToolsTooltipText)
             };
 
+            s_ViewToolOnOffset = s_ViewToolIcons.Length / 2;
+
             s_LayerContent = EditorGUIUtility.TrTextContent("Layers", "Which layers are visible in the Scene views.");
 
             s_PlayIcons = new GUIContent[]
@@ -98,6 +100,7 @@ namespace UnityEditor
         static GUIContent   s_LayerContent;
         static GUIContent[] s_PlayIcons;
         static GUIContent s_CustomToolIcon;
+        static int s_ViewToolOnOffset;
         private static GUIContent s_AccountContent;
         static GUIContent   s_CloudIcon;
         internal static event Action<Rect> toolSettingsGui;
@@ -248,7 +251,9 @@ namespace UnityEditor
             // Right spacing side
             ReserveWidthLeft(space, ref pos);
             ReserveWidthLeft(dropdownWidth, ref pos);
-            DoLayoutDropDown(EditorToolGUI.GetThinArea(pos));
+
+            if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
+                DoLayoutDropDown(EditorToolGUI.GetThinArea(pos));
 
             if (ModeService.HasCapability(ModeCapability.Layers, true))
             {
@@ -280,7 +285,6 @@ namespace UnityEditor
                 ReserveWidthLeft(subToolbar.Width, ref pos);
                 subToolbar.OnGUI(EditorToolGUI.GetThinArea(pos));
             }
-
 
             if (ModeService.modeCount > 1 && Unsupported.IsDeveloperBuild())
             {
@@ -363,7 +367,7 @@ namespace UnityEditor
             else
                 s_ShownToolIcons[builtinIconsLength] = s_CustomToolIcon;
 
-            s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? s_ShownToolIcons.Length - 1 : 0)];
+            s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? s_ViewToolOnOffset : 0)];
 
             displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, Styles.command, GUI.ToolbarButtonSize.FitToContents);
 

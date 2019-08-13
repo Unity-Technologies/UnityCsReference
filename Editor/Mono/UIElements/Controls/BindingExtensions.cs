@@ -688,6 +688,9 @@ namespace UnityEditor.UIElements
 
             internal static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
             {
+                if (element == null)
+                    return;
+
                 if (element is Foldout)
                 {
                     // We only want to apply override styles onto the Foldout header, not the entire contents.

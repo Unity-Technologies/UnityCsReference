@@ -32,9 +32,8 @@ namespace UnityEditor.Experimental.GraphView
         /// </remarks>
         public float scaleStep { get; set; } = DefaultScaleStep;
 
+        [Obsolete("ContentZoomer.keepPixelCacheOnZoom is deprecated and has no effect")]
         public bool keepPixelCacheOnZoom { get; set; }
-
-        private bool delayRepaintScheduled { get; set; }
 
         protected override void RegisterCallbacksOnTarget()
         {
@@ -50,20 +49,6 @@ namespace UnityEditor.Experimental.GraphView
         protected override void UnregisterCallbacksFromTarget()
         {
             target.UnregisterCallback<WheelEvent>(OnWheel);
-        }
-
-        private IVisualElementScheduledItem m_OnTimerTicker;
-
-        private void OnTimer(TimerState timerState)
-        {
-            var graphView = target as GraphView;
-            if (graphView == null)
-                return;
-
-            if (graphView.elementPanel != null)
-                graphView.elementPanel.keepPixelCacheOnWorldBoundChange = false;
-
-            delayRepaintScheduled = false;
         }
 
         // Compute the parameters of our exponential model:
@@ -174,21 +159,6 @@ namespace UnityEditor.Experimental.GraphView
             position -= Vector3.Scale(new Vector3(x, y, 0), scale);
             position.x = GUIUtility.RoundToPixelGrid(position.x);
             position.y = GUIUtility.RoundToPixelGrid(position.y);
-
-            // Delay updating of the pixel cache so the scrolling appears smooth.
-            if (graphView.elementPanel != null && keepPixelCacheOnZoom)
-            {
-                graphView.elementPanel.keepPixelCacheOnWorldBoundChange = true;
-
-                if (m_OnTimerTicker == null)
-                {
-                    m_OnTimerTicker = graphView.schedule.Execute(OnTimer);
-                }
-
-                m_OnTimerTicker.ExecuteLater(500);
-
-                delayRepaintScheduled = true;
-            }
 
             graphView.UpdateViewTransform(position, scale);
 

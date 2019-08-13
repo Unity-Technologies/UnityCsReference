@@ -3,10 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEditor.Hardware;
 using UnityEditorInternal;
 using UnityEngine;
@@ -18,6 +15,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
     {
         EditorWindow parentWindow { get; }
         GUIContent notificationMessage { get; }
+        bool deepProfilingSupported { get; }
         void AddItemsToMenu(GenericMenu menu, Rect position);
     }
 
@@ -29,7 +27,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
         // add out-off-process player/profiler here
     }
 
-    public static partial class EditorGUIUtility
+    public static class EditorGUIUtility
     {
         public static IConnectionState GetAttachToPlayerState(EditorWindow parentWindow, Action<string> connectedCallback = null)
         {
@@ -47,7 +45,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
         public static readonly GUIContent dropdownButton = UnityEditor.EditorGUIUtility.TrTextContent("", "Choose the target player to connect to.");
     }
 
-    public static partial class EditorGUI
+    public static class EditorGUI
     {
         public static void AttachToPlayerDropdown(Rect rect, IConnectionState state, GUIStyle style = null)
         {
@@ -73,7 +71,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             menu.DropDown(rect);
         }
     }
-    public static partial class EditorGUILayout
+    public static class EditorGUILayout
     {
         public static void AttachToPlayerDropdown(IConnectionState state, GUIStyle style = null)
         {
@@ -120,7 +118,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             get
             {
                 string name = ProfilerDriver.GetConnectionIdentifier(ProfilerDriver.connectedProfiler);
-                if (m_EditorModeTargetState.HasValue && name.Contains(k_EditorConnectionName))
+                if (m_EditorModeTargetState.HasValue && name.StartsWith(k_EditorConnectionName))
                 {
                     if (m_EditorModeTargetConnectionStatus(EditorConnectionTarget.MainEditorProcessEditmode))
                         name = Content.Editmode.text;
@@ -131,7 +129,10 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             }
         }
 
+        public bool deepProfilingSupported => ProfilerDriver.IsDeepProfilingSupported(ProfilerDriver.connectedProfiler);
+
         event Action<string> connected;
+
 
         event Action<EditorConnectionTarget> switchedEditorModeTarget;
         Func<EditorConnectionTarget, bool> m_EditorModeTargetConnectionStatus;
@@ -160,7 +161,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             s_AllGeneralAttachToPlayerStates.Add(new WeakReference(this));
         }
 
-        static void SuccesfullyConnectedToPlayer(string player, EditorConnectionTarget? editorConnectionTarget = null)
+        private static void SuccessfullyConnectedToPlayer(string player, EditorConnectionTarget? editorConnectionTarget = null)
         {
             for (int i = s_AllGeneralAttachToPlayerStates.Count - 1; i >= 0; i--)
             {
@@ -176,7 +177,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
                 }
                 else
                 {
-                    if (player.Contains(k_EditorConnectionName))
+                    if (player.StartsWith(k_EditorConnectionName))
                     {
                         // if e.g. the console or the memory profiler connects to the Editor, the profiler should switch to PlayMode profiling, not to Editmode profiling
                         // especially since falling back onto the Editor is the default.
@@ -215,7 +216,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             s_NotificationMessage = Content.ConnectingToPlayerMessage;
             ProfilerDriver.DirectIPConnect(ip);
             s_NotificationMessage = null;
-            SuccesfullyConnectedToPlayer(ip);
+            SuccessfullyConnectedToPlayer(ip);
         }
 
         internal static void DirectURLConnect(string url)
@@ -225,7 +226,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             s_NotificationMessage = Content.ConnectingToPlayerMessage;
             ProfilerDriver.DirectURLConnect(url);
             s_NotificationMessage = null;
-            SuccesfullyConnectedToPlayer(url);
+            SuccessfullyConnectedToPlayer(url);
         }
 
         void AddLastConnectedIP(GenericMenu menuOptions, ref bool hasOpenConnection)
@@ -260,17 +261,17 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
                 }
                 if (enabled)
                 {
-                    if (m_EditorModeTargetState.HasValue && name.Contains(k_EditorConnectionName))
+                    if (m_EditorModeTargetState.HasValue && name.StartsWith(k_EditorConnectionName))
                     {
                         menuOptions.AddItem(Content.Playmode, isConnected && m_EditorModeTargetConnectionStatus(EditorConnectionTarget.MainEditorProcessPlaymode), () =>
                         {
                             ProfilerDriver.connectedProfiler = guid;
-                            SuccesfullyConnectedToPlayer(connectionName, EditorConnectionTarget.MainEditorProcessPlaymode);
+                            SuccessfullyConnectedToPlayer(connectionName, EditorConnectionTarget.MainEditorProcessPlaymode);
                         });
                         menuOptions.AddItem(Content.Editmode, isConnected && m_EditorModeTargetConnectionStatus(EditorConnectionTarget.MainEditorProcessEditmode), () =>
                         {
                             ProfilerDriver.connectedProfiler = guid;
-                            SuccesfullyConnectedToPlayer(connectionName, EditorConnectionTarget.MainEditorProcessEditmode);
+                            SuccessfullyConnectedToPlayer(connectionName, EditorConnectionTarget.MainEditorProcessEditmode);
                         });
                     }
                     else
@@ -278,7 +279,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
                         menuOptions.AddItem(new GUIContent(name), isConnected, () =>
                         {
                             ProfilerDriver.connectedProfiler = guid;
-                            SuccesfullyConnectedToPlayer(connectionName);
+                            SuccessfullyConnectedToPlayer(connectionName);
                         });
                     }
                 }

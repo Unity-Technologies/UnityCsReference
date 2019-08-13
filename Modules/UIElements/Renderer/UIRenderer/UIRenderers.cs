@@ -17,11 +17,13 @@ namespace UnityEngine.UIElements.UIR
         IsAtlasTexturedPoint = 2,
         IsAtlasTexturedBilinear = 3,
         IsCustomTextured = 4,
-        IsEdge = 5,
-        IsSVGGradients = 6,
-        IsCustomSVGGradients = 7,
+        IsEdge = 5, // X and Y can grow/shrink according to displacement
+        IsEdgeNoShrinkX = 6,
+        IsEdgeNoShrinkY = 7,
+        IsSVGGradients = 8,
+        IsCustomSVGGradients = 9,
 
-        LastType = 8,
+        LastType = 10,
     }
 
     internal struct State
@@ -89,7 +91,7 @@ namespace UnityEngine.UIElements.UIR
             callback = null;
         }
 
-        internal void ExecuteNonDrawMesh(DrawParams drawParams, bool straightY, ref Exception immediateException)
+        internal void ExecuteNonDrawMesh(DrawParams drawParams, bool straightY, float pixelsPerPoint, ref Exception immediateException)
         {
             switch (type)
             {
@@ -118,7 +120,7 @@ namespace UnityEngine.UIElements.UIR
                     Utility.ProfileImmediateRendererEnd();
 
                     if (hasScissor)
-                        Utility.SetScissorRect(FlipRectYAxis(drawParams.scissor.Peek(), drawParams.viewport));
+                        Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(drawParams.scissor.Peek(), drawParams.viewport, pixelsPerPoint));
                     break;
                 }
                 case CommandType.PushView:
@@ -133,14 +135,14 @@ namespace UnityEngine.UIElements.UIR
                 case CommandType.PushScissor:
                     Rect elemRect = CombineScissorRects(owner.worldBound, drawParams.scissor.Peek());
                     drawParams.scissor.Push(elemRect);
-                    Utility.SetScissorRect(FlipRectYAxis(elemRect, drawParams.viewport));
+                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, drawParams.viewport, pixelsPerPoint));
                     break;
                 case CommandType.PopScissor:
                     drawParams.scissor.Pop();
                     Rect prevRect = drawParams.scissor.Peek();
                     if (prevRect.x == DrawParams.k_UnlimitedRect.x)
                         Utility.DisableScissor();
-                    else Utility.SetScissorRect(FlipRectYAxis(prevRect, drawParams.viewport));
+                    else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, drawParams.viewport, pixelsPerPoint));
                     break;
             }
         }
@@ -150,7 +152,7 @@ namespace UnityEngine.UIElements.UIR
             var viewport = Utility.GetActiveViewport();
             var minClipSpace = projection.MultiplyPoint(new Vector3(rc.xMin, rc.yMin, UIRUtility.k_MeshPosZ));
             var maxClipSpace = projection.MultiplyPoint(new Vector3(rc.xMax, rc.yMax, UIRUtility.k_MeshPosZ));
-            float yScale = straightY ? 0.5f : -0.5f; // The flip in Y should probably also be controlled by the UIRenderDevice's flipY mode
+            float yScale = straightY ? 0.5f : -0.5f;
             var x1 = (minClipSpace.x * 0.5f + 0.5f) * viewport.width;
             var x2 = (maxClipSpace.x * 0.5f + 0.5f) * viewport.width;
             var y1 = (minClipSpace.y * yScale + 0.5f) * viewport.height;
@@ -168,10 +170,9 @@ namespace UnityEngine.UIElements.UIR
             return r;
         }
 
-        static RectInt FlipRectYAxis(Rect rect, Rect viewport)
+        static RectInt RectPointsToPixelsAndFlipYAxis(Rect rect, Rect viewport, float pixelsPerPoint)
         {
             var r = new RectInt(0, 0, 0, 0);
-            float pixelsPerPoint = GUIUtility.pixelsPerPoint;
             r.x = Mathf.RoundToInt(rect.x * pixelsPerPoint);
             r.y = Mathf.RoundToInt((viewport.height - rect.yMax) * pixelsPerPoint);
             r.width = Mathf.RoundToInt(rect.width * pixelsPerPoint);

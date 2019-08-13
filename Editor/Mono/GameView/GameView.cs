@@ -3,16 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using System;
-using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEditor.SceneManagement;
 using UnityEditor.Modules;
-using UnityEngine.Scripting;
-using UnityEngine.Experimental.Rendering;
 using System.Globalization;
 using UnityEngine.Rendering;
 using System.Linq;
+using JetBrains.Annotations;
 
 /*
 The main GameView can be in the following states when entering playmode.
@@ -107,7 +104,6 @@ namespace UnityEditor
             }
         };
 
-        static List<GameView> s_GameViews = new List<GameView>();
         static double s_LastScrollTime;
 
         public GameView()
@@ -118,7 +114,7 @@ namespace UnityEditor
             clearColor = kClearBlack;
             showGizmos = m_Gizmos;
             targetDisplay = 0;
-            targetSize = Vector2.zero;
+            targetSize = new Vector2(640f, 480f);
             textureFilterMode = FilterMode.Point;
             textureHideFlags = HideFlags.HideAndDontSave;
         }
@@ -141,7 +137,20 @@ namespace UnityEditor
             }
         }
 
-        public bool forceLowResolutionAspectRatios { get { return EditorGUIUtility.pixelsPerPoint == 1f; } }
+        public bool forceLowResolutionAspectRatios => EditorGUIUtility.pixelsPerPoint == 1f;
+
+        public bool vSyncEnabled
+        {
+            get { return m_VSyncEnabled; }
+            set
+            {
+                if (value == m_VSyncEnabled)
+                    return;
+
+                SetVSync(value);
+                m_VSyncEnabled = value;
+            }
+        }
 
         int selectedSizeIndex
         {
@@ -157,18 +166,20 @@ namespace UnityEditor
             }
         }
 
-        static GameViewSizeGroupType currentSizeGroupType
-        {
-            get { return GameViewSizes.instance.currentGroupType; }
-        }
+        static GameViewSizeGroupType currentSizeGroupType => GameViewSizes.instance.currentGroupType;
 
-        GameViewSize currentGameViewSize
-        {
-            get { return GameViewSizes.instance.currentGroup.GetGameViewSize(selectedSizeIndex); }
-        }
+        GameViewSize currentGameViewSize => GameViewSizes.instance.currentGroup.GetGameViewSize(selectedSizeIndex);
 
         // The area of the window that the rendered game view is limited to
-        Rect viewInWindow { get { return new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight); } }
+        Rect viewInWindow
+        {
+            get
+            {
+                if (showToolbar)
+                    return new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight);
+                return new Rect(0, 0, position.width, position.height);
+            }
+        }
 
         internal Vector2 targetRenderSize // Size of render target in pixels
         {
@@ -249,6 +260,8 @@ namespace UnityEditor
 
         float gameMouseScale { get { return EditorGUIUtility.pixelsPerPoint / m_ZoomArea.scale.y; } }
 
+        private bool showToolbar { get; set; }
+
         void InitializeZoomArea()
         {
             m_ZoomArea = new ZoomableArea(true, false) {uniformScale = true, upDirection = ZoomableArea.YDirection.Negative};
@@ -260,22 +273,23 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             UpdateZoomAreaAndParent();
             dontClearBackground = true;
-            s_GameViews.Add(this);
+            showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
 
+            ModeService.modeChanged += OnEditorModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
+            ModeService.modeChanged -= OnEditorModeChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            s_GameViews.Remove(this);
             if (m_RenderTexture)
             {
                 DestroyImmediate(m_RenderTexture);
             }
         }
 
-        // This is here because NGUI uses it via reflection (noted in https://confluence.hq.unity3d.com/display/DEV/Game+View+Bucket)
+        [UsedImplicitly] // This is here because NGUI uses it via reflection (noted in https://confluence.hq.unity3d.com/display/DEV/Game+View+Bucket)
         internal static Vector2 GetSizeOfMainGameView()
         {
             return GetMainPreviewTargetSize();
@@ -461,14 +475,16 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                var types = GetAvailableWindowTypes().OrderBy(type => type.Name).ToList();
-                if (types.Count > 1)
+                var availableTypes = GetAvailableWindowTypes();
+                if (availableTypes.Count > 1)
                 {
-                    int viewIndex = EditorGUILayout.Popup(types.IndexOf(typeof(GameView)), types.Select(viewTypes => viewTypes.Name).ToArray(),
+                    var typeNames = availableTypes.Values.ToList();
+                    var types = availableTypes.Keys.ToList();
+                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
                         EditorStyles.toolbarPopup,
                         GUILayout.Width(90));
                     EditorGUILayout.Space();
-                    if (types[viewIndex].Name != typeof(GameView).Name)
+                    if (types[viewIndex] != typeof(GameView))
                     {
                         SwapMainWindow(types[viewIndex]);
                     }
@@ -500,7 +516,7 @@ namespace UnityEditor
                     Color oldCol = GUI.color;
                     // This has nothing to do with animation recording.  Can we replace this color with something else?
                     GUI.color *= AnimationMode.recordedPropertyColor;
-                    GUILayout.Label(Styles.frameDebuggerOnContent, EditorStyles.miniLabel);
+                    GUILayout.Label(Styles.frameDebuggerOnContent, EditorStyles.toolbarLabel);
                     GUI.color = oldCol;
                     // Make frame debugger windows repaint after each time game view repaints.
                     // We want them to always display the latest & greatest game view
@@ -534,8 +550,6 @@ namespace UnityEditor
 
                 EditorUtility.audioMasterMute = GUILayout.Toggle(EditorUtility.audioMasterMute, Styles.muteContent, EditorStyles.toolbarButton);
 
-                DoVSyncButton();
-
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
 
                 if (EditorGUILayout.DropDownToggle(ref m_Gizmos, Styles.gizmosContent, EditorStyles.toolbarDropDownToggleRight))
@@ -548,23 +562,6 @@ namespace UnityEditor
                 }
             }
             GUILayout.EndHorizontal();
-        }
-
-        private void DoVSyncButton()
-        {
-            // Only show the vsync toggle for editor supported gfx device backend.
-            var gfxDeviceType = SystemInfo.graphicsDeviceType;
-            if (gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Metal ||
-                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Vulkan ||
-                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D11 ||
-                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D12 ||
-                gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.OpenGLCore)
-            {
-                EditorGUI.BeginChangeCheck();
-                m_VSyncEnabled = GUILayout.Toggle(m_VSyncEnabled, Styles.vsyncContent, EditorStyles.toolbarButton);
-                if (EditorGUI.EndChangeCheck() && EditorApplication.isPlaying)
-                    SetVSync(m_VSyncEnabled);
-            }
         }
 
         private void SetXRRenderMode(int mode)
@@ -663,14 +660,13 @@ namespace UnityEditor
 
         public void RenderToHMDOnly()
         {
-            var clearTexture = false;
             var mousePos = Vector2.zero;
             targetDisplay = 0;
             targetSize = targetRenderSize;
             showGizmos = false;
             renderIMGUI = false;
 
-            m_RenderTexture = RenderPreview(mousePos, clearTexture);
+            m_RenderTexture = RenderPreview(mousePos, clearTexture: false);
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -686,6 +682,13 @@ namespace UnityEditor
             }
         }
 
+        private void OnEditorModeChanged(ModeService.ModeChangedArgs args)
+        {
+            showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
+
+            Repaint();
+        }
+
         private void OnGUI()
         {
             if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
@@ -693,7 +696,8 @@ namespace UnityEditor
                 UpdateZoomAreaAndParent();
             }
 
-            DoToolbarGUI();
+            if (showToolbar)
+                DoToolbarGUI();
 
             // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.
             // To fix this we should probably stop using the global custom cursor (intended for runtime) for custom editor cursors.
@@ -808,12 +812,9 @@ namespace UnityEditor
 
                 EditorGUIUtility.QueueGameViewInputEvent(Event.current);
 
-                bool useEvent = true;
-
                 // Do not use mouse UP event if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
                 // Placed after event queueing above to ensure scripts can react on mouse up events.
-                if (Event.current.rawType == EventType.MouseUp && !mousePosInGameViewRect)
-                    useEvent = false;
+                bool useEvent = !(Event.current.rawType == EventType.MouseUp && !mousePosInGameViewRect);
 
                 // Don't use command events, or they won't be sent to other views.
                 if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)

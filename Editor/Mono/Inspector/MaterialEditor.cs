@@ -1509,7 +1509,7 @@ namespace UnityEditor
                 throw new ArgumentNullException("mats");
             if (Array.IndexOf(mats, null) >= 0)
                 throw new ArgumentException("List of materials contains null");
-            return ShaderUtil.GetMaterialProperty_Index(mats, propertyIndex);
+            return ShaderUtil.GetMaterialProperty(mats, propertyIndex);
         }
 
         class ForwardApplyMaterialModification

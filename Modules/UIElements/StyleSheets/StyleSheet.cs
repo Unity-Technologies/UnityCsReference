@@ -121,6 +121,15 @@ namespace UnityEngine.UIElements
                         ++rule.customPropertiesCount;
                         property.isCustomProperty = true;
                     }
+
+                    foreach (var handle in property.values)
+                    {
+                        if (handle.IsVarFunction())
+                        {
+                            property.requireVariableResolve = true;
+                            break;
+                        }
+                    }
                 }
             }
 

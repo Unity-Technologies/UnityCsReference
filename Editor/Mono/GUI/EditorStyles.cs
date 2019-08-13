@@ -210,6 +210,12 @@ namespace UnityEditor
         public static GUIStyle toolbarPopup { get { return s_Current.m_ToolbarPopup; } }
         private GUIStyle m_ToolbarPopup;
 
+        internal static GUIStyle toolbarPopupLeft { get { return s_Current.m_ToolbarPopupLeft; } }
+        private GUIStyle m_ToolbarPopupLeft;
+
+        internal static GUIStyle toolbarPopupRight { get { return s_Current.m_ToolbarPopupRight; } }
+        private GUIStyle m_ToolbarPopupRight;
+
         // Toolbar Dropdown
         public static GUIStyle toolbarDropDown { get { return s_Current.m_ToolbarDropDown; } }
         private GUIStyle m_ToolbarDropDown;
@@ -234,11 +240,17 @@ namespace UnityEditor
         public static GUIStyle toolbarTextField { get { return s_Current.m_ToolbarTextField; } }
         private GUIStyle m_ToolbarTextField;
 
+        internal static GUIStyle toolbarLabel { get { return s_Current.m_ToolbarLabel; } }
+        private GUIStyle m_ToolbarLabel;
+
         public static GUIStyle inspectorDefaultMargins { get { return s_Current.m_InspectorDefaultMargins; } }
         private GUIStyle m_InspectorDefaultMargins;
 
         public static GUIStyle inspectorFullWidthMargins { get { return s_Current.m_InspectorFullWidthMargins; } }
         private GUIStyle m_InspectorFullWidthMargins;
+
+        internal static GUIStyle frameBox => s_Current.m_FrameBox;
+        private GUIStyle m_FrameBox;
 
         public static GUIStyle helpBox { get { return s_Current.m_HelpBox; } }
         private GUIStyle m_HelpBox;
@@ -266,6 +278,9 @@ namespace UnityEditor
 
         internal static GUIStyle inspectorTitlebar { get { return s_Current.m_InspectorTitlebar; } }
         private GUIStyle m_InspectorTitlebar;
+
+        internal static GUIStyle inspectorTitlebarFlat { get { return s_Current.m_InspectorTitlebarFlat; } }
+        private GUIStyle m_InspectorTitlebarFlat;
 
         internal static GUIStyle inspectorTitlebarText { get { return s_Current.m_InspectorTitlebarText; } }
         private GUIStyle m_InspectorTitlebarText;
@@ -363,7 +378,7 @@ namespace UnityEditor
 
             if (s_CachedStyles[skinIndex] == null)
             {
-                EditorResources.BuildCatalog();
+                EditorResources.RefreshSkin();
 
                 s_CachedStyles[skinIndex] = new EditorStyles();
                 s_CachedStyles[skinIndex].InitSharedStyles();
@@ -402,12 +417,15 @@ namespace UnityEditor
             m_ToolbarButton = GetStyle("toolbarbutton");
             m_ToolbarButtonRight = GetStyle("toolbarbuttonRight");
             m_ToolbarPopup = GetStyle("toolbarPopup");
+            m_ToolbarPopupLeft = GetStyle("toolbarPopupLeft");
+            m_ToolbarPopupRight = GetStyle("toolbarPopupRight");
             m_ToolbarDropDown = GetStyle("toolbarDropDown");
             m_ToolbarDropDownRight = GetStyle("toolbarDropDownRight");
             m_ToolbarDropDownToggle = GetStyle("toolbarDropDownToggle");
             m_ToolbarDropDownToggleRight = GetStyle("toolbarDropDownToggleRight");
             m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
             m_ToolbarTextField = GetStyle("toolbarTextField");
+            m_ToolbarLabel = GetStyle("ToolbarLabel");
             m_ToolbarSearchField = GetStyle("ToolbarSeachTextField");
             m_ToolbarSearchFieldPopup = GetStyle("ToolbarSeachTextFieldPopup");
             m_ToolbarSearchFieldCancelButton = GetStyle("ToolbarSeachCancelButton");
@@ -416,6 +434,7 @@ namespace UnityEditor
             m_SearchFieldCancelButton = GetStyle("SearchCancelButton");
             m_SearchFieldCancelButtonEmpty = GetStyle("SearchCancelButtonEmpty");
             m_HelpBox = GetStyle("HelpBox");
+            m_FrameBox = GetStyle("FrameBox");
             m_AssetLabel = GetStyle("AssetLabel");
             m_AssetLabelPartial = GetStyle("AssetLabel Partial");
             m_AssetLabelIcon = GetStyle("AssetLabel Icon");
@@ -436,6 +455,7 @@ namespace UnityEditor
             m_FoldoutHeaderIcon = GetStyle("FoldoutHeaderIcon");
             m_OptionsButtonStyle = GetStyle("PaneOptions");
             m_InspectorTitlebar = GetStyle("IN Title");
+            m_InspectorTitlebarFlat = GetStyle("IN Title Flat");
             m_InspectorTitlebarText = GetStyle("IN TitleText");
             m_ToggleGroup = GetStyle("BoldToggle");
             m_Tooltip = GetStyle("Tooltip");

@@ -61,6 +61,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool autoReferenced;
         public string[] defineConstraints;
         public VersionDefine[] versionDefines;
+        public bool noEngineReferences;
 
         static Dictionary<string, string> renamedReferences = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -102,6 +103,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if ((excludePlatforms != null && excludePlatforms.Length > 0) &&
                 (includePlatforms != null && includePlatforms.Length > 0))
                 throw new System.Exception("Both 'excludePlatforms' and 'includePlatforms' are set.");
+
+            if (autoReferenced && UnityCodeGenHelpers.IsCodeGen(name, includesExtension: false))
+            {
+                throw new Exception($"Assembly '{name}' is a CodeGen assembly and cannot be Auto Referenced");
+            }
         }
 
         public static string ToJson(CustomScriptAssemblyData data)
@@ -215,6 +221,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool AutoReferenced { get; set; }
         public string[] DefineConstraints { get; set; }
         public VersionDefine[] VersionDefines { get; set; }
+        public bool NoEngineReferences { get; set; }
 
         public AssemblyFlags AssemblyFlags
         {
@@ -233,6 +240,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (!AutoReferenced)
                 {
                     assemblyFlags |= AssemblyFlags.ExplicitlyReferenced;
+                }
+
+                if (NoEngineReferences)
+                {
+                    assemblyFlags |= AssemblyFlags.NoEngineReferences;
                 }
 
                 return assemblyFlags;
@@ -355,6 +367,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.PathPrefix = pathPrefix;
             customScriptAssembly.AutoReferenced = customScriptAssemblyData.autoReferenced;
             customScriptAssembly.OverrideReferences = customScriptAssemblyData.overrideReferences;
+            customScriptAssembly.NoEngineReferences = customScriptAssemblyData.noEngineReferences;
             customScriptAssembly.PrecompiledReferences = customScriptAssemblyData.precompiledReferences ?? new string[0];
             customScriptAssembly.DefineConstraints = customScriptAssemblyData.defineConstraints ?? new string[0];
             customScriptAssembly.VersionDefines = (customScriptAssemblyData.versionDefines ?? new VersionDefine[0]);

@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI
         public static IUpmClient instance { get { return s_Instance ?? UpmClientInternal.instance; } }
 
         [Serializable]
-        private class UpmClientInternal : ScriptableSingleton<UpmClientInternal>, IUpmClient, ISerializationCallbackReceiver
+        internal class UpmClientInternal : ScriptableSingleton<UpmClientInternal>, IUpmClient, ISerializationCallbackReceiver
         {
             public event Action<IOperation> onListOperation = delegate {};
             public event Action<IOperation> onSearchAllOperation = delegate {};
@@ -68,6 +68,9 @@ namespace UnityEditor.PackageManager.UI
             private PackageInfo[] m_SerializedInstalledPackageInfos;
             private PackageInfo[] m_SerializedSearchPackageInfos;
             private PackageInfo[] m_SerializedExtraPackageInfos;
+
+            [SerializeField]
+            private bool m_SetupDone;
 
             public bool isAddRemoveOrEmbedInProgress
             {
@@ -500,10 +503,21 @@ namespace UnityEditor.PackageManager.UI
 
             public void Setup()
             {
+                System.Diagnostics.Debug.Assert(!m_SetupDone);
+                m_SetupDone = true;
+
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged += OnShowPreviewPackagesChanged;
             }
 
             public void Clear()
+            {
+                System.Diagnostics.Debug.Assert(m_SetupDone);
+                m_SetupDone = false;
+
+                PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
+            }
+
+            public void Reset()
             {
                 m_InstalledPackageInfos.Clear();
                 m_SearchPackageInfos.Clear();

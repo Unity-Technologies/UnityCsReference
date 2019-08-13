@@ -64,7 +64,7 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, this.text), m_TextHandle);
+            mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, this.text), m_TextHandle, this.scaledPixelsPerPoint);
         }
 
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
@@ -84,8 +84,10 @@ namespace UnityEngine.UIElements
 
             var elementScaling = ve.ComputeGlobalScale();
 
-            float pixelsPerPoint = (ve.elementPanel != null) ? ve.elementPanel.currentPixelsPerPoint : GUIUtility.pixelsPerPoint;
-            float scaling = (elementScaling.x + elementScaling.y) * 0.5f * pixelsPerPoint;
+            float scaling = (elementScaling.x + elementScaling.y) * 0.5f * ve.scaledPixelsPerPoint;
+
+            if (scaling <= 0)
+                return Vector2.zero;
 
             if (widthMode == MeasureMode.Exactly)
             {

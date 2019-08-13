@@ -117,9 +117,7 @@ namespace UnityEditor
 
                 if (GUILayout.Button(Contents.pushToGrid, Styles.button, GUILayout.Width(k_PushToGridIconWidth)))
                 {
-                    var selections = Selection.transforms;
-                    Undo.RecordObjects(selections, L10n.Tr("Snap to Grid"));
-                    Handles.SnapToGrid(selections);
+                    SnapSelectionToGrid();
                 }
             }
 
@@ -144,9 +142,7 @@ namespace UnityEditor
 
                 if (GUILayout.Button(Contents.pushX, Styles.button, GUILayout.Width(k_PushToGridIconWidth)))
                 {
-                    var selections = Selection.transforms;
-                    Undo.RecordObjects(selections, L10n.Tr("Snap to Grid"));
-                    Handles.SnapToGrid(selections, SnapAxis.X);
+                    SnapSelectionToGrid(SnapAxis.X);
                 }
             }
 
@@ -164,11 +160,7 @@ namespace UnityEditor
                 }
 
                 if (GUILayout.Button(Contents.pushY, Styles.button, GUILayout.Width(k_PushToGridIconWidth)))
-                {
-                    var selections = Selection.transforms;
-                    Undo.RecordObjects(selections, L10n.Tr("Snap to Grid"));
-                    Handles.SnapToGrid(selections, SnapAxis.Y);
-                }
+                    SnapSelectionToGrid(SnapAxis.Y);
             }
 
             using (new EditorGUILayout.HorizontalScope())
@@ -185,11 +177,7 @@ namespace UnityEditor
                 }
 
                 if (GUILayout.Button(Contents.pushZ, Styles.button, GUILayout.Width(k_PushToGridIconWidth)))
-                {
-                    var selections = Selection.transforms;
-                    Undo.RecordObjects(selections, L10n.Tr("Snap to Grid"));
-                    Handles.SnapToGrid(selections, SnapAxis.Z);
-                }
+                    SnapSelectionToGrid(SnapAxis.Z);
             }
             --EditorGUI.indentLevel;
         }
@@ -237,6 +225,16 @@ namespace UnityEditor
             GenericMenu menu = new GenericMenu();
             menu.AddItem(Contents.reset, false, EditorSnapSettings.ResetSnapSettings);
             menu.ShowAsContext();
+        }
+
+        internal static void SnapSelectionToGrid(SnapAxis axis = SnapAxis.All)
+        {
+            var selections = Selection.transforms;
+            if (selections != null && selections.Length > 0)
+            {
+                Undo.RecordObjects(selections, L10n.Tr("Snap to Grid"));
+                Handles.SnapToGrid(selections, axis);
+            }
         }
     }
 }

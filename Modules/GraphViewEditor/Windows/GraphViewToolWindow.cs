@@ -9,7 +9,6 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
-//using Toolbar = UnityEditor.UIElements.Toolbar;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -20,9 +19,13 @@ namespace UnityEditor.Experimental.GraphView
             public EditorWindow window;
             public GraphView graphView;
             public int idx;
+            public bool canUse;
         }
 
-        protected UnityEditor.UIElements.Toolbar m_Toolbar;
+        const string k_DefaultSelectorName = "Select a panel";
+
+        UnityEditor.UIElements.Toolbar m_Toolbar;
+        protected VisualElement m_ToolbarContainer;
         ToolbarMenu m_SelectorMenu;
 
         [SerializeField]
@@ -35,6 +38,8 @@ namespace UnityEditor.Experimental.GraphView
         List<GraphViewChoice> m_GraphViewChoices;
 
         bool m_FirstUpdate;
+
+        protected abstract string ToolName { get; }
 
         public override IEnumerable<Type> GetExtraPaneTypes()
         {
@@ -74,10 +79,17 @@ namespace UnityEditor.Experimental.GraphView
                 DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             m_Toolbar.Add(m_SelectorMenu);
+            m_Toolbar.style.flexGrow = 1;
+            m_Toolbar.style.overflow = Overflow.Hidden;
+            m_ToolbarContainer = new VisualElement();
+            m_ToolbarContainer.style.flexDirection = FlexDirection.Row;
+            m_ToolbarContainer.Add(m_Toolbar);
 
-            root.Add(m_Toolbar);
+            root.Add(m_ToolbarContainer);
 
             m_FirstUpdate = true;
+
+            titleContent.text = ToolName;
         }
 
         void Update()
@@ -102,31 +114,55 @@ namespace UnityEditor.Experimental.GraphView
                 if (!m_SelectedWindow && m_SelectedGraphView != null)
                     SelectGraphView(null);
             }
+
+            UpdateGraphViewName();
         }
 
         void RefreshPanelChoices()
         {
             m_GraphViewChoices.Clear();
 
-            List<GUIView> guiViews = new List<GUIView>();
+            var guiViews = new List<GUIView>();
             GUIViewDebuggerHelper.GetViews(guiViews);
-            var it = UIElementsUtility.GetPanelsIterator();
-            while (it.MoveNext())
+
+            var usedGraphViews = new HashSet<GraphView>();
+            // Get all GraphViews used by existing tool windows of our type
+            using (var it = UIElementsUtility.GetPanelsIterator())
             {
-                GUIView view = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key);
-                if (view == null)
-                    continue;
-
-                DockArea dockArea = view as DockArea;
-                if (dockArea == null)
-                    continue;
-
-                foreach (var graphViewEditor in dockArea.m_Panes.OfType<GraphViewEditorWindow>())
+                var currentWindowType = GetType();
+                while (it.MoveNext())
                 {
-                    int idx = 0;
-                    foreach (var graphView in graphViewEditor.graphViews.Where(IsGraphViewSupported))
+                    var dockArea = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key) as DockArea;
+                    if (dockArea == null)
+                        continue;
+
+                    foreach (var graphViewTool in dockArea.m_Panes.Where(p => p.GetType() == currentWindowType).Cast<GraphViewToolWindow>())
                     {
-                        m_GraphViewChoices.Add(new GraphViewChoice {window = graphViewEditor, idx = idx++, graphView = graphView});
+                        if (graphViewTool.m_SelectedGraphView != null)
+                        {
+                            usedGraphViews.Add(graphViewTool.m_SelectedGraphView);
+                        }
+                    }
+                }
+            }
+
+
+            // Get all the existing GraphViewWindows we could use...
+            using (var it = UIElementsUtility.GetPanelsIterator())
+            {
+                while (it.MoveNext())
+                {
+                    var dockArea = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key) as DockArea;
+                    if (dockArea == null)
+                        continue;
+
+                    foreach (var graphViewWindow in dockArea.m_Panes.OfType<GraphViewEditorWindow>())
+                    {
+                        int idx = 0;
+                        foreach (var graphView in graphViewWindow.graphViews.Where(IsGraphViewSupported))
+                        {
+                            m_GraphViewChoices.Add(new GraphViewChoice {window = graphViewWindow, idx = idx++, graphView = graphView, canUse = !usedGraphViews.Contains(graphView)});
+                        }
                     }
                 }
             }
@@ -141,8 +177,15 @@ namespace UnityEditor.Experimental.GraphView
             foreach (var graphView in m_GraphViewChoices)
             {
                 menu.AppendAction(graphView.graphView.name, OnSelectGraphView,
-                    a => ((GraphViewChoice)a.userData).graphView == m_SelectedGraphView ?
-                    DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal,
+                    a =>
+                    {
+                        var gvc = (GraphViewChoice)a.userData;
+                        return (gvc.graphView == m_SelectedGraphView
+                            ? DropdownMenuAction.Status.Checked
+                            : (gvc.canUse
+                                ? DropdownMenuAction.Status.Normal
+                                : DropdownMenuAction.Status.Disabled));
+                    },
                     graphView);
             }
         }
@@ -161,15 +204,10 @@ namespace UnityEditor.Experimental.GraphView
         {
             OnGraphViewChanging();
             m_SelectedGraphView = choice?.graphView;
-            if (m_SelectedGraphView != null)
-                m_SelectorMenu.text = m_SelectedGraphView.name;
-            else
-                m_SelectorMenu.text = "Select a panel";
-
             m_SelectedWindow = choice?.window;
             m_SelectedGraphViewIdx = choice?.idx ?? -1;
-
             OnGraphViewChanged();
+            UpdateGraphViewName();
         }
 
         // Called just before the change.
@@ -181,6 +219,16 @@ namespace UnityEditor.Experimental.GraphView
         protected virtual bool IsGraphViewSupported(GraphView gv)
         {
             return false;
+        }
+
+        void UpdateGraphViewName()
+        {
+            string updatedName = k_DefaultSelectorName;
+            if (m_SelectedGraphView != null)
+                updatedName = m_SelectedGraphView.name;
+
+            if (m_SelectorMenu.text != updatedName)
+                m_SelectorMenu.text = updatedName;
         }
     }
 }

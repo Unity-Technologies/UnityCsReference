@@ -6,15 +6,15 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
 using System.Linq;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
     internal class VisualTreeBindingsUpdater : BaseVisualTreeHierarchyTrackerUpdater
     {
-        public override string description
-        {
-            get { return "Update Bindings"; }
-        }
+        private static readonly string s_Description = "Update Bindings";
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         private readonly HashSet<VisualElement> m_ElementsWithBindings = new HashSet<VisualElement>();
         private readonly HashSet<VisualElement> m_ElementsToAdd = new HashSet<VisualElement>();

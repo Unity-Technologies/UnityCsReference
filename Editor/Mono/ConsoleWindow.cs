@@ -237,7 +237,10 @@ namespace UnityEditor
             if (ms_ConsoleWindow == null)
             {
                 ms_ConsoleWindow = ScriptableObject.CreateInstance<ConsoleWindow>();
-                ms_ConsoleWindow.Show(immediate);
+                if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
+                    ms_ConsoleWindow.Show(immediate);
+                else
+                    ms_ConsoleWindow.ShowModalUtility();
                 ms_ConsoleWindow.Focus();
             }
             else

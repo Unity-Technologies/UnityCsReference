@@ -196,37 +196,59 @@ namespace UnityEditor
             zGrid.fade.target = _zGrid;
         }
 
-        internal void ApplySnapConstraints()
+        internal void ApplySnapConstraintsInPerspectiveMode()
         {
             switch (gridAxis)
             {
                 case GridRenderAxis.X:
-                    xGrid.size = new Vector2(
-                        EditorSnapSettings.move.y,
-                        EditorSnapSettings.move.z);
+                    ApplySnapContraintsOnXAxis();
                     break;
                 case GridRenderAxis.Y:
-                    yGrid.size = new Vector2(
-                        EditorSnapSettings.move.z,
-                        EditorSnapSettings.move.x);
+                    ApplySnapContraintsOnYAxis();
                     break;
                 case GridRenderAxis.Z:
-                    zGrid.size = new Vector2(
-                        EditorSnapSettings.move.x,
-                        EditorSnapSettings.move.y);
+                    ApplySnapContraintsOnZAxis();
                     break;
             }
+        }
+
+        internal void ApplySnapConstraintsInOrthogonalMode()
+        {
+            if (xGrid.fade.target)
+                ApplySnapContraintsOnXAxis();
+            if (yGrid.fade.target)
+                ApplySnapContraintsOnYAxis();
+            if (zGrid.fade.target)
+                ApplySnapContraintsOnZAxis();
+        }
+
+        void ApplySnapContraintsOnXAxis()
+        {
+            xGrid.size = new Vector2(EditorSnapSettings.move.y, EditorSnapSettings.move.z);
+        }
+
+        void ApplySnapContraintsOnYAxis()
+        {
+            yGrid.size = new Vector2(EditorSnapSettings.move.z, EditorSnapSettings.move.x);
+        }
+
+        void ApplySnapContraintsOnZAxis()
+        {
+            zGrid.size = new Vector2(EditorSnapSettings.move.x, EditorSnapSettings.move.y);
         }
 
         internal DrawGridParameters PrepareGridRender(Camera camera, Vector3 pivot, Quaternion rotation,
             float size, bool orthoMode)
         {
             UpdateGridsVisibility(rotation, orthoMode);
-            ApplySnapConstraints();
 
             if (orthoMode)
+            {
+                ApplySnapConstraintsInOrthogonalMode();
                 return PrepareGridRenderOrthogonalMode(camera, pivot, rotation, size);
+            }
 
+            ApplySnapConstraintsInPerspectiveMode();
             return PrepareGridRenderPerspectiveMode(camera, pivot, rotation, size);
         }
 

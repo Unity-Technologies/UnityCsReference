@@ -133,6 +133,9 @@ namespace UnityEditor.StyleSheets
 
         internal static GUIStyle FromUSS(string ussStyleRuleName, string ussInPlaceStyleOverride = null, GUISkin srcSkin = null)
         {
+            if (GUISkin.current == null)
+                return null;
+
             // Check if the style already exists in skin
             var blockName = RuleNameToBlockName(ussStyleRuleName);
             var styleName = ConverterUtils.ToStyleName(ussStyleRuleName);

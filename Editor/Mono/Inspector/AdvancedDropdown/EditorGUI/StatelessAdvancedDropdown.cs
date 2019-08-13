@@ -118,6 +118,35 @@ namespace UnityEditor
             return selectedIndex;
         }
 
+        internal static int DoLazySearchablePopup(Rect rect, string selectedOption, int selectedIndex, Func<Tuple<int, string[]>> displayedOptionsFunc, GUIStyle style)
+        {
+            var content = new GUIContent(selectedOption);
+
+            int id = EditorGUIUtility.GetControlID("AdvancedDropdown".GetHashCode(), FocusType.Keyboard, rect);
+            if (EditorGUI.DropdownButton(id, rect, content, style))
+            {
+                s_CurrentControl = id;
+                ResetAndCreateWindow();
+
+                var displayData = displayedOptionsFunc.Invoke();
+                InitSearchableWindow(rect, content.text, displayData.Item1, displayData.Item2);
+
+                s_Instance.windowClosed += w =>
+                {
+                    m_Result = w.GetSelectedItem().elementIndex;
+                    m_WindowClosed = true;
+                };
+            }
+            if (m_WindowClosed && s_CurrentControl == id)
+            {
+                s_CurrentControl = 0;
+                m_WindowClosed = false;
+                return m_Result;
+            }
+
+            return selectedIndex;
+        }
+
         public static int DoPopup(Rect rect, int selectedIndex, GUIContent[] displayedOptions)
         {
             GUIContent content = GUIContent.none;

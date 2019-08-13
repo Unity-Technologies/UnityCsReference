@@ -873,6 +873,7 @@ namespace UnityEditor
         {
             get
             {
+                Verify(VerifyFlags.IteratorNotAtEnd);
                 return GetPPtrValueFromInstanceIDInternal();
             }
             set

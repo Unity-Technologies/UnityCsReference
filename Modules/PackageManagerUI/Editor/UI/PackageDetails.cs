@@ -107,14 +107,11 @@ namespace UnityEditor.PackageManager.UI
             removeButton.clickable.clicked += RemoveClick;
             importButton.clickable.clicked += ImportClick;
             downloadButton.clickable.clicked += DownloadOrCancelClick;
+            editButton.clickable.clicked += EditPackageManifestClick;
             detailDescMore.clickable.clicked += DescMoreClick;
             detailDescLess.clickable.clicked += DescLessClick;
 
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
-
-            var editManifestIconButton = new IconButton(Resources.GetIconPath("edit"));
-            editManifestIconButton.clickable.clicked += EditPackageManifestClick;
-            editPackageManifestButton.Add(editManifestIconButton);
 
             GetTagLabel(PackageTag.Verified).text = ApplicationUtil.instance.shortUnityVersion + " verified";
         }
@@ -126,7 +123,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var onlyContainsCurrentPackageManifest = Selection.count == 1 && Selection.Contains(manifestAsset);
-            editPackageManifestButton.SetEnabled(!onlyContainsCurrentPackageManifest);
+            editButton.SetEnabled(!onlyContainsCurrentPackageManifest);
         }
 
         public UnityEngine.Object GetDisplayPackageManifestAsset()
@@ -146,7 +143,7 @@ namespace UnityEditor.PackageManager.UI
                 Selection.activeObject = manifestAsset;
         }
 
-        public void Setup()
+        public void OnEnable()
         {
             ApplicationUtil.instance.onFinishCompiling += RefreshPackageActionButtons;
 
@@ -158,7 +155,6 @@ namespace UnityEditor.PackageManager.UI
 
             PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
 
-
             PageManager.instance.onPageRebuild += page => OnSelectionChanged(PageManager.instance.GetSelectedVersion());
             PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
@@ -168,6 +164,22 @@ namespace UnityEditor.PackageManager.UI
             OnSelectionChanged(PageManager.instance.GetSelectedVersion());
 
             Selection.selectionChanged += OnEditorSelectionChanged;
+        }
+
+        public void OnDisable()
+        {
+            ApplicationUtil.instance.onFinishCompiling -= RefreshPackageActionButtons;
+
+            PackageDatabase.instance.onPackageOperationStart -= OnOperationStartOrFinish;
+            PackageDatabase.instance.onPackageOperationFinish -= OnOperationStartOrFinish;
+
+            PackageDatabase.instance.onDownloadProgress -= OnDownloadProgress;
+
+            PageManager.instance.onSelectionChanged -= OnSelectionChanged;
+
+            Selection.selectionChanged -= OnEditorSelectionChanged;
+
+            ClearSupportingImages();
         }
 
         private void OnDownloadProgress(IPackage package, DownloadProgress progress)
@@ -265,7 +277,7 @@ namespace UnityEditor.PackageManager.UI
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag), displayVersion.HasTag(tag));
 
-                UIUtils.SetElementDisplay(editPackageManifestButton, displayVersion.isInstalled && !displayVersion.HasTag(PackageTag.BuiltIn));
+                UIUtils.SetElementDisplay(editButton, displayVersion.isInstalled && !displayVersion.HasTag(PackageTag.BuiltIn));
 
                 sampleList.SetPackageVersion(displayVersion);
 
@@ -419,9 +431,19 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(detailLinksContainer, displayVersion.links.Any());
                 foreach (var link in displayVersion.links)
                 {
-                    var url = $"{AssetStoreUtils.instance.assetStoreUrl}{link.url}";
+                    var tooltip = link.url;
+                    var url = link.url;
+                    if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
+                    {
+                        url = AssetStoreUtils.instance.assetStoreUrl + url;
+                        tooltip = string.Empty;
+                    }
                     detailLinks.Add(new Button(() => { ApplicationUtil.instance.OpenURL(url); })
-                        { text = link.name, classList = { "unity-button", "link" }});
+                    {
+                        text = link.name,
+                        tooltip = tooltip,
+                        classList = { "unity-button", "link" }
+                    });
                 }
             }
         }
@@ -445,10 +467,24 @@ namespace UnityEditor.PackageManager.UI
                 detailSizes.Add(new Label($"Size: {UIUtils.convertToHumanReadableSize(sizeInfo.downloadSize)} (Number of files: {sizeInfo.assetCount})"));
         }
 
+        private void ClearSupportingImages()
+        {
+            foreach (var elt in detailImages.Children())
+            {
+                if (elt is Label &&
+                    elt.style.backgroundImage.value.texture != null &&
+                    elt.style.backgroundImage.value.texture != s_LoadingTexture)
+                {
+                    UnityEngine.Object.DestroyImmediate(elt.style.backgroundImage.value.texture);
+                }
+            }
+            detailImages.Clear();
+        }
+
         private void RefreshSupportingImages()
         {
             UIUtils.SetElementDisplay(detailImagesContainer, displayVersion.images.Any());
-            detailImages.Clear();
+            ClearSupportingImages();
 
             if (s_LoadingTexture == null)
                 s_LoadingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
@@ -472,7 +508,10 @@ namespace UnityEditor.PackageManager.UI
                     AssetStoreDownloadOperation.instance.DownloadImageAsync(id, packageImage.thumbnailUrl, (retId, texture) =>
                     {
                         if (retId.ToString() == displayVersion?.uniqueId)
+                        {
+                            texture.hideFlags = HideFlags.HideAndDontSave;
                             image.style.backgroundImage = texture;
+                        }
                     });
                 }
             }
@@ -481,9 +520,6 @@ namespace UnityEditor.PackageManager.UI
         public void SetPackage(IPackage package, IPackageVersion version = null)
         {
             version = version ?? package?.primaryVersion;
-            if (package == this.package && version == displayVersion)
-                return;
-
             this.package = package;
             ShowVersion(version);
         }
@@ -604,7 +640,8 @@ namespace UnityEditor.PackageManager.UI
 
             importButton.text = GetButtonText(PackageAction.Import);
 
-            var downloadInProgress = PackageDatabase.instance.IsDownloadInProgress(displayVersion);
+            var progress = PackageDatabase.instance.GetDownloadProgress(displayVersion);
+            var downloadInProgress = progress != null && (progress.state == DownloadProgress.State.InProgress || progress.state == DownloadProgress.State.Started);
             downloadButton.text = GetButtonText(package.state == PackageState.Outdated ? PackageAction.Upgrade : PackageAction.Download, downloadInProgress);
 
             var enableButton = !ApplicationUtil.instance.isCompiling;
@@ -616,7 +653,9 @@ namespace UnityEditor.PackageManager.UI
             var notOnDiskOrUpgradeAvailable = !displayVersion.isAvailableOnDisk || package.state == PackageState.Outdated;
             downloadButton.SetEnabled(enableButton && notOnDiskOrUpgradeAvailable);
 
-            if (!downloadInProgress)
+            if (downloadInProgress)
+                downloadProgress.SetProgress(progress.total == 0 ? 0 : progress.current / (float)progress.total);
+            else
                 downloadProgress.Hide();
         }
 
@@ -882,13 +921,13 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
         private PackageDependencies dependencies { get {return cache.Get<PackageDependencies>("detailDependencies");} }
-        private VisualElement packageToolbarContainer { get {return cache.Get<VisualElement>("toolbarContainer");} }
+        internal VisualElement packageToolbarContainer { get {return cache.Get<VisualElement>("toolbarContainer");} }
         private VisualElement packageToolbarLeftArea { get {return cache.Get<VisualElement>("leftItems");} }
         internal Button updateButton { get { return cache.Get<Button>("update"); } }
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
         private Button importButton { get { return cache.Get<Button>("import"); } }
         private Button downloadButton { get { return cache.Get<Button>("download"); } }
-        private VisualElement editPackageManifestButton { get { return cache.Get<VisualElement>("editPackageManifest"); } }
+        private Button editButton { get { return cache.Get<Button>("editButton"); } }
         private ProgressBar downloadProgress { get { return cache.Get<ProgressBar>("downloadProgress"); } }
         private VisualElement detailCategories { get { return cache.Get<VisualElement>("detailCategories"); } }
         private VisualElement detailUnityVersionsContainer { get { return cache.Get<VisualElement>("detailUnityVersionsContainer"); } }

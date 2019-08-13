@@ -21,6 +21,7 @@ namespace Unity.Profiling
         [NativeDisableUnsafePtrRestriction]
         internal readonly IntPtr m_Ptr;
 
+        // 256 : Aggressive inlining
         [MethodImpl(256)]
         public ProfilerMarker(string name)
         {
@@ -46,6 +47,12 @@ namespace Unity.Profiling
         public void End()
         {
             Internal_End(m_Ptr);
+        }
+
+        [Conditional("ENABLE_PROFILER")]
+        internal void GetName(ref string name)
+        {
+            name = Internal_GetName(m_Ptr);
         }
 
         [UsedByNativeCode]
@@ -89,5 +96,9 @@ namespace Unity.Profiling
         [ThreadSafe]
         [NativeConditional("ENABLE_PROFILER")]
         static extern void Internal_End(IntPtr markerPtr);
+
+        [ThreadSafe]
+        [NativeConditional("ENABLE_PROFILER")]
+        static extern string Internal_GetName(IntPtr markerPtr);
     }
 }

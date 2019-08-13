@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine.Profiling;
 
 namespace UnityEngine.UIElements
@@ -71,14 +72,14 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < (int)VisualTreeUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
-                Profiler.BeginSample(updater.description);
+                updater.profilerMarker.Begin();
                 try
                 {
                     updater.Update();
                 }
                 finally
                 {
-                    Profiler.EndSample();
+                    updater.profilerMarker.End();
                 }
             }
         }
@@ -87,14 +88,14 @@ namespace UnityEngine.UIElements
         {
             var updater = m_UpdaterArray[phase];
 
-            Profiler.BeginSample(updater.description);
+            updater.profilerMarker.Begin();
             try
             {
                 updater.Update();
             }
             finally
             {
-                Profiler.EndSample();
+                updater.profilerMarker.End();
             }
         }
 
@@ -149,7 +150,7 @@ namespace UnityEngine.UIElements
     {
         BaseVisualElementPanel panel { get; set; }
 
-        string description { get; }
+        ProfilerMarker profilerMarker { get; }
 
         void Update();
         void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType);
@@ -172,7 +173,7 @@ namespace UnityEngine.UIElements
 
         public VisualElement visualTree { get { return panel.visualTree; } }
 
-        public abstract string description { get; }
+        public abstract ProfilerMarker profilerMarker { get; }
 
         public void Dispose()
         {

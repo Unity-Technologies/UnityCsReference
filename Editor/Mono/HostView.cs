@@ -41,6 +41,8 @@ namespace UnityEditor
                 return;
             DeregisterSelectedPane(clearActualView: true, sendEvents: true);
             m_ActualView = value;
+            name = GetViewName();
+            SetActualViewName(name);
             RegisterSelectedPane(sendEvents);
             actualViewChanged?.Invoke(this);
         }

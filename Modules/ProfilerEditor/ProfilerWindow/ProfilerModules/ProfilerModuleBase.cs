@@ -47,7 +47,7 @@ namespace UnityEditorInternal.Profiling
 
         protected static void DrawOtherToolbar(ProfilerArea? area)
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }

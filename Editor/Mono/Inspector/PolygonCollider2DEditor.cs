@@ -5,7 +5,8 @@
 using UnityEngine;
 using System;
 using System.Linq;
-using UnityEditorInternal;
+using UnityEditor.EditorTools;
+using UnityEditor.IMGUI.Controls;
 
 namespace UnityEditor
 {
@@ -13,9 +14,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class PolygonCollider2DEditor : Collider2DEditorBase
     {
-        private readonly PolygonEditorUtility m_PolyUtility = new PolygonEditorUtility();
-
-        private SerializedProperty m_Points;
+        SerializedProperty m_Points;
 
         public override void OnEnable()
         {
@@ -30,15 +29,19 @@ namespace UnityEditor
         {
             // Start a vertical group which we'll use to note the layout rect as a drag-drop target.
             EditorGUILayout.BeginVertical();
+
             bool disableEditCollider = !CanEditCollider();
+
             if (disableEditCollider)
             {
                 EditorGUILayout.HelpBox(Styles.s_ColliderEditDisableHelp.text, MessageType.Info);
-                if (editingCollider)
-                    EditMode.QuitEditMode();
+                if (EditorTools.EditorTools.activeToolType == typeof(PolygonCollider2DTool))
+                    EditorTools.EditorTools.RestorePreviousPersistentTool();
             }
             else
+            {
                 BeginColliderInspector();
+            }
 
             // Grab this as the offset to the top of the drag target.
             base.OnInspectorGUI();
@@ -86,11 +89,11 @@ namespace UnityEditor
                         for (int i = 0; i < paths.Length; ++i)
                             collider.SetPath(i, paths[i]);
 
-                        // Stop editing
-                        m_PolyUtility.StopEditing();
-
                         DragAndDrop.AcceptDrag();
                     }
+
+                    if (EditorTools.EditorTools.activeToolType == typeof(PolygonCollider2DTool))
+                        EditorTools.EditorTools.RestorePreviousPersistentTool();
                 }
 
                 return;
@@ -98,27 +101,57 @@ namespace UnityEditor
 
             DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
         }
+    }
 
-        protected override void OnEditStart()
+    [EditorTool("Edit Polygon Collider 2D", typeof(PolygonCollider2D))]
+    class PolygonCollider2DTool : EditorTool
+    {
+        public override GUIContent toolbarIcon
         {
-            // We don't support multiselection editing
-            if (target == null)
-                return;
-
-            m_PolyUtility.StartEditing(target as Collider2D);
+            get { return PrimitiveBoundsHandle.editModeButton; }
         }
 
-        protected override void OnEditEnd()
+        internal readonly PolygonEditorUtility polyUtility = new PolygonEditorUtility();
+
+        public void OnEnable()
         {
-            m_PolyUtility.StopEditing();
+            EditorTools.EditorTools.activeToolChanged += OnActiveToolChanged;
+            EditorTools.EditorTools.activeToolChanging += OnActiveToolChanging;
         }
 
-        public void OnSceneGUI()
+        public void OnDisable()
         {
-            if (!editingCollider)
-                return;
+            EditorTools.EditorTools.activeToolChanged -= OnActiveToolChanged;
+            EditorTools.EditorTools.activeToolChanging -= OnActiveToolChanging;
+        }
 
-            m_PolyUtility.OnSceneGUI();
+        public override void OnToolGUI(EditorWindow window)
+        {
+            polyUtility.OnSceneGUI();
+        }
+
+        void OnActiveToolChanged()
+        {
+            // We don't support multi-selection editing
+            if (EditorTools.EditorTools.IsActiveTool(this) && target != null)
+                polyUtility.StartEditing(target as Collider2D);
+        }
+
+        void OnActiveToolChanging()
+        {
+            if (EditorTools.EditorTools.IsActiveTool(this))
+                polyUtility.StopEditing();
+        }
+
+        public override bool IsAvailable()
+        {
+            return targets.Count() == 1 && !targets.FirstOrDefault((x) =>
+            {
+                var sr = (x as Component).GetComponent<SpriteRenderer>();
+                var cd = (x as Component).GetComponent<PolygonCollider2D>();
+                return (sr != null && sr.drawMode != SpriteDrawMode.Simple && cd.autoTiling);
+            }
+            );
         }
     }
 }

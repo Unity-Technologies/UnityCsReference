@@ -216,6 +216,11 @@ namespace UnityEngine
             get { return GetGraphicsMultiThreaded(); }
         }
 
+        public static Rendering.RenderingThreadingMode renderingThreadingMode
+        {
+            get { return GetRenderingThreadingMode(); }
+        }
+
         public static bool hasHiddenSurfaceRemovalOnGPU
         {
             get { return HasHiddenSurfaceRemovalOnGPU(); }
@@ -635,6 +640,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsMultiThreaded")]
         static extern bool GetGraphicsMultiThreaded();
 
+        [FreeFunction("ScriptingGraphicsCaps::GetRenderingThreadingMode")]
+        static extern Rendering.RenderingThreadingMode GetRenderingThreadingMode();
+
         [FreeFunction("ScriptingGraphicsCaps::HasHiddenSurfaceRemovalOnGPU")]
         static extern bool HasHiddenSurfaceRemovalOnGPU();
 
@@ -856,6 +864,8 @@ namespace UnityEngine
         public static int graphicsShaderLevel => ShimManager.SystemInfoShim.graphicsShaderLevel;
 
         public static bool graphicsMultiThreaded => ShimManager.SystemInfoShim.graphicsMultiThreaded;
+
+        public static Rendering.RenderingThreadingMode renderingThreadingMode => ShimManager.SystemInfoShim.renderingThreadingMode;
 
         public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.SystemInfoShim.hasHiddenSurfaceRemovalOnGPU;
 

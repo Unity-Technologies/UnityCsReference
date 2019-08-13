@@ -34,6 +34,7 @@ namespace UnityEditor
             ReflectionEmitDisabled          = (1 << 9),
             OSFontsDisabled                 = (1 << 10),
             NoDefaultUnityFonts             = (1 << 11),
+            [Obsolete("Facebook support was removed in 2019.3")]
             SupportsFacebook                = (1 << 12),
             WarnForMouseEvents              = (1 << 13),
             HideInUI                        = (1 << 14),
@@ -128,9 +129,6 @@ namespace UnityEditor
 
         public static string GetBuildTargetNiceName(BuildTarget platform, BuildTargetGroup buildTargetGroup = BuildTargetGroup.Unknown)
         {
-            if (PlatformHasFlag(platform, TargetAttributes.SupportsFacebook) && buildTargetGroup == BuildTargetGroup.Facebook)
-                return "Facebook";
-
             return GetNiceNameByBuildTarget(platform);
         }
 

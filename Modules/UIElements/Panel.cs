@@ -37,6 +37,8 @@ namespace UnityEngine.UIElements
         Size = 1 << 9,
         // The visuals of the element have changed
         Repaint = 1 << 10,
+        // The opacity of the element have changed
+        Opacity = 1 << 11,
     }
 
     [Flags]
@@ -104,13 +106,6 @@ namespace UnityEngine.UIElements
         void PostProcessEvent(EventBase ev);
     }
 
-    // This is the required interface to IPanel for Runtime game components.
-    internal interface IRuntimePanel
-    {
-        void Update(Vector2 size);
-        void Repaint(Event e);
-    }
-
     // Passed-in to every element of the visual tree
     public interface IPanel : IDisposable
     {
@@ -125,7 +120,7 @@ namespace UnityEngine.UIElements
         ContextualMenuManager contextualMenuManager { get; }
     }
 
-    abstract class BaseVisualElementPanel : IPanel, IRuntimePanel
+    abstract class BaseVisualElementPanel : IPanel
     {
         public abstract EventInterests IMGUIEventInterests { get; set; }
         public abstract ScriptableObject ownerObject { get; protected set; }
@@ -153,8 +148,8 @@ namespace UnityEngine.UIElements
                     panelDebug.DetachAllDebuggers();
                     panelDebug = null;
                 }
-
-                UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
+                if (ownerObject != null)
+                    UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
             }
             else
                 DisposeHelper.NotifyMissingDispose(this);
@@ -169,8 +164,40 @@ namespace UnityEngine.UIElements
         public abstract void ApplyStyles();
 
         public abstract void DirtyStyleSheets();
+        private float m_Scale = 1;
+        internal float scale
+        {
+            get { return m_Scale; }
+            set
+            {
+                if (!Mathf.Approximately(m_Scale, value))
+                {
+                    m_Scale = value;
+                    // if the surface DPI changes we need to invalidate styles
+                    visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+                }
+            }
+        }
 
-        internal float currentPixelsPerPoint { get; set; } = 1.0f;
+        private float m_PixelsPerPoint = 1;
+        internal float pixelsPerPoint
+        {
+            get { return m_PixelsPerPoint; }
+            set
+            {
+                if (!Mathf.Approximately(m_PixelsPerPoint, value))
+                {
+                    m_PixelsPerPoint = value;
+                    // if the surface DPI changes we need to invalidate styles
+                    visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+                }
+            }
+        }
+
+        public float scaledPixelsPerPoint
+        {
+            get { return m_PixelsPerPoint * m_Scale; }
+        }
 
         internal bool duringLayoutPhase {get; set;}
 
@@ -191,6 +218,14 @@ namespace UnityEngine.UIElements
         internal virtual ICursorManager cursorManager { get; set; }
         public ContextualMenuManager contextualMenuManager { get; internal set; }
 
+        internal Matrix4x4 GetProjection()
+        {
+            var rect = visualTree.layout;
+            return Matrix4x4.Ortho(rect.xMin, rect.xMax, rect.yMax, rect.yMin, -1, 1);
+        }
+
+        internal Rect GetViewport() { return visualTree.layout; }
+
         //IPanel
         public abstract VisualElement visualTree { get; }
         public abstract EventDispatcher dispatcher { get; protected set; }
@@ -207,8 +242,6 @@ namespace UnityEngine.UIElements
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
         internal bool disposed { get; private set; }
-        internal bool allowPixelCaching { get; set; }
-        public abstract bool keepPixelCacheOnWorldBoundChange { get; set; }
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
@@ -262,15 +295,9 @@ namespace UnityEngine.UIElements
 
         public IPanelDebug panelDebug { get; set; }
 
-        public void Update(Vector2 size)
+        public void Update()
         {
             scheduler.UpdateScheduledEvents();
-
-            if (size != visualTree.layout.size)
-            {
-                visualTree.SetSize(size);
-            }
-
             ValidateLayout();
             UpdateBindings();
         }
@@ -418,30 +445,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool m_KeepPixelCacheOnWorldBoundChange;
-        public override bool keepPixelCacheOnWorldBoundChange
-        {
-            get { return m_KeepPixelCacheOnWorldBoundChange; }
-            set
-            {
-                if (m_KeepPixelCacheOnWorldBoundChange == value)
-                    return;
-
-                m_KeepPixelCacheOnWorldBoundChange = value;
-
-                // We only need to force a repaint if this flag was set from
-                // true (do NOT update pixel cache) to false (update pixel cache).
-                // When it was true, the pixel cache was just being transformed and
-                // now we want to regenerate it at the correct resolution. Going from
-                // false to true does not need a repaint because the pixel cache is
-                // already valid (was being updated each transform repaint).
-                if (!value)
-                {
-                    m_RootContainer.IncrementVersion(VersionChangeType.Transform | VersionChangeType.Repaint);
-                }
-            }
-        }
-
         public override int IMGUIContainersCount { get; set; }
 
         internal override uint version
@@ -498,7 +501,6 @@ namespace UnityEngine.UIElements
             m_ProfileBindingsName = "PanelBindings";
             m_ProfileAnimationsName = "PanelAnimations";
 
-            allowPixelCaching = true;
             InvokeHierarchyChanged(visualTree, HierarchyChangeType.Add);
         }
 
@@ -659,16 +661,14 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
-            Debug.Assert(GUIClip.Internal_GetCount() == 0, "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
+            if (contextType == ContextType.Editor)
+                Debug.Assert(GUIClip.Internal_GetCount() == 0, "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
 
             m_RepaintVersion = version;
 
-            // if the surface DPI changes we need to invalidate styles
-            if (!Mathf.Approximately(currentPixelsPerPoint, GUIUtility.pixelsPerPoint))
-            {
-                currentPixelsPerPoint = GUIUtility.pixelsPerPoint;
-                visualTree.IncrementVersion(VersionChangeType.StyleSheet);
-            }
+            // in an in-game context, pixelsPerPoint is user driven
+            if (contextType == ContextType.Editor)
+                pixelsPerPoint = GUIUtility.pixelsPerPoint;
 
             repaintData.repaintEvent = e;
             Profiler.BeginSample(m_ProfileUpdateName);
@@ -700,6 +700,31 @@ namespace UnityEngine.UIElements
         internal override IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase)
         {
             return m_VisualTreeUpdater.GetUpdater(phase);
+        }
+    }
+
+    internal class RuntimePanel : Panel
+    {
+        public RuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
+            : base(ownerObject, ContextType.Player, dispatcher) {}
+
+        // we may provide a rendertexture to be used for world space rendering
+        internal RenderTexture targetTexture = null;
+
+        public override void Repaint(Event e)
+        {
+            // if the renderTarget is not set, we simply render on whatever target is currently set
+            if (targetTexture == null)
+            {
+                base.Repaint(e);
+                return;
+            }
+
+            var toBeRestoredTarget = RenderTexture.active;
+            RenderTexture.active = targetTexture;
+            GL.Clear(true, true, Color.clear);
+            base.Repaint(e);
+            RenderTexture.active = toBeRestoredTarget;
         }
     }
 }

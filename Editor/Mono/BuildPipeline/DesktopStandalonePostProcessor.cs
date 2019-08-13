@@ -401,18 +401,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return result;
     }
 
-    protected static void CopyResolutionDialogBanner(string destinationFolder)
-    {
-#pragma warning disable 618
-        var bannerTexture = PlayerSettings.resolutionDialogBanner;
-        if (bannerTexture != null)
-        {
-            var path = Path.Combine(destinationFolder, "ScreenSelector.png");
-            IconUtility.SaveTextureToFile(path, bannerTexture, StringToFourCC("PNGf"));
-        }
-#pragma warning restore 618
-    }
-
     protected string GetVariationFolder(BuildPostProcessArgs args) =>
         Paths.Combine(args.playerPackage, "Variations", GetVariationName(args));
 

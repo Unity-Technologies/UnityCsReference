@@ -515,6 +515,7 @@ namespace UnityEditor
 
             internal void OnGuiVertical(BuildTargetGroup platform)
             {
+                EditorGUILayout.BeginVertical();
                 foreach (GraphicsTier tier in Enum.GetValues(typeof(GraphicsTier)))
                 {
                     bool autoSettings = EditorGraphicsSettings.AreTierSettingsAutomatic(platform, tier);
@@ -554,13 +555,14 @@ namespace UnityEditor
                         EditorGUI.indentLevel--;
                     }
                 }
+                GUILayout.EndVertical();
                 EditorGUIUtility.labelWidth = 0;
             }
 
             public override void OnInspectorGUI()
             {
                 BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().ToArray();
-                BuildTargetGroup platform = validPlatforms[EditorGUILayout.BeginPlatformGrouping(validPlatforms, null, GUIStyle.none)].targetGroup;
+                BuildTargetGroup platform = validPlatforms[EditorGUILayout.BeginPlatformGrouping(validPlatforms, null, EditorStyles.frameBox)].targetGroup;
 
                 if (verticalLayout)  OnGuiVertical(platform);
                 else                OnGuiHorizontal(platform);

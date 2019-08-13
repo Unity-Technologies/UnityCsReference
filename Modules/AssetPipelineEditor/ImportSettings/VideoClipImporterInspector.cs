@@ -159,10 +159,12 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("preAudioPlayOff"),
                 EditorGUIUtility.IconContent("preAudioPlayOn")
             };
+            public GUIContent globalTranscodeOptionsContent = EditorGUIUtility.TextContent(
+                "Global Transcode Options");
             public GUIContent keepAlphaContent = EditorGUIUtility.TextContent(
-                "Keep Alpha|If the source clip has alpha, this will encode it in the resulting clip so that transparency is usable during render.");
+                "Keep Alpha|If the source clip has alpha, it will be preserved during transcoding so that transparency is usable during render.");
             public GUIContent deinterlaceContent = EditorGUIUtility.TextContent(
-                "Deinterlace|Remove interlacing on this video.");
+                "Deinterlace|Remove interlacing on this video during transcoding.");
             public GUIContent flipHorizontalContent = EditorGUIUtility.TextContent(
                 "Flip Horizontally|Flip the video horizontally during transcoding.");
             public GUIContent flipVerticalContent = EditorGUIUtility.TextContent(
@@ -187,6 +189,8 @@ namespace UnityEditor
                 "Spatial Quality|Adds a downsize during import to reduce bitrate using resolution.");
             public GUIContent transcodeWarning = EditorGUIUtility.TextContent(
                 "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");
+            public GUIContent transcodeOptionsWarning = EditorGUIUtility.TextContent(
+                "Global transcode options are not applied on all platforms. You must enable \"Transcode\" for these to take effect.");
             public GUIContent transcodeSkippedWarning = EditorGUIUtility.TextContent(
                 "Transcode was skipped. Current clip does not match import settings. Reimport to resolve.");
             public GUIContent multipleTranscodeSkippedWarning = EditorGUIUtility.TextContent(
@@ -301,6 +305,37 @@ namespace UnityEditor
             return false;
         }
 
+        private bool AnyUnappliedGlobalTranscodeOptions()
+        {
+            // Scan through all selected clips (eg. multi-select)
+            for (var i = 0; i < targets.Length; i++)
+            {
+                // Check "global" (eg. non-platform specific options) for any that actually apply
+                // non trivial processing during transcode.
+                var importer = targets[i] as VideoClipImporter;
+                if (importer != null &&
+                    (importer.flipHorizontal ||
+                     importer.flipVertical ||
+                     importer.deinterlaceMode != VideoDeinterlaceMode.Off ||
+                     (!importer.importAudio && importer.sourceAudioTrackCount > 0) ||
+                     (!importer.keepAlpha && importer.sourceHasAlpha)))
+                {
+                    // Check all platform-specific options to see if any platform has transcoding
+                    // disabled.
+                    var settings = extraDataTargets[i] as TargetSettings;
+                    if (settings != null)
+                    {
+                        foreach (var setting in settings.allSettings)
+                        {
+                            if (setting.overridePlatform && !setting.settings.enableTranscoding)
+                                return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         private void OnCrossTargetInspectorGUI()
         {
             bool sourcesHaveAlpha = true;
@@ -318,10 +353,16 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
                 m_ColorSpace.enumValueIndex = (int)(sRGB ? VideoColorSpace.sRGB : VideoColorSpace.Linear);
 
-            if (sourcesHaveAlpha)
-                EditorGUILayout.PropertyField(m_EncodeAlpha, s_Styles.keepAlphaContent);
-
             EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField(s_Styles.globalTranscodeOptionsContent, EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
+            if (sourcesHaveAlpha)
+            {
+                EditorGUILayout.PropertyField(m_EncodeAlpha, s_Styles.keepAlphaContent);
+                EditorGUILayout.Space();
+            }
 
             EditorGUILayout.PropertyField(m_Deinterlace, s_Styles.deinterlaceContent);
             EditorGUILayout.Space();
@@ -334,6 +375,8 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_ImportAudio, s_Styles.importAudioContent);
             }
+
+            EditorGUI.indentLevel--;
         }
 
         private void FrameSettingsGUI(SerializedProperty videoImporterTargetSettings)
@@ -520,6 +563,10 @@ namespace UnityEditor
             // Warn the user if there is no transcoding happening on at least one platform
             if (AnySettingsNotTranscoded())
                 EditorGUILayout.HelpBox(s_Styles.transcodeWarning.text, MessageType.Info);
+
+            // Warn the user if any of the global transcode settings are on, but transcoding isn't applied
+            if (AnyUnappliedGlobalTranscodeOptions())
+                EditorGUILayout.HelpBox(s_Styles.transcodeOptionsWarning.text, MessageType.Warning);
 
             foreach (var t in targets)
             {

@@ -103,16 +103,9 @@ namespace UnityEditor.Compilation
     {
         public string[] Defines;
         public string[] FullPathReferences;
-        public ResponseFileReference[] References;
         public string[] Errors;
         public string[] OtherArguments;
         public bool Unsafe;
-    }
-
-    public struct ResponseFileReference
-    {
-        public string FullPathReference;
-        public string Alias;
     }
 
     public struct AssemblyDefinitionPlatform

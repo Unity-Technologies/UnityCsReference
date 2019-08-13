@@ -108,6 +108,9 @@ namespace UnityEditor
 
         // Only needed internally for AssetBundleStripUnityVersion
         //StripUnityVersion = 1 << 27
+
+        // Enable C# code instrumentation for the player.
+        EnableDeepProfilingSupport = 1 << 28
     }
 
     // Asset Bundle building options.

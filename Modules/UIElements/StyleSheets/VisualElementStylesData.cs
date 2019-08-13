@@ -239,43 +239,42 @@ namespace UnityEngine.UIElements.StyleSheets
 
         internal void ApplyProperties(StylePropertyReader reader, InheritedStylesData inheritedStylesData)
         {
-            while (reader.IsValid())
+            for (var propertyID = reader.propertyID; propertyID != StylePropertyID.Unknown; propertyID = reader.MoveNextProperty())
             {
-                var styleProperty = reader.property;
-                var propertyID = reader.propertyID;
-
-                if (reader.IsKeyword(0, StyleValueKeyword.Initial))
+                var handle = reader.GetValue(0).handle;
+                if (handle.valueType == StyleValueType.Keyword)
                 {
-                    ApplyInitialStyleValue(reader);
-                }
-                else if (reader.IsKeyword(0, StyleValueKeyword.Unset) && inheritedStylesData != null)
-                {
-                    ApplyUnsetStyleValue(reader, inheritedStylesData);
-                }
-                else
-                {
-                    switch (propertyID)
+                    if ((StyleValueKeyword)handle.valueIndex == StyleValueKeyword.Initial)
                     {
-                        case StylePropertyID.Unknown:
-                            break;
-                        case StylePropertyID.Custom:
-                            ApplyCustomStyleProperty(reader);
-                            break;
-                        case StylePropertyID.BorderColor:
-                        case StylePropertyID.BorderRadius:
-                        case StylePropertyID.BorderWidth:
-                        case StylePropertyID.Flex:
-                        case StylePropertyID.Margin:
-                        case StylePropertyID.Padding:
-                            ApplyShorthandProperty(reader);
-                            break;
-                        default:
-                            ApplyStyleProperty(reader);
-                            break;
+                        ApplyInitialStyleValue(reader);
+                        continue;
+                    }
+                    else if ((StyleValueKeyword)handle.valueIndex == StyleValueKeyword.Unset)
+                    {
+                        ApplyUnsetStyleValue(reader, inheritedStylesData);
+                        continue;
                     }
                 }
 
-                reader.MoveNextProperty();
+                switch (propertyID)
+                {
+                    case StylePropertyID.Unknown:
+                        break;
+                    case StylePropertyID.Custom:
+                        ApplyCustomStyleProperty(reader);
+                        break;
+                    case StylePropertyID.BorderColor:
+                    case StylePropertyID.BorderRadius:
+                    case StylePropertyID.BorderWidth:
+                    case StylePropertyID.Flex:
+                    case StylePropertyID.Margin:
+                    case StylePropertyID.Padding:
+                        ApplyShorthandProperty(reader);
+                        break;
+                    default:
+                        ApplyStyleProperty(reader);
+                        break;
+                }
             }
         }
 
@@ -424,7 +423,9 @@ namespace UnityEngine.UIElements.StyleSheets
 
         private void ApplyUnsetStyleValue(StylePropertyReader reader, InheritedStylesData inheritedStylesData)
         {
-            Debug.Assert(inheritedStylesData != null, "Unexpected call to ApplyUnsetStyleValue");
+            if (inheritedStylesData == null)
+                ApplyInitialStyleValue(reader);
+
             var specificity = reader.specificity;
             switch (reader.propertyID)
             {

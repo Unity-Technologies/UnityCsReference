@@ -413,7 +413,8 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static GUIContent TrTextContent(string text, string tooltip, string iconName)
         {
-            string key = string.Format("{0}|{1}|{2}", text ?? "", tooltip ?? "", iconName ?? "");
+            string key = iconName == null ? string.Format("{0}|{1}", text ?? "", tooltip ?? "") :
+                string.Format("{0}|{1}|{2}|{3}", text ?? "", tooltip ?? "", iconName, pixelsPerPoint);
             return TrTextContent(key, text, tooltip, LoadIconRequired(iconName));
         }
 
@@ -462,7 +463,8 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static GUIContent TrIconContent(string iconName, string tooltip = null)
         {
-            string key = (tooltip == null ? iconName : iconName + tooltip);
+            string key = tooltip == null ? string.Format("{0}|{1}", iconName, pixelsPerPoint) :
+                string.Format("{0}|{1}|{2}", iconName, tooltip, pixelsPerPoint);
             GUIContent gc = (GUIContent)s_IconGUIContents[key];
             if (gc != null)
             {
@@ -561,7 +563,7 @@ namespace UnityEditor
             if (icon == null)
                 icon = "";
 
-            string key = string.Format("{0}|{1}", textAndTooltip, icon);
+            string key = string.Format("{0}|{1}|{2}", textAndTooltip, icon, pixelsPerPoint);
 
             GUIContent gc = (GUIContent)s_TextGUIContents[key];
             if (gc == null)
@@ -1064,7 +1066,8 @@ namespace UnityEditor
 
         // Context width is used for calculating the label width for various editor controls.
         // In most cases the top level clip rect is a perfect context width.
-        private static float s_ContextWidth = 0f;
+        private static Stack<float> s_ContextWidthStack = new Stack<float>(10);
+
         private static float CalcContextWidth()
         {
             float output = GUIClip.GetTopRect().width;
@@ -1077,20 +1080,23 @@ namespace UnityEditor
 
         internal static void LockContextWidth()
         {
-            s_ContextWidth = CalcContextWidth();
+            s_ContextWidthStack.Push(CalcContextWidth());
         }
 
         internal static void UnlockContextWidth()
         {
-            s_ContextWidth = 0f;
+            if (s_ContextWidthStack.Count > 0)
+            {
+                s_ContextWidthStack.Pop();
+            }
         }
 
         internal static float contextWidth
         {
             get
             {
-                if (s_ContextWidth > 0f)
-                    return s_ContextWidth;
+                if (s_ContextWidthStack.Count > 0 && s_ContextWidthStack.Peek() > 0f)
+                    return s_ContextWidthStack.Peek();
 
                 return CalcContextWidth();
             }

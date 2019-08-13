@@ -99,9 +99,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                     string[] dest =
                     {
-                        downloadInfo.PublisherName,
-                        downloadInfo.CategoryName,
-                        downloadInfo.PackageName
+                        downloadInfo.PublisherName.Replace(".", ""),
+                        downloadInfo.CategoryName.Replace(".", ""),
+                        downloadInfo.PackageName.Replace(".", "")
                     };
 
                     var json = AssetStoreUtils.instance.CheckDownload(

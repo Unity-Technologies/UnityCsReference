@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace UnityEditor
         [SerializeField] HideFlags m_TextureHideFlags = HideFlags.HideAndDontSave;
         [SerializeField] bool m_RenderIMGUI;
         [SerializeField] bool m_MaximizeOnPlay;
+
+        private Dictionary<Type, string> m_AvailableWindowTypes;
 
         protected string previewName
         {
@@ -122,12 +125,14 @@ namespace UnityEditor
         protected PreviewEditorWindow()
         {
             RegisterWindow();
+            SetPlayModeView();
         }
 
         protected RenderTexture RenderPreview(Vector2 mousePosition, bool clearTexture)
         {
             using (var renderingPreview = new RenderingPreview(this))
             {
+                SetPlayModeViewSize(targetSize);
                 var currentTargetDisplay = 0;
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
@@ -154,9 +159,15 @@ namespace UnityEditor
             }
         }
 
-        protected TypeCache.TypeCollection GetAvailableWindowTypes()
+        protected string GetWindowTitle(Type type)
         {
-            return TypeCache.GetTypesDerivedFrom(typeof(PreviewEditorWindow));
+            var attributes = type.GetCustomAttributes(typeof(EditorWindowTitleAttribute), true);
+            return attributes.Length > 0 ? ((EditorWindowTitleAttribute)attributes[0]).title : type.Name;
+        }
+
+        protected Dictionary<Type, string> GetAvailableWindowTypes()
+        {
+            return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PreviewEditorWindow)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
         }
 
         protected void SwapMainWindow(Type type)
@@ -293,6 +304,7 @@ namespace UnityEditor
             else if (focused)
             {
                 InternalEditorUtility.OnGameViewFocus(true);
+                m_Parent.SetAsLastPlayModeView();
                 s_LastFocused = this;
                 Repaint();
             }

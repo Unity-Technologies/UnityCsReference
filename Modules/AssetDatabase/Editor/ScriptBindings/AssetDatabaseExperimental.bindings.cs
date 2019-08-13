@@ -3,16 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using uei = UnityEngine.Internal;
 
 namespace UnityEditor.Experimental
 {
     [NativeHeader("Modules/AssetDatabase/Editor/V2/AssetDatabaseCounters.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/V2/V1Compatibility.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseExperimental.h")]
-    public partial class AssetDatabaseExperimental
+    public sealed partial class AssetDatabaseExperimental
     {
         public struct AssetDatabaseCounters
         {
@@ -81,5 +84,48 @@ namespace UnityEditor.Experimental
 
         [FreeFunction("ImportCountersResetDeltas")]
         private extern static void ImportCountersResetDeltas();
+
+        private extern static Hash128 GetArtifactHash_Internal_Guid_SelectImporter(string guid);
+        private extern static Hash128 GetArtifactHash_Internal_Guid(string guid, Type importerType);
+
+        [uei.ExcludeFromDocs] public static Hash128 GetArtifactHash(string guid) { return GetArtifactHash(guid, null); }
+        public static Hash128 GetArtifactHash(string guid, [uei.DefaultValue("null")] Type importerType)
+        {
+            if (importerType == null)
+                return GetArtifactHash_Internal_Guid_SelectImporter(guid);
+            else
+                return GetArtifactHash_Internal_Guid(guid, importerType);
+        }
+
+        public static bool GetArtifactPaths(Hash128 hash, out string[] paths)
+        {
+            bool success;
+            var p = GetArtifactPathsImpl(hash, out success);
+            paths = p;
+            return success;
+        }
+
+        extern private static string[] GetArtifactPathsImpl(Hash128 hash, out bool success);
+
+        [RequiredByNativeCode]
+        static string[] OnSourceAssetsModified(string[] changedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            var assetMoveInfo = new AssetMoveInfo[movedAssets.Length];
+            Debug.Assert(movedAssets.Length == movedFromAssetPaths.Length);
+            for (int i = 0; i < movedAssets.Length; i++)
+                assetMoveInfo[i] = new AssetMoveInfo(movedFromAssetPaths[i], movedAssets[i]);
+
+            var assetsReportedChanged = new HashSet<string>();
+
+            foreach (Type type in TypeCache.GetTypesDerivedFrom<AssetsModifiedProcessor>())
+            {
+                var assetPostprocessor = Activator.CreateInstance(type) as AssetsModifiedProcessor;
+                assetPostprocessor.assetsReportedChanged = assetsReportedChanged;
+                assetPostprocessor.Internal_OnAssetsModified(changedAssets, addedAssets, deletedAssets, assetMoveInfo);
+                assetPostprocessor.assetsReportedChanged = null;
+            }
+
+            return assetsReportedChanged.ToArray();
+        }
     }
 }

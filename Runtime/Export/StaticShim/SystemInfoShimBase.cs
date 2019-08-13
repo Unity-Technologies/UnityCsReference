@@ -66,6 +66,8 @@ namespace UnityEngine
 
         public virtual bool graphicsMultiThreaded => EditorSystemInfo.graphicsMultiThreaded;
 
+        public virtual Rendering.RenderingThreadingMode renderingThreadingMode => EditorSystemInfo.renderingThreadingMode;
+
         public virtual bool hasHiddenSurfaceRemovalOnGPU => EditorSystemInfo.hasHiddenSurfaceRemovalOnGPU;
 
         public virtual bool hasDynamicUniformArrayIndexingInFragmentShaders =>

@@ -83,9 +83,10 @@ namespace UnityEditorInternal
             public GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to list");
             public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
-            public readonly GUIStyle headerBackground = "IN BigTitle";//""RL Header";
-            public readonly GUIStyle footerBackground = "button";//""RL Footer";
-            public readonly GUIStyle boxBackground = "box"; //"RL Background";
+            public readonly GUIStyle headerBackground = "RL Header";
+            private readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
+            public readonly GUIStyle footerBackground = "RL Footer";
+            public readonly GUIStyle boxBackground = "RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
             public readonly GUIStyle elementBackground = "RL Element";
             public const int padding = 6;
@@ -95,15 +96,15 @@ namespace UnityEditorInternal
             // draw the default footer
             public void DrawFooter(Rect rect, ReorderableList list)
             {
-                float rightEdge = rect.xMax;
+                float rightEdge = rect.xMax - 10f;
                 float leftEdge = rightEdge - 8f;
                 if (list.displayAdd)
                     leftEdge -= 25;
                 if (list.displayRemove)
                     leftEdge -= 25;
                 rect = new Rect(leftEdge, rect.y, rightEdge - leftEdge, rect.height);
-                Rect addRect = new Rect(leftEdge + 4, rect.y - 3, 25, 13);
-                Rect removeRect = new Rect(rightEdge - 29, rect.y - 3, 25, 13);
+                Rect addRect = new Rect(leftEdge + 4, rect.y, 25, 16);
+                Rect removeRect = new Rect(rightEdge - 29, rect.y, 25, 16);
                 if (Event.current.type == EventType.Repaint)
                 {
                     footerBackground.Draw(rect, false, false, false, false);
@@ -193,7 +194,17 @@ namespace UnityEditorInternal
             public void DrawHeaderBackground(Rect headerRect)
             {
                 if (Event.current.type == EventType.Repaint)
-                    headerBackground.Draw(headerRect, false, false, false, false);
+                {
+                    // We assume that a height smaller than 5px means a header with no content
+                    if (headerRect.height < 5f)
+                    {
+                        emptyHeaderBackground.Draw(headerRect, false, false, false, false);
+                    }
+                    else
+                    {
+                        headerBackground.Draw(headerRect, false, false, false, false);
+                    }
+                }
             }
 
             // draw the default header
@@ -308,6 +319,8 @@ namespace UnityEditorInternal
         public float footerHeight = 13;
         // show default background
         public bool showDefaultBackground = true;
+        private float listElementTopPadding => headerHeight > 5 ? 4 : 1; // headerHeight is usually set to 3px when there is no header content. Therefore, we add a 1px top margin to match the 4px bottom margin
+        private const float kListElementBottomPadding = 4;
 
         // draggable accessor
         public bool draggable
@@ -430,7 +443,7 @@ namespace UnityEditorInternal
 
         private float GetListElementHeight()
         {
-            const float listElementPadding = 7;
+            float listElementPadding = kListElementBottomPadding + listElementTopPadding;
 
             int arraySize = count;
             if (arraySize == 0)
@@ -456,8 +469,13 @@ namespace UnityEditorInternal
                 s_Defaults.boxBackground.Draw(listRect, false, false, false, false);
 
             // resize to the area that we want to draw our elements into
-            listRect.yMin += 2; listRect.yMax -= 5;
+            listRect.yMin += listElementTopPadding; listRect.yMax -= kListElementBottomPadding;
 
+            if (showDefaultBackground)
+            {
+                listRect.xMin += 1;
+                listRect.xMax -= 1;
+            }
 
             // create the rect for individual elements in the list
             Rect elementRect = listRect;

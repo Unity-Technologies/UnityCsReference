@@ -253,6 +253,7 @@ namespace UnityEditor
 
             m_AnimationClipEditor.ShowRange(info);
             m_AnimationClipEditor.mask = m_Mask;
+            AnimationCurvePreviewCache.ClearCache();
         }
 
         private void SetupDefaultClips()

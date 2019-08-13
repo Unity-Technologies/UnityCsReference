@@ -174,6 +174,82 @@ namespace UnityEditor
             public readonly GUIContent holesCompressionToggle = EditorGUIUtility.TrTextContent("Compress Holes Texture", "If enabled, holes texture will be compressed at runtime if compression supported.");
 
             public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
+
+            public static readonly GUIContent heightmapResolution = EditorGUIUtility.TrTextContent("Heightmap Resolution", "Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1)");
+            public static readonly GUIContent[] heightmapResolutionStrings =
+            {
+                EditorGUIUtility.TrTextContent("33 x 33", "Pixels"),
+                EditorGUIUtility.TrTextContent("65 x 65", "Pixels"),
+                EditorGUIUtility.TrTextContent("129 x 129", "Pixels"),
+                EditorGUIUtility.TrTextContent("257 x 257", "Pixels"),
+                EditorGUIUtility.TrTextContent("513 x 513", "Pixels"),
+                EditorGUIUtility.TrTextContent("1025 x 1025", "Pixels"),
+                EditorGUIUtility.TrTextContent("2049 x 2049", "Pixels"),
+                EditorGUIUtility.TrTextContent("4097 x 4097", "Pixels")
+            };
+            public static readonly int[] heightmapResolutionInts =
+            {
+                33,
+                65,
+                129,
+                257,
+                513,
+                1025,
+                2049,
+                4097
+            };
+
+            public static readonly GUIContent alphamapResolution = EditorGUIUtility.TrTextContent("Control Texture Resolution", "Resolution of the \"splatmap\" that controls the blending of the different terrain materials.");
+            public static readonly GUIContent[] alphamapResolutionStrings =
+            {
+                EditorGUIUtility.TrTextContent("16 x 16", "Pixels"),
+                EditorGUIUtility.TrTextContent("32 x 32", "Pixels"),
+                EditorGUIUtility.TrTextContent("64 x 64", "Pixels"),
+                EditorGUIUtility.TrTextContent("128 x 128", "Pixels"),
+                EditorGUIUtility.TrTextContent("256 x 256", "Pixels"),
+                EditorGUIUtility.TrTextContent("512 x 512", "Pixels"),
+                EditorGUIUtility.TrTextContent("1024 x 1024", "Pixels"),
+                EditorGUIUtility.TrTextContent("2048 x 2048", "Pixels"),
+                EditorGUIUtility.TrTextContent("4096 x 4096", "Pixels")
+            };
+            public static readonly int[] alphamapResolutionInts =
+            {
+                16,
+                32,
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048,
+                4096
+            };
+
+            public static readonly GUIContent basemapResolution = EditorGUIUtility.TrTextContent("Base Texture Resolution", "Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance.");
+            public static readonly GUIContent[] basemapResolutionStrings =
+            {
+                EditorGUIUtility.TrTextContent("16 x 16", "Pixels"),
+                EditorGUIUtility.TrTextContent("32 x 32", "Pixels"),
+                EditorGUIUtility.TrTextContent("64 x 64", "Pixels"),
+                EditorGUIUtility.TrTextContent("128 x 128", "Pixels"),
+                EditorGUIUtility.TrTextContent("256 x 256", "Pixels"),
+                EditorGUIUtility.TrTextContent("512 x 512", "Pixels"),
+                EditorGUIUtility.TrTextContent("1024 x 1024", "Pixels"),
+                EditorGUIUtility.TrTextContent("2048 x 2048", "Pixels"),
+                EditorGUIUtility.TrTextContent("4096 x 4096", "Pixels")
+            };
+            public static readonly int[] basemapResolutionInts =
+            {
+                16,
+                32,
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048,
+                4096
+            };
         }
         static Styles styles;
 
@@ -268,9 +344,6 @@ namespace UnityEditor
         float m_IncreaseOpacityTime = 0.0f;
         float m_DecreaseOpacityTime = 0.0f;
         bool m_OpacitySlow = false;
-
-        int m_CurrentHeightmapResolution = 0;
-        int m_CurrentControlTextureResolution = 0;
 
         const float kHeightmapBrushScale = 0.01F;
         const float kMinBrushStrength = (1.1F / ushort.MaxValue) / kHeightmapBrushScale;
@@ -1151,11 +1224,6 @@ namespace UnityEditor
             }
         }
 
-        private int GetMaxDetailInstances(int detailResolutionPerPatch)
-        {
-            return detailResolutionPerPatch * detailResolutionPerPatch * 16; // Each resolution placement consists of up to 16 details, based on brush strength.
-        }
-
         public void ShowDetailStats()
         {
             GUILayout.Space(3);
@@ -1165,7 +1233,7 @@ namespace UnityEditor
             int maxMeshes = m_Terrain.terrainData.detailPatchCount * m_Terrain.terrainData.detailPatchCount;
             EditorGUILayout.LabelField("Detail patches currently allocated: " + maxMeshes);
 
-            int maxDetails = maxMeshes * GetMaxDetailInstances(m_Terrain.terrainData.detailResolutionPerPatch);
+            int maxDetails = maxMeshes * PaintDetailsUtils.GetMaxDetailInstances(m_Terrain.terrainData);
             EditorGUILayout.LabelField("Detail instance density: " + maxDetails);
             GUILayout.Space(3);
         }
@@ -1267,7 +1335,7 @@ namespace UnityEditor
                 var drawHeightmap = EditorGUILayout.Toggle(styles.drawTerrain, m_Terrain.drawHeightmap);
                 var drawInstanced = EditorGUILayout.Toggle(styles.drawInstancedTerrain, m_Terrain.drawInstanced);
                 var heightmapPixelError = EditorGUILayout.Slider(styles.pixelError, m_Terrain.heightmapPixelError, 1, 200); // former string formatting: ""
-                var basemapDistance = EditorGUILayout.Slider(styles.baseMapDist, m_Terrain.basemapDistance, 0, 2000); // former string formatting: ""
+                var basemapDistance = PowerSlider(styles.baseMapDist, m_Terrain.basemapDistance, 0.0f, 20000.0f, 2.0f);
                 var shadowCastingMode = (ShadowCastingMode)EditorGUILayout.EnumPopup(styles.castShadows, m_Terrain.shadowCastingMode);
 
                 var reflectionProbeUsage = (ReflectionProbeUsage)EditorGUILayout.EnumPopup(styles.reflectionProbes, m_Terrain.reflectionProbeUsage);
@@ -1455,11 +1523,11 @@ namespace UnityEditor
         // if we switch to serializedProperty multi-edit, we can just use that function directly instead
         private void ShowRenderingLayerMask(bool useMiniStyle = false)
         {
-            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+            var layerNames = RendererEditorBase.defaultRenderingLayerNames;
 
-            var layerNames = srpAsset.renderingLayerMaskNames;
-            if (layerNames == null)
-                layerNames = RendererEditorBase.defaultRenderingLayerNames;
+            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+            if (srpAsset != null && srpAsset.renderingLayerMaskNames != null)
+                layerNames = srpAsset.renderingLayerMaskNames;
 
             int mask = (int)m_Terrain.renderingLayerMask;
 
@@ -1498,6 +1566,7 @@ namespace UnityEditor
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(activeTool.GetDesc());
                 GUILayout.EndVertical();
+                EditorGUILayout.Space();
 
                 activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
             }
@@ -1545,27 +1614,67 @@ namespace UnityEditor
         {
             RenderTexture oldRT = RenderTexture.active;
 
-            TerrainData td = m_Terrain.terrainData;
-            RenderTexture[] oldAlphaMaps = new RenderTexture[td.alphamapTextureCount];
-            for (int i = 0; i < oldAlphaMaps.Length; i++)
+            TerrainData terrainData = m_Terrain.terrainData;
+
+            // we record the terrainData because we change terrainData.alphamapResolution
+            // we also store a complete copy of the alphamap -- because each alphamap is a separate asset, these are separate
+            var undoObjects = new List<UnityEngine.Object>();
+            undoObjects.Add(terrainData);
+            undoObjects.AddRange(terrainData.alphamapTextures);
+            Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), "Resize Alphamap");
+
+            Material blitMaterial = TerrainPaintUtility.GetCopyTerrainLayerMaterial();      // special blit that forces copy from highest mip only
+
+            int targetRezU = newResolution;
+            int targetRezV = newResolution;
+
+            float invTargetRezU = 1.0f / targetRezU;
+            float invTargetRezV = 1.0f / targetRezV;
+
+            RenderTexture[] resizedAlphaMaps = new RenderTexture[terrainData.alphamapTextureCount];
+            for (int i = 0; i < resizedAlphaMaps.Length; i++)
             {
-                td.alphamapTextures[i].filterMode = FilterMode.Bilinear;
-                oldAlphaMaps[i] = RenderTexture.GetTemporary(newResolution, newResolution, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
-                Graphics.Blit(td.alphamapTextures[i], oldAlphaMaps[i]);
+                Texture2D oldAlphamap = terrainData.alphamapTextures[i];
+
+                int sourceRezU = oldAlphamap.width;
+                int sourceRezV = oldAlphamap.height;
+                float invSourceRezU = 1.0f / sourceRezU;
+                float invSourceRezV = 1.0f / sourceRezV;
+
+                resizedAlphaMaps[i] = RenderTexture.GetTemporary(newResolution, newResolution, 0, oldAlphamap.graphicsFormat);
+
+                float scaleU = (1.0f - invSourceRezU) / (1.0f - invTargetRezU);
+                float scaleV = (1.0f - invSourceRezV) / (1.0f - invTargetRezV);
+                float offsetU = 0.5f * (invSourceRezU - scaleU * invTargetRezU);
+                float offsetV = 0.5f * (invSourceRezV - scaleV * invTargetRezV);
+
+                Vector2 scale = new Vector2(scaleU, scaleV);
+                Vector2 offset = new Vector2(offsetU, offsetV);
+
+                blitMaterial.mainTexture = oldAlphamap;
+                blitMaterial.mainTextureScale = scale;
+                blitMaterial.mainTextureOffset = offset;
+
+                // custom blit
+                oldAlphamap.filterMode = FilterMode.Bilinear;
+                RenderTexture.active = resizedAlphaMaps[i];
+                GL.PushMatrix();
+                GL.LoadPixelMatrix(0, newResolution, 0, newResolution);
+                blitMaterial.SetPass(2);
+                TerrainPaintUtility.DrawQuad(new RectInt(0, 0, newResolution, newResolution), new RectInt(0, 0, sourceRezU, sourceRezV), oldAlphamap);
+                GL.PopMatrix();
             }
 
-            Undo.RegisterCompleteObjectUndo(m_Terrain.terrainData, "Resize Heightmap");
-
-            td.alphamapResolution = newResolution;
-            for (int i = 0; i < oldAlphaMaps.Length; i++)
+            terrainData.alphamapResolution = newResolution;
+            for (int i = 0; i < resizedAlphaMaps.Length; i++)
             {
-                RenderTexture.active = oldAlphaMaps[i];
-                td.CopyActiveRenderTextureToTexture(TerrainData.AlphamapTextureName, i, new RectInt(0, 0, newResolution, newResolution), Vector2Int.zero, false);
+                RenderTexture.active = resizedAlphaMaps[i];
+                terrainData.CopyActiveRenderTextureToTexture(TerrainData.AlphamapTextureName, i, new RectInt(0, 0, newResolution, newResolution), Vector2Int.zero, false);
             }
-            td.SetBaseMapDirty();
+            terrainData.SetBaseMapDirty();
             RenderTexture.active = oldRT;
-            for (int i = 0; i < oldAlphaMaps.Length; i++)
-                RenderTexture.ReleaseTemporary(oldAlphaMaps[i]);
+            for (int i = 0; i < resizedAlphaMaps.Length; i++)
+                RenderTexture.ReleaseTemporary(resizedAlphaMaps[i]);
             Repaint();
         }
 
@@ -1582,7 +1691,6 @@ namespace UnityEditor
 
             Undo.RegisterCompleteObjectUndo(m_Terrain.terrainData, "Resize Heightmap");
 
-            float sUV = 1.0f;
             int dWidth = m_Terrain.terrainData.heightmapResolution;
             int sWidth = newResolution;
 
@@ -1600,7 +1708,7 @@ namespace UnityEditor
             // duv = suv * (swidth * k)     + 0.5 / dwidth - 0.5 * k
 
             float k = (dWidth - 1.0f) / (sWidth - 1.0f) / dWidth;
-            float scaleX = sUV * (sWidth * k);
+            float scaleX = (sWidth * k);
             float offsetX = (float)(0.5 / dWidth - 0.5 * k);
             Vector2 scale = new Vector2(scaleX, scaleX);
             Vector2 offset = new Vector2(offsetX, offsetX);
@@ -1637,64 +1745,43 @@ namespace UnityEditor
 
             GUILayout.BeginVertical();
 
-            // base texture
-            const int kMinBaseTextureResolution = 16;
-            const int kMaxBaseTextureResolution = 2048;
-            GUILayout.BeginHorizontal();
-            int baseTextureResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Base Texture Resolution", $"Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance. Value range [{kMinBaseTextureResolution}, {kMaxBaseTextureResolution}]"), m_Terrain.terrainData.baseMapResolution);
-            baseTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(baseTextureResolution), kMinBaseTextureResolution, kMaxBaseTextureResolution);
-            if (m_Terrain.terrainData.baseMapResolution != baseTextureResolution)
-                m_Terrain.terrainData.baseMapResolution = baseTextureResolution;
-            GUILayout.EndHorizontal();
-
-            // splatmap control texture
-            const int kMinControlTextureResolution = 16;
-            const int kMaxControlTextureResolution = 2048;
-            GUILayout.BeginHorizontal();
-            if (m_CurrentControlTextureResolution == 0)
-                m_CurrentControlTextureResolution = m_Terrain.terrainData.alphamapResolution;
-            m_CurrentControlTextureResolution = EditorGUILayout.IntField(EditorGUIUtility.TrTextContent("Control Texture Resolution", $"Resolution of the \"splatmap\" that controls the blending of the different terrain textures. Value range [{kMinControlTextureResolution}, {kMaxControlTextureResolution}]"), m_CurrentControlTextureResolution);
-            m_CurrentControlTextureResolution = Mathf.Clamp(Mathf.ClosestPowerOfTwo(m_CurrentControlTextureResolution), kMinControlTextureResolution, kMaxControlTextureResolution);
-            if (m_CurrentControlTextureResolution != m_Terrain.terrainData.alphamapResolution && GUILayout.Button("Resize", GUILayout.Width(128)))
+            // heightmap texture resolution
+            int newHeightmapResolution = EditorGUILayout.IntPopup(Styles.heightmapResolution, m_Terrain.terrainData.heightmapResolution, Styles.heightmapResolutionStrings, Styles.heightmapResolutionInts);
+            if (newHeightmapResolution != m_Terrain.terrainData.heightmapResolution)
             {
-                ResizeControlTexture(m_CurrentControlTextureResolution);
+                ResizeHeightmap(newHeightmapResolution);
                 MarkTerrainDataDirty();
             }
-
-            GUILayout.EndHorizontal();
-
-            // heightmap texture
-            const int kMinimumResolution = 33; // 33 is the minimum that GetAdjustedSize will allow
-            const int kMaximumResolution = 4097; // if you want to change the maximum value, also change it in SetResolutionWizard
-            GUILayout.BeginHorizontal();
-            if (m_CurrentHeightmapResolution == 0)
-                m_CurrentHeightmapResolution = m_Terrain.terrainData.heightmapResolution;
-            m_CurrentHeightmapResolution = EditorGUILayout.IntField(EditorGUIUtility.TrTextContent("Heightmap Resolution", $"Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1). Value range [{kMinimumResolution}, {kMaximumResolution}]"), m_CurrentHeightmapResolution);
-            m_CurrentHeightmapResolution = Mathf.Clamp(m_CurrentHeightmapResolution, kMinimumResolution, kMaximumResolution);
-            m_CurrentHeightmapResolution = m_Terrain.terrainData.GetAdjustedSize(m_CurrentHeightmapResolution);
-            if (m_CurrentHeightmapResolution != m_Terrain.terrainData.heightmapResolution && GUILayout.Button("Resize", GUILayout.Width(128)))
-            {
-                ResizeHeightmap(m_CurrentHeightmapResolution);
-                MarkTerrainDataDirty();
-            }
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndVertical();
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-
             if (GUILayout.Button(styles.importRaw))
             {
                 TerrainMenus.ImportRaw();
             }
-
             if (GUILayout.Button(styles.exportRaw))
             {
                 TerrainMenus.ExportHeightmapRaw();
             }
             GUILayout.EndHorizontal();
+
+            // alphamap resolution
+            int newAlphamapResolution = EditorGUILayout.IntPopup(Styles.alphamapResolution, m_Terrain.terrainData.alphamapResolution, Styles.alphamapResolutionStrings, Styles.alphamapResolutionInts);
+            if (newAlphamapResolution != m_Terrain.terrainData.alphamapResolution)
+            {
+                ResizeControlTexture(newAlphamapResolution);
+                MarkTerrainDataDirty();
+            }
+
+            // base texture resolution
+            int newBasemapResolution = EditorGUILayout.IntPopup(Styles.basemapResolution, m_Terrain.terrainData.baseMapResolution, Styles.basemapResolutionStrings, Styles.basemapResolutionInts);
+            if (newBasemapResolution != m_Terrain.terrainData.baseMapResolution)
+            {
+                Undo.RecordObject(m_Terrain.terrainData, "Resize Basemap");
+                m_Terrain.terrainData.baseMapResolution = newBasemapResolution;
+            }
+
+            GUILayout.EndVertical();
 
             --EditorGUI.indentLevel;
 
@@ -2021,7 +2108,7 @@ namespace UnityEditor
 
         public bool Raycast(out Vector2 uv, out Vector3 pos)
         {
-            Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+            Ray mouseRay = GUIPointToWorldRayPrecise(Event.current.mousePosition);
 
             RaycastHit hit;
             if (m_Terrain.GetComponent<TerrainCollider>().Raycast(mouseRay, out hit, Mathf.Infinity, true))
@@ -2126,9 +2213,79 @@ namespace UnityEditor
             return (overTerrain != null);
         }
 
+        private Ray GUIPointToWorldRayPrecise(Vector2 guiPoint, float startZ = float.NegativeInfinity)
+        {
+            Camera camera = Camera.current;
+            if (!camera)
+            {
+                Debug.LogError("Unable to convert GUI point to world ray if a camera has not been set up!");
+                return new Ray(Vector3.zero, Vector3.forward);
+            }
+
+            if (float.IsNegativeInfinity(startZ))
+            {
+                startZ = camera.nearClipPlane;
+            }
+
+            Vector2 screenPixelPos = HandleUtility.GUIPointToScreenPixelCoordinate(guiPoint);
+            Rect viewport = camera.pixelRect;
+
+            Matrix4x4 camToWorld = camera.cameraToWorldMatrix;
+            Matrix4x4 camToClip = camera.projectionMatrix;
+            Matrix4x4 clipToCam = camToClip.inverse;
+
+            // calculate ray origin and direction in world space
+            Vector3 rayOriginWorldSpace;
+            Vector3 rayDirectionWorldSpace;
+
+            // first construct an arbitrary point that is on the ray through this screen pixel (remap screen pixel point to clip space [-1, 1])
+            Vector3 rayPointClipSpace = new Vector3(
+                (screenPixelPos.x - viewport.x) * 2.0f / viewport.width - 1.0f,
+                (screenPixelPos.y - viewport.y) * 2.0f / viewport.height - 1.0f,
+                0.95f
+            );
+
+            // and convert that point to camera space
+            Vector3 rayPointCameraSpace = clipToCam.MultiplyPoint(rayPointClipSpace);
+
+            if (camera.orthographic)
+            {
+                // ray direction is always 'camera forward' in orthographic mode
+                Vector3 rayDirectionCameraSpace = new Vector3(0.0f, 0.0f, -1.0f);
+                rayDirectionWorldSpace = camToWorld.MultiplyVector(rayDirectionCameraSpace);
+                rayDirectionWorldSpace.Normalize();
+
+                // in camera space, the ray origin has the same XY coordinates as ANY point on the ray
+                // so we just need to override the Z coordinate to startZ to get the correct starting point
+                // (assuming camToWorld is a pure rotation/offset, with no scale)
+                Vector3 rayOriginCameraSpace = rayPointCameraSpace;
+                rayOriginCameraSpace.z = startZ;
+
+                // move it to world space
+                rayOriginWorldSpace = camToWorld.MultiplyPoint(rayOriginCameraSpace);
+            }
+            else
+            {
+                // in projective mode, the ray passes through the origin in camera space
+                // so the ray direction is just (ray point - origin) == (ray point)
+                Vector3 rayDirectionCameraSpace = rayPointCameraSpace;
+                rayDirectionCameraSpace.Normalize();
+
+                rayDirectionWorldSpace = camToWorld.MultiplyVector(rayDirectionCameraSpace);
+
+                // calculate the correct startZ offset from the camera by moving a distance along the ray direction
+                // this assumes camToWorld is a pure rotation/offset, with no scale, so we can use rayDirection.z to calculate how far we need to move
+                Vector3 cameraPositionWorldSpace = camToWorld.MultiplyPoint(Vector3.zero);
+                Vector3 originOffsetWorldSpace = rayDirectionWorldSpace * Mathf.Abs(startZ / rayDirectionCameraSpace.z);
+                rayOriginWorldSpace = cameraPositionWorldSpace + originOffsetWorldSpace;
+            }
+
+            return new Ray(rayOriginWorldSpace, rayDirectionWorldSpace);
+        }
+
         private bool RaycastAllTerrains(out Terrain hitTerrain, out RaycastHit raycastHit)
         {
-            Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+            Ray mouseRay = GUIPointToWorldRayPrecise(Event.current.mousePosition);
 
             float minDist = float.MaxValue;
             hitTerrain = null;

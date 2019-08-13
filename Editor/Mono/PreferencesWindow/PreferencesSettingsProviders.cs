@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System;
 using System.IO;
 using System.Linq;
+using JetBrains.Annotations;
 using Unity.CodeEditor;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
@@ -67,6 +68,7 @@ namespace UnityEditor
 
         internal class ExternalProperties
         {
+            public static readonly GUIContent addUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
             public static readonly GUIContent editorAttaching = EditorGUIUtility.TrTextContent("Editor Attaching");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
             public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
@@ -172,6 +174,14 @@ namespace UnityEditor
         private const string kRecentScriptAppsKey = "RecentlyUsedScriptApp";
         private const string kRecentImageAppsKey = "RecentlyUsedImageApp";
 
+        const string k_UnityGenerateAll = "unity_generate_all_csproj";
+
+        private static readonly string k_ExpressNotSupportedMessage = L10n.Tr(
+            "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
+            "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
+            "\n(This does work with Visual Studio Pro)"
+        );
+
         private const int kRecentAppsCount = 10;
 
         SortedDictionary<string, List<KeyValuePair<string, PrefColor>>> s_CachedColors = null;
@@ -230,15 +240,17 @@ namespace UnityEditor
             return settings;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateGICacheProvider()
         {
+            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_SLAVE && !Unity.MPE.ProcessService.HasCapability("enable-gi"))
+                return null;
             var settings = new PreferencesProvider("Preferences/GI Cache", GetSearchKeywordsFromGUIContentProperties<GICacheProperties>());
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGICache); };
             return settings;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider Create2DProvider()
         {
             var settings = new PreferencesProvider("Preferences/2D", GetSearchKeywordsFromGUIContentProperties<TwoDProperties>());
@@ -246,7 +258,7 @@ namespace UnityEditor
             return settings;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateLanguagesProvider()
         {
             var editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
@@ -297,7 +309,7 @@ namespace UnityEditor
             return null;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateUIScalingProvider()
         {
             if (Application.platform == RuntimePlatform.WindowsEditor)
@@ -310,7 +322,7 @@ namespace UnityEditor
             return null;
         }
 
-        [SettingsProvider]
+        [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateUnityServicesProvider()
         {
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
@@ -321,6 +333,7 @@ namespace UnityEditor
             }
             return null;
         }
+
 
         // Group Preference sections with the same name
         private static void OnGUI(string searchContext, Action<string> drawAction)
@@ -334,7 +347,23 @@ namespace UnityEditor
             // Applications
             FilePopup(ExternalProperties.externalScriptEditor, m_ScriptEditorPath, ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
 
-            CodeEditor.Editor.Current.OnGUI();
+            #pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
+            {
+                CodeEditor.Editor.Current.OnGUI();
+            }
+            else
+            {
+                var prevGenerate = EditorPrefs.GetBool(k_UnityGenerateAll, false);
+                var generateAll = EditorGUILayout.Toggle("Generate all .csproj files.", prevGenerate);
+                if (generateAll != prevGenerate)
+                {
+                    EditorPrefs.SetBool(k_UnityGenerateAll, generateAll);
+                }
+                SyncVS.Synchronizer.GenerateAll(generateAll);
+            }
+
+            DoUnityProjCheckbox();
 
             bool oldValue = m_AllowAttachedDebuggingOfEditor;
             m_AllowAttachedDebuggingOfEditor = EditorGUILayout.Toggle(ExternalProperties.editorAttaching, m_AllowAttachedDebuggingOfEditor);
@@ -344,6 +373,14 @@ namespace UnityEditor
 
             if (m_AllowAttachedDebuggingOfEditorStateChangedThisSession)
                 GUILayout.Label(ExternalProperties.changingThisSettingRequiresRestart, EditorStyles.helpBox);
+
+            if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
+            {
+                GUILayout.BeginHorizontal(EditorStyles.helpBox);
+                GUILayout.Label("", Constants.warningIcon);
+                GUILayout.Label(k_ExpressNotSupportedMessage, Constants.errorLabel);
+                GUILayout.EndHorizontal();
+            }
 
             GUILayout.Space(10f);
 
@@ -378,9 +415,38 @@ namespace UnityEditor
             ApplyChangesToPrefs();
         }
 
+        private void DoUnityProjCheckbox()
+        {
+            bool isConfigurable = false;
+            bool value = false;
+
+            ScriptEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
+
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
+            {
+                isConfigurable = true;
+                value = m_ExternalEditorSupportsUnityProj;
+            }
+
+            using (new EditorGUI.DisabledScope(!isConfigurable))
+            {
+                value = EditorGUILayout.Toggle(ExternalProperties.addUnityProjeToSln, value);
+            }
+
+            if (isConfigurable)
+                m_ExternalEditorSupportsUnityProj = value;
+        }
+
+        #pragma warning disable 618
+        private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
+        {
+            return ScriptEditorUtility.GetScriptEditorFromPath(m_ScriptEditorPath.str);
+        }
+
         private void OnScriptEditorChanged()
         {
             CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
+            UnityEditor.VisualStudioIntegration.UnityVSSupport.ScriptEditorChanged(m_ScriptEditorPath.str);
         }
 
         private void ShowUnityConnectPrefs(string searchContext)
@@ -894,7 +960,7 @@ namespace UnityEditor
 
         private void ReadPreferences()
         {
-            m_ScriptEditorPath.str = CodeEditor.Editor.EditorInstallation.Path;
+            m_ScriptEditorPath.str = ScriptEditorUtility.GetExternalScriptEditor();
 
             m_ExternalEditorSupportsUnityProj = EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false);
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
@@ -902,7 +968,30 @@ namespace UnityEditor
             m_ScriptApps = BuildAppPathList(m_ScriptEditorPath, kRecentScriptAppsKey, "internal");
             m_ScriptAppsEditions = new string[m_ScriptApps.Length];
 
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                foreach (var vsPaths in SyncVS.InstalledVisualStudios.Values)
+                    foreach (var vsPath in vsPaths)
+                    {
+                        int index = Array.IndexOf(m_ScriptApps, vsPath.Path);
+                        if (index == -1)
+                        {
+                            ArrayUtility.Add(ref m_ScriptApps, vsPath.Path);
+                            ArrayUtility.Add(ref m_ScriptAppsEditions, vsPath.Edition);
+                        }
+                        else
+                        {
+                            m_ScriptAppsEditions[index] = vsPath.Edition;
+                        }
+                    }
+            }
+
             var foundScriptEditorPaths = CodeEditor.Editor.GetFoundScriptEditorPaths();
+            if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                CodeEditor.AddIfPathExists("Visual Studio", "/Applications/Visual Studio.app", foundScriptEditorPaths);
+                CodeEditor.AddIfPathExists("Visual Studio (Preview)", "/Applications/Visual Studio (Preview).app", foundScriptEditorPaths);
+            }
 
             foreach (var scriptEditorPath in foundScriptEditorPaths.Keys)
             {

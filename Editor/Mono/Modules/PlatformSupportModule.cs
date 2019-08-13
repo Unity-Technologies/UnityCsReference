@@ -138,6 +138,8 @@ namespace UnityEditor.Modules
 
         bool SupportsLz4Compression();
 
+        Compression GetDefaultCompression();
+
         bool SupportsScriptsOnlyBuild();
 
         // This is the place to make sure platform has everything it needs for the build.

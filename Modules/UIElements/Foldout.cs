@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-            UxmlBoolAttributeDescription m_Value = new UxmlBoolAttributeDescription { name = "value" };
+            UxmlBoolAttributeDescription m_Value = new UxmlBoolAttributeDescription { name = "value", defaultValue = true };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {

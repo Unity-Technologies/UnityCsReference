@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI
 
         private long m_SearchTextChangeTimestamp;
 
-        private const long k_SearchEventDelayTicks = TimeSpan.TicksPerSecond * 3;
+        private const long k_SearchEventDelayTicks = TimeSpan.TicksPerSecond / 3;
 
         public PackageManagerToolbar()
         {
@@ -32,19 +32,33 @@ namespace UnityEditor.PackageManager.UI
             SetupAddMenu();
             SetupFilterMenu();
             SetupAdvancedMenu();
-            SetupSearchToolbar();
 
             m_SearchTextChangeTimestamp = 0;
         }
 
-        public void Setup()
+        public void OnEnable()
         {
             SetFilter(PackageFiltering.instance.currentFilterTab);
             searchToolbar.SetValueWithoutNotify(PackageFiltering.instance.currentSearchText);
+            searchToolbar.RegisterValueChangedCallback(OnSearchTextChanged);
 
             PackageDatabase.instance.onPackagesChanged += OnPackagesChanged;
 
             PackageFiltering.instance.onFilterTabChanged += SetFilter;
+        }
+
+        public void OnDisable()
+        {
+            searchToolbar.UnregisterValueChangedCallback(OnSearchTextChanged);
+            PackageDatabase.instance.onPackagesChanged -= OnPackagesChanged;
+            PackageFiltering.instance.onFilterTabChanged -= SetFilter;
+        }
+
+        public void FocusOnSearch()
+        {
+            searchToolbar.Focus();
+            // Line below is required to make sure focus is in textfield
+            searchToolbar.Q<TextField>()?.visualInput?.Focus();
         }
 
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
@@ -60,16 +74,16 @@ namespace UnityEditor.PackageManager.UI
                 SetFilter(PackageFilterTab.Local);
         }
 
-        private void SetupSearchToolbar()
+        internal void SetCurrentSearch(string text)
         {
-            searchToolbar.RegisterValueChangedCallback(OnSearchTextChanged);
+            searchToolbar.SetValueWithoutNotify(text);
+            PackageFiltering.instance.currentSearchText = text;
         }
 
         private void OnSearchTextChanged(ChangeEvent<string> evt)
         {
-            PackageFiltering.instance.currentSearchText = evt.newValue;
-
             m_SearchTextChangeTimestamp = DateTime.Now.Ticks;
+
             EditorApplication.update -= DelayedSearchEvent;
             EditorApplication.update += DelayedSearchEvent;
         }
@@ -78,11 +92,10 @@ namespace UnityEditor.PackageManager.UI
         {
             if (DateTime.Now.Ticks - m_SearchTextChangeTimestamp > k_SearchEventDelayTicks)
             {
-                if (string.IsNullOrEmpty(searchToolbar.value))
-                    return;
                 EditorApplication.update -= DelayedSearchEvent;
-
-                PackageManagerWindowAnalytics.SendEvent("search");
+                PackageFiltering.instance.currentSearchText = searchToolbar.value;
+                if (!string.IsNullOrEmpty(searchToolbar.value))
+                    PackageManagerWindowAnalytics.SendEvent("search");
             }
         }
 

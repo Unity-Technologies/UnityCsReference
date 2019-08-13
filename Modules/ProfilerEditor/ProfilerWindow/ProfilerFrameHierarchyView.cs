@@ -69,10 +69,9 @@ namespace UnityEditorInternal.Profiling
         int m_ThreadIndex = 0;
 
         [NonSerialized]
-        string[] m_ThreadNames;
-
+        List<ThreadInfo> m_ThreadInfoCache;
         [NonSerialized]
-        int[] m_ThreadIndices;
+        string[] m_ThreadNames;
 
         [SerializeField]
         DetailedViewType m_DetailedViewType = DetailedViewType.None;
@@ -406,6 +405,7 @@ namespace UnityEditorInternal.Profiling
 
             using (new EditorGUI.DisabledScope(!frameDataView.valid))
             {
+                EditorGUILayout.Space(); // workaround: Remove double lines
                 DrawThreadPopup(frameDataView);
             }
 
@@ -421,37 +421,86 @@ namespace UnityEditorInternal.Profiling
             if (!showDetailedView)
             {
                 DrawDetailedViewPopup();
+                EditorGUILayout.Space(); // workaround: Remove double lines
                 DrawOptionsMenuPopup();
             }
 
             EditorGUILayout.EndHorizontal();
         }
 
-        struct ThreadComparer : IComparer<string>
+        class ThreadInfo : IComparable<ThreadInfo>
         {
-            static int GetGroupOrder(string s)
-            {
-                if (s.StartsWith("Job"))
-                    return 2;
-                if (s.StartsWith("Loading"))
-                    return 3;
-                if (s.StartsWith("Scripting Thread"))
-                    return 4;
-                if (s.StartsWith(kMainThreadName))
-                    return 0;
-                if (s.StartsWith(kRenderThreadName))
-                    return 1;
-                return 10;
-            }
+            public int groupOrder;
+            public string fullName;
 
-            public int Compare(string x, string y)
+            public int CompareTo(ThreadInfo other)
             {
-                int groupX = GetGroupOrder(x);
-                int groupY = GetGroupOrder(y);
-                if (groupX != groupY)
-                    return groupX < groupY ? -1 : 1;
-                return string.Compare(x, y);
+                if (this == other)
+                    return 0;
+                if (groupOrder != other.groupOrder)
+                    return groupOrder - other.groupOrder;
+                return string.Compare(fullName, other.fullName, StringComparison.Ordinal);
             }
+        }
+
+        static int GetGroupOrder(string threadName)
+        {
+            if (threadName.StartsWith("Job", StringComparison.Ordinal))
+                return 2;
+            if (threadName.StartsWith("Loading", StringComparison.Ordinal))
+                return 3;
+            if (threadName.StartsWith("Scripting Thread", StringComparison.Ordinal))
+                return 4;
+            if (threadName.StartsWith(kMainThreadName, StringComparison.Ordinal))
+                return 0;
+            if (threadName.StartsWith(kRenderThreadName, StringComparison.Ordinal))
+                return 1;
+            return 10;
+        }
+
+        void UpdateThreadNamesAndThreadIndex(HierarchyFrameDataView frameDataView)
+        {
+            if (m_FrameIndex == frameDataView.frameIndex)
+                return;
+
+            m_FrameIndex = frameDataView.frameIndex;
+            m_ThreadIndex = 0;
+
+            using (var frameIterator = new ProfilerFrameDataIterator())
+            {
+                var threadCount = frameIterator.GetThreadCount(m_FrameIndex);
+                if (m_ThreadInfoCache == null || m_ThreadInfoCache.Capacity < threadCount)
+                    m_ThreadInfoCache = new List<ThreadInfo>(threadCount);
+                m_ThreadInfoCache.Clear();
+
+                // Fetch all thread names
+                for (var i = 0; i < threadCount; ++i)
+                {
+                    frameIterator.SetRoot(m_FrameIndex, i);
+                    var groupName = frameIterator.GetGroupName();
+                    var threadName = frameIterator.GetThreadName();
+                    var name = string.IsNullOrEmpty(groupName) ? threadName : groupName + "." + threadName;
+                    m_ThreadInfoCache[i] = new ThreadInfo() { groupOrder = GetGroupOrder(name), fullName = name };
+                }
+
+                m_ThreadInfoCache.Sort();
+
+                if (m_ThreadNames == null || m_ThreadNames.Length != threadCount)
+                    m_ThreadNames = new string[threadCount];
+                // Make a display list with a current index selected
+                for (var i = 0; i < threadCount; ++i)
+                {
+                    m_ThreadNames[i] = m_ThreadInfoCache[i].fullName;
+                    if (m_ThreadName == m_ThreadNames[i])
+                        m_ThreadIndex = i;
+                }
+            }
+        }
+
+        UnityEditor.Tuple<int, string[]> GetThreadNamesLazy(HierarchyFrameDataView frameDataView)
+        {
+            UpdateThreadNamesAndThreadIndex(frameDataView);
+            return new UnityEditor.Tuple<int, string[]>(m_ThreadIndex, m_ThreadNames);
         }
 
         private void DrawThreadPopup(HierarchyFrameDataView frameDataView)
@@ -463,38 +512,19 @@ namespace UnityEditorInternal.Profiling
                 return;
             }
 
-            if (m_FrameIndex != frameDataView.frameIndex)
+            var newThreadIndex = 0;
+            if (m_ThreadIndex == 0)
             {
-                m_FrameIndex = frameDataView.frameIndex;
-                m_ThreadIndex = 0;
-
-                using (var frameIterator = new ProfilerFrameDataIterator())
-                {
-                    var threadCount = frameIterator.GetThreadCount(m_FrameIndex);
-                    m_ThreadNames = new string[threadCount];
-                    m_ThreadIndices = new int[threadCount];
-                    for (var i = 0; i < threadCount; ++i)
-                    {
-                        frameIterator.SetRoot(m_FrameIndex, i);
-                        var groupName = frameIterator.GetGroupName();
-                        var threadName = frameIterator.GetThreadName();
-                        var name = string.IsNullOrEmpty(groupName) ? threadName : groupName + "." + threadName;
-                        m_ThreadNames[i] = name;
-                        m_ThreadIndices[i] = i;
-                        if (m_ThreadName == name)
-                            m_ThreadIndex = i;
-                    }
-
-                    Array.Sort(m_ThreadNames, m_ThreadIndices, new ThreadComparer());
-                    for (var i = 0; i < threadCount; ++i)
-                    {
-                        if (m_ThreadName == m_ThreadNames[i])
-                            m_ThreadIndex = i;
-                    }
-                }
+                newThreadIndex = EditorGUILayout.AdvancedLazyPopup(m_ThreadName, m_ThreadIndex,
+                    (() => GetThreadNamesLazy(frameDataView)),
+                    BaseStyles.detailedViewTypeToolbarDropDown, GUILayout.Width(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
+            }
+            else
+            {
+                UpdateThreadNamesAndThreadIndex(frameDataView);
+                newThreadIndex = EditorGUILayout.AdvancedPopup(m_ThreadIndex, m_ThreadNames, BaseStyles.detailedViewTypeToolbarDropDown, GUILayout.Width(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
             }
 
-            var newThreadIndex = EditorGUILayout.AdvancedPopup(m_ThreadIndex, m_ThreadNames, BaseStyles.detailedViewTypeToolbarDropDown, GUILayout.Width(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
             if (newThreadIndex != m_ThreadIndex)
             {
                 m_ThreadIndex = newThreadIndex;

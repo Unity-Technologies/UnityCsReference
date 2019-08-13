@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEditor.AnimatedValues;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -16,6 +17,7 @@ namespace UnityEditor
     internal class AnimatorInspector : Editor
     {
         SerializedProperty m_Avatar;
+        SerializedProperty m_Controller;
         SerializedProperty m_ApplyRootMotion;
         SerializedProperty m_CullingMode;
         SerializedProperty m_UpdateMode;
@@ -67,6 +69,7 @@ namespace UnityEditor
         {
             m_Avatar = serializedObject.FindProperty("m_Avatar");
             m_ApplyRootMotion = serializedObject.FindProperty("m_ApplyRootMotion");
+            m_Controller = serializedObject.FindProperty("m_Controller");
             m_CullingMode = serializedObject.FindProperty("m_CullingMode");
             m_UpdateMode = serializedObject.FindProperty("m_UpdateMode");
             m_WarningMessage = serializedObject.FindProperty("m_WarningMessage");
@@ -89,13 +92,28 @@ namespace UnityEditor
             UpdateShowOptions();
 
             EditorGUI.BeginChangeCheck();
-            var controller  = EditorGUILayout.ObjectField("Controller", firstAnimator.runtimeAnimatorController, typeof(RuntimeAnimatorController), false) as RuntimeAnimatorController;
+            //Collect the previous AnimatorControllers
+
+            EditorGUILayout.ObjectField(m_Controller);
+
+
+            var controller = m_Controller.objectReferenceValue as RuntimeAnimatorController;
             if (EditorGUI.EndChangeCheck())
             {
+                var controllers = new List<RuntimeAnimatorController>();
                 foreach (Animator animator in targets)
                 {
-                    Undo.RecordObject(animator, "Changed AnimatorController");
-                    animator.runtimeAnimatorController = controller;
+                    controllers.Add(animator.runtimeAnimatorController);
+                }
+                serializedObject.ApplyModifiedProperties();
+
+                //Force rebind if the controller has changed.
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    if (controllers[i] != controller)
+                    {
+                        (targets[i] as Animator).Rebind();
+                    }
                 }
                 AnimationWindowUtility.ControllerChanged();
             }

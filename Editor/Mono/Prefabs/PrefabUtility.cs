@@ -1207,13 +1207,16 @@ namespace UnityEditor
             return SavePrefabAsset_Internal(root, out savedSuccessfully);
         }
 
-        private static void ValidatePath(GameObject instanceRoot, string path)
+        internal static void ValidatePath(GameObject instanceRoot, string path)
         {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException("path is null or empty");
 
             if (!Paths.IsValidAssetPath(path, ".prefab"))
                 throw new ArgumentException("Given path is not valid: '" + path + "'");
+
+            if (Directory.Exists(path))
+                throw new ArgumentException("Overwriting a folder with an Asset is not allowed: '" + path + "'");
 
             string directory = Path.GetDirectoryName(path);
 

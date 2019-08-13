@@ -12,7 +12,7 @@ using UnityEditor.Modules;
 namespace UnityEditor
 {
     // Resolution dialog setting
-    [Obsolete("ResolutionDialogSetting is deprecated and will be removed in future versions.", false)]
+    [Obsolete("The Display Resolution Dialog has been removed.", false)]
     public enum ResolutionDialogSetting
     {
         // Never show the resolutions dialog.
@@ -439,7 +439,7 @@ namespace UnityEditor
         public static extern int defaultWebScreenHeight { get; set; }
 
         // Defines the behaviour of the Resolution Dialog on product launch.
-        [Obsolete("displayResolutionDialog is deprecated and will be removed in future versions.", false)]
+        [Obsolete("displayResolutionDialog has been removed.", false)]
         public static extern ResolutionDialogSetting displayResolutionDialog { get; set; }
 
         // Returns whether or not the specified aspect ratio is enabled.
@@ -563,7 +563,7 @@ namespace UnityEditor
         }
 
         // The image to display in the Resolution Dialog window.
-        [Obsolete("resolutionDialogBanner is deprecated and will be removed in future versions.", false)]
+        [Obsolete("resolutionDialogBanner has been removed.", false)]
         public static extern Texture2D resolutionDialogBanner { get; set; }
 
         // The image to display on the Virtual Reality splash screen.
@@ -965,7 +965,17 @@ namespace UnityEditor
         [NativeProperty("GPUSkinning")]
         public static extern bool gpuSkinning { get; set; }
 
-        public static extern bool graphicsJobs { get; set; }
+        public static bool graphicsJobs
+        {
+            get { return GetGraphicsJobsForPlatform(EditorUserBuildSettings.activeBuildTarget); }
+            set { SetGraphicsJobsForPlatform(EditorUserBuildSettings.activeBuildTarget, value); }
+        }
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool GetGraphicsJobsForPlatform(BuildTarget platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetGraphicsJobsForPlatform(BuildTarget platform, bool graphicsJobs);
 
         public static extern GraphicsJobMode graphicsJobMode { get; set; }
 

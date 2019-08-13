@@ -20,13 +20,15 @@ namespace UnityEditor
 
         public BreadcrumbBar m_BreadcrumbBar = new BreadcrumbBar();
         public bool m_BreadcrumbInitialized;
+        bool m_IsPrefabInImmutableFolder;
+        bool m_IsPrefabInValidAssetFolder;
 
         public bool isShowingBreadcrumbBar
         {
             get { return PrefabStageUtility.GetCurrentPrefabStage() != null; }
         }
 
-        public float breadcrumbHeight { get { return BreadcrumbBar.DefaultStyles.background.fixedHeight; }}
+        public float breadcrumbHeight { get { return BreadcrumbBar.DefaultStyles.background.fixedHeight; } }
 
         static class Styles
         {
@@ -34,6 +36,7 @@ namespace UnityEditor
             public static GUIContent saveButtonContent = EditorGUIUtility.TrTextContent("Save");
             public static GUIContent checkoutButtonContent = EditorGUIUtility.TrTextContent("Check Out");
             public static GUIContent autoSavingBadgeContent = EditorGUIUtility.TrTextContent("Auto Saving...");
+            public static GUIContent immutablePrefabContent = EditorGUIUtility.TrTextContent("Immutable Prefab");
             public static GUIStyle saveToggle;
             public static GUIStyle button;
             public static GUIStyle savingBadge = "Badge";
@@ -219,43 +222,51 @@ namespace UnityEditor
         void AutoSaveButtons()
         {
             StageNavigationItem item = StageNavigationManager.instance.currentItem;
+
             if (item.isPrefabStage)
             {
-                StatusQueryOptions opts = EditorUserSettings.allowAsyncStatusUpdate ? StatusQueryOptions.UseCachedAsync : StatusQueryOptions.UseCachedIfPossible;
-                bool openForEdit = AssetDatabase.IsOpenForEdit(item.prefabAssetPath, opts);
-
-                PrefabStage stage = item.prefabStage;
-                if (stage.showingSavingLabel)
+                if (m_IsPrefabInValidAssetFolder && !m_IsPrefabInImmutableFolder)
                 {
-                    GUILayout.Label(Styles.autoSavingBadgeContent, Styles.savingBadge);
-                    GUILayout.Space(4);
-                }
+                    StatusQueryOptions opts = EditorUserSettings.allowAsyncStatusUpdate ? StatusQueryOptions.UseCachedAsync : StatusQueryOptions.UseCachedIfPossible;
+                    bool openForEdit = AssetDatabase.IsOpenForEdit(item.prefabAssetPath, opts);
 
-                if (!stage.autoSave)
-                {
-                    using (new EditorGUI.DisabledScope(!openForEdit || !PrefabStageUtility.GetCurrentPrefabStage().HasSceneBeenModified()))
+                    PrefabStage stage = item.prefabStage;
+                    if (stage.showingSavingLabel)
                     {
-                        if (GUILayout.Button(Styles.saveButtonContent, Styles.button))
-                            PrefabStageUtility.GetCurrentPrefabStage().SavePrefabWithVersionControlDialogAndRenameDialog();
+                        GUILayout.Label(Styles.autoSavingBadgeContent, Styles.savingBadge);
+                        GUILayout.Space(4);
+                    }
+
+                    if (!stage.autoSave)
+                    {
+                        using (new EditorGUI.DisabledScope(!openForEdit || !PrefabStageUtility.GetCurrentPrefabStage().HasSceneBeenModified()))
+                        {
+                            if (GUILayout.Button(Styles.saveButtonContent, Styles.button))
+                                PrefabStageUtility.GetCurrentPrefabStage().SavePrefabWithVersionControlDialogAndRenameDialog();
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(stage.temporarilyDisableAutoSave))
+                    {
+                        bool autoSaveForScene = stage.autoSave;
+                        EditorGUI.BeginChangeCheck();
+                        autoSaveForScene = GUILayout.Toggle(autoSaveForScene, Styles.autoSaveGUIContent, Styles.saveToggle);
+                        if (EditorGUI.EndChangeCheck())
+                            stage.autoSave = autoSaveForScene;
+                    }
+
+                    if (!openForEdit)
+                    {
+                        if (GUILayout.Button(Styles.checkoutButtonContent, Styles.button))
+                        {
+                            Task task = Provider.Checkout(AssetDatabase.LoadAssetAtPath<GameObject>(item.prefabAssetPath), CheckoutMode.Both);
+                            task.Wait();
+                        }
                     }
                 }
-
-                using (new EditorGUI.DisabledScope(stage.temporarilyDisableAutoSave))
+                else
                 {
-                    bool autoSaveForScene = stage.autoSave;
-                    EditorGUI.BeginChangeCheck();
-                    autoSaveForScene = GUILayout.Toggle(autoSaveForScene, Styles.autoSaveGUIContent, Styles.saveToggle);
-                    if (EditorGUI.EndChangeCheck())
-                        stage.autoSave = autoSaveForScene;
-                }
-
-                if (!openForEdit)
-                {
-                    if (GUILayout.Button(Styles.checkoutButtonContent, Styles.button))
-                    {
-                        Task task = Provider.Checkout(AssetDatabase.LoadAssetAtPath<GameObject>(item.prefabAssetPath), CheckoutMode.Both);
-                        task.Wait();
-                    }
+                    GUILayout.Label(Styles.immutablePrefabContent, EditorStyles.boldLabel);
                 }
             }
         }
@@ -291,6 +302,9 @@ namespace UnityEditor
             m_BreadcrumbBar.onBreadCrumbClicked -= BreadCrumbItemClicked;
             m_BreadcrumbBar.onBreadCrumbClicked += BreadCrumbItemClicked;
             m_BreadcrumbInitialized = true;
+
+            bool isRootFolder;
+            m_IsPrefabInValidAssetFolder = AssetDatabase.GetAssetFolderInfo(StageNavigationManager.instance.currentItem.prefabAssetPath, out isRootFolder, out m_IsPrefabInImmutableFolder);
         }
 
         static void BreadCrumbItemClicked(BreadcrumbBar.Item item)

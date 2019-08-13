@@ -53,7 +53,7 @@ namespace UnityEditor
 
         private float m_PrevScollPos;
         private float m_PrevTotalHeight;
-        internal delegate void OnHeaderGUIDelegate(Rect availableRect, string scenePath);
+        internal delegate float OnHeaderGUIDelegate(Rect availableRect, string scenePath);
         internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
 
         GameObjectTreeViewDataSource dataSource
@@ -324,6 +324,8 @@ namespace UnityEditor
             }
         }
 
+        float m_ContentRectRight;
+
         override protected void DoItemGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused, bool useBoldFont)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
@@ -339,14 +341,23 @@ namespace UnityEditor
 
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
             SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
+        }
+
+        protected override void OnAdditionalGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
+        {
+            GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
+            if (goItem == null)
+                return;
+
+            m_ContentRectRight = 0;
 
             if (goItem.isSceneHeader)
             {
-                DoAdditionalSceneHeaderGUI(goItem, rect);
+                m_ContentRectRight = DoAdditionalSceneHeaderGUI(goItem, rect);
             }
             else
             {
-                PrefabModeButton(goItem, rect);
+                m_ContentRectRight = PrefabModeButton(goItem, rect);
                 if (SubSceneGUI.IsUsingSubScenes() && !showingSearchResults)
                     SubSceneGUI.DrawVerticalLine(rect, (GameObject)goItem.objectPPTR);
             }
@@ -362,7 +373,7 @@ namespace UnityEditor
             return rect;
         }
 
-        protected void DoAdditionalSceneHeaderGUI(GameObjectTreeViewItem goItem, Rect rect)
+        protected float DoAdditionalSceneHeaderGUI(GameObjectTreeViewItem goItem, Rect rect)
         {
             // Options button
             const float optionsButtonWidth = 16f;
@@ -384,7 +395,7 @@ namespace UnityEditor
                 m_TreeView.SelectionClick(goItem, true);
                 m_TreeView.contextClickItemCallback(goItem.id);
             }
-
+            float availableRectLeft = buttonRect.xMin;
             if (null != OnPostHeaderGUI)
             {
                 float optionsWidth = (rect.width - buttonRect.x);
@@ -393,8 +404,10 @@ namespace UnityEditor
                 float y = rect.y;
                 float height = rect.height;
                 Rect availableRect = new Rect(x, y, width, height);
-                OnPostHeaderGUI(availableRect, goItem.scene.path);
+                availableRectLeft = Math.Min(availableRectLeft, OnPostHeaderGUI(availableRect, goItem.scene.path));
             }
+
+            return availableRectLeft;
         }
 
         static bool IsPrefabStageHeader(GameObjectTreeViewItem item)
@@ -517,6 +530,8 @@ namespace UnityEditor
             if (goItem == null)
                 return;
 
+            rect.xMax = m_ContentRectRight;
+
             if (goItem.isSceneHeader)
             {
                 if (goItem.scene.isDirty)
@@ -590,8 +605,9 @@ namespace UnityEditor
             lineStyle.Draw(rect, label, false, false, selected, focused);
         }
 
-        public void PrefabModeButton(GameObjectTreeViewItem item, Rect selectionRect)
+        public float PrefabModeButton(GameObjectTreeViewItem item, Rect selectionRect)
         {
+            float contentRectRight = selectionRect.xMax;
             if (item.showPrefabModeButton)
             {
                 float yOffset = (selectionRect.height - GameObjectStyles.rightArrow.fixedWidth) / 2;
@@ -613,7 +629,11 @@ namespace UnityEditor
                         PrefabStageUtility.OpenPrefab(assetPath, go, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyRightArrow);
                     }
                 }
+
+                contentRectRight = buttonRect.xMin;
             }
+
+            return contentRectRight;
         }
 
         GUIContent GetPrefabButtonContent(int instanceID)

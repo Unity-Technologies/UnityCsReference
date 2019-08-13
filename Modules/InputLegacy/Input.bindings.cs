@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -328,6 +329,17 @@ namespace UnityEngine
         {
             return GetKeyDownString(name);
         }
+
+        [Conditional("UNITY_EDITOR")]
+        internal static void SimulateTouch(int id, Vector2 position, TouchPhase action)
+        {
+            SimulateTouchInternal(id, position, action, DateTime.Now.Ticks);
+        }
+
+        [Conditional("UNITY_EDITOR")]
+        [NativeConditional("UNITY_EDITOR")]
+        [FreeFunction("SimulateTouch")]
+        private extern static void SimulateTouchInternal(int id, Vector2 position, TouchPhase action, long timestamp);
 
         public extern static bool simulateMouseWithTouches { get; set; }
         [NativeThrows]

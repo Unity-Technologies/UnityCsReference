@@ -366,8 +366,9 @@ namespace Unity.MPE
                         continue;
                     if (elapsedTime > request.timeoutInMs)
                     {
+                        var eventType = request.eventType;
                         CleanRequest(request.eventType);
-                        Reject(request, new Exception($"Request timeout: {elapsedTime} > {request.timeoutInMs}"));
+                        Reject(request, new Exception($"Request timeout for {eventType} ({elapsedTime} > {request.timeoutInMs})"));
                     }
                 }
             }
@@ -386,6 +387,7 @@ namespace Unity.MPE
                 catch (Exception e)
                 {
                     result = new object[] { e };
+                    Console.WriteLine(e);
                 }
             }
 

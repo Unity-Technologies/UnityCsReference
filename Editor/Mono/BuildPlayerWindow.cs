@@ -72,7 +72,10 @@ namespace UnityEditor
 
             // string and matching enum values for standalone subtarget dropdowm
             public GUIContent debugBuild = EditorGUIUtility.TrTextContent("Development Build");
-            public GUIContent profileBuild = EditorGUIUtility.TrTextContent("Autoconnect Profiler");
+            public GUIContent autoconnectProfiler = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "When the build is started, an open Profiler Window will automatically connect to the Player and start profiling. The \"Build And Run\" option will also automatically open the Profiler Window.");
+            public GUIContent autoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
+            public GUIContent buildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
+            public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling", "Profiling is only enabled in a Development Player.");
             public GUIContent vrRemoteStremaing = EditorGUIUtility.TrTextContent("VR Remote Streaming");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");
             public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution.");
@@ -464,7 +467,6 @@ namespace UnityEditor
             { "OSXStandalone", "Mac" },
             { "WindowsStandalone", "Windows" },
             { "LinuxStandalone", "Linux" },
-            { "Facebook", "Facebook-Games"},
             { "UWP", "Universal-Windows-Platform"}
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
@@ -656,7 +658,7 @@ namespace UnityEditor
 
             if (BuildPipeline.IsBuildTargetSupported(buildTargetGroup, buildTarget))
             {
-                bool shouldDrawConnectProfilerToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawProfilerCheckbox() : true;
+                bool shouldDrawProfilerToggles = buildWindowExtension != null ? buildWindowExtension.ShouldDrawProfilerCheckbox() : true;
 
                 GUI.enabled = shouldDrawDevelopmentPlayerToggle;
                 if (shouldDrawDevelopmentPlayerToggle)
@@ -666,16 +668,15 @@ namespace UnityEditor
 
                 GUI.enabled = developmentBuild;
 
-                if (shouldDrawConnectProfilerToggle)
+                if (shouldDrawProfilerToggles)
                 {
-                    if (!GUI.enabled)
-                    {
-                        if (!developmentBuild)
-                            styles.profileBuild.tooltip = "Profiling only enabled in Development Player";
-                    }
-                    else
-                        styles.profileBuild.tooltip = "";
-                    EditorUserBuildSettings.connectProfiler = EditorGUILayout.Toggle(styles.profileBuild, EditorUserBuildSettings.connectProfiler);
+                    var profilerDisabled = !GUI.enabled && !developmentBuild;
+
+                    var autoConnectLabel = profilerDisabled ? styles.autoconnectProfilerDisabled : styles.autoconnectProfiler;
+                    EditorUserBuildSettings.connectProfiler = EditorGUILayout.Toggle(autoConnectLabel, EditorUserBuildSettings.connectProfiler);
+
+                    var buildWithDeepProfilerLabel = profilerDisabled ? styles.buildWithDeepProfilerDisabled : styles.buildWithDeepProfiler;
+                    EditorUserBuildSettings.buildWithDeepProfilingSupport = EditorGUILayout.Toggle(buildWithDeepProfilerLabel, EditorUserBuildSettings.buildWithDeepProfilingSupport);
                 }
 
                 GUI.enabled = developmentBuild;
@@ -755,6 +756,8 @@ namespace UnityEditor
                 if (postprocessor != null && postprocessor.SupportsLz4Compression())
                 {
                     var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(buildTargetGroup));
+                    if (cmpIdx == -1)
+                        cmpIdx = Array.IndexOf(styles.compressionTypes, postprocessor.GetDefaultCompression());
                     if (cmpIdx == -1)
                         cmpIdx = 1; // Lz4 by default.
                     cmpIdx = EditorGUILayout.Popup(styles.compressionMethod, cmpIdx, styles.compressionStrings);

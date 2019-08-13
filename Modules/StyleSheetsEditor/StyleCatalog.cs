@@ -7,14 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.StyleSheets
@@ -242,7 +240,7 @@ namespace UnityEditor.StyleSheets
 
     [DebuggerDisplay("topleft = ({top}, {left}), bottomright = ({bottom}, {right}), size = ({width} x {height})")]
     [StructLayout(LayoutKind.Explicit)]
-    internal struct StyleRect
+    internal struct StyleRect : IEquatable<StyleRect>
     {
         public static readonly StyleRect Nil = new StyleRect { left = float.NaN, right = float.NaN, top = float.NaN, bottom = float.NaN };
         public static readonly StyleRect Zero = new StyleRect { left = 0f, right = 0f, top = 0f, bottom = 0f };
@@ -284,6 +282,31 @@ namespace UnityEditor.StyleSheets
 
         [FieldOffset(0)] public float width;
         [FieldOffset(4)] public float height;
+
+        public bool Equals(StyleRect other)
+        {
+            return top.Equals(other.top) && right.Equals(other.right) && bottom.Equals(other.bottom) && left.Equals(other.left) && width.Equals(other.width) && height.Equals(other.height);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is StyleRect && Equals((StyleRect)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = top.GetHashCode();
+                hashCode = (hashCode * 397) ^ right.GetHashCode();
+                hashCode = (hashCode * 397) ^ bottom.GetHashCode();
+                hashCode = (hashCode * 397) ^ left.GetHashCode();
+                hashCode = (hashCode * 397) ^ width.GetHashCode();
+                hashCode = (hashCode * 397) ^ height.GetHashCode();
+                return hashCode;
+            }
+        }
     }
 
     [DebuggerDisplay("{width} {style} {color}")]
@@ -302,7 +325,7 @@ namespace UnityEditor.StyleSheets
     }
 
     [DebuggerDisplay("count = {count}")]
-    internal struct StyleValueGroup
+    internal struct StyleValueGroup : IEquatable<StyleValueGroup>
     {
         public const int k_MaxValueCount = 5;
 
@@ -352,10 +375,35 @@ namespace UnityEditor.StyleSheets
         public StyleValue v3;
         public StyleValue v4;
         public StyleValue v5;
+
+        public bool Equals(StyleValueGroup other)
+        {
+            return count == other.count && v1.Equals(other.v1) && v2.Equals(other.v2) && v3.Equals(other.v3) && v4.Equals(other.v4) && v5.Equals(other.v5);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is StyleValueGroup && Equals((StyleValueGroup)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = count;
+                hashCode = (hashCode * 397) ^ v1.GetHashCode();
+                hashCode = (hashCode * 397) ^ v2.GetHashCode();
+                hashCode = (hashCode * 397) ^ v3.GetHashCode();
+                hashCode = (hashCode * 397) ^ v4.GetHashCode();
+                hashCode = (hashCode * 397) ^ v5.GetHashCode();
+                return hashCode;
+            }
+        }
     }
 
     [DebuggerDisplay("key = {key}, type = {type}, index = {index}, state = {state}")]
-    internal struct StyleValue
+    internal struct StyleValue : IEquatable<StyleValue>
     {
         public static StyleValue Undefined(int key, StyleState state = StyleState.none) { return new StyleValue { key = key, state = state, type = Type.Undefined, index = 0 }; }
         public static StyleValue Undefined(string name, StyleState state = StyleState.none) { return Undefined(name.GetHashCode(), state); }
@@ -409,6 +457,29 @@ namespace UnityEditor.StyleSheets
         public Type type;
         public int index;
         public StyleState state;
+
+        public bool Equals(StyleValue other)
+        {
+            return key == other.key && type == other.type && index == other.index && state == other.state;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is StyleValue && Equals((StyleValue)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = key;
+                hashCode = (hashCode * 397) ^ (int)type;
+                hashCode = (hashCode * 397) ^ index;
+                hashCode = (hashCode * 397) ^ state.GetHashCode();
+                return hashCode;
+            }
+        }
     }
 
     [DebuggerDisplay("name = {name}")]
@@ -556,29 +627,75 @@ namespace UnityEditor.StyleSheets
             return GetResource<T>(key.GetHashCode(), defaultValue);
         }
 
+        static class TexturesByDPIScale
+        {
+            private static Dictionary<int, Dictionary<string, Texture2D>> s_TexturesByDPIScale = new Dictionary<int, Dictionary<string, Texture2D>>();
+
+            static TexturesByDPIScale()
+            {
+                for (int i = 1; i < 4; ++i)
+                    s_TexturesByDPIScale[i] = new Dictionary<string, Texture2D>();
+            }
+
+            public static Texture2D GetTextureByDPIScale(string resourcePath, bool autoScale, float systemScale)
+            {
+                Texture2D tex = null;
+                int scale = Mathf.RoundToInt(systemScale);
+
+                if (autoScale && systemScale > 1f)
+                {
+                    if (TryGetTexture(scale, resourcePath, out tex))
+                        return tex;
+
+                    string dirName = Path.GetDirectoryName(resourcePath).Replace('\\', '/');
+                    string fileName = Path.GetFileNameWithoutExtension(resourcePath);
+                    string fileExt = Path.GetExtension(resourcePath);
+                    for (int s = scale; scale > 1; --scale)
+                    {
+                        string scaledResourcePath = $"{dirName}/{fileName}@{s}x{fileExt}";
+                        var scaledResource = StoreTextureByScale(scale, scaledResourcePath, resourcePath, false);
+                        if (scaledResource != null)
+                            return scaledResource;
+                    }
+                }
+
+                if (TryGetTexture(scale, resourcePath, out tex))
+                    return tex;
+                return StoreTextureByScale(scale, resourcePath, resourcePath, true);
+            }
+
+            private static Texture2D StoreTextureByScale(int scale, string scaledPath, string resourcePath, bool logError)
+            {
+                var tex = EditorResources.Load<Texture2D>(scaledPath, false);
+                if (tex)
+                {
+                    if (!s_TexturesByDPIScale.ContainsKey(scale))
+                        s_TexturesByDPIScale[scale] = new Dictionary<string, Texture2D>();
+                    s_TexturesByDPIScale[scale][resourcePath] = tex;
+                }
+                else if (logError)
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, $"Failed to store {resourcePath} > {scaledPath}");
+                }
+                return tex;
+            }
+
+            private static bool TryGetTexture(int scale, string path, out Texture2D tex)
+            {
+                tex = null;
+                if (s_TexturesByDPIScale.ContainsKey(scale) && s_TexturesByDPIScale[scale].TryGetValue(path, out tex) && tex != null)
+                    return true;
+                return false;
+            }
+        }
+
         public Texture2D GetTexture(int key, bool autoScale = false)
         {
             var resourcePath = GetText(key);
             if (String.IsNullOrEmpty(resourcePath))
                 return null;
 
-            float systemScale = GUIUtility.pixelsPerPoint;
-            if (autoScale && systemScale > 1f)
-            {
-                int scale = Mathf.RoundToInt(systemScale);
-                string dirName = Path.GetDirectoryName(resourcePath).Replace('\\', '/');
-                string fileName = Path.GetFileNameWithoutExtension(resourcePath);
-                string fileExt = Path.GetExtension(resourcePath);
-                for (int s = scale; scale > 1; --scale)
-                {
-                    string scaledResourcePath = $"{dirName}/{fileName}@{s}x{fileExt}";
-                    var scaledResource = EditorResources.Load<Texture2D>(scaledResourcePath, false);
-                    if (scaledResource != null)
-                        return scaledResource;
-                }
-            }
-
-            return EditorResources.Load<Texture2D>(resourcePath, false);
+            return TexturesByDPIScale.GetTextureByDPIScale(resourcePath, autoScale, GUIUtility.pixelsPerPoint);
         }
 
         public Texture2D GetTexture(string key)
@@ -894,7 +1011,7 @@ namespace UnityEditor.StyleSheets
 
         public void Load(IEnumerable<string> paths)
         {
-            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p) as StyleSheet)
+            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet)
                 .Where(s => s != null).Distinct();
 
             Load(sheets);

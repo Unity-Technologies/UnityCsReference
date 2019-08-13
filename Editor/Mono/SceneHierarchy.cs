@@ -70,6 +70,7 @@ namespace UnityEditor
 
         public Rect position { get; set; }
         const int kInvalidSceneHandle = 0;
+        bool m_RectSelectInProgress;
 
         TreeViewController m_TreeView;
         [SerializeField]
@@ -481,6 +482,8 @@ namespace UnityEditor
             EditorApplication.dirtyHierarchySorting += DirtySortingMethods;
             EditorSceneManager.newSceneCreated += OnSceneCreated;
             EditorSceneManager.sceneOpened += OnSceneOpened;
+            RectSelection.rectSelectionStarting += SceneViewRectSelectionStarting;
+            RectSelection.rectSelectionFinished += SceneViewRectSelectionFinished;
 
             m_AllowAlphaNumericalSort = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false) || !InternalEditorUtility.isHumanControllingUs; // Always allow alphasorting when running automated tests so we can test alpha sorting
             SetUpSortMethodLists();
@@ -501,6 +504,8 @@ namespace UnityEditor
             EditorApplication.dirtyHierarchySorting -= DirtySortingMethods;
             EditorSceneManager.newSceneCreated -= OnSceneCreated;
             EditorSceneManager.sceneOpened -= OnSceneOpened;
+            RectSelection.rectSelectionStarting -= SceneViewRectSelectionStarting;
+            RectSelection.rectSelectionFinished -= SceneViewRectSelectionFinished;
         }
 
         internal void OnProjectWasLoaded()
@@ -531,6 +536,19 @@ namespace UnityEditor
         {
         }
 
+        void SceneViewRectSelectionStarting()
+        {
+            m_RectSelectInProgress = true;
+        }
+
+        void SceneViewRectSelectionFinished()
+        {
+            m_RectSelectInProgress = false;
+            selectionSyncNeeded = true;
+            SyncIfNeeded();
+            Repaint();
+        }
+
         void SyncIfNeeded()
         {
             if (treeViewReloadNeeded)
@@ -544,7 +562,7 @@ namespace UnityEditor
                 selectionSyncNeeded = false;
 
                 bool userJustInteracted = (EditorApplication.timeSinceStartup - m_LastUserInteractionTime) < 0.2;
-                bool frame = !isLocked || m_FrameOnSelectionSync || userJustInteracted;
+                bool frame = (!isLocked || m_FrameOnSelectionSync || userJustInteracted) && !m_RectSelectInProgress;
                 bool animatedFraming = userJustInteracted && frame;
                 m_FrameOnSelectionSync = false;
 
@@ -926,6 +944,13 @@ namespace UnityEditor
             {
                 if (execute)
                     DuplicateGO();
+                evt.Use();
+                GUIUtility.ExitGUI();
+            }
+            else if (evt.commandName == EventCommandNames.Rename)
+            {
+                if (execute)
+                    RenameGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }

@@ -7,11 +7,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    [EditorWindowTitle(title = "MiniMap")]
+    [EditorWindowTitle(title = k_ToolName)]
     public class GraphViewMinimapWindow : GraphViewToolWindow
     {
         MiniMap m_MiniMap;
         Label m_ZoomLabel;
+
+        const string k_ToolName = "MiniMap";
+
+        protected override string ToolName => k_ToolName;
 
         new void OnEnable()
         {
@@ -24,10 +28,9 @@ namespace UnityEditor.Experimental.GraphView
 
             OnGraphViewChanged();
             m_ZoomLabel = new Label();
-            m_ZoomLabel.style.position = Position.Absolute;
-            m_ZoomLabel.style.right = 4;
-            m_ZoomLabel.style.top = 1;
-            m_Toolbar.Add(m_ZoomLabel);
+            m_ZoomLabel.style.width = 35;
+            m_ZoomLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+            m_ToolbarContainer.Add(m_ZoomLabel);
         }
 
         void OnDestroy()
@@ -44,17 +47,10 @@ namespace UnityEditor.Experimental.GraphView
 
         protected override void OnGraphViewChanged()
         {
-            string windowTitle = "Minimap";
             if (m_SelectedGraphView != null)
-            {
-                windowTitle += " - " + m_SelectedGraphView.name;
-
                 m_SelectedGraphView.redrawn += GraphViewRedrawn;
-            }
             else
                 ZoomFactorTextChanged("");
-
-            titleContent.text = windowTitle;
 
             if (m_MiniMap == null) // Probably called from base.OnEnable(). We're not ready just yet.
                 return;

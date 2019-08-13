@@ -117,7 +117,7 @@ namespace UnityEditorInternal
 
     // Match C++ ScriptingFrameDebuggerEventData memory layout!
     [StructLayout(LayoutKind.Sequential)]
-    internal struct FrameDebuggerEventData
+    internal class FrameDebuggerEventData
     {
         public int frameEventIndex;
         public int vertexCount;
@@ -657,14 +657,14 @@ namespace UnityEditor
             int newLimit;
             using (new EditorGUI.DisabledScope(FrameDebuggerUtility.count <= 1))
             {
-                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, -1,
+                newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, 1,
                     EditorStyles.toolbarSlider);
             }
             if (EditorGUI.EndChangeCheck())
             {
                 ChangeFrameEventLimit(newLimit);
             }
-            GUILayout.Label("of " + FrameDebuggerUtility.count, styles.miniLabel);
+            GUILayout.Label("of " + FrameDebuggerUtility.count, EditorStyles.toolbarLabel);
             // prev/next buttons
             using (new EditorGUI.DisabledScope(newLimit <= 1))
             {
@@ -815,13 +815,13 @@ namespace UnityEditor
                 var clampedIndex = Mathf.Clamp(m_RTIndex, 0, showableRTCount - 1);
                 rtWasClamped = (clampedIndex != m_RTIndex);
                 m_RTIndex = clampedIndex;
-                m_RTIndex = EditorGUILayout.Popup(m_RTIndex, rtNames, EditorStyles.toolbarPopup, GUILayout.Width(70));
+                m_RTIndex = EditorGUILayout.Popup(m_RTIndex, rtNames, EditorStyles.toolbarPopupLeft, GUILayout.Width(70));
             }
 
             // color channels
             using (new EditorGUI.DisabledScope(isDepthOnlyRT))
             {
-                GUILayout.Label(Styles.channelHeader, EditorStyles.miniLabel);
+                GUILayout.Label(Styles.channelHeader, EditorStyles.toolbarLabel);
                 m_RTChannel = GUILayout.Toolbar(m_RTChannel, Styles.channelLabels, EditorStyles.toolbarButton);
             }
 
@@ -950,6 +950,9 @@ namespace UnityEditor
             if (curEventIndex < 0 || curEventIndex >= descs.Length)
                 return;
 
+            if (m_CurEventData == null)
+                m_CurEventData = new FrameDebuggerEventData();
+
             GUILayout.BeginArea(rect);
 
             uint eventDataHash = FrameDebuggerUtility.eventDataHash;
@@ -957,7 +960,7 @@ namespace UnityEditor
 
             if (eventDataHash != 0 && m_CurEventDataHash != eventDataHash)
             {
-                isFrameEventDataValid = FrameDebuggerUtility.GetFrameEventData(curEventIndex, out m_CurEventData);
+                isFrameEventDataValid = FrameDebuggerUtility.GetFrameEventData(curEventIndex, m_CurEventData);
                 m_CurEventDataHash = eventDataHash;
                 BuildCurEventDataStrings();
             }
@@ -1457,8 +1460,7 @@ namespace UnityEditor
             public GUIStyle toolbarLabelSliderGroup = new GUIStyle(EditorStyles.toolbarButton)
             {
                 margin = new RectOffset(4, 4, 0, 0),
-                padding = new RectOffset(4, 4, 0, 0),
-                fixedHeight = 21
+                padding = new RectOffset(4, 4, 0, 0)
             };
 
             public GUIContent recordButton = new GUIContent(EditorGUIUtility.TrTextContent("Record", "Record profiling information"));

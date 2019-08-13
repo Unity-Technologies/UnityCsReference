@@ -67,6 +67,7 @@ namespace UnityEditor
         public static extern int GetHiddenObjectCount();
         public static extern int GetPickingDisabledObjectCount();
         public static extern void SetPrefabStageScene(Scene scene);
+        public static extern void ForceDataUpdate();
 
         public static Action internalStructureChanged;
 

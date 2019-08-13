@@ -18,6 +18,7 @@ namespace UnityEngine
         public const string DeselectAll = "DeselectAll";
         public const string InvertSelection = "InvertSelection";
         public const string Duplicate = "Duplicate";
+        public const string Rename = "Rename";
         public const string Delete = "Delete";
         public const string SoftDelete = "SoftDelete";
         public const string Find = "Find";

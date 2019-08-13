@@ -27,9 +27,11 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public event Action onListOperationFinish = delegate {};
             public event Action<Error> onOperationError = delegate {};
 
-            public event Action<ProductList, bool> onProductListFetched;
-            public event Action onFetchDetailsStart;
-            public event Action onFetchDetailsFinish;
+            public event Action<ProductList, bool> onProductListFetched = delegate {};
+            public event Action<long> onProductFetched = delegate {};
+
+            public event Action onFetchDetailsStart = delegate {};
+            public event Action onFetchDetailsFinish = delegate {};
 
             private Dictionary<string, DownloadProgress> m_Downloads = new Dictionary<string, DownloadProgress>();
 
@@ -46,7 +48,11 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             [SerializeField]
             private DownloadProgress[] m_SerializedDownloads = new DownloadProgress[0];
 
+            [SerializeField]
             private long[] m_SerializedPackageDetailsFetched;
+
+            [SerializeField]
+            private bool m_SetupDone;
 
             public void OnAfterDeserialize()
             {
@@ -82,44 +88,54 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_SerializedPackageDetailsFetched = m_PackageDetailsFetched.ToArray();
             }
 
+            public void Fetch(long productId)
+            {
+                if (!ApplicationUtil.instance.isUserLoggedIn)
+                {
+                    onOperationError?.Invoke(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
+                    return;
+                }
+
+                var id = productId.ToString();
+                var localPackages = GetLocalPackages();
+                if (localPackages.ContainsKey(id))
+                    RefreshProductUpdateDetails(new Dictionary<string, AssetStorePackageInfo> { { id, localPackages[id] } }, () => { FetchInternal(localPackages, productId); });
+                else
+                    FetchInternal(localPackages, productId);
+            }
+
+            private void FetchInternal(IDictionary<string, AssetStorePackageInfo> localPackages, long productID)
+            {
+                // create a placeholder before fetching data from the cloud for the first time
+                if (!m_PackageDetailsFetched.Contains(productID))
+                {
+                    onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(productID.ToString(), PackageTag.AssetStore) });
+                }
+
+                FetchDetailsInternal(new[] { productID }, localPackages);
+
+                onProductFetched?.Invoke(productID);
+            }
+
             public void List(int offset, int limit, string searchText = "", bool fetchDetails = true)
             {
                 if (!ApplicationUtil.instance.isUserLoggedIn)
+                {
+                    onOperationError?.Invoke(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
                     return;
+                }
+
+                onListOperationStart?.Invoke();
 
                 var localPackages = GetLocalPackages();
-
-                var needsUpdateDetail = localPackages.Where(kp => m_UpdateDetails[kp.Key] == PackageState.UpToDate);
-                if (!needsUpdateDetail.Any())
-                {
-                    ListInternal(localPackages, offset, limit, searchText, fetchDetails);
-                }
+                if (offset == 0)
+                    RefreshProductUpdateDetails(localPackages, () => { ListInternal(localPackages, offset, limit, searchText, fetchDetails); });
                 else
-                {
-                    var list = needsUpdateDetail.Select(kp => kp.Value).ToList();
-                    AssetStoreRestAPI.instance.GetProductUpdateDetail(list, updateDetails =>
-                    {
-                        object error;
-                        if (!updateDetails.TryGetValue("errorMessage", out error))
-                        {
-                            var results = updateDetails["results"] as List<object>;
-                            foreach (var item in results)
-                            {
-                                var updateDetail = item as IDictionary<string, object>;
-                                var canUpdate = (updateDetail["can_update"] is long? (long)updateDetail["can_update"] : 0) != 0;
-                                m_UpdateDetails[updateDetail["id"] as string] = canUpdate ? PackageState.Outdated : PackageState.UpToDate;
-                            }
-                        }
-
-                        ListInternal(localPackages, offset, limit, searchText, fetchDetails);
-                    });
-                }
+                    ListInternal(localPackages, offset, limit, searchText, fetchDetails);
             }
 
             private void ListInternal(IDictionary<string, AssetStorePackageInfo> localPackages, int offset, int limit, string searchText, bool fetchDetails)
             {
-                onListOperationStart?.Invoke();
-
                 AssetStoreRestAPI.instance.GetProductIDList(offset, limit, searchText, productList =>
                 {
                     if (!productList.isValid)
@@ -162,29 +178,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 });
             }
 
-            private IDictionary<string, AssetStorePackageInfo> GetLocalPackages()
-            {
-                var localPackages = new Dictionary<string, AssetStorePackageInfo>();
-                foreach (var package in AssetStoreUtils.instance.GetLocalPackageList())
-                {
-                    var item = Json.Deserialize(package.jsonInfo) as Dictionary<string, object>;
-                    if (item != null && item.ContainsKey("id") && item["id"] is string)
-                    {
-                        var packageId = (string)item["id"];
-                        localPackages[packageId] = package;
-                        if (!m_UpdateDetails.ContainsKey(packageId))
-                            m_UpdateDetails[packageId] = PackageState.UpToDate;
-                    }
-                }
-                return localPackages;
-            }
-
             public void FetchDetails(IEnumerable<long> packageIds)
             {
                 FetchDetailsInternal(packageIds, GetLocalPackages());
             }
 
-            public void FetchDetailsInternal(IEnumerable<long> packageIds, IDictionary<string, AssetStorePackageInfo> localPackages)
+            private void FetchDetailsInternal(IEnumerable<long> packageIds, IDictionary<string, AssetStorePackageInfo> localPackages)
             {
                 var countProduct = packageIds.Count();
                 if (countProduct == 0)
@@ -218,7 +217,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                             if (package.state == PackageState.Outdated && !string.IsNullOrEmpty(localPackage.packagePath))
                             {
-                                package.m_FirstVersion.localPath = string.Empty;
+                                package.m_FetchedVersion.localPath = string.Empty;
 
                                 try
                                 {
@@ -252,6 +251,99 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 }
             }
 
+            public void Refresh(IEnumerable<IPackage> packages)
+            {
+                if (packages == null || !packages.Any() || !ApplicationUtil.instance.isUserLoggedIn)
+                    return;
+
+                var localInfos = new Dictionary<string, AssetStorePackageVersion.SpecificVersionInfo>();
+                var localPackages = AssetStoreUtils.instance.GetLocalPackageList();
+                foreach (var p in localPackages)
+                {
+                    if (!string.IsNullOrEmpty(p.jsonInfo))
+                    {
+                        var item = Json.Deserialize(p.jsonInfo) as Dictionary<string, object>;
+                        if (item != null && item.ContainsKey("id") && item["id"] is string)
+                        {
+                            localInfos[(string)item["id"]] = new AssetStorePackageVersion.SpecificVersionInfo
+                            {
+                                packagePath = p.packagePath,
+                                versionString = item.ContainsKey("version") && item["version"] is string? (string)item["version"] : string.Empty,
+                                versionId = item.ContainsKey("version_id") && item["version_id"] is string? (string)item["version_id"] : string.Empty,
+                                publishedDate = item.ContainsKey("pubdate") && item["pubdate"] is string? (string)item["pubdate"] : string.Empty,
+                                supportedVersion = item.ContainsKey("unity_version") && item["unity_version"] is string? (string)item["unity_version"] : string.Empty
+                            };
+                        }
+                    }
+                }
+
+                var updatedPackages = new List<IPackage>();
+                foreach (var package in packages)
+                {
+                    var assetStorePackage = package as AssetStorePackage;
+                    if (assetStorePackage == null)
+                        continue;
+
+                    AssetStorePackageVersion.SpecificVersionInfo localInfo;
+                    localInfos.TryGetValue(assetStorePackage.uniqueId, out localInfo);
+
+                    var packageChanged = false;
+                    if (localInfo == null)
+                    {
+                        if (assetStorePackage.installedVersion != null)
+                        {
+                            assetStorePackage.m_FetchedVersion.localPath = string.Empty;
+                            if (assetStorePackage.m_FetchedVersion != assetStorePackage.m_LocalVersion)
+                            {
+                                assetStorePackage.RemoveVersion(assetStorePackage.m_LocalVersion);
+                            }
+
+                            assetStorePackage.SetState(PackageState.UpToDate);
+                            packageChanged = true;
+                        }
+                    }
+                    else if (assetStorePackage.installedVersion == null || localInfo.versionString != assetStorePackage.installedVersion.versionString)
+                    {
+                        if (assetStorePackage.m_FetchedVersion.versionString == localInfo.versionString)
+                        {
+                            assetStorePackage.m_FetchedVersion.localPath = localInfo.packagePath;
+                            if (assetStorePackage.m_LocalVersion != assetStorePackage.m_FetchedVersion)
+                            {
+                                assetStorePackage.RemoveVersion(assetStorePackage.m_LocalVersion);
+                            }
+
+                            assetStorePackage.SetState(PackageState.UpToDate);
+                        }
+                        else if (assetStorePackage.m_LocalVersion.versionString == localInfo.versionString)
+                        {
+                            assetStorePackage.m_FetchedVersion.localPath = string.Empty;
+                            assetStorePackage.m_LocalVersion.localPath = localInfo.packagePath;
+                            assetStorePackage.SetState(PackageState.Outdated);
+                        }
+                        else
+                        {
+                            assetStorePackage.m_FetchedVersion.localPath = string.Empty;
+                            assetStorePackage.AddVersion(new AssetStorePackageVersion(assetStorePackage.m_FetchedVersion, localInfo));
+                            assetStorePackage.m_LocalVersion.localPath = localInfo.packagePath;
+                            assetStorePackage.SetState(PackageState.Outdated);
+                        }
+
+                        packageChanged = true;
+                    }
+
+                    if (packageChanged)
+                    {
+                        if (m_UpdateDetails.ContainsKey(assetStorePackage.uniqueId))
+                            m_UpdateDetails[assetStorePackage.uniqueId] = assetStorePackage.state;
+
+                        updatedPackages.Add(package);
+                    }
+                }
+
+                if (updatedPackages.Any())
+                    onPackagesChanged?.Invoke(updatedPackages);
+            }
+
             public void Refresh(IPackage package)
             {
                 if (!ApplicationUtil.instance.isUserLoggedIn)
@@ -261,26 +353,74 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 if (assetStorePackage == null)
                     return;
 
+                AssetStorePackageVersion.SpecificVersionInfo localInfo = null;
                 var localPackage = AssetStoreUtils.instance.GetLocalPackageList().FirstOrDefault(p =>
                 {
                     if (!string.IsNullOrEmpty(p.jsonInfo))
                     {
                         var item = Json.Deserialize(p.jsonInfo) as Dictionary<string, object>;
-                        return item != null && item.ContainsKey("id") && item["id"] is string && package.uniqueId == (string)item["id"];
+                        if (item != null && item.ContainsKey("id") && item["id"] is string && package.uniqueId == (string)item["id"])
+                        {
+                            localInfo = new AssetStorePackageVersion.SpecificVersionInfo
+                            {
+                                versionString = item.ContainsKey("version") && item["version"] is string? (string)item["version"] : string.Empty,
+                                versionId = item.ContainsKey("version_id") && item["version_id"] is string? (string)item["version_id"] : string.Empty,
+                                publishedDate = item.ContainsKey("pubdate") && item["pubdate"] is string? (string)item["pubdate"] : string.Empty,
+                                supportedVersion = item.ContainsKey("unity_version") && item["unity_version"] is string? (string)item["unity_version"] : string.Empty
+                            };
+                            return true;
+                        }
                     }
                     return false;
                 });
 
-                if (!string.IsNullOrEmpty(localPackage.packagePath))
+                var packageChanged = false;
+                if (localInfo == null)
                 {
-                    assetStorePackage.m_FirstVersion.localPath = localPackage.packagePath;
-                    if (assetStorePackage.m_FirstVersion != assetStorePackage.m_LastVersion)
+                    if (assetStorePackage.installedVersion != null)
                     {
-                        assetStorePackage.RemoveVersion(assetStorePackage.m_LastVersion);
-                    }
-                    assetStorePackage.SetState(PackageState.UpToDate);
-                    m_UpdateDetails[package.uniqueId] = PackageState.UpToDate;
+                        assetStorePackage.m_FetchedVersion.localPath = string.Empty;
+                        if (assetStorePackage.m_FetchedVersion != assetStorePackage.m_LocalVersion)
+                        {
+                            assetStorePackage.RemoveVersion(assetStorePackage.m_LocalVersion);
+                        }
 
+                        assetStorePackage.SetState(PackageState.UpToDate);
+                        packageChanged = true;
+                    }
+                }
+                else if (assetStorePackage.installedVersion == null || localInfo.versionString != assetStorePackage.installedVersion.versionString)
+                {
+                    if (assetStorePackage.m_FetchedVersion.versionString == localInfo.versionString)
+                    {
+                        assetStorePackage.m_FetchedVersion.localPath = localPackage.packagePath;
+                        if (assetStorePackage.m_LocalVersion != assetStorePackage.m_FetchedVersion)
+                        {
+                            assetStorePackage.RemoveVersion(assetStorePackage.m_LocalVersion);
+                        }
+                        assetStorePackage.SetState(PackageState.UpToDate);
+                    }
+                    else if (assetStorePackage.m_LocalVersion.versionString == localInfo.versionString)
+                    {
+                        assetStorePackage.m_FetchedVersion.localPath = string.Empty;
+                        assetStorePackage.m_LocalVersion.localPath = localPackage.packagePath;
+                        assetStorePackage.SetState(PackageState.Outdated);
+                    }
+                    else
+                    {
+                        assetStorePackage.m_FetchedVersion.localPath = string.Empty;
+                        assetStorePackage.AddVersion(new AssetStorePackageVersion(assetStorePackage.m_FetchedVersion, localInfo));
+                        assetStorePackage.m_LocalVersion.localPath = localPackage.packagePath;
+                        assetStorePackage.SetState(PackageState.Outdated);
+                    }
+
+                    packageChanged = true;
+                }
+
+                if (packageChanged)
+                {
+                    if (m_UpdateDetails.ContainsKey(assetStorePackage.uniqueId))
+                        m_UpdateDetails[assetStorePackage.uniqueId] = assetStorePackage.state;
                     onPackagesChanged?.Invoke(new[] { package });
                 }
             }
@@ -301,13 +441,13 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public bool IsDownloadInProgress(string packageId)
             {
                 DownloadProgress progress;
-                if (!GetDownloadInProgress(packageId, out progress))
+                if (!GetDownloadProgress(packageId, out progress))
                     return false;
 
                 return progress.state == DownloadProgress.State.InProgress || progress.state == DownloadProgress.State.Started;
             }
 
-            public bool GetDownloadInProgress(string packageId, out DownloadProgress progress)
+            public bool GetDownloadProgress(string packageId, out DownloadProgress progress)
             {
                 progress = null;
                 return m_Downloads.TryGetValue(AssetStoreCompatibleKey(packageId), out progress);
@@ -316,7 +456,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public void Download(string packageId)
             {
                 DownloadProgress progress;
-                if (GetDownloadInProgress(packageId, out progress))
+                if (GetDownloadProgress(packageId, out progress))
                 {
                     if (progress.state != DownloadProgress.State.Started &&
                         progress.state != DownloadProgress.State.InProgress &&
@@ -349,7 +489,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public void AbortDownload(string packageId)
             {
                 DownloadProgress progress;
-                if (!GetDownloadInProgress(packageId, out progress))
+                if (!GetDownloadProgress(packageId, out progress))
                     return;
 
                 if (progress.state == DownloadProgress.State.Aborted || progress.state == DownloadProgress.State.Completed || progress.state == DownloadProgress.State.Error)
@@ -372,7 +512,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public void OnDownloadProgress(string packageId, string message, ulong bytes, ulong total)
             {
                 DownloadProgress progress;
-                if (!GetDownloadInProgress(packageId, out progress))
+                if (!GetDownloadProgress(packageId, out progress))
                 {
                     if (packageId.StartsWith(k_AssetStoreDownloadPrefix))
                         packageId = packageId.Substring(k_AssetStoreDownloadPrefix.Length);
@@ -402,6 +542,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             public void Setup()
             {
+                System.Diagnostics.Debug.Assert(!m_SetupDone);
+                m_SetupDone = true;
+
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
                 if (ApplicationUtil.instance.isUserLoggedIn)
                 {
@@ -411,17 +554,17 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             public void Clear()
             {
+                System.Diagnostics.Debug.Assert(m_SetupDone);
+                m_SetupDone = false;
+
                 AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
+            }
 
-                m_Downloads.Clear();
+            public void Reset()
+            {
                 m_UpdateDetails.Clear();
                 m_PackageDetailsFetched.Clear();
-
-                m_SerializedDownloads = new DownloadProgress[0];
-                m_SerializedUpdateDetailKeys = new string[0];
-                m_SerializedUpdateDetailValues = new PackageState[0];
-                m_SerializedPackageDetailsFetched = new long[0];
             }
 
             private void OnUserLoginStateChange(bool loggedIn)
@@ -445,6 +588,52 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                 foreach (var download in currentDownloads)
                     AssetStoreDownloadOperation.instance.AbortDownloadPackageAsync(download);
+            }
+
+            private void RefreshProductUpdateDetails(IDictionary<string, AssetStorePackageInfo> localPackages, Action doneCallbackAction)
+            {
+                var needsUpdateDetail = localPackages.Where(kp => m_UpdateDetails[kp.Key] == PackageState.UpToDate);
+                if (!needsUpdateDetail.Any())
+                {
+                    doneCallbackAction?.Invoke();
+                }
+                else
+                {
+                    var list = needsUpdateDetail.Select(kp => kp.Value).ToList();
+                    AssetStoreRestAPI.instance.GetProductUpdateDetail(list, updateDetails =>
+                    {
+                        object error;
+                        if (!updateDetails.TryGetValue("errorMessage", out error))
+                        {
+                            var results = updateDetails["results"] as List<object>;
+                            foreach (var item in results)
+                            {
+                                var updateDetail = item as IDictionary<string, object>;
+                                var canUpdate = (updateDetail["can_update"] is long? (long)updateDetail["can_update"] : 0) != 0;
+                                m_UpdateDetails[updateDetail["id"] as string] = canUpdate ? PackageState.Outdated : PackageState.UpToDate;
+                            }
+                        }
+
+                        doneCallbackAction?.Invoke();
+                    });
+                }
+            }
+
+            private IDictionary<string, AssetStorePackageInfo> GetLocalPackages()
+            {
+                var localPackages = new Dictionary<string, AssetStorePackageInfo>();
+                foreach (var package in AssetStoreUtils.instance.GetLocalPackageList())
+                {
+                    var item = Json.Deserialize(package.jsonInfo) as Dictionary<string, object>;
+                    if (item != null && item.ContainsKey("id") && item["id"] is string)
+                    {
+                        var packageId = (string)item["id"];
+                        localPackages[packageId] = package;
+                        if (!m_UpdateDetails.ContainsKey(packageId))
+                            m_UpdateDetails[packageId] = PackageState.UpToDate;
+                    }
+                }
+                return localPackages;
             }
         }
     }

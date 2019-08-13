@@ -56,7 +56,8 @@ namespace UnityEditor
         void OnDisable()
         {
             AnimatorOverrideController animatorOverrideController = target as AnimatorOverrideController;
-            animatorOverrideController.OnOverrideControllerDirty -= Repaint;
+            if (animatorOverrideController != null)
+                animatorOverrideController.OnOverrideControllerDirty -= Repaint;
         }
 
         public override void OnInspectorGUI()

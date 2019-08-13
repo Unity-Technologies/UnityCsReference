@@ -96,10 +96,6 @@ namespace UnityEditor
             if (m_ActiveCollider == null)
                 return;
 
-            // Skip editing of polygon if view tool is active i.e. while panning the scene view
-            if (Tools.viewToolActive)
-                return;
-
             // Fetch the collider offset.
             var colliderOffset = m_ActiveCollider.offset;
 

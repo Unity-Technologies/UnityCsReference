@@ -29,7 +29,7 @@ namespace UnityEditorInternal.Profiling
 
             static BaseStyles()
             {
-                viewTypeToolbarDropDown.fixedWidth = Chart.kSideWidth - 1f - viewTypeToolbarDropDown.padding.left;
+                viewTypeToolbarDropDown.fixedWidth = Chart.kSideWidth;
                 viewTypeToolbarDropDown.stretchWidth = false;
 
                 detailedViewTypeToolbarDropDown.fixedWidth = 130f;
@@ -94,7 +94,7 @@ namespace UnityEditorInternal.Profiling
         {
             var cpuTime = cpuTimeMs > 0 ? UnityString.Format("{0:N2}", cpuTimeMs) : "--";
             var gpuTime = gpuTimeMs > 0 ? UnityString.Format("{0:N2}", gpuTimeMs) : "--";
-            GUILayout.Label(UnityString.Format(BaseStyles.cpuGPUTime.text, cpuTime, gpuTime), EditorStyles.miniLabel);
+            GUILayout.Label(UnityString.Format(BaseStyles.cpuGPUTime.text, cpuTime, gpuTime), EditorStyles.toolbarLabel);
         }
 
         protected void ShowLargeTooltip(Vector2 pos, Rect fullRect, string text, float lineHeight)

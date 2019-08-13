@@ -22,14 +22,19 @@ namespace UnityEditor.StyleSheets
 
         internal static bool DrawStyle(GUIStyle gs, Rect position, GUIContent content, DrawStates states)
         {
-            if (gs == GUIStyle.none || String.IsNullOrEmpty(gs.name) || gs.normal.background != null)
+            if (gs == GUIStyle.none || gs.normal.background != null)
                 return false;
 
             if (!GUIClip.visibleRect.Overlaps(position))
                 return true;
 
-            var styleName = GUIStyleExtensions.StyleNameToBlockName(gs.name, false);
-            var block = FindBlock(styleName.GetHashCode(), states);
+            if (gs.blockId == 0)
+            {
+                var blockName = GUIStyleExtensions.StyleNameToBlockName(gs.name, false);
+                gs.blockId = blockName.GetHashCode();
+            }
+
+            var block = FindBlock(gs.blockId, states);
             if (!block.IsValid())
                 return false;
 
@@ -51,12 +56,13 @@ namespace UnityEditor.StyleSheets
             StyleState[] states;
             if (!s_StatesCache.TryGetValue(stateFlags, out states))
             {
-                states = new[] { stateFlags & StyleState.disabled,
-                                                         stateFlags & StyleState.active,
-                                                         stateFlags & StyleState.@checked,
-                                                         stateFlags & StyleState.hover,
-                                                         stateFlags & StyleState.focus,
-                                                         StyleState.normal }.Distinct().Where(s => s != StyleState.none).ToArray();
+                states = new[] { stateFlags,
+                                 stateFlags & StyleState.disabled,
+                                 stateFlags & StyleState.active,
+                                 stateFlags & StyleState.@checked,
+                                 stateFlags & StyleState.hover,
+                                 stateFlags & StyleState.focus,
+                                 StyleState.normal}.Distinct().Where(s => s != StyleState.none).ToArray();
                 s_StatesCache.Add(stateFlags, states);
             }
 
@@ -174,6 +180,7 @@ namespace UnityEditor.StyleSheets
             var border = new StyleBorder(block);
 
             var guiBgColor = GUI.backgroundColor;
+            var guiContentColor = GUI.contentColor;
             var bgColorTint = guiBgColor * colorTint;
 
             if (!block.Execute(StyleCatalogKeyword.background, DrawGradient, new GradientParams(drawRect, border.radius, bgColorTint)))
@@ -210,7 +217,7 @@ namespace UnityEditor.StyleSheets
                 float contentImageOffsetY = hasImage ? block.GetFloat(StyleCatalogKeyword.contentImageOffsetY) : 0;
                 basis.Internal_DrawContent(contentRect, content, states.isHover, states.isActive, states.on, states.hasKeyboardFocus,
                     states.hasTextInput, states.drawSelectionAsComposition, states.cursorFirst, states.cursorLast,
-                    states.cursorColor, states.selectionColor, Color.white * opacity,
+                    states.cursorColor, states.selectionColor, guiContentColor * opacity,
                     0, 0, contentImageOffsetY, contentImageOffsetX, false, false);
 
                 // Handle tooltip and hovering region

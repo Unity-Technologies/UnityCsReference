@@ -333,7 +333,14 @@ namespace UnityEditor.UIElements
 
             using (new EditorGUI.DisabledScope(!currentEditor.IsEnabled()))
             {
+                // Woraround: Temporarily adjust the top padding to 2px in order to vertically center the content of the titlebar.
+                // This is because there is a 3px bottom margin used to be able to pick and drag a component section
+                var oldPadding = EditorStyles.inspectorTitlebar.padding.top;
+                EditorStyles.inspectorTitlebar.padding.top = 2;
+
                 bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, currentEditor);
+                EditorStyles.inspectorTitlebar.padding.top = oldPadding;
+
                 if (wasVisible != isVisible)
                 {
                     inspectorWindow.tracker.SetVisible(m_EditorIndex, isVisible ? 1 : 0);

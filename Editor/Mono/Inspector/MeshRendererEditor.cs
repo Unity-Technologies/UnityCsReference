@@ -79,7 +79,7 @@ namespace UnityEditor
             }
 
             LightingSettingsGUI(true);
-            OtherSettingsGUI(true);
+            OtherSettingsGUI(true, false, false, true);
 
             serializedObject.ApplyModifiedProperties();
         }

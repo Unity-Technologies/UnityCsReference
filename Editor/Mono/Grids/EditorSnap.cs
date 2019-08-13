@@ -59,9 +59,15 @@ namespace UnityEditor
             {
                 return Event.current == null
                     ? instance.snapEnabled
-                    : EditorGUI.actionKey ? !instance.snapEnabled : instance.snapEnabled;
+                    : hotkeyActive ? !instance.snapEnabled : instance.snapEnabled;
             }
         }
+
+        internal static bool hotkeyActive
+        {
+            get { return EditorGUI.actionKey; }
+        }
+
 
         public static bool preferGrid
         {

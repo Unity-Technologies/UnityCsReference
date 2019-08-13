@@ -62,7 +62,7 @@ namespace UnityEditor
             }
             catch
             {
-                return ""; // Possible on just deleted FacebookSDK
+                return "";
             }
         }
 

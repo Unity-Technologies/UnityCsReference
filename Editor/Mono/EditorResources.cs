@@ -6,25 +6,30 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using JetBrains.Annotations;
 using UnityEditor.StyleSheets;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Experimental
 {
     [ExcludeFromDocs]
     public partial class EditorResources
     {
+        private static StyleCatalog s_StyleCatalog;
+        private static bool s_RefreshGlobalStyleCatalog = false;
+        private static Dictionary<string, string> s_BuiltInFonts = null;
+
         // Global editor styles
-        internal static StyleCatalog styleCatalog { get; private set; }
-
-        static EditorResources()
+        internal static StyleCatalog styleCatalog
         {
-            styleCatalog = new StyleCatalog();
-
-            if (CanEnableExtendedStyles())
-                GUIStyle.onDraw = StylePainter.DrawStyle;
+            get
+            {
+                if (s_StyleCatalog == null || s_RefreshGlobalStyleCatalog)
+                    BuildCatalog();
+                return s_StyleCatalog;
+            }
         }
 
         private static bool CanEnableExtendedStyles()
@@ -175,17 +180,16 @@ namespace UnityEditor.Experimental
             return s_SupportedFonts;
         }
 
-        private static Dictionary<string, string> s_BuiltInFonts = null;
-
         internal static Dictionary<string, string> builtInFonts
         {
             get
             {
                 if (s_BuiltInFonts == null)
                 {
-                    s_BuiltInFonts = new Dictionary<string, string>();
-
-                    s_BuiltInFonts["Roboto"] = "Fonts/roboto/Roboto-Regular.ttf";
+                    s_BuiltInFonts = new Dictionary<string, string>
+                    {
+                        ["Roboto"] = "Fonts/roboto/Roboto-Regular.ttf"
+                    };
 
                     if (Application.platform != RuntimePlatform.WindowsEditor)
                     {
@@ -226,26 +230,36 @@ namespace UnityEditor.Experimental
             return catalogFiles;
         }
 
+        [UsedImplicitly, RequiredByNativeCode]
         internal static void BuildCatalog()
         {
-            styleCatalog = new StyleCatalog();
+            s_StyleCatalog = new StyleCatalog();
+            s_RefreshGlobalStyleCatalog = false;
+
             var paths = GetDefaultStyleCatalogPaths();
             foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
                 paths.Add(editorUssPath);
 
+            Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
             styleCatalog.Load(paths);
-            if (CanEnableExtendedStyles())
+        }
+
+        internal static void RefreshSkin()
+        {
+            if (!CanEnableExtendedStyles())
+                return;
+
+            GUIStyle.onDraw = StylePainter.DrawStyle;
+
+            // Update gui skin style layouts
+            var skin = GUIUtility.GetDefaultSkin();
+            if (skin != null)
             {
-                // Update gui skin style layouts
-                var skin = GUIUtility.GetDefaultSkin();
-                if (skin != null)
-                {
-                    // TODO: Emit OnStyleCatalogLoaded
-                    if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
-                        ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
-                    skin.font = GetNormalFont();
-                    UpdateGUIStyleProperties(skin);
-                }
+                // TODO: Emit OnStyleCatalogLoaded
+                if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
+                    ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
+                skin.font = GetNormalFont();
+                UpdateGUIStyleProperties(skin);
             }
         }
 
@@ -379,6 +393,24 @@ namespace UnityEditor.Experimental
             var catalog = new StyleCatalog();
             catalog.Load(ussPaths);
             return catalog;
+        }
+
+        [UsedImplicitly]
+        private class StyleCatalogPostProcessor : AssetPostprocessor
+        {
+            [UsedImplicitly]
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                if (styleCatalog == null)
+                    return;
+
+                foreach (var assetPath in importedAssets.Concat(deletedAssets))
+                {
+                    if (!IsEditorStyleSheet(assetPath))
+                        continue;
+                    s_RefreshGlobalStyleCatalog = true;
+                }
+            }
         }
     }
 }

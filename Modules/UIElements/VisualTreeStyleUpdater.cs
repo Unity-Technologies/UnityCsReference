@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Profiling;
 
@@ -65,10 +66,9 @@ namespace UnityEngine.UIElements
 
         private VisualTreeStyleUpdaterTraversal m_StyleContextHierarchyTraversal = new VisualTreeStyleUpdaterTraversal();
 
-        public override string description
-        {
-            get { return "Update Style"; }
-        }
+        private static readonly string s_Description = "Update Style";
+        private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
+        public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         public void DirtyStyleSheets()
         {
@@ -119,7 +119,7 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(visualTree.panel != null);
             m_IsApplyingStyles = true;
-            m_StyleContextHierarchyTraversal.PrepareTraversal(panel.currentPixelsPerPoint);
+            m_StyleContextHierarchyTraversal.PrepareTraversal(panel.scaledPixelsPerPoint);
             m_StyleContextHierarchyTraversal.Traverse(visualTree);
             m_IsApplyingStyles = false;
         }

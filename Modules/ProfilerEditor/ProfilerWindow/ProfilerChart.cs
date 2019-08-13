@@ -99,14 +99,18 @@ namespace UnityEditorInternal
 
         protected override void DoLegendGUI(Rect position, ChartType type, ChartViewData cdata, EventType evtType, bool active)
         {
-            Rect warningIconRect = position;
-            warningIconRect.xMin = warningIconRect.xMax - performanceWarning.image.width;
-            warningIconRect.yMin = warningIconRect.yMax - performanceWarning.image.height;
-
             base.DoLegendGUI(position, type, cdata, evtType, active);
 
             if (m_Area == ProfilerArea.GPU)
-                GUI.Label(warningIconRect, performanceWarning);
+            {
+                const float rightMmargin = 2f;
+                const float topMargin = 4f;
+                const float iconSize = 16f;
+                var padding = GUISkin.current.label.padding;
+                float width = iconSize + padding.horizontal;
+
+                GUI.Label(new Rect(position.xMax - width - rightMmargin, position.y + topMargin, width, iconSize + padding.vertical), performanceWarning);
+            }
         }
 
         public virtual int DoChartGUI(int currentFrame, bool active)

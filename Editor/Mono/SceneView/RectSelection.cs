@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
@@ -9,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -22,6 +24,9 @@ namespace UnityEditor
         enum SelectionType { Normal, Additive, Subtractive }
         Object[] m_CurrentSelection = null;
         EditorWindow m_Window;
+
+        internal static event Action rectSelectionStarting = delegate {};
+        internal static event Action rectSelectionFinished = delegate {};
 
         static int s_RectSelectionID = GUIUtility.GetPermanentControlID();
 
@@ -62,8 +67,10 @@ namespace UnityEditor
                         {
                             EditorApplication.modifierKeysChanged += SendCommandsOnModifierKeys;
                             m_RectSelecting = true;
+                            ActiveEditorTracker.delayFlushDirtyRebuild = true;
                             m_LastSelection = null;
                             m_CurrentSelection = null;
+                            rectSelectionStarting();
                         }
                         if (m_RectSelecting)
                         {
@@ -121,7 +128,10 @@ namespace UnityEditor
                         {
                             EditorApplication.modifierKeysChanged -= SendCommandsOnModifierKeys;
                             m_RectSelecting = false;
+                            ActiveEditorTracker.delayFlushDirtyRebuild = false;
+                            ActiveEditorTracker.RebuildAllIfNecessary();
                             m_SelectionStart = new Object[0];
+                            rectSelectionFinished();
                             evt.Use();
                         }
                         else

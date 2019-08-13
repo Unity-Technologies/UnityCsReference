@@ -101,12 +101,6 @@ namespace UnityEditor.UIElements
 
             internal bool m_UpdateTextFromValue;
 
-            void UpdateValueFromText()
-            {
-                var newValue = StringToValue(text);
-                textValueFieldParent.value = newValue;
-            }
-
             internal override bool AcceptCharacter(char c)
             {
                 return base.AcceptCharacter(c) && c != 0 && allowedCharacters.IndexOf(c) != -1;
@@ -138,7 +132,10 @@ namespace UnityEditor.UIElements
 
             protected abstract string ValueToString(TValueType value);
 
-            protected abstract TValueType StringToValue(string str);
+            protected override TValueType StringToValue(string str)
+            {
+                return base.StringToValue(str);
+            }
 
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {

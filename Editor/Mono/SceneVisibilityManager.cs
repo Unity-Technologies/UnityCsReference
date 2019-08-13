@@ -95,8 +95,6 @@ namespace UnityEditor
                     Undo.ClearUndo(SceneVisibilityState.GetInstance());
                 }
             }
-            instance.VisibilityChanged();
-            instance.PickableContentChanged();
         }
 
         private static void StageNavigationManagerOnStageChanging(StageNavigationItem oldItem, StageNavigationItem newItem)
@@ -118,8 +116,6 @@ namespace UnityEditor
             {
                 SceneVisibilityState.GeneratePersistentDataForAllLoadedScenes();
             }
-            instance.VisibilityChanged();
-            instance.PickableContentChanged();
         }
 
         private static void EditorSceneManagerOnSceneSaved(Scene scene)
@@ -152,20 +148,17 @@ namespace UnityEditor
             }
             //need to clear scene on new scene since all new scenes use the same GUID
             SceneVisibilityState.ClearScene(scene);
-            instance.VisibilityChanged();
-            instance.PickableContentChanged();
         }
 
         private static void UndoRedoPerformed()
         {
-            instance.VisibilityChanged();
+            SceneVisibilityState.ForceDataUpdate();
         }
 
         public void HideAll()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Hide All");
             HideAllNoUndo();
-            VisibilityChanged();
         }
 
         private void HideAllNoUndo()
@@ -180,7 +173,7 @@ namespace UnityEditor
             {
                 for (int i = 0; i < SceneManager.sceneCount; i++)
                 {
-                    Hide(SceneManager.GetSceneAt(i), false);
+                    HideNoUndo(SceneManager.GetSceneAt(i));
                 }
             }
         }
@@ -189,7 +182,6 @@ namespace UnityEditor
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Disable All Picking");
             DisableAllPickingNoUndo();
-            PickableContentChanged();
         }
 
         private void DisableAllPickingNoUndo()
@@ -204,7 +196,7 @@ namespace UnityEditor
             {
                 for (int i = 0; i < SceneManager.sceneCount; i++)
                 {
-                    DisablePicking(SceneManager.GetSceneAt(i), false);
+                    DisablePicking(SceneManager.GetSceneAt(i));
                 }
             }
         }
@@ -213,28 +205,24 @@ namespace UnityEditor
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show GameObject");
             SceneVisibilityState.SetGameObjectHidden(gameObject, false, includeDescendants);
-            VisibilityChanged();
         }
 
         public void Hide(GameObject gameObject, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Hide GameObject");
             SceneVisibilityState.SetGameObjectHidden(gameObject, true, includeDescendants);
-            VisibilityChanged();
         }
 
         public void DisablePicking(GameObject gameObject, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Disable Picking GameObject");
             SceneVisibilityState.SetGameObjectPickingDisabled(gameObject, true, includeDescendants);
-            PickableContentChanged();
         }
 
         public void EnablePicking(GameObject gameObject, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Enable Picking GameObject");
             SceneVisibilityState.SetGameObjectPickingDisabled(gameObject, false, includeDescendants);
-            PickableContentChanged();
         }
 
         [Shortcut("Scene Visibility/Show All")]
@@ -257,7 +245,6 @@ namespace UnityEditor
                     Show(SceneManager.GetSceneAt(i), false);
                 }
             }
-            VisibilityChanged();
         }
 
         public void EnableAllPicking()
@@ -271,10 +258,9 @@ namespace UnityEditor
             {
                 for (int i = 0; i < SceneManager.sceneCount; i++)
                 {
-                    EnablePicking(SceneManager.GetSceneAt(i), false);
+                    EnablePickingNoUndo(SceneManager.GetSceneAt(i));
                 }
             }
-            PickableContentChanged();
         }
 
         private void Show(Scene scene, bool sendContentChangedEvent)
@@ -290,17 +276,12 @@ namespace UnityEditor
             }
         }
 
-        private void EnablePicking(Scene scene, bool sendContentChangedEvent)
+        private void EnablePickingNoUndo(Scene scene)
         {
             if (!scene.IsValid())
                 return;
 
             SceneVisibilityState.EnablePicking(scene);
-
-            if (sendContentChangedEvent)
-            {
-                PickableContentChanged();
-            }
         }
 
         public void Show(Scene scene)
@@ -318,35 +299,25 @@ namespace UnityEditor
                 return;
 
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Enable Picking Scene");
-            EnablePicking(scene, true);
+            EnablePickingNoUndo(scene);
         }
 
-        private void Hide(Scene scene, bool sendContentChangedEvent)
+        private void HideNoUndo(Scene scene)
         {
             if (!scene.IsValid())
                 return;
 
             SceneVisibilityState.ShowScene(scene);
             SceneVisibilityState.SetGameObjectsHidden(scene.GetRootGameObjects(), true, true);
-
-            if (sendContentChangedEvent)
-            {
-                VisibilityChanged();
-            }
         }
 
-        internal void DisablePicking(Scene scene, bool sendContentChangedEvent)
+        internal void DisablePickingNoUndo(Scene scene)
         {
             if (!scene.IsValid())
                 return;
 
             SceneVisibilityState.EnablePicking(scene);
             SceneVisibilityState.SetGameObjectsPickingDisabled(scene.GetRootGameObjects(), true, true);
-
-            if (sendContentChangedEvent)
-            {
-                PickableContentChanged();
-            }
         }
 
         public void Hide(Scene scene)
@@ -355,7 +326,7 @@ namespace UnityEditor
                 return;
 
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Hide Scene");
-            Hide(scene, true);
+            HideNoUndo(scene);
         }
 
         public void DisablePicking(Scene scene)
@@ -364,7 +335,7 @@ namespace UnityEditor
                 return;
 
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Disable Picking Scene");
-            DisablePicking(scene, true);
+            DisablePickingNoUndo(scene);
         }
 
         public bool IsHidden(GameObject gameObject, bool includeDescendants = false)
@@ -472,28 +443,24 @@ namespace UnityEditor
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show GameObjects");
             SceneVisibilityState.SetGameObjectsHidden(gameObjects, false, includeDescendants);
-            VisibilityChanged();
         }
 
         public void Hide(GameObject[] gameObjects, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Hide GameObjects");
             SceneVisibilityState.SetGameObjectsHidden(gameObjects, true, includeDescendants);
-            VisibilityChanged();
         }
 
         public void DisablePicking(GameObject[] gameObjects, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Disable Picking GameObjects");
             SceneVisibilityState.SetGameObjectsPickingDisabled(gameObjects, true, includeDescendants);
-            PickableContentChanged();
         }
 
         public void EnablePicking(GameObject[] gameObjects, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Enable Picking GameObjects");
             SceneVisibilityState.SetGameObjectsPickingDisabled(gameObjects, false, includeDescendants);
-            PickableContentChanged();
         }
 
         public void Isolate(GameObject gameObject, bool includeDescendants)
@@ -503,7 +470,6 @@ namespace UnityEditor
             IsolateCurrentStage();
             HideAllNoUndo();
             SceneVisibilityState.SetGameObjectHidden(gameObject, false, includeDescendants);
-            VisibilityChanged();
         }
 
         public void Isolate(GameObject[] gameObjects, bool includeDescendants)
@@ -513,7 +479,6 @@ namespace UnityEditor
             IsolateCurrentStage();
             HideAllNoUndo();
             SceneVisibilityState.SetGameObjectsHidden(gameObjects, false, includeDescendants);
-            VisibilityChanged();
         }
 
         private void VisibilityChanged()
@@ -530,14 +495,12 @@ namespace UnityEditor
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Visibility");
             SceneVisibilityState.SetGameObjectHidden(gameObject, !SceneVisibilityState.IsGameObjectHidden(gameObject), includeDescendants);
-            VisibilityChanged();
         }
 
         public void TogglePicking(GameObject gameObject, bool includeDescendants)
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Picking");
             SceneVisibilityState.SetGameObjectPickingDisabled(gameObject, !SceneVisibilityState.IsGameObjectPickingDisabled(gameObject), includeDescendants);
-            PickableContentChanged();
         }
 
         public bool AreAllDescendantsHidden(GameObject gameObject)
@@ -575,7 +538,6 @@ namespace UnityEditor
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Exit Isolation");
             RevertIsolationCurrentStage();
-            VisibilityChanged();
         }
 
         private static void RevertIsolationCurrentStage()
@@ -601,7 +563,6 @@ namespace UnityEditor
                 }
                 Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Visibility");
                 SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, false);
-                instance.VisibilityChanged();
             }
         }
 
@@ -622,7 +583,6 @@ namespace UnityEditor
                 }
                 Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Visibility");
                 SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, true);
-                instance.VisibilityChanged();
             }
         }
 
@@ -643,7 +603,6 @@ namespace UnityEditor
                 }
                 Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Picking");
                 SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldDisablePicking, true);
-                instance.VisibilityChanged();
             }
         }
 
@@ -664,7 +623,6 @@ namespace UnityEditor
                 }
                 Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Pickable");
                 SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldHide, false);
-                instance.PickableContentChanged();
             }
         }
 
@@ -693,13 +651,10 @@ namespace UnityEditor
                 {
                     SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, true);
                 }
-
-                VisibilityChanged();
             }
             else
             {
                 RevertIsolationCurrentStage();
-                VisibilityChanged();
             }
         }
 
@@ -722,13 +677,10 @@ namespace UnityEditor
                 {
                     SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, false);
                 }
-
-                VisibilityChanged();
             }
             else
             {
                 RevertIsolationCurrentStage();
-                VisibilityChanged();
             }
         }
 

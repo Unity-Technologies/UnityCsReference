@@ -61,7 +61,8 @@ namespace UnityEditor.UIElements
                 {
                     DestroyOwnedEditor();
                     m_Editor = value;
-                    PartialReset();
+                    ownsEditor = false;
+                    PartialReset(m_Editor.serializedObject);
                 }
             }
         }
@@ -218,8 +219,9 @@ namespace UnityEditor.UIElements
                 hierarchy.Add(customInspector);
         }
 
-        private void PartialReset()
+        private void PartialReset(SerializedObject bindObject)
         {
+            boundObject = bindObject;
             if (boundObject == null)
             {
                 Reset(null);
@@ -235,6 +237,8 @@ namespace UnityEditor.UIElements
             Clear();
             if (customInspector != null && customInspector != this)
                 hierarchy.Add(customInspector);
+
+            this.Bind(boundObject);
         }
 
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -267,8 +271,12 @@ namespace UnityEditor.UIElements
             }
 
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            var ed = Editor.CreateEditor(serializedObject?.targetObject);
+            editor = ed;
             ownsEditor = true;
-            return editor = Editor.CreateEditor(serializedObject?.targetObject);
+
+            return ed;
         }
 
         private VisualElement CreateDefaultInspector(SerializedObject serializedObject)
@@ -313,7 +321,7 @@ namespace UnityEditor.UIElements
             return false;
         }
 
-        static internal bool SetWideModeForWidth(VisualElement displayElement)
+        internal static bool SetWideModeForWidth(VisualElement displayElement)
         {
             var previousWideMode = EditorGUIUtility.wideMode;
 

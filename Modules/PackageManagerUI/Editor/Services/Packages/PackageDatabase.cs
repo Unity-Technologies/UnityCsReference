@@ -20,19 +20,18 @@ namespace UnityEditor.PackageManager.UI
         private class PackageDatabaseInternal : ScriptableSingleton<PackageDatabaseInternal>, IPackageDatabase, ISerializationCallbackReceiver
         {
             public event Action<long> onUpdateTimeChange;
-
             public event Action<IPackage, IPackageVersion> onInstallSuccess = delegate {};
             public event Action<IPackage> onUninstallSuccess = delegate {};
             public event Action<IPackage> onPackageOperationStart = delegate {};
             public event Action<IPackage> onPackageOperationFinish = delegate {};
             public event Action onRefreshOperationStart = delegate {};
-            public event Action onRefreshOperationFinish = delegate {};
+            public event Action<PackageFilterTab> onRefreshOperationFinish = delegate {};
             public event Action<Error> onRefreshOperationError = delegate {};
 
             public event Action<IPackage, DownloadProgress> onDownloadProgress = delegate {};
 
             // args 1,2, 3 are added, removed and preUpdated, and postUpdated packages respectively
-            public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged;
+            public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged = delegate {};
 
             private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
             // a list of unique ids (could be specialUniqueId or packageId)
@@ -48,6 +47,9 @@ namespace UnityEditor.PackageManager.UI
             [NonSerialized]
             private List<IOperation> m_RefreshOperationsInProgress = new List<IOperation>();
 
+            [SerializeField]
+            private bool m_SetupDone;
+
             public bool isEmpty { get { return !m_Packages.Any(); } }
 
             private static readonly IPackage[] k_EmptyList = new IPackage[0] {};
@@ -59,6 +61,8 @@ namespace UnityEditor.PackageManager.UI
             }
 
             public IEnumerable<IPackage> allPackages { get { return m_Packages.Values; } }
+            public IEnumerable<IPackage> assetStorePackages { get { return m_Packages.Values.Where(p => p is AssetStorePackage); } }
+            public IEnumerable<IPackage> upmPackages { get { return m_Packages.Values.Where(p => p is UpmPackage); } }
 
             private long m_LastUpdateTimestamp = 0;
             public long lastUpdateTimestamp { get { return m_LastUpdateTimestamp; } }
@@ -189,42 +193,36 @@ namespace UnityEditor.PackageManager.UI
 
             public void Setup()
             {
-                UpmClient.instance.Setup();
+                System.Diagnostics.Debug.Assert(!m_SetupDone);
+                m_SetupDone = true;
 
                 UpmClient.instance.onPackagesChanged += OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
-
                 UpmClient.instance.onListOperation += OnUpmListOrSearchOperation;
                 UpmClient.instance.onSearchAllOperation += OnUpmListOrSearchOperation;
                 UpmClient.instance.onSearchAllOperation += OnUpmSearchAllOperation;
-
                 UpmClient.instance.onAddOperation += OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation += OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation += OnUpmRemoveOperation;
+                UpmClient.instance.Setup();
 
-                AssetStore.AssetStoreClient.instance.Setup();
                 AssetStore.AssetStoreClient.instance.onPackagesChanged += OnPackagesChanged;
                 AssetStore.AssetStoreClient.instance.onDownloadProgress += OnDownloadProgress;
-
                 AssetStore.AssetStoreClient.instance.onListOperationStart += OnAssetStoreOperationStart;
                 AssetStore.AssetStoreClient.instance.onListOperationFinish += OnAssetStoreOperationFinish;
                 AssetStore.AssetStoreClient.instance.onOperationError += OnAssetStoreOperationError;
+                AssetStore.AssetStoreClient.instance.Setup();
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
+
+                //if (m_RefreshedOnce)
+                //    Refresh(RefreshOptions.Purchased | RefreshOptions.OfflineMode);
             }
 
             public void Clear()
             {
-                var allPackages = this.allPackages;
-                m_Packages.Clear();
-                onPackagesChanged?.Invoke(k_EmptyList, allPackages, k_EmptyList, k_EmptyList);
-
-                m_SerializedUpmPackages = new List<UpmPackage>();
-                m_SerializedAssetStorePackages = new List<AssetStorePackage>();
-                m_SpecialInstallations.Clear();
-
-                m_RefreshOperationsInProgress.Clear();
-                m_LastUpdateTimestamp = 0;
+                System.Diagnostics.Debug.Assert(m_SetupDone);
+                m_SetupDone = false;
 
                 UpmClient.instance.onPackagesChanged -= OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
@@ -244,6 +242,26 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.Clear();
 
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
+            }
+
+            public void Reset()
+            {
+                onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), m_Packages.Values, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
+
+                Clear();
+
+                AssetStore.AssetStoreClient.instance.Reset();
+                UpmClient.instance.Reset();
+
+                m_Packages.Clear();
+                m_SerializedUpmPackages = new List<UpmPackage>();
+                m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+                m_SpecialInstallations.Clear();
+
+                m_RefreshOperationsInProgress.Clear();
+                m_LastUpdateTimestamp = 0;
+
+                Setup();
             }
 
             private void OnDownloadProgress(DownloadProgress progress)
@@ -271,12 +289,11 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnAssetStoreOperationFinish()
             {
-                onRefreshOperationFinish?.Invoke();
+                onRefreshOperationFinish?.Invoke(PackageFilterTab.AssetStore);
             }
 
             private void OnAssetStoreOperationError(Error error)
             {
-                Debug.Log(string.Format(L10n.Tr("Error while fetching your assets: {0}"), error.message));
                 onRefreshOperationError?.Invoke(error);
             }
 
@@ -435,9 +452,7 @@ namespace UnityEditor.PackageManager.UI
             private void OnListOrSearchOperationFinalized(IOperation operation)
             {
                 m_RefreshOperationsInProgress.Remove(operation);
-                if (m_RefreshOperationsInProgress.Any())
-                    return;
-                onRefreshOperationFinish();
+                onRefreshOperationFinish(operation is UpmListOperation ? PackageFilterTab.Local : PackageFilterTab.All);
             }
 
             private void OnUpmPackageVersionUpdated(IPackageVersion version)
@@ -494,6 +509,13 @@ namespace UnityEditor.PackageManager.UI
                 if (version.isFullyFetched)
                     return;
                 UpmClient.instance.ExtraFetch(version.uniqueId);
+            }
+
+            public DownloadProgress GetDownloadProgress(IPackageVersion version)
+            {
+                DownloadProgress progress;
+                AssetStore.AssetStoreClient.instance.GetDownloadProgress(version.packageUniqueId, out progress);
+                return progress;
             }
 
             public bool IsDownloadInProgress(IPackageVersion version)

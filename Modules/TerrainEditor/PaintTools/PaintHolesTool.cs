@@ -51,7 +51,8 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
-            BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv, editContext.brushSize, 0.0f);
+            Vector2 halfTexelOffset = new Vector2(0.5f / terrain.terrainData.holesResolution, 0.5f / terrain.terrainData.holesResolution);
+            BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv - halfTexelOffset, editContext.brushSize, 0.0f);
             PaintContext paintContext = TerrainPaintUtility.BeginPaintHoles(terrain, brushXform.GetBrushXYBounds());
 
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();

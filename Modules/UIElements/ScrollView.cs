@@ -303,10 +303,11 @@ namespace UnityEngine.UIElements
 
         void UpdateScrollers(bool displayHorizontal, bool displayVertical)
         {
-            if (contentContainer.layout.width > Mathf.Epsilon)
-                horizontalScroller.Adjust(contentViewport.layout.width / contentContainer.layout.width);
-            if (contentContainer.layout.height > Mathf.Epsilon)
-                verticalScroller.Adjust(contentViewport.layout.height / contentContainer.layout.height);
+            float horizontalFactor = contentContainer.layout.width > Mathf.Epsilon ? contentViewport.layout.width / contentContainer.layout.width : 1f;
+            float verticalFactor = contentContainer.layout.height > Mathf.Epsilon ? contentViewport.layout.height / contentContainer.layout.height : 1f;
+
+            horizontalScroller.Adjust(horizontalFactor);
+            verticalScroller.Adjust(verticalFactor);
 
             // Set availability
             horizontalScroller.SetEnabled(contentContainer.layout.width - contentViewport.layout.width > 0);

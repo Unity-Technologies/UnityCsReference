@@ -40,7 +40,7 @@ namespace UnityEditor
             public static readonly GUIStyle categoryBox = new GUIStyle(EditorStyles.helpBox);
             static Styles()
             {
-                categoryBox.padding.left = 14;
+                categoryBox.padding.left = 4;
             }
         }
 
@@ -138,7 +138,7 @@ namespace UnityEditor
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
-            public static readonly GUIContent graphicsJobs = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)*");
+            public static readonly GUIContent graphicsJobs = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode*");
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
@@ -195,6 +195,7 @@ namespace UnityEditor
             public static string undoChangedIconString { get { return LocalizationDatabase.GetLocalizedString("Changed Icon"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
             public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
+            public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Settings"); } }
         }
 
         // Icon layout constants
@@ -303,7 +304,6 @@ namespace UnityEditor
         SerializedProperty m_MetalForceHardShadows;
         SerializedProperty m_FramebufferDepthMemorylessMode;
 
-        SerializedProperty m_DisplayResolutionDialog;
         SerializedProperty m_DefaultIsNativeResolution;
         SerializedProperty m_MacRetinaSupport;
 
@@ -324,7 +324,6 @@ namespace UnityEditor
         SerializedProperty m_SupportedAspectRatios;
 
         SerializedProperty m_SkinOnGPU;
-        SerializedProperty m_GraphicsJobs;
 
         // OpenGL ES 3.1+
         SerializedProperty m_RequireES31;
@@ -462,7 +461,6 @@ namespace UnityEditor
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
             m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
-            m_DisplayResolutionDialog       = FindPropertyAssert("displayResolutionDialog");
             m_SupportedAspectRatios         = FindPropertyAssert("m_SupportedAspectRatios");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
 
@@ -476,7 +474,6 @@ namespace UnityEditor
             m_VisibleInBackground           = FindPropertyAssert("visibleInBackground");
             m_AllowFullscreenSwitch         = FindPropertyAssert("allowFullscreenSwitch");
             m_SkinOnGPU                     = FindPropertyAssert("gpuSkinning");
-            m_GraphicsJobs                  = FindPropertyAssert("graphicsJobs");
             m_ForceSingleInstance           = FindPropertyAssert("forceSingleInstance");
             m_UseFlipModelSwapchain         = FindPropertyAssert("useFlipModelSwapchain");
 
@@ -568,8 +565,8 @@ namespace UnityEditor
             }
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
 
-            // Compensate so settings inside boxes line up with settings at the top, though keep a minimum of 150.
-            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth - 8);
+            // Increase the offset to accomodate large labels, though keep a minimum of 150.
+            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
             BuildPlatform platform = validPlatforms[selectedPlatform];
             BuildTargetGroup targetGroup = platform.targetGroup;
@@ -635,9 +632,9 @@ namespace UnityEditor
             bool enabled = GUI.enabled;
             GUI.enabled = true; // we don't want to disable the expand behavior
             EditorGUILayout.BeginVertical(Styles.categoryBox);
-            Rect r = GUILayoutUtility.GetRect(20, 18); r.x += 3; r.width += 6;
+            Rect r = GUILayoutUtility.GetRect(20, 21);
             EditorGUI.BeginChangeCheck();
-            bool expanded = GUI.Toggle(r, m_SelectedSection.value == nr, header, EditorStyles.inspectorTitlebarText);
+            bool expanded = EditorGUI.FoldoutTitlebar(r, header, m_SelectedSection.value == nr, true, EditorStyles.inspectorTitlebarFlat, EditorStyles.inspectorTitlebarText);
             if (EditorGUI.EndChangeCheck())
             {
                 m_SelectedSection.value = (expanded ? nr : -1);
@@ -935,12 +932,6 @@ namespace UnityEditor
                     {
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
-                        EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
-
-                        if (m_DisplayResolutionDialog.intValue > 0)
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.displayResolutionDialogDeprecationWarning.text, MessageType.Warning, true);
-                        }
 
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
@@ -1154,14 +1145,6 @@ namespace UnityEditor
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
         {
-            // Facebook on windows must be always DX11
-            // TODO: Remove this when Facebook platform support contract is over
-            if (targetGroup == BuildTargetGroup.Facebook &&
-                (targetPlatform == BuildTarget.StandaloneWindows || targetPlatform == BuildTarget.StandaloneWindows64))
-            {
-                return;
-            }
-
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
             // if no devices (e.g. no platform module), or we only have one possible choice, then no
             // point in having any UI
@@ -1642,7 +1625,7 @@ namespace UnityEditor
             }
 
             // GPU Skinning toggle (only show on relevant platforms)
-            if (targetGroup != BuildTargetGroup.Facebook && !BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
+            if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
                 bool computeSkinningOnly =
@@ -1657,35 +1640,58 @@ namespace UnityEditor
                 }
             }
 
+            bool graphicsJobsOptionEnabled = true;
+            bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform(platform.defaultTarget);
+            bool newGraphicsJobs = graphicsJobs;
+
             if (targetGroup == BuildTargetGroup.XboxOne)
             {
-                // on XBoxOne, we only have kGfxJobModeNative active for Dx12 API and kGfxJobModeLegacy for the DX11 API
+                // on XBoxOne, we only have kGfxJobModeNative active for DX12 API and kGfxJobModeLegacy for the DX11 API
                 // no need for a drop down popup for XBoxOne
-                // also if XboxOneD3D12 is selected as GraphicsAPI, then we want to check the graphics jobs checkbox and disable it.
+                // also if XboxOneD3D12 is selected as GraphicsAPI, then we want to set graphics jobs and disable the user option
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
-
-                PlayerSettings.graphicsJobMode = gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12 ? GraphicsJobMode.Native : GraphicsJobMode.Legacy;
                 if (gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12)
-                    PlayerSettings.graphicsJobs = true;
-                using (new EditorGUI.DisabledScope(gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12))
                 {
-                    EditorGUILayout.PropertyField(m_GraphicsJobs, SettingsContent.graphicsJobs);
+                    PlayerSettings.graphicsJobMode = GraphicsJobMode.Native;
+                    graphicsJobsOptionEnabled = false;
+                    if (graphicsJobs == false)
+                    {
+                        PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, true);
+                        newGraphicsJobs = true;
+                    }
+                }
+                else
+                {
+                    PlayerSettings.graphicsJobMode = GraphicsJobMode.Legacy;
                 }
             }
-            else
+            EditorGUI.BeginChangeCheck();
+            using (new EditorGUI.DisabledScope(!graphicsJobsOptionEnabled))
             {
-                EditorGUILayout.PropertyField(m_GraphicsJobs, SettingsContent.graphicsJobs);
-                if (gfxJobModesSupported)
+                if (GUI.enabled)
                 {
-                    using (new EditorGUI.DisabledScope(!m_GraphicsJobs.boolValue))
-                    {
-                        GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
+                    newGraphicsJobs = EditorGUILayout.Toggle(SettingsContent.graphicsJobs, graphicsJobs);
+                }
+                else
+                {
+                    EditorGUILayout.Toggle(SettingsContent.graphicsJobs, false);
+                }
+            }
+            if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
+            {
+                Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
+            }
 
-                        GraphicsJobMode newGfxJobMode = BuildEnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
-                        if (newGfxJobMode != currGfxJobMode)
-                        {
-                            PlayerSettings.graphicsJobMode = newGfxJobMode;
-                        }
+            if (gfxJobModesSupported)
+            {
+                using (new EditorGUI.DisabledScope(!graphicsJobs))
+                {
+                    GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
+                    GraphicsJobMode newGfxJobMode = BuildEnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
+                    if (newGfxJobMode != currGfxJobMode)
+                    {
+                        PlayerSettings.graphicsJobMode = newGfxJobMode;
                     }
                 }
             }

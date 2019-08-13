@@ -261,6 +261,9 @@ namespace UnityEditorInternal
         static internal extern bool IsIdentifierOnLocalhost(int guid);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
+        static internal extern bool IsDeepProfilingSupported(int guid);
+
+        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         static internal extern bool IsConnectionEditor();
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]

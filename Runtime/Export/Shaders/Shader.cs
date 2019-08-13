@@ -687,6 +687,8 @@ namespace UnityEngine
         }
     }
 }
+
+
 //
 // RayTracingShader
 //
@@ -707,6 +709,7 @@ namespace UnityEngine.Experimental.Rendering
         public void SetInts(int nameID, params int[] values) { SetIntArray(nameID, values); }
         public void SetBool(string name, bool val) { SetInt(Shader.PropertyToID(name), val ? 1 : 0); }
         public void SetBool(int nameID, bool val) { SetInt(nameID, val ? 1 : 0); }
+
         public void SetTexture(string resourceName, Texture texture)
         {
             SetTexture(Shader.PropertyToID(resourceName), texture);
@@ -715,6 +718,11 @@ namespace UnityEngine.Experimental.Rendering
         public void SetBuffer(string resourceName, ComputeBuffer buffer)
         {
             SetBuffer(Shader.PropertyToID(resourceName), buffer);
+        }
+
+        public void SetAccelerationStructure(string name, RayTracingAccelerationStructure accelerationStructure)
+        {
+            SetAccelerationStructure(Shader.PropertyToID(name), accelerationStructure);
         }
 
         public void SetTextureFromGlobal(string resourceName, string globalTextureName)

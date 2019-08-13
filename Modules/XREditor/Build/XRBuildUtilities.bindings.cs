@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 using UnityEngine.Bindings;
 using UnityEngine;
-using UnityEngine.Experimental.XR;
+using UnityEngine.XR;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 

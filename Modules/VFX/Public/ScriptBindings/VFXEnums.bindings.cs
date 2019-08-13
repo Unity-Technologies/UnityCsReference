@@ -199,9 +199,6 @@ namespace UnityEngine.VFX
 
         // updates
         CameraSort                  = Update | 1,
-        StripSort                   = Update | 2,
-        StripUpdatePerParticle      = Update | 3,
-        StripUpdatePerStrip         = Update | 4,
 
         // outputs
         ParticlePointOutput         = Output | 0,

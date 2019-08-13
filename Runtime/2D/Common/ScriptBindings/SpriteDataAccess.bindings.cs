@@ -154,26 +154,26 @@ namespace UnityEngine.U2D
         }
 
         [NativeName("HasChannel")]
-        extern public static bool HasVertexAttribute(this Sprite sprite, VertexAttribute channel);
+        extern public static bool HasVertexAttribute([NotNull] this Sprite sprite, VertexAttribute channel);
 
         // The only way to change the vertex count
-        extern public static void SetVertexCount(this Sprite sprite, int count);
-        extern public static int GetVertexCount(this Sprite sprite);
+        extern public static void SetVertexCount([NotNull] this Sprite sprite, int count);
+        extern public static int GetVertexCount([NotNull] this Sprite sprite);
 
         // This lenght is not tied to vertexCount
-        extern private static SpriteChannelInfo GetBindPoseInfo(Sprite sprite);
-        unsafe extern private static void SetBindPoseData(Sprite sprite, void* src, int count);
+        extern private static SpriteChannelInfo GetBindPoseInfo([NotNull] Sprite sprite);
+        unsafe extern private static void SetBindPoseData([NotNull] Sprite sprite, void* src, int count);
 
-        extern private static SpriteChannelInfo GetIndicesInfo(Sprite sprite);
-        unsafe extern private static void SetIndicesData(Sprite sprite, void* src, int count);
+        extern private static SpriteChannelInfo GetIndicesInfo([NotNull] Sprite sprite);
+        unsafe extern private static void SetIndicesData([NotNull] Sprite sprite, void* src, int count);
 
-        extern private static SpriteChannelInfo GetChannelInfo(Sprite sprite, VertexAttribute channel);
-        unsafe extern private static void SetChannelData(Sprite sprite, VertexAttribute channel, void* src);
+        extern private static SpriteChannelInfo GetChannelInfo([NotNull] Sprite sprite, VertexAttribute channel);
+        unsafe extern private static void SetChannelData([NotNull] Sprite sprite, VertexAttribute channel, void* src);
 
-        extern private static SpriteBone[] GetBoneInfo(Sprite sprite);
-        extern private static void SetBoneData(Sprite sprite, SpriteBone[] src);
+        extern private static SpriteBone[] GetBoneInfo([NotNull] Sprite sprite);
+        extern private static void SetBoneData([NotNull] Sprite sprite, SpriteBone[] src);
 
-        extern internal static AtomicSafetyHandle GetSafetyHandle(this Sprite sprite);
+        extern internal static AtomicSafetyHandle GetSafetyHandle([NotNull] this Sprite sprite);
     }
 
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
@@ -191,8 +191,8 @@ namespace UnityEngine.U2D
             SetDeformableBuffer(spriteRenderer, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
-        extern public static void DeactivateDeformableBuffer(this SpriteRenderer renderer);
-        extern internal static void SetLocalAABB(this SpriteRenderer renderer, Bounds aabb);
-        extern private unsafe static void SetDeformableBuffer(SpriteRenderer spriteRenderer, void* src, int count);
+        extern public static void DeactivateDeformableBuffer([NotNull] this SpriteRenderer renderer);
+        extern internal static void SetLocalAABB([NotNull] this SpriteRenderer renderer, Bounds aabb);
+        extern private unsafe static void SetDeformableBuffer([NotNull] SpriteRenderer spriteRenderer, void* src, int count);
     }
 }

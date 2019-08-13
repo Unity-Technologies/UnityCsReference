@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public string versionId;
             public string publishedDate;
             public string supportedVersion;
+            public string packagePath;
         }
 
         [SerializeField]
@@ -154,6 +155,48 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         public bool HasTag(PackageTag tag)
         {
             return (m_Tag & tag) == tag;
+        }
+
+        public AssetStorePackageVersion(AssetStorePackageVersion other, SpecificVersionInfo localInfo = null)
+        {
+            m_PackageUniqueId = other.m_PackageUniqueId;
+            m_DisplayName = other.m_DisplayName;
+            m_Type = other.m_Type;
+            m_Author = other.m_Author;
+            m_Description = other.m_Description;
+            m_Category = other.m_Category;
+            m_Errors = other.m_Errors;
+            m_Version = other.m_Version;
+            m_PublishedDate = other.m_PublishedDate;
+            m_PublisherId = other.m_PublisherId;
+            m_IsAvailableOnDisk = other.m_IsAvailableOnDisk;
+            m_LocalPath = other.m_LocalPath;
+            m_VersionString = other.m_VersionString;
+            m_VersionId = other.m_VersionId;
+            m_SupportedUnityVersions = other.m_SupportedUnityVersions;
+            m_SupportedUnityVersion = other.m_SupportedUnityVersion;
+            m_Images = other.m_Images;
+            m_SizeInfos = other.m_SizeInfos;
+            m_Links = other.m_Links;
+            m_Tag = other.m_Tag;
+
+            if (localInfo != null)
+            {
+                m_VersionString = localInfo.versionString;
+                m_VersionId = localInfo.versionId;
+
+                SemVersion semVer;
+                if (!SemVersion.TryParse(m_VersionString.Trim(), out semVer))
+                {
+                    semVer = new SemVersion(0);
+                }
+                m_Version = semVer;
+
+                m_PublishedDate = DateTime.Parse(localInfo.publishedDate);
+
+                var simpleVersion = Regex.Replace(localInfo.supportedVersion, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
+                SemVersion.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
+            }
         }
 
         public AssetStorePackageVersion(string productId, IDictionary<string, object> productDetail, SpecificVersionInfo localInfo = null)

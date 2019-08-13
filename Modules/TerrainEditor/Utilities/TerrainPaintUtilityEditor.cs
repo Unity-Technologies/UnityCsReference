@@ -3,10 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Experimental.TerrainAPI;
 
@@ -143,12 +140,12 @@ namespace UnityEditor.Experimental.TerrainAPI
             // objectPos.y = scaleY * H
             // objectPos.z = scaleZ * pcPixels.y + heightmapRect.yMin * scaleZ
             float scaleX = heightmapPC.pixelSize.x;
-            float scaleY = 2.0f * heightmapPC.originTerrain.terrainData.heightmapScale.y;
+            float scaleY = heightmapPC.heightWorldSpaceSize / PaintContext.kNormalizedHeightScale;
             float scaleZ = heightmapPC.pixelSize.y;
             proceduralMaterial.SetVector("_ObjectPos_PCPixelsX", new Vector4(scaleX, 0.0f, 0.0f, 0.0f));
             proceduralMaterial.SetVector("_ObjectPos_HeightMapSample", new Vector4(0.0f, scaleY, 0.0f, 0.0f));
             proceduralMaterial.SetVector("_ObjectPos_PCPixelsY", new Vector4(0.0f, 0.0f, scaleZ, 0.0f));
-            proceduralMaterial.SetVector("_ObjectPos_Offset", new Vector4(heightmapPC.pixelRect.xMin * scaleX, 0.0f, heightmapPC.pixelRect.yMin * scaleZ, 1.0f));
+            proceduralMaterial.SetVector("_ObjectPos_Offset", new Vector4(heightmapPC.pixelRect.xMin * scaleX, heightmapPC.heightWorldSpaceMin - heightmapPC.originTerrain.GetPosition().y, heightmapPC.pixelRect.yMin * scaleZ, 1.0f));
 
             // heightmap paint context pixels to brush UV
             // derivation:

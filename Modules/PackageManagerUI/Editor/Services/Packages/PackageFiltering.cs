@@ -90,6 +90,9 @@ namespace UnityEditor.PackageManager.UI
         [Serializable]
         private class PackageFilteringInternal : ScriptableSingleton<PackageFilteringInternal>, IPackageFiltering
         {
+            public event Action<PackageFilterTab> onFilterTabChanged = delegate {};
+            public event Action<string> onSearchTextChanged = delegate {};
+
             private PackageFilterTab m_CurrentFilterTab;
             public PackageFilterTab currentFilterTab
             {
@@ -104,7 +107,6 @@ namespace UnityEditor.PackageManager.UI
                     }
                 }
             }
-            public event Action<PackageFilterTab> onFilterTabChanged;
 
             private string m_CurrentSearchText;
             public string currentSearchText
@@ -121,7 +123,6 @@ namespace UnityEditor.PackageManager.UI
                     }
                 }
             }
-            public event Action<string> onSearchTextChanged;
 
             private PackageFilteringInternal() {}
 

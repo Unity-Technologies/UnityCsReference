@@ -608,6 +608,12 @@ namespace UnityEngine
         private LightProbes() {}
 
         [FreeFunction]
+        public static extern void Tetrahedralize();
+
+        [FreeFunction]
+        public static extern void TetrahedralizeAsync();
+
+        [FreeFunction]
         public extern static void GetInterpolatedProbe(Vector3 position, Renderer renderer, out UnityEngine.Rendering.SphericalHarmonicsL2 probe);
 
         [FreeFunction]
@@ -658,22 +664,34 @@ namespace UnityEngine
         internal extern static void CalculateInterpolatedLightAndOcclusionProbes_Internal(Vector3[] positions, int positionsCount, SphericalHarmonicsL2[] lightProbes, Vector4[] occlusionProbes);
 
         // Positions of the baked light probes.
-        public extern Vector3[] positions { get; }
+        public extern Vector3[] positions
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetLightProbePositions")] get;
+        }
 
         public extern UnityEngine.Rendering.SphericalHarmonicsL2[] bakedProbes
         {
+            [FreeFunction(HasExplicitThis = true)]
             [NativeName("GetBakedCoefficients")] get;
-            [NativeName("SetBakedCoefficients")] set;
 
-            // if (GetScriptingArraySize(value) != self->GetLightProbeData().GetNumProbes())
-            //     Scripting::RaiseArgumentException("Coefficients array must have the same amount of elements as the probe count.");
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetBakedCoefficients")] set;
         }
 
         // The number of light probes.
-        public extern int count { get; }
+        public extern int count
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetLightProbeCount")] get;
+        }
 
         // The number of cells (tetrahedra + outer cells) the space is divided to.
-        public extern int cellCount {[NativeName("GetTetrahedraSize")] get; }
+        public extern int cellCount
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetTetrahedraSize")] get;
+        }
     }
 }
 
@@ -700,17 +718,6 @@ namespace UnityEngine.Experimental.Rendering
         EndFrame = 1
     }
 
-    // Tries to follow naming from https://unity3d.com/learn/tutorials/topics/best-practices/multithreaded-rendering-graphics-jobs
-    public enum RenderingThreadingMode
-    {
-        Direct = 0,
-        SingleThreaded = 1,
-        MultiThreaded = 2,
-        LegacyJobified = 3,
-        NativeGraphicsJobs = 4,
-        NativeGraphicsJobsWithoutRenderThread = 5,
-    };
-
     public enum GraphicsJobsSyncPoint
     {
         EndOfFrame = 0,
@@ -726,7 +733,5 @@ namespace UnityEngine.Experimental.Rendering
 
         [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
         extern public static GraphicsJobsSyncPoint graphicsJobsSyncPoint { get; set; }
-
-        extern public static RenderingThreadingMode renderingThreadingMode { [FreeFunction("GetGfxThreadingMode")] get; }
     }
 }

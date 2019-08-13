@@ -328,6 +328,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static bool ShouldRecompileNonCodeGenAssembliesAfterReload()
+        {
+            return EmitExceptionAsError(() => Instance.IsCodeGenAssemblyChanged, false);
+        }
+
+        [RequiredByNativeCode]
+        public static void DirtyAllNonCodeGenAssemblies()
+        {
+            EmitExceptionAsError(() => Instance.DirtyAllNonCodeGenAssemblies());
+        }
+
+        [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyDirtyScripts()
         {
             return Instance.DoesProjectFolderHaveAnyDirtyScripts();

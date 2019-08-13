@@ -57,5 +57,8 @@ namespace UnityEngine.UIElements
 
         [NonSerialized]
         internal bool isCustomProperty;
+
+        [NonSerialized]
+        internal bool requireVariableResolve;
     }
 }

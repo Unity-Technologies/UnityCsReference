@@ -177,12 +177,12 @@ namespace UnityEditor
         }
 
         // Draws in the Hierarchy header, left of the context menu.
-        public void DrawSceneUI(Rect availableRect, string scenePath)
+        public float DrawSceneUI(Rect availableRect, string scenePath)
         {
             string assetGUID = AssetDatabase.AssetPathToGUID(scenePath);
             if (!HasSoftlocks(assetGUID))
             {
-                return;
+                return availableRect.xMax;
             }
 
             int lockCount;
@@ -198,6 +198,8 @@ namespace UnityEditor
             const int kRightMargin = 4;
             drawRect.x = (availableRect.width - drawRect.width) - kRightMargin;
             EditorGUI.LabelField(drawRect, content);
+
+            return drawRect.xMin;
         }
 
         // Assigned as a callback to Editor.OnPostHeaderGUI

@@ -20,6 +20,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         UserAssembly = (1 << 5),
         ExplicitlyReferenced = (1 << 6),
         ExplicitReferences = (1 << 7),
-        UnityModule = (1 << 8)
+        UnityModule = (1 << 8),
+        NoEngineReferences = (1 << 9)
     };
 }

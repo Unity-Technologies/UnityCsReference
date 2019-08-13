@@ -156,6 +156,7 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [UsedByNativeCode]
     [NativeAsStruct]
+    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     [StructLayout(LayoutKind.Sequential)]
     public class SerializationInfo
     {

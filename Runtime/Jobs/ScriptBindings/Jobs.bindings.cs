@@ -122,14 +122,17 @@ namespace Unity.Jobs.LowLevel.Unsafe
             get;
         }
 
+        [FreeFunction("JobSystem::ResetJobQueueWorkerThreadCount")]
+        public static extern void ResetJobWorkerCount();
+
         public static int JobWorkerCount
         {
             get { return GetJobQueueWorkerThreadCount(); }
             set
             {
-                if ((value != -1) && ((value < 1) || (value > JobsUtility.JobWorkerMaximumCount)))
+                if ((value < 1) || (value > JobsUtility.JobWorkerMaximumCount))
                 {
-                    throw new ArgumentOutOfRangeException("JobWorkerCount", $"Invalid JobWorkerCount {value} must be -1 or in the range 1 -> {JobsUtility.JobWorkerMaximumCount}");
+                    throw new ArgumentOutOfRangeException("JobWorkerCount", $"Invalid JobWorkerCount {value} must be in the range 1 -> {JobsUtility.JobWorkerMaximumCount}");
                 }
                 SetJobQueueMaximumActiveThreadCount(value);
             }

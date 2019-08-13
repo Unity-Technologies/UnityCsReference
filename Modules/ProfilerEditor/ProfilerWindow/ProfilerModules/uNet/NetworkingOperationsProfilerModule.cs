@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEditor;
+using UnityEditor.StyleSheets;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -14,6 +15,7 @@ namespace UnityEditorInternal.Profiling
     internal class NetworkingOperationsProfilerModule : ProfilerModuleBase
     {
         SplitterState m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
+        static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
 
         public override void DrawToolbar(Rect position)
         {
@@ -22,7 +24,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawView(Rect position)
         {
-            DrawNetworkOperationsPane();
+            DrawNetworkOperationsPane(position);
         }
 
         private String[] msgNames =
@@ -32,15 +34,18 @@ namespace UnityEditorInternal.Profiling
 
         private bool[] msgFoldouts = { true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
 
-        void DrawNetworkOperationsPane()
+        void DrawNetworkOperationsPane(Rect position)
         {
             SplitterGUILayout.BeginHorizontalSplit(m_NetworkSplit);
+            var overviewLabel = GUIContent.Temp(ProfilerDriver.GetOverviewText(ProfilerArea.NetworkOperations,
+                m_ProfilerWindow.GetActiveVisibleFrameIndex()));
+            var labelRect = GUILayoutUtility.GetRect(overviewLabel, EditorStyles.wordWrappedLabel);
 
-            GUILayout.Label(ProfilerDriver.GetOverviewText(ProfilerArea.NetworkOperations, m_ProfilerWindow.GetActiveVisibleFrameIndex()), EditorStyles.wordWrappedLabel);
+            GUI.Label(labelRect, overviewLabel, EditorStyles.wordWrappedLabel);
 
             m_PaneScroll = GUILayout.BeginScrollView(m_PaneScroll, ProfilerWindow.Styles.background);
 
-            EditorGUILayout.BeginHorizontal(EditorStyles.contentToolbar);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             EditorGUILayout.LabelField("Operation Detail");
             EditorGUILayout.LabelField("Over 5 Ticks");
             EditorGUILayout.LabelField("Over 10 Ticks");
@@ -99,6 +104,11 @@ namespace UnityEditorInternal.Profiling
             EditorGUI.indentLevel -= 1;
             GUILayout.EndScrollView();
             SplitterGUILayout.EndHorizontalSplit();
+
+            // Draw separator
+            var lineRect = new Rect(m_NetworkSplit.realSizes[0] + labelRect.xMin, position.y - EditorGUI.kWindowToolbarHeight - 1, 1,
+                position.height + EditorGUI.kWindowToolbarHeight);
+            EditorGUI.DrawRect(lineRect, s_SeparatorColor);
         }
 
     }

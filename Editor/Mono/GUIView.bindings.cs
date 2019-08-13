@@ -38,6 +38,8 @@ namespace UnityEditor
         internal extern void RemoveFromAuxWindowList();
         internal extern void SetInternalGameViewDimensions(Rect rect, Rect clippedRect, Vector2 targetSize);
         internal extern void SetAsStartView();
+        internal extern void SetAsLastPlayModeView();
+        internal extern void SetPlayModeView();
         internal extern void ClearStartView();
         internal extern void MakeVistaDWMHappyDance();
         internal extern void StealMouseCapture();
@@ -47,6 +49,7 @@ namespace UnityEditor
         internal extern void GrabPixels(RenderTexture rd, Rect rect);
         internal extern void MarkHotRegion(Rect hotRegionRect);
         internal extern void EnableVSync(bool value);
+        internal extern void SetActualViewName(string viewName);
 
         protected extern void Internal_SetAsActiveWindow();
 

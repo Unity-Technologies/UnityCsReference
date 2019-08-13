@@ -15,12 +15,16 @@ namespace UnityEditor.Build
     {
         // short name used for texture settings, etc.
         public string name;
-        public GUIContent title;
-        public Texture2D smallIcon;
         public BuildTargetGroup targetGroup;
         public bool forceShowTarget;
         public string tooltip;
         public BuildTarget defaultTarget;
+
+        private ScalableGUIContent m_Title;
+        private ScalableGUIContent m_SmallTitle;
+
+        public GUIContent title => m_Title;
+        public Texture2D smallIcon => ((GUIContent)m_SmallTitle).image as Texture2D;
 
         public BuildPlatform(string locTitle, string iconId, BuildTargetGroup targetGroup, BuildTarget defaultTarget, bool forceShowTarget)
             : this(locTitle, "", iconId, targetGroup, defaultTarget, forceShowTarget)
@@ -31,8 +35,8 @@ namespace UnityEditor.Build
         {
             this.targetGroup = targetGroup;
             name = targetGroup != BuildTargetGroup.Unknown ? BuildPipeline.GetBuildTargetGroupName(defaultTarget) : "";
-            title = EditorGUIUtility.TextContentWithIcon(locTitle, iconId);
-            smallIcon = EditorGUIUtility.IconContent(iconId + ".Small").image as Texture2D;
+            m_Title = new ScalableGUIContent(locTitle, null, iconId);
+            m_SmallTitle = new ScalableGUIContent(null, null, iconId + ".Small");
             this.tooltip = tooltip;
             this.forceShowTarget = forceShowTarget;
             this.defaultTarget = defaultTarget;
@@ -83,9 +87,6 @@ namespace UnityEditor.Build
                 }
             }
 
-            // Facebook is a special case and needs to be added separately
-            buildPlatformsList.Add(new BuildPlatform(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Facebook), "BuildSettings.Facebook", BuildTargetGroup.Facebook, BuildTarget.StandaloneWindows64, true));
-
             foreach (var buildPlatform in buildPlatformsList)
             {
                 buildPlatform.tooltip = buildPlatform.title.text + " settings";
@@ -130,13 +131,7 @@ namespace UnityEditor.Build
 
         public string GetModuleDisplayName(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {
-            switch (buildTargetGroup)
-            {
-                case BuildTargetGroup.Facebook:
-                    return BuildPipeline.GetBuildTargetGroupDisplayName(buildTargetGroup);
-                default:
-                    return GetBuildTargetDisplayName(buildTargetGroup, buildTarget);
-            }
+            return GetBuildTargetDisplayName(buildTargetGroup, buildTarget);
         }
 
         private int BuildPlatformIndexFromTargetGroup(BuildTargetGroup group)
@@ -165,7 +160,7 @@ namespace UnityEditor.Build
         {
             List<BuildPlatform> platforms = new List<BuildPlatform>();
             foreach (BuildPlatform bp in buildPlatforms)
-                if ((bp.targetGroup == BuildTargetGroup.Standalone || BuildPipeline.IsBuildTargetSupported(bp.targetGroup, bp.defaultTarget)) && (!(bp.targetGroup == BuildTargetGroup.Facebook) || includeMetaPlatforms))
+                if (bp.targetGroup == BuildTargetGroup.Standalone || BuildPipeline.IsBuildTargetSupported(bp.targetGroup, bp.defaultTarget))
                     platforms.Add(bp);
 
             return platforms;

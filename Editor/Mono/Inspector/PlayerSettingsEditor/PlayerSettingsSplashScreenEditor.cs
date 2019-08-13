@@ -15,7 +15,6 @@ namespace UnityEditor
     {
         PlayerSettingsEditor m_Owner;
 
-        SerializedProperty m_ResolutionDialogBanner;
         SerializedProperty m_ShowUnitySplashLogo;
         SerializedProperty m_ShowUnitySplashScreen;
         SerializedProperty m_SplashScreenAnimation;
@@ -107,7 +106,6 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            m_ResolutionDialogBanner = m_Owner.FindPropertyAssert("resolutionDialogBanner");
             m_ShowUnitySplashLogo = m_Owner.FindPropertyAssert("m_ShowUnitySplashLogo");
             m_ShowUnitySplashScreen = m_Owner.FindPropertyAssert("m_ShowUnitySplashScreen");
             m_SplashScreenAnimation = m_Owner.FindPropertyAssert("m_SplashScreenAnimation");
@@ -299,17 +297,6 @@ namespace UnityEditor
         {
             if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
             {
-                if (targetGroup == BuildTargetGroup.Standalone)
-                {
-                    ObjectReferencePropertyField<Texture2D>(m_ResolutionDialogBanner, k_Texts.configDialogBanner);
-                    if (m_ResolutionDialogBanner.objectReferenceValue != null)
-                    {
-                        EditorGUILayout.HelpBox(k_Texts.configDialogBannerDeprecationWarning.text, MessageType.Warning, true);
-                    }
-
-                    EditorGUILayout.Space();
-                }
-
                 if (m_Owner.m_VRSettings.TargetGroupSupportsVirtualReality(targetGroup))
                     ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
 

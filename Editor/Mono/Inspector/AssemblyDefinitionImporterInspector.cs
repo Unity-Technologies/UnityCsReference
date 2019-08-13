@@ -40,6 +40,7 @@ namespace UnityEditor
             public static readonly GUIContent deselectAll = EditorGUIUtility.TrTextContent("Deselect all");
             public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
             public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Expression outcome", "Shows the mathematical equation that your Expression represents.");
+            public static readonly GUIContent noEngineReferences = EditorGUIUtility.TrTextContent("No Engine References", "When enabled, references to UnityEngine/UnityEditor will not be added when compiling this assembly.");
         }
 
         GUIStyle m_TextStyle;
@@ -108,6 +109,7 @@ namespace UnityEditor
             public bool autoReferenced;
             public bool compatibleWithAnyPlatform;
             public bool[] platformCompatibility;
+            public bool noEngineReferences;
         }
 
         SemVersionRangesFactory m_SemVersionRanges;
@@ -123,6 +125,7 @@ namespace UnityEditor
         SerializedProperty m_OverrideReferences;
         SerializedProperty m_CompatibleWithAnyPlatform;
         SerializedProperty m_PlatformCompatibility;
+        SerializedProperty m_NoEngineReferences;
 
         string[] m_Defines;
         Exception initializeException;
@@ -143,6 +146,7 @@ namespace UnityEditor
             m_OverrideReferences = extraDataSerializedObject.FindProperty("overrideReferences");
             m_CompatibleWithAnyPlatform = extraDataSerializedObject.FindProperty("compatibleWithAnyPlatform");
             m_PlatformCompatibility = extraDataSerializedObject.FindProperty("platformCompatibility");
+            m_NoEngineReferences = extraDataSerializedObject.FindProperty("noEngineReferences");
         }
 
         public override void OnInspectorGUI()
@@ -177,6 +181,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_AllowUnsafeCode, Styles.allowUnsafeCode);
                 EditorGUILayout.PropertyField(m_AutoReferenced, Styles.autoReferenced);
                 EditorGUILayout.PropertyField(m_OverrideReferences, Styles.overrideReferences);
+                EditorGUILayout.PropertyField(m_NoEngineReferences, Styles.noEngineReferences);
 
                 EditorGUILayout.EndVertical();
                 GUILayout.Space(10f);
@@ -569,6 +574,7 @@ namespace UnityEditor
             state.autoReferenced = data.autoReferenced;
             state.allowUnsafeCode = data.allowUnsafeCode;
             state.overrideReferences = data.overrideReferences;
+            state.noEngineReferences = data.noEngineReferences;
 
             // If the .asmdef has no references (true for newly created .asmdef), then use GUIDs.
             // Otherwise do not use GUIDs. This value might be changed below if any reference is a GUID.
@@ -751,6 +757,7 @@ namespace UnityEditor
 
 
             data.allowUnsafeCode = state.allowUnsafeCode;
+            data.noEngineReferences = state.noEngineReferences;
 
             List<string> dataPlatforms = new List<string>();
 

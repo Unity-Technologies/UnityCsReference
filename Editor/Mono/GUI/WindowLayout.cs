@@ -183,6 +183,9 @@ namespace UnityEditor
         {
             Menu.RemoveMenuItem("Window/Layouts");
 
+            if (!ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
+                return;
+
             int layoutMenuItemPriority = 20;
 
             // Get user saved layouts
@@ -779,36 +782,22 @@ namespace UnityEditor
                 for (int i = 0; i < newWindows.Count; i++)
                 {
                     UnityObject o = newWindows[i];
-                    if (o == null)
+                    if (!o)
                         continue;
 
-                    if (o.GetType() == null)
+                    if (newProjectLayoutWasCreated)
                     {
-                        Console.WriteLine("LoadWindowLayout: Error while reading window layout: window #" + i + " type is null, instanceID=" + o.GetInstanceID());
-                        layoutLoadingIssue = true;
-
-                        // Keep going
-                    }
-                    else
-                    {
-                        if (newProjectLayoutWasCreated)
-                        {
-                            MethodInfo method = o.GetType().GetMethod("OnNewProjectLayoutWasCreated", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                            if (method != null)
-                                method.Invoke(o, null);
-                        }
+                        MethodInfo method = o.GetType().GetMethod("OnNewProjectLayoutWasCreated", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                        method?.Invoke(o, null);
                     }
                 }
 
                 if (mainWindowToSetSize)
-                {
                     mainWindowToSetSize.position = mainWindowPosition;
-                    mainWindowToSetSize.OnResize();
-                }
 
                 // Always show main window before other windows. So that other windows can
                 // get their parent/owner.
-                if (mainWindow == null)
+                if (!mainWindow)
                 {
                     Debug.LogError("Error while reading window layout: no main window found");
                     throw new Exception();
@@ -1113,6 +1102,7 @@ namespace UnityEditor
             GUI.SetNextControlName("m_PreferencesName");
             EditorGUI.BeginChangeCheck();
             s_LayoutName = EditorGUILayout.TextField(s_LayoutName);
+            s_LayoutName = s_LayoutName.TrimEnd();
             if (EditorGUI.EndChangeCheck())
             {
                 UpdateCurrentInvalidChars();

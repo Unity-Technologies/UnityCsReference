@@ -1530,9 +1530,13 @@ namespace UnityEditor.Experimental.GraphView
             redrawn?.Invoke();
         }
 
-        public virtual Blackboard CreateBlackboard()
+        public virtual Blackboard GetBlackboard()
         {
-            return new Blackboard();
+            return null;
+        }
+
+        public virtual void ReleaseBlackboard(Blackboard toRelease)
+        {
         }
     }
 }

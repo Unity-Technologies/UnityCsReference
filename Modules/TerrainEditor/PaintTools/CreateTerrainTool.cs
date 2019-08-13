@@ -120,6 +120,10 @@ namespace UnityEditor.Experimental.TerrainAPI
                 terrainData.terrainLayers = newarray;
             }
             terrainData.SetDetailResolution(parent.terrainData.detailResolution, parent.terrainData.detailResolutionPerPatch);
+            terrainData.wavingGrassSpeed = parent.terrainData.wavingGrassSpeed;
+            terrainData.wavingGrassAmount = parent.terrainData.wavingGrassAmount;
+            terrainData.wavingGrassStrength = parent.terrainData.wavingGrassStrength;
+            terrainData.wavingGrassTint = parent.terrainData.wavingGrassTint;
             terrainData.name = Guid.NewGuid().ToString();
             terrainData.size = parent.terrainData.size;
             GameObject terrainGO = Terrain.CreateTerrainGameObject(terrainData);
@@ -131,6 +135,16 @@ namespace UnityEditor.Experimental.TerrainAPI
             terrain.groupingID = parent.groupingID;
             terrain.drawInstanced = parent.drawInstanced;
             terrain.allowAutoConnect = parent.allowAutoConnect;
+            terrain.drawTreesAndFoliage = parent.drawTreesAndFoliage;
+            terrain.bakeLightProbesForTrees = parent.bakeLightProbesForTrees;
+            terrain.deringLightProbesForTrees = parent.deringLightProbesForTrees;
+            terrain.preserveTreePrototypeLayers = parent.preserveTreePrototypeLayers;
+            terrain.detailObjectDistance = parent.detailObjectDistance;
+            terrain.detailObjectDensity = parent.detailObjectDensity;
+            terrain.treeDistance = parent.treeDistance;
+            terrain.treeBillboardDistance = parent.treeBillboardDistance;
+            terrain.treeCrossFadeLength = parent.treeCrossFadeLength;
+            terrain.treeMaximumFullLODCount = parent.treeMaximumFullLODCount;
 
             string parentTerrainDataDir = Path.GetDirectoryName(AssetDatabase.GetAssetPath(parent.terrainData));
 
