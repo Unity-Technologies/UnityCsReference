@@ -26,6 +26,13 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & (VersionChangeType.Layout | VersionChangeType.Hierarchy)) == 0)
                 return;
 
+            // Yoga DOES NOT expect the node tree to mutate while layout is being computed.
+            // it could lead to crashes (EXC_BAD_ACCESS)
+            if ((versionChangeType & VersionChangeType.Hierarchy) != 0 && panel.duringLayoutPhase)
+            {
+                throw new InvalidOperationException("Hierarchy change detected while computing layout, this is not supported.");
+            }
+
             var yogaNode = ve.yogaNode;
             if (yogaNode != null && yogaNode.IsMeasureDefined)
             {

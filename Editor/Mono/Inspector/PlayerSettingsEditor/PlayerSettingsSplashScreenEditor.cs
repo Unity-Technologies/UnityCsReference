@@ -200,9 +200,11 @@ namespace UnityEditor
                 logo.objectReferenceValue = value;
 
             // Properties
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = k_LogoListPropertyLabelWidth;
             var propertyRect = new Rect(rect.x + unityLogoWidth, rect.y + EditorGUIUtility.standardVerticalSpacing, rect.width - unityLogoWidth, EditorGUIUtility.singleLineHeight);
             var duration = element.FindPropertyRelative("duration");
+            EditorGUIUtility.labelWidth = oldLabelWidth;
 
             EditorGUI.BeginChangeCheck();
             var newDurationVal = EditorGUI.Slider(propertyRect, k_Texts.logoDuration, duration.floatValue, k_MinLogoTime, k_MaxLogoTime);

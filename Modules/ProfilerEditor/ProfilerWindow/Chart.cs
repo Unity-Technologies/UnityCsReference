@@ -301,8 +301,7 @@ namespace UnityEditorInternal
         {
             if (Event.current.type == EventType.Repaint && cdata.dataAvailable != null)
             {
-                r.height += 2;
-                r.y -= 1;
+                r.height += 1;
 
                 int lastFrameWithData = 0;
                 int frameDataLength = cdata.dataAvailable.Length;
@@ -325,20 +324,18 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style, GUIContent content = null)
+        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style)
         {
             float gracePixels = -1;
             float domainSize = frameDataLength - 1;
-            float startYOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
-            float endYOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
+            float startXOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
+            float endXOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
             Rect noDataRect = r;
 
-            noDataRect.x += Mathf.Max(startYOffest, 0);
-            noDataRect.width = Mathf.Min(endYOffest - startYOffest, r.width - (noDataRect.x - r.x));
+            noDataRect.x += Mathf.Max(startXOffest, 0);
+            noDataRect.width = Mathf.Min(endXOffest - startXOffest, r.width - (noDataRect.x - r.x));
 
             style.Draw(noDataRect, false, false, chartActive, false);
-            if (content != null)
-                GUI.Box(noDataRect, content);
         }
 
         private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive)

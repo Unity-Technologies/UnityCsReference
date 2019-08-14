@@ -154,6 +154,9 @@ namespace UnityEngine.Experimental.TerrainAPI
 
         public static PaintContext CollectNormals(Terrain terrain, Rect boundsInTerrainSpace, int extraBorderPixels = 0)
         {
+            if (terrain.normalmapTexture == null)
+                return null;
+
             int heightmapResolution = terrain.terrainData.heightmapResolution;
             PaintContext ctx = InitializePaintContext(terrain, heightmapResolution, heightmapResolution, Terrain.normalmapRenderTextureFormat, boundsInTerrainSpace, extraBorderPixels);
             ctx.GatherNormals();

@@ -74,6 +74,9 @@ namespace UnityEditor.Animations
 
         public void SaveToClip(AnimationClip clip, float fps)
         {
+            if (!isRecording)
+                throw new InvalidOperationException("Cannot save to clip as there is nothing to save. The method TakeSnapshot() has not been called.");
+
             if (fps <= Mathf.Epsilon)
                 throw new ArgumentException("FPS can't be 0.0 or less");
             SaveToClipInternal(clip, fps);

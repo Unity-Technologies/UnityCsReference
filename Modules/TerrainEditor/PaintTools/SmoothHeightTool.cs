@@ -33,7 +33,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         }
 
         [FormerlyPrefKeyAs("Terrain/Smooth Height", "f3")]
-        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolShortcutContext), KeyCode.F3)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
