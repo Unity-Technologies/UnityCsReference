@@ -999,7 +999,7 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
             menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
 
-            if (GetIsCustomParentSelected() || GetIsNotEditable())
+            if (GetIsCustomParentSelected())
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);

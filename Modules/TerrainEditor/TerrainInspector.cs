@@ -175,8 +175,12 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
 
+            minVal *= scale;
+            maxVal *= scale;
+
             float v = Mathf.Round(valueInPercent * scale / precision) * precision;
-            v = EditorGUILayout.Slider(content, v, minVal * scale, maxVal * scale);
+            v = Mathf.Clamp(v, minVal, maxVal);   // this keeps the slider knob from disappearing
+            v = EditorGUILayout.Slider(content, v, minVal, maxVal);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -332,14 +336,14 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
-        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext), KeyCode.F5)]
         static void SelectPlaceTreeTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
         }
 
         [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
-        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext), KeyCode.F6)]
         static void SelectPaintDetailTool(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);

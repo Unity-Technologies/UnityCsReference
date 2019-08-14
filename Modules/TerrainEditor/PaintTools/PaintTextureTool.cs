@@ -25,7 +25,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         private int m_SelectedTerrainLayerIndex = -1;
 
         [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
-        [Shortcut("Terrain/Paint Texture", typeof(TerrainToolShortcutContext))]
+        [Shortcut("Terrain/Paint Texture", typeof(TerrainToolShortcutContext), KeyCode.F4)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;

@@ -284,6 +284,11 @@ namespace UnityEngine.Experimental.TerrainAPI
         public void GatherNormals()
         {
             RenderTexture rt = originTerrain.normalmapTexture;
+            if (rt == null)
+            {
+                Debug.LogError("Terrain has no normal map.  Enable instanced rendering to ensure availability of normals.");
+                return;
+            }
 
             Material blitMaterial = TerrainPaintUtility.GetBlitMaterial();
 

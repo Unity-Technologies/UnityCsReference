@@ -637,8 +637,13 @@ namespace UnityEditorInternal
         [StaticAccessor("GetRenderManager()", StaticAccessorType.Dot)]
         extern public static bool HasFullscreenCamera();
 
+        public static Bounds CalculateSelectionBounds(bool usePivotOnlyForParticles, bool onlyUseActiveSelection)
+        {
+            return CalculateSelectionBounds(usePivotOnlyForParticles, onlyUseActiveSelection, false);
+        }
+
         [FreeFunction]
-        extern public static Bounds CalculateSelectionBounds(bool usePivotOnlyForParticles, bool onlyUseActiveSelection);
+        extern public static Bounds CalculateSelectionBounds(bool usePivotOnlyForParticles, bool onlyUseActiveSelection, bool ignoreEditableField);
 
         internal static Bounds CalculateSelectionBoundsInSpace(Vector3 position, Quaternion rotation, bool rectBlueprintMode)
         {

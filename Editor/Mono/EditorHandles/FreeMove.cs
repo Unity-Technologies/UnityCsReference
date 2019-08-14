@@ -84,16 +84,6 @@ namespace UnityEditorInternal
                             screenPos += (Vector3)(s_CurrentMousePosition - s_StartMousePosition);
                             position = Handles.inverseMatrix.MultiplyPoint(Camera.current.ScreenToWorldPoint(screenPos));
 
-                            // Due to floating point inaccuracies, the back-and-forth transformations used may sometimes introduce
-                            // tiny unintended movement in wrong directions. People notice when using a straight top/left/right ortho camera.
-                            // In that case, just restrain the movement to the plane.
-                            if (Camera.current.transform.forward == Vector3.forward || Camera.current.transform.forward == -Vector3.forward)
-                                position.z = s_StartPosition.z;
-                            if (Camera.current.transform.forward == Vector3.up || Camera.current.transform.forward == -Vector3.up)
-                                position.y = s_StartPosition.y;
-                            if (Camera.current.transform.forward == Vector3.right || Camera.current.transform.forward == -Vector3.right)
-                                position.x = s_StartPosition.x;
-
                             if (Tools.vertexDragging)
                             {
                                 if (HandleUtility.ignoreRaySnapObjects == null)
@@ -223,16 +213,6 @@ namespace UnityEditorInternal
                             Vector3 screenPos = Camera.current.WorldToScreenPoint(Handles.matrix.MultiplyPoint(s_StartPosition));
                             screenPos += (Vector3)(s_CurrentMousePosition - s_StartMousePosition);
                             position = Handles.inverseMatrix.MultiplyPoint(Camera.current.ScreenToWorldPoint(screenPos));
-
-                            // Due to floating point inaccuracies, the back-and-forth transformations used may sometimes introduce
-                            // tiny unintended movement in wrong directions. People notice when using a straight top/left/right ortho camera.
-                            // In that case, just restrain the movement to the plane.
-                            if (Camera.current.transform.forward == Vector3.forward || Camera.current.transform.forward == -Vector3.forward)
-                                position.z = s_StartPosition.z;
-                            if (Camera.current.transform.forward == Vector3.up || Camera.current.transform.forward == -Vector3.up)
-                                position.y = s_StartPosition.y;
-                            if (Camera.current.transform.forward == Vector3.right || Camera.current.transform.forward == -Vector3.right)
-                                position.x = s_StartPosition.x;
 
                             if (Tools.vertexDragging)
                             {

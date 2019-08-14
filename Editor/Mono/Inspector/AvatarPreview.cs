@@ -26,14 +26,10 @@ namespace UnityEditor
         {
             public static void Start(AvatarPreview owner)
             {
-                var operation = new ObjectSelectorOperation(owner, ObjectSelector.get);
+                var operation = ScriptableObject.CreateInstance<ObjectSelectorOperation>();
+                operation.m_Owner = owner;
+                operation.m_Selector = ObjectSelector.get;
                 operation.Execute();
-            }
-
-            public ObjectSelectorOperation(AvatarPreview owner, ObjectSelector selector)
-            {
-                m_Owner = owner;
-                m_Selector = selector;
             }
 
             AvatarPreview m_Owner;
