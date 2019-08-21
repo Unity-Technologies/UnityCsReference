@@ -7,10 +7,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.ShortcutManagement;
+using JetBrains.Annotations;
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.UIElements;
+using UnityEditor.ShortcutManagement;
 
 using JSONObject = System.Collections.IDictionary;
 
@@ -26,6 +28,25 @@ namespace UnityEditor
         Layouts,
         LayoutSwitching,
         Playbar
+    }
+
+    [Serializable]
+    class ModeDescriptor : ScriptableObject
+    {
+        [SerializeField] public string path;
+    }
+
+    [UsedImplicitly, ExcludeFromPreset, ScriptedImporter(version: 1, ext: "mode")]
+    class ModeDescriptorImporter : ScriptedImporter
+    {
+        public override void OnImportAsset(AssetImportContext ctx)
+        {
+            var modeDescriptor = ScriptableObject.CreateInstance<ModeDescriptor>();
+            modeDescriptor.path = ctx.assetPath;
+            modeDescriptor.hideFlags = HideFlags.NotEditable;
+            ctx.AddObjectToAsset("mode", modeDescriptor);
+            ctx.SetMainObject(modeDescriptor);
+        }
     }
 
     [ExcludeFromDocs]
@@ -260,27 +281,40 @@ namespace UnityEditor
         private static void ScanModes()
         {
             var modesData = new Dictionary<string, object> { [k_DefaultModeId] = new Dictionary<string, object> { [k_LabelSectionName] = "Default" } };
-            var modeFilePaths = AssetDatabase.FindAssets("t:DefaultAsset")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Where(IsEditorModeDescriptor).OrderBy(path => - new FileInfo(path).Length);
-            foreach (var modeFilePath in modeFilePaths)
+            var modeDescriptors = AssetDatabase.EnumerateAllAssets(new SearchFilter
             {
-                var json = SJSON.Load(modeFilePath);
-
-                foreach (var rawModeId in json.Keys)
+                searchArea = SearchFilter.SearchArea.InPackagesOnly,
+                classNames = new[] { nameof(ModeDescriptor) },
+                skipHidden = true,
+                showAllHits = true
+            });
+            while (modeDescriptors.MoveNext())
+            {
+                var md = modeDescriptors.Current.pptrValue as ModeDescriptor;
+                if (md == null)
+                    continue;
+                try
                 {
-                    var modeId = ((string)rawModeId).ToLower();
-                    if (IsValidModeId(modeId))
+                    var json = SJSON.Load(md.path);
+                    foreach (var rawModeId in json.Keys)
                     {
-                        if (modesData.ContainsKey(modeId))
-                            modesData[modeId] = JsonUtils.DeepMerge(modesData[modeId] as JSONObject, json[modeId] as JSONObject);
+                        var modeId = ((string)rawModeId).ToLower();
+                        if (IsValidModeId(modeId))
+                        {
+                            if (modesData.ContainsKey(modeId))
+                                modesData[modeId] = JsonUtils.DeepMerge(modesData[modeId] as JSONObject, json[modeId] as JSONObject);
+                            else
+                                modesData[modeId] = json[modeId];
+                        }
                         else
-                            modesData[modeId] = json[modeId];
+                        {
+                            Debug.LogWarning($"Invalid Mode Id: {modeId} contains non alphanumeric characters.");
+                        }
                     }
-                    else
-                    {
-                        Debug.LogWarning($"Invalid Mode Id: {modeId} contains non alphanumeric characters.");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[ModeService] Error while parsing mode file {md.path}.\n{ex}");
                 }
             }
 

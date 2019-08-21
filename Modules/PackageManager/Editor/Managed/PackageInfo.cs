@@ -106,10 +106,6 @@ namespace UnityEditor.PackageManager
         private bool m_HideInEditor;
 
         [SerializeField]
-        [NativeName("entitlements")]
-        private EntitlementsInfo m_Entitlements = new EntitlementsInfo();
-
-        [SerializeField]
         [NativeName("datePublishedTicks")]
         private long m_DatePublishedTicks;
 
@@ -134,7 +130,6 @@ namespace UnityEditor.PackageManager
         public string[] keywords { get { return m_Keywords;  } }
         public AuthorInfo author { get { return m_Author;  } }
         internal bool hideInEditor { get { return m_HideInEditor;  } }
-        internal EntitlementsInfo entitlements { get { return m_Entitlements; } }
 
         public RegistryInfo registry
         {

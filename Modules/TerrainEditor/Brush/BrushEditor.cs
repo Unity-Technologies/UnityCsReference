@@ -60,18 +60,21 @@ namespace UnityEditor
 
             serializedObject.Update();
             EditorGUI.BeginChangeCheck();
+            Texture2D origMask = (Texture2D)m_Mask.objectReferenceValue;
             Texture2D mask = (Texture2D)EditorGUILayout.ObjectField(Styles.maskTexture,
-                (Texture2D)m_Mask.objectReferenceValue, typeof(Texture2D), false);
+                origMask, typeof(Texture2D), false);
             if (mask == null)
             {
                 mask = Brush.DefaultMask();
                 m_HasChanged = true;
             }
 
+            if (origMask != mask)
+                m_Mask.objectReferenceValue = mask;
+
             float blackWhiteRemapMin = m_BlackWhiteRemapMin.floatValue;
             float blackWhiteRemapMax = m_BlackWhiteRemapMax.floatValue;
 
-            m_Mask.objectReferenceValue = mask;
             EditorGUILayout.MinMaxSlider(Styles.remap, ref blackWhiteRemapMin, ref blackWhiteRemapMax, 0.0f, 1.0f);
             EditorGUILayout.PropertyField(m_InvertRemapRange);
             EditorGUILayout.CurveField(m_Falloff, Color.white, new Rect(0, 0, 1, 1));
