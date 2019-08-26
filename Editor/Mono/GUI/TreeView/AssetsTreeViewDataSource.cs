@@ -11,6 +11,7 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
+using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 
 namespace UnityEditor
 {
@@ -59,6 +60,50 @@ namespace UnityEditor
             : this(treeView)
         {
             m_rootInstanceID = rootInstanceID;
+        }
+
+        public override List<int> GetNewSelection(TreeViewItem clickedItem, TreeViewSelectState selectState)
+        {
+            var assetTreeClickedItem = clickedItem as IAssetTreeViewItem;
+            var clickedEntry = new AssetReference() { instanceID = clickedItem.id };
+            if (clickedItem.id == 0 && assetTreeClickedItem != null)
+                clickedEntry.guid = assetTreeClickedItem.Guid;
+
+            // Get ids from items
+            var visibleRows = GetRows();
+            var allIDs = new List<int>(visibleRows.Count);
+            var allGuids = new List<string>(visibleRows.Count);
+
+            for (int i = 0; i < visibleRows.Count; ++i)
+            {
+                int instanceID = visibleRows[i].id;
+                string guid = null;
+                if (instanceID == 0)
+                {
+                    var assetTreeViewItem = visibleRows[i] as IAssetTreeViewItem;
+                    if (assetTreeViewItem != null)
+                        guid = assetTreeViewItem.Guid;
+                }
+
+                allGuids.Add(guid);
+                allIDs.Add(instanceID);
+            }
+
+            List<int> selectedIDs = selectState.selectedIDs;
+            int lastClickedID = selectState.lastClickedID;
+            bool allowMultiselection = CanBeMultiSelected(clickedItem);
+
+            var result = InternalEditorUtility.GetNewSelection(ref clickedEntry, allIDs, allGuids, selectedIDs, lastClickedID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection);
+
+            clickedItem.id = clickedEntry.instanceID;
+
+            for (int i = 0; i < allIDs.Count; ++i)
+            {
+                if (allGuids[i] != null && allIDs[i] != 0)
+                    visibleRows[i].id = allIDs[i];
+            }
+
+            return result;
         }
 
         static string CreateDisplayName(int instanceID)
@@ -131,6 +176,7 @@ namespace UnityEditor
                 var rootInstanceID = root.instanceID;
                 var displayName = root.displayName ?? CreateDisplayName(rootInstanceID);
                 var rootPath = root.path ?? AssetDatabase.GetAssetPath(rootInstanceID);
+                var rootGuid = AssetDatabase.AssetPathToGUID(rootPath);
 
                 var property = new HierarchyProperty(rootPath);
                 if (!root.skipValidation && !property.Find(rootInstanceID, null))
@@ -165,7 +211,7 @@ namespace UnityEditor
 
                     // Create root item TreeView item
                     if (subDepth > 0)
-                        rootItem = new FolderTreeItem(rootInstanceID, rootDepth, parentItem, displayName);
+                        rootItem = new FolderTreeItem(rootGuid, rootInstanceID, rootDepth, parentItem, displayName);
                     else
                         rootItem = new RootTreeItem(rootInstanceID, rootDepth, parentItem, displayName);
                     rootItem.icon = folderIcon;
@@ -195,9 +241,9 @@ namespace UnityEditor
                             depth = property.depth - minDepth;
                             TreeViewItem item;
                             if (property.isFolder)
-                                item = new FolderTreeItem(property.instanceID, depth + subDepth, null, property.name);
+                                item = new FolderTreeItem(property.guid, property.instanceID, depth + subDepth, null, property.name);
                             else
-                                item = new NonFolderTreeItem(property.instanceID, depth + subDepth, null, property.name);
+                                item = new NonFolderTreeItem(property.guid, property.GetInstanceIDIfImported(), depth + subDepth, null, property.name);
 
                             if (property.isFolder && !property.hasChildren)
                                 item.icon = emptyFolderIcon;
@@ -473,6 +519,11 @@ namespace UnityEditor
         }
 
         // Classes used for type checking
+        internal interface IAssetTreeViewItem
+        {
+            string Guid { get; }
+        }
+
         internal class RootTreeItem : TreeViewItem
         {
             public RootTreeItem(int id, int depth, TreeViewItem parent, string displayName)
@@ -480,18 +531,25 @@ namespace UnityEditor
             {
             }
         }
-        class FolderTreeItem : TreeViewItem
+
+        class FolderTreeItem : TreeViewItem, IAssetTreeViewItem
         {
-            public FolderTreeItem(int id, int depth, TreeViewItem parent, string displayName)
+            public string Guid { get; }
+
+            public FolderTreeItem(string guid, int id, int depth, TreeViewItem parent, string displayName)
                 : base(id, depth, parent, displayName)
             {
+                Guid = guid;
             }
         }
-        class NonFolderTreeItem : TreeViewItem
+
+        class NonFolderTreeItem : TreeViewItem, IAssetTreeViewItem
         {
-            public NonFolderTreeItem(int id, int depth, TreeViewItem parent, string displayName)
+            public string Guid { get; }
+            public NonFolderTreeItem(string guid, int id, int depth, TreeViewItem parent, string displayName)
                 : base(id, depth, parent, displayName)
             {
+                Guid = guid;
             }
         }
     }

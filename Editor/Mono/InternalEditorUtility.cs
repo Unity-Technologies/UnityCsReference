@@ -150,52 +150,163 @@ namespace UnityEditorInternal
             WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(true);
         }
 
-        // Multi selection handling. Returns new list of selected instanceIDs
+        internal struct AssetReference
+        {
+            // The guid is always valid. Assets not yet present will not have an instanceID yet.
+            // Could be because it is on-demand imported.
+            public string guid;
+            public int instanceID; // instanceID of an object in an asset if the asset is available in imported form. Else 0.
+
+            public sealed class GuidThenInstanceIDEqualityComparer : IEqualityComparer<AssetReference>
+            {
+                public bool Equals(AssetReference x, AssetReference y)
+                {
+                    if (!string.IsNullOrEmpty(x.guid) || !string.IsNullOrEmpty(y.guid))
+                        string.Equals(x.guid, y.guid);
+
+                    // Both guids are nullOrEmpty now
+                    return x.instanceID == y.instanceID;
+                }
+
+                public int GetHashCode(AssetReference assetReference)
+                {
+                    return (assetReference.instanceID * 397)
+                        ^ (assetReference.guid != null ? assetReference.guid.GetHashCode() : 0);
+                }
+            }
+        }
+
         public static List<int> GetNewSelection(int clickedInstanceID, List<int> allInstanceIDs, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
         {
-            List<int> newSelection = new List<int>();
+            return GetNewSelection(clickedInstanceID, allInstanceIDs, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, Event.current.shift, EditorGUI.actionKey);
+        }
 
-            bool useShift = Event.current.shift || (EditorGUI.actionKey && useShiftAsActionKey);
-            bool useActionKey = EditorGUI.actionKey && !useShiftAsActionKey;
+        internal static List<int> GetNewSelection(int clickedInstanceID, List<int> allInstanceIDs, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection, bool shiftKeyIsDown, bool actionKeyIsDown)
+        {
+            List<string> allGuids = null;
+            var clicked = new AssetReference() { guid = null, instanceID = clickedInstanceID };
+
+            return GetNewSelection(ref clicked, allInstanceIDs, allGuids, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, shiftKeyIsDown, actionKeyIsDown);
+        }
+
+        internal static void EnsureInstanceId(ref AssetReference entry)
+        {
+            if (entry.instanceID != 0 || string.IsNullOrEmpty(entry.guid))
+                return;
+
+            var guids = new string[] { entry.guid };
+            UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids);
+            string path = AssetDatabase.GUIDToAssetPath(entry.guid);
+            entry.instanceID = AssetDatabase.GetMainAssetInstanceID(path);
+        }
+
+        internal static List<int> EnsureInstanceIds(List<int> entryInstanceIds, List<string> entryInstanceGuids, int from, int to)
+        {
+            List<string> guids = new List<string>();
+
+            for (int i = from; i <= to; ++i)
+            {
+                if (entryInstanceIds[i] == 0)
+                    guids.Add(entryInstanceGuids[i]);
+            }
+
+            // Force import if needed so that we can get an instance ID for the entry
+
+            if (guids.Count == 0)
+            {
+                return entryInstanceIds.GetRange(from, to - from + 1);
+            }
+            else
+            {
+                UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids.ToArray());
+                var newSelection = new List<int>(to - from + 1);
+
+                for (int i = from; i <= to; ++i)
+                {
+                    int instanceID = entryInstanceIds[i];
+                    if (instanceID == 0)
+                    {
+                        string path = AssetDatabase.GUIDToAssetPath(entryInstanceGuids[i]);
+                        instanceID = AssetDatabase.GetMainAssetInstanceID(path);
+                        entryInstanceIds[i] = instanceID;
+                    }
+                    newSelection.Add(instanceID);
+                }
+                return newSelection;
+            }
+        }
+
+        internal static List<int> GetNewSelection(ref AssetReference clickedEntry, List<int> allEntryInstanceIDs, List<string> allEntryGuids, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
+        {
+            return GetNewSelection(ref clickedEntry, allEntryInstanceIDs, allEntryGuids, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, Event.current.shift, EditorGUI.actionKey);
+        }
+
+        // Multi selection handling. Returns new list of selected instanceIDs
+        internal static List<int> GetNewSelection(ref AssetReference clickedEntry, List<int> allEntryInstanceIDs, List<string> allEntryGuids, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection, bool shiftKeyIsDown, bool actionKeyIsDown)
+        {
+            bool useShift = shiftKeyIsDown || (actionKeyIsDown && useShiftAsActionKey);
+            bool useActionKey = actionKeyIsDown && !useShiftAsActionKey;
             if (!allowMultiSelection)
                 useShift = useActionKey = false;
 
             // Toggle selected node from selection
             if (useActionKey)
             {
-                newSelection.AddRange(selectedInstanceIDs);
-                if (newSelection.Contains(clickedInstanceID))
-                    newSelection.Remove(clickedInstanceID);
+                var newSelection = new List<int>(selectedInstanceIDs);
+                if (newSelection.Contains(clickedEntry.instanceID))
+                    newSelection.Remove(clickedEntry.instanceID);
                 else
-                    newSelection.Add(clickedInstanceID);
+                {
+                    EnsureInstanceId(ref clickedEntry);
+                    newSelection.Add(clickedEntry.instanceID);
+                }
+                return newSelection;
             }
             // Select everything between the first selected object and the selected
             else if (useShift)
             {
-                if (clickedInstanceID == lastClickedInstanceID)
+                if (clickedEntry.instanceID == lastClickedInstanceID)
                 {
-                    newSelection.AddRange(selectedInstanceIDs);
-                    return newSelection;
+                    return new List<int>(selectedInstanceIDs);
                 }
 
                 int firstIndex;
                 int lastIndex;
-                if (!GetFirstAndLastSelected(allInstanceIDs, selectedInstanceIDs, out firstIndex, out lastIndex))
+                if (!GetFirstAndLastSelected(allEntryInstanceIDs, selectedInstanceIDs, out firstIndex, out lastIndex))
                 {
                     // We had no selection
-                    newSelection.Add(clickedInstanceID);
+                    EnsureInstanceId(ref clickedEntry);
+                    var newSelection = new List<int>(1);
+                    newSelection.Add(clickedEntry.instanceID);
                     return newSelection;
                 }
 
                 int newIndex = -1;
                 int prevIndex = -1;
-                for (int i = 0; i < allInstanceIDs.Count; ++i)
+
+                // Only valid in case the selection concerns assets
+
+                EnsureInstanceId(ref clickedEntry);
+                int clickedInstanceID = clickedEntry.instanceID;
+
+                if (lastClickedInstanceID != 0)
                 {
-                    if (allInstanceIDs[i] == clickedInstanceID)
-                        newIndex = i;
-                    if (lastClickedInstanceID != 0)
-                        if (allInstanceIDs[i] == lastClickedInstanceID)
+                    for (int i = 0; i < allEntryInstanceIDs.Count; ++i)
+                    {
+                        if (allEntryInstanceIDs[i] == clickedInstanceID)
+                            newIndex = i;
+
+                        if (allEntryInstanceIDs[i] == lastClickedInstanceID)
                             prevIndex = i;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < allEntryInstanceIDs.Count; ++i)
+                    {
+                        if (allEntryInstanceIDs[i] == clickedInstanceID)
+                            newIndex = i;
+                    }
                 }
 
                 System.Diagnostics.Debug.Assert(newIndex != -1); // new item should be part of visible folder set
@@ -229,10 +340,11 @@ namespace UnityEditorInternal
                 }
 
                 // Outcomment to debug
-                //Debug.Log (clickedInstanceID + ",   firstIndex " + firstIndex + ", lastIndex " + lastIndex + ",    newIndex " + newIndex + " " + ", lastClickedIndex " + prevIndex + ",     from " + from + ", to " + to);
-
-                for (int i = from; i <= to; ++i)
-                    newSelection.Add(allInstanceIDs[i]);
+                //Debug.Log (clickedEntry + ",   firstIndex " + firstIndex + ", lastIndex " + lastIndex + ",    newIndex " + newIndex + " " + ", lastClickedIndex " + prevIndex + ",     from " + from + ", to " + to);
+                if (allEntryGuids == null)
+                    return allEntryInstanceIDs.GetRange(from, to - from + 1);
+                else
+                    return EnsureInstanceIds(allEntryInstanceIDs, allEntryGuids, from, to);
             }
             // Just set the selection to the clicked object
             else
@@ -241,26 +353,26 @@ namespace UnityEditorInternal
                 {
                     // Don't change selection on mouse down when clicking on selected item.
                     // This is for dragging in case with multiple items selected or right click (mouse down should not unselect the rest).
-                    if (selectedInstanceIDs.Contains(clickedInstanceID))
+                    if (selectedInstanceIDs.Contains(clickedEntry.instanceID))
                     {
-                        newSelection.AddRange(selectedInstanceIDs);
-                        return newSelection;
+                        return new List<int>(selectedInstanceIDs);
                     }
                 }
 
-                newSelection.Add(clickedInstanceID);
+                EnsureInstanceId(ref clickedEntry);
+                var newSelection = new List<int>(1);
+                newSelection.Add(clickedEntry.instanceID);
+                return newSelection;
             }
-
-            return newSelection;
         }
 
-        static bool GetFirstAndLastSelected(List<int> allInstanceIDs, List<int> selectedInstanceIDs, out int firstIndex, out int lastIndex)
+        static bool GetFirstAndLastSelected(List<int> allEntries, List<int> selectedInstanceIDs, out int firstIndex, out int lastIndex)
         {
             firstIndex = -1;
             lastIndex = -1;
-            for (int i = 0; i < allInstanceIDs.Count; ++i)
+            for (int i = 0; i < allEntries.Count; ++i)
             {
-                if (selectedInstanceIDs.Contains(allInstanceIDs[i]))
+                if (selectedInstanceIDs.Contains(allEntries[i]))
                 {
                     if (firstIndex == -1)
                         firstIndex = i;
@@ -424,10 +536,10 @@ namespace UnityEditorInternal
 
         public static void SetShowGizmos(bool value)
         {
-            var view = PreviewEditorWindow.GetMainPreviewWindow();
+            var view = PlayModeView.GetMainPlayModeView();
 
             if (view == null)
-                view = PreviewEditorWindow.GetRenderingPreview();
+                view = PlayModeView.GetRenderingView();
 
             if (view == null)
                 return;

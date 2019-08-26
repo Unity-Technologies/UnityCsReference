@@ -52,14 +52,6 @@ namespace UnityEditor
         }
 
         [Serializable]
-        internal class VersionDefine
-        {
-            public string name;
-            public string expression;
-            public string define;
-        }
-
-        [Serializable]
         internal class AssemblyDefinitionReference
         {
             public string name;
@@ -92,10 +84,7 @@ namespace UnityEditor
 
         class AssemblyDefinitionState : ScriptableObject
         {
-            public string path
-            {
-                get { return AssetDatabase.GetAssetPath(asset); }
-            }
+            public string path => AssetDatabase.GetAssetPath(asset);
 
             public string assemblyName;
             public AssemblyDefinitionAsset asset;
@@ -113,6 +102,7 @@ namespace UnityEditor
         }
 
         SemVersionRangesFactory m_SemVersionRanges;
+
         ReorderableList m_ReferencesList;
         ReorderableList m_PrecompiledReferencesList;
         ReorderableList m_VersionDefineList;
@@ -130,7 +120,7 @@ namespace UnityEditor
         string[] m_Defines;
         Exception initializeException;
 
-        public override bool showImportedObject { get { return false; } }
+        public override bool showImportedObject => false;
 
         public override void OnEnable()
         {
@@ -160,7 +150,7 @@ namespace UnityEditor
 
             extraDataSerializedObject.Update();
 
-            var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
+            var platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms();
             using (new EditorGUI.DisabledScope(false))
             {
                 if (targets.Length > 1)
@@ -311,7 +301,7 @@ namespace UnityEditor
 
         static void InversePlatformCompatibility(AssemblyDefinitionState state)
         {
-            var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
+            var platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms();
             for (int i = 0; i < platforms.Length; ++i)
                 state.platformCompatibility[i] = !state.platformCompatibility[i];
         }
@@ -332,7 +322,7 @@ namespace UnityEditor
         {
             try
             {
-                LoadAssemblyDefintionState((AssemblyDefinitionState)extraTarget, ((AssetImporter)targets[targetIndex]).assetPath);
+                LoadAssemblyDefinitionState((AssemblyDefinitionState)extraTarget, ((AssetImporter)targets[targetIndex]).assetPath);
                 initializeException = null;
             }
             catch (Exception e)
@@ -545,7 +535,7 @@ namespace UnityEditor
             newProp.FindPropertyRelative("fileName").stringValue = string.Empty;
         }
 
-        static void LoadAssemblyDefintionState(AssemblyDefinitionState state, string path)
+        static void LoadAssemblyDefinitionState(AssemblyDefinitionState state, string path)
         {
             var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
             if (asset == null)
@@ -584,20 +574,7 @@ namespace UnityEditor
             {
                 foreach (var versionDefine in data.versionDefines)
                 {
-                    if (!SymbolNameRestrictions.IsValid(versionDefine.define))
-                    {
-                        var exception = new AssemblyDefinitionException($"Invalid version define {versionDefine.define}", path);
-                        Debug.LogException(exception, asset);
-                    }
-                    else
-                    {
-                        state.versionDefines.Add(new VersionDefine
-                        {
-                            name = versionDefine.name,
-                            expression = versionDefine.expression,
-                            define = versionDefine.define,
-                        });
-                    }
+                    state.versionDefines.Add(versionDefine);
                 }
             }
 
@@ -645,7 +622,7 @@ namespace UnityEditor
                     }
                     catch (AssemblyDefinitionException e)
                     {
-                        UnityEngine.Debug.LogException(e, asset);
+                        Debug.LogException(e, asset);
                         state.references.Add(new AssemblyDefinitionReference());
                     }
                 }
@@ -742,19 +719,12 @@ namespace UnityEditor
                 .Select(r => r.name)
                 .ToArray();
 
-            data.versionDefines = state.versionDefines.Select(x => new UnityEditor.Scripting.ScriptCompilation.VersionDefine
-            {
-                name = x.name,
-                expression = x.expression,
-                define = x.define,
-            }).ToArray();
-
+            data.versionDefines = state.versionDefines.ToArray();
             data.autoReferenced = state.autoReferenced;
             data.overrideReferences = state.overrideReferences;
 
             data.precompiledReferences = state.precompiledReferences
                 .Select(r => r.name).ToArray();
-
 
             data.allowUnsafeCode = state.allowUnsafeCode;
             data.noEngineReferences = state.noEngineReferences;

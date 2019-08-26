@@ -88,7 +88,6 @@ namespace UnityEditor
             public static readonly GUIContent iPhoneScriptCallOptimization = EditorGUIUtility.TrTextContent("Script Call Optimization*");
             public static readonly GUIContent enableInternalProfiler = EditorGUIUtility.TrTextContent("Enable Internal Profiler* (Deprecated)", "Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.");
             public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
-            public static readonly GUIContent protectGraphicsMemory = EditorGUIUtility.TrTextContent("Protect Graphics Memory", "Protect GPU memory from being read (on supported devices). Will prevent user from taking screenshots");
             public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Enable Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
             public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
             public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TrTextContent("Prerendered Icon");
@@ -138,7 +137,8 @@ namespace UnityEditor
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
-            public static readonly GUIContent graphicsJobs = EditorGUIUtility.TrTextContent("Graphics Jobs");
+            public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
+            public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode*");
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
@@ -814,11 +814,6 @@ namespace UnityEditor
                 return settingsExtension.CanShowUnitySplashScreen();
 
             return targetGroup == BuildTargetGroup.Standalone;
-        }
-
-        private static bool TargetSupportsProtectedGraphicsMem(BuildTargetGroup targetGroup)
-        {
-            return BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.ProtectedGraphicsMem);
         }
 
         public void ResolutionSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 0)
@@ -1643,6 +1638,7 @@ namespace UnityEditor
             bool graphicsJobsOptionEnabled = true;
             bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform(platform.defaultTarget);
             bool newGraphicsJobs = graphicsJobs;
+            bool graphicsJobsModeOptionEnabled = graphicsJobs;
 
             if (targetGroup == BuildTargetGroup.XboxOne)
             {
@@ -1657,6 +1653,7 @@ namespace UnityEditor
                     if (graphicsJobs == false)
                     {
                         PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, true);
+                        graphicsJobs = true;
                         newGraphicsJobs = true;
                     }
                 }
@@ -1664,17 +1661,31 @@ namespace UnityEditor
                 {
                     PlayerSettings.graphicsJobMode = GraphicsJobMode.Legacy;
                 }
+                graphicsJobsModeOptionEnabled = false;
             }
             EditorGUI.BeginChangeCheck();
+            GUIContent graphicsJobsGUI = SettingsContent.graphicsJobsNonExperimental;
+            switch (platform.defaultTarget)
+            {
+                case BuildTarget.StandaloneOSX:
+                case BuildTarget.iOS:
+                case BuildTarget.tvOS:
+                case BuildTarget.Android:
+                    graphicsJobsGUI = SettingsContent.graphicsJobsExperimental;
+                    break;
+                default:
+                    break;
+            }
+
             using (new EditorGUI.DisabledScope(!graphicsJobsOptionEnabled))
             {
                 if (GUI.enabled)
                 {
-                    newGraphicsJobs = EditorGUILayout.Toggle(SettingsContent.graphicsJobs, graphicsJobs);
+                    newGraphicsJobs = EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
                 }
                 else
                 {
-                    EditorGUILayout.Toggle(SettingsContent.graphicsJobs, false);
+                    EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
                 }
             }
             if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
@@ -1685,7 +1696,7 @@ namespace UnityEditor
 
             if (gfxJobModesSupported)
             {
-                using (new EditorGUI.DisabledScope(!graphicsJobs))
+                using (new EditorGUI.DisabledScope(!graphicsJobsModeOptionEnabled))
                 {
                     GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
                     GraphicsJobMode newGfxJobMode = BuildEnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
@@ -1768,11 +1779,6 @@ namespace UnityEditor
 
                     GUIUtility.ExitGUI();
                 }
-            }
-
-            if (TargetSupportsProtectedGraphicsMem(targetGroup))
-            {
-                PlayerSettings.protectGraphicsMemory = EditorGUILayout.Toggle(SettingsContent.protectGraphicsMemory, PlayerSettings.protectGraphicsMemory);
             }
 
             if (targetGroup == BuildTargetGroup.Standalone || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))

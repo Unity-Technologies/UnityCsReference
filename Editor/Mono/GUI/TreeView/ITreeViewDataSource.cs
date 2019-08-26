@@ -64,6 +64,7 @@ namespace UnityEditor.IMGUI.Controls
         // Selection
         bool CanBeMultiSelected(TreeViewItem item);
         bool CanBeParent(TreeViewItem item);
+        List<int> GetNewSelection(TreeViewItem clickedItem, TreeViewSelectState selectState);
 
         // Renaming
         bool IsRenamingItemAllowed(TreeViewItem item);

@@ -332,11 +332,11 @@ namespace UnityEditor
 
         public static bool ShouldRenderGizmos()
         {
-            var preview = PreviewEditorWindow.GetRenderingPreview();
+            var playModeView = PlayModeView.GetRenderingView();
             SceneView sv = SceneView.currentDrawingSceneView;
 
-            if (preview != null)
-                return preview.IsShowingGizmos();
+            if (playModeView != null)
+                return playModeView.IsShowingGizmos();
 
             if (sv != null)
                 return sv.drawGizmos;
@@ -1311,10 +1311,10 @@ namespace UnityEditor
             return cameraRect;
         }
 
-        // Get the size of the main preview window
+        // Get the size of the main playModeView window
         public static Vector2 GetMainGameViewSize()
         {
-            return PreviewEditorWindow.GetMainPreviewTargetSize();
+            return PlayModeView.GetMainPlayModeViewTargetSize();
         }
 
         // Clears the camera.

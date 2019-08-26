@@ -682,7 +682,7 @@ namespace UnityEditor
                         {
                             light.RemoveCommandBuffer(le, cb);
                             SceneView.RepaintAll();
-                            PreviewEditorWindow.RepaintAll();
+                            PlayModeView.RepaintAll();
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -696,7 +696,7 @@ namespace UnityEditor
                 {
                     light.RemoveAllCommandBuffers();
                     SceneView.RepaintAll();
-                    PreviewEditorWindow.RepaintAll();
+                    PlayModeView.RepaintAll();
                 }
             }
             EditorGUI.indentLevel--;

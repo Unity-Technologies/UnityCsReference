@@ -33,7 +33,8 @@ namespace UnityEditor
                             // Note: Do not set m_Icon as GetCachedIcon uses its own cache that is cleared on reaching a max limit.
                             // This is because when having e.g very large projects (1000s of textures with unique icons) we do not want all icons loaded
                             // at the same time so don't keep a reference in m_Icon here
-                            string path = AssetDatabase.GetAssetPath(instanceID);
+                            string path = instanceID == 0 ? null : AssetDatabase.GetAssetPath(instanceID);
+
                             if (path != null)
                                 // Finding icon based on only file extension fails in several ways, and a different approach have to be found.
                                 // Using InternalEditorUtility.FindIconForFile first in revision f25945218bb6 / 29b23dbe4b5c introduced several regressions.
@@ -44,6 +45,10 @@ namespace UnityEditor
                                 // Support for specific file types based on file extensiom have to be supported inside AssetDatabase.GetCachedIcon
                                 // itself to work correctly and universally. for e.g. uxml files from within GetCachedIcon without relying on FindIconForFile.
                                 return AssetDatabase.GetCachedIcon(path) as Texture2D;
+
+                            path = string.IsNullOrEmpty(m_Guid) ? null : AssetDatabase.GUIDToAssetPath(m_Guid);
+                            if (path != null)
+                                return UnityEditorInternal.InternalEditorUtility.FindIconForFile(path);
                         }
                         else if (type == HierarchyType.GameObjects)
                         {
@@ -65,15 +70,21 @@ namespace UnityEditor
             }
             private Texture2D m_Icon;
 
+            internal string m_Guid;
+
             public string guid
             {
                 get
                 {
                     if (type == HierarchyType.Assets)
                     {
-                        string path = AssetDatabase.GetAssetPath(instanceID);
-                        if (path != null)
-                            return AssetDatabase.AssetPathToGUID(path);
+                        if (instanceID != 0 && string.IsNullOrEmpty(m_Guid))
+                        {
+                            string path = AssetDatabase.GetAssetPath(instanceID);
+                            if (path != null)
+                                m_Guid = AssetDatabase.AssetPathToGUID(path);
+                        }
+                        return m_Guid;
                     }
                     return null;
                 }
@@ -162,7 +173,7 @@ namespace UnityEditor
             if (result == null)
                 result = new FilterResult();
 
-            result.instanceID = property.instanceID;
+            result.instanceID = property.GetInstanceIDIfImported();
             result.name = property.name;
             result.hasChildren = property.hasChildren;
             result.colorCode = property.colorCode;
@@ -180,6 +191,9 @@ namespace UnityEditor
                 result.icon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
             else
                 result.icon = null;
+
+            if (m_HierarchyType == HierarchyType.Assets)
+                result.m_Guid = property.guid;
         }
 
         void SearchAllAssets(SearchFilter.SearchArea area)
@@ -456,7 +470,13 @@ namespace UnityEditor
 
         public int instanceID
         {
-            get { return m_Hierarchy.results[m_Position].instanceID; }
+            get
+            {
+                var id = m_Hierarchy.results[m_Position].instanceID;
+                if (id == 0)
+                    m_Hierarchy.results[m_Position].instanceID = AssetDatabase.GetMainAssetInstanceID(guid);
+                return m_Hierarchy.results[m_Position].instanceID;
+            }
         }
 
         public Object pptrValue
@@ -590,6 +610,11 @@ namespace UnityEditor
         public int CountRemaining(int[] expanded)
         {
             return m_Hierarchy.results.Length - m_Position - 1;
+        }
+
+        public int GetInstanceIDIfImported()
+        {
+            return m_Hierarchy.results[m_Position].instanceID;
         }
     }
 }

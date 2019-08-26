@@ -106,11 +106,12 @@ namespace UnityEditor.SceneManagement
 
         public override void Revert()
         {
+            var coupledComponent = instanceComponent.GetCoupledComponent();
+
             PrefabUtility.RevertAddedComponent(
                 instanceComponent,
                 InteractionMode.UserAction);
 
-            var coupledComponent = instanceComponent.GetCoupledComponent();
             if (coupledComponent != null)
             {
                 PrefabUtility.RevertAddedComponent(

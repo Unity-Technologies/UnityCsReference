@@ -59,11 +59,32 @@ namespace UnityEditor
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
         Vector2 m_ScrollPosition = Vector2.zero;
+        private Material m_SrpCompatibilityCheckMaterial = null;
+
+        public Material srpCompatibilityCheckMaterial
+        {
+            get
+            {
+                if (m_SrpCompatibilityCheckMaterial == null)
+                {
+                    m_SrpCompatibilityCheckMaterial = new Material(target as Shader);
+                }
+                return m_SrpCompatibilityCheckMaterial;
+            }
+        }
 
         public virtual void OnEnable()
         {
             var s = target as Shader;
             ShaderUtil.FetchCachedMessages(s);
+        }
+
+        public virtual void OnDisable()
+        {
+            if (m_SrpCompatibilityCheckMaterial != null)
+            {
+                GameObject.DestroyImmediate(m_SrpCompatibilityCheckMaterial);
+            }
         }
 
         private static string GetPropertyType(Shader s, int index)
@@ -116,8 +137,8 @@ namespace UnityEditor
                 // If any SRP is active, then display the SRP Batcher compatibility status
                 if (RenderPipelineManager.currentPipeline != null)
                 {
-                    var mat = new Material(s);
-                    mat.SetPass(0);                 // NOTE: Force the shader compilation to ensure GetSRPBatcherCompatibilityCode will be up to date
+                    // NOTE: Force the shader compilation to ensure GetSRPBatcherCompatibilityCode will be up to date
+                    srpCompatibilityCheckMaterial.SetPass(0);
                     int subShader = ShaderUtil.GetShaderActiveSubshaderIndex(s);
                     int SRPErrCode = ShaderUtil.GetSRPBatcherCompatibilityCode(s, subShader);
                     string result = (0 == SRPErrCode) ? "compatible" : "not compatible";
@@ -127,6 +148,7 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(ShaderUtil.GetSRPBatcherCompatibilityIssueReason(s, subShader, SRPErrCode), MessageType.Info);
                     }
                 }
+
                 ShowShaderProperties(s);
             }
         }

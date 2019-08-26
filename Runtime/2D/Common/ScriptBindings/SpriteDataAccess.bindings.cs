@@ -173,6 +173,8 @@ namespace UnityEngine.U2D
         extern private static SpriteBone[] GetBoneInfo([NotNull] Sprite sprite);
         extern private static void SetBoneData([NotNull] Sprite sprite, SpriteBone[] src);
 
+        extern internal static int GetPrimaryVertexStreamSize(Sprite sprite);
+
         extern internal static AtomicSafetyHandle GetSafetyHandle([NotNull] this Sprite sprite);
     }
 
@@ -180,10 +182,21 @@ namespace UnityEngine.U2D
     [NativeHeader("Runtime/Graphics/Mesh/SpriteRenderer.h")]
     public static class SpriteRendererDataAccessExtensions
     {
+        internal unsafe static void SetDeformableBuffer(this SpriteRenderer spriteRenderer, NativeArray<byte> src)
+        {
+            if (spriteRenderer.sprite == null)
+                throw new ArgumentException(String.Format("spriteRenderer does not have a valid sprite set."));
+
+            if (src.Length != SpriteDataAccessExtensions.GetPrimaryVertexStreamSize(spriteRenderer.sprite))
+                throw new InvalidOperationException(String.Format("custom sprite vertex data size must match sprite asset's vertex data size {0} {1}", src.Length, SpriteDataAccessExtensions.GetPrimaryVertexStreamSize(spriteRenderer.sprite)));
+
+            SetDeformableBuffer(spriteRenderer, src.GetUnsafeReadOnlyPtr(), src.Length);
+        }
+
         internal unsafe static void SetDeformableBuffer(this SpriteRenderer spriteRenderer, NativeArray<Vector3> src)
         {
             if (spriteRenderer.sprite == null)
-                throw new InvalidOperationException(String.Format("spriteRenderer does not have a valid sprite set."));
+                throw new ArgumentException(String.Format("spriteRenderer does not have a valid sprite set."));
 
             if (src.Length != spriteRenderer.sprite.GetVertexCount())
                 throw new InvalidOperationException(String.Format("The src length {0} must match the vertex count of source Sprite {1}.", src.Length, spriteRenderer.sprite.GetVertexCount()));

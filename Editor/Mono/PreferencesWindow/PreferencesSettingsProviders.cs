@@ -551,7 +551,7 @@ namespace UnityEditor
                     // Refresh skin to get new font
                     Unsupported.ClearSkinCache();
                     EditorResources.BuildCatalog();
-                    InternalEditorUtility.RequestScriptReload();
+                    EditorUtility.RequestScriptReload();
                     InternalEditorUtility.RepaintAllViews();
                 }
             }
@@ -803,7 +803,7 @@ namespace UnityEditor
             {
                 SystemLanguage lang = (SystemLanguage)Enum.Parse(typeof(SystemLanguage), m_SelectedLanguage);
                 EditorGUIUtility.NotifyLanguageChanged(lang);
-                InternalEditorUtility.RequestScriptReload();
+                EditorUtility.RequestScriptReload();
             }
 
             ApplyChangesToPrefs();

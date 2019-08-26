@@ -30,7 +30,7 @@ These states should be tested when changing the behavior when entering playmode.
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Game", useTypeNameAsIconName = true)]
-    internal class GameView : PreviewEditorWindow, IHasCustomMenu, IGameViewSizeMenuUser
+    internal class GameView : PlayModeView, IHasCustomMenu, IGameViewSizeMenuUser
     {
         const int kScaleSliderMinWidth = 30;
         const int kScaleSliderMaxWidth = 150;
@@ -110,7 +110,7 @@ namespace UnityEditor
         {
             autoRepaintOnSceneChange = true;
             InitializeZoomArea();
-            previewName = "GameView";
+            playModeViewName = "GameView";
             clearColor = kClearBlack;
             showGizmos = m_Gizmos;
             targetDisplay = 0;
@@ -292,7 +292,7 @@ namespace UnityEditor
         [UsedImplicitly] // This is here because NGUI uses it via reflection (noted in https://confluence.hq.unity3d.com/display/DEV/Game+View+Bucket)
         internal static Vector2 GetSizeOfMainGameView()
         {
-            return GetMainPreviewTargetSize();
+            return GetMainPlayModeViewTargetSize();
         }
 
         private void UpdateZoomAreaAndParent()
@@ -666,7 +666,7 @@ namespace UnityEditor
             showGizmos = false;
             renderIMGUI = false;
 
-            m_RenderTexture = RenderPreview(mousePos, clearTexture: false);
+            m_RenderTexture = RenderView(mousePos, clearTexture: false);
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -773,7 +773,7 @@ namespace UnityEditor
                 renderIMGUI = true;
 
                 if (!EditorApplication.isPlaying || (EditorApplication.isPlaying && Time.frameCount % OnDemandRendering.GetRenderFrameInterval() == 0))
-                    m_RenderTexture = RenderPreview(gameMousePosition, clearTexture);
+                    m_RenderTexture = RenderView(gameMousePosition, clearTexture);
                 if (m_TargetClamped)
                     Debug.LogWarningFormat("GameView reduced to a reasonable size for this system ({0}x{1})", targetSize.x, targetSize.y);
                 EditorGUIUtility.SetupWindowSpaceAndVSyncInternal(GUIClip.Unclip(viewInWindow));

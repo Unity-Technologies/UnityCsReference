@@ -916,10 +916,10 @@ namespace UnityEditor
         internal void OnLostFocus()
         {
             // don't bleed our scene view rendering into game view
-            var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
-            if (previewWindow && previewWindow.m_Parent != null && m_Parent != null && previewWindow.m_Parent == m_Parent)
+            var playModeView = PlayModeView.GetMainPlayModeView();
+            if (playModeView && playModeView.m_Parent != null && m_Parent != null && playModeView.m_Parent == m_Parent)
             {
-                previewWindow.m_Parent.backgroundValid = false;
+                playModeView.m_Parent.backgroundValid = false;
             }
 
             if (s_LastActiveSceneView == this)
@@ -3655,9 +3655,9 @@ namespace UnityEditor
         internal static void ShowSceneViewPlayModeSaveWarning()
         {
             // In this case, we want to explicitly try the GameView before passing it on to whatever notificationView we have
-            var preview = (PreviewEditorWindow)WindowLayout.FindEditorWindowOfType(typeof(PreviewEditorWindow));
-            if (preview != null && preview.hasFocus)
-                preview.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
+            var playModeView = (PlayModeView)WindowLayout.FindEditorWindowOfType(typeof(PlayModeView));
+            if (playModeView != null && playModeView.hasFocus)
+                playModeView.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
             else
                 ShowNotification("You must exit play mode to save the scene!");
         }

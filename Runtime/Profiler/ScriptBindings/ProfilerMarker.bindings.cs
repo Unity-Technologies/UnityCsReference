@@ -10,12 +10,13 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Object = UnityEngine.Object;
 
 namespace Unity.Profiling
 {
-    [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerMarker.bindings.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerMarker.bindings.h")]
     public struct ProfilerMarker
     {
         [NativeDisableUnsafePtrRestriction]
@@ -25,7 +26,7 @@ namespace Unity.Profiling
         [MethodImpl(256)]
         public ProfilerMarker(string name)
         {
-            m_Ptr = Internal_Create(name, MarkerFlags.Default);
+            m_Ptr = Internal_Create(name, (ushort)MarkerFlags.Default);
         }
 
         [MethodImpl(256)]
@@ -37,7 +38,7 @@ namespace Unity.Profiling
 
         [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
-        public void Begin(UnityEngine.Object contextUnityObject)
+        public void Begin(Object contextUnityObject)
         {
             Internal_BeginWithObject(m_Ptr, contextUnityObject);
         }
@@ -82,20 +83,24 @@ namespace Unity.Profiling
         }
 
         [ThreadSafe]
-        [NativeConditional("ENABLE_PROFILER", "NULL")]
-        static extern IntPtr Internal_Create(string name, MarkerFlags flags);
+        [NativeConditional("ENABLE_PROFILER")]
+        internal static extern IntPtr Internal_Create(string name, ushort flags);
 
         [ThreadSafe]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern void Internal_Begin(IntPtr markerPtr);
+        internal static extern void Internal_Begin(IntPtr markerPtr);
 
         [ThreadSafe]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern void Internal_BeginWithObject(IntPtr markerPtr, UnityEngine.Object contextUnityObject);
+        internal static extern void Internal_BeginWithObject(IntPtr markerPtr, UnityEngine.Object contextUnityObject);
 
         [ThreadSafe]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern void Internal_End(IntPtr markerPtr);
+        internal static extern void Internal_End(IntPtr markerPtr);
+
+        [ThreadSafe]
+        [NativeConditional("ENABLE_PROFILER")]
+        internal static extern unsafe void Internal_Emit(IntPtr markerPtr, ushort eventType, int metadataCount, void* metadata);
 
         [ThreadSafe]
         [NativeConditional("ENABLE_PROFILER")]

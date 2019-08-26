@@ -508,7 +508,8 @@ namespace UnityEditor
 
         public static extern StereoRenderingPath stereoRenderingPath { get; set; }
 
-        public static extern bool protectGraphicsMemory { get; set; }
+        [Obsolete("protectGraphicsMemory is deprecated. This field has no effect.", false)]
+        public static bool protectGraphicsMemory { get { return false; } set {} }
 
         public static extern bool enableFrameTimingStats { get; set; }
 

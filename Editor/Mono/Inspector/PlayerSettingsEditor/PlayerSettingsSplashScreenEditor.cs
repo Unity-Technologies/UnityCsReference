@@ -331,11 +331,11 @@ namespace UnityEditor
                 if (SplashScreen.isFinished)
                 {
                     SplashScreen.Begin();
-                    PreviewEditorWindow.RepaintAll();
-                    var preview = PreviewEditorWindow.GetMainPreviewWindow();
-                    if (preview)
+                    PlayModeView.RepaintAll();
+                    var playModeView = PlayModeView.GetMainPlayModeView();
+                    if (playModeView)
                     {
-                        preview.Focus();
+                        playModeView.Focus();
                     }
                     EditorApplication.update += PollSplashState;
                 }
@@ -423,7 +423,7 @@ namespace UnityEditor
         void PollSplashState()
         {
             // Force the GameViews to repaint whilst showing the splash(1166664)
-            PreviewEditorWindow.RepaintAll();
+            PlayModeView.RepaintAll();
 
             // When the splash screen is playing we need to keep track so that we can update the preview button when it has finished.
             if (SplashScreen.isFinished)

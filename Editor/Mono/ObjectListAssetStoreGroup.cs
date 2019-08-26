@@ -250,7 +250,8 @@ namespace UnityEditor
                 {
                     // We crop the text in Preview mode
                     int pseudoInstanceID = assetStoreResource.id + 10000000; // we add a large offset to the asset store id to ensure there is no overlap with instanceIDs
-                    string labeltext = m_Owner.GetCroppedLabelText(pseudoInstanceID, assetStoreResource.displayName, position.width);
+                    var assetReference = new InternalEditorUtility.AssetReference() { instanceID = pseudoInstanceID };
+                    string labeltext = m_Owner.GetCroppedLabelText(assetReference, assetStoreResource.displayName, position.width);
                     position.height -= s_Styles.resultsGridLabel.fixedHeight;
                     // The -1 is to ensure the label has same width as the image and that it aligns with the bottom of the image
                     s_Styles.resultsGridLabel.Draw(new Rect(position.x, position.yMax + 1, position.width - 1,

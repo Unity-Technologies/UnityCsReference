@@ -939,7 +939,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             HashSet<string> predefinedAssemblyNames = null;
 
             // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
-            var prefixToFilePathLookup = customScriptAssemblyReferences.ToDictionary(x => x.PathPrefix, x => new List<string>(){ x.FilePath }, StringComparer.OrdinalIgnoreCase);
+            var prefixToFilePathLookup = customScriptAssemblyReferences.ToDictionary(x => x.PathPrefix, x => new List<string>() { x.FilePath }, StringComparer.OrdinalIgnoreCase);
 
             ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
 
@@ -2116,34 +2116,38 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             for (int i = 0; i < targetAssemblyVersionDefines.Count; i++)
             {
-                if (!assetPathVersionMetaDatas.ContainsKey(targetAssemblyVersionDefines[i].name))
+                var targetAssemblyVersionDefine = targetAssemblyVersionDefines[i];
+                if (!assetPathVersionMetaDatas.ContainsKey(targetAssemblyVersionDefine.name))
                 {
                     continue;
                 }
 
-                if (string.IsNullOrEmpty(targetAssemblyVersionDefines[i].expression))
+                if (string.IsNullOrEmpty(targetAssemblyVersionDefine.expression))
                 {
-                    var define = targetAssemblyVersionDefines[i].define;
+                    var define = targetAssemblyVersionDefine.define;
                     if (!string.IsNullOrEmpty(define))
                     {
                         defines[populatedVersionDefinesCount] = define;
-                        populatedVersionDefinesCount++;
+                        ++populatedVersionDefinesCount;
                     }
                     continue;
                 }
 
-                var versionDefineExpression = semVersionRangesFactory.GetExpression(targetAssemblyVersionDefines[i].expression);
-                var assetPathVersionMetaData = assetPathVersionMetaDatas[targetAssemblyVersionDefines[i].name];
-                var semVersion = SemVersionParser.Parse(assetPathVersionMetaData);
-
-                if (versionDefineExpression.IsValid(semVersion))
+                try
                 {
-                    var define = targetAssemblyVersionDefines[i].define;
-                    if (!string.IsNullOrEmpty(define))
+                    var versionDefineExpression = semVersionRangesFactory.GetExpression(targetAssemblyVersionDefine.expression);
+                    var assetPathVersionMetaData = assetPathVersionMetaDatas[targetAssemblyVersionDefine.name];
+                    var semVersion = SemVersionParser.Parse(assetPathVersionMetaData);
+                    if (versionDefineExpression.IsValid(semVersion))
                     {
-                        defines[populatedVersionDefinesCount] = define;
-                        populatedVersionDefinesCount++;
+                        defines[populatedVersionDefinesCount] = targetAssemblyVersionDefine.define;
+                        ++populatedVersionDefinesCount;
                     }
+                }
+                catch (Exception e)
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(EditorCompilationInterface.Instance.FindCustomTargetAssemblyFromTargetAssembly(targetAssembly).FilePath);
+                    UnityEngine.Debug.LogException(e, asset);
                 }
             }
 

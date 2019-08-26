@@ -385,8 +385,6 @@ namespace UnityEditor
         extern internal static bool IsV1Enabled();
         [FreeFunction("AssetDatabase::IsV2Enabled")]
         extern internal static bool IsV2Enabled();
-        [FreeFunction("AssetDatabase::IsOnDemandModeEnabled")]
-        extern internal static bool IsOnDemandModeEnabled();
         [FreeFunction("AssetDatabase::CloseCachedFiles")]
         extern internal static void CloseCachedFiles();
 

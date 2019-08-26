@@ -28,7 +28,10 @@ namespace UnityEditor.Profiling
             get
             {
                 if (m_FrameCount == 0)
+                {
                     m_FrameCount = EditorPrefs.GetInt(k_FrameCountSettingKey, kMinFrameCount);
+                    ProfilerDriver.SetMaxFrameHistoryLength(m_FrameCount);
+                }
 
                 return m_FrameCount;
             }
@@ -38,7 +41,7 @@ namespace UnityEditor.Profiling
                 {
                     m_FrameCount = value;
                     EditorPrefs.SetInt(k_FrameCountSettingKey, value);
-                    ProfilerDriver.maxHistoryLength = value;
+                    ProfilerDriver.SetMaxFrameHistoryLength(value);
 
                     if (settingsChanged != null)
                         settingsChanged.Invoke();
