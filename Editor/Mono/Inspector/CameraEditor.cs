@@ -626,7 +626,7 @@ namespace UnityEditor
                         {
                             cam.RemoveCommandBuffer(ce, cb);
                             SceneView.RepaintAll();
-                            PreviewEditorWindow.RepaintAll();
+                            PlayModeView.RepaintAll();
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -640,7 +640,7 @@ namespace UnityEditor
                 {
                     cam.RemoveAllCommandBuffers();
                     SceneView.RepaintAll();
-                    PreviewEditorWindow.RepaintAll();
+                    PlayModeView.RepaintAll();
                 }
             }
             EditorGUI.indentLevel--;
@@ -720,7 +720,7 @@ namespace UnityEditor
             if (targetStage != sceneViewStage)
                 return;
 
-            Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : PreviewEditorWindow.GetMainPreviewTargetSize();
+            Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : PlayModeView.GetMainPlayModeViewTargetSize();
 
             if (previewSize.x < 0f)
             {
@@ -823,7 +823,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal static float GetGameViewAspectRatio()
         {
-            Vector2 gameViewSize = PreviewEditorWindow.GetMainPreviewTargetSize();
+            Vector2 gameViewSize = PlayModeView.GetMainPlayModeViewTargetSize();
             if (gameViewSize.x < 0f)
             {
                 // Fallback to Scene View of not a valid game view size
@@ -835,9 +835,9 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        internal static Vector2 GetMainPreviewSize()
+        internal static void GetMainPlayModeViewSize(out Vector2 size)
         {
-            return PreviewEditorWindow.GetMainPreviewTargetSize();
+            size = PlayModeView.GetMainPlayModeViewTargetSize();
         }
 
         // Called from C++ when we need to render a Camera's gizmo
@@ -846,7 +846,7 @@ namespace UnityEditor
             CameraEditorUtils.DrawFrustumGizmo(camera);
         }
 
-        private static Vector2 s_PreviousMainGameViewTargetSize;
+        private static Vector2 s_PreviousMainPlayModeViewTargetSize;
         public virtual void OnSceneGUI()
         {
             if (!target)
@@ -856,12 +856,12 @@ namespace UnityEditor
             if (!CameraEditorUtils.IsViewportRectValidToRender(c.rect))
                 return;
 
-            Vector2 currentMainGameViewTargetSize = PreviewEditorWindow.GetMainPreviewTargetSize();
-            if (s_PreviousMainGameViewTargetSize != currentMainGameViewTargetSize)
+            Vector2 currentMainPlayModeViewTargetSize = PlayModeView.GetMainPlayModeViewTargetSize();
+            if (s_PreviousMainPlayModeViewTargetSize != currentMainPlayModeViewTargetSize)
             {
                 // a gameView size change can affect horizontal FOV, refresh the inspector when that happens.
                 Repaint();
-                s_PreviousMainGameViewTargetSize = currentMainGameViewTargetSize;
+                s_PreviousMainPlayModeViewTargetSize = currentMainPlayModeViewTargetSize;
             }
             SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 

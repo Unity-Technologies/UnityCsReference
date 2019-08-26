@@ -52,6 +52,7 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public struct SecondarySpriteTexture
     {
         public string name;

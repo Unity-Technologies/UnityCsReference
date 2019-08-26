@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEditorInternal;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -347,6 +348,19 @@ namespace UnityEditor.IMGUI.Controls
         virtual public bool CanBeParent(TreeViewItem item)
         {
             return true;
+        }
+
+        virtual public List<int> GetNewSelection(TreeViewItem clickedItem, TreeViewSelectState selectState)
+        {
+            // Get ids from items
+            var visibleRows = GetRows();
+            List<int> allIDs = new List<int>(visibleRows.Count);
+            for (int i = 0; i < visibleRows.Count; ++i)
+                allIDs.Add(visibleRows[i].id);
+
+            bool allowMultiselection = CanBeMultiSelected(clickedItem);
+
+            return InternalEditorUtility.GetNewSelection(clickedItem.id, allIDs, selectState.selectedIDs, selectState.lastClickedID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection);
         }
 
         virtual public void OnExpandedStateChanged()

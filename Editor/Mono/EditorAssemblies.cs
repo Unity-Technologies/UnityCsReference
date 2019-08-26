@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -30,6 +29,12 @@ namespace UnityEditor
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Method)]
     public class InitializeOnLoadMethodAttribute : Attribute
+    {
+    }
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Method)]
+    public class InitializeOnEnterPlayModeAttribute : Attribute
     {
     }
 

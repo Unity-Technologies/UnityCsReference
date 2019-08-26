@@ -209,7 +209,7 @@ namespace UnityEditor
         public ProfilerProperty CreateProperty(int sortType)
         {
             int targetedFrame = GetActiveVisibleFrameIndex();
-            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerDriver.maxHistoryLength)
+            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerUserSettings.frameCount)
             {
                 return null;
             }
@@ -339,7 +339,7 @@ namespace UnityEditor
         {
             if (wasToggled)
             {
-                int historyLength = ProfilerDriver.maxHistoryLength - 1;
+                int historyLength = ProfilerUserSettings.frameCount;
                 int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
                 int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
@@ -623,7 +623,7 @@ namespace UnityEditor
 
         private void UpdateCharts()
         {
-            int historyLength = ProfilerDriver.maxHistoryLength - 1;
+            int historyLength = ProfilerUserSettings.frameCount;
             int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
             int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
@@ -764,7 +764,7 @@ namespace UnityEditor
             ProfilerDriver.GetStatisticsAvailable(chart.m_Area, firstEmptyFrame, chart.m_Data.dataAvailable);
 
             if (chart is UISystemProfilerChart)
-                ((UISystemProfilerChart)chart).Update(firstFrame, ProfilerDriver.maxHistoryLength - 1);
+                ((UISystemProfilerChart)chart).Update(firstFrame, ProfilerUserSettings.frameCount);
         }
 
         void AddAreaClick(object userData, string[] options, int selected)
@@ -1187,7 +1187,7 @@ namespace UnityEditor
             if (doApply)
             {
                 ProfilerDriver.deepProfiling = deep;
-                InternalEditorUtility.RequestScriptReload();
+                EditorUtility.RequestScriptReload();
             }
 
             return doApply;

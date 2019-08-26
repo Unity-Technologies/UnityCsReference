@@ -23,13 +23,13 @@ namespace UnityEditor
 {
     internal class EditorApplicationLayout
     {
-        static private PreviewEditorWindow m_PreviewWindow = null;
+        static private PlayModeView m_PlayModeView = null;
         static private bool m_MaximizePending = false;
 
 
         static internal bool IsInitializingPlaymodeLayout()
         {
-            return m_PreviewWindow != null;
+            return m_PlayModeView != null;
         }
 
         static internal void SetPlaymodeLayout()
@@ -52,34 +52,34 @@ namespace UnityEditor
 
         static internal void InitPlaymodeLayout()
         {
-            m_PreviewWindow = WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(true) as PreviewEditorWindow;
-            if (m_PreviewWindow == null)
+            m_PlayModeView = WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(true) as PlayModeView;
+            if (m_PlayModeView == null)
                 return;
 
-            if (m_PreviewWindow.maximizeOnPlay)
+            if (m_PlayModeView.maximizeOnPlay)
             {
-                DockArea da = m_PreviewWindow.m_Parent as DockArea;
+                DockArea da = m_PlayModeView.m_Parent as DockArea;
 
                 if (da != null)
                     m_MaximizePending = WindowLayout.MaximizePrepare(da.actualView);
             }
 
-            // Mark this preview window as the start preview so the backend
-            // can set size and mouseoffset properly for this preview
-            m_PreviewWindow.m_Parent.SetAsStartView();
-            m_PreviewWindow.m_Parent.SetAsLastPlayModeView();
+            // Mark this PlayModeView window as the start view so the backend
+            // can set size and mouseoffset properly for this view
+            m_PlayModeView.m_Parent.SetAsStartView();
+            m_PlayModeView.m_Parent.SetAsLastPlayModeView();
 
             Toolbar.RepaintToolbar();
         }
 
         static internal void FinalizePlaymodeLayout()
         {
-            if (m_PreviewWindow != null)
+            if (m_PlayModeView != null)
             {
                 if (m_MaximizePending)
-                    WindowLayout.MaximizePresent(m_PreviewWindow);
+                    WindowLayout.MaximizePresent(m_PlayModeView);
 
-                m_PreviewWindow.m_Parent.ClearStartView();
+                m_PlayModeView.m_Parent.ClearStartView();
             }
 
             Clear();
@@ -88,7 +88,7 @@ namespace UnityEditor
         static private void Clear()
         {
             m_MaximizePending = false;
-            m_PreviewWindow = null;
+            m_PlayModeView = null;
         }
     }
 } // namespace

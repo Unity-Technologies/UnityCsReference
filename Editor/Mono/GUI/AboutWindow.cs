@@ -218,7 +218,7 @@ namespace UnityEditor
                 bool enabled = !EditorPrefs.GetBool("DeveloperMode", false);
                 EditorPrefs.SetBool("DeveloperMode", enabled);
                 ShowNotification(new GUIContent(string.Format(L10n.Tr("Developer Mode {0}"), (enabled ? L10n.Tr("On") : L10n.Tr("Off")))));
-                InternalEditorUtility.RequestScriptReload();
+                EditorUtility.RequestScriptReload();
 
                 // Repaint all views to show/hide debug repaint indicator
                 InternalEditorUtility.RepaintAllViews();

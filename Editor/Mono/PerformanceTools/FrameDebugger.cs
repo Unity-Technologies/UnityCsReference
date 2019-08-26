@@ -485,10 +485,10 @@ namespace UnityEditor
             // Make sure game view is visible when enabling frame debugger locally
             if (FrameDebuggerUtility.IsLocalEnabled())
             {
-                var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
-                if (previewWindow)
+                var playModeView = PlayModeView.GetMainPlayModeView();
+                if (playModeView)
                 {
-                    previewWindow.ShowTab();
+                    playModeView.ShowTab();
                 }
             }
 

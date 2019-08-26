@@ -2165,7 +2165,7 @@ namespace UnityEditor
         {
             bool oldValue = EditorPrefs.GetBool(TreeViewController.kExpansionAnimationPrefKey, false);
             EditorPrefs.SetBool(TreeViewController.kExpansionAnimationPrefKey, !oldValue);
-            InternalEditorUtility.RequestScriptReload();
+            EditorUtility.RequestScriptReload();
         }
 
         public virtual void AddItemsToMenu(GenericMenu menu)

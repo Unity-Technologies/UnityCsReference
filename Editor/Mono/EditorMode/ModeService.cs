@@ -293,21 +293,15 @@ namespace UnityEditor
         private static void ScanModes()
         {
             var modesData = new Dictionary<string, object> { [k_DefaultModeId] = new Dictionary<string, object> { [k_LabelSectionName] = "Default" } };
-            var modeDescriptors = AssetDatabase.EnumerateAllAssets(new SearchFilter
+            var modeFilePaths = AssetDatabase.GetAllAssetPaths()
+                .Where(IsEditorModeDescriptor)
+                .OrderBy(path => - new FileInfo(path).Length);
+            foreach (var modeFilePath in modeFilePaths)
             {
-                searchArea = SearchFilter.SearchArea.InPackagesOnly,
-                classNames = new[] { nameof(ModeDescriptor) },
-                skipHidden = true,
-                showAllHits = true
-            });
-            while (modeDescriptors.MoveNext())
-            {
-                var md = modeDescriptors.Current.pptrValue as ModeDescriptor;
-                if (md == null)
-                    continue;
                 try
                 {
-                    var json = SJSON.Load(md.path);
+                    var json = SJSON.Load(modeFilePath);
+
                     foreach (var rawModeId in json.Keys)
                     {
                         var modeId = ((string)rawModeId).ToLower();
@@ -326,7 +320,7 @@ namespace UnityEditor
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[ModeService] Error while parsing mode file {md.path}.\n{ex}");
+                    Debug.LogError($"[ModeService] Error while parsing mode file {modeFilePath}.\n{ex}");
                 }
             }
 

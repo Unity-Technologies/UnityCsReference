@@ -65,7 +65,7 @@ namespace Unity.MPE
                 Debug.Log($"Slave need to refresh the following assets: {String.Join(", ", paths)}");
                 AssetDatabase.Refresh();
                 if (paths.Any(p => p.EndsWith(".cs")))
-                    InternalEditorUtility.RequestScriptReload();
+                    EditorUtility.RequestScriptReload();
                 InternalEditorUtility.RepaintAllViews();
                 return paths;
             });

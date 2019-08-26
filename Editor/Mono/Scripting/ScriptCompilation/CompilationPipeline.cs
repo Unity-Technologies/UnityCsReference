@@ -501,5 +501,15 @@ namespace UnityEditor.Compilation
                 return null;
             }
         }
+
+        public static void RequestScriptCompilation()
+        {
+            RequestScriptCompilation(EditorCompilationInterface.Instance);
+        }
+
+        internal static void RequestScriptCompilation(EditorCompilation editorCompilation)
+        {
+            editorCompilation.DirtyAllScripts();
+        }
     }
 }

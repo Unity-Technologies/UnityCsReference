@@ -7,6 +7,7 @@ using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
+using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 
 namespace UnityEditor
 {
@@ -111,7 +112,7 @@ namespace UnityEditor
         public bool foldersFirst { get; set; }
         int m_KeyboardControlID;
 
-        Dictionary<int, string> m_InstanceIDToCroppedNameMap = new Dictionary<int, string>();
+        Dictionary<AssetReference, string> m_AssetReferenceToCroppedNameMap = new Dictionary<AssetReference, string>(new AssetReference.GuidThenInstanceIDEqualityComparer());
         int m_WidthUsedForCroppingName;
         bool m_AllowRenameOnMouseUp = true;
 
@@ -529,9 +530,12 @@ namespace UnityEditor
             // For key navigation: Auto set selection to first element if selection is not shown currently when tabbing
             if (evt.keyCode == KeyCode.Tab && evt.type == EventType.KeyDown && !hasKeyboardFocus && !IsShowingAny(GetSelection()))
             {
-                int firstInstanceID;
-                if (m_LocalAssets.InstanceIdAtIndex(0, out firstInstanceID))
-                    Selection.activeInstanceID = firstInstanceID;
+                AssetReference firstAssetReference;
+                if (m_LocalAssets.AssetReferenceAtIndex(0, out firstAssetReference))
+                {
+                    m_LocalAssets.GetNewSelection(ref firstAssetReference, false, false);
+                    Selection.activeInstanceID = firstAssetReference.instanceID;
+                }
             }
 
 
@@ -760,8 +764,12 @@ namespace UnityEditor
 
         public void SelectAll()
         {
-            List<int> list = m_LocalAssets.GetInstanceIDs();
-            SetSelection(list.ToArray(), false);
+            List<int> instanceIDs;
+            List<string> guids;
+            m_LocalAssets.GetAssetReferences(out instanceIDs, out guids);
+            if (instanceIDs.Count != 0)
+                InternalEditorUtility.EnsureInstanceIds(instanceIDs, guids, 0, instanceIDs.Count - 1);
+            SetSelection(instanceIDs.ToArray(), false);
         }
 
         void SetSelection(int[] selectedInstanceIDs, bool doubleClicked)
@@ -1044,19 +1052,11 @@ namespace UnityEditor
             SetSelectedAssetByIdx(startIndex);
         }
 
-        public int GetInstanceIDByIndex(int index)
-        {
-            int instanceID;
-            if (m_LocalAssets.InstanceIdAtIndex(index, out instanceID))
-                return instanceID;
-            return 0;
-        }
-
         void SetSelectedAssetByIdx(int selectedIdx)
         {
             // instanceID can be 0 if 'None' item is at index
-            int instanceID;
-            if (m_LocalAssets.InstanceIdAtIndex(selectedIdx, out instanceID))
+            AssetReference assetReference;
+            if (m_LocalAssets.AssetReferenceAtIndex(selectedIdx, out assetReference))
             {
                 Rect r = m_LocalAssets.m_Grid.CalcRect(selectedIdx, 0f);
                 ScrollToPosition(AdjustRectForFraming(r));
@@ -1064,12 +1064,12 @@ namespace UnityEditor
 
                 int[] newSelection;
                 if (IsLocalAssetsCurrentlySelected())
-                    newSelection = m_LocalAssets.GetNewSelection(instanceID, false, true).ToArray(); // Handle multi selection
+                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, true).ToArray(); // Handle multi selection
                 else
-                    newSelection = new[] {instanceID};                                              // If current selection is asset store asset do not allow multiselection
+                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, false).ToArray(); // If current selection is asset store asset do not allow multiselection
 
                 SetSelection(newSelection, false);
-                m_State.m_LastClickedInstanceID = instanceID;
+                m_State.m_LastClickedInstanceID = assetReference.instanceID;
                 return;
             }
 
@@ -1530,20 +1530,20 @@ namespace UnityEditor
 
         void ClearCroppedLabelCache()
         {
-            m_InstanceIDToCroppedNameMap.Clear();
+            m_AssetReferenceToCroppedNameMap.Clear();
         }
 
-        protected string GetCroppedLabelText(int instanceID, string fullText, float cropWidth)
+        protected string GetCroppedLabelText(AssetReference assetReference, string fullText, float cropWidth)
         {
             // Clear when width changes
             if (m_WidthUsedForCroppingName != (int)cropWidth)
                 ClearCroppedLabelCache();
 
             string croppedText;
-            if (!m_InstanceIDToCroppedNameMap.TryGetValue(instanceID, out croppedText))
+            if (!m_AssetReferenceToCroppedNameMap.TryGetValue(assetReference, out croppedText))
             {
                 // Ensure to clean up once in a while
-                if (m_InstanceIDToCroppedNameMap.Count > GetMaxNumVisibleItems() * 2 + 30)
+                if (m_AssetReferenceToCroppedNameMap.Count > GetMaxNumVisibleItems() * 2 + 30)
                     ClearCroppedLabelCache();
 
                 // Check if we need to crop
@@ -1559,7 +1559,7 @@ namespace UnityEditor
                 else
                     croppedText = fullText;
 
-                m_InstanceIDToCroppedNameMap[instanceID] = croppedText;
+                m_AssetReferenceToCroppedNameMap[assetReference] = croppedText;
                 m_WidthUsedForCroppingName = (int)cropWidth;
             }
             return croppedText;
@@ -1636,8 +1636,8 @@ namespace UnityEditor
                 m_pingIndex = index;
 
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
-
-                GUIContent cont = new GUIContent(m_LocalAssets.ListMode ? name : GetCroppedLabelText(instanceID, name, m_WidthUsedForCroppingName));
+                var assetReference = new AssetReference() { instanceID = instanceID };
+                GUIContent cont = new GUIContent(m_LocalAssets.ListMode ? name : GetCroppedLabelText(assetReference, name, m_WidthUsedForCroppingName));
                 string label = cont.text;
 
                 if (m_LocalAssets.ListMode)

@@ -454,7 +454,7 @@ namespace UnityEditor
         static void RepaintSceneAndGameViews()
         {
             SceneView.RepaintAll();
-            PreviewEditorWindow.RepaintAll();
+            PlayModeView.RepaintAll();
         }
 
         public void OnSceneViewGUI(SceneView sceneView)

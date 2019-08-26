@@ -497,8 +497,8 @@ namespace UnityEngine.TextCore
         {
             Profiler.BeginSample("TextGenerator.Prepare");
             // TODO: Find a way for GetPaddingForMaterial to not allocate
-            // TODO: Needs review of these values.
-            m_Padding = generationSettings.extraPadding ? 5.5f : 1.5f;
+            // TODO: Hard coded padding value is temporary change to avoid clipping of text geometry with small point size.
+            m_Padding = 6.0f; // generationSettings.extraPadding ? 5.5f : 1.5f;
 
             m_IsMaskingEnabled = false;
 

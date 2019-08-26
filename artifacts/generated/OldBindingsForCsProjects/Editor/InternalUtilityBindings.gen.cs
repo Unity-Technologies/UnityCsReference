@@ -81,6 +81,7 @@ interface IHierarchyProperty
 
         bool Skip(int count, int[] expanded);
         int CountRemaining(int[] expanded);
+        int GetInstanceIDIfImported();
     }
 
 
@@ -311,6 +312,10 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public int CountRemaining (int[] expanded) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public int GetInstanceIDIfImported () ;
 
     public extern  Texture2D icon
     {

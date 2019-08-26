@@ -13,14 +13,22 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
-    [Serializable]
-    internal abstract class PreviewEditorWindow : EditorWindow
+    internal static class PreviewEditorWindow
     {
-        static List<PreviewEditorWindow> s_PreviewWindows = new List<PreviewEditorWindow>();
-        static PreviewEditorWindow s_LastFocused;
-        static PreviewEditorWindow s_RenderingPreview;
+        internal static void RepaintAll()
+        {
+            PlayModeView.RepaintAll();
+        }
+    }
 
-        [SerializeField] string m_PreviewName;
+    [Serializable]
+    internal abstract class PlayModeView : EditorWindow
+    {
+        static List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
+        static PlayModeView s_LastFocused;
+        static PlayModeView s_RenderingView;
+
+        [SerializeField] string m_PlayModeViewName;
         [SerializeField] bool m_ShowGizmos;
         [SerializeField] int m_TargetDisplay;
         [SerializeField] Color m_ClearColor;
@@ -32,10 +40,10 @@ namespace UnityEditor
 
         private Dictionary<Type, string> m_AvailableWindowTypes;
 
-        protected string previewName
+        protected string playModeViewName
         {
-            get { return m_PreviewName; }
-            set { m_PreviewName = value; }
+            get { return m_PlayModeViewName; }
+            set { m_PlayModeViewName = value; }
         }
 
         protected bool showGizmos
@@ -92,13 +100,13 @@ namespace UnityEditor
         RenderTexture m_TargetTexture;
         ColorSpace m_CurrentColorSpace = ColorSpace.Uninitialized;
 
-        class RenderingPreview : IDisposable
+        class RenderingView : IDisposable
         {
             bool disposed = false;
 
-            public RenderingPreview(PreviewEditorWindow previewWindow)
+            public RenderingView(PlayModeView playModeView)
             {
-                PreviewEditorWindow.s_RenderingPreview = previewWindow;
+                PlayModeView.s_RenderingView = playModeView;
             }
 
             public void Dispose()
@@ -115,22 +123,22 @@ namespace UnityEditor
 
                 if (disposing)
                 {
-                    PreviewEditorWindow.s_RenderingPreview = null;
+                    PlayModeView.s_RenderingView = null;
                 }
 
                 disposed = true;
             }
         }
 
-        protected PreviewEditorWindow()
+        protected PlayModeView()
         {
             RegisterWindow();
             SetPlayModeView();
         }
 
-        protected RenderTexture RenderPreview(Vector2 mousePosition, bool clearTexture)
+        protected RenderTexture RenderView(Vector2 mousePosition, bool clearTexture)
         {
-            using (var renderingPreview = new RenderingPreview(this))
+            using (var renderingView = new RenderingView(this))
             {
                 SetPlayModeViewSize(targetSize);
                 var currentTargetDisplay = 0;
@@ -141,7 +149,7 @@ namespace UnityEditor
                     currentTargetDisplay = targetDisplay;
                 }
 
-                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, previewName);
+                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, playModeViewName);
 
                 if (Event.current == null || Event.current.type != EventType.Repaint)
                     return m_TargetTexture;
@@ -150,7 +158,7 @@ namespace UnityEditor
                 GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
                 SavedGUIState oldState = SavedGUIState.Create();
 
-                EditorGUIUtility.RenderPreviewCamerasInternal(m_TargetTexture, currentTargetDisplay, mousePosition, showGizmos, renderIMGUI);
+                EditorGUIUtility.RenderPlayModeViewCamerasInternal(m_TargetTexture, currentTargetDisplay, mousePosition, showGizmos, renderIMGUI);
 
                 oldState.ApplyAndForget();
                 GUIUtility.s_EditorScreenPointOffset = oldOffset;
@@ -167,17 +175,17 @@ namespace UnityEditor
 
         protected Dictionary<Type, string> GetAvailableWindowTypes()
         {
-            return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PreviewEditorWindow)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
+            return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
         }
 
         protected void SwapMainWindow(Type type)
         {
-            if (type.BaseType != typeof(PreviewEditorWindow))
-                throw new ArgumentException("Type should derive from " + typeof(PreviewEditorWindow).Name);
+            if (type.BaseType != typeof(PlayModeView))
+                throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);
 
             if (type.Name != GetType().Name)
             {
-                var window = CreateInstance(type) as PreviewEditorWindow;
+                var window = CreateInstance(type) as PlayModeView;
                 window.autoRepaintOnSceneChange = true;
                 var da = m_Parent as DockArea;
                 if (da)
@@ -234,18 +242,18 @@ namespace UnityEditor
             }
         }
 
-        internal static PreviewEditorWindow GetRenderingPreview()
+        internal static PlayModeView GetRenderingView()
         {
-            return s_RenderingPreview;
+            return s_RenderingView;
         }
 
-        internal static PreviewEditorWindow GetMainPreviewWindow()
+        internal static PlayModeView GetMainPlayModeView()
         {
-            if (s_LastFocused == null && s_PreviewWindows != null)
+            if (s_LastFocused == null && s_PlayModeViews != null)
             {
                 RemoveDisabledWindows();
-                if (s_PreviewWindows.Count > 0)
-                    s_LastFocused = s_PreviewWindows[0];
+                if (s_PlayModeViews.Count > 0)
+                    s_LastFocused = s_PlayModeViews[0];
             }
 
             return s_LastFocused;
@@ -253,21 +261,21 @@ namespace UnityEditor
 
         private static void RemoveDisabledWindows()
         {
-            if (s_PreviewWindows == null)
+            if (s_PlayModeViews == null)
                 return;
 
-            s_PreviewWindows.RemoveAll(window => window == null);
+            s_PlayModeViews.RemoveAll(window => window == null);
         }
 
-        internal static Vector2 GetMainPreviewTargetSize()
+        internal static Vector2 GetMainPlayModeViewTargetSize()
         {
-            var prevWindow = GetMainPreviewWindow();
+            var prevWindow = GetMainPlayModeView();
             if (prevWindow)
-                return prevWindow.GetPreviewSize();
+                return prevWindow.GetPlayModeViewSize();
             return new Vector2(640f, 480f);
         }
 
-        internal Vector2 GetPreviewSize()
+        internal Vector2 GetPlayModeViewSize()
         {
             return targetSize;
         }
@@ -275,8 +283,8 @@ namespace UnityEditor
         private void RegisterWindow()
         {
             RemoveDisabledWindows();
-            if (!s_PreviewWindows.Contains(this))
-                s_PreviewWindows.Add(this);
+            if (!s_PlayModeViews.Contains(this))
+                s_PlayModeViews.Add(this);
         }
 
         public bool IsShowingGizmos()
@@ -310,24 +318,24 @@ namespace UnityEditor
             }
         }
 
-        internal static bool IsPreviewWindowOpen()
+        internal static bool IsPlayModeViewOpen()
         {
-            return GetMainPreviewWindow() != null;
+            return GetMainPlayModeView() != null;
         }
 
         internal static void RepaintAll()
         {
-            if (s_PreviewWindows == null)
+            if (s_PlayModeViews == null)
                 return;
 
-            foreach (PreviewEditorWindow previewWindow in s_PreviewWindows)
-                previewWindow.Repaint();
+            foreach (PlayModeView playModeView in s_PlayModeViews)
+                playModeView.Repaint();
         }
 
         [RequiredByNativeCode]
-        private static void GetMainPreviewTargetSizeNoBox(out Vector2 result)
+        private static void GetMainPlayModeViewargetSizeNoBox(out Vector2 result)
         {
-            result = GetMainPreviewTargetSize();
+            result = GetMainPlayModeViewTargetSize();
         }
     }
 }

@@ -6,9 +6,9 @@ using System;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    internal class SemVersionRangesFactory
+    class SemVersionRangesFactory
     {
-        private SemVersionRanges m_SemVersionRanges;
+        SemVersionRanges m_SemVersionRanges;
 
         public SemVersionRangesFactory()
         {

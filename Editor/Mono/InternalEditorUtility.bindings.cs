@@ -198,8 +198,11 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::CreateScriptableObjectUnchecked")]
         extern internal static int CreateScriptableObjectUnchecked(MonoScript script);
 
-        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        extern public static void RequestScriptReload();
+        [Obsolete("RequestScriptReload has been deprecated. Use UnityEditor.EditorUtility.RequestScriptReload instead (UnityUpgradable) -> [UnityEditor] UnityEditor.EditorUtility.RequestScriptReload(*)")]
+        public static void RequestScriptReload()
+        {
+            EditorUtility.RequestScriptReload();
+        }
 
         // Repaint all views on next tick. Used when the user changes skins in the prefs.
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
