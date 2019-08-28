@@ -105,6 +105,10 @@ namespace UnityEditor.SceneManagement
                 if (component == null)
                     continue;
 
+                // Don't list DontSave objects as they won't get applied or reverted.
+                if ((component.hideFlags & HideFlags.DontSaveInEditor) != 0)
+                    continue;
+
                 bool isAddedObject = PrefabUtility.GetCorrespondingObjectFromSource(component) == null;
                 if (isAddedObject)
                 {
@@ -206,6 +210,10 @@ namespace UnityEditor.SceneManagement
 
         static bool CheckForAddedGameObjectAndIfSoAddItAndReturnFalse(Transform transform, object userData)
         {
+            // Don't list DontSave objects or their children as they won't get applied or reverted.
+            if ((transform.gameObject.hideFlags & HideFlags.DontSaveInEditor) != 0)
+                return false;
+
             var addedGameObjectUserData = (AddedGameObjectUserData)userData;
             if (IsAddedGameObject(addedGameObjectUserData.contextGameObject, transform.gameObject))
             {

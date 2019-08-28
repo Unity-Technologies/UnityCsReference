@@ -124,7 +124,7 @@ namespace UnityEditor.StyleSheets
                 return;
             }
 
-            string projectRelativePath = absoluteUri.AbsolutePath;
+            string projectRelativePath = absoluteUri.LocalPath;
 
             // Remove any leading "/" as this now used as a path relative to the current directory
             if (projectRelativePath.StartsWith("/"))
