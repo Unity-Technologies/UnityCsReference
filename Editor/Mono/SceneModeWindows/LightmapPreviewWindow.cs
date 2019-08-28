@@ -256,7 +256,7 @@ namespace UnityEditor
 
             m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, Styles.UVOverlayIcon, "preButton");
 
-            Rect dropRect = GUILayoutUtility.GetRect(14, 160, EditorGUI.kWindowToolbarHeight, EditorGUI.kWindowToolbarHeight);
+            Rect dropRect = GUILayoutUtility.GetRect(14, 170, EditorGUI.kWindowToolbarHeight, EditorGUI.kWindowToolbarHeight);
             GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
             GITextureType[] types = isRealtimeLightmap ? kRealtimePreviewTextureTypes : kBakedPreviewTextureTypes;
 
