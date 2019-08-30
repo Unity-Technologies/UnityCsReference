@@ -105,6 +105,10 @@ namespace UnityEditor.SceneManagement
                 if (component == null)
                     continue;
 
+                // Don't list DontSave objects as they won't get applied or reverted.
+                if ((component.hideFlags & HideFlags.DontSaveInEditor) != 0)
+                    continue;
+
                 bool isAddedObject = PrefabUtility.GetCorrespondingObjectFromSource(component) == null;
                 if (isAddedObject)
                 {
@@ -121,12 +125,22 @@ namespace UnityEditor.SceneManagement
             var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
 
             // From root of asset traverse all children and detect any Components that are not present on the instance object (these must be deleted)
-            TransformVisitor transformVisitor = new TransformVisitor();
             var removedComponents = new List<RemovedComponent>();
             if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
                 return removedComponents;
-
+            TransformVisitor transformVisitor = new TransformVisitor();
             transformVisitor.VisitAll(prefabInstanceRoot.transform, CheckForRemovedComponents, removedComponents);
+            return removedComponents;
+        }
+
+        public static List<RemovedComponent> GetRemovedComponentsForSingleGameObject(GameObject prefabInstance)
+        {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
+            var removedComponents = new List<RemovedComponent>();
+            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
+                return removedComponents;
+            CheckForRemovedComponents(prefabInstance.transform, removedComponents);
             return removedComponents;
         }
 
@@ -196,6 +210,10 @@ namespace UnityEditor.SceneManagement
 
         static bool CheckForAddedGameObjectAndIfSoAddItAndReturnFalse(Transform transform, object userData)
         {
+            // Don't list DontSave objects or their children as they won't get applied or reverted.
+            if ((transform.gameObject.hideFlags & HideFlags.DontSaveInEditor) != 0)
+                return false;
+
             var addedGameObjectUserData = (AddedGameObjectUserData)userData;
             if (IsAddedGameObject(addedGameObjectUserData.contextGameObject, transform.gameObject))
             {

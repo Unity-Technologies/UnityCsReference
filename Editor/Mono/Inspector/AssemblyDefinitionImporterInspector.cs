@@ -657,10 +657,19 @@ namespace UnityEditor
             if (asset == null)
                 return null;
 
-            var data = CustomScriptAssemblyData.FromJson(asset.text);
+            var data = CustomScriptAssemblyData.FromJsonNoFieldValidation(asset.text);
 
             if (data == null)
                 return null;
+
+            try
+            {
+                data.ValidateFields();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e, asset);
+            }
 
             var state = new AssemblyDefintionState();
 

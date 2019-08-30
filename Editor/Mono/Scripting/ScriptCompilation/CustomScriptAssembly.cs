@@ -53,21 +53,34 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static CustomScriptAssemblyData FromJson(string json)
         {
-            CustomScriptAssemblyData assemblyData = new CustomScriptAssemblyData();
+            var assemblyData = FromJsonNoFieldValidation(json);
+
+            assemblyData.ValidateFields();
+
+            return assemblyData;
+        }
+
+        public static CustomScriptAssemblyData FromJsonNoFieldValidation(string json)
+        {
+            var assemblyData = new CustomScriptAssemblyData();
+
             assemblyData.autoReferenced = true;
             UnityEngine.JsonUtility.FromJsonOverwrite(json, assemblyData);
 
             if (assemblyData == null)
                 throw new System.Exception("Json file does not contain an assembly definition");
 
-            if (string.IsNullOrEmpty(assemblyData.name))
+            return assemblyData;
+        }
+
+        public void ValidateFields()
+        {
+            if (string.IsNullOrEmpty(name))
                 throw new System.Exception("Required property 'name' not set");
 
-            if ((assemblyData.excludePlatforms != null && assemblyData.excludePlatforms.Length > 0) &&
-                (assemblyData.includePlatforms != null && assemblyData.includePlatforms.Length > 0))
+            if ((excludePlatforms != null && excludePlatforms.Length > 0) &&
+                (includePlatforms != null && includePlatforms.Length > 0))
                 throw new System.Exception("Both 'excludePlatforms' and 'includePlatforms' are set.");
-
-            return assemblyData;
         }
 
         public static string ToJson(CustomScriptAssemblyData data)
