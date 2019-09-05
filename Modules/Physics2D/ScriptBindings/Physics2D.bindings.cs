@@ -619,7 +619,7 @@ namespace UnityEngine
         extern public static bool autoSyncTransforms { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static bool autoSimulation { get; set; }
+        extern public static SimulationMode2D simulationMode { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
         extern public static PhysicsJobOptions2D jobOptions { get; set; }
@@ -2249,6 +2249,13 @@ namespace UnityEngine
     }
 
     #region Enums
+
+    public enum SimulationMode2D
+    {
+        FixedUpdate = 0,
+        Update      = 1,
+        Script      = 2
+    }
 
     public enum CapsuleDirection2D
     {

@@ -394,10 +394,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 return true;
 
             match = s_ZeroRegex.Match(value);
-            if (match.Success)
-                return true;
-
-            return false;
+            return match.Success;
         }
 
         static readonly Regex s_PercentRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:%)$", RegexOptions.Compiled);
@@ -409,10 +406,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 return true;
 
             match = s_ZeroRegex.Match(value);
-            if (match.Success)
-                return true;
-
-            return false;
+            return match.Success;
         }
 
         static readonly Regex s_HexColorRegex = new Regex(@"^#[a-fA-F0-9]{3}(?:[a-fA-F0-9]{3})?$", RegexOptions.Compiled);

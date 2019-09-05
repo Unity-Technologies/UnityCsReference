@@ -32,7 +32,7 @@ namespace UnityEditor
             {
                 prefix = prefix + "  ";
             }
-            s = s + prefix + this.ToString() + " p:" + position;
+            s = s + prefix + this + " p:" + position;
             if (children.Length > 0)
             {
                 s += " {\n";

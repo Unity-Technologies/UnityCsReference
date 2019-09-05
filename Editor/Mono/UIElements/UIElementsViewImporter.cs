@@ -327,11 +327,7 @@ namespace UnityEditor.UIElements
             }
 
             LoadXmlRoot(doc, vta);
-
-            StyleSheet inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            inlineSheet.name = "inlineStyle";
-            m_Builder.BuildTo(inlineSheet);
-            vta.inlineSheet = inlineSheet;
+            TryCreateInlineStyleSheet(vta);
         }
 
         internal void ImportXmlFromString(string xml, out VisualTreeAsset vta)
@@ -358,6 +354,30 @@ namespace UnityEditor.UIElements
             }
 
             LoadXmlRoot(doc, vta);
+            TryCreateInlineStyleSheet(vta);
+        }
+
+        void TryCreateInlineStyleSheet(VisualTreeAsset vta)
+        {
+            if (m_Context != null)
+            {
+                foreach (var e in m_Errors)
+                {
+                    if (e.isWarning)
+                        m_Context.LogImportWarning(e.ToString(), e.assetPath, e.line);
+                    else
+                        m_Context.LogImportError(e.ToString(), e.assetPath, e.line);
+                }
+            }
+
+            if (m_Errors.hasErrors)
+            {
+                // in case of errors preventing the creation of the inline stylesheet,
+                // reset rule indices
+                foreach (var asset in vta.visualElementAssets)
+                    asset.ruleIndex = -1;
+                return;
+            }
 
             StyleSheet inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
             inlineSheet.name = "inlineStyle";

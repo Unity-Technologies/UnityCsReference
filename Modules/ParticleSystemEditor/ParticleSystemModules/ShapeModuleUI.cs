@@ -19,7 +19,7 @@ namespace UnityEditor
             public SerializedProperty m_Spread;
             public SerializedMinMaxCurve m_Speed;
 
-            public enum ValueMode { Random, Loop, PingPong, BurstSpread };
+            public enum ValueMode { Random, Loop, PingPong, BurstSpread }
 
             public static MultiModeParameter GetProperty(ModuleUI ui, string name, GUIContent speed, bool skipValue = false)
             {
@@ -55,7 +55,7 @@ namespace UnityEditor
 
                 EditorGUI.indentLevel--;
             }
-        };
+        }
 
         SerializedProperty m_Type;
         SerializedProperty m_RandomDirectionAmount;

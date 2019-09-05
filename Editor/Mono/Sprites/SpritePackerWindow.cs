@@ -48,7 +48,7 @@ namespace UnityEditor.Sprites
             {
                 return (v0 << 16 | v1) ^ (v1 << 16 | v0).GetHashCode();
             }
-        };
+        }
 
         private static string[] s_AtlasNamesEmpty = new string[1] { "Sprite atlas cache is empty" };
         private string[] m_AtlasNames = s_AtlasNamesEmpty;

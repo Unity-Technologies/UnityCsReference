@@ -345,7 +345,6 @@ namespace UnityEngine.UIElements.StyleSheets
                     count = sp.values.Length;
                     for (int i = 0; i < count; ++i)
                     {
-                        var handle = sp.values[i];
                         m_Values.Add(new StylePropertyValue() { sheet = m_Sheet, handle = sp.values[i] });
                     }
                 }

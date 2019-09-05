@@ -85,10 +85,10 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            m_ShowInfoFoldout = new SavedBool($"PhysicsDebugWindow.ShowFoldout", false);
-            m_ShowColliderTypeFoldout = new SavedBool($"PhysicsDebugWindow.ShowColliderType", false);
-            m_ColorFoldout = new SavedBool($"PhysicsDebugWindow.ShowColorFoldout", false);
-            m_RenderingFoldout = new SavedBool($"PhysicsDebugWindow.ShowRenderingFoldout", false);
+            m_ShowInfoFoldout = new SavedBool("PhysicsDebugWindow.ShowFoldout", false);
+            m_ShowColliderTypeFoldout = new SavedBool("PhysicsDebugWindow.ShowColliderType", false);
+            m_ColorFoldout = new SavedBool("PhysicsDebugWindow.ShowColorFoldout", false);
+            m_RenderingFoldout = new SavedBool("PhysicsDebugWindow.ShowRenderingFoldout", false);
         }
 
         void AddPicker()

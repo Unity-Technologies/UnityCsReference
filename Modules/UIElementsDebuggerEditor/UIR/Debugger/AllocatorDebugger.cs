@@ -117,14 +117,6 @@ namespace UnityEditor.UIElements.Debugger
                 EditorGUILayout.IntField("Pages Count", m_Stats.pages != null ? m_Stats.pages.Length : 0);
                 EditorGUILayout.IntField("Frees Deferred", freesDeferred);
                 EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.IntField("Transform pages", m_Stats.transformPages);
-                EditorGUILayout.IntField("Allocated transforms", m_Stats.transformsAllocated);
-                if (m_Stats.transformsAvailable < 0)
-                    EditorGUILayout.TextField("Available transforms", "Unlimited");
-                else EditorGUILayout.IntField("Available transforms", m_Stats.transformsAvailable);
-                EditorGUILayout.EndHorizontal();
             }
         }
     }

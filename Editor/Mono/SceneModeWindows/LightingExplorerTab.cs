@@ -29,12 +29,6 @@ namespace UnityEditor
             m_Title = EditorGUIUtility.TrTextContent(title);
         }
 
-        internal void OnEnable()
-        {
-            if (m_LightTable != null)
-                m_LightTable.OnEnable();
-        }
-
         internal void OnDisable()
         {
             if (m_LightTable != null)

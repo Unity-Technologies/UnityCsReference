@@ -220,7 +220,7 @@ namespace UnityEngine
                 MeshFilter filter = (MeshFilter)mesh.gameObject.GetComponent(typeof(MeshFilter));
                 filter.sharedMesh = combinedMesh;
 
-                int subMeshCount = mesh.subMeshInstances.Count();
+                int subMeshCount = mesh.subMeshInstances.Count;
                 Renderer renderer = mesh.gameObject.GetComponent<Renderer>();
                 renderer.SetStaticBatchInfo(totalSubMeshCount, subMeshCount);
                 renderer.staticBatchRootTransform = staticBatchRootTransform;

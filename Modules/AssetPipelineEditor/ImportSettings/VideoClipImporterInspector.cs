@@ -109,7 +109,7 @@ namespace UnityEditor
                 channelCount == 1 ? "Mono" :
                 channelCount == 2 ? "Stereo" :
                 channelCount == 4 ? channelCount.ToString() : // Can be 3.1 or quad
-                ((channelCount - 1).ToString() + ".1");
+                ((channelCount - 1) + ".1");
             return importer.GetSourceAudioSampleRate(audioTrackIdx) + " Hz, " + channelCountStr;
         }
 
@@ -197,7 +197,7 @@ namespace UnityEditor
                 "Transcode was skipped for some clips and they don't match import settings. Reimport to resolve.");
             public GUIContent sRGBTextureContent = EditorGUIUtility.TrTextContent(
                 "sRGB (Color Texture)", "Texture content is stored in gamma space.");
-        };
+        }
 
         static Styles s_Styles;
 
@@ -213,7 +213,7 @@ namespace UnityEditor
             if (targetSettings != null && currentTarget != null)
             {
                 var validPlatforms = BuildPlatforms.instance.GetValidPlatforms();
-                targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count() + 1);
+                targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count + 1);
 
                 var defaultSetting = new InspectorTargetSettings();
                 defaultSetting.target = BuildTargetGroup.Unknown;
@@ -629,7 +629,6 @@ namespace UnityEditor
 
         public override void OnPreviewSettings()
         {
-            VideoClipImporter importer = (VideoClipImporter)target;
             EditorGUI.BeginDisabledGroup(Application.isPlaying);
             m_IsPlaying = PreviewGUI.CycleButton(m_IsPlaying ? 1 : 0, s_Styles.playIcons) != 0;
             EditorGUI.EndDisabledGroup();

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEditor.Compilation;
 using UnityEditor;
@@ -136,7 +137,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 additionalReferences.Add(newReference);
             }
 
-            if (additionalReferences != null && additionalReferences.Count() > 0)
+            if (additionalReferences != null && additionalReferences.Count > 0)
             {
                 for (int i = 0; i < data.references.Length; ++i)
                 {
@@ -146,7 +147,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         additionalReferences.Remove(reference);
                 }
 
-                if (additionalReferences.Count() > 0)
+                if (additionalReferences.Count > 0)
                     data.references = data.references.Concat(additionalReferences).ToArray();
             }
         }
@@ -202,6 +203,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
     }
 
+    [DebuggerDisplay("{Name}")]
     class CustomScriptAssembly
     {
         public string FilePath { get; set; }

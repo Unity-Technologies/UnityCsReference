@@ -48,6 +48,7 @@ namespace UnityEditor
         const float kAddComponentButtonHeight = 45f;
         internal const int kInspectorPaddingLeft = 8 + 10;
         internal const int kInspectorPaddingRight = 4;
+        internal const int kInspectorPaddingTop = 4;
         internal const float kEditorElementPaddingBottom = 2f;
 
         const float k_MinAreaAbovePreview = 130;
@@ -55,6 +56,7 @@ namespace UnityEditor
         const float k_InspectorPreviewMinTotalHeight = k_InspectorPreviewMinHeight + kBottomToolbarHeight;
         const int k_MinimumRootVisualHeight = 81;
         const int k_MinimumWindowWidth = 275;
+        const int k_AutoScrollZoneHeight = 24;
 
         private const long delayRepaintWhilePlayingAnimation = 150; // Delay between repaints in milliseconds while playing animation
         private long s_LastUpdateWhilePlayingAnimation = 0;
@@ -110,6 +112,10 @@ namespace UnityEditor
 
         VisualElement m_MultiEditLabel;
 
+        ScrollView m_ScrollView;
+        [SerializeField] int m_LastInspectedObjectInstanceID = -1;
+        [SerializeField] float m_LastVerticalScrollValue = 0;
+
         VisualElement FindVisualElementInTreeByClassName(string elementClassName)
         {
             var element = rootVisualElement.Q(className: elementClassName);
@@ -148,7 +154,7 @@ namespace UnityEditor
             public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
             public static readonly GUIContent vcsUnlock = EditorGUIUtility.TrTextContent("Unlock");
             public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
-            public static GUIStyle vcsButtonStyle = "preButton";
+            public static readonly GUIStyle vcsButtonStyle = EditorStyles.miniButton;
             public static readonly string objectDisabledModuleWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
@@ -230,6 +236,7 @@ namespace UnityEditor
             var container = tpl.CloneTree();
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
+            m_ScrollView = container.Q<ScrollView>();
 
             var multiContainer = rootVisualElement.Q(className: s_MultiEditClassName);
             multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
@@ -252,6 +259,7 @@ namespace UnityEditor
                     m_PreviewResizer.SetExpanded(false);
                 }
             }
+            RestoreVerticalScrollIfNeeded();
         }
 
         private void OnProjectWasLoaded()
@@ -280,6 +288,10 @@ namespace UnityEditor
 
         protected virtual void OnDisable()
         {
+            // save vertical scroll position
+            m_LastInspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
+            m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
+
             RemoveInspectorWindow(this);
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
@@ -783,6 +795,21 @@ namespace UnityEditor
             {
                 if (editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragUpdatedEvent.mousePosition)))
                 {
+                    if (m_ScrollView != null)
+                    {
+                        // implement auto-scroll for easier component drag'n'drop,
+                        // we define a zone of height = k_AutoScrollZoneHeight
+                        // at the top/bottom of the scrollView viewport,
+                        // while dragging, when the mouse moves in these zones,
+                        // we automatically scroll up/down
+                        var localDragPosition = m_ScrollView.contentViewport.WorldToLocal(dragUpdatedEvent.mousePosition);
+
+                        if (localDragPosition.y < k_AutoScrollZoneHeight)
+                            m_ScrollView.verticalScroller.ScrollPageUp();
+                        else if (localDragPosition.y > m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight)
+                            m_ScrollView.verticalScroller.ScrollPageDown();
+                    }
+
                     return;
                 }
 
@@ -1257,9 +1284,8 @@ namespace UnityEditor
             var hasAssetState = !string.IsNullOrEmpty(currentState);
             var hasMetaState = !string.IsNullOrEmpty(currentMetaState);
 
-            GUILayout.Label(GUIContent.none, Styles.preToolbar, GUILayout.Height(kBottomToolbarHeight));
-
-            var rect = GUILayoutUtility.GetLastRect();
+            GUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar);
+            var rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.toolbar, GUILayout.ExpandWidth(true));
 
             var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
             var overlayRect = new Rect(rect.x, rect.y + 1, 28, 16);
@@ -1294,6 +1320,7 @@ namespace UnityEditor
                 fullState = "State: " + fullState;
             content.tooltip = fullState;
             GUI.Label(textRect, content, EditorStyles.label);
+            GUILayout.EndHorizontal();
 
             VersionControlCheckoutHint(assetEditor, connected);
         }
@@ -1325,6 +1352,7 @@ namespace UnityEditor
 
             var buttonRect = rect;
             var buttonStyle = Styles.vcsButtonStyle;
+            buttonRect.y += 1;
             buttonRect.height = buttonStyle.CalcSize(Styles.vcsAdd).y;
 
             var isFolder = asset.isFolder && !Provider.isVersioningFolders;
@@ -1500,6 +1528,16 @@ namespace UnityEditor
                     m_RemovedPrefabComponentsElement = prefabsComponentElement;
                 }
             }
+        }
+
+        void RestoreVerticalScrollIfNeeded()
+        {
+            if (m_LastInspectedObjectInstanceID == -1)
+                return;
+            var inspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
+            if (inspectedObjectInstanceID == m_LastInspectedObjectInstanceID && inspectedObjectInstanceID != -1)
+                m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
+            m_LastInspectedObjectInstanceID = -1; // reset to make sure the restore occurs once
         }
 
         void AddRemovedPrefabComponentElement(GameObject targetGameObject, Component nextInSource, VisualElement element)
@@ -1782,7 +1820,8 @@ namespace UnityEditor
                 {
                     if (!EditorUtility.IsPersistent(m_ObjectsLockedBeforeSerialization[i]))
                     {
-                        m_InstanceIDsLockedBeforeSerialization.Add(m_ObjectsLockedBeforeSerialization[i].GetInstanceID());
+                        if (m_ObjectsLockedBeforeSerialization[i] != null)
+                            m_InstanceIDsLockedBeforeSerialization.Add(m_ObjectsLockedBeforeSerialization[i].GetInstanceID());
                         m_ObjectsLockedBeforeSerialization.RemoveAt(i);
                     }
                 }

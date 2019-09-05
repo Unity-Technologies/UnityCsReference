@@ -25,7 +25,8 @@ namespace UnityEngine.UIElements
         // (like a touch screen), without any cursor acting as an intermediate.
         internal static bool IsDirectManipulationDevice(string pointerType)
         {
-            return ReferenceEquals(pointerType, touch);
+            return ReferenceEquals(pointerType, touch)
+                || ReferenceEquals(pointerType, pen);
         }
     }
 

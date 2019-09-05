@@ -43,7 +43,6 @@ namespace UnityEditor.Snap
         internal static void MenuNudgePerspectiveBackward()
         {
             SceneView sv = SceneView.lastActiveSceneView;
-            SceneViewGrid.Grid grid = sv.sceneViewGrids.activeGrid;
             SceneViewGrid.GridRenderAxis axis = sv.sceneViewGrids.gridAxis;
             Vector3 v = sv.sceneViewGrids.GetPivot(axis);
             switch (axis)
@@ -67,7 +66,6 @@ namespace UnityEditor.Snap
         internal static void MenuNudgePerspectiveForward()
         {
             SceneView sv = SceneView.lastActiveSceneView;
-            SceneViewGrid.Grid grid = sv.sceneViewGrids.activeGrid;
             SceneViewGrid.GridRenderAxis axis = sv.sceneViewGrids.gridAxis;
             Vector3 v = sv.sceneViewGrids.GetPivot(axis);
             switch (axis)

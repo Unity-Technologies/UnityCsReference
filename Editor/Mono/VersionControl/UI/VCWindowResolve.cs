@@ -88,6 +88,17 @@ namespace UnityEditor.VersionControl
             Repaint();
         }
 
+        void SimpleMerge(ResolveMethod resolveMethod)
+        {
+            AssetList selAssets = resolveList.SelectedAssets;
+            Provider.Resolve(selAssets, resolveMethod).Wait();
+
+            DoOpen(assetList);
+
+            if (assetList.Count == 0)
+                Close();
+        }
+
         void OnGUI()
         {
             cancelled = false;
@@ -110,18 +121,12 @@ namespace UnityEditor.VersionControl
             GUILayout.Label("Resolve selection by:");
             if (GUILayout.Button("using local version"))
             {
-                AssetList selAssets = resolveList.SelectedAssets;
-                Provider.Resolve(selAssets, ResolveMethod.UseMine).Wait();
-                AssetDatabase.Refresh();
-                Close();
+                SimpleMerge(ResolveMethod.UseMine);
             }
 
             if (GUILayout.Button("using incoming version"))
             {
-                AssetList selAssets = resolveList.SelectedAssets;
-                Provider.Resolve(selAssets, ResolveMethod.UseTheirs).Wait();
-                AssetDatabase.Refresh();
-                Close();
+                SimpleMerge(ResolveMethod.UseTheirs);
             }
 
             MergeMethod mergeMethod = MergeMethod.MergeNone;

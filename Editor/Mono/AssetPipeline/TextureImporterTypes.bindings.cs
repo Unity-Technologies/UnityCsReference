@@ -96,6 +96,9 @@ namespace UnityEditor
         int m_AlphaIsTransparency;
 
         [SerializeField]
+        bool m_IgnorePngGamma;
+
+        [SerializeField]
         float m_SpriteTessellationDetail;
 
         [SerializeField]
@@ -332,6 +335,12 @@ namespace UnityEditor
         {
             get {return m_AlphaIsTransparency != 0; }
             set { m_AlphaIsTransparency = value ? 1 : 0; }
+        }
+
+        public bool ignorePngGamma
+        {
+            get { return m_IgnorePngGamma; }
+            set { m_IgnorePngGamma = value; }
         }
 
         public int spriteMode

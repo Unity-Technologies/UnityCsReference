@@ -106,7 +106,7 @@ namespace UnityEditor
             FailedNonPersistedObj,
             FailedEntryExists,
             FailedTypeMismatch
-        };
+        }
 
         [NativeMethod("AddConfigObject")]
         static extern ConfigObjectResult AddConfigObjectInternal(string name, Object obj, bool overwrite);

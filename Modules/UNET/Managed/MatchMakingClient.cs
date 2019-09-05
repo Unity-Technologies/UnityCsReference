@@ -244,7 +244,7 @@ namespace UnityEngine.Networking.Match
             }
 
             Uri uri = new Uri(baseUri, "/json/reply/DestroyMatchRequest");
-            Debug.Log("MatchMakingClient Destroy :" + uri.ToString());
+            Debug.Log("MatchMakingClient Destroy :" + uri);
 
             var data = new WWWForm();
 

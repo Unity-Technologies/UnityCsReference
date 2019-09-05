@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
             None = 0,
             IsCapturable = 1,
             IsSentExclusivelyToCapturingElement = 2
-        };
+        }
 
         public bool CanDispatchEvent(EventBase evt)
         {

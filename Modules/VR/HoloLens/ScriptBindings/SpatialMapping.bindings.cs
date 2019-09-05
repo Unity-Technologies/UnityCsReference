@@ -52,7 +52,7 @@ namespace UnityEngine.XR.WSA
         public MeshCollider outputCollider;
         public float trianglesPerCubicMeter;
         public bool bakeCollider;
-    };
+    }
 
     //
     // A single observer updating surfaces within a single user specified
@@ -60,13 +60,14 @@ namespace UnityEngine.XR.WSA
     //
     [MovedFrom("UnityEngine.VR.WSA")]
     [UsedByNativeCode]
-    [StaticAccessor("SurfaceObserver", StaticAccessorType.DoubleColon)]
+    [StaticAccessor("Unity::SurfaceObserver", StaticAccessorType.DoubleColon)]
     [NativeHeader("Modules/VR/HoloLens/SpatialMapping/SurfaceObserver.h")]
     [NativeHeader("VRScriptingClasses.h")]
     [StructLayout(LayoutKind.Sequential)]   // needed for IntPtr binding classes
     sealed public class SurfaceObserver : IDisposable
     {
-        internal IntPtr m_Observer;  // Native object
+        const int k_InvalidObserverId = 0;
+        internal int m_Observer;  // Native object id
 
         public delegate void SurfaceChangedDelegate(SurfaceId surfaceId, SurfaceChange changeType, Bounds bounds, DateTime updateTime);
         public delegate void SurfaceDataReadyDelegate(SurfaceData bakedData, bool outputWritten, float elapsedBakeTimeSeconds);
@@ -105,43 +106,69 @@ namespace UnityEngine.XR.WSA
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         [NativeName("Create")]
-        private static extern IntPtr Internal_Create(System.Object surfaceObserver);
+        private static extern int Internal_Create(System.Object surfaceObserver);
 
         ~SurfaceObserver()
         {
-            if (m_Observer != IntPtr.Zero)
+            if (m_Observer != k_InvalidObserverId)
             {
                 DestroyThreaded();
-                m_Observer = IntPtr.Zero;
+                m_Observer = k_InvalidObserverId;
                 GC.SuppressFinalize(this);
             }
         }
 
-        [ThreadAndSerializationSafe]
-        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        private extern void DestroyThreaded();
-
         public void Dispose()
         {
-            if (m_Observer != IntPtr.Zero)
+            if (m_Observer != k_InvalidObserverId)
             {
                 Destroy();
-                m_Observer = IntPtr.Zero;
+                m_Observer = k_InvalidObserverId;
             }
             GC.SuppressFinalize(this);
         }
 
-        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        private extern void Destroy();
+        private void Destroy()
+        {
+            Internal_Destroy(m_Observer);
+        }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        public extern void SetVolumeAsAxisAlignedBox(Vector3 origin, Vector3 extents);
+        private static extern void Internal_Destroy(int id);
+
+        public void SetVolumeAsAxisAlignedBox(Vector3 origin, Vector3 extents)
+        {
+            if (m_Observer != k_InvalidObserverId) Internal_SetVolumeAsAxisAlignedBox(m_Observer, origin, extents);
+        }
+
+        private void DestroyThreaded()
+        {
+            Internal_DestroyThreaded(m_Observer);
+        }
+
+        [ThreadAndSerializationSafe]
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        private static extern void Internal_DestroyThreaded(int id);
+
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        public extern void SetVolumeAsSphere(Vector3 origin, float radiusMeters);
+        private static extern void Internal_SetVolumeAsAxisAlignedBox(int id, Vector3 origin, Vector3 extents);
+
+        public void SetVolumeAsSphere(Vector3 origin, float radiusMeters)
+        {
+            if (m_Observer != k_InvalidObserverId) Internal_SetVolumeAsSphere(m_Observer, origin, radiusMeters);
+        }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        public extern void SetVolumeAsOrientedBox(Vector3 origin, Vector3 extents, Quaternion orientation);
+        private static extern void Internal_SetVolumeAsSphere(int id, Vector3 origin, float radiusMeters);
+
+        public void SetVolumeAsOrientedBox(Vector3 origin, Vector3 extents, Quaternion orientation)
+        {
+            if (m_Observer != k_InvalidObserverId) Internal_SetVolumeAsOrientedBox(m_Observer, origin, extents, orientation);
+        }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        private static extern void Internal_SetVolumeAsOrientedBox(int id, Vector3 origin, Vector3 extents, Quaternion orientation);
 
         public void SetVolumeAsFrustum(Plane[] planes)
         {
@@ -151,15 +178,19 @@ namespace UnityEngine.XR.WSA
             if (planes.Length != 6)
                 throw new ArgumentException("Planes array must be 6 items long", "planes");
 
-            SetVolumeAsFrustum_Internal(planes);
+            if (m_Observer != k_InvalidObserverId) Internal_SetVolumeAsFrustum(m_Observer, planes);
         }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        [NativeName("SetVolumeAsFrustum")]
-        private extern void SetVolumeAsFrustum_Internal([NotNull] Plane[] planes);
+        private static extern void Internal_SetVolumeAsFrustum(int id, [NotNull] Plane[] planes);
+
+        public void Update(SurfaceChangedDelegate onSurfaceChanged)
+        {
+            if (m_Observer != k_InvalidObserverId) Internal_Update(m_Observer, onSurfaceChanged);
+        }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        public extern void Update([NotNull] SurfaceChangedDelegate onSurfaceChanged);
+        private static extern void Internal_Update(int id, [NotNull] SurfaceChangedDelegate onSurfaceChanged);
 
         public bool RequestMeshAsync(SurfaceData dataRequest, SurfaceDataReadyDelegate onDataReady)
         {
@@ -202,7 +233,7 @@ namespace UnityEngine.XR.WSA
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         [NativeName("AddToWorkQueue")]
-        private static extern bool Internal_AddToWorkQueue(IntPtr observer, SurfaceDataReadyDelegate onDataReady, int surfaceId, MeshFilter filter, WorldAnchor wa, MeshCollider mc, float trisPerCubicMeter, bool createColliderData);
+        private static extern bool Internal_AddToWorkQueue(int observer, SurfaceDataReadyDelegate onDataReady, int surfaceId, MeshFilter filter, WorldAnchor wa, MeshCollider mc, float trisPerCubicMeter, bool createColliderData);
     }
 }
 

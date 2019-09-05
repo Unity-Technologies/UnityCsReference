@@ -52,7 +52,7 @@ namespace UnityEditor
 
             internal TerrainInspector terrainEditor { get; }
         }
-    };
+    }
 
     [CustomEditor(typeof(Terrain))]
     internal class TerrainInspector : Editor
@@ -1806,7 +1806,6 @@ namespace UnityEditor
             float terrainHeight = terrainData.size.y;
             float terrainLength = terrainData.size.z;
             int detailResolution = terrainData.detailResolution;
-            int detailPatchCount = terrainData.detailPatchCount;
             int detailResolutionPerPatch = terrainData.detailResolutionPerPatch;
 
             EditorGUI.BeginChangeCheck();

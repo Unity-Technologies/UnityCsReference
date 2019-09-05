@@ -492,12 +492,12 @@ namespace UnityEngine.Networking
         {
             int maxPacketSize = GetMaxPacketSize();
             if (topology.DefaultConfig.PacketSize > maxPacketSize)
-                throw new ArgumentOutOfRangeException("Default config: packet size should be less than packet size defined in global config: " + maxPacketSize.ToString());
+                throw new ArgumentOutOfRangeException("Default config: packet size should be less than packet size defined in global config: " + maxPacketSize);
             for (int i = 0; i < topology.SpecialConnectionConfigs.Count; ++i)
             {
                 if (topology.SpecialConnectionConfigs[i].PacketSize > maxPacketSize)
                 {
-                    throw new ArgumentOutOfRangeException("Special config " + i.ToString() + ": packet size should be less than packet size defined in global config: " + maxPacketSize.ToString());
+                    throw new ArgumentOutOfRangeException("Special config " + i + ": packet size should be less than packet size defined in global config: " + maxPacketSize);
                 }
             }
         }
@@ -536,7 +536,3 @@ namespace UnityEngine.Networking
     }
 }
 
-namespace UnityEngine.WebGL
-{
-    // this exposes hooks that are required for UNet in WebGL builds
-}

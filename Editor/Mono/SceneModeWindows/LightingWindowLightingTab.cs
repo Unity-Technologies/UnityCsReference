@@ -168,9 +168,9 @@ namespace UnityEditor
 
             InitLightmapSettings();
 
-            m_ShowOtherSettings = new SavedBool($"LightingWindow.ShowOtherSettings", true);
-            m_ShowDebugSettings = new SavedBool($"LightingWindow.ShowDebugSettings", false);
-            m_ShowProbeDebugSettings = new SavedBool($"LightingWindow.ShowProbeDebugSettings", false);
+            m_ShowOtherSettings = new SavedBool("LightingWindow.ShowOtherSettings", true);
+            m_ShowDebugSettings = new SavedBool("LightingWindow.ShowDebugSettings", false);
+            m_ShowProbeDebugSettings = new SavedBool("LightingWindow.ShowProbeDebugSettings", false);
         }
 
         public void OnDisable()
@@ -473,14 +473,12 @@ namespace UnityEditor
                     int numConvergedLightmapsNotInView = 0;
                     int numNotConvergedLightmapsNotInView = 0;
 
-                    int numInvalidConvergenceLightmaps = 0;
                     int numLightmaps = LightmapSettings.lightmaps.Length;
                     for (int i = 0; i < numLightmaps; ++i)
                     {
                         LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
                         if (!lc.IsValid())
                         {
-                            numInvalidConvergenceLightmaps++;
                             continue;
                         }
 

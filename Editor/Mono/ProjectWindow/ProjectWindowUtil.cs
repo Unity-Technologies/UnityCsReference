@@ -93,7 +93,7 @@ namespace UnityEditor
 
         internal class DoCreateFolderWithTemplates : EndNameEditAction
         {
-            private const string kResourcesTemplatePath = "Resources/ScriptTemplates";
+            public string kResourcesTemplatePath = "Resources/ScriptTemplates";
 
             public IList<string> templates { get; set; }
 
@@ -259,13 +259,21 @@ namespace UnityEditor
         // Create a folder
         public static void CreateFolder()
         {
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateFolder>(), "New Folder", EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
+            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateFolder>(), "New Folder", EditorGUIUtility.IconContent(EditorResources.folderIconName).image as Texture2D, null);
         }
 
         internal static void CreateFolderWithTemplates(string defaultName, params string[] templates)
         {
             var endNameEditAction = ScriptableObject.CreateInstance<DoCreateFolderWithTemplates>();
             endNameEditAction.templates = templates;
+            StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(EditorResources.folderIconName).image as Texture2D, null);
+        }
+
+        internal static void CreateFolderWithTemplatesWithCustomResourcesPath(string defaultName, string customResPath, params string[] templates)
+        {
+            var endNameEditAction = ScriptableObject.CreateInstance<DoCreateFolderWithTemplates>();
+            endNameEditAction.templates = templates;
+            endNameEditAction.kResourcesTemplatePath = customResPath;
             StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
         }
 

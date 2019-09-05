@@ -15,7 +15,7 @@ namespace UnityEditorInternal
         private const int kAutoInstrumentButtonHeight = 20;
         private const int kAutoInstrumentButtonsHeight = 1 * kAutoInstrumentButtonHeight;
 
-        private static GUIContent s_AutoInstrumentScriptsContent = EditorGUIUtility.TrTextContent("Auto instrument " + InstrumentedAssemblyTypes.Script.ToString() + " assemblies");
+        private static GUIContent s_AutoInstrumentScriptsContent = EditorGUIUtility.TrTextContent("Auto instrument " + InstrumentedAssemblyTypes.Script + " assemblies");
 
         private static Dictionary<string, int> s_InstrumentableFunctions;
         private static ProfilerInstrumentationPopup s_PendingPopup;

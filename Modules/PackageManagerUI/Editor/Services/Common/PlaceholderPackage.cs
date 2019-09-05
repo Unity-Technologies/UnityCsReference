@@ -18,26 +18,41 @@ namespace UnityEditor.PackageManager.UI
         public string name => string.Empty;
         public string uniqueId => m_UniqueId;
 
-        public string displayName => m_Version.displayName;
+        public string displayName => versions.FirstOrDefault().displayName;
 
         [SerializeField]
-        private PlaceholderPackageVersion m_Version;
+        private PlaceholderVersionList m_VersionList;
 
-        public IEnumerable<IPackageVersion> versions => new[] { m_Version };
-        public IEnumerable<IPackageVersion> keyVersions => new[] { m_Version };
-        public IPackageVersion installedVersion => null;
-        public IPackageVersion latestVersion => m_Version;
-        public IPackageVersion latestPatch => m_Version;
-        public IPackageVersion recommendedVersion => m_Version;
-        public IPackageVersion primaryVersion => m_Version;
+        public IVersionList versionList => m_VersionList;
 
         [SerializeField]
-        private PackageState m_State;
-        public PackageState state => m_State;
+        private PackageProgress m_Progress;
+        public PackageProgress progress => m_Progress;
+
+        [SerializeField]
+        private PackageType m_Type;
 
         public bool isDiscoverable => true;
 
         public IEnumerable<Error> errors => Enumerable.Empty<Error>();
+
+        public IEnumerable<PackageImage> images => Enumerable.Empty<PackageImage>();
+
+        public IEnumerable<PackageLink> links => Enumerable.Empty<PackageLink>();
+
+        public IEnumerable<IPackageVersion> versions => versionList?.all;
+
+        public IEnumerable<IPackageVersion> keyVersions => versionList?.key;
+
+        public IPackageVersion installedVersion => versionList?.installed;
+
+        public IPackageVersion latestVersion => versionList?.latest;
+
+        public IPackageVersion latestPatch => versionList?.latestPatch;
+
+        public IPackageVersion recommendedVersion => versionList?.recommended;
+
+        public IPackageVersion primaryVersion => versionList?.primary;
 
         public void AddError(Error error)
         {
@@ -47,11 +62,17 @@ namespace UnityEditor.PackageManager.UI
         {
         }
 
-        public PlaceholderPackage(string uniqueId, PackageTag tag = PackageTag.None, PackageSource source = PackageSource.Unknown, PackageState state = PackageState.InProgress)
+        public bool Is(PackageType type)
         {
+            return (m_Type & type) != 0;
+        }
+
+        public PlaceholderPackage(string uniqueId, PackageType type = PackageType.None, PackageTag tag = PackageTag.None, PackageProgress progress = PackageProgress.None)
+        {
+            m_Type = type;
             m_UniqueId = uniqueId;
-            m_State = state;
-            m_Version = new PlaceholderPackageVersion(uniqueId, uniqueId, tag, source);
+            m_Progress = progress;
+            m_VersionList = new PlaceholderVersionList(new PlaceholderPackageVersion(uniqueId, uniqueId, tag));
         }
 
         public IPackage Clone()

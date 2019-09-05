@@ -20,8 +20,10 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
         }
 
-        SplitterState m_ViewSplit = new SplitterState(new[] { 70f, 30f }, new[] { 450, 50 }, null);
-        ProfilerMemoryView m_ShowDetailedMemoryPane = ProfilerMemoryView.Simple;
+        static readonly int[] k_SplitterMinSizes = new[] { 450, 50 };
+
+        SplitterState m_ViewSplit = new SplitterState(new[] { EditorPrefs.GetFloat(k_SplitterRelative0SettingsKey, 70f), EditorPrefs.GetFloat(k_SplitterRelative1SettingsKey, 30f) }, k_SplitterMinSizes, null);
+        ProfilerMemoryView m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerMemoryView.Simple);
 
         private MemoryTreeList m_ReferenceListView;
         private MemoryTreeListClickable m_MemoryListView;
@@ -29,6 +31,11 @@ namespace UnityEditorInternal.Profiling
         bool wantsMemoryRefresh { get { return m_MemoryListView.RequiresRefresh; } }
 
         static WeakReference instance;
+
+        const string k_ViewTypeSettingsKey = "Profiler.MemoryProfilerModule.ViewType";
+        const string k_GatherObjectReferencesSettingsKey = "Profiler.MemoryProfilerModule.GatherObjectReferences";
+        const string k_SplitterRelative0SettingsKey = "Profiler.MemoryProfilerModule.Splitter.Relative[0]";
+        const string k_SplitterRelative1SettingsKey = "Profiler.MemoryProfilerModule.Splitter.Relative[1]";
 
         public override void OnEnable(IProfilerWindowController profilerWindow)
         {
@@ -40,6 +47,24 @@ namespace UnityEditorInternal.Profiling
                 m_ReferenceListView = new MemoryTreeList(profilerWindow, null);
             if (m_MemoryListView == null)
                 m_MemoryListView = new MemoryTreeListClickable(profilerWindow, m_ReferenceListView);
+
+            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
+            m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerMemoryView.Simple);
+            m_GatherObjectReferences = EditorPrefs.GetBool(k_GatherObjectReferencesSettingsKey, true);
+        }
+
+        public override void OnDisable()
+        {
+            base.OnDisable();
+            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
+
+            EditorPrefs.SetInt(k_ViewTypeSettingsKey, (int)m_ShowDetailedMemoryPane);
+            EditorPrefs.SetBool(k_GatherObjectReferencesSettingsKey, m_GatherObjectReferences);
+            if (m_ViewSplit != null)
+            {
+                EditorPrefs.SetFloat(k_SplitterRelative0SettingsKey, m_ViewSplit.relativeSizes[0]);
+                EditorPrefs.SetFloat(k_SplitterRelative1SettingsKey, m_ViewSplit.relativeSizes[1]);
+            }
         }
 
         public override void DrawToolbar(Rect position)

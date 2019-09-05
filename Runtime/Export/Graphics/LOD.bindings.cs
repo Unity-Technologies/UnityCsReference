@@ -82,5 +82,7 @@ namespace UnityEngine
 
         [StaticAccessor("GetLODGroupManager()")]
         extern public static float crossFadeAnimationDuration { get; set; }
+
+        extern internal Vector3 worldReferencePoint { get; }
     }
 }

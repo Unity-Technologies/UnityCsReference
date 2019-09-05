@@ -9,6 +9,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.LiveNotes")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
+[assembly: InternalsVisibleTo("Unity.Cloud.Collaborate.Editor")]
 [assembly: InternalsVisibleTo("Unity.CollabProxy.Editor")]
 [assembly: InternalsVisibleTo("Unity.CollabProxy.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.CollabProxy.UI")]

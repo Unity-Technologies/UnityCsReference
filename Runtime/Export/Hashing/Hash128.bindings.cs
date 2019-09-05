@@ -53,7 +53,7 @@ namespace UnityEngine
         {
             get
             {
-                fixed(uint* ptr1 = &m_u32_1)
+                fixed(uint* ptr1 = &m_u32_2)
                 return *(ulong*)ptr1;
             }
         }

@@ -12,9 +12,9 @@ namespace UnityEditor
     {
         // Keep in sync with CollisionModule.h
         const int k_MaxNumPlanes = 6;
-        enum CollisionTypes { Plane = 0, World = 1 };
-        enum CollisionModes { Mode3D = 0, Mode2D = 1 };
-        enum PlaneVizType { Grid, Solid };
+        enum CollisionTypes { Plane = 0, World = 1 }
+        enum CollisionModes { Mode3D = 0, Mode2D = 1 }
+        enum PlaneVizType { Grid, Solid }
 
         SerializedProperty m_Type;
         SerializedProperty[] m_Planes = new SerializedProperty[k_MaxNumPlanes];

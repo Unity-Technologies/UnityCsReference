@@ -59,13 +59,26 @@ namespace UnityEditor
                 }
             }
 
+            public bool activeInHierarchy
+            {
+                get
+                {
+                    if (m_Object != null && typeof(Component).IsAssignableFrom(m_Object.GetType()))
+                    {
+                        return ((Component)m_Object).gameObject.activeInHierarchy;
+                    }
+
+                    return false;
+                }
+            }
+
             public bool Update() { return m_Object != null ? m_SerializedObject.UpdateIfRequiredOrScript() : false; }
             public void Store() { if (m_Object != null) {  m_SerializedObject.ApplyModifiedProperties(); } }
         }
 
         // LightTreeDataStore members
         internal delegate UnityEngine.Object[] GatherDelegate();
-        UnityEngine.Object[] m_Objects;
+        UnityEngine.Object[] m_Objects; // only used to keep track of changes
         Data[] m_Elements;
         string[] m_PropNames;
         GatherDelegate m_GatherDel;
@@ -103,8 +116,21 @@ namespace UnityEditor
             // Recreate data store
             m_Objects = objs;
             m_Elements = new Data[objs.Length];
+
+            int elementIndex = 0;
             for (int i = 0; i < objs.Length; i++)
-                m_Elements[i] = new Data(objs[i], m_PropNames);
+            {
+                // we don't want to list hidden objects
+                if (objs[i].hideFlags == HideFlags.HideAndDontSave)
+                    continue;
+
+                m_Elements[elementIndex] = new Data(objs[i], m_PropNames);
+
+                elementIndex++;
+            }
+
+            if (elementIndex < objs.Length)
+                System.Array.Resize(ref m_Elements, elementIndex);
 
             return true;
         }
@@ -133,15 +159,15 @@ namespace UnityEditor
             public static readonly string serializeTreeViewState    = "_TreeViewState";
             public static readonly string serializeColumnHeaderState = "_ColumnHeaderState";
             public static readonly string serializeFilter = "_Filter_";
-            public static readonly GUIContent filterSelection = EditorGUIUtility.TrTextContent("Lock Selection", "Limits the table contents to the active selection.");
-            public static readonly GUIContent filterDisable   = EditorGUIUtility.TrTextContent("Disable All", "Disables all filters.");
-            public static readonly GUIContent filterInvert    = EditorGUIUtility.TrTextContent("Invert Result", "Inverts the filtered results.");
+            public static readonly GUIContent filterSelection = EditorGUIUtility.TrTextContent("Isolate Selection", "Limits the table contents to the active selection.");
+            public static readonly GUIContent showInactiveObjects = EditorGUIUtility.TrTextContent("Show Inactive Objects", "Show objects that are not active in the hierarchy but contains the component.");
         }
 
         // this gets stuffed into the view and displayed on screen. It is a visible subset of the actual data
         internal class SerializedPropertyItem : TreeViewItem
         {
             SerializedPropertyDataStore.Data m_Data;
+
             public SerializedPropertyItem(int id, int depth, SerializedPropertyDataStore.Data ltd) : base(id, depth, ltd != null ? ltd.name : "root")
             {
                 m_Data = ltd;
@@ -182,12 +208,12 @@ namespace UnityEditor
                     }
                 }
             }
-        };
+        }
 
         private struct ColumnInternal
         {
             public SerializedProperty[] dependencyProps;    // helper array, must be the same size as dependencyIndices
-        };
+        }
 
         internal class DefaultDelegates
         {
@@ -246,6 +272,7 @@ namespace UnityEditor
         List<TreeViewItem>          m_Items;
         int                         m_ChangedId;
         bool                        m_bFilterSelection;
+        bool                        m_ShowInactiveObjects;
         int[]                       m_SelectionFilter;
 
         public SerializedPropertyTreeView(TreeViewState state, MultiColumnHeader multicolumnHeader, SerializedPropertyDataStore dataStore) : base(state, multicolumnHeader)
@@ -272,6 +299,7 @@ namespace UnityEditor
         public void SerializeState(string uid)
         {
             SessionState.SetBool(uid + Styles.serializeFilterSelection, m_bFilterSelection);
+            SessionState.SetBool(uid + Styles.showInactiveObjects, m_ShowInactiveObjects);
 
             for (int i = 0; i < multiColumnHeader.state.columns.Length; i++)
             {
@@ -295,6 +323,7 @@ namespace UnityEditor
         public void DeserializeState(string uid)
         {
             m_bFilterSelection = SessionState.GetBool(uid + Styles.serializeFilterSelection, false);
+            m_ShowInactiveObjects = SessionState.GetBool(uid + Styles.showInactiveObjects, false);
 
             MultiColumnHeaderState headerState = new MultiColumnHeaderState(multiColumnHeader.state.columns);
             string columnHeaderState = EditorPrefs.GetString(uid + Styles.serializeColumnHeaderState, "");
@@ -378,6 +407,9 @@ namespace UnityEditor
             // filtering
             IEnumerable<TreeViewItem> tmprows = m_Items;
 
+            if (!m_ShowInactiveObjects)
+                tmprows = m_Items.Where((TreeViewItem item) => { return ((SerializedPropertyItem)item).GetData().activeInHierarchy; });
+
             if (m_bFilterSelection)
             {
                 if (m_SelectionFilter == null)
@@ -424,7 +456,10 @@ namespace UnityEditor
             {
                 // default drawing
                 Profiler.BeginSample("SerializedPropertyTreeView.OnItemGUI.LabelField");
-                DefaultGUI.Label(cellRect, ltd.name, IsSelected(args.item.id), false);
+                using (new EditorGUI.DisabledScope(!ltd.activeInHierarchy))
+                {
+                    DefaultGUI.Label(cellRect, ltd.name, IsSelected(args.item.id), false);
+                }
                 Profiler.EndSample();
             }
             else if (column.drawDelegate != null)
@@ -516,6 +551,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             float fullWidth = r.width;
+            float windowPadding = r.x;
             float toggleWidth = 16;
 
             r.width = toggleWidth;
@@ -524,8 +560,15 @@ namespace UnityEditor
             r.width = GUI.skin.label.CalcSize(SerializedPropertyTreeView.Styles.filterSelection).x;
             EditorGUI.LabelField(r, SerializedPropertyTreeView.Styles.filterSelection);
 
+            r.x += r.width + 10;
+            r.width = toggleWidth;
+            m_ShowInactiveObjects = EditorGUI.Toggle(r, m_ShowInactiveObjects);
+            r.x += toggleWidth;
+            r.width = GUI.skin.label.CalcSize(SerializedPropertyTreeView.Styles.showInactiveObjects).x;
+            EditorGUI.LabelField(r, SerializedPropertyTreeView.Styles.showInactiveObjects);
+
             r.width = Mathf.Min(fullWidth - (r.x + r.width), 300);
-            r.x = fullWidth - r.width + 10;
+            r.x = fullWidth - r.width + windowPadding;
 
             for (int i = 0; i < multiColumnHeader.state.columns.Length; i++)
             {

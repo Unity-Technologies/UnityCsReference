@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
@@ -11,8 +12,17 @@ using UnityEditorInternal.VersionControl;
 using System.Linq;
 using System.Reflection;
 
+[Obsolete("Use UnityEditor.AssetModificationProcessor")]
+public class AssetModificationProcessor
+{
+}
+
 namespace UnityEditor
 {
+    public class AssetModificationProcessor
+    {
+    }
+
     internal class AssetModificationProcessorInternal
     {
         enum FileMode
@@ -27,7 +37,7 @@ namespace UnityEditor
 
             if (types.Length != parameters.Length)
             {
-                Debug.LogWarning("Parameter count did not match. Expected: " + types.Length.ToString() + " Got: " + parameters.Length.ToString() + " in " + method.DeclaringType.ToString() + "." + method.Name);
+                Debug.LogWarning("Parameter count did not match. Expected: " + types.Length + " Got: " + parameters.Length + " in " + method.DeclaringType + "." + method.Name);
                 return false;
             }
 
@@ -37,7 +47,7 @@ namespace UnityEditor
                 ParameterInfo pInfo = parameters[i];
                 if (type != pInfo.ParameterType)
                 {
-                    Debug.LogWarning("Parameter type mismatch at parameter " + i + ". Expected: " + type.ToString() + " Got: " + pInfo.ParameterType.ToString() + " in " + method.DeclaringType.ToString() + "." + method.Name);
+                    Debug.LogWarning("Parameter type mismatch at parameter " + i + ". Expected: " + type + " Got: " + pInfo.ParameterType + " in " + method.DeclaringType + "." + method.Name);
                     return false;
                 }
                 ++i;
@@ -50,7 +60,7 @@ namespace UnityEditor
         {
             if (returnType != method.ReturnType)
             {
-                Debug.LogWarning("Return type mismatch. Expected: " + returnType.ToString() + " Got: " + method.ReturnType.ToString() + " in " + method.DeclaringType.ToString() + "." + method.Name);
+                Debug.LogWarning("Return type mismatch. Expected: " + returnType + " Got: " + method.ReturnType + " in " + method.DeclaringType + "." + method.Name);
                 return false;
             }
 
@@ -274,11 +284,26 @@ namespace UnityEditor
             return isOpenForEditMethods;
         }
 
-        static bool IsAssetInReadOnlyFolder(string assetPath)
+        enum Editability
         {
+            Never,
+            Always,
+            Maybe
+        }
+
+        static Editability GetPathEditability(string assetPath)
+        {
+            // read-only asset locations (e.g. shared packages) are considered not editable
             bool rootFolder, readOnly;
             bool validPath = AssetDatabase.GetAssetFolderInfo(assetPath, out rootFolder, out readOnly);
-            return validPath && readOnly;
+            if (validPath && readOnly)
+                return Editability.Never;
+
+            // other paths that are not know to asset database, and not versioned, are considered always editable
+            if (!Provider.PathIsVersioned(assetPath))
+                return Editability.Always;
+
+            return Editability.Maybe;
         }
 
         static bool IsOpenForEditViaScriptCallbacks(string assetPath, ref string message)
@@ -301,7 +326,10 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(assetPath))
                 return true; // treat empty/null paths as editable (might be under Library folders etc.)
 
-            if (IsAssetInReadOnlyFolder(assetPath))
+            var editability = GetPathEditability(assetPath);
+            if (editability == Editability.Always)
+                return true;
+            if (editability == Editability.Never)
                 return false;
             if (!AssetModificationHook.IsOpenForEdit(assetPath, out message, statusOptions))
                 return false;
@@ -322,7 +350,10 @@ namespace UnityEditor
             {
                 if (string.IsNullOrEmpty(path))
                     continue; // treat empty/null paths as editable (might be under Library folders etc.)
-                if (IsAssetInReadOnlyFolder(path))
+                var editability = GetPathEditability(path);
+                if (editability == Editability.Always)
+                    continue;
+                if (editability == Editability.Never)
                 {
                     outNotEditablePaths.Add(path);
                     continue;

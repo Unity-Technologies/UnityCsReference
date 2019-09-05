@@ -112,7 +112,7 @@ namespace UnityEditor
                     Init();
                 }
             }
-        };
+        }
 
 
         private void CopyStateForPreview(AnimatorState src, ref AnimatorState dst)
@@ -557,11 +557,7 @@ namespace UnityEditor
 
         private void DisableIKOnFeetIfNeeded()
         {
-            bool disable = false;
-            if (m_SrcMotion == null || m_DstMotion == null)
-            {
-                disable = true;
-            }
+            bool disable = m_SrcMotion == null || m_DstMotion == null;
 
             if (m_LayerIndex > 0)
             {

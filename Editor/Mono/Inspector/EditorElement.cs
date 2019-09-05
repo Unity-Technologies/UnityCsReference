@@ -226,6 +226,8 @@ namespace UnityEditor.UIElements
             if (wasVisible != IsElementVisible(m_InspectorElement))
             {
                 SetElementVisible(m_InspectorElement, wasVisible);
+
+                m_Footer.style.marginTop = wasVisible ? 0 : -kFooterDefaultHeight;
             }
 
             var multiEditingSupported = inspectorWindow.IsMultiEditingSupported(editor, target);
@@ -296,7 +298,13 @@ namespace UnityEditor.UIElements
                     var importedObjectBarRect = GUILayoutUtility.GetRect(16, 20);
                     importedObjectBarRect.height = 21;
 
-                    var headerText = m_Editors[0] is PrefabImporterEditor ? "Root in Prefab Asset" : "Imported Object";
+                    var headerText = "Imported Object";
+                    if (m_Editors.Length > 1)
+                    {
+                        if (m_Editors[0] is PrefabImporterEditor && m_Editors[1] is GameObjectInspector)
+                            headerText = "Root in Prefab Asset";
+                    }
+
                     GUILayout.Label(headerText, Styles.importedObjectsHeaderStyle, GUILayout.ExpandWidth(true));
                     GUILayout.Space(-7f); // Ensures no spacing between this header and the next header
                 }
@@ -333,13 +341,7 @@ namespace UnityEditor.UIElements
 
             using (new EditorGUI.DisabledScope(!currentEditor.IsEnabled()))
             {
-                // Woraround: Temporarily adjust the top padding to 2px in order to vertically center the content of the titlebar.
-                // This is because there is a 3px bottom margin used to be able to pick and drag a component section
-                var oldPadding = EditorStyles.inspectorTitlebar.padding.top;
-                EditorStyles.inspectorTitlebar.padding.top = 2;
-
                 bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, currentEditor);
-                EditorStyles.inspectorTitlebar.padding.top = oldPadding;
 
                 if (wasVisible != isVisible)
                 {

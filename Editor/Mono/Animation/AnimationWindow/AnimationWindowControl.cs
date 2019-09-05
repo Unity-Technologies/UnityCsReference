@@ -58,7 +58,7 @@ namespace UnityEditorInternal
         {
             ManualKey,
             AutoKey
-        };
+        }
 
         class RecordingState : IAnimationRecordingState
         {
@@ -105,7 +105,7 @@ namespace UnityEditorInternal
             FlushUndos          = 1 << 2,
 
             Default             = RefreshViews | FlushUndos
-        };
+        }
 
         private static bool HasFlag(ResampleFlags flags, ResampleFlags flag)
         {

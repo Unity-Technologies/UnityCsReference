@@ -167,6 +167,9 @@ namespace UnityEditor
         private string[] m_ImageApps;
         private string[] m_DiffTools;
 
+        private string m_CustomDiffToolPath = "";
+        private string[] m_CustomDiffToolArguments = new[] {"", "", ""};
+
         private string m_noDiffToolsMessage = string.Empty;
 
         private string[] m_ScriptAppDisplayNames;
@@ -191,6 +194,7 @@ namespace UnityEditor
         private static int kMaxSpriteCacheSizeInGigabytes = 200;
 
         private List<GUIContent> m_SystemFonts = new List<GUIContent>();
+        private const int k_browseButtonWidth = 80;
 
         class RefString
         {
@@ -391,6 +395,25 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(!InternalEditorUtility.HasTeamLicense()))
             {
                 m_DiffToolIndex = EditorGUILayout.Popup(ExternalProperties.revisionControlDiffMerge, m_DiffToolIndex, m_DiffTools);
+                if (m_DiffToolIndex == m_DiffTools.Length - 1)
+                {
+                    GUILayout.BeginHorizontal();
+                    m_CustomDiffToolPath = EditorGUILayout.DelayedTextField("Tool Path", m_CustomDiffToolPath);
+
+                    if (GUILayout.Button("Browse", GUILayout.Width(k_browseButtonWidth)))
+                    {
+                        string path = EditorUtility.OpenFilePanel("Browse for application", "", InternalEditorUtility.GetApplicationExtensionForRuntimePlatform(Application.platform));
+                        if (path.Length != 0)
+                        {
+                            m_CustomDiffToolPath = path;
+                        }
+                    }
+
+                    GUILayout.EndHorizontal();
+                    m_CustomDiffToolArguments[0] = EditorGUILayout.DelayedTextField("Two-way diff command line", m_CustomDiffToolArguments[0]);
+                    m_CustomDiffToolArguments[1] = EditorGUILayout.DelayedTextField("Three-way diff command line", m_CustomDiffToolArguments[1]);
+                    m_CustomDiffToolArguments[2] = EditorGUILayout.DelayedTextField("Merge arguments", m_CustomDiffToolArguments[2]);
+                }
             }
 
             if (m_noDiffToolsMessage != string.Empty)
@@ -550,7 +573,6 @@ namespace UnityEditor
 
                     // Refresh skin to get new font
                     Unsupported.ClearSkinCache();
-                    EditorResources.BuildCatalog();
                     InternalEditorUtility.RequestScriptReload();
                     InternalEditorUtility.RepaintAllViews();
                 }
@@ -803,7 +825,7 @@ namespace UnityEditor
             {
                 SystemLanguage lang = (SystemLanguage)Enum.Parse(typeof(SystemLanguage), m_SelectedLanguage);
                 EditorGUIUtility.NotifyLanguageChanged(lang);
-                InternalEditorUtility.RequestScriptReload();
+                EditorUtility.RequestScriptReload();
             }
 
             ApplyChangesToPrefs();
@@ -899,6 +921,10 @@ namespace UnityEditor
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
             EditorPrefs.SetString("kDiffsDefaultApp", m_DiffTools.Length == 0 ? "" : m_DiffTools[m_DiffToolIndex]);
+            EditorPrefs.SetString("customDiffToolPath", m_CustomDiffToolPath);
+            EditorPrefs.SetString("twoWayDiffArguments", m_CustomDiffToolArguments[0]);
+            EditorPrefs.SetString("threeWayDiffArguments", m_CustomDiffToolArguments[1]);
+            EditorPrefs.SetString("mergeArguments", m_CustomDiffToolArguments[2]);
 
             WriteRecentAppsList(m_ScriptApps, m_ScriptEditorPath, kRecentScriptAppsKey);
             WriteRecentAppsList(m_ImageApps, m_ImageAppPath, kRecentImageAppsKey);
@@ -1009,8 +1035,15 @@ namespace UnityEditor
 
             m_DiffTools = InternalEditorUtility.GetAvailableDiffTools();
 
+            m_CustomDiffToolPath = EditorPrefs.GetString("customDiffToolPath", m_CustomDiffToolPath);
+            m_CustomDiffToolArguments[0] = EditorPrefs.GetString("twoWayDiffArguments", m_CustomDiffToolArguments[0]);
+            m_CustomDiffToolArguments[1] = EditorPrefs.GetString("threeWayDiffArguments", m_CustomDiffToolArguments[1]);
+            m_CustomDiffToolArguments[2] = EditorPrefs.GetString("mergeArguments", m_CustomDiffToolArguments[2]);
+            InternalEditorUtility.SetCustomDiffToolData(m_CustomDiffToolPath, m_CustomDiffToolArguments[0], m_CustomDiffToolArguments[1], m_CustomDiffToolArguments[2]);
+
+
             // only show warning if has team license
-            if ((m_DiffTools == null || m_DiffTools.Length == 0) && InternalEditorUtility.HasTeamLicense())
+            if ((m_DiffTools == null || (m_DiffTools.Length == 1 && m_CustomDiffToolPath.Equals(""))) && InternalEditorUtility.HasTeamLicense())
             {
                 m_noDiffToolsMessage = InternalEditorUtility.GetNoDiffToolsDetectedMessage();
             }

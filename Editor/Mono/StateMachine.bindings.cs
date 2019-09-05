@@ -148,7 +148,7 @@ namespace UnityEditor.Animations
     [NativeHeader("Editor/Src/Animation/StateMachine.h")]
     [NativeHeader("Editor/Src/Animation/StateMachine.bindings.h")]
     [NativeHeader("Editor/Src/Animation/StateMachineBehaviourScripting.h")]
-    public partial class AnimatorState : Object
+    public sealed partial class AnimatorState : Object
     {
         public AnimatorState()
         {
@@ -217,6 +217,17 @@ namespace UnityEditor.Animations
         {
             return AddStateMachineBehaviour(typeof(T)) as T;
         }
+
+        public StateMachineBehaviour[] behaviours
+        {
+            get { return Array.ConvertAll(behaviours_Internal, so => (StateMachineBehaviour)so); }
+            set { behaviours_Internal = Array.ConvertAll(value, smb => (ScriptableObject)smb); }
+        }
+
+        [NativeName("Behaviours")]
+        private extern ScriptableObject[] behaviours_Internal { get; set; }
+
+        internal extern MonoScript GetBehaviourMonoScript(int index);
     }
 
     [NativeHeader("Editor/Src/Animation/StateMachine.h")]
@@ -247,7 +258,7 @@ namespace UnityEditor.Animations
     [NativeHeader("Editor/Src/Animation/StateMachine.h")]
     [NativeHeader("Editor/Src/Animation/StateMachine.bindings.h")]
     [NativeHeader("Editor/Src/Animation/StateMachineBehaviourScripting.h")]
-    public partial class AnimatorStateMachine : Object
+    public sealed partial class AnimatorStateMachine : Object
     {
         public AnimatorStateMachine()
         {
@@ -319,5 +330,16 @@ namespace UnityEditor.Animations
         {
             get;
         }
+
+        public StateMachineBehaviour[] behaviours
+        {
+            get { return Array.ConvertAll(behaviours_Internal, so => (StateMachineBehaviour)so); }
+            set { behaviours_Internal = Array.ConvertAll(value, smb => (ScriptableObject)smb); }
+        }
+
+        [NativeName("Behaviours")]
+        private extern ScriptableObject[] behaviours_Internal { get; set; }
+
+        internal extern MonoScript GetBehaviourMonoScript(int index);
     }
 }

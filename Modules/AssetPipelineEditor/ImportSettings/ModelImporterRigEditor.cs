@@ -358,7 +358,7 @@ namespace UnityEditor
 
             if (singleImporter.transformPaths.Length <= HumanTrait.RequiredBoneCount)
             {
-                GUILayout.Label(string.Format("Not enough bones to create human avatar (requires {0})", HumanTrait.RequiredBoneCount, EditorStyles.helpBox));
+                GUILayout.Label(string.Format("Not enough bones to create human avatar (requires {0})", HumanTrait.RequiredBoneCount), EditorStyles.helpBox);
             }
 
             // Validation text

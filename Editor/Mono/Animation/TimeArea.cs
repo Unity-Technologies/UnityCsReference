@@ -44,7 +44,7 @@ namespace UnityEditor
             None, // Unformatted time
             TimeFrame, // Time:Frame
             Frame // Integer frame
-        };
+        }
 
         class Styles2
         {
@@ -501,7 +501,7 @@ namespace UnityEditor
                     sign = "-";
                     frame = -frame;
                 }
-                return sign + (frame / (int)frameRate).ToString() + ":" +
+                return sign + (frame / (int)frameRate) + ":" +
                     (frame % frameRate).ToString().PadLeft(frameDigits, '0');
             }
             else

@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    string[] dest = { downloadInformation.PublisherName, downloadInformation.CategoryName, downloadInformation.PackageName };
+                    string[] dest = { downloadInformation.publisherName, downloadInformation.categoryName, downloadInformation.packageName };
                     var res = AssetStoreUtils.instance.AbortDownload($"content__{productID}", dest);
                     ret.downloadState = res ? DownloadProgress.State.Aborted : DownloadProgress.State.Error;
                     if (!res)
@@ -99,15 +99,15 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                     string[] dest =
                     {
-                        downloadInfo.PublisherName.Replace(".", ""),
-                        downloadInfo.CategoryName.Replace(".", ""),
-                        downloadInfo.PackageName.Replace(".", "")
+                        downloadInfo.publisherName.Replace(".", ""),
+                        downloadInfo.categoryName.Replace(".", ""),
+                        downloadInfo.packageName.Replace(".", "")
                     };
 
                     var json = AssetStoreUtils.instance.CheckDownload(
-                        $"content__{downloadInfo.PackageId}",
-                        downloadInfo.Url, dest,
-                        downloadInfo.Key);
+                        $"content__{downloadInfo.productId}",
+                        downloadInfo.url, dest,
+                        downloadInfo.key);
 
                     var resumeOK = false;
                     try
@@ -135,7 +135,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                             var download = (IDictionary<string, object>)current["download"];
                             var existingUrl = download.ContainsKey("url") ? download["url"] as string : string.Empty;
                             var existingKey = download.ContainsKey("key") ? download["key"] as string : string.Empty;
-                            resumeOK = (existingUrl == downloadInfo.Url && existingKey == downloadInfo.Key);
+                            resumeOK = (existingUrl == downloadInfo.url && existingKey == downloadInfo.key);
                         }
                     }
                     catch (Exception e)
@@ -146,12 +146,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    json = $"{{\"download\":{{\"url\":\"{downloadInfo.Url}\",\"key\":\"{downloadInfo.Key}\"}}}}";
+                    json = $"{{\"download\":{{\"url\":\"{downloadInfo.url}\",\"key\":\"{downloadInfo.key}\"}}}}";
                     AssetStoreUtils.instance.Download(
-                        $"content__{downloadInfo.PackageId}",
-                        downloadInfo.Url,
+                        $"content__{downloadInfo.productId}",
+                        downloadInfo.url,
                         dest,
-                        downloadInfo.Key,
+                        downloadInfo.key,
                         json,
                         resumeOK);
 

@@ -9,8 +9,7 @@ namespace UnityEngine
     // Stores keyframe based animations.
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationClip.bindings.h")]
     [NativeType("Modules/Animation/AnimationClip.h")]
-
-    public sealed partial class AnimationClip : Motion
+    public sealed class AnimationClip : Motion
     {
         // Creates a new animation clip
         public AnimationClip()
@@ -109,23 +108,31 @@ namespace UnityEngine
             get;
         }
 
-        // Adds an animation event to the clip.
-        //[FreeFunction("AnimationClipBindings::Internal_AddEvent", HasExplicitThis = true)]
-        //extern public void AddEvent([NotNull] AnimationEvent evt);
-
-        //Retrieves all animation events associated with the animation clip
-        //extern public AnimationEvent[] events
-        //{
-        //    [FreeFunction("AnimationClipBindings::Internal_GetEvents", HasExplicitThis = true)]
-        //    get;
-        //    [FreeFunction("AnimationClipBindings::Internal_SetEvents", HasExplicitThis = true)]
-        //    set;
-        //}
-
         internal extern bool hasRootMotion
         {
             [FreeFunction(Name = "AnimationClipBindings::Internal_GetHasRootMotion", HasExplicitThis = true)]
             get;
         }
+
+        public void AddEvent(AnimationEvent evt)
+        {
+            if (evt == null)
+                throw new ArgumentNullException("evt");
+            AddEventInternal(evt);
+        }
+
+        [FreeFunction(Name = "AnimationClipBindings::AddEventInternal", HasExplicitThis = true)]
+        extern private void AddEventInternal(System.Object evt);
+
+        // Retrieves all animation events associated with the animation clip
+        public AnimationEvent[] events
+        {
+            get { return (AnimationEvent[])GetEventsInternal(); }
+            set { SetEventsInternal(value); }
+        }
+        [FreeFunction(Name = "AnimationClipBindings::SetEventsInternal", HasExplicitThis = true)]
+        extern private void SetEventsInternal(System.Array value);
+        [FreeFunction(Name = "AnimationClipBindings::GetEventsInternal", HasExplicitThis = true)]
+        extern private System.Array GetEventsInternal();
     }
 }

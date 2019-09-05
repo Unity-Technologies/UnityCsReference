@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor
 {
-    class SceneViewCameraWindow : PopupWindowContent
+    public class SceneViewCameraWindow : PopupWindowContent
     {
         static class Styles
         {
@@ -22,7 +24,7 @@ namespace UnityEditor
 
                 settingsArea = new GUIStyle()
                 {
-                    padding = new RectOffset(4, 4, 4, 4),
+                    border = new RectOffset(4, 4, 4, 4),
                 };
             }
         }
@@ -31,8 +33,7 @@ namespace UnityEditor
 
         GUIContent m_CameraSpeedSliderContent;
         GUIContent m_AccelerationEnabled;
-        GUIContent m_CameraSpeedMin;
-        GUIContent m_CameraSpeedMax;
+        GUIContent[] m_MinMaxContent;
         GUIContent m_FieldOfView;
         GUIContent m_DynamicClip;
         GUIContent m_OcclusionCulling;
@@ -40,21 +41,24 @@ namespace UnityEditor
 
         const int kFieldCount = 12;
         const int kWindowWidth = 290;
-        const int kWindowHeight = ((int)EditorGUI.kSingleLineHeight) * kFieldCount + kFrameWidth * 2;
-        const int kFrameWidth = 11;
+        const int kContentPadding = 4;
+        const int kWindowHeight = ((int)EditorGUI.kSingleLineHeight) * kFieldCount + kContentPadding * 2;
         const float kPrefixLabelWidth = 120f;
-        const float kMinSpeedLabelWidth = 25f;
-        const float kMaxSpeedLabelWidth = 29f;
-        const float kMinMaxSpeedFieldWidth = 50f;
-        const float kMinMaxSpeedSpace = 8f;
         const float kNearClipMin = .01f;
+        const int k_HeaderSpacing = 2;
 
+        Vector2 m_WindowSize;
+        Vector2 m_Scroll;
         float[] m_Vector2Floats = { 0, 0 };
+
+        public static event Action<SceneView> additionalSettingsGui;
 
         public override Vector2 GetWindowSize()
         {
-            return new Vector2(kWindowWidth, kWindowHeight);
+            return m_WindowSize;
         }
+
+        SceneViewCameraWindow() {}
 
         public SceneViewCameraWindow(SceneView sceneView)
         {
@@ -62,12 +66,16 @@ namespace UnityEditor
 
             m_CameraSpeedSliderContent = EditorGUIUtility.TrTextContent("Camera Speed", "The current speed of the camera in the Scene view.");
             m_AccelerationEnabled = EditorGUIUtility.TrTextContent("Camera Acceleration", "Check this to enable acceleration when moving the camera. When enabled, camera speed is evaluated as a modifier. With acceleration disabled, the camera is accelerated to the Camera Speed.");
-            m_CameraSpeedMin = EditorGUIUtility.TrTextContent("Min", "The minimum speed of the camera in the Scene view. Valid values are between [0.01, 98].");
-            m_CameraSpeedMax = EditorGUIUtility.TrTextContent("Max", "The maximum speed of the camera in the Scene view. Valid values are between [0.02, 99].");
             m_FieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the camera's view angle. Measured in degrees vertically, or along the local Y axis.");
             m_DynamicClip = EditorGUIUtility.TrTextContent("Dynamic Clipping", "Check this to enable camera's near and far clipping planes to be calculated relative to the viewport size of the Scene.");
             m_OcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Check this to enable occlusion culling in the Scene view. Occlusion culling disables rendering of objects when they\'re not currently seen by the camera because they\'re hidden (occluded) by other objects.");
             m_EasingEnabled = EditorGUIUtility.TrTextContent("Camera Easing", "Check this to enable camera movement easing. This makes the camera ease in when it starts moving and ease out when it stops.");
+            m_WindowSize = new Vector2(kWindowWidth, kWindowHeight);
+            m_MinMaxContent = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("Min", "The minimum speed of the camera in the Scene view. Valid values are between [0.001, 98]."),
+                EditorGUIUtility.TrTextContent("Max", "The maximum speed of the camera in the Scene view. Valid values are between [0.002, 99].")
+            };
         }
 
         public override void OnGUI(Rect rect)
@@ -85,26 +93,27 @@ namespace UnityEditor
             }
         }
 
-        private void Draw(Rect rect)
+        void Draw(Rect rect)
         {
-            var settings = m_SceneView.cameraSettings;
             Styles.Init();
 
-            const int k_SettingsIconPad = 2;
-            Vector2 settingsSize = EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.titleSettingsIcon);
-            Rect settingsRect = new Rect(rect.xMax - Styles.settingsArea.padding.right - k_SettingsIconPad - settingsSize.x, Styles.settingsArea.padding.top + k_SettingsIconPad, settingsSize.x, settingsSize.y);
+            var settings = m_SceneView.cameraSettings;
 
-            if (GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, EditorStyles.iconButton))
-                ShowContextMenu();
+            m_Scroll = GUILayout.BeginScrollView(m_Scroll);
 
-            GUILayout.BeginArea(rect, Styles.settingsArea);
-
+            GUILayout.BeginVertical(Styles.settingsArea);
             EditorGUI.BeginChangeCheck();
 
-            var sceneCameraContent = EditorGUIUtility.TrTextContent("Scene Camera");
-            EditorGUIUtility.labelWidth = Mathf.Max(kPrefixLabelWidth, EditorGUI.CalcPrefixLabelWidth(sceneCameraContent, EditorStyles.boldLabel));
+            GUILayout.Space(k_HeaderSpacing);
 
-            GUILayout.Label(sceneCameraContent, EditorStyles.boldLabel);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(EditorGUIUtility.TrTextContent("Scene Camera"), EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(EditorGUI.GUIContents.titleSettingsIcon, EditorStyles.iconButton))
+                ShowContextMenu();
+            GUILayout.EndHorizontal();
+
+            EditorGUIUtility.labelWidth = kPrefixLabelWidth;
 
             // fov isn't applicable in orthographic mode, and orthographic size is controlled by the user zoom
             using (new EditorGUI.DisabledScope(m_SceneView.orthographic))
@@ -130,13 +139,18 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
                 m_SceneView.Repaint();
 
+            EditorGUILayout.Space(k_HeaderSpacing);
+
             GUILayout.Label(EditorGUIUtility.TrTextContent("Navigation"), EditorStyles.boldLabel);
 
             settings.easingEnabled = EditorGUILayout.Toggle(m_EasingEnabled, settings.easingEnabled);
-
             settings.accelerationEnabled = EditorGUILayout.Toggle(m_AccelerationEnabled, settings.accelerationEnabled);
 
-            settings.speed = EditorGUILayout.Slider(m_CameraSpeedSliderContent, settings.speed, settings.speedMin, settings.speedMax);
+            EditorGUI.BeginChangeCheck();
+            float min = settings.speedMin, max = settings.speedMax, speed = settings.RoundSpeedToNearestSignificantDecimal(settings.speed);
+            speed = EditorGUILayout.Slider(m_CameraSpeedSliderContent, speed, min, max);
+            if (EditorGUI.EndChangeCheck())
+                settings.speed = settings.RoundSpeedToNearestSignificantDecimal(speed);
 
             EditorGUI.BeginChangeCheck();
 
@@ -150,7 +164,17 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = 0f;
 
-            GUILayout.EndArea();
+            if (additionalSettingsGui != null)
+            {
+                EditorGUILayout.Space(k_HeaderSpacing);
+                additionalSettingsGui(m_SceneView);
+            }
+
+            if (Event.current.type == EventType.Repaint)
+                m_WindowSize.y = Math.Min(GUILayoutUtility.GetLastRect().yMax + kContentPadding, kWindowHeight * 3);
+
+            GUILayout.BeginVertical(Styles.settingsArea);
+            GUILayout.EndScrollView();
         }
 
         void DrawSpeedMinMaxFields()
@@ -158,13 +182,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(EditorGUIUtility.labelWidth);
             Rect r = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight, EditorStyles.numberField);
-            r.width = kMinSpeedLabelWidth + kMinMaxSpeedFieldWidth;
-            EditorGUIUtility.labelWidth = kMinSpeedLabelWidth;
-            m_Vector2Floats[0] = EditorGUI.FloatField(r, m_CameraSpeedMin, m_Vector2Floats[0]);
-            r.x += r.width + kMinMaxSpeedSpace;
-            r.width = kMaxSpeedLabelWidth + kMinMaxSpeedFieldWidth;
-            EditorGUIUtility.labelWidth = kMaxSpeedLabelWidth;
-            m_Vector2Floats[1] = EditorGUI.FloatField(r, m_CameraSpeedMax, m_Vector2Floats[1]);
+            EditorGUI.MultiFloatField(r, m_MinMaxContent, m_Vector2Floats);
             GUILayout.EndHorizontal();
         }
 

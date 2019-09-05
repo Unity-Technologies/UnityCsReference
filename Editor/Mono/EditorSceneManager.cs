@@ -11,9 +11,9 @@ using uei = UnityEngine.Internal;
 namespace UnityEditor.SceneManagement
 {
     // Must match same enums in C++
-    public enum OpenSceneMode { Single, Additive, AdditiveWithoutLoading };
-    public enum NewSceneMode { Single, Additive };
-    public enum NewSceneSetup { EmptyScene, DefaultGameObjects };
+    public enum OpenSceneMode { Single, Additive, AdditiveWithoutLoading }
+    public enum NewSceneMode { Single, Additive }
+    public enum NewSceneSetup { EmptyScene, DefaultGameObjects }
 
     public sealed partial class EditorSceneManager : SceneManager
     {

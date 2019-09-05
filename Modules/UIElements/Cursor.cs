@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
                 if (cursor.defaultCursorId != 0)
                 {
                     Debug.LogWarning(
-                        "Runtime does not support setting a cursor without a texture. Use ResetCursor() to reset the cursor to the default cursor.");
+                        "Runtime cursors other than the default cursor need to be defined using a texture.");
                 }
 
                 ResetCursor();

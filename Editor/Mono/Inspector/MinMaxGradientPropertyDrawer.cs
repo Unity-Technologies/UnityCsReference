@@ -35,7 +35,7 @@ namespace UnityEditorInternal
                 EditorGUIUtility.TrTextContent("Random Between Two Gradients"),
                 EditorGUIUtility.TrTextContent("Random Color")
             };
-        };
+        }
         static Styles s_Styles;
 
         void Init(SerializedProperty property)

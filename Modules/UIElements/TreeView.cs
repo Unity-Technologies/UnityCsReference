@@ -230,8 +230,6 @@ namespace UnityEngine.UIElements
                     currentIterator = currentItem.children.GetEnumerator();
                 }
             }
-
-            yield break;
         }
 
         public void OnKeyDown(KeyDownEvent evt)
@@ -562,7 +560,6 @@ namespace UnityEngine.UIElements
 
         private void CreateWrappers(IEnumerable<ITreeViewItem> items, int depth, ref List<TreeViewItemWrapper> wrappers)
         {
-            int i = 0;
             foreach (var item in items)
             {
                 var wrapper = new TreeViewItemWrapper()
@@ -575,8 +572,6 @@ namespace UnityEngine.UIElements
 
                 if (m_ExpandedItemIds.Contains(item.id) && item.hasChildren)
                     CreateWrappers(item.children, depth + 1, ref wrappers);
-
-                i++;
             }
         }
 

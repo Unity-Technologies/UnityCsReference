@@ -116,7 +116,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             public int terrainLayerIndex;           // the terrain layer index on this Terrain
             public int mapIndex;                    // the splatmap index on this Terrain containing the desired TerrainLayer weight
             public int channelIndex;                // the channel on the splatmap containing the desired TerrainLayer weight
-        };
+        }
 
         [Flags]
         internal enum ToolAction
@@ -567,7 +567,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         {
             public Terrain terrain;
             public ToolAction action;
-        };
+        }
         private static List<PaintedTerrain> s_PaintedTerrain = new List<PaintedTerrain>();
 
         private static void OnTerrainPainted(ITerrainInfo tile, ToolAction action)

@@ -200,7 +200,7 @@ namespace UnityEditor
             m_MaterialPropertyPopupContent = BuildPopupEntries(targets, GetMaterialPropertyNames, out m_MaterialPropertyPopupSelection, out m_MaterialPropertyPopupInvalidSelections);
             m_MaterialPropertyPopupContentHash = GetMaterialPropertyPopupHash(targets);
             m_ShowMaterialProperty.value =
-                targets.Count() > 1 || (m_MaterialPropertyPopupSelection >= 0 && m_MaterialPropertyPopupContent.Length > 0);
+                targets.Length > 1 || (m_MaterialPropertyPopupSelection >= 0 && m_MaterialPropertyPopupContent.Length > 0);
 
             m_DataSourceIsClip.value = m_DataSource.intValue == (int)VideoSource.VideoClip;
             m_DataSourceIsUrl.value = m_DataSource.intValue == (int)VideoSource.Url;
@@ -349,10 +349,10 @@ namespace UnityEditor
                         }
                     }
                     selection = properties.IndexOf(vp.targetMaterialProperty);
-                    invalidSelection = selection < 0 && properties.Count() > 0;
+                    invalidSelection = selection < 0 && properties.Count > 0;
                     if (invalidSelection && !multiSelect)
                     {
-                        selection = properties.Count();
+                        selection = properties.Count;
                         properties.Add(vp.targetMaterialProperty);
                     }
                 }
@@ -370,7 +370,7 @@ namespace UnityEditor
             {
                 int newSelection;
                 bool invalidSelection;
-                List<string> newEntries = func(o, objects.Count() > 1, out newSelection, out invalidSelection);
+                List<string> newEntries = func(o, objects.Length > 1, out newSelection, out invalidSelection);
                 if (newEntries != null)
                 {
                     if (invalidSelection)
@@ -391,7 +391,7 @@ namespace UnityEditor
             Rect pos = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
             GUIContent label = EditorGUI.BeginProperty(pos, content, property);
             EditorGUI.BeginChangeCheck();
-            EditorGUI.BeginDisabledGroup(entries.Count() == 0);
+            EditorGUI.BeginDisabledGroup(entries.Length == 0);
             selection = EditorGUI.Popup(pos, label, selection, entries);
             EditorGUI.EndDisabledGroup();
             if (EditorGUI.EndChangeCheck())
@@ -427,7 +427,7 @@ namespace UnityEditor
             m_ShowRenderer.target = currentRenderMode == VideoRenderMode.MaterialOverride;
             if (EditorGUILayout.BeginFadeGroup(m_ShowRenderer.faded))
             {
-                bool hasMultipleSelection = targets.Count() > 1;
+                bool hasMultipleSelection = targets.Length > 1;
                 if (hasMultipleSelection)
                     EditorGUILayout.PropertyField(m_TargetMaterialRenderer, s_Styles.materialRendererContent);
                 else
@@ -501,7 +501,7 @@ namespace UnityEditor
 
         private string GenerateMultiMaterialinformation()
         {
-            if (targets.Count() > 1)
+            if (targets.Length > 1)
                 return "";
 
             VideoPlayer vp = target as VideoPlayer;
@@ -513,7 +513,7 @@ namespace UnityEditor
                 return "";
 
             var sharedMaterials = renderer.sharedMaterials;
-            if (sharedMaterials == null || sharedMaterials.Count() <= 1)
+            if (sharedMaterials == null || sharedMaterials.Length <= 1)
                 return "";
 
             var targetMaterials = new List<string>();
@@ -535,12 +535,12 @@ namespace UnityEditor
                 }
             }
 
-            if (targetMaterials.Count() == sharedMaterials.Count())
+            if (targetMaterials.Count == sharedMaterials.Length)
                 return s_Styles.texPropInAllMaterialsHelp;
 
             return string.Format(
                 s_Styles.texPropInSomeMaterialsHelp,
-                targetMaterials.Count(), sharedMaterials.Count()) + ": " +
+                targetMaterials.Count, sharedMaterials.Length) + ": " +
                 string.Join(", ", targetMaterials.ToArray());
         }
 
@@ -661,7 +661,7 @@ namespace UnityEditor
                 {
                     if (trackDetails.Length > 0)
                         trackDetails += ", ";
-                    trackDetails += channelCount.ToString() + " ch";
+                    trackDetails += channelCount + " ch";
                 }
 
                 if (trackDetails.Length > 0)

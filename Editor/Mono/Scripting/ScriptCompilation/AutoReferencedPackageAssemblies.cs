@@ -40,7 +40,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static void AddReferences(Dictionary<string, TargetAssembly> customTargetAssemblies, EditorScriptCompilationOptions options, Func<TargetAssembly, bool> shouldAdd)
         {
-            if (customTargetAssemblies == null || customTargetAssemblies.Count() == 0)
+            if (customTargetAssemblies == null || customTargetAssemblies.Count == 0)
                 return;
 
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;

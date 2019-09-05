@@ -9,7 +9,7 @@ namespace UnityEditor
 {
     class CustomDataModuleUI : ModuleUI
     {
-        enum Mode { Disabled = 0, Vector = 1, Color = 2 };
+        enum Mode { Disabled = 0, Vector = 1, Color = 2 }
         const int k_NumCustomDataStreams = 2;
         const int k_NumChannelsPerStream = 4;
 

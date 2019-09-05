@@ -38,7 +38,7 @@ namespace UnityEditor
             public readonly GUIContent m_Shaded = EditorGUIUtility.TrTextContent("Shaded");
             public readonly GUIContent m_Geometry = EditorGUIUtility.TrTextContent("Geometry");
             public readonly GUIStyle m_DropdownButton = "MiniPopup";
-        };
+        }
 
         private static GUIStyles s_Styles = null;
         private static GUIStyles Styles

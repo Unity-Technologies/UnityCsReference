@@ -141,7 +141,7 @@ namespace UnityEditor
                 }
                 catch
                 {
-                    Debug.LogError("Failed to parse value  ('" + capability.ToString() + "," + stringValue + "') to bool type.");
+                    Debug.LogError("Failed to parse value  ('" + capability + "," + stringValue + "') to bool type.");
                     return false;
                 }
             }
@@ -163,7 +163,7 @@ namespace UnityEditor
                 }
                 catch
                 {
-                    Debug.LogError("Failed to parse value  ('" + family.ToString() + "," + stringValue + "') to bool type.");
+                    Debug.LogError("Failed to parse value  ('" + family + "," + stringValue + "') to bool type.");
                     return false;
                 }
             }

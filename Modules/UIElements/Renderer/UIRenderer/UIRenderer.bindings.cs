@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements.UIR
         public UInt32 offsetFromWriteStart;
         public UInt32 size;
         public UIntPtr source;
-    };
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct DrawBufferRange
@@ -27,12 +27,12 @@ namespace UnityEngine.UIElements.UIR
         public int indexCount;
         public int minIndexVal;
         public int vertsReferenced;
-    };
+    }
 
     [NativeHeader("Modules/UIElements/UIRendererUtility.h")]
     internal partial class Utility
     {
-        internal enum GPUBufferType { Vertex, Index };
+        internal enum GPUBufferType { Vertex, Index }
         unsafe public class GPUBuffer<T> : IDisposable where T : struct
         {
             IntPtr buffer;

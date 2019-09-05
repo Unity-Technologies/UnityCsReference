@@ -22,7 +22,7 @@ namespace UnityEditor.Collaboration
             Count = 1,
             Percent = 2,
             Both = 3
-        };
+        }
 
         int m_JobId;
         string m_Title;

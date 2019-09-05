@@ -260,9 +260,7 @@ namespace UnityEngine
         //*undocumented
         public static float Gamma(float value, float absmax, float gamma)
         {
-            bool negative = false;
-            if (value < 0F)
-                negative = true;
+            bool negative = value < 0F;
             float absval = Abs(value);
             if (absval > absmax)
                 return negative ? -absval : absval;

@@ -54,11 +54,6 @@ namespace UnityEditor
 
             UpdateTabs();
 
-            for (int i = 0; i < m_TableTabs.Length; i++)
-            {
-                m_TableTabs[i].OnEnable();
-            }
-
             EditorApplication.searchChanged += Repaint;
             Repaint();
         }

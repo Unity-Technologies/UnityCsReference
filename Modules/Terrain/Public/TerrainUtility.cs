@@ -35,7 +35,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                     this.tileZ = tileZ;
                     this.terrain = terrain;
                 }
-            };
+            }
 
             static public TerrainMap CreateFromConnectedNeighbors(Terrain originTerrain, TerrainFilter filter = null, bool fullValidation = true)
             {
@@ -150,7 +150,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                     this.tileX = tileX;
                     this.tileZ = tileZ;
                 }
-            };
+            }
 
             public enum ErrorCode
             {
@@ -158,7 +158,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                 Overlapping = 1 << 0,
                 SizeMismatch = 1 << 2,
                 EdgeAlignmentMismatch = 1 << 3,
-            };
+            }
 
             Vector3 m_patchSize;            // size of the first terrain, used for consistency checks
 
@@ -277,7 +277,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                 }
                 return m_errorCode;
             }
-        };
+        }
 
         public class TerrainGroups : Dictionary<int, TerrainMap> {}
         internal static bool HasValidTerrains() { return Terrain.activeTerrains != null && Terrain.activeTerrains.Length > 0; }
@@ -324,7 +324,6 @@ namespace UnityEngine.Experimental.TerrainAPI
 
             foreach (var group in TerrainGroups)
             {
-                int groupingID = group.Key;
                 TerrainMap terrains = group.Value;
 
                 foreach (var tile in terrains.m_terrainTiles)

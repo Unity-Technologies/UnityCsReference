@@ -60,7 +60,7 @@ namespace UnityEditor
             }
             catch (Exception e)
             {
-                Debug.LogError(string.Format("Error saving file {0}. Error: {1}", filePath, e.ToString()));
+                Debug.LogError(string.Format("Error saving file {0}. Error: {1}", filePath, e));
             }
 
             m_Cache[key] = obj;
@@ -85,7 +85,7 @@ namespace UnityEditor
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError(string.Format("Error loading file {0}. Error: {1}", filePath, e.ToString()));
+                    Debug.LogError(string.Format("Error loading file {0}. Error: {1}", filePath, e));
                     return default(T);
                 }
 
@@ -95,7 +95,7 @@ namespace UnityEditor
                 }
                 catch (ArgumentException exception)
                 {
-                    Debug.LogError(string.Format("Invalid file content for {0}. Removing file. Error: {1}", filePath, exception.ToString()));
+                    Debug.LogError(string.Format("Invalid file content for {0}. Removing file. Error: {1}", filePath, exception));
                     RemoveState(key);
                     return default(T);
                 }

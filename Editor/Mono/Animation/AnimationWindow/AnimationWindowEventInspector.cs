@@ -379,10 +379,7 @@ namespace UnityEditor
 
         private static bool IsSupportedMethodName(string name)
         {
-            if (name == "Main" || name == "Start" || name == "Awake" || name == "Update")
-                return false;
-
-            return true;
+            return name != "Main" && name != "Start" && name != "Awake" && name != "Update";
         }
 
         private static string FormatEventArguments(IEnumerable<Type> paramTypes, AnimationEvent evt)

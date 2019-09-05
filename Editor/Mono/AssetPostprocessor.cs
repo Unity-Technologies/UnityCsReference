@@ -77,7 +77,6 @@ namespace UnityEditor
         // Postprocess on all assets once an automatic import has completed
         static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets)
         {
-            bool profile = Profiler.enabled;
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {

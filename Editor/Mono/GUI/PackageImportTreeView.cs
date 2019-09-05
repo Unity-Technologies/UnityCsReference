@@ -25,7 +25,7 @@ namespace UnityEditor
             None = 0,
             All = 1,
             Mixed = 2
-        };
+        }
 
         private PackageImport m_PackageImport;
 

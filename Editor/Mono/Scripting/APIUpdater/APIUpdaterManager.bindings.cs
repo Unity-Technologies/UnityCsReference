@@ -38,7 +38,7 @@ namespace UnityEditorInternal.APIUpdating
         None,
         Offered,
         Accepted
-    };
+    }
 
     //*undocumented*
     [NativeHeader("Editor/Src/Scripting/APIUpdater/APIUpdaterManager.h")]
@@ -551,7 +551,7 @@ namespace UnityEditorInternal.APIUpdating
             var resolvedList = assetsAssemblies.Where(a => CompareIgnoreCase(AssemblyNameFromPath(a), assemblyName)).ToArray();
             var assemblyPathInAssetsFolder = resolvedList.OrderBy(path => path.Length).FirstOrDefault();
 
-            if (resolvedList.Count() > 1 && !resolvedList.All(a => a.IsUnityExtension()))
+            if (resolvedList.Length > 1 && !resolvedList.All(a => a.IsUnityExtension()))
             {
                 APIUpdaterLogger.WriteToFile("Warning : Multiple matches found for assembly name '{0}'. Shortest path one ({1}) choosen as the source of updates. Full list: {2}", assemblyName, assemblyPathInAssetsFolder, string.Join(Environment.NewLine, resolvedList));
             }

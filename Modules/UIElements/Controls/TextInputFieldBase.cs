@@ -50,7 +50,7 @@ namespace UnityEngine.UIElements
                 field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
-                if (maskCharacter != null && maskCharacter.Length > 0)
+                if (!string.IsNullOrEmpty(maskCharacter))
                 {
                     field.maskChar = maskCharacter[0];
                 }

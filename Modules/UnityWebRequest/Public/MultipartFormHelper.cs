@@ -41,7 +41,7 @@ namespace UnityEngine.Networking
 
         public MultipartFormDataSection(string name, string data, System.Text.Encoding encoding, string contentType)
         {
-            if (data == null || data.Length < 1)
+            if (string.IsNullOrEmpty(data))
             {
                 throw new ArgumentException("Cannot create a multipart form data section without body data");
             }
@@ -118,7 +118,7 @@ namespace UnityEngine.Networking
         // String upload functions, for convenience
         public MultipartFormFileSection(string name, string data, System.Text.Encoding dataEncoding, string fileName)
         {
-            if (data == null || data.Length < 1)
+            if (string.IsNullOrEmpty(data))
             {
                 throw new ArgumentException("Cannot create a multipart form file section without body data");
             }

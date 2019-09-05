@@ -33,14 +33,14 @@ namespace UnityEditor
             public FieldInfoFlags flags;
             public int fixedBufferLength;
             public string fixedBufferTypename;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct ClassInfo
         {
             public string name;
             public FieldInfo[] fields;
-        };
+        }
 
 
         private AssemblyDefinition assembly_;

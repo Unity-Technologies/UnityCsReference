@@ -47,7 +47,7 @@ namespace UnityEditor
                 m_NormalizedPartitionSize = normalizedPartitionSize;
                 m_LastCachedMousePosition = currentMousePos;
             }
-        };
+        }
         private static DragCache  s_DragCache;
 
         private static readonly int s_CascadeSliderId = "s_CascadeSliderId".GetHashCode();

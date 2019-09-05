@@ -51,7 +51,7 @@ namespace UnityEngine.XR.WSA
             PositionAndOrientation = 0,
             OrientationOnly = 1,
             Disabled = 2,
-        };
+        }
 
         public static HolographicReprojectionMode ReprojectionMode
         {

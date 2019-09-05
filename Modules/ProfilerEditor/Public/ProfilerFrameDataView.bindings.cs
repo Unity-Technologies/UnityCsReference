@@ -222,7 +222,7 @@ namespace UnityEditor.Profiling
             public string methodName;
             public string sourceFileName;
             public uint sourceFileLine;
-        };
+        }
         public extern MethodInfo ResolveMethodInfo(ulong addr);
 
         public extern string ResolveItemMergedSampleCallstack(int id, int sampleIndex);

@@ -42,7 +42,7 @@ namespace UnityEditor
 
             public static GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate materials with new settings.");
             public static GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials from the current importer settings.");
-        };
+        }
 
         private SerializedProperty m_LODSettings;
         private SerializedProperty m_EnableSmoothLOD;

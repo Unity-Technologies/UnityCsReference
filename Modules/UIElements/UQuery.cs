@@ -284,7 +284,7 @@ namespace UnityEngine.UIElements
 
                 return false;
             }
-        };
+        }
 
         public void ForEach(Action<T> funcCall)
         {

@@ -359,9 +359,11 @@ namespace UnityEditor
             }
         }
 
-        internal bool hasFocus { get { return m_Parent && m_Parent.actualView == this; } }
+        // Is EditorWindow focused?
+        public bool hasFocus { get { return m_Parent && m_Parent.actualView == this; } }
 
-        internal bool docked { get { return m_Parent != null && m_Parent.window != null && !m_Parent.window.IsNotDocked(); } }
+        // Is EditorWindow docked?
+        public bool docked { get { return m_Parent != null && m_Parent.window != null && !m_Parent.window.IsNotDocked(); } }
 
         // This property can be used to stop OS events from being sent to the EditorWindow
         internal bool disableInputEvents

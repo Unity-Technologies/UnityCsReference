@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Connect;
 
 namespace UnityEditor.PackageManager.UI.AssetStore
@@ -194,12 +195,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                                     var downloadRes = res["result"] as Dictionary<string, object>;
                                     var download = downloadRes["download"] as Dictionary<string, object>;
                                     downloadInfo.isValid = true;
-                                    downloadInfo.CategoryName = download["filename_safe_category_name"] as string;
-                                    downloadInfo.PackageName = download["filename_safe_package_name"] as string;
-                                    downloadInfo.PublisherName = download["filename_safe_publisher_name"] as string;
-                                    downloadInfo.PackageId = download["id"] as string;
-                                    downloadInfo.Key = download["key"] as string;
-                                    downloadInfo.Url = download["url"] as string;
+                                    downloadInfo.categoryName = download["filename_safe_category_name"] as string;
+                                    downloadInfo.packageName = download["filename_safe_package_name"] as string;
+                                    downloadInfo.publisherName = download["filename_safe_publisher_name"] as string;
+                                    downloadInfo.productId = download["id"] as string;
+                                    downloadInfo.key = download["key"] as string;
+                                    downloadInfo.url = download["url"] as string;
                                     doneCallbackAction?.Invoke(downloadInfo);
                                     return;
                                 }
@@ -219,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 });
             }
 
-            public void GetProductUpdateDetail(List<UnityEditor.PackageInfo> localPackages, Action<Dictionary<string, object>> doneCallbackAction)
+            public void GetProductUpdateDetail(IEnumerable<LocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction)
             {
                 AssetStoreOAuth.instance.FetchUserInfo(userInfo =>
                 {
@@ -231,7 +232,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    if (localPackages?.Count == 0)
+                    if (localInfos == null || !localInfos.Any())
                     {
                         doneCallbackAction?.Invoke(new Dictionary<string, object>());
                         return;
@@ -239,35 +240,14 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                     var packageList = new List<Dictionary<string, string>>();
 
-                    foreach (var product in localPackages)
+                    foreach (var info in localInfos)
                     {
                         var dictData = new Dictionary<string, string>();
 
-                        dictData["local_path"] = product.packagePath;
-
-                        try
-                        {
-                            var localPackageJson = Json.Deserialize(product.jsonInfo) as Dictionary<string, object>;
-                            if (localPackageJson == null)
-                            {
-                                var ret = new Dictionary<string, object>();
-                                ret["errorMessage"] = "Failed to parse JSON in local package";
-                                doneCallbackAction?.Invoke(ret);
-                                return;
-                            }
-
-                            dictData["id"] = localPackageJson["id"] as string;
-                            dictData["version"] = localPackageJson["version"] as string;
-                            dictData["version_id"] = localPackageJson["version_id"] as string;
-                        }
-                        catch (Exception e)
-                        {
-                            Dictionary<string, object> ret = new Dictionary<string, object>();
-                            ret["errorMessage"] = e.Message;
-                            doneCallbackAction?.Invoke(ret);
-                            return;
-                        }
-
+                        dictData["local_path"] = info?.packagePath ?? string.Empty;
+                        dictData["id"] = info?.id ?? string.Empty;
+                        dictData["version"] = info?.versionString ?? string.Empty;
+                        dictData["version_id"] = info?.versionId ?? string.Empty;
                         packageList.Add(dictData);
                     }
 

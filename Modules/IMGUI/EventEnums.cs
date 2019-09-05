@@ -55,6 +55,19 @@ namespace UnityEngine
         // Mouse left a window
         MouseLeaveWindow = 21,
 
+        // Direct manipulation device (finger, pen) touched the screen
+        TouchDown = 30,
+        // Direct manipulation device (finger, pen) left the screen
+        TouchUp = 31,
+        // Direct manipulation device (finger, pen) moved on the screen (drag)
+        TouchMove = 32,
+        // Direct manipulation device (finger, pen) moving into the window (drag)
+        TouchEnter = 33,
+        // Direct manipulation device (finger, pen) moved out of the window (drag)
+        TouchLeave = 34,
+        // Direct manipulation device (finger, pen) stationary event (long touch down)
+        TouchStationary = 35,
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use MouseDown instead (UnityUpgradable) -> MouseDown", true)]
         mouseDown = 0,

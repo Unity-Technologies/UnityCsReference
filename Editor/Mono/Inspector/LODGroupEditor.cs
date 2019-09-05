@@ -381,7 +381,7 @@ namespace UnityEditor
                         break;
 
                     // If we are over a valid range, make sure we have a game object...
-                    if (DragAndDrop.objectReferences.Count() > 0)
+                    if (DragAndDrop.objectReferences.Length > 0)
                     {
                         DragAndDrop.visualMode = m_IsPrefab ? DragAndDropVisualMode.None : DragAndDropVisualMode.Copy;
 
@@ -903,7 +903,7 @@ namespace UnityEditor
                         // Actually set LOD level now
                         m_SelectedLOD = lodLevel;
 
-                        if (DragAndDrop.objectReferences.Count() > 0)
+                        if (DragAndDrop.objectReferences.Length > 0)
                         {
                             DragAndDrop.visualMode = m_IsPrefab ? DragAndDropVisualMode.None : DragAndDropVisualMode.Copy;
 
@@ -939,7 +939,6 @@ namespace UnityEditor
                             }
                         }
                         evt.Use();
-                        break;
                     }
 
                     break;

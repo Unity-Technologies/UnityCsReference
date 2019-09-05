@@ -105,7 +105,7 @@ namespace UnityEditor
 
                 bool filenameMatch =    fileExtension.Equals(extension, StringComparison.OrdinalIgnoreCase) ||
                     fileName.Equals(extension, StringComparison.OrdinalIgnoreCase);
-                bool debugMatch =       debugExtension != null && debugExtension.Length != 0 &&
+                bool debugMatch =       !string.IsNullOrEmpty(debugExtension) &&
                     (fileExtension.Equals(debugExtension, StringComparison.OrdinalIgnoreCase) ||
                         fileName.Equals(debugExtension, StringComparison.OrdinalIgnoreCase));
 

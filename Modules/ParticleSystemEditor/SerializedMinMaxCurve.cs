@@ -14,7 +14,7 @@ namespace UnityEditor
         k_Curve = 1,
         k_TwoCurves = 2,
         k_TwoScalars = 3
-    };
+    }
 
     internal class SerializedMinMaxCurve
     {
@@ -216,7 +216,6 @@ namespace UnityEditor
             if (newState == state)
                 return;
 
-            MinMaxCurveState oldState = state;
             ParticleSystemCurveEditor sce = m_Module.GetParticleSystemCurveEditor();
 
             if (sce.IsAdded(GetMinCurve(), maxCurve))

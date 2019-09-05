@@ -32,7 +32,7 @@ namespace UnityEditorInternal.Profiling
                 viewTypeToolbarDropDown.fixedWidth = Chart.kSideWidth;
                 viewTypeToolbarDropDown.stretchWidth = false;
 
-                detailedViewTypeToolbarDropDown.fixedWidth = 130f;
+                detailedViewTypeToolbarDropDown.fixedWidth = 150f;
             }
         }
 

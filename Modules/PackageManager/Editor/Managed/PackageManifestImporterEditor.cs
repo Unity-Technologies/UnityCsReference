@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager
             DependsOnType,
             AlwaysHidden,
             AlwaysVisible
-        };
+        }
 
         private static readonly string s_LocalizedTitle = L10n.Tr("Package '{0}' Manifest");
         private static readonly string s_LocalizedMultipleTitle = L10n.Tr("{0} Package Manifests");

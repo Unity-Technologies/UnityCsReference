@@ -333,7 +333,7 @@ namespace UnityEditor.UIAutomation
                     eased = 4 * k - eased - 1;
                 return eased;
             }
-        };
+        }
     }
 
 

@@ -200,9 +200,9 @@ namespace UnityEditor
                 duration = duration.Substring(0, duration.Length - 4);
 
             string s = duration;
-            s += ", " + frameCount.ToString() + " frames";
+            s += ", " + frameCount + " frames";
             s += ", " + frameRate.ToString("F2", CultureInfo.InvariantCulture.NumberFormat) + " FPS";
-            s += ", " + clip.width.ToString() + "x" + clip.height.ToString();
+            s += ", " + clip.width + "x" + clip.height;
             return s;
         }
     }

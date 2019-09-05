@@ -23,7 +23,7 @@ namespace UnityEditor
             NotVisible = 0,
             VisibleAndFolded = 1,
             VisibleAndFoldedOut = 2
-        };
+        }
 
         public bool visibleUI
         {

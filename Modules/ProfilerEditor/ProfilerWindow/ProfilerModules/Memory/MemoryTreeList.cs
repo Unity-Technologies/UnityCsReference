@@ -382,7 +382,7 @@ namespace UnityEditor
 
             string displayName = memoryElement.name;
             if (memoryElement.ChildCount() > 0 && indent < 3)
-                displayName += " (" + memoryElement.AccumulatedChildCount().ToString() + ")";
+                displayName += " (" + memoryElement.AccumulatedChildCount() + ")";
 
             int currentColumn = 0;
             rect.xMax = m_Splitter.realSizes[currentColumn];

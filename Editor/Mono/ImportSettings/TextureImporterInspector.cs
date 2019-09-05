@@ -25,7 +25,7 @@ namespace UnityEditor
         Specular = 1,
         // Convolve for diffuse-only reflection (irradiance cubemap).
         Diffuse = 2
-    };
+    }
 
     // Kept for backward compatibility
     public enum TextureImporterRGBMMode
@@ -58,6 +58,7 @@ namespace UnityEditor
             CubeMapping = 1 << 9,
             StreamingMipmaps = 1 << 10,
             SingleChannelComponent = 1 << 11,
+            PngGamma = 1 << 12
         }
 
         private struct TextureInspectorTypeGUIProperties
@@ -355,6 +356,8 @@ namespace UnityEditor
             public readonly GUIContent psdRemoveMatteURLButton = EditorGUIUtility.TrTextContent("How to handle PSD with alpha");
             public readonly string psdRemoveMatteURL = "https://docs.unity3d.com/Manual/HOWTO-alphamaps.html";
 
+            public readonly GUIContent ignorePngGamma = EditorGUIUtility.TrTextContent("Ignore PNG file gamma", "Ignore the Gamma value attribute in PNG files, this setting has no effect on other file formats.");
+
             public Styles()
             {
                 // This is far from ideal, but it's better than having tons of logic in the GUI code itself.
@@ -435,6 +438,7 @@ namespace UnityEditor
         SerializedProperty m_SpriteGenerateFallbackPhysicsShape;
 
         SerializedProperty m_AlphaIsTransparency;
+        SerializedProperty m_IgnorePngGamma;
         SerializedProperty m_PSDRemoveMatte;
 
         SerializedProperty m_TextureShape;
@@ -497,6 +501,7 @@ namespace UnityEditor
             m_SpriteGenerateFallbackPhysicsShape = serializedObject.FindProperty("m_SpriteGenerateFallbackPhysicsShape");
 
             m_AlphaIsTransparency = serializedObject.FindProperty("m_AlphaIsTransparency");
+            m_IgnorePngGamma = serializedObject.FindProperty("m_IgnorePngGamma");
             m_PSDRemoveMatte = serializedObject.FindProperty("m_PSDRemoveMatte");
 
             m_TextureType = serializedObject.FindProperty("m_TextureType");
@@ -518,32 +523,32 @@ namespace UnityEditor
             // TODO: Maybe complement the bitfield with a list to add a concept of order in the display. Not sure if necessary...
             TextureImporterShape shapeCapsAll = TextureImporterShape.Texture2D | TextureImporterShape.TextureCube;
 
-            m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , shapeCapsAll);
-            m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Sprite,
-                TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
+                TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
                 TextureImporterShape.Texture2D);
-            m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                 TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
-            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.GUI]          = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                 TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Cursor]       = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                 TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Lightmap]     = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , TextureImporterShape.Texture2D);
 
@@ -553,6 +558,7 @@ namespace UnityEditor
             m_GUIElementMethods.Add(TextureInspectorGUIElement.StreamingMipmaps, this.StreamingMipmapsGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.ColorSpace, this.ColorSpaceGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.AlphaHandling, this.AlphaHandlingGUI);
+            m_GUIElementMethods.Add(TextureInspectorGUIElement.PngGamma, this.PngGammaGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.MipMaps, this.MipMapGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.NormalMap, this.BumpGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.Sprite, this.SpriteGUI);
@@ -567,6 +573,7 @@ namespace UnityEditor
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Cookie);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.ColorSpace);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.AlphaHandling);
+            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.PngGamma);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.SingleChannelComponent);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.NormalMap);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Sprite);
@@ -647,6 +654,7 @@ namespace UnityEditor
             m_Aniso.intValue = settings.aniso;
 
             m_AlphaIsTransparency.intValue = settings.alphaIsTransparency ? 1 : 0;
+            m_IgnorePngGamma.boolValue = settings.ignorePngGamma;
 
             m_TextureType.intValue = (int)settings.textureType;
             m_TextureShape.intValue = (int)settings.textureShape;
@@ -766,6 +774,9 @@ namespace UnityEditor
 
             if (!m_SingleChannelComponent.hasMultipleDifferentValues)
                 settings.singleChannelComponent = (TextureImporterSingleChannelComponent)m_SingleChannelComponent.intValue;
+
+            if (!m_IgnorePngGamma.hasMultipleDifferentValues)
+                settings.ignorePngGamma = m_IgnorePngGamma.boolValue;
 
             return settings;
         }
@@ -1055,6 +1066,11 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
         }
 
+        void PngGammaGUI(TextureInspectorGUIElement guiElements)
+        {
+            EditorGUILayout.PropertyField(m_IgnorePngGamma);
+        }
+
         void BumpGUI(TextureInspectorGUIElement guiElements)
         {
             EditorGUI.BeginChangeCheck();
@@ -1213,7 +1229,7 @@ namespace UnityEditor
                 showAdvanced = true;
                 int iteratedTextureType = (int)m_TextureTypes[0];
                 TextureInspectorGUIElement firstAdvancedElements = m_TextureTypeGUIElements[iteratedTextureType].advancedElements;
-                for (int selectionIndex = 1; selectionIndex < m_TextureTypes.Count(); selectionIndex++)
+                for (int selectionIndex = 1; selectionIndex < m_TextureTypes.Count; selectionIndex++)
                 {
                     iteratedTextureType = (int)m_TextureTypes[selectionIndex];
                     if (firstAdvancedElements != m_TextureTypeGUIElements[iteratedTextureType].advancedElements)

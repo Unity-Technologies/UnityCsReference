@@ -66,7 +66,7 @@ namespace UnityEditor
             ThresholdAndKnee,
             Ratio,
             MakeupGain,
-        };
+        }
 
         private static DragType dragtype = DragType.None;
 

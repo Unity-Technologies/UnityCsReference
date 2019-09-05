@@ -10,8 +10,8 @@ namespace UnityEditor
 {
     public class SearchableEditorWindow : EditorWindow
     {
-        public enum SearchMode { All, Name, Type, Label, AssetBundleName };
-        public enum SearchModeHierarchyWindow { All, Name, Type };
+        public enum SearchMode { All, Name, Type, Label, AssetBundleName }
+        public enum SearchModeHierarchyWindow { All, Name, Type }
 
         internal static SearchFilter CreateFilter(string searchString, SearchMode searchMode)
         {
@@ -145,8 +145,8 @@ namespace UnityEditor
         {
             string searchFilter;
 
-            // only main assets have unique paths (remove "Assets" to make string simpler)
-            string path = AssetDatabase.GetAssetPath(instanceID).Substring(7);
+            // Don't remove "Assets" prefix, we need to support Packages as well (https://fogbugz.unity3d.com/f/cases/1161019/)
+            string path = AssetDatabase.GetAssetPath(instanceID);
             if (path.IndexOf(' ') != -1)
                 path = '"' + path + '"';
 

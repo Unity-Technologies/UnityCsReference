@@ -247,10 +247,7 @@ namespace UnityEditor
                 return false;
 
             TerrainLayer t = (TerrainLayer)target;
-            if (t.diffuseTexture == null)
-                return false;
-
-            return true;
+            return t.diffuseTexture != null;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)

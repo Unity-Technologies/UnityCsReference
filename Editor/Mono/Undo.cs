@@ -10,7 +10,7 @@ namespace UnityEditor
 {
     public partial class Undo
     {
-        internal enum UndoRedoType { Undo, Redo };
+        internal enum UndoRedoType { Undo, Redo }
 
         [RequiredByNativeCode]
         static void OnSelectionUndo(bool redo)

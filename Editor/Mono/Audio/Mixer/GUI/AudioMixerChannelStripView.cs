@@ -366,7 +366,7 @@ namespace UnityEditor
         {
             public AudioMixerGroupController group;
             public float x, y;
-        };
+        }
 
         GUIContent bypassButtonContent = EditorGUIUtility.TrTextContent("", "Toggle bypass on this effect");
         void EffectSlot(Rect effectRect, AudioMixerSnapshotController snapshot, AudioMixerEffectController effect, int effectIndex, ref int highlightEffectIndex, ChannelStripParams p, ref Dictionary<AudioMixerEffectController, PatchSlot> patchslots)

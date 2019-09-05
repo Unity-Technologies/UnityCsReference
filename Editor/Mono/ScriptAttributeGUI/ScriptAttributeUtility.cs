@@ -116,6 +116,15 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// Builds the drawer cache and checks for the drawer cache for a statically
+        /// defined drawer for a given type.
+        /// NOTE: The world 'statically' in this context means that what is being
+        /// looked up is only what is in the cache, which might not play well with
+        /// Managed References types (where the dynamic type matters).
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
         internal static Type GetDrawerTypeForType(Type type)
         {
             if (s_DrawerTypeForType == null)
@@ -126,11 +135,52 @@ namespace UnityEditor
             if (drawerType.drawer != null)
                 return drawerType.drawer;
 
+            //
             // now check for base generic versions of the drawers...
             if (type.IsGenericType)
                 s_DrawerTypeForType.TryGetValue(type.GetGenericTypeDefinition(), out drawerType);
 
             return drawerType.drawer;
+        }
+
+        /// <summary>
+        /// Does the same thing as 'GetDrawerTypeForType' (with the same side effect of building the cache)
+        /// but also plays well with Managed References. If the property that is used as a reference for the drawer
+        /// query is of a managed reference type, the class parents are also looked up as fallbacks.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <param name="type"></param>
+        /// <returns>The custom property drawer type or 'null' if not found.</returns>
+        internal static Type GetDrawerTypeForPropertyAndType(SerializedProperty property, Type type)
+        {
+            // As a side effect this also builds the drawer cache dict
+            var staticDrawerType = GetDrawerTypeForType(type);
+            if (staticDrawerType != null)
+                return staticDrawerType;
+
+            // Special case for managed references.
+            // The custom property drawers for those are defined with 'useForChildren=false'
+            // (otherwise the dynamic type is not taking into account in the custom property
+            // drawer resolution) so even if 's_DrawerTypeForType' is built (based on static types)
+            // we have to check base types for custom property drawers manually.
+            // Managed references with no drawers should properly try to fallback
+            if (property.propertyType == SerializedPropertyType.ManagedReference)
+            {
+                DrawerKeySet drawerTypes;
+
+                FieldInfo foundField = null;
+                for (Type currentType = type; foundField == null && currentType != null; currentType = currentType.BaseType)
+                {
+                    s_DrawerTypeForType.TryGetValue(currentType, out drawerTypes);
+                    if (drawerTypes.drawer != null)
+                    {
+                        s_DrawerTypeForType.Add(type, drawerTypes);
+                        return drawerTypes.drawer;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static List<PropertyAttribute> GetFieldAttributes(FieldInfo field)
@@ -145,7 +195,14 @@ namespace UnityEditor
             return null;
         }
 
-        internal static FieldInfo GetFieldInfoFromProperty(SerializedProperty property, out Type type)
+        /// <summary>
+        /// Returns the field info and field type for the property. The types are based on the
+        /// static field definition.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        internal static FieldInfo GetFieldInfoAndStaticTypeFromProperty(SerializedProperty property, out Type type)
         {
             var classType = GetScriptTypeFromProperty(property);
             if (classType == null)
@@ -154,6 +211,60 @@ namespace UnityEditor
                 return null;
             }
             return GetFieldInfoFromPropertyPath(classType, property.propertyPath, out type);
+        }
+
+        /// <summary>
+        /// Returns the field info and type for the property. Contrary to GetFieldInfoAndStaticTypeFromProperty,
+        /// when confronted with a managed reference the dynamic instance type is returned.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        internal static FieldInfo GetFieldInfoFromProperty(SerializedProperty property, out Type type)
+        {
+            var fieldInfo = GetFieldInfoAndStaticTypeFromProperty(property, out type);
+            if (fieldInfo == null)
+                return fieldInfo;
+
+            // Managed references are a special case, we need to override the static type
+            // returned by 'GetFieldInfoFromPropertyPath' for custom property handler matching
+            // by the dynamic type of the instance.
+            if (property.propertyType == SerializedPropertyType.ManagedReference)
+            {
+                Type managedReferenceInstanceType;
+
+                // Try to get a Type instance for the managed reference
+                if (GetTypeFromManagedReferenceFullTypeName(property.managedReferenceFullTypename, out managedReferenceInstanceType))
+                {
+                    type = managedReferenceInstanceType;
+                }
+
+                // We keep the fallback to the field type returned by 'GetFieldInfoFromPropertyPath'.
+            }
+
+            return fieldInfo;
+        }
+
+        /// <summary>
+        /// Create a Type instance from the managed reference full type name description.
+        /// The expected format for the typename string is the one returned by SerializedProperty.managedReferenceFullTypename.
+        /// </summary>
+        /// <param name="managedReferenceFullTypename"></param>
+        /// <param name="managedReferenceInstanceType"></param>
+        /// <returns></returns>
+        internal static bool GetTypeFromManagedReferenceFullTypeName(string managedReferenceFullTypename, out Type managedReferenceInstanceType)
+        {
+            managedReferenceInstanceType = null;
+
+            var parts = managedReferenceFullTypename.Split(' ');
+            if (parts.Length == 2)
+            {
+                var assemblyPart = parts[0];
+                var nsClassnamePart = parts[1];
+                managedReferenceInstanceType = Type.GetType($"{nsClassnamePart}, {assemblyPart}");
+            }
+
+            return managedReferenceInstanceType != null;
         }
 
         private static Type GetScriptTypeFromProperty(SerializedProperty property)
@@ -305,12 +416,12 @@ namespace UnityEditor
             if (attributes != null)
             {
                 for (int i = attributes.Count - 1; i >= 0; i--)
-                    handler.HandleAttribute(attributes[i], field, propertyType);
+                    handler.HandleAttribute(property, attributes[i], field, propertyType);
             }
 
             // Field has no CustomPropertyDrawer attribute with matching drawer so look for default drawer for field type
             if (!handler.hasPropertyDrawer && propertyType != null)
-                handler.HandleDrawnType(propertyType, propertyType, field, null);
+                handler.HandleDrawnType(property, propertyType, propertyType, field, null);
 
             if (handler.empty)
             {

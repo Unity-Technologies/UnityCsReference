@@ -393,11 +393,16 @@ namespace UnityEditor
             {
                 float scrollWheelDelta = Event.current.delta.y * s_FPSScrollWheelMultiplier;
                 view.cameraSettings.speedNormalized -= scrollWheelDelta;
-
                 float cameraSettingsSpeed = view.cameraSettings.speed;
-                string cameraSpeedDisplayValue = cameraSettingsSpeed.ToString(cameraSettingsSpeed < 0.1f ? "F2" : cameraSettingsSpeed < 10f ? "F1" : "F0");
+                string cameraSpeedDisplayValue = cameraSettingsSpeed.ToString(
+                    cameraSettingsSpeed < 0.01f  ? "F3" :
+                    cameraSettingsSpeed < 0.1f  ? "F2" :
+                    cameraSettingsSpeed < 10f ? "F1" :
+                    "F0");
+
                 if (cameraSettingsSpeed < 0.1f)
                     cameraSpeedDisplayValue = cameraSpeedDisplayValue.TrimStart(new Char[] {'0'});
+
                 GUIContent cameraSpeedContent = EditorGUIUtility.TempContent(string.Format("{0}{1}",
                     cameraSpeedDisplayValue,
                     s_SceneView.cameraSettings.accelerationEnabled ? "x" : ""));
@@ -975,9 +980,7 @@ namespace UnityEditor
         {
             // If holding shift or clicking with middle mouse button, orthographic is enforced, otherwise not altered.
             // Note: This function can also be called from a context menu where Event.current is null.
-            bool ortho = view.orthographic;
-            if (Event.current != null && (Event.current.shift || Event.current.button == 2))
-                ortho = true;
+            bool ortho = view.orthographic || Event.current != null && (Event.current.shift || Event.current.button == 2);
 
             ViewAxisDirection(view, dir, ortho);
         }

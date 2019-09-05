@@ -4,17 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using Unity.CompilationPipeline.Common.Diagnostics;
-using Unity.CompilationPipeline.Common.ILPostProcessing;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
-using UnityEngine;
 using UnityEngine.Profiling;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
@@ -153,6 +151,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        Dictionary<object, Stopwatch> stopWatchDict = new Dictionary<object, Stopwatch>();
         bool areAllScriptsDirty;
         bool areAllPrecompiledAssembliesDirty;
         string projectDirectory = string.Empty;
@@ -188,6 +187,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public bool IsCodeGenAssemblyChanged { get; set; }
 
+        public ILPostProcessing ILPostProcessing = new ILPostProcessing();
+
         static EditorCompilation() {}
 
         public void Initialize()
@@ -195,6 +196,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Initialize maxConcurrentCompilers if it hasn't been set already.
             if (maxConcurrentCompilers == 0)
                 SetMaxConcurrentCompilers(UnityEngine.SystemInfo.processorCount);
+
+            ILPostProcessing.ILPostProcessors = ILPostProcessing.FindAllPostProcessors();
         }
 
         public void SetMaxConcurrentCompilers(int maxCompilers)
@@ -222,6 +225,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 .SelectMany(x => x.VersionMetaDatas ?? new AssetPathVersionMetaData[0])
                 .Distinct(assetPathVersionMetaDataComparer)
                 .ToDictionary(x => x.Name, x => x.Version);
+            UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathMetaDatas, forceUpdate: true);
         }
 
         internal AssetPathMetaData[] GetAssetPathsMetaData()
@@ -277,13 +281,60 @@ namespace UnityEditor.Scripting.ScriptCompilation
             areAllScriptsDirty = true;
         }
 
-        public void DirtyAllNonCodeGenAssemblies()
+        public class ILPostProcessCompiledTargetAssembly : ILPostProcessCompiledAssembly
         {
-            foreach (KeyValuePair<string, EditorBuildRules.TargetAssembly> customTargetAssembly in customTargetAssemblies)
+            public EditorBuildRules.TargetAssembly TargetAssembly { get; private set; }
+
+            public ILPostProcessCompiledTargetAssembly(EditorBuildRules.TargetAssembly targetAssembly, string outputPath)
+                : base(targetAssembly, outputPath)
             {
-                if (!UnityCodeGenHelpers.IsCodeGen(customTargetAssembly.Key))
+                TargetAssembly = targetAssembly;
+            }
+        }
+
+        public void DirtyAllNonCodeGenAssemblies(EditorScriptCompilationOptions additionalOptions)
+        {
+            var ilPostProcessors = ILPostProcessing.ILPostProcessors;
+
+            if (ilPostProcessors.Length == 0)
+            {
+                return;
+            }
+
+            var scriptAssemblySettings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | additionalOptions);
+
+            var allTargetAssemblies = new Dictionary<string, EditorBuildRules.TargetAssembly>(customTargetAssemblies);
+
+            foreach (var predefinedTargetAssembly in EditorBuildRules.GetPredefinedTargetAssemblies())
+            {
+                allTargetAssemblies.Add(predefinedTargetAssembly.Filename, predefinedTargetAssembly);
+            }
+
+            var ilCompiledAssemblies = new List<ILPostProcessCompiledTargetAssembly>(customScriptAssemblies.Length);
+
+            foreach (var entry in allTargetAssemblies)
+            {
+                var targetAssembly = entry.Value;
+
+                if (UnityCodeGenHelpers.IsCodeGen(targetAssembly.Filename))
+                    continue;
+
+                if (dirtyTargetAssemblies.Contains(targetAssembly))
+                    continue;
+
+                var compiledAssembly = new ILPostProcessCompiledTargetAssembly(targetAssembly, outputDirectory);
+                ilCompiledAssemblies.Add(compiledAssembly);
+            }
+
+            foreach (var ilCompiledAssembly in ilCompiledAssemblies)
+            {
+                foreach (var ilPostProcessor in ilPostProcessors)
                 {
-                    dirtyTargetAssemblies.Add(customTargetAssembly.Value);
+                    if (!ilPostProcessor.WillProcess(ilCompiledAssembly))
+                        continue;
+
+                    dirtyTargetAssemblies.Add(ilCompiledAssembly.TargetAssembly);
+                    break;
                 }
             }
         }
@@ -552,7 +603,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             while (removed);
 
             var count = customTargetAssemblyCompiledPaths.Count;
-            var targetAssemblies = new TargetAssemblyInfo[customTargetAssemblyCompiledPaths.Count];
+            var targetAssemblies = new TargetAssemblyInfo[count];
             int index = 0;
 
             foreach (var entry in customTargetAssemblyCompiledPaths)
@@ -711,7 +762,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             AssetPathMetaData[] assetPathsMetaData)
         {
             var asmrefLookup = customScriptAssemblyReferences.ToLookup(x => x.Reference);
-            var exceptions = new List<Exception>();
+
 
             // Add AdditionalPrefixes
             foreach (var assembly in customScriptAssemblies)
@@ -722,49 +773,60 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 assembly.AdditionalPrefixes = foundAsmRefs.Any() ? foundAsmRefs.Select(ar => ar.PathPrefix).ToArray() : null;
             }
 
-            // Add AssetPathMetaData
-            if (assetPathsMetaData != null)
-            {
-                var assetMetaDataPaths = new string[assetPathsMetaData.Length];
-                var lowerAssetMetaDataPaths = new string[assetPathsMetaData.Length];
+            var exceptions = UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathsMetaData);
+            return exceptions.ToArray();
+        }
 
-                for (int i = 0; i < assetPathsMetaData.Length; ++i)
+        static Exception[] UpdateCustomTargetAssembliesAssetPathsMetaData(CustomScriptAssembly[] customScriptAssemblies,
+            AssetPathMetaData[] assetPathsMetaData, bool forceUpdate = false)
+        {
+            if (assetPathsMetaData == null)
+            {
+                return new Exception[0];
+            }
+
+            var exceptions = new List<Exception>();
+            var assetMetaDataPaths = new string[assetPathsMetaData.Length];
+            var lowerAssetMetaDataPaths = new string[assetPathsMetaData.Length];
+
+            for (int i = 0; i < assetPathsMetaData.Length; ++i)
+            {
+                var assetPathMetaData = assetPathsMetaData[i];
+                assetMetaDataPaths[i] = AssetPath.ReplaceSeparators(assetPathMetaData.DirectoryPath + AssetPath.Separator);
+                lowerAssetMetaDataPaths[i] = Utility.FastToLower(assetMetaDataPaths[i]);
+            }
+
+            foreach (var assembly in customScriptAssemblies)
+            {
+                if (assembly.AssetPathMetaData != null && !forceUpdate)
                 {
-                    var assetPathMetaData = assetPathsMetaData[i];
-                    assetMetaDataPaths[i] = AssetPath.ReplaceSeparators(assetPathMetaData.DirectoryPath + AssetPath.Separator);
-                    lowerAssetMetaDataPaths[i] = Utility.FastToLower(assetMetaDataPaths[i]);
+                    continue;
                 }
 
-                foreach (var assembly in customScriptAssemblies)
+                try
                 {
-                    try
+                    for (int i = 0; i < assetMetaDataPaths.Length; ++i)
                     {
-                        if (assembly.AssetPathMetaData == null)
-                        {
-                            for (int i = 0; i < assetMetaDataPaths.Length; ++i)
-                            {
-                                var path = assetMetaDataPaths[i];
-                                var lowerPath = lowerAssetMetaDataPaths[i];
+                        var path = assetMetaDataPaths[i];
+                        var lowerPath = lowerAssetMetaDataPaths[i];
 
-                                if (Utility.FastStartsWith(assembly.PathPrefix, path, lowerPath))
-                                {
-                                    assembly.AssetPathMetaData = assetPathsMetaData[i];
-                                    break;
-                                }
-                            }
+                        if (Utility.FastStartsWith(assembly.PathPrefix, path, lowerPath))
+                        {
+                            assembly.AssetPathMetaData = assetPathsMetaData[i];
+                            break;
                         }
                     }
-                    catch (Exception e)
-                    {
-                        exceptions.Add(e);
-                    }
+                }
+                catch (Exception e)
+                {
+                    exceptions.Add(e);
                 }
             }
 
             return exceptions.ToArray();
         }
 
-        Exception[] UpdateCustomTargetAssemblies()
+        Exception[] UpdateCustomTargetAssemblies(bool forceUpdateAssetMetadata = false)
         {
             var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, customScriptAssemblyReferences, m_AssetPathsMetaData);
 
@@ -939,7 +1001,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             HashSet<string> predefinedAssemblyNames = null;
 
             // To check if a path prefix is already being used we use a Dictionary where the key is the prefix and the value is the file path.
-            var prefixToFilePathLookup = customScriptAssemblyReferences.ToDictionary(x => x.PathPrefix, x => new List<string>(){ x.FilePath }, StringComparer.OrdinalIgnoreCase);
+            var prefixToFilePathLookup = customScriptAssemblyReferences.ToDictionary(x => x.PathPrefix, x => new List<string>() { x.FilePath }, StringComparer.OrdinalIgnoreCase);
 
             ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
 
@@ -1386,8 +1448,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 RunUpdaterAssemblies = runScriptUpdaterAssemblies
             };
 
-            EditorBuildRules.ScriptAssembliesResult changedScriptAssemblies = EditorBuildRules.GenerateChangedScriptAssemblies(args);
-            ScriptAssembly[] scriptAssemblies = changedScriptAssemblies.ScriptAssemblies;
+            ScriptAssembly[] scriptAssemblies = EditorBuildRules.GenerateChangedScriptAssemblies(args);
 
             foreach (var customTargetAssembly in args.NoScriptsCustomTargetAssemblies)
             {
@@ -1424,7 +1485,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!scriptAssemblies.Any())
                 return CompileStatus.Idle;
 
-            bool compiling = CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.StopOnFirstError, CompileScriptAssembliesOptions.none, changedScriptAssemblies.PendingCodeGenAssembly);
+            bool compiling = CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.StopOnFirstError, CompileScriptAssembliesOptions.none);
 
             return compiling ? CompileStatus.CompilationStarted : CompileStatus.Idle;
         }
@@ -1440,16 +1501,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             DeleteUnusedAssemblies();
             var scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings, EditorBuildRules.TargetAssemblyType.Custom);
 
-            bool hasPreprocessor = false;
-            foreach (var scriptAssembly in scriptAssemblies)
-            {
-                if (UnityCodeGenHelpers.IsCodeGen(scriptAssembly.Filename))
-                {
-                    hasPreprocessor = true;
-                }
-            }
-
-            return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.None, CompileScriptAssembliesOptions.skipSetupChecks, hasPreprocessor);
+            return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.None, CompileScriptAssembliesOptions.skipSetupChecks);
         }
 
         internal bool CompileScriptAssemblies(ScriptAssembly[] scriptAssemblies,
@@ -1457,8 +1509,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string tempBuildDirectory,
             EditorScriptCompilationOptions options,
             CompilationTaskOptions compilationTaskOptions,
-            CompileScriptAssembliesOptions compileScriptAssembliesOptions,
-            bool pendingCodeGenAssembly = false)
+            CompileScriptAssembliesOptions compileScriptAssembliesOptions)
         {
             StopAllCompilation();
 
@@ -1482,21 +1533,53 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!Directory.Exists(tempBuildDirectory))
                 Directory.CreateDirectory(tempBuildDirectory);
 
-            var allTargetAssemblies = new Dictionary<string, EditorBuildRules.TargetAssembly>(customTargetAssemblies);
-            foreach (var predefinedTargetAssembly in EditorBuildRules.GetPredefinedTargetAssemblies())
+            // CodeGen/ILPostProcessor
+            var scriptCodegenAssemblies = UnityCodeGenHelpers.ToScriptCodeGenAssemblies(scriptAssemblies);
+            var pendingCodeGenAssembly = scriptCodegenAssemblies.CodeGenAssemblies.Any();
+
+            // Do compile codegen assemblies that were scheduled for compilation
+            // because one of it's references changed. Only compile them when
+            // their source files are modified or the compilation is forced.
+            if (pendingCodeGenAssembly)
             {
-                allTargetAssemblies.Add(predefinedTargetAssembly.Filename, predefinedTargetAssembly);
+                var newScriptAssemblies = new List<ScriptAssembly>(scriptCodegenAssemblies.ScriptAssemblies);
+
+                foreach (var codegenAssembly in scriptCodegenAssemblies.CodeGenAssemblies)
+                {
+                    if (codegenAssembly.DirtySource == DirtySource.DirtyReference)
+                        continue;
+
+                    newScriptAssemblies.Add(codegenAssembly);
+                }
+
+                pendingCodeGenAssembly = newScriptAssemblies.Count > scriptCodegenAssemblies.ScriptAssemblies.Count;
+                scriptAssemblies = newScriptAssemblies.ToArray();
             }
 
-            var findReferences = new FindReferences(allTargetAssemblies, scriptAssemblySettings);
-            var fullPathToTempOutputFolder = Path.GetFullPath(tempBuildDirectory);
-            ILPostProcessor[] ilPostProcessors = null;
+            // If we are not compiling any codegen assemblies and there are post processors,
+            // then run them after finishing compiling each assembly in
+            // MicrosoftCSharpCompilerWithPostProcessing.Poll()
+            if (!pendingCodeGenAssembly && ILPostProcessing.HasPostProcessors)
+            {
+                compilationTaskOptions |= CompilationTaskOptions.RunPostProcessors;
+            }
 
             // Compile to tempBuildDirectory
-            compilationTask = new CompilationTask(scriptAssemblies, tempBuildDirectory, "Editor Compilation", options, compilationTaskOptions, maxConcurrentCompilers);
+            compilationTask = new CompilationTask(scriptAssemblies,
+                tempBuildDirectory,
+                "Editor Compilation",
+                options,
+                compilationTaskOptions,
+                maxConcurrentCompilers,
+                ILPostProcessing.PostProcess);
 
             compilationTask.OnCompilationTaskStarted += (context) =>
             {
+                Console.WriteLine("- Starting script compilation");
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                stopWatchDict[context] = stopwatch;
+
                 InvokeCompilationStarted(context);
             };
 
@@ -1506,7 +1589,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     IsCodeGenAssemblyChanged = pendingCodeGenAssembly;
                 }
+
                 InvokeCompilationFinished(context);
+
+                var stopwatch = stopWatchDict[context];
+                var elapsed = stopwatch.Elapsed;
+                stopWatchDict.Remove(context);
+
+                Console.WriteLine($"- Finished script compilation in {elapsed.TotalSeconds:0.######} seconds");
             };
 
             compilationTask.OnBeforeCompilationStarted += (assembly, phase) =>
@@ -1516,9 +1606,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.OnCompilationStarted += (assembly, phase) =>
             {
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
                 var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
                 Console.WriteLine("- Starting compile {0}", assemblyOutputPath);
                 InvokeAssemblyCompilationStarted(assemblyOutputPath);
+                stopWatchDict[assemblyOutputPath] = stopwatch;
             };
 
             compilationTask.OnCompilationFinished += (assembly, messages) =>
@@ -1528,46 +1621,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
 
                 var hasCompileError = messages.Any(m => m.type == CompilerMessageType.Error);
-                if (!pendingCodeGenAssembly && !hasCompileError)
-                {
-                    if (ilPostProcessors == null)
-                    {
-                        ilPostProcessors = FindAllPostProcessors();
-                    }
 
-                    if (!UnityCodeGenHelpers.IsCodeGen(assembly.Filename))
-                    {
-                        try
-                        {
-                            List<DiagnosticMessage> diagnostics = RunILPostProcessors(ilPostProcessors, assembly, fullPathToTempOutputFolder, findReferences);
-                            foreach (var message in diagnostics)
-                            {
-                                if (message.DiagnosticType == DiagnosticType.Error)
-                                {
-                                    hasCompileError = true;
-                                }
-                                messages.Add(new CompilerMessage
-                                {
-                                    assemblyName = message.File,
-                                    message = message.MessageData,
-                                    type = message.DiagnosticType == DiagnosticType.Error ? CompilerMessageType.Error : CompilerMessageType.Warning,
-                                });
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            messages.Add(new CompilerMessage
-                            {
-                                assemblyName = assembly.Filename,
-                                message = $"Something went wrong while Post Processing the assembly ({assembly.Filename}) : {Environment.NewLine} {exception.Message} {Environment.NewLine}{exception.StackTrace}",
-                                type = CompilerMessageType.Error,
-                            });
-                            hasCompileError = true;
-                        }
-                    }
-                }
-
-                Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
                 changedAssemblies.Add(assembly.Filename);
 
                 if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
@@ -1591,73 +1645,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
+
+                Stopwatch stopwatch = null;
+
+                try
+                {
+                    stopwatch = stopWatchDict[assemblyOutputPath];
+                    var elapsed = stopwatch.Elapsed;
+                    Console.WriteLine($"- Finished compile {assemblyOutputPath} in {elapsed.TotalSeconds:0.######} seconds");
+                    stopWatchDict.Remove(assemblyOutputPath);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
+                }
             };
 
             compilationTask.Poll();
             return true;
-        }
-
-        static ILPostProcessor[] FindAllPostProcessors()
-        {
-            TypeCache.TypeCollection typesDerivedFrom = TypeCache.GetTypesDerivedFrom<ILPostProcessor>();
-            ILPostProcessor[] ilPostProcessors = new ILPostProcessor[typesDerivedFrom.Count];
-
-            for (int i = 0; i < typesDerivedFrom.Count; i++)
-            {
-                try
-                {
-                    ilPostProcessors[i] = (ILPostProcessor)Activator.CreateInstance(typesDerivedFrom[i]);
-                }
-                catch (Exception exception)
-                {
-                    Console.WriteLine($"Could not create ILPostProcessor ({typesDerivedFrom[i].FullName}):{Environment.NewLine}{exception.StackTrace}");
-                }
-            }
-
-            return ilPostProcessors;
-        }
-
-        static List<DiagnosticMessage> RunILPostProcessors(ILPostProcessor[] ilPostProcessors, ScriptAssembly assembly, string outputTempPath, FindReferences findReferences)
-        {
-            var assemblyPath = Path.Combine(outputTempPath, assembly.Filename);
-
-            var resultMessages = new List<DiagnosticMessage>();
-            if (!File.Exists(assemblyPath))
-            {
-                resultMessages.Add(new DiagnosticMessage
-                {
-                    File = assemblyPath,
-                    MessageData = $"Could not find {assemblyPath} for post processing",
-                    DiagnosticType = DiagnosticType.Error,
-                });
-            }
-
-            bool isILProcessed = false;
-            var ilPostProcessCompiledAssembly = new ILPostProcessCompiledAssembly(assembly, outputTempPath, findReferences);
-
-            InMemoryAssembly postProcessedInMemoryAssembly = null;
-            foreach (var ilPostProcessor in ilPostProcessors)
-            {
-                Console.WriteLine($"IL PostProcessor {ilPostProcessor.GetType().Name} processing: {assembly.Filename}");
-                var ilPostProcessResult = ilPostProcessor.Process(ilPostProcessCompiledAssembly);
-                postProcessedInMemoryAssembly = ilPostProcessResult?.InMemoryAssembly;
-                if (ilPostProcessResult?.InMemoryAssembly != null)
-                {
-                    isILProcessed = true;
-                    ilPostProcessCompiledAssembly.InMemoryAssembly = postProcessedInMemoryAssembly;
-                }
-
-                if (ilPostProcessResult?.Diagnostics != null)
-                {
-                    resultMessages.AddRange(ilPostProcessResult.Diagnostics);
-                }
-            }
-            if (isILProcessed)
-            {
-                ilPostProcessCompiledAssembly.WriteAssembly();
-            }
-
-            return resultMessages;
         }
 
         static void RunScriptUpdater(
@@ -1824,7 +1829,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // then compilation will trigger on next TickCompilationPipeline.
             return DoesProjectFolderHaveAnyDirtyScripts() ||
                 ArePrecompiledAssembliesDirty() ||
-                runScriptUpdaterAssemblies.Count() > 0 ||
+                runScriptUpdaterAssemblies.Count > 0 ||
                 recompileAllScriptsOnNextTick;
         }
 
@@ -1927,7 +1932,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             EditorBuildRules.TargetAssembly[] predefindTargetAssemblies = EditorBuildRules.GetPredefinedTargetAssemblies();
 
-            TargetAssemblyInfo[] targetAssemblyInfo = new TargetAssemblyInfo[predefindTargetAssemblies.Length + (customTargetAssemblies != null ? customTargetAssemblies.Count() : 0)];
+            TargetAssemblyInfo[] targetAssemblyInfo = new TargetAssemblyInfo[predefindTargetAssemblies.Length + (customTargetAssemblies != null ? customTargetAssemblies.Count : 0)];
 
             for (int i = 0; i < predefindTargetAssemblies.Length; ++i)
                 targetAssemblyInfo[i] = ToTargetAssemblyInfo(predefindTargetAssemblies[i]);
@@ -2116,34 +2121,38 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             for (int i = 0; i < targetAssemblyVersionDefines.Count; i++)
             {
-                if (!assetPathVersionMetaDatas.ContainsKey(targetAssemblyVersionDefines[i].name))
+                var targetAssemblyVersionDefine = targetAssemblyVersionDefines[i];
+                if (!assetPathVersionMetaDatas.ContainsKey(targetAssemblyVersionDefine.name))
                 {
                     continue;
                 }
 
-                if (string.IsNullOrEmpty(targetAssemblyVersionDefines[i].expression))
+                if (string.IsNullOrEmpty(targetAssemblyVersionDefine.expression))
                 {
-                    var define = targetAssemblyVersionDefines[i].define;
+                    var define = targetAssemblyVersionDefine.define;
                     if (!string.IsNullOrEmpty(define))
                     {
                         defines[populatedVersionDefinesCount] = define;
-                        populatedVersionDefinesCount++;
+                        ++populatedVersionDefinesCount;
                     }
                     continue;
                 }
 
-                var versionDefineExpression = semVersionRangesFactory.GetExpression(targetAssemblyVersionDefines[i].expression);
-                var assetPathVersionMetaData = assetPathVersionMetaDatas[targetAssemblyVersionDefines[i].name];
-                var semVersion = SemVersionParser.Parse(assetPathVersionMetaData);
-
-                if (versionDefineExpression.IsValid(semVersion))
+                try
                 {
-                    var define = targetAssemblyVersionDefines[i].define;
-                    if (!string.IsNullOrEmpty(define))
+                    var versionDefineExpression = semVersionRangesFactory.GetExpression(targetAssemblyVersionDefine.expression);
+                    var assetPathVersionMetaData = assetPathVersionMetaDatas[targetAssemblyVersionDefine.name];
+                    var semVersion = SemVersionParser.Parse(assetPathVersionMetaData);
+                    if (versionDefineExpression.IsValid(semVersion))
                     {
-                        defines[populatedVersionDefinesCount] = define;
-                        populatedVersionDefinesCount++;
+                        defines[populatedVersionDefinesCount] = targetAssemblyVersionDefine.define;
+                        ++populatedVersionDefinesCount;
                     }
+                }
+                catch (Exception e)
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(EditorCompilationInterface.Instance.FindCustomTargetAssemblyFromTargetAssembly(targetAssembly).FilePath);
+                    UnityEngine.Debug.LogException(e, asset);
                 }
             }
 

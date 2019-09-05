@@ -50,7 +50,7 @@ namespace UnityEditor
             None = 0,
             All = 1,
             Mixed = 2
-        };
+        }
 
         const float kWindowWidth = 270;
         const float scrollBarWidth = 14;
@@ -78,7 +78,6 @@ namespace UnityEditor
         readonly string textGizmoVisible = L10n.Tr("Show/Hide Gizmo");
         GUIContent iconToggleContent = EditorGUIUtility.TrTextContent("", "Show/Hide Icon");
         GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
-
         GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
         GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
         GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
@@ -257,8 +256,8 @@ namespace UnityEditor
                 if (s_Debug)
                     debuginfo += "   same as below: icon " + a[i].iconEnabled + " gizmo " + a[i].gizmoEnabled + "\n";
 
-                bool ge = (a[i].gizmoEnabled == 1) ? true : false;
-                bool ie = (a[i].iconEnabled == 1) ? true : false;
+                bool ge = (a[i].gizmoEnabled == 1);
+                bool ie = (a[i].iconEnabled == 1);
                 AInfo anno = new AInfo(ge, ie, a[i].flags, a[i].classID, a[i].scriptClass);
 
                 if (anno.m_ScriptClass == "")
@@ -601,21 +600,24 @@ namespace UnityEditor
                 GUI.DrawTexture(div, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill);
                 GUI.color = Color.white;
 
-                Rect arrowRect = iconRect;
-                arrowRect.x += 18;
-                arrowRect.y += 0;
-                arrowRect.width = 9;
-
-                if (GUI.Button(arrowRect, iconSelectContent, m_Styles.iconDropDown))
+                if (!ainfo.IsDisabled())
                 {
-                    Object script = EditorGUIUtility.GetScript(ainfo.m_ScriptClass);
-                    if (script != null)
+                    Rect arrowRect = iconRect;
+                    arrowRect.x += 18;
+                    arrowRect.y += 0;
+                    arrowRect.width = 9;
+
+                    if (GUI.Button(arrowRect, iconSelectContent, m_Styles.iconDropDown))
                     {
-                        m_LastScriptThatHasShownTheIconSelector = ainfo.m_ScriptClass;
-                        if (IconSelector.ShowAtPosition(script, arrowRect, true))
+                        Object script = EditorGUIUtility.GetScript(ainfo.m_ScriptClass);
+                        if (script != null)
                         {
-                            IconSelector.SetMonoScriptIconChangedCallback(MonoScriptIconChanged);
-                            GUIUtility.ExitGUI();
+                            m_LastScriptThatHasShownTheIconSelector = ainfo.m_ScriptClass;
+                            if (IconSelector.ShowAtPosition(script, arrowRect, true))
+                            {
+                                IconSelector.SetMonoScriptIconChangedCallback(MonoScriptIconChanged);
+                                GUIUtility.ExitGUI();
+                            }
                         }
                     }
                 }
@@ -688,7 +690,7 @@ namespace UnityEditor
     internal class AInfo : System.IComparable, System.IEquatable<AInfo>
     {
         // Similar values as in Annotation (in AnnotationManager.h)
-        public enum Flags { kHasIcon = 1, kHasGizmo = 2 };
+        public enum Flags { kHasIcon = 1, kHasGizmo = 2, kIsDisabled = 4 }
 
         public AInfo(bool gizmoEnabled, bool iconEnabled, int flags, int classID, string scriptClass)
         {
@@ -718,6 +720,11 @@ namespace UnityEditor
         public bool HasIcon()
         {
             return (m_Flags & (int)Flags.kHasIcon) > 0;
+        }
+
+        public bool IsDisabled()
+        {
+            return (m_Flags & (int)Flags.kIsDisabled) > 0;
         }
 
         public int CompareTo(object obj)

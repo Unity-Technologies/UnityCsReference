@@ -17,12 +17,14 @@ namespace UnityEditor.UIElements
         public new class UxmlTraits : BaseField<Object>.UxmlTraits
         {
             UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allow-scene-objects", defaultValue = true };
+            UxmlTypeAttributeDescription<Object> m_ObjectType = new UxmlTypeAttributeDescription<Object> { name = "type" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
 
                 ((ObjectField)ve).allowSceneObjects = m_AllowSceneObjects.GetValueFromBag(bag, cc);
+                ((ObjectField)ve).objectType = m_ObjectType.GetValueFromBag(bag, cc);
             }
         }
 

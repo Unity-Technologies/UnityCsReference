@@ -760,6 +760,19 @@ namespace UnityEditor
                 var actionName = "Apply Added Component";
                 if (action == InteractionMode.UserAction)
                 {
+                    string dependentComponents = string.Join(
+                        ", ",
+                        GetAddedComponentDependencies(component, OverrideOperation.Apply).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                    if (!string.IsNullOrEmpty(dependentComponents))
+                    {
+                        string error = String.Format(
+                            L10n.Tr("Can't apply added component {0} because it depends on {1}."),
+                            ObjectNames.GetInspectorTitle(component),
+                            dependentComponents);
+                        EditorUtility.DisplayDialog(L10n.Tr("Can't apply added component"), error, L10n.Tr("OK"));
+                        return;
+                    }
+
                     Undo.RegisterFullObjectHierarchyUndo(prefabSourceGameObject, actionName);
                     Undo.RegisterFullObjectHierarchyUndo(component, actionName);
                 }
@@ -807,11 +820,11 @@ namespace UnityEditor
             {
                 string dependentComponents = string.Join(
                     ", ",
-                    GetDependentComponents(component).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                    GetAddedComponentDependencies(component, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
                     string error = String.Format(
-                        L10n.Tr("Can't revert added component {0} because {1} depends on it"),
+                        L10n.Tr("Can't revert added component {0} because {1} depends on it."),
                         ObjectNames.GetInspectorTitle(component),
                         dependentComponents);
                     EditorUtility.DisplayDialog(L10n.Tr("Can't revert added component"), error, L10n.Tr("OK"));
@@ -866,6 +879,19 @@ namespace UnityEditor
 
             if (action == InteractionMode.UserAction)
             {
+                string dependentComponents = string.Join(
+                    ", ",
+                    GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Apply).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                if (!string.IsNullOrEmpty(dependentComponents))
+                {
+                    string error = String.Format(
+                        L10n.Tr("Can't apply removed component {0} because {1} component in the Prefab Asset depends on it."),
+                        ObjectNames.GetInspectorTitle(assetComponent),
+                        dependentComponents);
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't apply removed component"), error, L10n.Tr("OK"));
+                    return;
+                }
+
                 Undo.DestroyObjectUndoable(assetComponent, actionName);
                 // Undo.DestroyObjectUndoable saves prefab asset internally.
             }
@@ -920,7 +946,22 @@ namespace UnityEditor
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
             if (action == InteractionMode.UserAction)
+            {
+                string dependentComponents = string.Join(
+                    ", ",
+                    GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                if (!string.IsNullOrEmpty(dependentComponents))
+                {
+                    string error = String.Format(
+                        L10n.Tr("Can't revert removed component {0} because it depends on {1}."),
+                        ObjectNames.GetInspectorTitle(assetComponent),
+                        dependentComponents);
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert removed component"), error, L10n.Tr("OK"));
+                    return;
+                }
+
                 Undo.RegisterCompleteObjectUndo(instanceGameObject, actionName);
+            }
 
             RemoveRemovedComponentOverride(prefabInstanceObject, assetComponent);
 
@@ -1654,6 +1695,9 @@ namespace UnityEditor
                 gameObjectOrComponent = (GameObject)comp.gameObject;
             }
 
+            if (!(gameObjectOrComponent is GameObject))
+                return false;
+
             GameObject go;
             go = (GameObject)gameObjectOrComponent;
             TransformVisitor transformVisitor = new TransformVisitor();
@@ -1863,27 +1907,263 @@ namespace UnityEditor
             return applyTargets;
         }
 
-        static List<Component> GetDependentComponents(Component component)
+        internal enum OverrideOperation
+        {
+            Apply,
+            Revert
+        }
+
+        // Applying/reverting multiple overrides at once is surprisingly tricky because
+        // we have to handle components with dependencies on other components in just the right order.
+        internal static bool ProcessMultipleOverrides(GameObject prefabInstanceRoot, List<PrefabOverride> overrides, PrefabUtility.OverrideOperation operation, InteractionMode mode)
+        {
+            Dictionary<PrefabOverride, List<Component>> overrideDependencies =
+                new Dictionary<PrefabOverride, List<Component>>();
+            List<PrefabOverride> acceptedOverrides = new List<PrefabOverride>();
+            List<PrefabOverride> acceptedRemovedComponentOverrides = new List<PrefabOverride>();
+            List<PrefabOverride> remainingOverrides = new List<PrefabOverride>();
+            HashSet<Object> acceptedOverrideObjects = new HashSet<Object>();
+
+            // Iterate over overrides. Immediately accept any overrides with no dependencies.
+            // Otherwise save dependencies in dictionary for quick lookup.
+            for (int i = 0; i < overrides.Count; i++)
+            {
+                PrefabOverride singleOverride = overrides[i];
+                if (singleOverride == null)
+                    continue;
+                bool hasDependencies = false;
+
+                RemovedComponent removedComponent = singleOverride as RemovedComponent;
+                if (removedComponent != null)
+                {
+                    var deps = PrefabUtility.GetRemovedComponentDependencies(
+                        removedComponent.assetComponent,
+                        removedComponent.containingInstanceGameObject,
+                        operation);
+                    if (deps.Count > 0)
+                    {
+                        overrideDependencies[singleOverride] = deps;
+                        hasDependencies = true;
+                    }
+                }
+
+                AddedComponent addedComponent = singleOverride as AddedComponent;
+                if (addedComponent != null)
+                {
+                    var deps = PrefabUtility.GetAddedComponentDependencies(
+                        addedComponent.instanceComponent,
+                        operation);
+                    if (deps.Count > 0)
+                    {
+                        overrideDependencies[singleOverride] = deps;
+                        hasDependencies = true;
+                    }
+                }
+
+                if (hasDependencies)
+                {
+                    remainingOverrides.Add(singleOverride);
+                }
+                else
+                {
+                    if (singleOverride is RemovedComponent)
+                        acceptedRemovedComponentOverrides.Add(singleOverride);
+                    else
+                        acceptedOverrides.Add(singleOverride);
+                    acceptedOverrideObjects.Add(singleOverride.GetObject());
+                }
+            }
+
+            // Iteratively accept overrides whose dependencies are all in the accepted overrides.
+            // Theoretically this algorithm is worst case n*n.
+            // However, long dependency chains are uncommon, so in practise it's much closer to just n.
+            while (true)
+            {
+                bool didAcceptNewOverrides = false;
+
+                for (int i = remainingOverrides.Count - 1; i >= 0; i--)
+                {
+                    var o = remainingOverrides[i];
+                    var dependencies = overrideDependencies[o];
+                    bool allDependenciesSatisfied = true;
+                    for (int j = 0; j < dependencies.Count; j++)
+                    {
+                        if (!acceptedOverrideObjects.Contains(dependencies[j]))
+                        {
+                            allDependenciesSatisfied = false;
+                            break;
+                        }
+                    }
+                    if (allDependenciesSatisfied)
+                    {
+                        if (o is RemovedComponent)
+                            acceptedRemovedComponentOverrides.Add(o);
+                        else
+                            acceptedOverrides.Add(o);
+                        acceptedOverrideObjects.Add(o.GetObject());
+                        remainingOverrides.RemoveAt(i);
+                        didAcceptNewOverrides = true;
+                    }
+                }
+
+                if (!didAcceptNewOverrides)
+                    break;
+            }
+
+            if (remainingOverrides.Count > 0)
+            {
+                string dependenciesString = "";
+                foreach (var singleOverride in remainingOverrides)
+                {
+                    var dependencies = overrideDependencies[singleOverride];
+                    foreach (var dep in dependencies)
+                    {
+                        // The dependency direction is different for apply versus revert AND for added versus removed components.
+                        bool dependsOnOther = (singleOverride is AddedComponent) ^ (operation == PrefabUtility.OverrideOperation.Revert);
+                        dependenciesString += "\n" + string.Format(
+                            dependsOnOther ? L10n.Tr("{0} depends on {1}") : L10n.Tr("{0} is depended on by {1}"),
+                            ObjectNames.GetInspectorTitle(singleOverride.GetObject()),
+                            ObjectNames.GetInspectorTitle(dep));
+                    }
+                }
+
+                string error = null;
+                string dialogTitle = null;
+                if (operation == PrefabUtility.OverrideOperation.Apply)
+                {
+                    dialogTitle = L10n.Tr("Can't apply selected overrides");
+                    error = L10n.Tr("Can't apply selected overrides due to dependencies with non-selected overrides:") + dependenciesString;
+                }
+                else
+                {
+                    dialogTitle = L10n.Tr("Can't revert selected overrides");
+                    error = L10n.Tr("Can't revert selected overrides due to dependencies with non-selected overrides.") + dependenciesString;
+                }
+
+                if (mode == InteractionMode.UserAction)
+                {
+                    EditorUtility.DisplayDialog(dialogTitle, error, L10n.Tr("OK"));
+                }
+                else
+                {
+                    throw new ArgumentException(error);
+                }
+
+                return false;
+            }
+
+            if (operation == PrefabUtility.OverrideOperation.Apply)
+            {
+                if (mode == InteractionMode.UserAction)
+                {
+                    // Make sure asset is checked out in version control.
+                    string prefabAssetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(prefabInstanceRoot);
+                    if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(prefabAssetPath, PrefabUtility.SaveVerb.Apply))
+                        return false;
+                }
+
+                // Apply overrides *in the order* they were added, but all removed components first, so removed
+                // and added component of same type can't cause GameObject to temporarily have two at once.
+                for (int i = 0; i < acceptedRemovedComponentOverrides.Count; i++)
+                    acceptedRemovedComponentOverrides[i].Apply(mode);
+                for (int i = 0; i < acceptedOverrides.Count; i++)
+                    acceptedOverrides[i].Apply(mode);
+            }
+            else
+            {
+                // Revert overrides *in the order* they were added, but all removed components last, so removed
+                // and added component of same type can't cause GameObject to temporarily have two at once.
+                for (int i = 0; i < acceptedOverrides.Count; i++)
+                    acceptedOverrides[i].Revert(mode);
+                for (int i = 0; i < acceptedRemovedComponentOverrides.Count; i++)
+                    acceptedRemovedComponentOverrides[i].Revert(mode);
+            }
+
+            return true;
+        }
+
+        internal static List<Component> GetAddedComponentDependencies(Component component, OverrideOperation op)
+        {
+            GameObject instanceGameObject = component.gameObject;
+            List<Component> addedComponentsOnGO =
+                GetAddedComponents(instanceGameObject)
+                    .Select(e => e.instanceComponent)
+                    .Where(e => e.gameObject == instanceGameObject)
+                    .ToList();
+            if (op == OverrideOperation.Apply)
+                // We can't apply an added component if it depends on a different added component.
+                // This would violate a dependency in the asset.
+                return GetComponentsWhichThisDependsOn(component, addedComponentsOnGO);
+            else
+                // We can't revert an added component if another added component depends on it.
+                // This would violate a dependency in the instance.
+                return GetComponentsWhichDependOnThis(component, addedComponentsOnGO);
+        }
+
+        internal static List<Component> GetRemovedComponentDependencies(Component assetComponent, GameObject instanceGameObject, OverrideOperation op)
+        {
+            GameObject assetGameObject = assetComponent.gameObject;
+            List<Component> removedComponentsOnAssetGO =
+                GetRemovedComponents(instanceGameObject)
+                    .Select(e => e.assetComponent)
+                    .Where(e => e.gameObject == assetGameObject)
+                    .ToList();
+            if (op == OverrideOperation.Apply)
+                // We can't apply a removed component if another removed component depends on it.
+                // This would violate a dependency in the asset.
+                return GetComponentsWhichDependOnThis(assetComponent, removedComponentsOnAssetGO);
+            else
+                // We can't revert a removed component if it depends on another removed component.
+                // This would violate a dependency in the instance.
+                return GetComponentsWhichThisDependsOn(assetComponent, removedComponentsOnAssetGO);
+        }
+
+        static List<Component> GetComponentsWhichDependOnThis(Component component, List<Component> componentsToConsider)
         {
             List<Component> dependencies = new List<Component>();
             var componentType = component.GetType();
 
-            // Iterate all components on *this* GameObject.
-            // We don't care about other components on the Prefab instance.
-            var allComponents = component.gameObject.GetComponents<Component>();
-            for (int i = 0; i < allComponents.Length; i++)
+            // Iterate all components.
+            for (int i = 0; i < componentsToConsider.Count; i++)
             {
-                var comp = allComponents[i];
+                var comp = componentsToConsider[i];
 
-                // Ignore components that are not added.
-                if (GetCorrespondingObjectFromSource(comp) != null)
-                    continue;
-
-                // Ignore component itself the user is reverting.
+                // Ignore component itself.
                 if (comp == component)
                     continue;
 
                 var requiredComps = comp.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
+                foreach (RequireComponent reqComp in requiredComps)
+                {
+                    if (reqComp.m_Type0 == componentType || reqComp.m_Type1 == componentType || reqComp.m_Type2 == componentType)
+                    {
+                        // We might get the same component type requirement from multiple sources.
+                        // Make sure we don't add the same component more than once.
+                        if (!dependencies.Contains(comp))
+                            dependencies.Add(comp);
+                    }
+                }
+            }
+            return dependencies;
+        }
+
+        static List<Component> GetComponentsWhichThisDependsOn(Component component, List<Component> componentsToConsider)
+        {
+            var requiredComps = component.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
+            List<Component> dependencies = new List<Component>();
+            if (requiredComps.Count() == 0)
+                return dependencies;
+
+            // Iterate all components.
+            for (int i = 0; i < componentsToConsider.Count; i++)
+            {
+                var comp = componentsToConsider[i];
+
+                // Ignore component itself.
+                if (comp == component)
+                    continue;
+
+                var componentType = comp.GetType();
                 foreach (RequireComponent reqComp in requiredComps)
                 {
                     if (reqComp.m_Type0 == componentType || reqComp.m_Type1 == componentType || reqComp.m_Type2 == componentType)

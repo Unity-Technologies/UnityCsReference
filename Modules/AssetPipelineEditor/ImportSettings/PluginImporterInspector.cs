@@ -478,7 +478,7 @@ namespace UnityEditor
                     case DllType.WinMDNET40: info = "Managed WinMD"; break;
                     case DllType.WinMDNative: info = "Native WinMD"; break;
                     default:
-                        throw new Exception("Unknown managed dll type: " + importer.dllType.ToString());
+                        throw new Exception("Unknown managed dll type: " + importer.dllType);
                 }
 
                 m_PluginInformation["Assembly Info"] = info;
@@ -585,7 +585,7 @@ namespace UnityEditor
                 case Compatibility.Compatible: return Compatibility.NotCompatible;
                 case Compatibility.NotCompatible: return Compatibility.Compatible;
                 default:
-                    throw new InvalidEnumArgumentException("Invalid value: " + value.ToString());
+                    throw new InvalidEnumArgumentException("Invalid value: " + value);
             }
         }
 

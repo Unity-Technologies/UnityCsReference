@@ -65,7 +65,7 @@ namespace UnityEngine.Networking
         Acks64 = 2,
         Acks96 = 3,
         Acks128 = 4
-    };
+    }
 
     [Serializable]
     [Obsolete("The UNET transport will be removed in the future as soon a replacement is ready.")]
@@ -244,9 +244,9 @@ namespace UnityEngine.Networking
         public static void Validate(ConnectionConfig config)
         {
             if (config.m_PacketSize < g_MinPacketSize) //rough estimation of largest header, as it is defined in c++; we do not have access to it
-                throw new ArgumentOutOfRangeException("PacketSize should be > " + g_MinPacketSize.ToString());
+                throw new ArgumentOutOfRangeException("PacketSize should be > " + g_MinPacketSize);
             if (config.m_FragmentSize >= config.m_PacketSize - g_MinPacketSize)
-                throw new ArgumentOutOfRangeException("FragmentSize should be < PacketSize - " + g_MinPacketSize.ToString());
+                throw new ArgumentOutOfRangeException("FragmentSize should be < PacketSize - " + g_MinPacketSize);
             if (config.m_Channels.Count > 255)
                 throw new ArgumentOutOfRangeException("Channels number should be less than 256");
         }
@@ -685,7 +685,7 @@ namespace UnityEngine.Networking
                 if (value == 0)
                     throw new ArgumentOutOfRangeException("MaxHosts", "Maximum hosts number should be > 0");
                 if (value > g_MaxHosts)
-                    throw new ArgumentOutOfRangeException("MaxHosts", "Maximum hosts number should be <= " + g_MaxHosts.ToString());
+                    throw new ArgumentOutOfRangeException("MaxHosts", "Maximum hosts number should be <= " + g_MaxHosts);
                 m_MaxHosts = value;
             }
         }
@@ -715,7 +715,7 @@ namespace UnityEngine.Networking
                 if (value == 0)
                     throw new ArgumentOutOfRangeException("MaxTimerTimeout should be > 0");
                 if (value > g_MaxTimerTimeout)
-                    throw new ArgumentOutOfRangeException("MaxTimerTimeout should be <=" + g_MaxTimerTimeout.ToString());
+                    throw new ArgumentOutOfRangeException("MaxTimerTimeout should be <=" + g_MaxTimerTimeout);
                 m_MaxTimerTimeout = value;
             }
         }
@@ -740,7 +740,7 @@ namespace UnityEngine.Networking
                 if (value == 0)
                     throw new ArgumentOutOfRangeException("MaxNetSimulatorTimeout should be > 0");
                 if (value > g_MaxNetSimulatorTimeout)
-                    throw new ArgumentOutOfRangeException("MaxNetSimulatorTimeout should be <=" + g_MaxNetSimulatorTimeout.ToString());
+                    throw new ArgumentOutOfRangeException("MaxNetSimulatorTimeout should be <=" + g_MaxNetSimulatorTimeout);
                 m_MaxNetSimulatorTimeout = value;
             }
         }

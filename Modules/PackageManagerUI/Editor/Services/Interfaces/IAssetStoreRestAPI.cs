@@ -9,12 +9,12 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class DownloadInformation
     {
-        public string CategoryName;
-        public string PackageName;
-        public string PublisherName;
-        public string PackageId;
-        public string Key;
-        public string Url;
+        public string categoryName;
+        public string packageName;
+        public string publisherName;
+        public string productId;
+        public string key;
+        public string url;
         public bool isValid;
         public string errorMessage;
     }
@@ -38,6 +38,6 @@ namespace UnityEditor.PackageManager.UI
 
         void GetDownloadDetail(long productID, Action<DownloadInformation> doneCallbackAction);
 
-        void GetProductUpdateDetail(List<UnityEditor.PackageInfo> localPackages, Action<Dictionary<string, object>> doneCallbackAction);
+        void GetProductUpdateDetail(IEnumerable<AssetStore.LocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction);
     }
 }

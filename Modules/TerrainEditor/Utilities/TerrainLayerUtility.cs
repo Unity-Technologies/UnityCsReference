@@ -16,7 +16,7 @@ namespace UnityEditor
     public interface ITerrainLayerCustomUI
     {
         bool OnTerrainLayerGUI(TerrainLayer terrainLayer, Terrain terrain);
-    };
+    }
 
     public static class TerrainLayerUtility
     {

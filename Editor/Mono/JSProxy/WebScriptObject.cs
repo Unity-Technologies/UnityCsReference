@@ -48,5 +48,5 @@ namespace UnityEditor.Web
         {
             return ProcessMessage(jsonRequest, callback);
         }
-    };
+    }
 }

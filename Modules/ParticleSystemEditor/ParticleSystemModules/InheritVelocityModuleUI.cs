@@ -9,7 +9,7 @@ namespace UnityEditor
     class InheritVelocityModuleUI : ModuleUI
     {
         // Keep in sync with InheritVelocityModule.h
-        enum Modes { Initial = 0, Current = 1 };
+        enum Modes { Initial = 0, Current = 1 }
 
         SerializedProperty m_Mode;
         SerializedMinMaxCurve m_Curve;

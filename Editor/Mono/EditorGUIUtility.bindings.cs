@@ -150,7 +150,7 @@ namespace UnityEditor
         internal static extern Texture2D GetIconForObject(Object obj);
 
         // Render all ingame cameras bound to a specific Display.
-        internal static extern void RenderPreviewCamerasInternal(RenderTexture target, int targetDisplay, Vector2 mousePosition, bool gizmos, bool renderIMGUI);
+        internal static extern void RenderPlayModeViewCamerasInternal(RenderTexture target, int targetDisplay, Vector2 mousePosition, bool gizmos, bool renderIMGUI);
         internal static extern void SetupWindowSpaceAndVSyncInternal(Rect screenRect);
 
         private static extern Texture2D FindTextureByName(string name);

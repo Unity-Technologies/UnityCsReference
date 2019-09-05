@@ -9,7 +9,6 @@ using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEditorInternal;
 
-
 namespace UnityEditor.IMGUI.Controls
 {
     /*
@@ -57,6 +56,14 @@ namespace UnityEditor.IMGUI.Controls
             // Clear state that should not survive closing/starting Unity (If TreeViewState is in EditorWindow that are serialized in a layout file)
             m_RenameOverlay.Clear();
         }
+    }
+
+    internal struct TreeViewSelectState
+    {
+        public List<int> selectedIDs;
+        public int lastClickedID;
+        public bool keepMultiSelection;
+        public bool useShiftAsActionKey;
     }
 
     internal class TreeViewController
@@ -110,6 +117,7 @@ namespace UnityEditor.IMGUI.Controls
         bool m_HadFocusLastEvent;                           // Cached from last event for keyboard focus changed event
         int m_KeyboardControlID;
 
+        const double kSlowSelectTimeout = 0.2;
         const float kSpaceForScrollBar = 16f;
         public TreeViewItem hoveredItem { get; set; }
 
@@ -201,7 +209,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public bool HasSelection()
         {
-            return state.selectedIDs.Count() > 0;
+            return state.selectedIDs.Count > 0;
         }
 
         public int[] GetSelection()
@@ -333,13 +341,16 @@ namespace UnityEditor.IMGUI.Controls
                             }
                             else
                             {
-                                var dragSelection =  GetNewSelection(item, true, false);
-                                bool canStartDrag = dragging != null && dragSelection.Count != 0 && dragging.CanStartDrag(item, dragSelection, Event.current.mousePosition);
+                                double selectStartTime = Time.realtimeSinceStartup;
+                                var dragSelection = GetNewSelection(item, true, false);
+                                bool dragAbortedBySlowSelect = (Time.realtimeSinceStartup - selectStartTime) > kSlowSelectTimeout;
+
+                                bool canStartDrag = !dragAbortedBySlowSelect && dragging != null && dragSelection.Count != 0 && dragging.CanStartDrag(item, dragSelection, Event.current.mousePosition);
                                 if (canStartDrag)
                                 {
                                     // Prepare drag and drop delay (we start the drag after a couple of pixels mouse drag: See the case MouseDrag below)
                                     m_DragSelection = dragSelection;
-                                    DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), itemControlID);
+                                    DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), GetItemControlID(item));
                                     delay.mouseDownPosition = Event.current.mousePosition;
                                 }
                                 else
@@ -357,7 +368,7 @@ namespace UnityEditor.IMGUI.Controls
                                         itemSingleClickedCallback(item.id);
                                 }
 
-                                GUIUtility.hotControl = itemControlID;
+                                GUIUtility.hotControl = GetItemControlID(item);
                             }
                             evt.Use();
                         }
@@ -606,13 +617,16 @@ namespace UnityEditor.IMGUI.Controls
 
             gui.EndRowGUI();
 
+            // Keep inside clip region so callbacks that might want to get
+            // rects of rows have correct context.
+            KeyboardGUI();
+
             if (m_UseScrollView)
                 GUI.EndScrollView(showingVerticalScrollBar);
             else
                 GUI.EndClip();
 
             HandleUnusedEvents();
-            KeyboardGUI();
 
             // Call after iterating rows since selecting a row takes keyboard focus
             HandleTreeViewGotFocus(isMouseDownInTotalRect);
@@ -1135,17 +1149,15 @@ namespace UnityEditor.IMGUI.Controls
         {
             if (getNewSelectionOverride != null)
                 return getNewSelectionOverride(clickedItem, keepMultiSelection, useShiftAsActionKey);
-            // Get ids from items
-            var visibleRows = data.GetRows();
-            List<int> allIDs = new List<int>(visibleRows.Count);
-            for (int i = 0; i < visibleRows.Count; ++i)
-                allIDs.Add(visibleRows[i].id);
 
-            List<int> selectedIDs = state.selectedIDs;
-            int lastClickedID = state.lastClickedID;
-            bool allowMultiselection = data.CanBeMultiSelected(clickedItem);
+            var selectState = new TreeViewSelectState() {
+                selectedIDs = state.selectedIDs,
+                lastClickedID = state.lastClickedID,
+                keepMultiSelection = keepMultiSelection,
+                useShiftAsActionKey = useShiftAsActionKey
+            };
 
-            return InternalEditorUtility.GetNewSelection(clickedItem.id, allIDs, selectedIDs, lastClickedID, keepMultiSelection, useShiftAsActionKey, allowMultiselection);
+            return data.GetNewSelection(clickedItem, selectState);
         }
 
         void SelectionByKey(TreeViewItem itemSelected)

@@ -134,34 +134,20 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateStatusIcon()
         {
-            var displayVersion = package?.primaryVersion;
-            if (displayVersion == null)
-                return;
+            var state = package?.GetState() ?? PackageState.None;
 
-            string stateClass = null;
-            if (package.installedVersion != null)
-            {
-                if (displayVersion.HasTag(PackageTag.InDevelopment))
-                    stateClass = "development";
-                else if (package.state == PackageState.Outdated && package.recommendedVersion != package.installedVersion)
-                    stateClass = GetIconStateId(PackageState.Outdated);
-                else if (!displayVersion.HasTag(PackageTag.AssetStore))
-                    stateClass = "installed";
-                else if (displayVersion.HasTag(PackageTag.AssetStore))
-                    stateClass = package.state == PackageState.Outdated ? GetIconStateId(PackageState.Outdated) : "installed";
-            }
-            // Error state should be last as it should supersede other states
-            if (package.errors.Any())
-                stateClass = GetIconStateId(PackageState.Error);
-            stateClass = stateClass ?? GetIconStateId(package.state);
-
-            stateLabel.RemoveFromClassList(m_CurrentStateClass);
-            stateLabel.AddToClassList(stateClass);
+            var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
+            if (!string.IsNullOrEmpty(m_CurrentStateClass))
+                stateLabel.RemoveFromClassList(m_CurrentStateClass);
+            if (!string.IsNullOrEmpty(stateClass))
+                stateLabel.AddToClassList(stateClass);
             m_CurrentStateClass = stateClass;
 
-            if (package.state != PackageState.InProgress)
+            stateLabel.tooltip = GetTooltipByState(state);
+
+            if (state != PackageState.InProgress)
                 StopSpinner();
-            else if (package.state == PackageState.InProgress)
+            else if (state == PackageState.InProgress)
                 StartSpinner();
         }
 
@@ -274,15 +260,26 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement versionsContainer { get { return cache.Get<VisualElement>("versionsContainer"); } }
         private ScrollView versionList { get { return cache.Get<ScrollView>("versionList"); } }
 
-        public static string GetIconStateId(PackageState state)
+        private static readonly string[] k_TooltipsByState =
         {
-            return state.ToString().ToLower();
+            "",
+            "This package is installed.",
+            "This package is available for import.",
+            "This package is in development.",
+            "A newer version of this package is available.",
+            "",
+            "There are errors with this package. Please read the package details for further guidance."
+        };
+
+        public static string GetTooltipByState(PackageState state)
+        {
+            return L10n.Tr(k_TooltipsByState[(int)state]);
         }
 
         public static string GetVersionText(IPackageVersion version, bool simplified = false)
         {
-            if (version?.version == null)
-                return string.Empty;
+            if (version?.version == null || version?.version?.ToString() == "0.0.0")
+                return version?.versionString;
 
             var label = version.version.StripTag();
             if (!simplified)

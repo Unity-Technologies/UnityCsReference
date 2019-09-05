@@ -66,5 +66,9 @@ namespace UnityEngine
 
         [Obsolete("Physics2D.minPenetrationForPenalty is deprecated. Use Physics2D.defaultContactOffset instead. (UnityUpgradable) -> defaultContactOffset", false)]
         public static float minPenetrationForPenalty { get { return defaultContactOffset; } set { defaultContactOffset = value; } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Physics2D.autoSimulation is deprecated. Use Physics2D.simulationMode instead.", false)]
+        public static bool autoSimulation { get { return simulationMode != SimulationMode2D.Script; } set { simulationMode = value ? SimulationMode2D.FixedUpdate : SimulationMode2D.Script; } }
     }
 }

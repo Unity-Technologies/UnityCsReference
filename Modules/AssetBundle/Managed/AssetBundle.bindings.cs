@@ -28,7 +28,7 @@ namespace UnityEngine
         FailedDeleteRecompressionTarget,
         RecompressionTargetIsLoaded,
         RecompressionTargetExistsButNotArchive
-    };
+    }
 
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadFromFileAsyncOperation.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadFromMemoryAsyncOperation.h")]

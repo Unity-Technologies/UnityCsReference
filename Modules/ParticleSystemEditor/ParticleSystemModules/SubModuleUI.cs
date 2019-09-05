@@ -25,7 +25,7 @@ namespace UnityEditor
             Trigger,
             Manual,
             TypesMax,
-        };
+        }
 
         class Texts
         {

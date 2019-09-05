@@ -283,7 +283,7 @@ namespace UnityEditor.Connect
             Warning,
             Info,
             None
-        };
+        }
 
         [Flags]
         internal enum UnityErrorBehaviour
@@ -293,7 +293,7 @@ namespace UnityEditor.Connect
             Hidden,
             ConsoleOnly,
             Reconnect
-        };
+        }
 
         [Flags]
         internal enum UnityErrorFilter
@@ -302,7 +302,7 @@ namespace UnityEditor.Connect
             ByParent = 2,
             ByChild = 4,
             All = 7
-        };
+        }
 
         private UnityConnect()
         {
@@ -518,6 +518,13 @@ namespace UnityEditor.Connect
         public string GetUserName()
         {
             return GetUserName_Internal();
+        }
+
+        [NativeMethod("GetUserDisplayName")]
+        private static extern string GetUserDisplayName_Internal();
+        public string GetUserDisplayName()
+        {
+            return GetUserDisplayName_Internal();
         }
 
         [NativeMethod("GetAccessToken")]

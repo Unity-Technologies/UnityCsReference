@@ -51,13 +51,13 @@ namespace UnityEditorInternal
         NextSubpass,
         EndSubpass
         // ReSharper restore InconsistentNaming
-    };
+    }
 
     internal enum ShowAdditionalInfo
     {
         Preview,
         ShaderProperties
-    };
+    }
 
     // Match C++ ScriptingShaderFloatInfo memory layout!
     [StructLayout(LayoutKind.Sequential)]
@@ -485,10 +485,10 @@ namespace UnityEditor
             // Make sure game view is visible when enabling frame debugger locally
             if (FrameDebuggerUtility.IsLocalEnabled())
             {
-                var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
-                if (previewWindow)
+                var playModeView = PlayModeView.GetMainPlayModeView();
+                if (playModeView)
                 {
-                    previewWindow.ShowTab();
+                    playModeView.ShowTab();
                 }
             }
 
@@ -506,7 +506,7 @@ namespace UnityEditor
             m_CurEventDataStrings.shader = string.Format("{0}, SubShader #{1}", m_CurEventData.shaderName, m_CurEventData.subShaderIndex.ToString());
 
             // pass name & LightMode tag
-            string passName = string.IsNullOrEmpty(m_CurEventData.passName) ? "#" + m_CurEventData.shaderPassIndex.ToString() : m_CurEventData.passName;
+            string passName = string.IsNullOrEmpty(m_CurEventData.passName) ? "#" + m_CurEventData.shaderPassIndex : m_CurEventData.passName;
             string lightMode = string.IsNullOrEmpty(m_CurEventData.passLightMode) ? "" : string.Format(" ({0})", m_CurEventData.passLightMode);
             m_CurEventDataStrings.pass = passName + lightMode;
 
@@ -1214,7 +1214,7 @@ namespace UnityEditor
         {
             m_ScrollViewShaderProps = GUILayout.BeginScrollView(m_ScrollViewShaderProps);
 
-            if (props.textures.Count() > 0)
+            if (props.textures.Length > 0)
             {
                 GUILayout.Label("Textures", EditorStyles.boldLabel);
 
@@ -1224,7 +1224,7 @@ namespace UnityEditor
                 }
             }
 
-            if (props.floats.Count() > 0)
+            if (props.floats.Length > 0)
             {
                 GUILayout.Label("Floats", EditorStyles.boldLabel);
 
@@ -1236,7 +1236,7 @@ namespace UnityEditor
                 }
             }
 
-            if (props.vectors.Count() > 0)
+            if (props.vectors.Length > 0)
             {
                 GUILayout.Label("Vectors", EditorStyles.boldLabel);
 
@@ -1248,7 +1248,7 @@ namespace UnityEditor
                 }
             }
 
-            if (props.matrices.Count() > 0)
+            if (props.matrices.Length > 0)
             {
                 GUILayout.Label("Matrices", EditorStyles.boldLabel);
 
@@ -1260,7 +1260,7 @@ namespace UnityEditor
                 }
             }
 
-            if (props.buffers.Count() > 0)
+            if (props.buffers.Length > 0)
             {
                 GUILayout.Label("Buffers", EditorStyles.boldLabel);
 

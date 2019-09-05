@@ -226,7 +226,7 @@ namespace UnityEditor
         [InspectorName("Use Embedded Materials")]
         [Tooltip("Embed the material inside the imported asset.")]
         InPrefab = 1
-    };
+    }
 
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialImportMode
@@ -239,7 +239,7 @@ namespace UnityEditor
         [InspectorName("Import (Experimental)")]
         [Tooltip("Use AssetPostprocessor.OnPreprocessMaterialDescription")]
         Import = 2
-    };
+    }
 
     public enum ModelImporterTangentSpaceMode
     {
@@ -361,6 +361,14 @@ namespace UnityEditor
         X4 = 4,
 
         X8 = 8
+    }
+
+    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
+    public enum ModelImporterSecondaryUVMarginMethod
+    {
+        Manual = 0,
+
+        Calculate = 1,
     }
 
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
@@ -593,7 +601,25 @@ namespace UnityEditor
             set;
         }
 
+        public extern ModelImporterSecondaryUVMarginMethod secondaryUVMarginMethod
+        {
+            get;
+            set;
+        }
+
         public extern float secondaryUVPackMargin
+        {
+            get;
+            set;
+        }
+
+        public extern float secondaryUVMinLightmapResolution
+        {
+            get;
+            set;
+        }
+
+        public extern float secondaryUVMinObjectScale
         {
             get;
             set;

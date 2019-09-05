@@ -317,7 +317,6 @@ namespace UnityEditor.Modules
             catch (Exception ex)
             {
                 Console.WriteLine("Error scanning for extensions. {0}", ex);
-                return;
             }
         }
 
@@ -341,7 +340,7 @@ namespace UnityEditor.Modules
         private static void RegisterPlatformSupportModules()
         {
             var allTypesWithInterface = TypeCache.GetTypesDerivedFrom<IPlatformSupportModule>();
-            s_PlatformModules = new Dictionary<string, IPlatformSupportModule>(allTypesWithInterface.Count());
+            s_PlatformModules = new Dictionary<string, IPlatformSupportModule>(allTypesWithInterface.Count);
 
             foreach (var type in allTypesWithInterface)
             {

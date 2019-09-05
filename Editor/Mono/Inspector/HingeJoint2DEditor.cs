@@ -46,7 +46,6 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            HingeJoint2D joint = (HingeJoint2D)target;
             EditMode.DoEditModeInspectorModeButton(
                 EditMode.SceneViewEditMode.JointAngularLimits,
                 "Edit Joint Angular Limits",

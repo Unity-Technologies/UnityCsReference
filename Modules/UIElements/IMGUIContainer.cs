@@ -469,10 +469,57 @@ namespace UnityEngine.UIElements
         {
             if (evt is IPointerEvent)
             {
-                // Pointer events are not handled by IMGUI. The compatibility mouse event will eventually come.
+                if (evt.imguiEvent != null && evt.imguiEvent.isDirectManipulationDevice)
+                {
+                    bool sendPointerEvent = false;
+                    EventType originalEventType = evt.imguiEvent.type;
+                    if (evt is PointerDownEvent)
+                    {
+                        sendPointerEvent = true;
+                        evt.imguiEvent.type = EventType.TouchDown;
+                    }
+                    else if (evt is PointerUpEvent)
+                    {
+                        sendPointerEvent = true;
+                        evt.imguiEvent.type = EventType.TouchUp;
+                    }
+                    else if (evt is PointerMoveEvent && evt.imguiEvent.type == EventType.MouseDrag)
+                    {
+                        sendPointerEvent = true;
+                        evt.imguiEvent.type = EventType.TouchMove;
+                    }
+                    else if (evt is PointerLeaveEvent)
+                    {
+                        sendPointerEvent = true;
+                        evt.imguiEvent.type = EventType.TouchLeave;
+                    }
+                    else if (evt is PointerEnterEvent)
+                    {
+                        sendPointerEvent = true;
+                        evt.imguiEvent.type = EventType.TouchEnter;
+                    }
+                    else if (evt is PointerStationaryEvent)
+                    {
+                        sendPointerEvent = true;
+                        evt.imguiEvent.type = EventType.TouchStationary;
+                    }
+
+                    if (sendPointerEvent)
+                    {
+                        bool result = SendEventToIMGUIPrivate(evt);
+                        evt.imguiEvent.type = originalEventType;
+                        return result;
+                    }
+                }
+                // If not touch then we should not handle PointerEvents on IMGUI, we will handle the MouseEvent sent right after
                 return false;
             }
+            else
+                return SendEventToIMGUIPrivate(evt);
+        }
 
+        private bool SendEventToIMGUIPrivate(EventBase evt)
+        {
             bool result;
             using (new EventDebuggerLogIMGUICall(evt))
             {

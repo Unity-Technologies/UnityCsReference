@@ -104,7 +104,7 @@ namespace UnityEditor.Web
             this.name = name;
             this.parameters = parameters;
         }
-    };
+    }
 
     internal class JspmStubInfo
     {
@@ -118,7 +118,7 @@ namespace UnityEditor.Web
             this.properties = properties;
             this.events = events;
         }
-    };
+    }
 
     internal class JspmResult
     {
@@ -139,7 +139,7 @@ namespace UnityEditor.Web
             this.messageID = messageID;
             this.status = status;
         }
-    };
+    }
 
     internal class JspmError : JspmResult
     {
@@ -151,7 +151,7 @@ namespace UnityEditor.Web
 
         public string errorClass;
         public string message;
-    };
+    }
 
     internal class JspmSuccess : JspmResult
     {
@@ -164,7 +164,7 @@ namespace UnityEditor.Web
             this.result = result;
             this.type = type;
         }
-    };
+    }
 
     internal class JspmStubInfoSuccess : JspmSuccess
     {
@@ -175,7 +175,7 @@ namespace UnityEditor.Web
         {
             this.reference = reference;
         }
-    };
+    }
 
     [InitializeOnLoad]
     internal class JSProxyMgr

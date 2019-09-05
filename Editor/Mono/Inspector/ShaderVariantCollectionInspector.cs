@@ -343,7 +343,7 @@ namespace UnityEditor
                     var passType = (UnityEngine.Rendering.PassType)m_FilteredVariantTypes[i];
                     var wasSelected = m_SelectedVariants.Contains(i);
                     var keywordString = string.IsNullOrEmpty(m_FilteredVariantKeywords[i][0]) ? "<no keywords>" : string.Join(" ", m_FilteredVariantKeywords[i]);
-                    var displayString = passType.ToString() + " " + keywordString.ToLowerInvariant();
+                    var displayString = passType + " " + keywordString.ToLowerInvariant();
                     var isSelected = GUI.Toggle(rect, wasSelected, displayString, Styles.sMenuItem);
                     rect.y += rect.height;
 

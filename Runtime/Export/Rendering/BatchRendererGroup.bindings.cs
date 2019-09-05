@@ -45,7 +45,7 @@ namespace UnityEngine.Rendering
         public NativeArray<BatchVisibility> batchVisibility;
         public NativeArray<int> visibleIndices;
         readonly public LODParameters lodParameters;
-    };
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Camera/BatchRendererGroup.h")]
@@ -59,7 +59,7 @@ namespace UnityEngine.Rendering
         public int                 cullingPlanesCount;
         public int                 batchVisibilityCount;
         public int                 visibleIndicesCount;
-    };
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Math/Matrix4x4.h")]

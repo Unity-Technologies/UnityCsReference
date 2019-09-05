@@ -16,7 +16,7 @@ namespace UnityEngine.SceneManagement
     {
         Single = 0,
         Additive
-    };
+    }
 
     [Flags]
     public enum LocalPhysicsMode
@@ -58,7 +58,7 @@ namespace UnityEngine.SceneManagement
             m_LoadSceneMode = mode;
             m_LocalPhysicsMode = physicsMode;
         }
-    };
+    }
 
     [Serializable]
     public struct CreateSceneParameters

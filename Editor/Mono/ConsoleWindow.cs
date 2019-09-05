@@ -11,6 +11,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Experimental.Networking.PlayerConnection;
 using UnityEditor.Experimental.Networking.PlayerConnection;
 using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -124,6 +125,7 @@ namespace UnityEditor
 
         ListViewState m_ListView;
         string m_ActiveText = "";
+        StringBuilder m_CopyString;
         private int m_ActiveInstanceID = 0;
         bool m_DevBuild;
 
@@ -211,7 +213,7 @@ namespace UnityEditor
             GraphCompileError = 1 << 20,
             ScriptingAssertion = 1 << 21,
             VisualScriptingError = 1 << 22
-        };
+        }
 
         enum ConsoleFlags
         {
@@ -227,7 +229,7 @@ namespace UnityEditor
             LogLevelError = 1 << 9,
             ShowTimestamp = 1 << 10,
             ClearOnBuild = 1 << 11,
-        };
+        }
 
         static ConsoleWindow ms_ConsoleWindow = null;
         private string m_SearchText;
@@ -291,6 +293,7 @@ namespace UnityEditor
         {
             position = new Rect(200, 200, 800, 400);
             m_ListView = new ListViewState(0, 0);
+            m_CopyString = new StringBuilder();
             m_SearchText = string.Empty;
             EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
         }
@@ -432,6 +435,7 @@ namespace UnityEditor
                 m_ActiveText = string.Empty;
                 m_ActiveInstanceID = 0;
                 m_ListView.row = -1;
+                m_CopyString.Clear();
             }
         }
 
@@ -554,7 +558,7 @@ namespace UnityEditor
                 int selectedRow = -1;
                 bool openSelectedItem = false;
                 bool collapsed = HasFlag(ConsoleFlags.Collapse);
-                foreach (ListViewElement el in ListViewGUI.ListView(m_ListView, Constants.Box))
+                foreach (ListViewElement el in ListViewGUI.ListView(m_ListView, ListViewOptions.wantsRowMultiSelection, Constants.Box))
                 {
                     if (e.type == EventType.MouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
                     {
@@ -573,7 +577,7 @@ namespace UnityEditor
 
                         // Draw the background
                         GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
-                        s.Draw(el.position, false, false, m_ListView.row == el.row, false);
+                        s.Draw(el.position, false, false, m_ListView.selectedItems != null && m_ListView.selectedItems.Length == m_ListView.totalRows && m_ListView.selectedItems[el.row], false);
 
                         // Draw the icon
                         GUIStyle iconStyle = GetStyleForErrorMode(mode, true, Constants.LogStyleLineCount == 1);
@@ -581,7 +585,7 @@ namespace UnityEditor
                         iconRect.x += offset;
                         iconRect.y += 2;
 
-                        iconStyle.Draw(iconRect, false, false, m_ListView.row == el.row, false);
+                        iconStyle.Draw(iconRect, false, false, m_ListView.selectedItems != null && m_ListView.selectedItems.Length == m_ListView.totalRows && m_ListView.selectedItems[el.row], false);
 
                         // Draw the text
                         tempContent.text = text;
@@ -652,8 +656,21 @@ namespace UnityEditor
                     {
                         SetActiveEntry(entry);
                     }
-                }
 
+                    // If copy, get the messages from selected rows
+                    if (e.type == EventType.ExecuteCommand && e.commandName == EventCommandNames.Copy && m_ListView.selectedItems != null)
+                    {
+                        m_CopyString.Clear();
+                        for (int rowIndex = 0; rowIndex < m_ListView.selectedItems.Length; rowIndex++)
+                        {
+                            if (m_ListView.selectedItems[rowIndex])
+                            {
+                                LogEntries.GetEntryInternal(rowIndex, entry);
+                                m_CopyString.AppendLine(entry.message);
+                            }
+                        }
+                    }
+                }
                 // Open entry using return key
                 if ((GUIUtility.keyboardControl == m_ListView.ID) && (e.type == EventType.KeyDown) &&
                     (e.keyCode == KeyCode.Return) && (m_ListView.row != 0))
@@ -690,10 +707,10 @@ namespace UnityEditor
             SplitterGUILayout.EndVerticalSplit();
 
             // Copy & Paste selected item
-            if ((e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand) && e.commandName == EventCommandNames.Copy && m_ActiveText != string.Empty)
+            if ((e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand) && e.commandName == EventCommandNames.Copy && m_CopyString != null)
             {
                 if (e.type == EventType.ExecuteCommand)
-                    EditorGUIUtility.systemCopyBuffer = m_ActiveText;
+                    EditorGUIUtility.systemCopyBuffer = m_CopyString.ToString();
                 e.Use();
             }
         }
@@ -835,8 +852,7 @@ namespace UnityEditor
 
         public void AddItemsToMenu(GenericMenu menu)
         {
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
             menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);

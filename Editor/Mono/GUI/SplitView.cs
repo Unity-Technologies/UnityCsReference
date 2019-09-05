@@ -639,7 +639,6 @@ namespace UnityEditor
                     }
                     ic.Cleanup();
                 }
-                return;
             }
             else
             {

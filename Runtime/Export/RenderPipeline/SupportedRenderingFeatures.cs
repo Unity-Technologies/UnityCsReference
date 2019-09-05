@@ -36,7 +36,7 @@ namespace UnityEngine.Rendering
             IndirectOnly = 1,
             Subtractive = 2,
             Shadowmask = 4
-        };
+        }
 
         public ReflectionProbeModes reflectionProbeModes { get; set; } = ReflectionProbeModes.None;
 

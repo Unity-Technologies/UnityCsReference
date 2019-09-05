@@ -12,6 +12,7 @@ using UnityEditor.VisualStudioIntegration;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
+using Unity.CodeEditor;
 
 namespace UnityEditor
 {
@@ -42,10 +43,14 @@ namespace UnityEditor
     [InitializeOnLoad]
     internal partial class SyncVS : AssetPostprocessor
     {
+        static bool s_Enabled = false;
         static bool s_AlreadySyncedThisDomainReload;
 
         static SyncVS()
         {
+            s_Enabled = Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER;
+            if (!s_Enabled)
+                return;
             Synchronizer = new SolutionSynchronizer(Directory.GetParent(Application.dataPath).FullName, new SolutionSynchronizationSettings());
             try
             {
@@ -160,7 +165,11 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static void SyncVisualStudioProjectIfItAlreadyExists()
         {
-            if (Synchronizer.SolutionExists())
+            if (!s_Enabled)
+                return;
+
+            #pragma warning disable 618
+            if (Synchronizer.SolutionExists() && ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
             {
                 Synchronizer.Sync();
             }
@@ -174,6 +183,9 @@ namespace UnityEditor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
+            if (!s_Enabled)
+                return;
+
             Synchronizer.SyncIfNeeded(addedAssets.Union(deletedAssets.Union(movedAssets.Union(movedFromAssetPaths))), importedAssets);
         }
 

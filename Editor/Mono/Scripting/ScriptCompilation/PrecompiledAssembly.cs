@@ -17,5 +17,5 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string Path;
         [NativeName("flags")]
         public AssemblyFlags Flags;
-    };
+    }
 }

@@ -485,28 +485,28 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            float innerFlags = (float)VertexFlags.IsEdge;
-            float outerFlags = (float)VertexFlags.IsSolid;
+            Color32 innerFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+            Color32 outerFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
             var widths = new Vector2(leftWidth, topWidth);
 
             // Tessellate
             {
                 // inner-corner (top)
                 ushort innerTopIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(leftWidth, topWidth, posZ), tint = color, uv = widths, flags = innerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(leftWidth, topWidth, posZ), tint = color, uv = widths, idsFlags = innerFlags });
                 ++vertexCount;
 
                 // inner-corner (left)
                 ushort innerLeftIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(leftWidth, topWidth, posZ), tint = color, uv = widths, flags = innerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(leftWidth, topWidth, posZ), tint = color, uv = widths, idsFlags = innerFlags });
                 ++vertexCount;
 
                 if (heightDiff < 0)
                 {
                     // bottom-right
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, rect.yMax, posZ), tint = color, uv = widths, flags = innerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, rect.yMax, posZ), tint = color, uv = widths, idsFlags = innerFlags });
                     // bottom-left
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.yMax, posZ), tint = color, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.yMax, posZ), tint = color, idsFlags = outerFlags });
                     vertexCount += 2;
 
                     mesh.SetNextIndex(innerLeftIndex);
@@ -517,14 +517,14 @@ namespace UnityEngine.UIElements.UIR
                 else
                 {
                     // bottom-left
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.yMax, posZ), tint = color, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.yMax, posZ), tint = color, idsFlags = outerFlags });
                     ++vertexCount;
                 }
 
                 if (heightDiff > 0)
                 {
                     // fan left
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, radius.y, posZ), tint = color, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, radius.y, posZ), tint = color, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerLeftIndex);
@@ -538,7 +538,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     float angle = i * deltaAngle;
                     var p = new Vector2(radius.x - Mathf.Cos(angle) * radius.x, radius.y - Mathf.Sin(angle) * radius.y);
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerLeftIndex);
@@ -550,7 +550,7 @@ namespace UnityEngine.UIElements.UIR
                 if (widthDiff > 0)
                 {
                     // fan top
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(radius.x, 0, posZ), tint = color, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(radius.x, 0, posZ), tint = color, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerLeftIndex);
@@ -561,7 +561,7 @@ namespace UnityEngine.UIElements.UIR
 
                 {
                     // top-right
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, 0, posZ), tint = color, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, 0, posZ), tint = color, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerTopIndex);
@@ -573,7 +573,7 @@ namespace UnityEngine.UIElements.UIR
                 if (widthDiff < 0)
                 {
                     // bottom-right
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, rect.yMax, posZ), tint = color, uv = widths, flags = innerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, rect.yMax, posZ), tint = color, uv = widths, idsFlags = innerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerTopIndex);
@@ -642,20 +642,20 @@ namespace UnityEngine.UIElements.UIR
             int fanLeftTriangles = Mathf.Clamp(Mathf.RoundToInt(outerIntersectionAngle / (0.5f * Mathf.PI) * fanTriangles), 1, fanTriangles - 1);
             int fanTopTriangles = fanTriangles - fanLeftTriangles;
 
-            float innerFlags = (float)VertexFlags.IsEdge;
-            float outerFlags = (float)VertexFlags.IsSolid;
+            Color32 innerFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+            Color32 outerFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
             var widths = new Vector2(leftWidth, topWidth);
 
             // Tessellate left
             {
                 ushort centerIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(tessCenter.x, tessCenter.y, posZ), tint = leftColor, flags = outerFlags });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(innerCorner.x, innerCorner.y, posZ), tint = leftColor, uv = widths, flags = innerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(tessCenter.x, tessCenter.y, posZ), tint = leftColor, idsFlags = outerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(innerCorner.x, innerCorner.y, posZ), tint = leftColor, uv = widths, idsFlags = innerFlags });
                 vertexCount += 2;
 
                 if (heightDiff < 0)
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomRight.x, bottomRight.y, posZ), tint = leftColor, uv = widths, flags = innerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomRight.x, bottomRight.y, posZ), tint = leftColor, uv = widths, idsFlags = innerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -665,7 +665,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomLeft.x, bottomLeft.y, posZ), tint = leftColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomLeft.x, bottomLeft.y, posZ), tint = leftColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -676,7 +676,7 @@ namespace UnityEngine.UIElements.UIR
 
                 if (heightDiff > 0)
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(ellipseLeft.x, ellipseLeft.y, posZ), tint = leftColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(ellipseLeft.x, ellipseLeft.y, posZ), tint = leftColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -690,7 +690,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     float angle = i * deltaAngle;
                     Vector2 p = fanCorner - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -700,7 +700,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(outerIntersection.x, outerIntersection.y, posZ), tint = leftColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(outerIntersection.x, outerIntersection.y, posZ), tint = leftColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -713,8 +713,8 @@ namespace UnityEngine.UIElements.UIR
             // Tessellate top
             {
                 ushort centerIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(tessCenter.x, tessCenter.y, posZ), tint = topColor, flags = outerFlags });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(outerIntersection.x, outerIntersection.y, posZ), tint = topColor, flags = outerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(tessCenter.x, tessCenter.y, posZ), tint = topColor, idsFlags = outerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(outerIntersection.x, outerIntersection.y, posZ), tint = topColor, idsFlags = outerFlags });
                 vertexCount += 2;
 
                 float deltaAngle = (Mathf.PI * 0.5f - outerIntersectionAngle) / fanTopTriangles;
@@ -722,7 +722,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     float angle = outerIntersectionAngle + i * deltaAngle;
                     Vector2 p = fanCorner - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -733,7 +733,7 @@ namespace UnityEngine.UIElements.UIR
 
                 if (widthDiff > 0)
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(ellipseTop.x, ellipseTop.y, posZ), tint = topColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(ellipseTop.x, ellipseTop.y, posZ), tint = topColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -743,7 +743,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(topRight.x, topRight.y, posZ), tint = topColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(topRight.x, topRight.y, posZ), tint = topColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -754,7 +754,7 @@ namespace UnityEngine.UIElements.UIR
 
                 if (widthDiff < 0)
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomRight.x, bottomRight.y, posZ), tint = topColor, uv = widths, flags = innerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomRight.x, bottomRight.y, posZ), tint = topColor, uv = widths, idsFlags = innerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -764,7 +764,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(innerCorner.x, innerCorner.y, posZ), tint = topColor, uv = widths, flags = innerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(innerCorner.x, innerCorner.y, posZ), tint = topColor, uv = widths, idsFlags = innerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
@@ -796,7 +796,7 @@ namespace UnityEngine.UIElements.UIR
 
             var widths = new Vector2(leftWidth, topWidth);
             Vector2 uvTopLeft, uvTopRight, uvBottomLeft, uvBottomRight;
-            float flagsTopLeft, flagsTopRight, flagsBottomLeft, flagsBottomRight;
+            Color32 flagsTopLeft, flagsTopRight, flagsBottomLeft, flagsBottomRight;
             switch (tessellationType)
             {
                 case TessellationType.EdgeHorizontal:
@@ -804,35 +804,35 @@ namespace UnityEngine.UIElements.UIR
                     // The uvs contain the displacement from the vertically opposed corner.
                     uvTopLeft = uvTopRight = Vector2.zero;
                     uvBottomLeft = uvBottomRight = widths;
-                    flagsTopLeft = flagsTopRight = (float)VertexFlags.IsSolid;
-                    flagsBottomLeft = (float)VertexFlags.IsEdge;
-                    flagsBottomRight = (float)VertexFlags.IsEdgeNoShrinkX;
+                    flagsTopLeft = flagsTopRight = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
+                    flagsBottomLeft = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+                    flagsBottomRight = new Color32(0, 0, 0, (byte)VertexFlags.IsEdgeNoShrinkX);
                     break;
                 case TessellationType.EdgeVertical:
                     topRight.y += miterOffset;
                     // The uvs contain the displacement from the horizontally opposed corner.
                     uvTopLeft = uvBottomLeft = Vector2.zero;
                     uvTopRight = uvBottomRight = widths;
-                    flagsTopLeft = flagsBottomLeft = (float)VertexFlags.IsSolid;
-                    flagsTopRight = (float)VertexFlags.IsEdge;
-                    flagsBottomRight = (float)VertexFlags.IsEdgeNoShrinkY;
+                    flagsTopLeft = flagsBottomLeft = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
+                    flagsTopRight = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+                    flagsBottomRight = new Color32(0, 0, 0, (byte)VertexFlags.IsEdgeNoShrinkY);
                     break;
                 case TessellationType.EdgeCorner:
                     uvTopLeft = uvTopRight = uvBottomLeft = uvBottomRight = Vector2.zero;
-                    flagsTopLeft = flagsTopRight = flagsBottomLeft = flagsBottomRight = (float)VertexFlags.IsSolid;
+                    flagsTopLeft = flagsTopRight = flagsBottomLeft = flagsBottomRight = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
                     break;
                 case TessellationType.Content:
                     uvTopLeft = uvTopRight = uvBottomLeft = uvBottomRight = Vector2.zero; // UVs are computed later for content
-                    flagsTopLeft = flagsTopRight = flagsBottomLeft = flagsBottomRight = 0.0f; // Primed for later update by the chain builder
+                    flagsTopLeft = flagsTopRight = flagsBottomLeft = flagsBottomRight = new Color32(0, 0, 0, 0); // Primed for later update by the chain builder
                     break;
                 default:
                     throw new NotImplementedException();
             }
 
-            mesh.SetNextVertex(new Vertex { position = topLeft, uv = uvTopLeft, tint = color, flags = flagsTopLeft });
-            mesh.SetNextVertex(new Vertex { position = topRight, uv = uvTopRight, tint = color, flags = flagsTopRight });
-            mesh.SetNextVertex(new Vertex { position = bottomLeft, uv = uvBottomLeft, tint = color, flags = flagsBottomLeft });
-            mesh.SetNextVertex(new Vertex { position = bottomRight, uv = uvBottomRight, tint = color, flags = flagsBottomRight });
+            mesh.SetNextVertex(new Vertex { position = topLeft, uv = uvTopLeft, tint = color, idsFlags = flagsTopLeft });
+            mesh.SetNextVertex(new Vertex { position = topRight, uv = uvTopRight, tint = color, idsFlags = flagsTopRight });
+            mesh.SetNextVertex(new Vertex { position = bottomLeft, uv = uvBottomLeft, tint = color, idsFlags = flagsBottomLeft });
+            mesh.SetNextVertex(new Vertex { position = bottomRight, uv = uvBottomRight, tint = color, idsFlags = flagsBottomRight });
 
             mesh.SetNextIndex((UInt16)(vertexCount + 0));
             mesh.SetNextIndex((UInt16)(vertexCount + 2));
@@ -854,8 +854,8 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            float cornerFlags = (float)VertexFlags.IsEdge;
-            float outerFlags = (float)VertexFlags.IsSolid;
+            Color32 cornerFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+            Color32 outerFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
             var widths = new Vector2(leftWidth, topWidth);
 
             // Partition the triangles
@@ -869,8 +869,8 @@ namespace UnityEngine.UIElements.UIR
             {
                 UInt16 cornerIndex = vertexCount;
                 p = new Vector2(center.x - radius.x, center.y);
-                mesh.SetNextVertex(new Vertex { position = new Vector3(center.x, center.y, posZ), tint = leftColor, flags = cornerFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(center.x, center.y, posZ), tint = leftColor, idsFlags = cornerFlags, uv = widths });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, idsFlags = outerFlags });
                 vertexCount += 2;
 
                 float deltaAngle = splitAngle / leftTriangles;
@@ -878,7 +878,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     float angle = deltaAngle * i;
                     p = center - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(cornerIndex);
@@ -891,8 +891,8 @@ namespace UnityEngine.UIElements.UIR
             // Tessellate top
             {
                 UInt16 cornerIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(center.x, center.y, posZ), tint = topColor, flags = cornerFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(center.x, center.y, posZ), tint = topColor, idsFlags = cornerFlags, uv = widths });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, idsFlags = outerFlags });
                 vertexCount += 2;
 
                 float deltaAngle = (Mathf.PI * 0.5f - splitAngle) / topTriangles;
@@ -900,7 +900,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     float angle = splitAngle + deltaAngle * i;
                     p = center - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, idsFlags = outerFlags });
                     ++vertexCount;
 
                     mesh.SetNextIndex(cornerIndex);
@@ -920,15 +920,15 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            float innerVertexFlags, outerVertexFlags;
+            Color32 innerVertexFlags, outerVertexFlags;
             if (tessellationType == TessellationType.EdgeCorner)
             {
-                innerVertexFlags = (float)VertexFlags.IsEdge;
-                outerVertexFlags = (float)VertexFlags.IsSolid;
+                innerVertexFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+                outerVertexFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
             }
             else
             {
-                outerVertexFlags = innerVertexFlags = 0.0f; // Primed for later update by the chain builder
+                outerVertexFlags = innerVertexFlags = new Color32(0, 0, 0, 0); // Primed for later update by the chain builder
             }
 
             var widths = new Vector2(leftWidth, topWidth);
@@ -937,15 +937,15 @@ namespace UnityEngine.UIElements.UIR
 
             UInt16 indexOffset = vertexCount;
 
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(center.x, center.y, posZ), tint = color, flags = innerVertexFlags, uv = widths });
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(center.x, center.y, posZ), tint = color, idsFlags = innerVertexFlags, uv = widths });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p.x, p.y, posZ), tint = color, idsFlags = outerVertexFlags });
             vertexCount += 2;
 
             for (int k = 1; k < kSubdivisions; ++k)
             {
                 float angle = (Mathf.PI * 0.5f) * ((float)k) / (kSubdivisions - 1);
                 p = center + new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle)) * radius;
-                mesh.SetNextVertex(new Vertex() { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
+                mesh.SetNextVertex(new Vertex() { position = new Vector3(p.x, p.y, posZ), tint = color, idsFlags = outerVertexFlags });
                 vertexCount++;
 
                 mesh.SetNextIndex((UInt16)(indexOffset + 0));
@@ -966,8 +966,8 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            float innerVertexFlags = (float)VertexFlags.IsEdge;
-            float outerVertexFlags = (float)VertexFlags.IsSolid;
+            Color32 innerVertexFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+            Color32 outerVertexFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
             Vector2 innerRadius = new Vector2(outerRadius.x - leftWidth, outerRadius.y - topWidth);
             var widths = new Vector2(leftWidth, topWidth);
 
@@ -992,8 +992,8 @@ namespace UnityEngine.UIElements.UIR
                 var p = new Vector2(center.x - outerRadius.x, center.y);
                 var q = new Vector2(center.x - innerRadius.x, center.y);
 
-                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = leftColor, flags = innerVertexFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerVertexFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = leftColor, idsFlags = innerVertexFlags, uv = widths });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, idsFlags = outerVertexFlags });
                 vertexCount += 2;
 
                 for (int i = 1; i <= leftQuads; ++i)
@@ -1003,8 +1003,8 @@ namespace UnityEngine.UIElements.UIR
                     p = center - new Vector2(Mathf.Cos(outerAngle), Mathf.Sin(outerAngle)) * outerRadius;
                     q = center - new Vector2(Mathf.Cos(innerAngle), Mathf.Sin(innerAngle)) * innerRadius;
 
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = leftColor, flags = innerVertexFlags, uv = widths });
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerVertexFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = leftColor, idsFlags = innerVertexFlags, uv = widths });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, idsFlags = outerVertexFlags });
                     vertexCount += 2;
 
                     mesh.SetNextIndex((UInt16)(vertexCount - 4));
@@ -1021,12 +1021,12 @@ namespace UnityEngine.UIElements.UIR
             {
                 float outerDeltaAngle = (Mathf.PI / 2 - outerSplitAngle) / topQuads;
                 float innerDeltaAngle = (Mathf.PI / 2 - innerSplitAngle) / topQuads;
-                innerVertexFlags = outerVertexFlags = 0.0f; // Primed for later update by the chain builder
+                innerVertexFlags = outerVertexFlags = new Color32(0, 0, 0, 0); // Primed for later update by the chain builder
                 var p = center - new Vector2(Mathf.Cos(outerSplitAngle), Mathf.Sin(outerSplitAngle)) * outerRadius;
                 var q = center - new Vector2(Mathf.Cos(innerSplitAngle), Mathf.Sin(innerSplitAngle)) * innerRadius;
 
-                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = topColor, flags = innerVertexFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerVertexFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = topColor, idsFlags = innerVertexFlags, uv = widths });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, idsFlags = outerVertexFlags });
                 vertexCount += 2;
 
                 for (int i = 1; i <= topQuads; ++i)
@@ -1036,8 +1036,8 @@ namespace UnityEngine.UIElements.UIR
                     p = center - new Vector2(Mathf.Cos(outerAngle), Mathf.Sin(outerAngle)) * outerRadius;
                     q = center - new Vector2(Mathf.Cos(innerAngle), Mathf.Sin(innerAngle)) * innerRadius;
 
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = topColor, flags = innerVertexFlags, uv = widths });
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerVertexFlags });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = topColor, idsFlags = innerVertexFlags, uv = widths });
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, idsFlags = outerVertexFlags });
                     vertexCount += 2;
 
                     mesh.SetNextIndex((UInt16)(vertexCount - 4));
@@ -1060,8 +1060,8 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            float innerVertexFlags = (float)VertexFlags.IsEdge;
-            float outerVertexFlags = (float)VertexFlags.IsSolid;
+            Color32 innerVertexFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsEdge);
+            Color32 outerVertexFlags = new Color32(0, 0, 0, (byte)VertexFlags.IsSolid);
             var widths = new Vector2(leftWidth, topWidth);
 
             var a = radius.x - leftWidth;
@@ -1071,8 +1071,8 @@ namespace UnityEngine.UIElements.UIR
 
             UInt16 indexOffset = vertexCount;
 
-            mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = color, flags = innerVertexFlags, uv = widths });
-            mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
+            mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = color, idsFlags = innerVertexFlags, uv = widths });
+            mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, idsFlags = outerVertexFlags });
             vertexCount += 2;
 
             for (int k = 1; k < kSubdivisions; ++k)
@@ -1081,8 +1081,8 @@ namespace UnityEngine.UIElements.UIR
                 float angle = (Mathf.PI * 0.5f) * percent;
                 p = center + new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle)) * radius;
                 q = center + new Vector2(-a * Mathf.Cos(angle), -b * Mathf.Sin(angle));
-                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = color, flags = innerVertexFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = color, idsFlags = innerVertexFlags, uv = widths });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, idsFlags = outerVertexFlags });
                 vertexCount += 2;
 
                 int i = k * 2;

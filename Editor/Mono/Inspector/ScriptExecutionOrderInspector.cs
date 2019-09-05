@@ -667,6 +667,8 @@ namespace UnityEditor
 
             private static bool IsDefaultTimeElement(MonoScript element)
             {
+                if (element == null)
+                    return true;
                 return (element.name == string.Empty);
             }
 

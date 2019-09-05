@@ -23,7 +23,7 @@ namespace UnityEditor.VersionControl
             Info = 2,
             Warning = 3,
             Error = 4
-        };
+        }
 
         // The bindings generator will set the instance pointer in this field
         IntPtr m_Self;

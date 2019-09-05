@@ -117,7 +117,7 @@ namespace UnityEditor
             if (filter != null)
                 return filter.m_Name;
 
-            Debug.LogError("Could not find saved filter " + instanceID + " " + instance.ToString());
+            Debug.LogError("Could not find saved filter " + instanceID + " " + instance);
             return "";
         }
 
@@ -130,7 +130,7 @@ namespace UnityEditor
                 instance.Changed();
             }
             else
-                Debug.LogError("Could not set name of saved filter " + instanceID + " " + instance.ToString());
+                Debug.LogError("Could not set name of saved filter " + instanceID + " " + instance);
         }
 
         public static void UpdateExistingSavedFilter(int instanceID, SearchFilter filter, float previewSize)
@@ -273,7 +273,7 @@ namespace UnityEditor
             }
             else
             {
-                Debug.LogError("Could not find saved filter " + instanceID + " " + instance.ToString());
+                Debug.LogError("Could not find saved filter " + instanceID + " " + instance);
             }
         }
 

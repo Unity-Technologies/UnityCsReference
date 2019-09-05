@@ -109,7 +109,7 @@ namespace UnityEditor
             HandleUtility.s_CustomPickDistance = k_HandlePickDistance;
 
             // Find mouse positions in local and world space
-            Plane plane = new Plane(-transform.forward, Vector3.zero);
+            Plane plane = new Plane(-transform.forward, new Vector3(0f, 0f, transform.position.z));
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(evt.mousePosition);
             float dist;
             plane.Raycast(mouseRay, out dist);
@@ -197,13 +197,13 @@ namespace UnityEditor
                 p1 += colliderOffset;
                 Vector3 worldPosV0 = transform.TransformPoint(p0);
                 Vector3 worldPosV1 = transform.TransformPoint(p1);
-                worldPosV0.z = worldPosV1.z = 0;
 
                 Handles.color = Color.green;
                 Handles.DrawAAPolyLine(4.0f, new Vector3[] { worldPosV0, worldPosV1 });
                 Handles.color = Color.white;
 
-                Vector2 newPoint = GetNearestPointOnEdge(transform.TransformPoint(mouseLocalPos), worldPosV0, worldPosV1);
+                Vector3 newPoint = GetNearestPointOnEdge(transform.TransformPoint(mouseLocalPos), worldPosV0, worldPosV1);
+                newPoint.z = transform.position.z;
 
                 EditorGUI.BeginChangeCheck();
                 float guiSize = HandleUtility.GetHandleSize(newPoint) * 0.04f;
@@ -236,7 +236,6 @@ namespace UnityEditor
                 PolygonEditor.GetPoint(m_SelectedPath, m_SelectedVertex, out point);
                 point += colliderOffset;
                 Vector3 worldPos = transform.TransformPoint(point);
-                worldPos.z = 0;
                 Vector2 screenPos = HandleUtility.WorldToGUIPoint(worldPos);
 
                 float guiSize = HandleUtility.GetHandleSize(worldPos) * 0.04f;
@@ -322,7 +321,6 @@ namespace UnityEditor
 
                     Vector3 worldPosV0 = transform.TransformPoint(p0);
                     Vector3 worldPosV1 = transform.TransformPoint(p1);
-                    worldPosV0.z = worldPosV1.z = transform.position.z;
 
                     Handles.color = Color.green;
                     Handles.DrawAAPolyLine(1.0f, new Vector3[] { worldPosV0, worldPosV1 });
@@ -359,7 +357,6 @@ namespace UnityEditor
             p1 += colliderOffset;
             Vector3 worldPosV0 = transform.TransformPoint(p0);
             Vector3 worldPosV1 = transform.TransformPoint(p1);
-            worldPosV0.z = worldPosV1.z = worldPos.z;
 
             float lineWidth = 4.0f;
             if (drawLeft)

@@ -82,7 +82,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         {
             SourceRenderTexture,
             DestinationRenderTexture
-        };
+        }
 
         public static void DrawBrushPreview(
             PaintContext heightmapPC,

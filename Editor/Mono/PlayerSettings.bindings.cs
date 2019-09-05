@@ -508,7 +508,8 @@ namespace UnityEditor
 
         public static extern StereoRenderingPath stereoRenderingPath { get; set; }
 
-        public static extern bool protectGraphicsMemory { get; set; }
+        [Obsolete("protectGraphicsMemory is deprecated. This field has no effect.", false)]
+        public static bool protectGraphicsMemory { get { return false; } set {} }
 
         public static extern bool enableFrameTimingStats { get; set; }
 
@@ -977,7 +978,17 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetGraphicsJobsForPlatform(BuildTarget platform, bool graphicsJobs);
 
-        public static extern GraphicsJobMode graphicsJobMode { get; set; }
+        public static GraphicsJobMode graphicsJobMode
+        {
+            get { return GetGraphicsJobModeForPlatform(EditorUserBuildSettings.activeBuildTarget); }
+            set { SetGraphicsJobModeForPlatform(EditorUserBuildSettings.activeBuildTarget, value); }
+        }
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern GraphicsJobMode GetGraphicsJobModeForPlatform(BuildTarget platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetGraphicsJobModeForPlatform(BuildTarget platform, GraphicsJobMode gfxJobMode);
 
         [Obsolete("GetPlatformVuforiaEnabled(BuildTargetGroup targetGroup) has been deprecated. Use vuforiaEnabled instead.")]
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]

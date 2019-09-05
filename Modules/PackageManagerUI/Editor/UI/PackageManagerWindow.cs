@@ -4,13 +4,10 @@
 
 using System;
 using System.Linq;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -72,22 +69,23 @@ namespace UnityEditor.PackageManager.UI
                 packageManagerToolbar.SetEnabled(!PackageDatabase.instance.isEmpty);
                 packageDetails.packageToolbarContainer.SetEnabled(!PackageDatabase.instance.isEmpty);
 
-                PackageDatabase.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
-                PackageDatabase.instance.onRefreshOperationStart += OnRefreshOperationStart;
-                PackageDatabase.instance.onRefreshOperationError += OnRefreshOperationError;
+                PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
+                PageManager.instance.onRefreshOperationStart += OnRefreshOperationStart;
+                PageManager.instance.onRefreshOperationError += OnRefreshOperationError;
 
                 PackageManagerWindowAnalytics.Setup();
 
                 rootVisualElement.Add(root);
                 root.StretchToParentSize();
 
-                PackageFiltering.instance.currentFilterTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.All;
+                var newTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.All;
+                PackageFiltering.instance.currentFilterTab = newTab;
 
-                if (!PageManager.instance.HasFetchedPageForFilterTab(PackageFiltering.instance.currentFilterTab))
-                    PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
+                if (PageManager.instance.GetRefreshTimestamp(newTab) == 0)
+                    PageManager.instance.Refresh(newTab);
 
-                if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.All && !PageManager.instance.HasFetchedPageForFilterTab(PackageFilterTab.All))
-                    PageManager.instance.Refresh(RefreshOptions.All);
+                if (newTab != PackageFilterTab.All && PageManager.instance.GetRefreshTimestamp(PackageFilterTab.All) == 0)
+                    PageManager.instance.Refresh(PackageFilterTab.All);
 
                 mainContainer.leftWidth = m_SplitPaneLeftWidth;
                 mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
@@ -143,9 +141,9 @@ namespace UnityEditor.PackageManager.UI
 
             PackageManagerPrefs.instance.lastUsedPackageFilter = PackageFiltering.instance.currentFilterTab;
 
-            PackageDatabase.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
-            PackageDatabase.instance.onRefreshOperationStart -= OnRefreshOperationStart;
-            PackageDatabase.instance.onRefreshOperationError -= OnRefreshOperationError;
+            PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
+            PageManager.instance.onRefreshOperationStart -= OnRefreshOperationStart;
+            PageManager.instance.onRefreshOperationError -= OnRefreshOperationError;
 
             packageDetails.OnDisable();
             packageList.OnDisable();
@@ -169,17 +167,25 @@ namespace UnityEditor.PackageManager.UI
             s_Window = null;
         }
 
-        private void OnRefreshOperationFinish(PackageFilterTab tab)
+        private void OnRefreshOperationFinish()
         {
             packageManagerToolbar.SetEnabled(true);
             packageDetails.packageToolbarContainer.SetEnabled(true);
+            SelectPackageAndFilter();
+        }
 
+        private void SelectPackageAndFilter()
+        {
             if (m_FilterToSelectAfterLoad != null)
             {
                 PackageFiltering.instance.currentFilterTab = (PackageFilterTab)m_FilterToSelectAfterLoad;
             }
 
-            if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded) && (m_FilterToSelectAfterLoad == null || tab == m_FilterToSelectAfterLoad))
+            if (string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
+            {
+                m_FilterToSelectAfterLoad = null;
+            }
+            else
             {
                 var package = PackageDatabase.instance.GetPackage(m_PackageToSelectOnLoaded)
                     ?? PackageDatabase.instance.GetPackageByDisplayName(m_PackageToSelectOnLoaded);
@@ -202,12 +208,12 @@ namespace UnityEditor.PackageManager.UI
                     {
                         var newFilterTab = PackageFilterTab.All;
                         if (package.versions.Any(v => v.HasTag(PackageTag.BuiltIn)))
-                            newFilterTab = PackageFilterTab.Modules;
+                            newFilterTab = PackageFilterTab.BuiltIn;
                         else
                         {
                             var installedVersion = package.installedVersion;
                             if (installedVersion != null && installedVersion.isDirectDependency)
-                                newFilterTab = PackageFilterTab.Local;
+                                newFilterTab = PackageFilterTab.InProject;
                         }
                         PackageFiltering.instance.currentFilterTab = newFilterTab;
                     }
@@ -217,10 +223,6 @@ namespace UnityEditor.PackageManager.UI
                     m_FilterToSelectAfterLoad = null;
                     m_PackageToSelectOnLoaded = null;
                 }
-            }
-            else if (string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
-            {
-                m_FilterToSelectAfterLoad = null;
             }
         }
 
@@ -244,10 +246,14 @@ namespace UnityEditor.PackageManager.UI
             if (string.IsNullOrEmpty(url))
                 return;
 
-            var lastIndex = url.LastIndexOf('/');
-            if (lastIndex > 0)
+            var startIndex = url.LastIndexOf('/');
+            if (startIndex > 0)
             {
-                SelectPackageAndFilter(url.Substring(lastIndex + 1), PackageFilterTab.AssetStore);
+                var id = url.Substring(startIndex + 1);
+                var endIndex = id.IndexOf('?');
+                if (endIndex > 0)
+                    id = id.Substring(0, endIndex);
+                SelectPackageAndFilter(id, PackageFilterTab.AssetStore);
             }
         }
 
@@ -281,13 +287,13 @@ namespace UnityEditor.PackageManager.UI
                 s_Window.packageManagerToolbar.SetCurrentSearch(searchText);
                 s_Window.m_PackageToSelectOnLoaded = packageIdOrDisplayName;
                 s_Window.m_FilterToSelectAfterLoad = filterTab;
-                if (!PackageDatabase.instance.isEmpty && !refresh)
-                {
-                    s_Window.OnRefreshOperationFinish(filterTab ?? PackageFilterTab.All);
-                }
-                else if (refresh)
+                if (refresh)
                 {
                     PageManager.instance.Refresh(filterTab ?? PackageFilterTab.All);
+                }
+                else if (!PackageDatabase.instance.isEmpty)
+                {
+                    s_Window.SelectPackageAndFilter();
                 }
             }
             s_Window.Show();

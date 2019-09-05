@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditor.Collaboration;
 using UnityEditor.Web;
+using System.IO;
 
 namespace UnityEditor
 {
@@ -38,8 +39,8 @@ namespace UnityEditor
             public static GUIContent overwriteFailedCheckoutAssets = EditorGUIUtility.TrTextContent("Overwrite Failed Checkout Assets", "When on, assets that can not be checked out will get saved anyway.");
             public static GUIContent overlayIcons = EditorGUIUtility.TrTextContent("Overlay Icons", "Should version control status icons be shown in project view.");
 
-            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (experimental)");
-            public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
+            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline");
+            public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server (project specific)");
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
@@ -179,13 +180,13 @@ namespace UnityEditor
 
         private PopupElement[] assetPipelineModePopupList =
         {
-            new PopupElement("Version 1"),
-            new PopupElement("Version 2 (experimental)"),
+            new PopupElement("Version 1 (deprecated)"),
+            new PopupElement("Version 2"),
         };
 
         private PopupElement[] cacheServerModePopupList =
         {
-            new PopupElement("As preferences"),
+            new PopupElement("Use global settings (stored in preferences)"),
             new PopupElement("Enabled"),
             new PopupElement("Disabled"),
         };
@@ -238,11 +239,11 @@ namespace UnityEditor
         }
 
         ReorderableList m_CacheServerList;
-        enum CacheServerConnectionState { Unknown, Success, Failure };
+        enum CacheServerConnectionState { Unknown, Success, Failure }
         private CacheServerConnectionState m_CacheServerConnectionState;
         private static string s_ForcedAssetPipelineWarning;
 
-        const string kEditorUserSettingsPath = "Library/EditorUserSettings.asset";
+        const string kEditorUserSettingsPath = "UserSettings/EditorUserSettings.asset";
         SerializedObject m_EditorUserSettings;
         SerializedProperty m_AssetPipelineMode;
         SerializedProperty m_CacheServerMode;
@@ -275,8 +276,9 @@ namespace UnityEditor
         public void OnDisable()
         {
             DevDeviceList.Changed -= OnDeviceListChanged;
-            if (m_EditorUserSettings.targetObject != null && EditorUtility.IsDirty(m_EditorUserSettings.targetObject))
+            if (m_EditorUserSettings != null && m_EditorUserSettings.targetObject != null && EditorUtility.IsDirty(m_EditorUserSettings.targetObject))
                 InternalEditorUtility.SaveToSerializedFileAndForget(new[] { m_EditorUserSettings.targetObject }, kEditorUserSettingsPath, true);
+            m_EditorUserSettings = null;
         }
 
         void OnDeviceListChanged()
@@ -284,6 +286,7 @@ namespace UnityEditor
             BuildRemoteDeviceList();
         }
 
+        private static readonly int s_ServerTextFieldHash = "CacheServerTextField".GetHashCode();
         private void DrawCacheServerListElement(Rect rect, int index, bool selected, bool focused)
         {
             rect.height -= 2; // nicer looking with selected list row and a text field in it
@@ -292,10 +295,30 @@ namespace UnityEditor
             // Will have space in front of label for more space between it and the drag handle.
             rect.xMin -= ReorderableList.Defaults.dragHandleWidth;
 
-            string oldName = m_CacheServers.GetArrayElementAtIndex(index).stringValue;
+            // Get the current name at a given index, or an empty string if it's an invalid index
+            string oldName = (index < 0 || index >= m_CacheServers.arraySize) ? string.Empty : m_CacheServers.GetArrayElementAtIndex(index).stringValue;
             if (string.IsNullOrEmpty(oldName))
-                oldName = "";
-            string newName = EditorGUI.TextField(rect, " Server " + index, oldName);
+                oldName = string.Empty;
+
+            // Grow the array if the index is invalid
+            if (index >= m_CacheServers.arraySize) { index = m_CacheServers.arraySize; m_CacheServers.arraySize = index + 1; }
+
+            // Show the draggable handle
+            ReorderableList.defaultBehaviours.DrawElementDraggingHandle(rect, index, selected, focused, true);
+
+            // Show the textbox
+            var elementContentRect = rect;
+            elementContentRect.y++;
+            elementContentRect.xMin += ReorderableList.Defaults.dragHandleWidth;
+            elementContentRect.xMax -= ReorderableList.Defaults.padding;
+
+            int     prevId  = GUIUtility.keyboardControl;
+            int     id      = GUIUtility.GetControlID(s_ServerTextFieldHash, FocusType.Keyboard, elementContentRect);
+            string  newName = EditorGUI.TextFieldInternal(id, elementContentRect, EditorGUIUtility.TempContent(" Server " + index), oldName, EditorStyles.textField);
+
+            // When we focus on the text field, we want to select that line in the m_CacheServerList ReorderableList
+            if (prevId != id && GUIUtility.keyboardControl == id)
+                m_CacheServerList.index = index;
 
             if (newName != oldName)
             {
@@ -612,17 +635,39 @@ namespace UnityEditor
             m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
             s_ForcedAssetPipelineWarning = null;
 
-            if (m_CacheServerList == null)
+
+            m_CacheServerList = new ReorderableList(m_EditorUserSettings,
+                m_CacheServers,
+                draggable:           true,
+                displayHeader:       false,
+                displayAddButton:    true,
+                displayRemoveButton: true)
             {
-                m_CacheServerList = new ReorderableList(serializedObject, m_CacheServers, true, false, true, true);
-                m_CacheServerList.onReorderCallback = (ReorderableList list) => { serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onAddCallback = (ReorderableList list) => { m_CacheServers.arraySize += 1; serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onRemoveCallback = (ReorderableList list) => { ReorderableList.defaultBehaviours.DoRemoveButton(list); serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onCanRemoveCallback = (ReorderableList list) => { return list.index < m_CacheServers.arraySize && list.index >= 0; };
-                m_CacheServerList.drawElementCallback = DrawCacheServerListElement;
-                m_CacheServerList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
-                m_CacheServerList.headerHeight = 3;
-            }
+                drawElementCallback = DrawCacheServerListElement,
+                elementHeight       = EditorGUIUtility.singleLineHeight + 2,
+                headerHeight        = 3,
+
+                onAddCallback       = (ReorderableList list) => { list.serializedProperty.arraySize += 1; },
+                onReorderCallback   = (ReorderableList list) => { list.serializedProperty.serializedObject.ApplyModifiedProperties(); },
+                onChangedCallback   = (ReorderableList list) => { list.serializedProperty.serializedObject.ApplyModifiedProperties(); },
+                onCanRemoveCallback = (ReorderableList list) => { return list.index < list.serializedProperty.arraySize && list.index >= 0; },
+
+                onRemoveCallback    = (ReorderableList list) =>
+                {
+                    if (list.serializedProperty.arraySize == 0)
+                        return;
+
+                    list.GrabKeyboardFocus(); // de-focuses the text field, so it doesn't end up showing the old value after the deletion
+
+                    if (list.index < list.serializedProperty.arraySize)
+                        list.serializedProperty.DeleteArrayElementAtIndex(list.index);
+                    else
+                        list.serializedProperty.arraySize--;
+
+                    if (list.index >= list.serializedProperty.arraySize - 1)
+                        list.index = list.serializedProperty.arraySize - 1;
+                }
+            };
         }
 
         private void DoProjectGenerationSettings()
@@ -677,7 +722,7 @@ namespace UnityEditor
                 else if (CacheServerPreferences.GetMagicFileAssetPipelineOverride())
                     s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via via magic adb2.txt file in project root. The above setting is not in effect before restarting without the magic file.";
                 else
-                    s_ForcedAssetPipelineWarning = "";
+                    s_ForcedAssetPipelineWarning = string.Empty;
             }
             return s_ForcedAssetPipelineWarning;
         }
@@ -699,7 +744,14 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(assetPipelineWarning))
                 EditorGUILayout.HelpBox(assetPipelineWarning, MessageType.Info, true);
             else if (isAssetPipelineVersion1 != AssetDatabase.IsV1Enabled())
-                EditorGUILayout.HelpBox("Changes in asset pipeline version will take effect after saving and restarting the project.", MessageType.Info, true);
+            {
+                var message = "Changes in Asset Pipeline Version will take effect after saving and restarting the project.";
+
+                if (isAssetPipelineVersion1)
+                    message += "\nPlease note that Asset Pipeline Version 1 is now deprecated.";
+
+                EditorGUILayout.HelpBox(message, MessageType.Info, true);
+            }
         }
 
         private void DoCacheServerSettings()

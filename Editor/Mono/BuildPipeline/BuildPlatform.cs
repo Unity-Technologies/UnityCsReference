@@ -41,7 +41,7 @@ namespace UnityEditor.Build
             this.forceShowTarget = forceShowTarget;
             this.defaultTarget = defaultTarget;
         }
-    };
+    }
 
     internal class BuildPlatforms
     {
@@ -144,10 +144,7 @@ namespace UnityEditor.Build
 
         public bool ContainsBuildTarget(BuildTargetGroup group)
         {
-            if (BuildPlatformIndexFromTargetGroup(group) < 0)
-                return false;
-
-            return true;
+            return BuildPlatformIndexFromTargetGroup(group) >= 0;
         }
 
         public BuildPlatform BuildPlatformFromTargetGroup(BuildTargetGroup group)
@@ -170,5 +167,5 @@ namespace UnityEditor.Build
         {
             return GetValidPlatforms(false);
         }
-    };
+    }
 }

@@ -423,5 +423,7 @@ namespace UnityEditor
         // This is pure backward compatibility codepath. It can be removed when we decide that the time has come
         internal extern bool ShouldShowRemoveMatteOption();
         internal extern bool removeMatte { get; set; }
+
+        public extern bool ignorePngGamma { get; set; }
     }
 }

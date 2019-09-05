@@ -144,9 +144,9 @@ namespace UnityEditor
         {
             InitSettings();
 
-            m_ShowGeneralLightmapSettings = new SavedBool($"LightingWindow.ShowGeneralLightmapSettings", true);
-            m_ShowRealtimeLightsSettings = new SavedBool($"LightingWindow.ShowRealtimeLightsSettings", true);
-            m_ShowMixedLightsSettings = new SavedBool($"LightingWindow.ShowMixedLightsSettings", true);
+            m_ShowGeneralLightmapSettings = new SavedBool("LightingWindow.ShowGeneralLightmapSettings", true);
+            m_ShowRealtimeLightsSettings = new SavedBool("LightingWindow.ShowRealtimeLightsSettings", true);
+            m_ShowMixedLightsSettings = new SavedBool("LightingWindow.ShowMixedLightsSettings", true);
         }
 
         public void OnDisable()
@@ -349,7 +349,7 @@ namespace UnityEditor
             Lightmapping.enlightenForceUpdates = EditorGUILayout.Toggle(Styles.ForceUpdates, Lightmapping.enlightenForceUpdates);
             Lightmapping.enlightenForceWhiteAlbedo = EditorGUILayout.Toggle(Styles.ForceWhiteAlbedo, Lightmapping.enlightenForceWhiteAlbedo);
 
-            if (m_BakeBackend.intValue == (int)LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+            if (m_BakeBackend.intValue != (int)LightmapEditorSettings.Lightmapper.Enlighten)
             {
                 EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.ExportTrainingData);
 

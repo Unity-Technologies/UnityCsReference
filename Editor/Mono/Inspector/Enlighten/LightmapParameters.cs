@@ -139,6 +139,6 @@ namespace UnityEditor
             public static readonly GUIContent bakedLightmapTagContent = EditorGUIUtility.TrTextContent("Baked Tag", "An integer that lets you force an object into a different baked lightmap even though all the other parameters are the same. This can be useful e.g. when streaming in sections of a level.");
             public static readonly GUIContent limitLightmapCount = EditorGUIUtility.TrTextContent("Limit Lightmap Count", "If enabled, objects with the same baked GI settings will be packed into a specified number of lightmaps. This may reduce the objects' lightmap resolution.");
             public static readonly GUIContent lightmapMaxCount = EditorGUIUtility.TrTextContent("Max Lightmaps", "The maximum number of lightmaps into which objects will be packed.");
-        };
+        }
     }
 }

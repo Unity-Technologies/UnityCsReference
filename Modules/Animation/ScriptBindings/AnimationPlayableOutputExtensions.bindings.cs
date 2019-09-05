@@ -51,5 +51,5 @@ namespace UnityEngine.Experimental.Animations
         extern private static int InternalGetSortingOrder(PlayableOutputHandle output);
         [NativeThrows]
         extern private static void InternalSetSortingOrder(PlayableOutputHandle output, int sortingOrder);
-    };
+    }
 }

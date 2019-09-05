@@ -23,6 +23,6 @@ namespace UnityEditor
             TexDim3D = 3,
             TexDimCUBE = 4,
             TexDimAny = 6,
-        };
+        }
     }
 }

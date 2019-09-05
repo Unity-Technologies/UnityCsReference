@@ -30,20 +30,8 @@ namespace TreeEditor
             tension = o.tension;
         }
 
-        void OnDisable()
-        {
-            for (int i = 0; i < nodes.Length; i++)
-            {
-                //    DestroyImmediate(nodes[i],true);
-            }
-        }
-
         public void Reset()
         {
-            for (int i = 0; i < nodes.Length; i++)
-            {
-                //   DestroyImmediate(nodes[i],true);
-            }
             nodes = new SplineNode[0];
         }
 
@@ -61,10 +49,7 @@ namespace TreeEditor
                 {
                     temp[i] = nodes[i];
                 }
-                for (int i = c; i < nodes.Length; i++)
-                {
-                    //   DestroyImmediate(nodes[i],true);
-                }
+
                 nodes = temp;
             }
         }
@@ -83,8 +68,6 @@ namespace TreeEditor
                     j++;
                 }
             }
-
-            // DestroyImmediate(nodes[c], true);
 
             nodes = temp;
         }
@@ -105,9 +88,6 @@ namespace TreeEditor
 
             SplineNode node = new SplineNode(pos, timeInSeconds);
             nodes[nodes.Length - 1] = node;
-
-            // Add to Asset Database
-            //   UnityEditor.AssetDatabase.AddObjectToAsset(node, this);
         }
 
         public float GetApproximateLength()

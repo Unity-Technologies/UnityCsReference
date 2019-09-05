@@ -336,7 +336,7 @@ namespace UnityEditor.VisualStudioIntegration
             // We reload the domain because selecting a different editor requires loading a different UnityVS
             Initialize(editorPath);
 
-            InternalEditorUtility.RequestScriptReload();
+            EditorUtility.RequestScriptReload();
         }
 
         public static string GetAboutWindowLabel()

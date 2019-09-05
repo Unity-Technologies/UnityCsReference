@@ -156,7 +156,11 @@ namespace UnityEditor
                 EditorGUILayout.Space();
             }
 
+            float labelWidth = EditorGUIUtility.labelWidth;
+
             TierSettingsGUI();
+
+            EditorGUIUtility.labelWidth = labelWidth;
 
             GUILayout.Label(Styles.builtinSettings, EditorStyles.boldLabel);
             if (!usingSRP)

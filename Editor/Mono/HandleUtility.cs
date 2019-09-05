@@ -378,7 +378,7 @@ namespace UnityEditor
 
             float enter;
             if (!p.Raycast(r, out enter))
-                return -1;
+                return DistanceToPolyLine(points);
 
             Vector3 intersect = r.GetPoint(enter);
 

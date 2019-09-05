@@ -1100,7 +1100,7 @@ namespace UnityEngine
         {
             if (GraphicsFormatUtility.GetBlockSize(format) * (width / GraphicsFormatUtility.GetBlockWidth(format)) * (height / GraphicsFormatUtility.GetBlockHeight(format)) < 65536)
             {
-                Debug.LogError(String.Format("SparseTexture creation failed. The minimum size in bytes of a SparseTexture is 64KB."), this);
+                Debug.LogError("SparseTexture creation failed. The minimum size in bytes of a SparseTexture is 64KB.", this);
                 return false;
             }
             return true;

@@ -311,7 +311,6 @@ namespace UnityEditor.Scripting.Compilers
                     if (File.Exists(manifest))
                     {
                         extensions.Add(new UWPExtensionSDK(extensionName, "1.0", manifest));
-                        continue;
                     }
                 }
             }

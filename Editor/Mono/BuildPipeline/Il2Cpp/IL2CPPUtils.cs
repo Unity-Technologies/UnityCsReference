@@ -440,12 +440,6 @@ namespace UnityEditorInternal
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
-            // Working around gcc bug 41091
-            if (m_PlatformProvider.target == BuildTarget.StandaloneLinux64)
-            {
-                arguments.Add("--disable-aggressive-inlining");
-            }
-
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
             arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel)));

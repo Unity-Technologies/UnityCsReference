@@ -15,7 +15,7 @@ namespace UnityEngine.XR.WSA
         RightHand,
         LeftController,
         RightController,
-    };
+    }
 
     [NativeHeader("Modules/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
     internal enum Handedness
@@ -42,7 +42,7 @@ namespace UnityEngine.XR.WSA
         Select,
         TouchPadTouch,
         ThumbStick,
-    };
+    }
 
     [NativeHeader("Modules/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
     [StaticAccessor("HolographicEmulation::HolographicEmulationManager::Get()", StaticAccessorType.Dot)]

@@ -159,10 +159,7 @@ namespace UnityEngine.TextCore
         /// <returns></returns>
         public bool Contains(FontAsset font)
         {
-            if (m_FontAssetReferenceLookup.ContainsKey(font.hashCode))
-                return true;
-
-            return false;
+            return m_FontAssetReferenceLookup.ContainsKey(font.hashCode);
         }
 
         /// <summary>
@@ -172,10 +169,7 @@ namespace UnityEngine.TextCore
         /// <returns></returns>
         public bool Contains(TextSpriteAsset sprite)
         {
-            if (m_FontAssetReferenceLookup.ContainsKey(sprite.hashCode))
-                return true;
-
-            return false;
+            return m_FontAssetReferenceLookup.ContainsKey(sprite.hashCode);
         }
 
         /// <summary>
@@ -199,12 +193,7 @@ namespace UnityEngine.TextCore
         {
             fontAsset = null;
 
-            if (m_FontAssetReferenceLookup.TryGetValue(hashCode, out fontAsset))
-            {
-                return true;
-            }
-
-            return false;
+            return m_FontAssetReferenceLookup.TryGetValue(hashCode, out fontAsset);
         }
 
         /// <summary>
@@ -228,12 +217,7 @@ namespace UnityEngine.TextCore
         {
             spriteAsset = null;
 
-            if (m_SpriteAssetReferenceLookup.TryGetValue(hashCode, out spriteAsset))
-            {
-                return true;
-            }
-
-            return false;
+            return m_SpriteAssetReferenceLookup.TryGetValue(hashCode, out spriteAsset);
         }
 
         /// <summary>
@@ -257,12 +241,7 @@ namespace UnityEngine.TextCore
         {
             gradientPreset = null;
 
-            if (m_ColorGradientReferenceLookup.TryGetValue(hashCode, out gradientPreset))
-            {
-                return true;
-            }
-
-            return false;
+            return m_ColorGradientReferenceLookup.TryGetValue(hashCode, out gradientPreset);
         }
 
         /// <summary>
@@ -286,12 +265,7 @@ namespace UnityEngine.TextCore
         {
             material = null;
 
-            if (m_FontMaterialReferenceLookup.TryGetValue(hashCode, out material))
-            {
-                return true;
-            }
-
-            return false;
+            return m_FontMaterialReferenceLookup.TryGetValue(hashCode, out material);
         }
     }
 }

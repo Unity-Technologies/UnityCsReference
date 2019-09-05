@@ -19,5 +19,5 @@ namespace UnityEditor.RestService
         MethodNotAllowed = 405,
         InternalServerError = 500,
         NotImplemented = 501
-    };
+    }
 }

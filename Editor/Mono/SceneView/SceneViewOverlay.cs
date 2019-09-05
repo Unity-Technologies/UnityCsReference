@@ -51,7 +51,7 @@ namespace UnityEditor
                     result = other.m_SecondaryOrder.CompareTo(m_SecondaryOrder);
                 return result;
             }
-        };
+        }
         public delegate void WindowFunction(Object target, SceneView sceneView);
 
         static List<OverlayWindow> m_Windows;

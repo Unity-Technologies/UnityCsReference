@@ -36,7 +36,7 @@ namespace UnityEditor.Collaboration
 
             // do not exceed Javascript Number range
             InvalidRevertableState             = (uint)1 << 31
-        };
+        }
 
         string m_Path;
         Collab.CollabStates m_State;

@@ -747,10 +747,7 @@ namespace UnityEngine.TextCore
             if (m_CharacterLookupDictionary == null)
                 return false;
 
-            if (m_CharacterLookupDictionary.ContainsKey((uint)character))
-                return true;
-
-            return false;
+            return m_CharacterLookupDictionary.ContainsKey((uint)character);
         }
 
         /// <summary>
@@ -763,10 +760,7 @@ namespace UnityEngine.TextCore
             if (m_CharacterLookupDictionary == null)
                 return false;
 
-            if (m_CharacterLookupDictionary.ContainsKey(character))
-                return true;
-
-            return false;
+            return m_CharacterLookupDictionary.ContainsKey(character);
         }
 
         /// <summary>
@@ -887,10 +881,7 @@ namespace UnityEngine.TextCore
                     missingCharacters.Add(text[i]);
             }
 
-            if (missingCharacters.Count == 0)
-                return true;
-
-            return false;
+            return missingCharacters.Count == 0;
         }
 
         /// <summary>

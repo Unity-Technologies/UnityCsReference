@@ -141,7 +141,7 @@ namespace UnityEditor.TextCore
 
             // Check if Sprite Asset already exists
             TextSpriteAsset spriteAsset = AssetDatabase.LoadAssetAtPath(filePath + fileNameWithoutExtension + ".asset", typeof(TextSpriteAsset)) as TextSpriteAsset;
-            bool isNewAsset = spriteAsset == null ? true : false;
+            bool isNewAsset = spriteAsset == null;
 
             if (isNewAsset)
             {

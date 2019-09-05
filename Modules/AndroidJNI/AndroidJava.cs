@@ -155,7 +155,7 @@ namespace UnityEngine
 
         public virtual string toString()
         {
-            return this.ToString() + " <c# proxy java object>";
+            return this + " <c# proxy java object>";
         }
 
         internal IntPtr proxyObject = IntPtr.Zero;
@@ -343,7 +343,7 @@ namespace UnityEngine
                 sb.Append(", ");
                 sb.Append(obj == null ? "<null>" : obj.GetType().ToString());
             }
-            Debug.Log(call + "(\"" + methodName + "\"" + sb.ToString() + ") = " + signature);
+            Debug.Log(call + "(\"" + methodName + "\"" + sb + ") = " + signature);
         }
 
         //===================================================================

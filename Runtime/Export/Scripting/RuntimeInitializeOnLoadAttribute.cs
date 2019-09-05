@@ -13,7 +13,7 @@ namespace UnityEngine
         AfterAssembliesLoaded,
         BeforeSplashScreen,
         SubsystemRegistration
-    };
+    }
 
     [Scripting.RequiredByNativeCode]
     [System.AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]

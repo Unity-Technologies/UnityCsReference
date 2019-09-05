@@ -25,12 +25,7 @@ namespace UnityEngine.TextCore
 
             rectTransform.GetWorldCorners(s_RectWorldCorners);
 
-            if (PointIntersectRectangle(position, s_RectWorldCorners[0], s_RectWorldCorners[1], s_RectWorldCorners[2], s_RectWorldCorners[3]))
-            {
-                return true;
-            }
-
-            return false;
+            return PointIntersectRectangle(position, s_RectWorldCorners[0], s_RectWorldCorners[1], s_RectWorldCorners[2], s_RectWorldCorners[3]);
         }
 
         /// <summary>
@@ -106,10 +101,7 @@ namespace UnityEngine.TextCore
 
             if (Mathf.Abs(d) < Mathf.Epsilon)   // if line is parallel & co-planar to plane
             {
-                if (n == 0)
-                    return true;
-                else
-                    return false;
+                return n == 0;
             }
 
             float sI = n / d;

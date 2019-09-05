@@ -822,14 +822,6 @@ namespace UnityEditorInternal
         {
             m_RenamedNode = item as AnimationWindowHierarchyNode;
 
-            GameObject rootGameObject = null;
-            if (m_RenamedNode.curves.Length > 0)
-            {
-                AnimationWindowSelectionItem selectionBinding = m_RenamedNode.curves[0].selectionBinding;
-                if (selectionBinding != null)
-                    rootGameObject = selectionBinding.rootGameObject;
-            }
-
             return GetRenameOverlay().BeginRename(m_RenamedNode.path, item.id, delay);
         }
 

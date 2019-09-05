@@ -27,7 +27,7 @@ namespace UnityEngine.XR.WSA.Input
         NavigationRailsX = 128,
         NavigationRailsY = 256,
         NavigationRailsZ = 512
-    };
+    }
 
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]

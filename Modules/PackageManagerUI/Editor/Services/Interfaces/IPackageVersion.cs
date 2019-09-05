@@ -13,20 +13,19 @@ namespace UnityEditor.PackageManager.UI
 
         string displayName { get; }
 
-        string type { get; }
-
         string author { get; }
+
+        string authorLink { get; }
 
         string description { get; }
 
         string category { get; }
 
+        IDictionary<string, string> categoryLinks { get; }
+
         string packageUniqueId { get; }
 
         string uniqueId { get; }
-
-        // TODO: Might need to create a wrapper `PackageSource` to account for AssetStore package info.
-        PackageSource source { get; }
 
         IEnumerable<Error> errors { get; }
 
@@ -51,8 +50,6 @@ namespace UnityEditor.PackageManager.UI
         // A version is fully fetched when the information isn't derived from another version (therefore may be inaccurate)
         bool isFullyFetched { get; }
 
-        bool isUserVisible { get; }
-
         bool isAvailableOnDisk { get; }
 
         bool isVersionLocked { get; }
@@ -73,11 +70,7 @@ namespace UnityEditor.PackageManager.UI
 
         IEnumerable<SemVersion> supportedVersions { get; }
 
-        IEnumerable<PackageImage> images { get; }
-
         IEnumerable<PackageSizeInfo> sizes { get; }
-
-        IEnumerable<PackageLink> links { get; }
 
         EntitlementsInfo entitlements { get; }
     }

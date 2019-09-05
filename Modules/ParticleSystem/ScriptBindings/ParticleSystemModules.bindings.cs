@@ -229,6 +229,17 @@ namespace UnityEngine
             extern public float curveMultiplier { get; set; }
         }
 
+        public partial struct LifetimeByEmitterSpeedModule
+        {
+            internal LifetimeByEmitterSpeedModule(ParticleSystem particleSystem) { m_ParticleSystem = particleSystem; }
+            internal ParticleSystem m_ParticleSystem;
+
+            extern public bool enabled { get; set; }
+            extern public MinMaxCurve curve { get; set; }
+            extern public float curveMultiplier { get; set; }
+            extern public Vector2 range { get; set; }
+        }
+
         public partial struct ForceOverLifetimeModule
         {
             internal ForceOverLifetimeModule(ParticleSystem particleSystem) { m_ParticleSystem = particleSystem; }
@@ -575,6 +586,7 @@ namespace UnityEngine
         public VelocityOverLifetimeModule velocityOverLifetime { get { return new VelocityOverLifetimeModule(this); } }
         public LimitVelocityOverLifetimeModule limitVelocityOverLifetime { get { return new LimitVelocityOverLifetimeModule(this); } }
         public InheritVelocityModule inheritVelocity { get { return new InheritVelocityModule(this); } }
+        public LifetimeByEmitterSpeedModule lifetimeByEmitterSpeed { get { return new LifetimeByEmitterSpeedModule(this); } }
         public ForceOverLifetimeModule forceOverLifetime { get { return new ForceOverLifetimeModule(this); } }
         public ColorOverLifetimeModule colorOverLifetime { get { return new ColorOverLifetimeModule(this); } }
         public ColorBySpeedModule colorBySpeed { get { return new ColorBySpeedModule(this); } }

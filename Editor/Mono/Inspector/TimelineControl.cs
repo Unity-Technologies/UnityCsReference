@@ -44,7 +44,7 @@ namespace UnityEditor
         private float m_TimeStartDrag = 0f;
         private float m_TimeOffset = 0f;
 
-        private enum DragStates { None, LeftSelection, RightSelection, FullSelection, Destination, Source, Playhead, TimeArea };
+        private enum DragStates { None, LeftSelection, RightSelection, FullSelection, Destination, Source, Playhead, TimeArea }
         private DragStates m_DragState = DragStates.None;
 
         private int id = -1;

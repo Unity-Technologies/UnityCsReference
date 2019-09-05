@@ -20,7 +20,7 @@ namespace UnityEngine
         kAutorotateToPortraitUpsideDown = 2,
         kAutorotateToLandscapeLeft      = 4,
         kAutorotateToLandscapeRight     = 8,
-    };
+    }
 
     public enum FullScreenMode
     {
@@ -724,7 +724,7 @@ namespace UnityEngine.Experimental.Rendering
         AfterScriptUpdate = 1,
         AfterScriptLateUpdate = 2,
         WaitForPresent = 3
-    };
+    }
 
     public static partial class GraphicsDeviceSettings
     {

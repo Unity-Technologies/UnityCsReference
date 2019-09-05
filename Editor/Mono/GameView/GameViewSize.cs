@@ -11,7 +11,7 @@ namespace UnityEditor
     {
         AspectRatio,
         FixedResolution
-    };
+    }
 
     [Serializable]
     internal class GameViewSize

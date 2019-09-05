@@ -116,7 +116,7 @@ namespace UnityEngine
         int m_iAltCursorPos = -1;
         public int altCursorPosition { get { return m_iAltCursorPos; } set { m_iAltCursorPos = value; } }
 
-        public enum DblClickSnapping : byte { WORDS, PARAGRAPHS };
+        public enum DblClickSnapping : byte { WORDS, PARAGRAPHS }
 
         [RequiredByNativeCode]
         public TextEditor()
@@ -1224,7 +1224,7 @@ namespace UnityEngine
             Delete, Backspace, DeleteWordBack, DeleteWordForward, DeleteLineBack,
             Cut, Copy, Paste, SelectAll, SelectNone,
             ScrollStart, ScrollEnd, ScrollPageUp, ScrollPageDown
-        };
+        }
 
         string oldText;
         int oldPos, oldSelectPos;

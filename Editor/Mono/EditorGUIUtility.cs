@@ -98,6 +98,18 @@ namespace UnityEditor
         static EditorGUIUtility()
         {
             GUISkin.m_SkinChanged += SkinChanged;
+            s_HasCurrentWindowKeyFocusFunc = HasCurrentWindowKeyFocus;
+        }
+
+        // returns position and size of the main Unity Editor window
+        public static Rect GetMainWindowPosition()
+        {
+            foreach (var win in ContainerWindow.windows)
+            {
+                if (win.IsMainWindow())
+                    return win.position;
+            }
+            return new Rect(0, 0, 1000, 600);
         }
 
         internal static void RepaintCurrentWindow()

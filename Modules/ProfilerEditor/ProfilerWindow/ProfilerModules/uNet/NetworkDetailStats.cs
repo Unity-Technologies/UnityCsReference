@@ -15,7 +15,7 @@ namespace UnityEditor
         {
             Incoming,
             Outgoing
-        };
+        }
 
         // keep this many ticks of packet history
         const int kPacketHistoryTicks = 20;

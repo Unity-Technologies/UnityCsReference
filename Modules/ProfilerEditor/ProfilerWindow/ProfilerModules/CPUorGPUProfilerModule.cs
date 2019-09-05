@@ -16,6 +16,9 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         protected ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
 
+        protected abstract string ViewTypeSettingsKey { get; }
+        protected abstract ProfilerViewType DefaultViewTypeSetting { get; }
+
         [SerializeField]
         protected ProfilerFrameDataHierarchyView m_FrameDataHierarchyView;
 
@@ -38,6 +41,17 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_FrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
             m_ProfilerWindow.selectionChanged += m_FrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
+
+            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
+            m_ViewType = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
+        }
+
+        public override void OnDisable()
+        {
+            base.OnDisable();
+
+            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
+            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)m_ViewType);
         }
 
         public override void DrawToolbar(Rect position)

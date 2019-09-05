@@ -101,7 +101,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         Terrain CreateNeighbor(Terrain parent, Vector3 position)
         {
-            string uniqueName = "Terrain_" + position.ToString();
+            string uniqueName = "Terrain_" + position;
 
             if (null != GameObject.Find(uniqueName))
             {

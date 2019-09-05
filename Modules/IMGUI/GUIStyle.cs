@@ -273,7 +273,7 @@ namespace UnityEngine
 
         public void Draw(Rect position, GUIContent content, int controlID, bool on, bool hover)
         {
-            Draw(position, content, controlID, hover, false, on, controlID == GUIUtility.keyboardControl);
+            Draw(position, content, controlID, hover, GUIUtility.hotControl == controlID, on, GUIUtility.HasKeyFocus(controlID));
         }
 
         private void Draw(Rect position, GUIContent content, int controlId, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)

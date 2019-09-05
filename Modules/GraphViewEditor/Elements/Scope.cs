@@ -289,9 +289,6 @@ namespace UnityEditor.Experimental.GraphView
 
             try
             {
-                GraphView graphView = GetFirstAncestorOfType<GraphView>();
-                VisualElement viewport = graphView.contentViewContainer;
-
                 // Dirty the layout of the content container to recompute the content bounding rect
                 m_ContentContainer.yogaNode.MarkDirty();
 

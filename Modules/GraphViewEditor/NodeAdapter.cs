@@ -142,7 +142,6 @@ namespace UnityEditor.Experimental.GraphView
                     // Invalid DLLs might raise this exception, simply ignore it
                     catch (ReflectionTypeLoadException)
                     {
-                        continue;
                     }
                     catch (Exception ex)
                     {

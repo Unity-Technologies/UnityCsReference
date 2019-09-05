@@ -70,8 +70,6 @@ namespace UnityEngine
 
         private float OnMouseDown()
         {
-            var mousePosition = CurrentEvent().mousePosition;
-
             var thumbZone = ThumbSelectionRect();
             var mouseOverThumb = GUIUtility.HitTest(thumbZone, CurrentEvent());
             var boundingRect = Rect.zero;

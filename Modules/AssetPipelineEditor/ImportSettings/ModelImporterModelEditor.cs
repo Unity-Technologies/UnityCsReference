@@ -39,7 +39,10 @@ namespace UnityEditor
         SerializedProperty m_SecondaryUVAngleDistortion;
         SerializedProperty m_SecondaryUVAreaDistortion;
         SerializedProperty m_SecondaryUVHardAngle;
+        SerializedProperty m_SecondaryUVMarginMethod;
         SerializedProperty m_SecondaryUVPackMargin;
+        SerializedProperty m_SecondaryUVMinLightmapResolution;
+        SerializedProperty m_SecondaryUVMinObjectScale;
 
         protected SerializedProperty m_NormalImportMode;
         protected SerializedProperty m_NormalCalculationMode;
@@ -76,7 +79,10 @@ namespace UnityEditor
             m_SecondaryUVAngleDistortion = serializedObject.FindProperty("secondaryUVAngleDistortion");
             m_SecondaryUVAreaDistortion = serializedObject.FindProperty("secondaryUVAreaDistortion");
             m_SecondaryUVHardAngle = serializedObject.FindProperty("secondaryUVHardAngle");
+            m_SecondaryUVMarginMethod = serializedObject.FindProperty("secondaryUVMarginMethod");
             m_SecondaryUVPackMargin = serializedObject.FindProperty("secondaryUVPackMargin");
+            m_SecondaryUVMinLightmapResolution = serializedObject.FindProperty("secondaryUVMinLightmapResolution");
+            m_SecondaryUVMinObjectScale = serializedObject.FindProperty("secondaryUVMinObjectScale");
             m_NormalSmoothAngle = serializedObject.FindProperty("normalSmoothAngle");
             m_NormalImportMode = serializedObject.FindProperty("normalImportMode");
             m_NormalCalculationMode = serializedObject.FindProperty("normalCalculationMode");
@@ -130,12 +136,19 @@ namespace UnityEditor
             public static GUIContent NormalSmoothingSourceLabel = EditorGUIUtility.TrTextContent("Smoothness Source", "How to determine which edges should be smooth and which should be sharp.");
 
             public static GUIContent SwapUVChannels = EditorGUIUtility.TrTextContent("Swap UVs", "Swaps the 2 UV channels in meshes. Use if your diffuse texture uses UVs from the lightmap.");
-            public static GUIContent GenerateSecondaryUV           = EditorGUIUtility.TrTextContent("Generate Lightmap UVs", "Generate lightmap UVs into UV2.");
-            public static GUIContent GenerateSecondaryUVAdvanced   = EditorGUIUtility.TrTextContent("Lightmap UVs settings", "Advanced settings for Lightmap UVs generation");
-            public static GUIContent secondaryUVAngleDistortion    = EditorGUIUtility.TrTextContent("Angle Error", "Measured in percents. Angle error measures deviation of UV angles from geometry angles. Area error measures deviation of UV triangles area from geometry triangles if they were uniformly scaled.");
-            public static GUIContent secondaryUVAreaDistortion     = EditorGUIUtility.TrTextContent("Area Error");
-            public static GUIContent secondaryUVHardAngle          = EditorGUIUtility.TrTextContent("Hard Angle", "Angle between neighbor triangles that will generate seam.");
-            public static GUIContent secondaryUVPackMargin         = EditorGUIUtility.TrTextContent("Pack Margin", "Measured in pixels, assuming mesh will cover an entire 1024x1024 lightmap.");
+            public static GUIContent GenerateSecondaryUV = EditorGUIUtility.TrTextContent("Generate Lightmap UVs", "Generate lightmap UVs into UV2.");
+            public static GUIContent GenerateSecondaryUVAdvanced = EditorGUIUtility.TrTextContent("Lightmap UVs settings", "Advanced settings for Lightmap UVs generation");
+
+            public static GUIContent secondaryUVAngleDistortion       = EditorGUIUtility.TrTextContent("Angle Error", "Measured in percents. Angle error measures deviation of UV angles from geometry angles. Area error measures deviation of UV triangles area from geometry triangles if they were uniformly scaled.");
+            public static GUIContent secondaryUVAreaDistortion        = EditorGUIUtility.TrTextContent("Area Error");
+            public static GUIContent secondaryUVHardAngle             = EditorGUIUtility.TrTextContent("Hard Angle", "Angle between neighbor triangles that will generate seam.");
+            public static GUIContent secondaryUVMarginMethod          = EditorGUIUtility.TrTextContent("Margin Method", "Method to handle margins between UV charts.");
+            public static GUIContent secondaryUVPackMargin            = EditorGUIUtility.TrTextContent("Pack Margin", "Measured in pixels, assuming mesh will cover an entire 1024x1024 lightmap.");
+            public static GUIContent secondaryUVMinLightmapResolution = EditorGUIUtility.TrTextContent("Min Lightmap Resolution", "The minimum lightmap resolution at which this object will be used. Used to determine a packing which ensures no texel bleeding.");
+            public static GUIContent secondaryUVMinObjectScale        = EditorGUIUtility.TrTextContent("Min Object Scale", "The smallest scale at which this mesh will be used. Used to determine a packing which ensures no texel bleeding.");
+
+            public static GUIContent secondaryUVMinLightmapResolutionNotice = EditorGUIUtility.TrTextContent("The active scene's Lightmap Resolution is less than the specified Min Lightmap Resolution.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
+
             public static GUIContent LegacyComputeNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = EditorGUIUtility.TrTextContent("Legacy Blend Shape Normals", "Compute normals from smoothing groups when the mesh has BlendShapes.");
         }
 
@@ -380,16 +393,45 @@ namespace UnityEditor
                 {
                     using (new EditorGUI.IndentLevelScope())
                     {
-                        // TODO: all slider min/max values should be revisited
                         EditorGUI.BeginChangeCheck();
+
                         EditorGUILayout.Slider(m_SecondaryUVHardAngle, 0, 180, Styles.secondaryUVHardAngle);
-                        EditorGUILayout.Slider(m_SecondaryUVPackMargin, 1, 64, Styles.secondaryUVPackMargin);
                         EditorGUILayout.Slider(m_SecondaryUVAngleDistortion, 1, 75, Styles.secondaryUVAngleDistortion);
                         EditorGUILayout.Slider(m_SecondaryUVAreaDistortion, 1, 75, Styles.secondaryUVAreaDistortion);
+
+                        using (var horizontal = new EditorGUILayout.HorizontalScope())
+                        {
+                            using (var prop = new EditorGUI.PropertyScope(horizontal.rect, Styles.secondaryUVMarginMethod, m_SecondaryUVMarginMethod))
+                            {
+                                EditorGUI.BeginChangeCheck();
+                                var newValue = (int)(ModelImporterSecondaryUVMarginMethod)EditorGUILayout.EnumPopup(prop.content, (ModelImporterSecondaryUVMarginMethod)m_SecondaryUVMarginMethod.intValue);
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    m_SecondaryUVMarginMethod.intValue = newValue;
+                                }
+                            }
+                        }
+                        if (m_SecondaryUVMarginMethod.intValue == (int)ModelImporterSecondaryUVMarginMethod.Calculate)
+                        {
+                            EditorGUILayout.PropertyField(m_SecondaryUVMinLightmapResolution, Styles.secondaryUVMinLightmapResolution);
+                            if (LightmapEditorSettings.bakeResolution < m_SecondaryUVMinLightmapResolution.floatValue)
+                            {
+                                EditorGUILayout.HelpBox(Styles.secondaryUVMinLightmapResolutionNotice);
+                            }
+
+                            EditorGUILayout.PropertyField(m_SecondaryUVMinObjectScale, Styles.secondaryUVMinObjectScale);
+                        }
+                        else
+                        {
+                            EditorGUILayout.Slider(m_SecondaryUVPackMargin, 1, 64, Styles.secondaryUVPackMargin);
+                        }
+
                         if (EditorGUI.EndChangeCheck())
                         {
                             m_SecondaryUVHardAngle.floatValue = Mathf.Round(m_SecondaryUVHardAngle.floatValue);
                             m_SecondaryUVPackMargin.floatValue = Mathf.Round(m_SecondaryUVPackMargin.floatValue);
+                            m_SecondaryUVMinLightmapResolution.floatValue = Mathf.Round(m_SecondaryUVMinLightmapResolution.floatValue);
+                            m_SecondaryUVMinObjectScale.floatValue = m_SecondaryUVMinObjectScale.floatValue;
                             m_SecondaryUVAngleDistortion.floatValue = Mathf.Round(m_SecondaryUVAngleDistortion.floatValue);
                             m_SecondaryUVAreaDistortion.floatValue = Mathf.Round(m_SecondaryUVAreaDistortion.floatValue);
                         }

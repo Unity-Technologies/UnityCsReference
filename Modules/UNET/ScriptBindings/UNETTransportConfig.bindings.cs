@@ -57,19 +57,19 @@ namespace UnityEngine.Networking
             {
                 int len = SetSSLCertFilePath(config.SSLCertFilePath);
                 if (len != 0)
-                    throw new ArgumentOutOfRangeException("SSLCertFilePath cannot be > than " + len.ToString());
+                    throw new ArgumentOutOfRangeException("SSLCertFilePath cannot be > than " + len);
             }
             if (config.SSLPrivateKeyFilePath != null)
             {
                 int len = SetSSLPrivateKeyFilePath(config.SSLPrivateKeyFilePath);
                 if (len != 0)
-                    throw new ArgumentOutOfRangeException("SSLPrivateKeyFilePath cannot be > than " + len.ToString());
+                    throw new ArgumentOutOfRangeException("SSLPrivateKeyFilePath cannot be > than " + len);
             }
             if (config.SSLCAFilePath != null)
             {
                 int len = SetSSLCAFilePath(config.SSLCAFilePath);
                 if (len != 0)
-                    throw new ArgumentOutOfRangeException("SSLCAFilePath cannot be > than " + len.ToString());
+                    throw new ArgumentOutOfRangeException("SSLCAFilePath cannot be > than " + len);
             }
             for (byte i = 0; i < config.ChannelCount; ++i)
             {

@@ -435,7 +435,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         kValueType = 1 << 0,
         kArray = 1 << 1,
         kArrayRankMask = unchecked((int)0xFFFF0000)
-    };
+    }
 
     public static class TypeFlagsExtensions
     {

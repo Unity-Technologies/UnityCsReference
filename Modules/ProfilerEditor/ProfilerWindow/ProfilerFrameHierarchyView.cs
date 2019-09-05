@@ -43,7 +43,7 @@ namespace UnityEditorInternal.Profiling
         {
             None = 0,
             CollapseEditorBoundarySamples = 1 << 0, // Session based override, default to off
-        };
+        }
 
         static readonly GUIContent[] k_CpuProfilerOptions =
         {
@@ -480,7 +480,7 @@ namespace UnityEditorInternal.Profiling
                     var groupName = frameIterator.GetGroupName();
                     var threadName = frameIterator.GetThreadName();
                     var name = string.IsNullOrEmpty(groupName) ? threadName : groupName + "." + threadName;
-                    m_ThreadInfoCache[i] = new ThreadInfo() { groupOrder = GetGroupOrder(name), fullName = name };
+                    m_ThreadInfoCache.Add(new ThreadInfo() { groupOrder = GetGroupOrder(name), fullName = name });
                 }
 
                 m_ThreadInfoCache.Sort();

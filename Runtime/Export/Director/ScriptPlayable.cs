@@ -47,7 +47,7 @@ namespace UnityEngine.Playables
 
             if (scriptInstance == null)
             {
-                Debug.LogError("Could not create a ScriptPlayable of Type " + typeof(T).ToString());
+                Debug.LogError("Could not create a ScriptPlayable of Type " + typeof(T));
                 return PlayableHandle.Null;
             }
 

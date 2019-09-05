@@ -490,7 +490,7 @@ namespace UnityEngine.SocialPlatforms
                 // TODO: Only allow increase in progress, figure out if xbox/gc report errors when lower progress is reported
                 if (achoo.id == id)
                 {
-                    bool completed = (progress >= 100.0 ? true : false);
+                    bool completed = (progress >= 100.0);
                     Achievement newAchievement = new Achievement(id, progress, completed, false, DateTime.Now);
                     m_Achievements.Add(newAchievement);
                     if (callback != null)

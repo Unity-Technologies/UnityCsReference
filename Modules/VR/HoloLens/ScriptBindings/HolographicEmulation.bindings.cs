@@ -31,7 +31,7 @@ namespace UnityEngine.XR.WSA
         None,
         RemoteDevice,
         Simulated
-    };
+    }
 
     [NativeHeader("Modules/VR/HoloLens/PerceptionRemoting.h")]
     public enum RemoteDeviceVersion

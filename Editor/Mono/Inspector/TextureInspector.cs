@@ -121,7 +121,7 @@ namespace UnityEditor
             G,
             B,
             A,
-        };
+        }
 
         private PreviewMode m_PreviewMode = PreviewMode.RGB;
         public bool showAlpha
@@ -789,7 +789,7 @@ namespace UnityEditor
             Texture t = target as Texture;
             Texture2D t2 = target as Texture2D;
             TextureImporter textureImporter = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(t)) as TextureImporter;
-            string info = t.width.ToString() + "x" + t.height.ToString();
+            string info = t.width + "x" + t.height;
 
             bool showSize = true;
             bool isPackedSprite = textureImporter && textureImporter.qualifiesForSpritePacking;

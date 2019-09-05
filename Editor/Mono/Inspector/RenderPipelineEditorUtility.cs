@@ -15,7 +15,7 @@ namespace UnityEditor.Rendering
         public ScriptableRenderPipelineExtensionAttribute(Type renderPipelineAsset)
         {
             if (!(renderPipelineAsset?.IsSubclassOf(typeof(RenderPipelineAsset)) ?? false))
-                throw new ArgumentException($"Given renderPipelineAsset must derive from RenderPipelineAsset");
+                throw new ArgumentException("Given renderPipelineAsset must derive from RenderPipelineAsset");
             renderPipelineType = renderPipelineAsset;
         }
 

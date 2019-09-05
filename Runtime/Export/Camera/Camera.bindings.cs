@@ -90,17 +90,17 @@ namespace UnityEngine
         extern public void SetReplacementShader(Shader shader, string replacementTag);
         extern public void ResetReplacementShader();
 
-        internal enum ProjectionMatrixMode{ Explicit, Implicit, PhysicalPropertiesBased };
+        internal enum ProjectionMatrixMode{ Explicit, Implicit, PhysicalPropertiesBased }
 
         extern internal ProjectionMatrixMode projectionMatrixMode { get; }
 
-        public enum GateFitMode{ Vertical = 1 , Horizontal = 2, Fill = 3, Overscan = 4, None = 0 };
+        public enum GateFitMode{ Vertical = 1 , Horizontal = 2, Fill = 3, Overscan = 4, None = 0 }
         extern public bool usePhysicalProperties { get; set; }
         extern public Vector2 sensorSize  { get; set; }
         extern public Vector2 lensShift  { get; set; }
         extern public float focalLength  { get; set; }
         extern public GateFitMode gateFit  { get; set; }
-        public enum FieldOfViewAxis { Vertical, Horizontal };
+        public enum FieldOfViewAxis { Vertical, Horizontal }
         extern public float GetGateFittedFieldOfView();
         extern public Vector2 GetGateFittedLensShift();
 
@@ -210,8 +210,8 @@ namespace UnityEngine
         }
 
 
-        public enum StereoscopicEye { Left, Right };
-        public enum MonoOrStereoscopicEye { Left, Right, Mono };
+        public enum StereoscopicEye { Left, Right }
+        public enum MonoOrStereoscopicEye { Left, Right, Mono }
 
         extern public bool  stereoEnabled     { get; }
         extern public float stereoSeparation  { get; set; }

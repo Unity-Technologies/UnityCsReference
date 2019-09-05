@@ -37,7 +37,7 @@ namespace UnityEngine
             Canceled = 2,
             // The on-screen keyboard was closed by touching outside of the keyboard.
             LostFocus = 3,
-        };
+        }
 
         // We are matching the KeyboardOnScreen class here so we can directly
         // access it.

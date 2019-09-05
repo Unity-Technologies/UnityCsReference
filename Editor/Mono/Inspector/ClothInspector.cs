@@ -43,11 +43,11 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     class ClothInspector : Editor
     {
-        public enum DrawMode { MaxDistance = 1, CollisionSphereDistance };
-        public enum ToolMode { Select, Paint, GradientTool };
-        public enum CollToolMode { Select, Paint, Erase };
-        enum RectSelectionMode { Replace, Add, Substract };
-        public enum CollisionVisualizationMode { SelfCollision, InterCollision };
+        public enum DrawMode { MaxDistance = 1, CollisionSphereDistance }
+        public enum ToolMode { Select, Paint, GradientTool }
+        public enum CollToolMode { Select, Paint, Erase }
+        enum RectSelectionMode { Replace, Add, Substract }
+        public enum CollisionVisualizationMode { SelfCollision, InterCollision }
 
         bool[] m_ParticleSelection;
         bool[] m_ParticleRectSelection;
@@ -95,6 +95,7 @@ namespace UnityEditor
         int m_NumSelection = 0;
 
         SkinnedMeshRenderer m_SkinnedMeshRenderer;
+        Transform m_RootBone;
 
         private static class Styles
         {
@@ -106,6 +107,7 @@ namespace UnityEditor
             public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TrTextContent("Paint Collision Particles");
             public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TrTextContent("Select Collision Particles");
             public static readonly GUIContent brushRadiusString = EditorGUIUtility.TrTextContent("Brush Radius");
+            public static readonly GUIContent constraintSizeString = EditorGUIUtility.TrTextContent("Constraint Size");
             public static readonly GUIContent gradientStartString = EditorGUIUtility.TrTextContent("Gradient Start");
             public static readonly GUIContent gradientEndString = EditorGUIUtility.TrTextContent("Gradient End");
             public static readonly GUIContent setMaxDistanceString = EditorGUIUtility.TrTextContent("Max Distance");
@@ -259,10 +261,18 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
+            // If the Skinned Mesh Renderer's transform has changed we need to re-initialise the inspector
             if (m_SkinnedMeshRenderer.transform.hasChanged)
             {
-                InitClothParticlesInWorldSpace();
+                InitInspector();
                 m_SkinnedMeshRenderer.transform.hasChanged = false;
+            }
+
+            // If the Skinned Mesh Renderer's root bone has changed we need to re-initialise the inspector
+            if (m_RootBone != m_SkinnedMeshRenderer.actualRootBone)
+            {
+                InitInspector();
+                m_RootBone = m_SkinnedMeshRenderer.actualRootBone;
             }
 
             if (editingSelfAndInterCollisionParticles)
@@ -356,7 +366,6 @@ namespace UnityEditor
         {
             if (m_LastVertices != null)
             {
-                Transform t = m_SkinnedMeshRenderer.actualRootBone;
                 int numLastVertices = m_LastVertices.Length;
                 if (numLastVertices != m_NumVerts)
                     return true;
@@ -382,7 +391,6 @@ namespace UnityEditor
             m_ParticleRectSelection = new bool[m_NumVerts];
 
             m_LastVertices = new Vector3[m_NumVerts];
-            Transform t = m_SkinnedMeshRenderer.actualRootBone;
             for (int i = 0; i < m_NumVerts; i++)
             {
                 m_LastVertices[i] = m_ClothParticlesInWorldSpace[i];
@@ -403,14 +411,9 @@ namespace UnityEditor
             cloth.GetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
 
             int length = selfAndInterCollisionIndices.Count;
-            // if the number of self and inter collision indices are different then don't copy
-            // as this means the underlying meshes have changed so copying these values is meaningless in this situation
-            if (length == m_NumVerts)
+            for (int i = 0; i < length; i++)
             {
-                for (int i = 0; i < length; i++)
-                {
-                    m_SelfAndInterCollisionSelection[selfAndInterCollisionIndices[i]] = true;
-                }
+                m_SelfAndInterCollisionSelection[selfAndInterCollisionIndices[i]] = true;
             }
         }
 
@@ -465,11 +468,11 @@ namespace UnityEditor
                 bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
                 if (forwardFacing || state.ManipulateBackfaces)
                 {
-                    if ((m_SelfAndInterCollisionSelection[i] == true) && !(m_ParticleSelection[i] == true))
+                    if (m_SelfAndInterCollisionSelection[i] && !m_ParticleSelection[i])
                     {
                         Handles.color = s_SelfAndInterCollisionParticleColor;
                     }
-                    else if (!(m_SelfAndInterCollisionSelection[i] == true) && !(m_ParticleSelection[i] == true))
+                    else if (!m_SelfAndInterCollisionSelection[i] && !m_ParticleSelection[i])
                     {
                         Handles.color = s_UnselectedSelfAndInterCollisionParticleColor;
                     }
@@ -507,6 +510,7 @@ namespace UnityEditor
                 s_ColorTexture = GenerateColorTexture(100);
 
             m_SkinnedMeshRenderer = cloth.GetComponent<SkinnedMeshRenderer>();
+            m_RootBone = m_SkinnedMeshRenderer.actualRootBone;
 
             InitInspector();
 
@@ -772,6 +776,8 @@ namespace UnityEditor
                 }
                 cloth.coefficients = coefficients;
             }
+
+            EditConstraintSize();
         }
 
         void GradientToolGUI()
@@ -975,6 +981,19 @@ namespace UnityEditor
             }
         }
 
+        void EditConstraintSize()
+        {
+            EditorGUI.BeginChangeCheck();
+            float fieldValue = EditorGUILayout.FloatField(Styles.constraintSizeString, state.ConstraintSize);
+            bool changed = EditorGUI.EndChangeCheck();
+            if (changed)
+            {
+                state.ConstraintSize = fieldValue;
+                if (state.ConstraintSize < 0.0f)
+                    state.ConstraintSize = 0.0f;
+            }
+        }
+
         void EditGradientStart()
         {
             EditorGUI.BeginChangeCheck();
@@ -1022,6 +1041,7 @@ namespace UnityEditor
             }
 
             EditBrushSize();
+            EditConstraintSize();
         }
 
         int GetMouseVertex(Event e)
@@ -1035,11 +1055,9 @@ namespace UnityEditor
                 return -1;
             }
 
-            ClothSkinningCoefficient[] coefficients = cloth.coefficients;
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(e.mousePosition);
             float minDistance = 1000;
             int found = -1;
-            Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
             for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 dir = m_LastVertices[i] - mouseRay.origin;
@@ -1145,8 +1163,6 @@ namespace UnityEditor
             Plane bottom = new Plane(botLeft.origin + botLeft.direction, botRight.origin + botRight.direction, botRight.origin);
             Plane left = new Plane(topLeft.origin + topLeft.direction, botLeft.origin + botLeft.direction, botLeft.origin);
             Plane right = new Plane(botRight.origin + botRight.direction, topRight.origin + topRight.direction, topRight.origin);
-
-            Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
 
             int length = coefficients.Length;
             for (int i = 0; i < length; i++)
@@ -1313,7 +1329,6 @@ namespace UnityEditor
             }
 
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
-            Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
             for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
@@ -1398,7 +1413,6 @@ namespace UnityEditor
             EventType type = e.GetTypeForControl(id);
             if (type == EventType.MouseDown || type == EventType.MouseDrag)
             {
-                ClothSkinningCoefficient[] coefficients = cloth.coefficients;
                 if (GUIUtility.hotControl != id && (e.alt || e.control || e.command || e.button != 0))
                     return;
                 if (type == EventType.MouseDown)
@@ -1614,7 +1628,6 @@ namespace UnityEditor
             if (editingSelfAndInterCollisionParticles)
             {
                 OnSceneEditSelfAndInterCollisionParticlesGUI();
-                return;
             }
         }
 

@@ -9,7 +9,6 @@ namespace UnityEditor.PackageManager.UI
     internal interface IPage
     {
         PackageFilterTab tab { get; }
-        bool isLoading { get; }
         bool morePackagesToFetch { get; }
         List<VisualState> packageVisualStates { get; }
         VisualState GetVisualState(string packageUniqueId);

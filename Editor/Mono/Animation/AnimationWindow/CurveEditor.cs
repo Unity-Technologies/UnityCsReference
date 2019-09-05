@@ -3861,7 +3861,7 @@ namespace UnityEditor
             }
         }
 
-        internal enum PickMode { None, Click, Marquee };
+        internal enum PickMode { None, Click, Marquee }
 
         public void GridGUI()
         {

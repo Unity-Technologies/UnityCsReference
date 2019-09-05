@@ -32,7 +32,7 @@ namespace UnityEditor
             public readonly GUIContent m_AgentSteeringHeader = EditorGUIUtility.TrTextContent("Steering");
             public readonly GUIContent m_AgentAvoidanceHeader = EditorGUIUtility.TrTextContent("Obstacle Avoidance");
             public readonly GUIContent m_AgentPathFindingHeader = EditorGUIUtility.TrTextContent("Path Finding");
-        };
+        }
 
         static Styles s_Styles;
 

@@ -172,8 +172,6 @@ namespace UnityEditor.Experimental.GraphView
                 // For the first separator, use the top of the first element
                 if (i == 0)
                 {
-                    VisualElement firstElement = this[i];
-
                     separatorCenterY = separatorHeight / 2;
                 }
                 // .. for the other separators, use the spacing between the current and the next separators
@@ -187,8 +185,6 @@ namespace UnityEditor.Experimental.GraphView
                 // .. for the last separator, use the bottom of the container
                 else
                 {
-                    VisualElement element = this[i - 1];
-
                     separatorCenterY = m_SeparatorContainer.layout.height - separatorHeight / 2;
                 }
                 separator.style.top = separatorCenterY - separator.resolvedStyle.height / 2;

@@ -118,7 +118,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             get
             {
                 string name = ProfilerDriver.GetConnectionIdentifier(ProfilerDriver.connectedProfiler);
-                if (m_EditorModeTargetState.HasValue && name.StartsWith(k_EditorConnectionName))
+                if (m_EditorModeTargetState.HasValue && name.Contains(k_EditorConnectionName))
                 {
                     if (m_EditorModeTargetConnectionStatus(EditorConnectionTarget.MainEditorProcessEditmode))
                         name = Content.Editmode.text;
@@ -177,7 +177,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
                 }
                 else
                 {
-                    if (player.StartsWith(k_EditorConnectionName))
+                    if (player.Contains(k_EditorConnectionName))
                     {
                         // if e.g. the console or the memory profiler connects to the Editor, the profiler should switch to PlayMode profiling, not to Editmode profiling
                         // especially since falling back onto the Editor is the default.
@@ -261,9 +261,9 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
                 }
                 if (enabled)
                 {
-                    if (m_EditorModeTargetState.HasValue && name.StartsWith(k_EditorConnectionName))
+                    if (m_EditorModeTargetState.HasValue && name.Contains(k_EditorConnectionName))
                     {
-                        menuOptions.AddItem(Content.Playmode, isConnected && m_EditorModeTargetConnectionStatus(EditorConnectionTarget.MainEditorProcessPlaymode), () =>
+                        menuOptions.AddItem(Content.Playmode, isConnected && !m_EditorModeTargetConnectionStatus(EditorConnectionTarget.MainEditorProcessPlaymode), () =>
                         {
                             ProfilerDriver.connectedProfiler = guid;
                             SuccessfullyConnectedToPlayer(connectionName, EditorConnectionTarget.MainEditorProcessPlaymode);

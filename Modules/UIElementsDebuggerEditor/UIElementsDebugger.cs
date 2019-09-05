@@ -370,7 +370,6 @@ namespace UnityEditor.UIElements.Debugger
                 return;
 
             var evtBase = ev as EventBase;
-            var evtType = evtBase.eventTypeId;
             var target = evtBase.target as VisualElement;
             var targetIsImguiContainer = target is IMGUIContainer;
 

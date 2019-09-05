@@ -12,6 +12,8 @@ namespace UnityEditor
     {
         const int c_rowHeight = 16; //TODO:
         public int row;
+        public bool[] selectedItems;
+        public int initialRow = -1;
         public int column;
         public Vector2 scrollPos;
         public int totalRows;

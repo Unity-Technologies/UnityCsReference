@@ -19,14 +19,14 @@ namespace UnityEditor.Experimental.TerrainAPI
         Opacity = 8,
         SelectAndInspect = 3,
         All = 15,
-    };
+    }
 
     [Flags]
     public enum RepaintFlags
     {
         UI = 1,
         Scene = 2,
-    };
+    }
 
     public interface IOnPaint
     {

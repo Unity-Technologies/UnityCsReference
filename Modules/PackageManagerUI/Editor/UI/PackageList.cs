@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI
             viewDataKey = "package-list-key";
             scrollView.viewDataKey = "package-list-scrollview-key";
 
-            UIUtils.SetElementDisplay(emptyArea, false);
+            SetEmptyAreaDisplay(false);
             UIUtils.SetElementDisplay(loadMoreContainer, false);
 
             loginButton.clickable.clicked += OnLoginClicked;
@@ -60,8 +60,8 @@ namespace UnityEditor.PackageManager.UI
             PackageDatabase.instance.onPackageOperationFinish += OnPackageOperationFinish;
 
             PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
-            PackageDatabase.instance.onRefreshOperationStart += OnRefreshOperationStart;
-            PackageDatabase.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
+            PageManager.instance.onRefreshOperationStart += OnRefreshOperationStart;
+            PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
 
             PageManager.instance.onVisualStateChange += OnVisualStateChange;
             PageManager.instance.onPageRebuild += OnPageRebuild;
@@ -82,8 +82,8 @@ namespace UnityEditor.PackageManager.UI
             PackageDatabase.instance.onPackageOperationFinish -= OnPackageOperationFinish;
 
             PackageDatabase.instance.onDownloadProgress -= OnDownloadProgress;
-            PackageDatabase.instance.onRefreshOperationStart -= OnRefreshOperationStart;
-            PackageDatabase.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
+            PageManager.instance.onRefreshOperationStart -= OnRefreshOperationStart;
+            PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
 
             PageManager.instance.onVisualStateChange -= OnVisualStateChange;
             PageManager.instance.onPageRebuild -= OnPageRebuild;
@@ -139,13 +139,13 @@ namespace UnityEditor.PackageManager.UI
         {
             if (!value)
             {
-                UIUtils.SetElementDisplay(emptyArea, false);
+                SetEmptyAreaDisplay(false);
                 return;
             }
 
             var showLogin = !ApplicationUtil.instance.isUserLoggedIn && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore;
 
-            UIUtils.SetElementDisplay(emptyArea, true);
+            SetEmptyAreaDisplay(true);
             UIUtils.SetElementDisplay(noPackagesLabel, !showLogin);
             UIUtils.SetElementDisplay(loginContainer, showLogin);
 
@@ -158,10 +158,17 @@ namespace UnityEditor.PackageManager.UI
         {
             if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
             {
-                UIUtils.SetElementDisplay(emptyArea, true);
+                SetEmptyAreaDisplay(true);
                 UIUtils.SetElementDisplay(loginContainer, !loggedIn);
                 UIUtils.SetElementDisplay(noPackagesLabel, loggedIn);
             }
+        }
+
+        private void SetEmptyAreaDisplay(bool value)
+        {
+            // empty area & scroll view should never be shown at the same time
+            UIUtils.SetElementDisplay(emptyArea, value);
+            UIUtils.SetElementDisplay(scrollView, !value);
         }
 
         private void OnLoginClicked()
@@ -171,12 +178,14 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnEnterPanel(AttachToPanelEvent e)
         {
-            panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            if (panel != null)
+                panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
         private void OnLeavePanel(DetachFromPanelEvent e)
         {
-            panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            if (panel != null)
+                panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
         private void OnPackageOperationFinish(IPackage package)
@@ -195,7 +204,7 @@ namespace UnityEditor.PackageManager.UI
             UpdateNoPackagesLabel();
         }
 
-        private void OnRefreshOperationFinish(PackageFilterTab tab)
+        private void OnRefreshOperationFinish()
         {
             m_RefreshInProgress = false;
             UpdateNoPackagesLabel();
@@ -404,7 +413,7 @@ namespace UnityEditor.PackageManager.UI
             itemsList.Clear();
             m_PackageItemsLookup.Clear();
 
-            UIUtils.SetElementDisplay(emptyArea, false);
+            SetEmptyAreaDisplay(false);
         }
 
         private void ShowResults()

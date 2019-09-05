@@ -62,5 +62,5 @@ namespace UnityEngine.Playables
             pb.m_CreateOutputMethod = createFunction;
             return pb;
         }
-    };
+    }
 }

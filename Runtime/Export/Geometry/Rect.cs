@@ -113,12 +113,11 @@ namespace UnityEngine
             {
                 return Contains(point);
             }
-            bool xAxis = false;
-            if (width < 0f && (point.x <= xMin) && (point.x > xMax) || width >= 0f && (point.x >= xMin) && (point.x < xMax))
-                xAxis = true;
-            if (xAxis && (height < 0f && (point.y <= yMin) && (point.y > yMax) || height >= 0f && (point.y >= yMin) && (point.y < yMax)))
-                return true;
-            return false;
+            bool xAxis = width < 0f && (point.x <= xMin) && (point.x > xMax) ||
+                width >= 0f && (point.x >= xMin) && (point.x < xMax);
+            bool yAxis = height < 0f && (point.y <= yMin) && (point.y > yMax) ||
+                height >= 0f && (point.y >= yMin) && (point.y < yMax);
+            return xAxis && yAxis;
         }
 
         // Swaps min and max if min was greater than max.

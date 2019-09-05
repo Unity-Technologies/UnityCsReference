@@ -22,5 +22,5 @@ namespace UnityEditor.Scripting.ScriptCompilation
         ExplicitReferences = (1 << 7),
         UnityModule = (1 << 8),
         NoEngineReferences = (1 << 9)
-    };
+    }
 }

@@ -30,6 +30,7 @@ namespace UnityEditor
             public bool wantsExternalFiles = false;
             public bool wantsToStartCustomDrag = false;
             public bool wantsToAcceptCustomDrag = false;
+            public bool wantsRowMultiSelection = false;
             public int dragItem;
         }
 
@@ -117,6 +118,8 @@ namespace UnityEditor
         {
             var state = ilvState.state;
 
+            int previousRow = state.row;
+
             //ilvState.state.row, ref ilvState.state.column, ref ilvState.state.scrollPos
             switch (keyCode)
             {
@@ -172,13 +175,33 @@ namespace UnityEditor
                     }
                     break;
                 }
+                case KeyCode.A: // must evade the return false and be handled by MultiSelection if needed
+                    if (!(ilvState.wantsRowMultiSelection && EditorGUI.actionKey))
+                        return false;
+                    break;
                 default:
                     return false;
             }
 
-            state.scrollPos = ListViewScrollToRow(ilvState, state.scrollPos, state.row);
+            if (ilvState.wantsRowMultiSelection)
+                MultiSelection(ilvState, previousRow); // scrollPos is set during MultiSelection
+            else
+                state.scrollPos = ListViewScrollToRow(ilvState, state.scrollPos, state.row);
             Event.current.Use();
             return true;
+        }
+
+        internal static void MultiSelection(InternalListViewState ilvState, int previousRow)
+        {
+            var state = ilvState.state;
+
+            // initializing and updating the array if needed
+            if (state.selectedItems == null)
+                state.selectedItems = new bool[state.totalRows];
+            else if (state.selectedItems.Length != state.totalRows)
+                System.Array.Resize(ref state.selectedItems, state.totalRows);
+
+            MultiSelection(ilvState, previousRow, state.row, ref state.initialRow, ref state.selectedItems);
         }
 
         static internal bool HasMouseDown(InternalListViewState ilvState, Rect r)
@@ -233,12 +256,24 @@ namespace UnityEditor
             if ((shiftIsDown || ctrlIsDown) && (initialSelected == -1))
                 initialSelected = prevSelected;
 
+            // Select all : Ctrl + A
+            bool selectAll = ctrlIsDown && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.A;
+            int prevInitialSelected = initialSelected;
+            if (selectAll)
+            {
+                shiftIsDown = true;
+
+                initialSelected = selectedItems.Length - 1;
+                currSelected = 0;
+            }
+
             // multi selection
             if (shiftIsDown)
             {
                 int from = System.Math.Min(initialSelected, currSelected);
                 int to = System.Math.Max(initialSelected, currSelected);
 
+                // shift only: remove the items not between the initial and the current
                 if (!ctrlIsDown)
                 {
                     for (int i = 0; i < from; i++)
@@ -260,7 +295,7 @@ namespace UnityEditor
 
                 if (from < 0)
                     from = to;
-
+                // select the items between the initial and the current
                 for (int i = from; i <= to; i++)
                 {
                     if (!selectedItems[i])
@@ -291,6 +326,9 @@ namespace UnityEditor
                 initialSelected = -1;
                 selectedItems[currSelected] = true;
             }
+
+            if (selectAll) // revert the value
+                initialSelected = prevInitialSelected;
 
             if (ilvState != null)
                 ilvState.state.scrollPos = ListViewScrollToRow(ilvState, currSelected);
@@ -376,10 +414,14 @@ namespace UnityEditor
                 {
                     if (ListViewShared.HasMouseDown(ilvState, rect))
                     {
+                        var previousRow = ilvState.state.row;
                         ilvState.state.selectionChanged = true;
                         ilvState.state.row = yPos;
                         ilvState.state.column = xPos;
                         ilvState.state.scrollPos = ListViewShared.ListViewScrollToRow(ilvState, yPos); // this is about clicking on a row that is partially visible
+
+                        if (ilvState.wantsRowMultiSelection)
+                            MultiSelection(ilvState, previousRow);
 
                         if ((ilvState.wantsReordering || ilvState.wantsToStartCustomDrag) && (GUIUtility.hotControl == ilvState.state.ID))
                         {

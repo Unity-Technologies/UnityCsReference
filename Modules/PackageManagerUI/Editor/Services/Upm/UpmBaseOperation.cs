@@ -30,7 +30,8 @@ namespace UnityEditor.PackageManager.UI
         protected string m_PackageId = string.Empty;
         public string packageId { get { return m_PackageId; } }
 
-        public string packageUniqueId { get { return packageName; } }
+        protected string m_PackageUniqueId = string.Empty;
+        public string packageUniqueId { get { return m_PackageUniqueId; } }
         public string versionUniqueId { get { return packageId; } }
 
         public virtual string specialUniqueId { get { return string.Empty; } }
@@ -50,6 +51,8 @@ namespace UnityEditor.PackageManager.UI
         public abstract bool isInProgress { get; }
 
         public Error error { get; protected set; }        // Keep last error
+
+        public abstract RefreshOptions refreshOptions { get; }
     }
 
     internal abstract class UpmBaseOperation<T> : UpmBaseOperation where T : Request

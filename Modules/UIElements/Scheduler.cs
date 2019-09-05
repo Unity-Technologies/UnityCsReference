@@ -241,7 +241,6 @@ namespace UnityEngine.UIElements
         {
             if (index >= 0)
             {
-                var item = m_ScheduledItems[index];
                 m_ScheduledItems.RemoveAt(index);
 
                 return true;
@@ -251,7 +250,7 @@ namespace UnityEngine.UIElements
 
         public void Unschedule(ScheduledItem item)
         {
-            ScheduledItem sItem = item as ScheduledItem;
+            ScheduledItem sItem = item;
             if (sItem != null)
             {
                 if (m_TransactionMode)

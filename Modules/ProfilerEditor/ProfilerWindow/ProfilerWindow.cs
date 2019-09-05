@@ -108,7 +108,8 @@ namespace UnityEditor
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
         [SerializeField]
-        ProfilerArea? m_CurrentArea = ProfilerArea.CPU;
+        ProfilerArea m_CurrentArea = ProfilerArea.CPU;
+        const ProfilerArea k_InvalidArea = unchecked((ProfilerArea)Profiler.invalidProfilerArea);
 
         int m_CurrentFrame = -1;
         int m_LastFrameFromTick = -1;
@@ -147,7 +148,6 @@ namespace UnityEditor
         HierarchyFrameDataView m_FrameDataView;
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
-        [SerializeField]
         ProfilerModuleBase[] m_ProfilerModules;
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests.SelectAndDisplayDetailsForAFrame_WithSearchFiltering to avoid brittle tests due to reflection
@@ -209,7 +209,7 @@ namespace UnityEditor
         public ProfilerProperty CreateProperty(int sortType)
         {
             int targetedFrame = GetActiveVisibleFrameIndex();
-            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerDriver.maxHistoryLength)
+            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerUserSettings.frameCount)
             {
                 return null;
             }
@@ -241,6 +241,11 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
             ProfilerUserSettings.settingsChanged += OnSettingsChanged;
+
+            foreach (var module in m_ProfilerModules)
+            {
+                module?.OnEnable(this);
+            }
         }
 
         void InitializeIfNeeded()
@@ -339,7 +344,7 @@ namespace UnityEditor
         {
             if (wasToggled)
             {
-                int historyLength = ProfilerDriver.maxHistoryLength - 1;
+                int historyLength = ProfilerUserSettings.frameCount;
                 int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
                 int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
@@ -360,11 +365,11 @@ namespace UnityEditor
         void OnChartClosed(Chart sender)
         {
             ProfilerChart profilerChart = (ProfilerChart)sender;
-            m_CurrentArea = null;
+            m_CurrentArea = k_InvalidArea;
             profilerChart.active = false;
             m_ProfilerModules[(int)profilerChart.m_Area].OnDisable();
             m_ProfilerModules[(int)profilerChart.m_Area].OnClosed();
-            m_CurrentArea = null;
+            m_CurrentArea = k_InvalidArea;
         }
 
         void OnChartSelected(Chart sender)
@@ -382,9 +387,9 @@ namespace UnityEditor
                 ClearSelectedPropertyPath();
             }
 
-            if (oldArea.HasValue)
+            if (oldArea != k_InvalidArea)
             {
-                m_ProfilerModules[(int)oldArea.Value].OnDisable();
+                m_ProfilerModules[(int)oldArea].OnDisable();
             }
 
             m_ProfilerModules[(int)newArea].OnEnable(this);
@@ -430,8 +435,11 @@ namespace UnityEditor
             if (!Profiler.supported)
                 return;
 
-            // Track enabled state per Editor session
-            m_Recording = SessionState.GetBool(kProfilerEnabledSessionKey, true);
+            // Track enabled state
+            if (ProfilerUserSettings.rememberLastRecordState)
+                m_Recording = EditorPrefs.GetBool(kProfilerEnabledSessionKey, ProfilerUserSettings.defaultRecordState);
+            else
+                m_Recording = SessionState.GetBool(kProfilerEnabledSessionKey, ProfilerUserSettings.defaultRecordState);
 
             // This event gets called every time when some other window is maximized and then unmaximized
             ProfilerDriver.enabled = m_Recording;
@@ -497,7 +505,7 @@ namespace UnityEditor
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
         static void ShowProfilerWindow()
         {
-            if (ProfilerUserSettings.useOutOfProcessProfiler)
+            if (ProfilerUserSettings.useOutOfProcessProfiler && Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
                 ProfilerRoleProvider.LaunchProfilerSlave();
             else
                 EditorWindow.GetWindow<ProfilerWindow>(false);
@@ -623,7 +631,7 @@ namespace UnityEditor
 
         private void UpdateCharts()
         {
-            int historyLength = ProfilerDriver.maxHistoryLength - 1;
+            int historyLength = ProfilerUserSettings.frameCount;
             int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
             int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
@@ -764,7 +772,7 @@ namespace UnityEditor
             ProfilerDriver.GetStatisticsAvailable(chart.m_Area, firstEmptyFrame, chart.m_Data.dataAvailable);
 
             if (chart is UISystemProfilerChart)
-                ((UISystemProfilerChart)chart).Update(firstFrame, ProfilerDriver.maxHistoryLength - 1);
+                ((UISystemProfilerChart)chart).Update(firstFrame, ProfilerUserSettings.frameCount);
         }
 
         void AddAreaClick(object userData, string[] options, int selected)
@@ -791,7 +799,7 @@ namespace UnityEditor
             SetRecordMode((ProfilerMemoryRecordMode)selected);
         }
 
-        void SaveProfilingData()
+        internal void SaveProfilingData()
         {
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string directory = string.IsNullOrEmpty(recent)
@@ -807,12 +815,9 @@ namespace UnityEditor
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
                 ProfilerDriver.SaveProfile(selected);
             }
-
-            // Opened a save pop-up, MacOS will redraw the window so bail out now
-            EditorGUIUtility.ExitGUI();
         }
 
-        void LoadProfilingData(bool keepExistingData)
+        internal void LoadProfilingData(bool keepExistingData)
         {
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string selected = EditorUtility.OpenFilePanelWithFilters(Styles.loadWindowTitle.text, recent, Styles.loadProfilingDataFileFilters);
@@ -825,14 +830,13 @@ namespace UnityEditor
                     // Stop current profiling if data was loaded successfully
                     ProfilerDriver.enabled = m_Recording = false;
                     SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
-#pragma warning disable CS0618
+                    if (ProfilerUserSettings.rememberLastRecordState)
+                        EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
+                    #pragma warning disable CS0618
                     NetworkDetailStats.m_NetworkOperations.Clear();
-#pragma warning restore
+                    #pragma warning restore
                 }
             }
-
-            // Opened a load pop-up, MacOS will redraw the window so bail out now
-            EditorGUIUtility.ExitGUI();
         }
 
         public void SetRecordingEnabled(bool profilerEnabled)
@@ -840,6 +844,8 @@ namespace UnityEditor
             ProfilerDriver.enabled = profilerEnabled;
             m_Recording = profilerEnabled;
             SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
+            if (ProfilerUserSettings.rememberLastRecordState)
+                EditorPrefs.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
             recordingStateChanged?.Invoke(m_Recording);
             Repaint();
         }
@@ -906,13 +912,23 @@ namespace UnityEditor
 
             // Load profile
             if (GUILayout.Button(Styles.loadProfilingData, EditorStyles.toolbarButton, GUILayout.MaxWidth(25)))
+            {
                 LoadProfilingData(Event.current.shift);
+
+                // Opened a load pop-up, MacOS will redraw the window so bail out now
+                EditorGUIUtility.ExitGUI();
+            }
 
             // Save profile
             using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == -1))
             {
                 if (GUILayout.Button(Styles.saveProfilingData, EditorStyles.toolbarButton))
+                {
                     SaveProfilingData();
+
+                    // Opened a save pop-up, MacOS will redraw the window so bail out now
+                    EditorGUIUtility.ExitGUI();
+                }
             }
 
             // Open Manual
@@ -941,7 +957,6 @@ namespace UnityEditor
             if (settings == null)
             {
                 Debug.LogError("Could not find Preferences for 'Analysis/Profiler'");
-                return;
             }
         }
 
@@ -1058,7 +1073,7 @@ namespace UnityEditor
             CheckForPlatformModuleChange();
             InitializeIfNeeded();
 
-            if (!m_CurrentArea.HasValue && Event.current.type == EventType.Repaint)
+            if (m_CurrentArea == k_InvalidArea && Event.current.type == EventType.Repaint)
             {
                 for (int i = 0; i < m_Charts.Length; i++)
                 {
@@ -1102,7 +1117,7 @@ namespace UnityEditor
             EditorGUILayout.EndScrollView();
 
             GUILayout.BeginVertical();
-            if (m_CurrentArea.HasValue)
+            if (m_CurrentArea != k_InvalidArea)
             {
                 var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
                 var detailViewToolbar = detailViewPosition;
@@ -1143,9 +1158,11 @@ namespace UnityEditor
                 case EditorConnectionTarget.None:
                 case EditorConnectionTarget.MainEditorProcessPlaymode:
                     ProfilerDriver.profileEditor = false;
+                    recordingStateChanged?.Invoke(m_Recording);
                     break;
                 case EditorConnectionTarget.MainEditorProcessEditmode:
                     ProfilerDriver.profileEditor = true;
+                    recordingStateChanged?.Invoke(m_Recording);
                     break;
                 default:
                     ProfilerDriver.profileEditor = false;
@@ -1187,7 +1204,7 @@ namespace UnityEditor
             if (doApply)
             {
                 ProfilerDriver.deepProfiling = deep;
-                InternalEditorUtility.RequestScriptReload();
+                EditorUtility.RequestScriptReload();
             }
 
             return doApply;

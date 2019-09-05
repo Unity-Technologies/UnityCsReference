@@ -8,7 +8,6 @@ using Unity.Collections;
 
 namespace UnityEngine.UIElements
 {
-    [Serializable]
     public struct Vertex
     {
         public readonly static float nearZ = -1.0f;
@@ -16,11 +15,9 @@ namespace UnityEngine.UIElements
         public Vector3 position;
         public Color32 tint;
         public Vector2 uv;
-        internal float transformID;   // Allocator gives an int, but we only take floats, so set to ((float)transformID)
-        internal float clipRectID;    // Comes from the same pool as transformIDs
-        [SerializeField] internal float flags; // Solid,Font,AtlasTextured,CustomTextured,Edge,SVG with gradients,...
-        [SerializeField] internal float settingIndex; // Index in stored SVG gradients atlas
-        internal UInt16 siX, siY;     // Shader info address within the atlas (texels)
+        internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
+        internal Color32 idsFlags; //XYZ (xform,clip,opacity) (W flags)
+        internal Color32 opacityPageSVGSettingIndex; //XY (ZW SVG setting index)
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
@@ -328,7 +325,7 @@ namespace UnityEngine.UIElements
     public class MeshGenerationContext
     {
         [Flags]
-        internal enum MeshFlags { None, UVisDisplacement, IsSVGGradients, IsCustomSVGGradients };
+        internal enum MeshFlags { None, UVisDisplacement, IsSVGGradients, IsCustomSVGGradients }
 
         public VisualElement visualElement { get { return painter.visualElement; } }
 

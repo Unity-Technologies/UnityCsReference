@@ -12,25 +12,18 @@ namespace UnityEditor.UIElements
 {
     static class EnumFieldHelpers
     {
-        internal static readonly UxmlStringAttributeDescription type = new UxmlStringAttributeDescription { name = "type" };
+        internal static readonly UxmlTypeAttributeDescription<Enum> type = new UxmlTypeAttributeDescription<Enum> { name = "type" };
         internal static readonly UxmlStringAttributeDescription value = new UxmlStringAttributeDescription { name = "value" };
         internal static readonly UxmlBoolAttributeDescription includeObsoleteValues = new UxmlBoolAttributeDescription() { name = "include-obsolete-values", defaultValue = false };
 
         internal static bool ExtractValue(IUxmlAttributes bag, CreationContext cc, out Enum resEnumValue, out bool resIncludeObsoleteValues)
         {
-            string enumType = null;
             resIncludeObsoleteValues = false;
             resEnumValue = null;
 
-            if (!type.TryGetValueFromBag(bag, cc, ref enumType))
+            var systemType = type.GetValueFromBag(bag, cc);
+            if (systemType == null)
             {
-                return false;
-            }
-
-            Type systemType = Type.GetType(enumType);
-            if (systemType == null || !systemType.IsEnum)
-            {
-                Debug.LogError($"EnumField: Invalid enum type \"{enumType}\"");
                 return false;
             }
 
@@ -55,7 +48,7 @@ namespace UnityEditor.UIElements
         public new class UxmlTraits : BaseMaskField<Enum>.UxmlTraits
         {
 #pragma warning disable 414
-            private UxmlStringAttributeDescription m_Type = EnumFieldHelpers.type;
+            private UxmlTypeAttributeDescription<Enum> m_Type = EnumFieldHelpers.type;
             private UxmlStringAttributeDescription m_Value = EnumFieldHelpers.value;
             private UxmlBoolAttributeDescription m_IncludeObsoleteValues = EnumFieldHelpers.includeObsoleteValues;
 #pragma warning restore 414

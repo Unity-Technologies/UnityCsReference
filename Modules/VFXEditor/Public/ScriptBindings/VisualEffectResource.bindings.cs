@@ -185,7 +185,7 @@ namespace UnityEditor.VFX
         public VFXMapping[] buffers;
         public VFXMapping[] values;
         public VFXEditorTaskDesc[] tasks;
-    };
+    }
 
     [NativeType(CodegenOptions.Custom, "ScriptingVFXEventDesc")]
     internal struct VFXEventDesc
@@ -193,7 +193,7 @@ namespace UnityEditor.VFX
         public string name;
         public uint[] startSystems;
         public uint[] stopSystems;
-    };
+    }
 
     internal abstract class VFXExpressionValueContainerDesc
     {

@@ -149,7 +149,7 @@ namespace UnityEditor
             }
 
             bool doGenerate = true;
-            if (paths.Count() > 0)
+            if (paths.Count > 0)
                 doGenerate = Provider.PromptAndCheckoutIfNeeded(paths.ToArray(), String.Format("Materials will be checked out in:\n{0}", String.Join("\n", matFolders.ToArray())));
 
             if (doGenerate)

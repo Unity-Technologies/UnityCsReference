@@ -27,7 +27,7 @@ namespace Unity.MPE
         UMP_UNDEFINED,
         UMP_MASTER,
         UMP_SLAVE
-    };
+    }
 
     [Flags]
     internal enum RoleCapability
@@ -35,7 +35,7 @@ namespace Unity.MPE
         UMP_CAP_NIL = 0,
         UMP_CAP_MASTER = 1,
         UMP_CAP_SLAVE = 2
-    };
+    }
 
     [NativeType("Modules/UMPE/ChannelService.h")]
     [Serializable]
@@ -76,7 +76,7 @@ namespace Unity.MPE
         {
             return !(x == y);
         }
-    };
+    }
 
     [NativeType("Modules/UMPE/ChannelService.h")]
     [Serializable]
@@ -123,7 +123,7 @@ namespace Unity.MPE
         {
             return !(x == y);
         }
-    };
+    }
 
     [NativeHeader("Modules/UMPE/ChannelService.h"),
      StaticAccessor("Unity::MPE::ChannelService", StaticAccessorType.DoubleColon)]

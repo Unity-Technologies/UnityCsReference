@@ -39,7 +39,7 @@ namespace UnityEngine.XR
             PositionAndOrientation,
             OrientationOnly,
             None
-        };
+        }
 
         extern public ReprojectionMode reprojectionMode { get; set; }
 
@@ -157,13 +157,17 @@ namespace UnityEngine.XR
             extern public void GetBlitParameter(int blitParameterIndex, out XRBlitParams blitParameter);
         }
 
+        [NativeMethod(Name = "GetPreferredMirrorViewBlitMode", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public int GetPreferredMirrorBlitMode();
+
         [NativeMethod(Name = "QueryMirrorViewBlitDesc", IsThreadSafe = false)]
         [NativeConditional("ENABLE_XR")]
-        extern public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc);
+        extern public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc, int mode = XRMirrorViewBlitMode.kXRMirrorBlitLeftEye);
 
         [NativeMethod(Name = "AddGraphicsThreadMirrorViewBlit", IsThreadSafe = false)]
         [NativeHeader("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
         [NativeConditional("ENABLE_XR")]
-        extern public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate);
+        extern public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate, int mode = XRMirrorViewBlitMode.kXRMirrorBlitLeftEye);
     }
 }

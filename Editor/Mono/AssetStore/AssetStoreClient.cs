@@ -60,7 +60,7 @@ namespace UnityEditor
             string delim = "";
             foreach (KeyValuePair<string, JSONValue> kv in dict)
             {
-                res += delim + '"' + EncodeString(kv.Key) + "\" : " + kv.Value.ToString();
+                res += delim + '"' + EncodeString(kv.Key) + "\" : " + kv.Value;
                 delim = ", ";
             }
             return res + "}";
@@ -130,7 +130,7 @@ namespace UnityEditor
             public string name;
             public int offset;
             public int limit;
-        };
+        }
 
         internal List<Group> groups = new List<Group>();
 
@@ -401,7 +401,7 @@ namespace UnityEditor
             IN_PROGRESS,
             LOGGED_IN,
             LOGIN_ERROR
-        };
+        }
 
         static string s_AssetStoreUrl = null;
         static string s_AssetStoreSearchUrl = null;
@@ -806,7 +806,7 @@ namespace UnityEditor
         {
             string url = APIUrl("/assets/list");
             foreach (AssetStoreAsset asset in assets)
-                url += "&id=" + asset.id.ToString();
+                url += "&id=" + asset.id;
             // Debug.Log(url);
             AssetStoreAssetsInfo r = new AssetStoreAssetsInfo(callback, assets);
             return CreateJSONRequest(url, delegate(AssetStoreResponse ar) { r.Parse(ar); });
@@ -827,7 +827,7 @@ namespace UnityEditor
 
         internal static AsyncHTTPClient BuildPackage(AssetStoreAsset asset, BuildPackageResult.Callback callback)
         {
-            string url = APIUrl("/content/download/" + asset.packageID.ToString());
+            string url = APIUrl("/content/download/" + asset.packageID);
             // Debug.Log(url);
             BuildPackageResult r = new BuildPackageResult(asset, callback);
             return CreateJSONRequest(url, delegate(AssetStoreResponse ar) { r.Parse(ar); });

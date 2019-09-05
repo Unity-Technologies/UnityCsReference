@@ -5,6 +5,13 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace UnityEngine.iOS
+namespace UnityEditor.Scripting.ScriptCompilation
 {
+    internal enum DirtySource
+    {
+        None = 0,
+        DirtyScript = 1,
+        DirtyAssembly = 2,
+        DirtyReference = 3,
+    }
 }

@@ -49,10 +49,11 @@ namespace UnityEditor
             state.draggedTo = -1;
             state.fileNames = null;
 
-            if ((lvOptions & ListViewOptions.wantsReordering) != 0) ilvState.wantsReordering = true;
-            if ((lvOptions & ListViewOptions.wantsExternalFiles) != 0) ilvState.wantsExternalFiles = true;
-            if ((lvOptions & ListViewOptions.wantsToStartCustomDrag) != 0) ilvState.wantsToStartCustomDrag = true;
-            if ((lvOptions & ListViewOptions.wantsToAcceptCustomDrag) != 0) ilvState.wantsToAcceptCustomDrag = true;
+            ilvState.wantsReordering = (lvOptions & ListViewOptions.wantsReordering) != 0;
+            ilvState.wantsExternalFiles = (lvOptions & ListViewOptions.wantsExternalFiles) != 0;
+            ilvState.wantsToStartCustomDrag = (lvOptions & ListViewOptions.wantsToStartCustomDrag) != 0;
+            ilvState.wantsToAcceptCustomDrag = (lvOptions & ListViewOptions.wantsToAcceptCustomDrag) != 0;
+            ilvState.wantsRowMultiSelection = (lvOptions & ListViewOptions.wantsRowMultiSelection) != 0;
 
             return DoListView(GUILayoutUtility.GetRect(1, state.totalRows * state.rowHeight + 3), state, colWidths, string.Empty);
         }

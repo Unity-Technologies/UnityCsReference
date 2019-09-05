@@ -16,6 +16,7 @@ namespace UnityEditor
         RectOffset k_TreeViewPadding = new RectOffset(0, 0, 4, 4);
         const float k_HeaderHeight = 40f;
         const float k_ButtonWidth = 120;
+        const float k_ButtonWidthVariant = 135;
         const float k_HeaderLeftMargin = 6;
         const float k_NoOverridesLabelHeight = 26f;
         const float k_ApplyButtonHeight = 36f;
@@ -31,6 +32,9 @@ namespace UnityEditor
         GUIContent m_InstanceContent = new GUIContent();
         GUIContent m_RevertAllContent = new GUIContent();
         GUIContent m_ApplyAllContent = new GUIContent();
+        GUIContent m_RevertSelectedContent = new GUIContent();
+        GUIContent m_ApplySelectedContent = new GUIContent();
+        float m_ButtonWidth;
 
         bool m_AnyOverrides;
         bool m_Disconnected;
@@ -42,8 +46,11 @@ namespace UnityEditor
         static class Styles
         {
             public static GUIContent revertAllContent = EditorGUIUtility.TrTextContent("Revert All", "Revert all overrides.");
+            public static GUIContent revertSelectedContent = EditorGUIUtility.TrTextContent("Revert Selected", "Revert selected overrides.");
             public static GUIContent applyAllContent = EditorGUIUtility.TrTextContent("Apply All", "Apply all overrides to Prefab source '{0}'.");
+            public static GUIContent applySelectedContent = EditorGUIUtility.TrTextContent("Apply Selected", "Apply selected overrides to Prefab source '{0}'.");
             public static GUIContent applyAllToBaseContent = EditorGUIUtility.TrTextContent("Apply All to Base", "Apply all overrides to base Prefab source '{0}'.");
+            public static GUIContent applySelectedToBaseContent = EditorGUIUtility.TrTextContent("Apply Selected to Base", "Apply selected overrides to base Prefab source '{0}'.");
             public static GUIContent instanceLabel = EditorGUIUtility.TrTextContent("Overrides to");
             public static GUIContent contextLabel = EditorGUIUtility.TrTextContent("in");
 
@@ -91,6 +98,12 @@ namespace UnityEditor
 
         internal void RefreshStatus()
         {
+            if (m_TreeView != null)
+            {
+                m_TreeView.Reload();
+                m_TreeView.CullNonExistingItemsFromSelection();
+            }
+
             if (m_SelectedGameObjects.Length == 1)
                 UpdateTextSingle(PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObjects[0]));
             else
@@ -262,23 +275,53 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             using (new EditorGUI.DisabledScope(m_InvalidComponentOnAsset))
             {
-                if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(k_ButtonWidth)))
+                if (m_TreeView != null && m_TreeView.GetSelection().Count > 1)
                 {
-                    if (RevertAll() && editorWindow != null)
+                    if (GUILayout.Button(m_RevertSelectedContent, GUILayout.Width(m_ButtonWidth)))
                     {
-                        editorWindow.Close();
-                        GUIUtility.ExitGUI();
+                        if (OperateSelectedOverrides(PrefabUtility.OverrideOperation.Revert))
+                        {
+                            RefreshStatus();
+                            // We don't close the window even if there are no more overrides left.
+                            // We want to diplay explicit confirmation, since it's not a given outcome
+                            // when using Revert Selected. Only Revert All button closes the window.
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance))
+                    {
+                        if (GUILayout.Button(m_ApplySelectedContent, GUILayout.Width(m_ButtonWidth)))
+                        {
+                            if (OperateSelectedOverrides(PrefabUtility.OverrideOperation.Apply))
+                            {
+                                RefreshStatus();
+                                // We don't close the window even if there are no more overrides left.
+                                // We want to diplay explicit confirmation, since it's not a given outcome
+                                // when using Apply Selected. Only Apply All button closes the window.
+                            }
+                        }
                     }
                 }
-
-                using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance))
+                else
                 {
-                    if (GUILayout.Button(m_ApplyAllContent, GUILayout.Width(k_ButtonWidth)))
+                    if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(m_ButtonWidth)))
                     {
-                        if (ApplyAll() && editorWindow != null)
+                        if (RevertAll() && editorWindow != null)
                         {
                             editorWindow.Close();
                             GUIUtility.ExitGUI();
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance))
+                    {
+                        if (GUILayout.Button(m_ApplyAllContent, GUILayout.Width(m_ButtonWidth)))
+                        {
+                            if (ApplyAll() && editorWindow != null)
+                            {
+                                editorWindow.Close();
+                                GUIUtility.ExitGUI();
+                            }
                         }
                     }
                 }
@@ -291,7 +334,7 @@ namespace UnityEditor
         {
             public GameObject correspondingSourceObject;
             public HashSet<int> prefabHierarchy;
-        };
+        }
 
         bool ApplyAll()
         {
@@ -364,6 +407,25 @@ namespace UnityEditor
             return true;
         }
 
+        bool OperateSelectedOverrides(PrefabUtility.OverrideOperation operation)
+        {
+            List<PrefabOverride> overrides = new List<PrefabOverride>();
+
+            // Get all overrides from selection. Immediately accept any overrides with no dependencies.
+            var selection = m_TreeView.GetSelection();
+            for (int i = 0; i < selection.Count; i++)
+            {
+                PrefabOverride singleOverride = m_TreeView.FindOverride(selection[i]);
+                if (singleOverride != null)
+                    overrides.Add(singleOverride);
+            }
+
+            bool success = PrefabUtility.ProcessMultipleOverrides(m_SelectedGameObjects[0], overrides, operation, InteractionMode.UserAction);
+            if (success)
+                EditorUtility.ForceRebuildInspectors();
+            return success;
+        }
+
         void UpdateTextSingle(GameObject prefabAsset)
         {
             Texture2D icon = (Texture2D)AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(prefabAsset));
@@ -395,15 +457,23 @@ namespace UnityEditor
             m_InstanceContent.image = assetIcon;
             m_InstanceContent.text = assetName;
 
-            m_RevertAllContent.text = Styles.revertAllContent.text;
-            m_RevertAllContent.tooltip = Styles.revertAllContent.tooltip;
+            m_RevertAllContent = Styles.revertAllContent;
+            m_RevertSelectedContent = Styles.revertSelectedContent;
 
+            m_ButtonWidth = k_ButtonWidth;
             var applyAllContent = Styles.applyAllContent;
+            var applySelectedContent = Styles.applySelectedContent;
             if (stage.isPrefabStage && PrefabUtility.IsPartOfVariantPrefab(AssetDatabase.LoadAssetAtPath<Object>(stage.prefabAssetPath)))
+            {
+                m_ButtonWidth = k_ButtonWidthVariant;
                 applyAllContent = Styles.applyAllToBaseContent;
+                applySelectedContent = Styles.applySelectedToBaseContent;
+            }
 
             m_ApplyAllContent.text = applyAllContent.text;
             m_ApplyAllContent.tooltip = string.Format(applyAllContent.tooltip, assetName);
+            m_ApplySelectedContent.text = applySelectedContent.text;
+            m_ApplySelectedContent.tooltip = string.Format(applySelectedContent.tooltip, assetName);
         }
     }
 }

@@ -13,7 +13,6 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
-using CurveModifiedType = UnityEditor.AnimationUtility.CurveModifiedType;
 
 namespace UnityEditorInternal
 {
@@ -849,7 +848,7 @@ namespace UnityEditorInternal
 
         public static float GetPreviousKeyframeTime(AnimationWindowCurve[] curves, float currentTime, float frameRate)
         {
-            float candidate = float.MinValue;
+            AnimationKeyTime candidateKeyTime = AnimationKeyTime.Time(float.MinValue, frameRate);
             AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
             AnimationKeyTime previousTime = AnimationKeyTime.Frame(time.frame - 1, frameRate);
 
@@ -859,14 +858,19 @@ namespace UnityEditorInternal
             {
                 foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                 {
-                    if (keyframe.time > candidate && keyframe.time <= previousTime.time)
+                    AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
+                    if (keyTime.frame >= candidateKeyTime.frame && keyTime.frame <= previousTime.frame)
                     {
-                        candidate = keyframe.time;
-                        found = true;
+                        if (keyTime.time >= candidateKeyTime.time)
+                        {
+                            candidateKeyTime = keyTime;
+                            found = true;
+                        }
                     }
                 }
             }
-            return found ? candidate : time.time;
+
+            return found ? candidateKeyTime.time : time.time;
         }
 
         // Add animator, controller and clip to gameobject if they are missing to make this gameobject animatable
@@ -1045,7 +1049,7 @@ namespace UnityEditorInternal
 
         public static int GetPropertyNodeID(int setId, string path, System.Type type, string propertyName)
         {
-            return (setId.ToString() + path + type.Name + propertyName).GetHashCode();
+            return (setId + path + type.Name + propertyName).GetHashCode();
         }
 
         // What is the first animation player component (Animator or Animation) when recursing parent tree toward root

@@ -21,7 +21,7 @@ namespace UnityEditor.Compilation
         None = 0,
         EditorAssembly = 1,
         DevelopmentBuild = 2,
-    };
+    }
 
     [Flags]
     public enum ReferencesOptions
@@ -100,7 +100,8 @@ namespace UnityEditor.Compilation
             var scriptAssembly = editorCompilation.CreateScriptAssembly(this);
 
             compilationTask = new CompilationTask(new ScriptAssembly[] { scriptAssembly }, scriptAssembly.OutputDirectory, this,
-                EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1);
+                EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1,
+                editorCompilation.ILPostProcessing.PostProcess);
 
             compilationTask.OnCompilationTaskStarted += (context) =>
             {

@@ -6,8 +6,11 @@ namespace UnityEditor.PackageManager.UI
 {
     internal enum PackageState
     {
-        UpToDate,
-        Outdated,
+        None = 0,
+        Installed,
+        ImportAvailable,
+        InDevelopment,
+        UpdateAvailable,
         InProgress,
         Error
     }

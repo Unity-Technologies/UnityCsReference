@@ -269,7 +269,7 @@ namespace UnityEditorInternal.VersionControl
             insert.Add(item);
 
             // Create a lookup table
-            pathSearch[c_changeKeyPrefix + change.id.ToString()] = item;
+            pathSearch[c_changeKeyPrefix + change.id] = item;
 
             return item;
         }
@@ -973,7 +973,7 @@ namespace UnityEditorInternal.VersionControl
             if (item.Asset != null)
                 return selectList.ContainsKey(item.Asset.path.ToLower());
             if (item.Change != null)
-                return selectList.ContainsKey(c_changeKeyPrefix + item.Change.id.ToString());
+                return selectList.ContainsKey(c_changeKeyPrefix + item.Change.id);
 
             return false;
         }
@@ -1027,7 +1027,7 @@ namespace UnityEditorInternal.VersionControl
             }
             else if (item.Change != null)
             {
-                selectList[c_changeKeyPrefix + item.Change.id.ToString()] = item;
+                selectList[c_changeKeyPrefix + item.Change.id] = item;
             }
         }
 
@@ -1142,7 +1142,7 @@ namespace UnityEditorInternal.VersionControl
 
         void SelectedRemove(ListItem item)
         {
-            string name = item.Asset != null ? item.Asset.path.ToLower() : c_changeKeyPrefix + item.Change.id.ToString();
+            string name = item.Asset != null ? item.Asset.path.ToLower() : c_changeKeyPrefix + item.Change.id;
             // Remove item
             selectList.Remove(name);
 
@@ -1311,7 +1311,7 @@ namespace UnityEditorInternal.VersionControl
             {
                 if (item.Change != null)
                 {
-                    name = item.Change.id.ToString() + " " + item.Change.description;
+                    name = item.Change.id + " " + item.Change.description;
                 }
             }
 

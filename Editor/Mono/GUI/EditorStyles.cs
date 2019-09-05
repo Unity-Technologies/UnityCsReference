@@ -5,6 +5,7 @@
 using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEngine;
+using UnityEngine.Internal;
 
 // See Style Guide in wiki for more information on editor styles.
 
@@ -355,12 +356,14 @@ namespace UnityEditor
         // the list of editor styles to use
         private static EditorStyles[] s_CachedStyles = { null, null };
 
-        internal static GUIStyle FromUSS(string ussStyleRuleName, string ussInPlaceStyleOverride = null)
+        [ExcludeFromDocs]
+        public static GUIStyle FromUSS(string ussStyleRuleName, string ussInPlaceStyleOverride = null)
         {
             return GUIStyleExtensions.FromUSS(ussStyleRuleName, ussInPlaceStyleOverride);
         }
 
-        internal static GUIStyle ApplyUSS(GUIStyle style, string ussStyleRuleName, string ussInPlaceStyleOverride = null)
+        [ExcludeFromDocs]
+        public static GUIStyle ApplyUSS(GUIStyle style, string ussStyleRuleName, string ussInPlaceStyleOverride = null)
         {
             return GUIStyleExtensions.ApplyUSS(style, ussStyleRuleName, ussInPlaceStyleOverride);
         }
@@ -492,7 +495,7 @@ namespace UnityEditor
             {
                 padding = new RectOffset(
                     InspectorWindow.kInspectorPaddingLeft,
-                    InspectorWindow.kInspectorPaddingRight, 0, 0)
+                    InspectorWindow.kInspectorPaddingRight, InspectorWindow.kInspectorPaddingTop, 0)
             };
 
             // For the full width margins, use padding from right side in both sides,

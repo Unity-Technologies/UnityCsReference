@@ -34,7 +34,7 @@ namespace UnityEditor
         public static bool m_ShowOnlySelected = false;
         public static bool m_VerticalLayout;
         const string k_SimulationStateId = "SimulationState";
-        enum PlayState { Stopped = 0, Playing = 1, Paused = 2 };
+        enum PlayState { Stopped = 0, Playing = 1, Paused = 2 }
 
         // ParticleSystemWindow Layout
         static readonly Vector2 k_MinEmitterAreaSize = new Vector2(125f, 100);
@@ -45,7 +45,7 @@ namespace UnityEditor
         static readonly Color k_DarkSkinDisabledColor = new Color(0.66f, 0.66f, 0.66f, 0.95f);
         static readonly Color k_LightSkinDisabledColor = new Color(0.84f, 0.84f, 0.84f, 0.95f);
 
-        private enum OwnerType { Inspector, ParticleSystemWindow };
+        private enum OwnerType { Inspector, ParticleSystemWindow }
 
         internal class Texts
         {
@@ -179,7 +179,7 @@ namespace UnityEditor
             bool anyAdded = false;
 
             ParticleSystem[] allSystems = systems.ToArray();
-            bool usingMultiEdit = (allSystems.Count() > 1);
+            bool usingMultiEdit = (allSystems.Length > 1);
 
             bool initializeRequired = false;
             ParticleSystem mainSystem = null;
@@ -367,7 +367,7 @@ namespace UnityEditor
 
             SetShowOnlySelectedMode(false);
 
-            PreviewEditorWindow.RepaintAll();
+            PlayModeView.RepaintAll();
             SceneView.RepaintAll();
         }
 

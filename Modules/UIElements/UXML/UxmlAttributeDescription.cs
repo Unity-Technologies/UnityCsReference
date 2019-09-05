@@ -392,6 +392,53 @@ namespace UnityEngine.UIElements
         }
     }
 
+    public class UxmlTypeAttributeDescription<TBase> : TypedUxmlAttributeDescription<Type>
+    {
+        public UxmlTypeAttributeDescription()
+        {
+            type = "string";
+            typeNamespace = xmlSchemaNamespace;
+            defaultValue = null;
+        }
+
+        public override string defaultValueAsString
+        {
+            get { return defaultValue == null ? "null" : defaultValue.FullName; }
+        }
+
+        public override Type GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        {
+            return GetValueFromBag(bag, cc, ConvertValueToType, defaultValue);
+        }
+
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Type value)
+        {
+            return TryGetValueFromBag(bag, cc, ConvertValueToType, defaultValue, ref value);
+        }
+
+        Type ConvertValueToType(string v, Type defaultValue)
+        {
+            if (string.IsNullOrEmpty(v))
+                return defaultValue;
+
+            try
+            {
+                var type = Type.GetType(v, true);
+
+                if (!typeof(TBase).IsAssignableFrom(type))
+                    Debug.LogError($"Type: Invalid type \"{v}\". Type must derive from {typeof(TBase).FullName}.");
+                else
+                    return type;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            return defaultValue;
+        }
+    }
+
     public class UxmlEnumAttributeDescription<T> : TypedUxmlAttributeDescription<T> where T : struct, IConvertible
     {
         public UxmlEnumAttributeDescription()

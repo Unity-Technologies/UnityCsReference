@@ -250,6 +250,11 @@ namespace UnityEditor.IMGUI.Controls
             return TreeViewUtility.FindItem(id, searchFromThisItem);
         }
 
+        protected int FindRowOfItem(TreeViewItem item)
+        {
+            return GetRows().IndexOf(item);
+        }
+
         protected void GetFirstAndLastVisibleRows(out int firstRowVisible, out int lastRowVisible)
         {
             m_GUI.GetFirstAndLastRowVisible(out firstRowVisible, out lastRowVisible);
@@ -744,7 +749,7 @@ namespace UnityEditor.IMGUI.Controls
                         Debug.LogError(type.Name + ": If you are overriding SetupDragAndDrop you should also override CanStartDrag (to allow dragging).");
                 }
             }
-        };
+        }
 
         // Nested because they are used by protected methods
         protected struct RowGUIArgs

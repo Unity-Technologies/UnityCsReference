@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
         public new class UxmlTraits : BaseField<Enum>.UxmlTraits
         {
 #pragma warning disable 414
-            private UxmlStringAttributeDescription m_Type = EnumFieldHelpers.type;
+            private UxmlTypeAttributeDescription<Enum> m_Type = EnumFieldHelpers.type;
             private UxmlStringAttributeDescription m_Value = EnumFieldHelpers.value;
             private UxmlBoolAttributeDescription m_IncludeObsoleteValues = EnumFieldHelpers.includeObsoleteValues;
 #pragma warning restore 414

@@ -47,8 +47,7 @@ namespace UnityEditor
                     }
                     return false;
                 case EventType.Repaint:
-                    style.Draw(position, content, id);
-                    //          Handles.Repaint ();
+                    style.Draw(position, content, id, false, position.Contains(Event.current.mousePosition));
                     return id == GUIUtility.hotControl && position.Contains(Event.current.mousePosition);
             }
             return false;
@@ -133,17 +132,13 @@ namespace UnityEditor
 
             MinMaxSlider(sliderRect, ref value, ref size, newVisualStart, newVisualEnd, newVisualStart, newVisualEnd, slider, thumb, horiz);
 
-            bool wasMouseUpEvent = false;
-            if (Event.current.type == EventType.MouseUp)
-                wasMouseUpEvent = true;
-
             if (ScrollerRepeatButton(id, minRect, leftButton))
                 value -= scrollStepSize * (visualStart < visualEnd ? 1f : -1f);
 
             if (ScrollerRepeatButton(id, maxRect, rightButton))
                 value += scrollStepSize * (visualStart < visualEnd ? 1f : -1f);
 
-            if (wasMouseUpEvent && Event.current.type == EventType.Used) // repeat buttons ate mouse up event - release scrolling
+            if (Event.current.type == EventType.MouseUp && Event.current.type == EventType.Used) // repeat buttons ate mouse up event - release scrolling
                 scrollControlID = 0;
 
             if (startLimit < endLimit)

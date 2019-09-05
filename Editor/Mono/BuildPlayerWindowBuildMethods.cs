@@ -272,7 +272,7 @@ namespace UnityEditor
 
                     if (newLocation.Length == 0)
                     {
-                        throw new BuildMethodException("Build location for buildTarget " + buildTarget.ToString() + "is not valid.");
+                        throw new BuildMethodException("Build location for buildTarget " + buildTarget + "is not valid.");
                     }
 
                     if (!askForBuildLocation)
@@ -290,7 +290,7 @@ namespace UnityEditor
 
                                 newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
                                 if (!BuildLocationIsValid(newLocation))
-                                    throw new BuildMethodException("Build location for buildTarget " + buildTarget.ToString() + "is not valid.");
+                                    throw new BuildMethodException("Build location for buildTarget " + buildTarget + "is not valid.");
 
                                 break;
                         }
@@ -429,7 +429,8 @@ namespace UnityEditor
                 var settingsPath = NormalizePath(basePath + "/ProjectSettings");
                 var tempPath = NormalizePath(basePath + "/Temp");
                 var libraryPath = NormalizePath(basePath + "/Library");
-                if (basePath.Contains(cleanedPath) || cleanedPath == assetsPath || cleanedPath == settingsPath || cleanedPath == tempPath || cleanedPath == libraryPath)
+                var userSettingsPath = NormalizePath(basePath + "/UserSettings");
+                if (basePath.Contains(cleanedPath) || cleanedPath == assetsPath || cleanedPath == settingsPath || cleanedPath == tempPath || cleanedPath == libraryPath || cleanedPath == userSettingsPath)
                 {
                     Debug.LogError("Invalid build path: " + cleanedPath);
                     return false;

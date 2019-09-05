@@ -3,11 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 
 namespace Unity.Profiling.LowLevel
 {
@@ -24,4 +20,36 @@ namespace Unity.Profiling.LowLevel
 
         Warning = 1 << 4,
     }
+
+    internal enum MarkerEventType : ushort
+    {
+        Begin = 0,
+        End = 1,
+    };
+
+    internal enum MarkerEventDataType : byte
+    {
+        None = 0,
+        InstanceId = 1,
+        Int32 = 2,
+        UInt32 = 3,
+        Int64 = 4,
+        UInt64 = 5,
+        Float = 6,
+        Double = 7,
+        String = 8,
+        String16 = 9,
+        Vec3 = 10,
+        Blob8 = 11
+    };
+
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    internal unsafe struct MarkerEventData // Metadata parameter. Must be in sync with UnityProfilerMarkerData
+    {
+        [FieldOffset(0)] public byte type;
+        [FieldOffset(1)] public byte reserved0;
+        [FieldOffset(2)] public ushort reserved1;
+        [FieldOffset(4)] public uint size;
+        [FieldOffset(8)] public void* ptr;
+    };
 }

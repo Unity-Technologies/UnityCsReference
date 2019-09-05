@@ -1042,7 +1042,7 @@ namespace UnityEngine
         {
             if (submesh < 0 || submesh >= subMeshCount)
             {
-                Debug.LogError(String.Format("Failed getting topology. Submesh index is out of bounds."), this);
+                Debug.LogError("Failed getting topology. Submesh index is out of bounds.", this);
                 return MeshTopology.Triangles;
             }
             return GetTopologyImpl(submesh);

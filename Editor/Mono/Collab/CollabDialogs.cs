@@ -86,7 +86,7 @@ namespace UnityEditor.Collaboration
         }
 
         public PublishDialogOptions Options;
-    };
+    }
 
     internal class CollabCannotPublishDialog : EditorWindow
     {
@@ -142,5 +142,5 @@ namespace UnityEditor.Collaboration
 
             GUILayout.EndVertical();
         }
-    };
+    }
 }

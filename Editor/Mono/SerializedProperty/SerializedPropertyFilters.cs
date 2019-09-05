@@ -24,7 +24,7 @@ namespace UnityEditor
             public abstract void OnGUI(Rect r);                     // draws the filter control
             public string SerializeState() { return JsonUtility.ToJson(this); }
             public void DeserializeState(string state) { JsonUtility.FromJsonOverwrite(state, this); }
-        };
+        }
 
 
         internal class String : SerializableFilter
@@ -41,18 +41,21 @@ namespace UnityEditor
             public override bool Filter(SerializedProperty prop) { return prop.stringValue.IndexOf(m_Text, 0, System.StringComparison.OrdinalIgnoreCase) >= 0; }
             public override void OnGUI(Rect r)
             {
-                r.width -= 15;
-                m_Text = EditorGUI.TextField(r, GUIContent.none, m_Text, Styles.searchField);
+                bool empty = string.IsNullOrEmpty(m_Text);
 
-                // draw the cancel button
-                r.x += r.width;
-                r.width = 15;
-                bool notEmpty = m_Text != "";
-                if (GUI.Button(r, GUIContent.none, notEmpty ? Styles.searchFieldCancelButton : Styles.searchFieldCancelButtonEmpty) && notEmpty)
+                Rect buttonRect = r;
+                buttonRect.x += (r.width - 15);
+                buttonRect.width = 15;
+                GUIStyle buttonStyle = empty ? Styles.searchFieldCancelButtonEmpty : Styles.searchFieldCancelButton;
+
+                if (GUI.Button(buttonRect, GUIContent.none, buttonStyle) && !empty)
                 {
                     m_Text = "";
                     GUIUtility.keyboardControl = 0;
                 }
+
+                m_Text = EditorGUI.TextField(r, GUIContent.none, m_Text, Styles.searchField);
+                GUI.Button(buttonRect, GUIContent.none, buttonStyle);
             }
         }
 

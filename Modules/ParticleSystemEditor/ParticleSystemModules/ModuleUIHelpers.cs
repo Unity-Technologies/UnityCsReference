@@ -525,10 +525,10 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             int newValue = EditorGUI.Popup(rect, null, boolProp.boolValue ? 1 : 0, EditorGUIUtility.TempContent(options), ParticleSystemStyles.Get().popup);
             if (EditorGUI.EndChangeCheck())
-                boolProp.boolValue = newValue > 0 ? true : false;
+                boolProp.boolValue = newValue > 0;
 
             EditorGUI.EndProperty();
-            return newValue > 0 ? true : false;
+            return newValue > 0;
         }
 
         public static void GUIEnumMaskUVChannelFlags(GUIContent label, SerializedProperty enumProperty, params GUILayoutOption[] layoutOptions)

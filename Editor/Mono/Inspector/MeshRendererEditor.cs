@@ -15,7 +15,7 @@ namespace UnityEditor
         class Styles
         {
             public static readonly GUIContent materialWarning = EditorGUIUtility.TrTextContent("This renderer has more materials than the Mesh has submeshes. Multiple materials will be applied to the same submesh, which costs performance. Consider using multiple shader passes.");
-            public static readonly GUIContent staticBatchingWarning = EditorGUIUtility.TrTextContent("This renderer is statically batched and uses an instanced shader at the same time. Instancing will be disabled in such a case. Consider disabling static batching if you want it to be instanced.");
+            public static readonly GUIContent staticBatchingWarning = EditorGUIUtility.TrTextContent("This Renderer uses static batching and instanced Shaders. When the Player is active, instancing is disabled. If you want instanced Shaders at run time, disable static batching.");
         }
 
         private SerializedObject m_GameObjectsSerializedObject;

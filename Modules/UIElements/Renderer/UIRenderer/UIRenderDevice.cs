@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements.UIR
     [StructLayout(LayoutKind.Sequential)]
     struct Transform3x4
     {
-        public Vector4 v0, v1, v2, clipRect;
+        public Vector4 v0, v1, v2;
     }
 
     // The values stored here could be updated behind the back of the holder of this
@@ -55,8 +55,6 @@ namespace UnityEngine.UIElements.UIR
             public UInt32 handle;
             public Page page;
             public NativeArray<DrawBufferRange> drawRanges;
-            public List<NativeArray<Transform3x4>> transformPages;
-            public ComputeBuffer[] transformBuffers;
 
             public void Dispose()
             {
@@ -65,19 +63,6 @@ namespace UnityEngine.UIElements.UIR
                     Page pageToDispose = page;
                     page = page.next;
                     pageToDispose.Dispose();
-                }
-                if (transformPages != null)
-                {
-                    foreach (var transformPage in transformPages)
-                        transformPage.Dispose();
-                }
-                if (transformBuffers != null)
-                {
-                    foreach (var transformBuffer in transformBuffers)
-                    {
-                        if (transformBuffer != null)
-                            transformBuffer.Dispose();
-                    }
                 }
                 if (drawRanges.IsCreated)
                     drawRanges.Dispose();
@@ -89,7 +74,6 @@ namespace UnityEngine.UIElements.UIR
         private readonly bool m_MockDevice; // Don't access GfxDevice resources nor submit commands of any sort, used for tests
 
         // Those fields below are just for lazy creation
-        private uint m_LazyCreationInitialTransformCapacity;
         private int m_LazyCreationDrawRangeRingSize;
 
         private Shader m_DefaultMaterialShader;
@@ -99,8 +83,6 @@ namespace UnityEngine.UIElements.UIR
         private uint m_NextPageVertexCount;
         private uint m_LargeMeshVertexCount;
         private float m_IndexToVertexCountRatio;
-        private BlockAllocator m_TransformAllocator;
-        private List<NativeArray<Transform3x4>> m_TransformPages;
         private List<List<AllocToFree>> m_DeferredFrees;
         private List<List<AllocToUpdate>> m_Updates;
         private UInt32[] m_Fences;
@@ -109,9 +91,6 @@ namespace UnityEngine.UIElements.UIR
         private uint m_FrameIndex;
         private bool m_FrameIndexIncremented;
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
-        private uint m_TransformBufferToUse;
-        private bool m_TransformBufferNeedsUpdate;
-        private ComputeBuffer[] m_TransformBuffers;
         private DrawStatistics m_DrawStats;
         private bool m_APIUsesStraightYCoordinateSystem;
 
@@ -127,9 +106,10 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
         static readonly int s_1PixelClipInvViewPropID = Shader.PropertyToID("_1PixelClipInvView");
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
+        static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
         static readonly int s_PixelClipRectPropID = Shader.PropertyToID("_PixelClipRect");
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
-        static readonly int s_TransformsBufferPropID = Shader.PropertyToID("_TransformsBuffer");
+        static readonly int s_ClipRectsPropID = Shader.PropertyToID("_ClipRects");
 
         static CustomSampler s_AllocateSampler = CustomSampler.Create("UIR.Allocate");
         static CustomSampler s_FreeSampler = CustomSampler.Create("UIR.Free");
@@ -137,9 +117,9 @@ namespace UnityEngine.UIElements.UIR
         static CustomSampler s_FenceSampler = CustomSampler.Create("UIR.WaitOnFence");
         static CustomSampler s_BeforeDrawSampler = CustomSampler.Create("UIR.BeforeDraw");
 
-        static bool? s_ComputeIsAvailable;
-        const string k_ComputeIsAvailableTag = "UIE_ComputeIsAvailable";
-        const string k_ComputeIsAvailableTrue = "1";
+        static bool? s_VertexTexturingIsAvailable;
+        const string k_VertexTexturingIsAvailableTag = "UIE_VertexTexturingIsAvailable";
+        const string k_VertexTexturingIsAvailableTrue = "1";
 
 
         static UIRenderDevice()
@@ -148,20 +128,20 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.FlushPendingResources += OnFlushPendingResources;
         }
 
-        public enum DrawingModes { FlipY, StraightY, DisableClipping };
+        public enum DrawingModes { FlipY, StraightY, DisableClipping }
 
-        public UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, uint initialTransformCapacity = 1024, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
-            this(defaultMaterialShader, initialVertexCapacity, initialIndexCapacity, initialTransformCapacity, drawingMode, drawRangeRingSize, false)
+        public UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
+            this(defaultMaterialShader, initialVertexCapacity, initialIndexCapacity, drawingMode, drawRangeRingSize, false)
         {
         }
 
         // This protected constructor creates a "mock" render device
-        protected UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, uint initialTransformCapacity = 1024, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
-            this(null, initialVertexCapacity, initialIndexCapacity, initialTransformCapacity, drawingMode, drawRangeRingSize, true)
+        protected UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
+            this(null, initialVertexCapacity, initialIndexCapacity, drawingMode, drawRangeRingSize, true)
         {
         }
 
-        private UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity, uint initialIndexCapacity, uint initialTransformCapacity, DrawingModes drawingMode, int drawRangeRingSize, bool mockDevice)
+        private UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity, uint initialIndexCapacity, DrawingModes drawingMode, int drawRangeRingSize, bool mockDevice)
         {
             m_MockDevice = mockDevice;
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
@@ -181,7 +161,6 @@ namespace UnityEngine.UIElements.UIR
             m_LargeMeshVertexCount = m_NextPageVertexCount;
             m_IndexToVertexCountRatio = (float)initialIndexCapacity / (float)initialVertexCapacity;
             m_IndexToVertexCountRatio = Mathf.Max(m_IndexToVertexCountRatio, 2);
-            m_LazyCreationInitialTransformCapacity = initialTransformCapacity;
             m_LazyCreationDrawRangeRingSize = Mathf.IsPowerOfTwo(drawRangeRingSize) ? drawRangeRingSize : Mathf.NextPowerOfTwo(drawRangeRingSize);
 
             m_DeferredFrees = new List<List<AllocToFree>>((int)k_MaxQueuedFrameCount);
@@ -201,6 +180,7 @@ namespace UnityEngine.UIElements.UIR
         // TODO: Remove this once case 1148851 has been fixed.
         static internal Func<Shader> getEditorShader = null;
 
+        #region Default system resources
         static private Texture2D s_WhiteTexel;
         static internal Texture2D whiteTexel
         {
@@ -208,8 +188,9 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (s_WhiteTexel == null)
                 {
-                    s_WhiteTexel = new Texture2D(1, 1);
+                    s_WhiteTexel = new Texture2D(1, 1, TextureFormat.RGBA32, false);
                     s_WhiteTexel.hideFlags = HideFlags.HideAndDontSave;
+                    s_WhiteTexel.filterMode = FilterMode.Bilinear; // Make sure it's bilinear so UIRAtlasManager accepts it on older HW targets
                     s_WhiteTexel.SetPixel(0, 0, Color.white);
                     s_WhiteTexel.Apply(false, true);
                 }
@@ -217,16 +198,48 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-
-        /// <summary>
-        /// Indicates whether the active subshader of the stock shader has compute capability. Derived shaders are
-        /// expected to work as the stock shader in that regard.
-        /// </summary>
-        bool ComputeIsAvailable
+        static private Texture2D s_DefaultShaderInfoTexFloat, s_DefaultShaderInfoTexARGB8;
+        static internal Texture2D defaultShaderInfoTexFloat
         {
             get
             {
-                if (!s_ComputeIsAvailable.HasValue)
+                if (s_DefaultShaderInfoTexFloat == null)
+                {
+                    s_DefaultShaderInfoTexFloat = new Texture2D(64, 64, TextureFormat.RGBAFloat, false); // No mips
+                    s_DefaultShaderInfoTexFloat.hideFlags = HideFlags.HideAndDontSave;
+                    s_DefaultShaderInfoTexFloat.filterMode = FilterMode.Point;
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 0, UIRVEShaderInfoAllocator.identityTransformRow0Value);
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 1, UIRVEShaderInfoAllocator.identityTransformRow1Value);
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 2, UIRVEShaderInfoAllocator.identityTransformRow2Value);
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.infiniteClipRectTexel.x, UIRVEShaderInfoAllocator.infiniteClipRectTexel.y, UIRVEShaderInfoAllocator.infiniteClipRectValue);
+                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.fullOpacityTexel.x, UIRVEShaderInfoAllocator.fullOpacityTexel.y, UIRVEShaderInfoAllocator.fullOpacityValue);
+                    s_DefaultShaderInfoTexFloat.Apply(false, true);
+                }
+                return s_DefaultShaderInfoTexFloat;
+            }
+        }
+        static internal Texture2D defaultShaderInfoTexARGB8
+        {
+            get
+            {
+                if (s_DefaultShaderInfoTexARGB8 == null)
+                {
+                    s_DefaultShaderInfoTexARGB8 = new Texture2D(64, 64, TextureFormat.RGBA32, false); // No mips
+                    s_DefaultShaderInfoTexARGB8.hideFlags = HideFlags.HideAndDontSave;
+                    s_DefaultShaderInfoTexARGB8.filterMode = FilterMode.Point;
+                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.fullOpacityTexel.x, UIRVEShaderInfoAllocator.fullOpacityTexel.y, UIRVEShaderInfoAllocator.fullOpacityValue);
+                    s_DefaultShaderInfoTexARGB8.Apply(false, true);
+                }
+                return s_DefaultShaderInfoTexARGB8;
+            }
+        }
+        #endregion
+
+        static internal bool vertexTexturingIsAvailable
+        {
+            get
+            {
+                if (!s_VertexTexturingIsAvailable.HasValue)
                 {
                     // Remove this workaround once case 1148851 has been fixed. In the editor, subshaders aren't stripped
                     // according to the graphic device capabilities unless the shader is precompiled. Querying tags will
@@ -234,12 +247,12 @@ namespace UnityEngine.UIElements.UIR
                     // suffer this issue, so we can use it as a reference.
                     var stockDefaultShader = getEditorShader();
                     var stockDefaultMaterial = new Material(stockDefaultShader);
-                    string tagValue = stockDefaultMaterial.GetTag(k_ComputeIsAvailableTag, false);
+                    string tagValue = stockDefaultMaterial.GetTag(k_VertexTexturingIsAvailableTag, false);
                     UIRUtility.Destroy(stockDefaultMaterial);
-                    s_ComputeIsAvailable = tagValue == k_ComputeIsAvailableTrue;
+                    s_VertexTexturingIsAvailable = (tagValue == k_VertexTexturingIsAvailableTrue);
                 }
 
-                return s_ComputeIsAvailable.Value;
+                return s_VertexTexturingIsAvailable.Value;
             }
         }
 
@@ -247,28 +260,6 @@ namespace UnityEngine.UIElements.UIR
         {
             if (m_DrawRanges.IsCreated)
                 return;
-
-            var initialTransformCapacity = m_LazyCreationInitialTransformCapacity;
-
-            bool unlimitedTransformCount = ComputeIsAvailable;
-            if (!unlimitedTransformCount)
-                // This should be in sync with the fallback value of UIE_SKIN_ELEMS_COUNT_MAX_CONSTANTS in UnityUIE.cginc (minus one for the identity matrix)
-                initialTransformCapacity = 19;
-            initialTransformCapacity = Math.Max(1, initialTransformCapacity); // Reserve one entry for "unskinned" meshes
-            m_TransformAllocator = new BlockAllocator(unlimitedTransformCount ? uint.MaxValue : initialTransformCapacity);
-            m_TransformPages = new List<NativeArray<Transform3x4>>(1);
-            var firstTransformPage = new NativeArray<Transform3x4>((int)initialTransformCapacity + 1, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            firstTransformPage[0] = new Transform3x4() { v0 = new Vector4(1, 0, 0, 0), v1 = new Vector4(0, 1, 0, 0), v2 = new Vector4(0, 0, 1, 0), clipRect = UIRUtility.k_InfiniteClipRect };
-            m_TransformPages.Add(firstTransformPage);
-            if (unlimitedTransformCount)
-            {
-                m_TransformBuffers = new ComputeBuffer[k_MaxQueuedFrameCount];
-                if (!m_MockDevice)
-                {
-                    m_TransformBuffers[0] = new ComputeBuffer((int)initialTransformCapacity, sizeof(float) * 16, ComputeBufferType.Default);
-                    m_TransformBuffers[0].SetData(firstTransformPage, 0, 0, 1);
-                }
-            }
 
             m_DrawRanges = new NativeArray<DrawBufferRange>(m_LazyCreationDrawRangeRingSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             m_Fences = m_MockDevice ? null : new uint[(int)k_MaxQueuedFrameCount];
@@ -317,7 +308,7 @@ namespace UnityEngine.UIElements.UIR
                         Object.DestroyImmediate(m_DefaultMaterial);
                 }
                 DeviceToFree free = new DeviceToFree()
-                { handle = m_MockDevice ? 0 : Utility.InsertCPUFence(), page = m_FirstPage, drawRanges = m_DrawRanges, transformPages = m_TransformPages, transformBuffers = m_TransformBuffers };
+                { handle = m_MockDevice ? 0 : Utility.InsertCPUFence(), page = m_FirstPage, drawRanges = m_DrawRanges };
                 if (free.handle == 0)
                     free.Dispose();
                 else
@@ -524,32 +515,6 @@ namespace UnityEngine.UIElements.UIR
             indexOffset = (UInt16)mesh.allocVerts.start;
         }
 
-        public Alloc AllocateTransform()
-        {
-            CompleteCreation();
-            return m_TransformAllocator.Allocate();
-        }
-
-        public void UpdateTransform(Alloc transformID, Matrix4x4 newTransform, Vector4 clipRect)
-        {
-            m_TransformBufferNeedsUpdate = m_TransformBuffers != null;
-
-            int transformIndex = (int)transformID.start;
-            int pageLen = m_TransformPages[0].Length;
-            int transformPage = transformIndex / pageLen;
-            transformIndex -= transformPage * pageLen;
-            while (m_TransformPages.Count <= transformPage)
-                m_TransformPages.Add(new NativeArray<Transform3x4>(m_TransformPages[0].Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
-            var page = m_TransformPages[transformPage];
-            page[transformIndex] = new Transform3x4()
-            {
-                v0 = newTransform.GetRow(0),
-                v1 = newTransform.GetRow(1),
-                v2 = newTransform.GetRow(2),
-                clipRect = clipRect
-            };
-        }
-
         public void Free(MeshHandle mesh)
         {
             if (mesh.updateAllocID != 0) // Is there an update over this mesh
@@ -587,11 +552,6 @@ namespace UnityEngine.UIElements.UIR
             mesh.updateAllocID = 0;
             m_MeshHandles.Return(mesh);
 
-        }
-
-        public void Free(Alloc transformID)
-        {
-            m_TransformAllocator.Free(transformID);
         }
 
         public Shader standardShader
@@ -669,14 +629,6 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void SetTransformsOnMaterial(ComputeBuffer transformsAsStructBuffer, Material mat)
-        {
-            if (transformsAsStructBuffer != null)
-                mat.SetBuffer(s_TransformsBufferPropID, transformsAsStructBuffer);
-            else if (m_TransformPages != null)
-                UIR.Utility.SetVectorArray<Transform3x4>(mat, s_TransformsPropID, m_TransformPages[0]);
-        }
-
         static void Set1PixelSizeOnMaterial(DrawParams drawParams, Material mat)
         {
             Vector4 _1PixelClipInvView = new Vector4();
@@ -704,7 +656,6 @@ namespace UnityEngine.UIElements.UIR
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
             m_DrawStats.currentDrawRangeStart = m_DrawRangeStart;
 
-
             s_BeforeDrawSampler.Begin();
 
             // Send changes
@@ -715,34 +666,11 @@ namespace UnityEngine.UIElements.UIR
                 page.indices.SendUpdates();
                 page = page.next;
             }
-            if (m_TransformBufferNeedsUpdate)
-            {
-                m_TransformBufferNeedsUpdate = false;
-                int transformPageLength = m_TransformPages[0].Length;
-                m_TransformBufferToUse = (m_TransformBufferToUse + 1) % (uint)m_TransformBuffers.Length;
-                int transformCount = m_TransformPages.Count * transformPageLength;
-                ComputeBuffer buffer = m_TransformBuffers[m_TransformBufferToUse];
-                if (buffer != null && buffer.count < transformCount)
-                {
-                    buffer.Dispose();
-                    buffer = null;
-                }
-                if (buffer == null)
-                {
-                    buffer = !m_MockDevice ? new ComputeBuffer(transformCount, sizeof(float) * 16, ComputeBufferType.Default) : null;
-                    m_TransformBuffers[m_TransformBufferToUse] = buffer;
-                }
-
-                if (!m_MockDevice)
-                {
-                    for (int i = 0; i < m_TransformPages.Count; i++)
-                        buffer.SetData(m_TransformPages[i], 0, i * transformPageLength, transformPageLength);
-                }
-            }
             s_BeforeDrawSampler.End();
         }
 
-        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, float pixelsPerPoint, ref Exception immediateException)
+        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, Texture shaderInfo,
+            float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, ref Exception immediateException)
         {
             var usesStraightYCoordinateSystem = m_APIUsesStraightYCoordinateSystem;
             if (Utility.GetInvertProjectionMatrix())
@@ -750,7 +678,6 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset(viewport, projection);
-            ComputeBuffer transformsAsStructBuffer = m_TransformBuffers != null ? m_TransformBuffers[m_TransformBufferToUse] : null;
 
             Material standardMaterial = null;
             if (!m_MockDevice)
@@ -758,7 +685,11 @@ namespace UnityEngine.UIElements.UIR
                 standardMaterial = GetStandardMaterial();
                 standardMaterial.mainTexture = atlas;
                 standardMaterial.SetTexture(s_GradientSettingsTexID, gradientSettings);
-                SetTransformsOnMaterial(transformsAsStructBuffer, standardMaterial);
+                standardMaterial.SetTexture(s_ShaderInfoTexID, shaderInfo);
+                if (transforms.Length > 0)
+                    UIR.Utility.SetVectorArray<Transform3x4>(standardMaterial, s_TransformsPropID, transforms);
+                if (clipRects.Length > 0)
+                    UIR.Utility.SetVectorArray<Vector4>(standardMaterial, s_ClipRectsPropID, clipRects);
                 Set1PixelSizeOnMaterial(drawParams, standardMaterial);
                 standardMaterial.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
                 GL.modelview = drawParams.view.Peek().transform;
@@ -876,7 +807,13 @@ namespace UnityEngine.UIElements.UIR
                             var mat = curState.material != null ? curState.material : standardMaterial;
                             if (mat != standardMaterial)
                             {
-                                SetTransformsOnMaterial(transformsAsStructBuffer, mat);
+                                mat.mainTexture = atlas;
+                                mat.SetTexture(s_GradientSettingsTexID, gradientSettings);
+                                mat.SetTexture(s_ShaderInfoTexID, shaderInfo);
+                                if (transforms.Length > 0)
+                                    UIR.Utility.SetVectorArray<Transform3x4>(mat, s_TransformsPropID, transforms);
+                                if (clipRects.Length > 0)
+                                    UIR.Utility.SetVectorArray<Vector4>(mat, s_ClipRectsPropID, clipRects);
                                 Set1PixelSizeOnMaterial(drawParams, mat);
                                 mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
                             }
@@ -952,7 +889,8 @@ namespace UnityEngine.UIElements.UIR
         }
 
         // Called every frame to draw one entire UI window
-        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, float pixelsPerPoint, ref Exception immediateException)
+        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, Texture shaderInfo,
+            float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, ref Exception immediateException)
         {
             if (head == null)
                 return;
@@ -960,7 +898,7 @@ namespace UnityEngine.UIElements.UIR
             BeforeDraw();
             Utility.ProfileDrawChainBegin();
 
-            EvaluateChain(head, viewport, projection, atlas, gradientSettings, pixelsPerPoint, ref immediateException);
+            EvaluateChain(head, viewport, projection, atlas, gradientSettings, shaderInfo, pixelsPerPoint, transforms, clipRects, ref immediateException);
 
             Utility.ProfileDrawChainEnd();
 
@@ -1047,6 +985,16 @@ namespace UnityEngine.UIElements.UIR
                 UIRUtility.Destroy(s_WhiteTexel);
                 s_WhiteTexel = null;
             }
+            if (s_DefaultShaderInfoTexFloat != null)
+            {
+                UIRUtility.Destroy(s_DefaultShaderInfoTexFloat);
+                s_DefaultShaderInfoTexFloat = null;
+            }
+            if (s_DefaultShaderInfoTexARGB8 != null)
+            {
+                UIRUtility.Destroy(s_DefaultShaderInfoTexARGB8);
+                s_DefaultShaderInfoTexARGB8 = null;
+            }
         }
 
         internal static void WrapUpGfxDeviceRecreate() { m_ActiveDeviceCount -= 1; }
@@ -1061,8 +1009,6 @@ namespace UnityEngine.UIElements.UIR
             public struct PageStatistics { internal HeapStatistics vertices, indices; }
             public PageStatistics[] pages;
             public int[] freesDeferred;
-            public int transformPages;
-            public int transformsAllocated, transformsAvailable;
             public bool completeInit;
         }
         internal AllocationStatistics GatherAllocationStatistics()
@@ -1072,14 +1018,6 @@ namespace UnityEngine.UIElements.UIR
             stats.freesDeferred = new int[m_DeferredFrees.Count];
             for (int i = 0; i < m_DeferredFrees.Count; i++)
                 stats.freesDeferred[i] = m_DeferredFrees[i].Count;
-            stats.transformPages = m_TransformPages != null ? m_TransformPages.Count : 0;
-            if (m_TransformAllocator != null)
-            {
-                stats.transformsAllocated = (int)m_TransformAllocator.AllocatedBlocks;
-                if (m_TransformAllocator.TotalBlocks == uint.MaxValue)
-                    stats.transformsAvailable = -1;
-                else stats.transformsAvailable = (int)m_TransformAllocator.FreeBlocks;
-            }
             int pageCount = 0;
             Page page = m_FirstPage;
             while (page != null)
@@ -1147,6 +1085,16 @@ namespace UnityEngine.UIElements.UIR
                 {
                     UIRUtility.Destroy(s_WhiteTexel);
                     s_WhiteTexel = null;
+                }
+                if (s_DefaultShaderInfoTexFloat != null)
+                {
+                    UIRUtility.Destroy(s_DefaultShaderInfoTexFloat);
+                    s_DefaultShaderInfoTexFloat = null;
+                }
+                if (s_DefaultShaderInfoTexARGB8 != null)
+                {
+                    UIRUtility.Destroy(s_DefaultShaderInfoTexARGB8);
+                    s_DefaultShaderInfoTexARGB8 = null;
                 }
                 Utility.NotifyOfUIREvents(false);
                 m_SubscribedToNotifications = false;

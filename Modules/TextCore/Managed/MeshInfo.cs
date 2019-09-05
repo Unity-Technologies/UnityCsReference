@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore
 {
-    enum VertexSortingOrder { Normal, Reverse };
+    enum VertexSortingOrder { Normal, Reverse }
 
     /// <summary>
     /// Structure which contains the vertex attributes (geometry) of the text object.

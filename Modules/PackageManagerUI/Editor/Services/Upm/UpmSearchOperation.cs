@@ -10,6 +10,8 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class UpmSearchOperation : UpmBaseOperation<SearchRequest>
     {
+        public override RefreshOptions refreshOptions => isOfflineMode ? RefreshOptions.UpmSearchOffline : RefreshOptions.UpmSearch;
+
         private string m_PackageNameOrId;
         private void SetPackageNameOrId(string packageNameOrId)
         {
@@ -42,18 +44,20 @@ namespace UnityEditor.PackageManager.UI
             Start();
         }
 
-        public void Search(string packageNameOrId)
+        public void Search(string packageNameOrId, string productId = null)
         {
             m_OfflineMode = false;
             SetPackageNameOrId(packageNameOrId);
+            m_PackageUniqueId = productId ?? packageName;
             Start();
         }
 
-        public void SearchOffline(string packageNameOrId, long timestamp)
+        public void SearchOffline(string packageNameOrId, long timestamp, string productId = null)
         {
             m_OfflineMode = true;
             m_Timestamp = timestamp;
             SetPackageNameOrId(packageNameOrId);
+            m_PackageUniqueId = productId ?? packageName;
             Start();
         }
 

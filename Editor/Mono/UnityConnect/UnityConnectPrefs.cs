@@ -38,7 +38,7 @@ namespace UnityEditor.Connect
             public int m_CloudPanelServer;
             public string m_CloudPanelCustomUrl;
             public int m_CloudPanelCustomPort;
-        };
+        }
 
         protected static CloudPanelPref GetPanelPref(string serviceName)
         {

@@ -27,7 +27,7 @@ namespace UnityEditor
             GroupTree,
             ViewList,
             SnapshotList
-        };
+        }
 
         public enum LayoutMode
         {

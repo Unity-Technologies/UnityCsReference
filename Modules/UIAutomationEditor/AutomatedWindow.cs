@@ -486,7 +486,6 @@ namespace UnityEditor.UIAutomation
                 if (predicate(element))
                     yield return element;
             }
-            yield break;
         }
 
         public IEnumerable<IAutomatedUIElement> FindElementsByGUIStyle(GUIStyle style)

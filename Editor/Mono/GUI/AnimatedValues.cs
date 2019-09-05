@@ -112,9 +112,7 @@ namespace UnityEditor.AnimatedValues
             // If the new value is different, or we might be in the middle of a fade, we need to refresh.
             // Checking GetValue is not reliable on its own, since for e.g. bool it'll return the "closest" value,
             // but that doesn't mean the fade is done.
-            bool invoke = false;
-            if ((!newValue.Equals(GetValue()) || m_LerpPosition < 1) && valueChanged != null)
-                invoke = true;
+            bool invoke = (!newValue.Equals(GetValue()) || m_LerpPosition < 1) && valueChanged != null;
 
             m_Target = newValue;
             m_Start = newValue;

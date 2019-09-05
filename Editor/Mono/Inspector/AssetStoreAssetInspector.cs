@@ -185,9 +185,9 @@ namespace UnityEditor
                 {
                     EditorGUILayout.LabelField("Name", info == null ? "-" : info.packageName);
                     EditorGUILayout.LabelField("Version", info == null ? "-" : info.packageVersion);
-                    string price = info == null ? "-" : (activeAsset.price != null && activeAsset.price != "" ? activeAsset.price : "free");
+                    string price = info == null ? "-" : (!string.IsNullOrEmpty(activeAsset.price) ? activeAsset.price : "free");
                     EditorGUILayout.LabelField("Price", price);
-                    string rating = info != null && info.packageRating >= 0 ? info.packageRating.ToString() + " of 5" : "-";
+                    string rating = info != null && info.packageRating >= 0 ? info.packageRating + " of 5" : "-";
                     EditorGUILayout.LabelField("Rating", rating);
                     EditorGUILayout.LabelField("Size", info == null ? "-" : intToSizeString(info.packageSize));
                     string assetCount = info != null && info.packageAssetCount >= 0 ? info.packageAssetCount.ToString() : "-";

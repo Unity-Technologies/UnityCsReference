@@ -15,7 +15,7 @@ namespace UnityEngine.VFX
         DelayingBeforeLoop,
         Looping,
         DelayingAfterLoop
-    };
+    }
 
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]

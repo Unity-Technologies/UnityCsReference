@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Math = System.Math;
 using IndexOutOfRangeException = System.IndexOutOfRangeException;
+using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 
 namespace UnityEditor
 {
@@ -290,7 +291,7 @@ namespace UnityEditor
                 }
             }
 
-            void HandleMouseWithDragging(int instanceID, int controlID, Rect rect)
+            void HandleMouseWithDragging(ref AssetReference assetReference, int controlID, Rect rect)
             {
                 // Handle mouse down on entire line
                 Event evt = Event.current;
@@ -303,17 +304,30 @@ namespace UnityEditor
                             if (evt.clickCount == 2)
                             {
                                 // Double clicked
-                                m_Owner.SetSelection(new[] {instanceID}, true);
+                                var newSelection = GetNewSelection(ref assetReference, false, false);
+                                m_Owner.SetSelection(newSelection.ToArray(), true);
                                 m_DragSelection.Clear();
                             }
                             else
                             {
                                 // Begin drag
-                                m_DragSelection = GetNewSelection(instanceID, true, false);
+                                var newSelection = GetNewSelection(ref assetReference, false, false);
+                                var oldItemControlID = controlID;
+                                controlID = GetControlIDFromInstanceID(assetReference.instanceID);
+                                if (controlID == oldItemControlID)
+                                {
+                                    newSelection = GetNewSelection(ref assetReference, true, false);
+                                    m_DragSelection = newSelection;
+                                    DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), controlID);
+                                    delay.mouseDownPosition = Event.current.mousePosition;
+                                    m_Owner.ScrollToPosition(ObjectListArea.AdjustRectForFraming(rect));
+                                }
+                                else
+                                {
+                                    m_Owner.SetSelection(newSelection.ToArray(), false);
+                                    m_DragSelection.Clear();
+                                }
                                 GUIUtility.hotControl = controlID;
-                                DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), controlID);
-                                delay.mouseDownPosition = Event.current.mousePosition;
-                                m_Owner.ScrollToPosition(ObjectListArea.AdjustRectForFraming(rect));
                             }
 
                             evt.Use();
@@ -321,7 +335,7 @@ namespace UnityEditor
                         else if (Event.current.button == 1 && rect.Contains(Event.current.mousePosition))
                         {
                             // Right mouse down selection (do NOT use event since we need ContextClick event, which is not fired if right click is used)
-                            m_Owner.SetSelection(GetNewSelection(instanceID, true, false).ToArray(), false);
+                            m_Owner.SetSelection(GetNewSelection(ref assetReference, true, false).ToArray(), false);
                         }
                         break;
                     case EventType.MouseDrag:
@@ -330,7 +344,7 @@ namespace UnityEditor
                             DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), controlID);
                             if (delay.CanStartDrag())
                             {
-                                StartDrag(instanceID, m_DragSelection);
+                                StartDrag(assetReference.instanceID, m_DragSelection);
                                 GUIUtility.hotControl = 0;
                             }
 
@@ -343,7 +357,7 @@ namespace UnityEditor
                         bool perform = evt.type == EventType.DragPerform;
                         if (rect.Contains(evt.mousePosition))
                         {
-                            DragAndDropVisualMode mode = DoDrag(instanceID, perform);
+                            DragAndDropVisualMode mode = DoDrag(assetReference.instanceID, perform);
                             if (mode != DragAndDropVisualMode.None)
                             {
                                 if (perform)
@@ -382,13 +396,13 @@ namespace UnityEditor
                                 }
 
                                 List<int> selected = m_Owner.m_State.m_SelectedInstanceIDs;
-                                if (clickedOnText && m_Owner.allowRenaming && m_Owner.m_AllowRenameOnMouseUp && selected.Count == 1 && selected[0] == instanceID && !EditorGUIUtility.HasHolddownKeyModifiers(evt))
+                                if (clickedOnText && m_Owner.allowRenaming && m_Owner.m_AllowRenameOnMouseUp && selected.Count == 1 && selected[0] == assetReference.instanceID && !EditorGUIUtility.HasHolddownKeyModifiers(evt))
                                 {
                                     m_Owner.BeginRename(0.5f);
                                 }
                                 else
                                 {
-                                    List<int> newSelection = GetNewSelection(instanceID, false, false);
+                                    List<int> newSelection = GetNewSelection(ref assetReference, false, false);
                                     m_Owner.SetSelection(newSelection.ToArray(), false);
                                 }
 
@@ -413,7 +427,7 @@ namespace UnityEditor
                 }
             }
 
-            void HandleMouseWithoutDragging(int instanceID, int controlID, Rect position)
+            void HandleMouseWithoutDragging(ref AssetReference assetReference, int controlID, Rect position)
             {
                 Event evt = Event.current;
 
@@ -430,7 +444,7 @@ namespace UnityEditor
                             }
 
                             evt.Use();
-                            List<int> newSelection = GetNewSelection(instanceID, false, false);
+                            List<int> newSelection = GetNewSelection(ref assetReference, false, false);
                             m_Owner.SetSelection(newSelection.ToArray(), evt.clickCount == 2);
                         }
                         break;
@@ -439,7 +453,8 @@ namespace UnityEditor
                         if (position.Contains(evt.mousePosition))
                         {
                             // Select it
-                            m_Owner.SetSelection(new[] {instanceID}, false);
+                            List<int> newSelection = GetNewSelection(ref assetReference, false, false);
+                            m_Owner.SetSelection(newSelection.ToArray(), false);
 
                             Rect overlayPos = position;
                             overlayPos.x += 2;
@@ -595,27 +610,28 @@ namespace UnityEditor
                 Event evt = Event.current;
                 Rect itemRect = position;
 
-                int instanceID = 0;
+                var assetReference = new AssetReference() { instanceID = 0 };
                 bool showFoldout = false;
                 if (filterItem != null)
                 {
-                    instanceID = filterItem.instanceID;
+                    assetReference.instanceID = filterItem.instanceID;
+                    assetReference.guid = filterItem.guid;
                     showFoldout = filterItem.hasChildren && !filterItem.isFolder && isFolderBrowsing; // we do not want to be able to expand folders
                 }
                 else if (builtinResource != null)
                 {
-                    instanceID = builtinResource.m_InstanceID;
+                    assetReference.instanceID = builtinResource.m_InstanceID;
                 }
 
-                int controlID = GetControlIDFromInstanceID(instanceID);
+                int controlID = GetControlIDFromInstanceID(assetReference.instanceID);
 
                 bool selected;
                 if (m_Owner.allowDragging)
-                    selected = m_DragSelection.Count > 0 ? m_DragSelection.Contains(instanceID) : m_Owner.IsSelected(instanceID);
+                    selected = m_DragSelection.Count > 0 ? m_DragSelection.Contains(assetReference.instanceID) : m_Owner.IsSelected(assetReference.instanceID);
                 else
-                    selected = m_Owner.IsSelected(instanceID);
+                    selected = m_Owner.IsSelected(assetReference.instanceID);
 
-                if (selected && instanceID == m_Owner.m_State.m_LastClickedInstanceID)
+                if (selected && assetReference.instanceID == m_Owner.m_State.m_LastClickedInstanceID)
                     m_LastClickedDrawTime = EditorApplication.timeSinceStartup;
 
                 Rect foldoutRect = new Rect(position.x + s_Styles.groupFoldout.margin.left, position.y, s_Styles.groupFoldout.padding.left, position.height); // ListMode foldout
@@ -649,10 +665,10 @@ namespace UnityEditor
                         case KeyCode.LeftArrow:
                             if (ListMode || m_Owner.IsPreviewIconExpansionModifierPressed())
                             {
-                                if (IsExpanded(instanceID))
+                                if (IsExpanded(assetReference.instanceID))
                                     toggleState = true;
                                 else
-                                    SelectAndFrameParentOf(instanceID);
+                                    SelectAndFrameParentOf(assetReference.instanceID);
                                 evt.Use();
                             }
                             break;
@@ -661,7 +677,7 @@ namespace UnityEditor
                         case KeyCode.RightArrow:
                             if (ListMode || m_Owner.IsPreviewIconExpansionModifierPressed())
                             {
-                                if (!IsExpanded(instanceID))
+                                if (!IsExpanded(assetReference.instanceID))
                                     toggleState = true;
                                 evt.Use();
                             }
@@ -675,15 +691,15 @@ namespace UnityEditor
 
                 if (toggleState)
                 {
-                    bool expanded = !IsExpanded(instanceID);
+                    bool expanded = !IsExpanded(assetReference.instanceID);
                     if (expanded)
-                        m_ItemFader.Start(m_FilteredHierarchy.GetSubAssetInstanceIDs(instanceID));
-                    ChangeExpandedState(instanceID, expanded);
+                        m_ItemFader.Start(m_FilteredHierarchy.GetSubAssetInstanceIDs(assetReference.instanceID));
+                    ChangeExpandedState(assetReference.instanceID, expanded);
                     evt.Use();
                     GUIUtility.ExitGUI();
                 }
 
-                bool isRenaming = IsRenaming(instanceID);
+                bool isRenaming = IsRenaming(assetReference.instanceID);
 
                 Rect labelRect = position;
                 if (!ListMode)
@@ -723,14 +739,21 @@ namespace UnityEditor
                         m_Content.image = null;
                         Texture2D icon;
 
-                        if (m_Owner.GetCreateAssetUtility().instanceID == instanceID && m_Owner.GetCreateAssetUtility().icon != null)
+                        if (assetReference.instanceID != 0 && m_Owner.GetCreateAssetUtility().instanceID == assetReference.instanceID && m_Owner.GetCreateAssetUtility().icon != null)
                         {
                             // If we are creating a new asset we might have an icon to use
                             icon = m_Owner.GetCreateAssetUtility().icon;
                         }
                         else
                         {
-                            icon = filterItem != null ? filterItem.icon : AssetPreview.GetAssetPreview(instanceID, m_Owner.GetAssetPreviewManagerID());
+                            icon = filterItem != null ? filterItem.icon : null;
+                            if (icon == null)
+                            {
+                                if (assetReference.instanceID != 0)
+                                    icon = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
+                                else if (!string.IsNullOrEmpty(assetReference.guid))
+                                    icon = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
+                            }
                         }
 
                         if (selected)
@@ -744,13 +767,13 @@ namespace UnityEditor
 
                         // Foldout
                         if (showFoldout)
-                            s_Styles.groupFoldout.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(instanceID), false);
+                            s_Styles.groupFoldout.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(assetReference.instanceID), false);
                     }
                     else // Icon grid
                     {
                         // Get icon
                         bool drawDropShadow = false;
-                        if (m_Owner.GetCreateAssetUtility().instanceID == instanceID && m_Owner.GetCreateAssetUtility().icon != null)
+                        if (m_Owner.GetCreateAssetUtility().instanceID == assetReference.instanceID && m_Owner.GetCreateAssetUtility().icon != null)
                         {
                             // If we are creating a new asset we might have an icon to use
                             m_Content.image = m_Owner.GetCreateAssetUtility().icon;
@@ -758,7 +781,13 @@ namespace UnityEditor
                         else
                         {
                             // Check for asset preview
-                            m_Content.image = AssetPreview.GetAssetPreview(instanceID, m_Owner.GetAssetPreviewManagerID());
+                            Texture image = null;
+                            if (assetReference.instanceID != 0)
+                                image = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
+                            else if (!string.IsNullOrEmpty(assetReference.guid))
+                                image = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
+
+                            m_Content.image = image;
                             if (m_Content.image != null)
                                 drawDropShadow = true;
 
@@ -836,7 +865,7 @@ namespace UnityEditor
                             if (isDropTarget)
                                 s_Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
-                            labeltext = m_Owner.GetCroppedLabelText(instanceID, labeltext, position.width);
+                            labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, position.width);
                             var labelNewRect = s_Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), position.size);
                             labelRect.x = position.x + (position.width - labelNewRect.x) / 2.0f;
                             labelRect.width = labelNewRect.x;
@@ -855,7 +884,7 @@ namespace UnityEditor
                             {
                                 style = s_Styles.subAssetExpandButtonMedium;
                             }
-                            style.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(instanceID), false);
+                            style.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(assetReference.instanceID), false);
                         }
 
                         if (filterItem != null && filterItem.isMainRepresentation)
@@ -893,9 +922,12 @@ namespace UnityEditor
 
                 // Mouse handling (must be after rename overlay to ensure overlay get mouseevents)
                 if (m_Owner.allowDragging)
-                    HandleMouseWithDragging(instanceID, controlID, position);
+                    HandleMouseWithDragging(ref assetReference, controlID, position);
                 else
-                    HandleMouseWithoutDragging(instanceID, controlID, position);
+                    HandleMouseWithoutDragging(ref assetReference, controlID, position);
+
+                if (filterItem != null && filterItem.instanceID == 0)
+                    filterItem.instanceID = assetReference.instanceID;
             }
 
             private static Rect ActualImageDrawPosition(Rect position, float imageWidth, float imageHeight)
@@ -939,37 +971,51 @@ namespace UnityEditor
             {
             }
 
-            public List<int> GetInstanceIDs()
+            public void GetAssetReferences(out List<int> instanceIDs, out List<string> guids)
             {
-                List<int> result = new List<int>();
+                instanceIDs = new List<int>();
+                guids = new List<string>();
 
                 // 1. None item
                 if (m_NoneList.Length > 0)
-                    result.Add(m_NoneList[0].m_InstanceID); // 0
+                {
+                    instanceIDs.Add(m_NoneList[0].m_InstanceID); // 0
+                    guids.Add(null);
+                }
 
                 // 2. Project Assets
                 foreach (FilteredHierarchy.FilterResult r in m_FilteredHierarchy.results)
-                    result.Add(r.instanceID);
+                {
+                    instanceIDs.Add(r.instanceID);
+                    guids.Add(r.guid);
+                }
+
                 if (m_Owner.m_State.m_NewAssetIndexInList >= 0)
-                    result.Add(m_Owner.GetCreateAssetUtility().instanceID);
+                {
+                    instanceIDs.Add(m_Owner.GetCreateAssetUtility().instanceID);
+                    guids.Add(null);
+                }
 
                 // 3. Builtin
                 for (int i = 0; i < m_ActiveBuiltinList.Length; ++i)
-                    result.Add(m_ActiveBuiltinList[i].m_InstanceID);
-
-                return result;
+                {
+                    instanceIDs.Add(m_ActiveBuiltinList[i].m_InstanceID);
+                    guids.Add(null);
+                }
             }
 
             // Returns list of selected instanceIDs
-            public List<int> GetNewSelection(int clickedInstanceID, bool beginOfDrag, bool useShiftAsActionKey)
+            public List<int> GetNewSelection(ref AssetReference clickedAssetReference, bool beginOfDrag, bool useShiftAsActionKey)
             {
                 // Flatten grid
-                List<int> allInstanceIDs = GetInstanceIDs();
+                List<int> instanceIDs;
+                List<string> guids;
+                GetAssetReferences(out instanceIDs, out guids);
                 List<int> selectedInstanceIDs = m_Owner.m_State.m_SelectedInstanceIDs;
                 int lastClickedInstanceID = m_Owner.m_State.m_LastClickedInstanceID;
                 bool allowMultiselection = m_Owner.allowMultiSelect;
 
-                return InternalEditorUtility.GetNewSelection(clickedInstanceID, allInstanceIDs, selectedInstanceIDs, lastClickedInstanceID, beginOfDrag, useShiftAsActionKey, allowMultiselection);
+                return InternalEditorUtility.GetNewSelection(ref clickedAssetReference, instanceIDs, guids, selectedInstanceIDs, lastClickedInstanceID, beginOfDrag, useShiftAsActionKey, allowMultiselection);
             }
 
             public override void UpdateFilter(HierarchyType hierarchyType, SearchFilter searchFilter, bool foldersFirst)
@@ -1076,7 +1122,7 @@ namespace UnityEditor
                     Debug.LogWarning("ObjectSelector::InitBuiltinAssetType: type is null!");
                     return;
                 }
-                string typeName = type.ToString().Substring(type.Namespace.ToString().Length + 1);
+                string typeName = type.ToString().Substring(type.Namespace.Length + 1);
 
                 var unityType = UnityType.FindTypeByName(typeName);
                 if (unityType == null)
@@ -1228,9 +1274,9 @@ namespace UnityEditor
             }
 
             // Returns true if index was valid. Note that instance can be 0 if 'None' item was found at index
-            public bool InstanceIdAtIndex(int index, out int instanceID)
+            public bool AssetReferenceAtIndex(int index, out AssetReference assetReference)
             {
-                instanceID = 0;
+                assetReference = new AssetReference() { instanceID = 0 };
                 if (index >= m_Grid.rows * m_Grid.columns)
                     return false;
 
@@ -1248,7 +1294,8 @@ namespace UnityEditor
                 // 2. Project assets
                 foreach (FilteredHierarchy.FilterResult r in m_FilteredHierarchy.results)
                 {
-                    instanceID = r.instanceID;
+                    assetReference.instanceID = r.instanceID;
+                    assetReference.guid = r.guid;
                     if (idx == index)
                         return true;
                     idx++;
@@ -1257,7 +1304,7 @@ namespace UnityEditor
                 // 3. Builtin resources
                 foreach (BuiltinResource b in m_ActiveBuiltinList)
                 {
-                    instanceID = b.m_InstanceID;
+                    assetReference.instanceID = b.m_InstanceID;
                     if (idx == index)
                         return true;
                     idx++;

@@ -110,7 +110,7 @@ namespace UnityEditorInternal
             {
                 var platform = runInformation.platformProvider.Platform;
                 if (string.IsNullOrEmpty(platform))
-                    throw new ArgumentException($"Platform is required if AllowOutputToBeMadePlatformDependent is true");
+                    throw new ArgumentException("Platform is required if AllowOutputToBeMadePlatformDependent is true");
 
                 args.Add($"--platform={platform}");
             }
@@ -119,7 +119,7 @@ namespace UnityEditorInternal
             {
                 var architecture = runInformation.platformProvider.Architecture;
                 if (string.IsNullOrEmpty(architecture))
-                    throw new ArgumentException($"Architecture is required if AllowOutputToBeMadeArchitectureDependent is true");
+                    throw new ArgumentException("Architecture is required if AllowOutputToBeMadeArchitectureDependent is true");
                 args.Add($"--architecture={architecture}");
             }
 

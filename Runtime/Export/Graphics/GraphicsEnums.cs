@@ -119,7 +119,7 @@ namespace UnityEngine
         IndirectOnly = 0,
         Shadowmask = 2,
         Subtractive = 1
-    };
+    }
 
     // Must match ReceiveGIEnum::ReceiveGI on the C++ side
     public enum ReceiveGI
@@ -127,7 +127,7 @@ namespace UnityEngine
         // Off = 0,
         Lightmaps = 1,
         LightProbes = 2
-    };
+    }
 
     [Obsolete("See QualitySettings.names, QualitySettings.SetQualityLevel, and QualitySettings.GetQualityLevel")]
     public enum QualityLevel
@@ -255,7 +255,7 @@ namespace UnityEngine
         DisplayP3 = 3,
         HDR10 = 4,
         DolbyHDR = 5
-    };
+    }
 
     public enum ScreenOrientation
     {
@@ -925,6 +925,7 @@ namespace UnityEngine.Rendering
         DontCare = 3,
     }
 
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     public enum BlendMode
     {
         Zero = 0,
@@ -940,6 +941,7 @@ namespace UnityEngine.Rendering
         OneMinusSrcAlpha = 10
     }
 
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     public enum BlendOp
     {
         Add = 0,
@@ -980,6 +982,7 @@ namespace UnityEngine.Rendering
         HSLLuminosity = 35,
     }
 
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     public enum CompareFunction
     {
         Disabled = 0,
@@ -993,6 +996,7 @@ namespace UnityEngine.Rendering
         Always = 8
     }
 
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     public enum CullMode
     {
         Off = 0,
@@ -1010,6 +1014,7 @@ namespace UnityEngine.Rendering
         All = 15
     }
 
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
     public enum StencilOp
     {
         Keep = 0,
@@ -1144,7 +1149,7 @@ namespace UnityEngine.Rendering
         GBuffer5 = 17,
         GBuffer6 = 18,
         GBuffer7 = 19,
-    };
+    }
 
     // Match ShaderPassType on C++ side
     public enum PassType
@@ -1327,7 +1332,7 @@ namespace UnityEngine.Rendering
         FormatSwizzleA,
         FormatSwizzle0,
         FormatSwizzle1
-    };
+    }
 
     // Note: match layout of C++ MonoRenderTargetIdentifier!
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1789,7 +1794,7 @@ namespace UnityEngine.Rendering
         LegacyJobified = 3,
         NativeGraphicsJobs = 4,
         NativeGraphicsJobsWithoutRenderThread = 5,
-    };
+    }
 } // namespace UnityEngine.Rendering
 
 namespace UnityEngineInternal

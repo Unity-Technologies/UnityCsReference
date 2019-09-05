@@ -1664,7 +1664,7 @@ namespace UnityEditor
                 m_Index = index;
                 m_Selected = selected;
             }
-        };
+        }
 
         public void EventLineContextMenuAdd(object obj)
         {
@@ -1730,7 +1730,7 @@ namespace UnityEditor
 
             EditorGUI.indentLevel--;
 
-            if (m_InstantTooltipText != null && m_InstantTooltipText != "")
+            if (!string.IsNullOrEmpty(m_InstantTooltipText))
             {
                 // Draw body of tooltip
                 GUIStyle style = (GUIStyle)"AnimationEventTooltip";

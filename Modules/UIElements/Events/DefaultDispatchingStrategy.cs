@@ -8,12 +8,7 @@ namespace UnityEngine.UIElements
     {
         public bool CanDispatchEvent(EventBase evt)
         {
-            if (evt is IMGUIEvent)
-            {
-                return false;
-            }
-
-            return true;
+            return !(evt is IMGUIEvent);
         }
 
         public void DispatchEvent(EventBase evt, IPanel panel)

@@ -71,7 +71,7 @@ namespace UnityEditor.PackageManager.UI
 
             // If we have a filter set and no packages are in this filter, reset the filter to local packages.
             if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment && !HasPackageInDevelopment)
-                SetFilter(PackageFilterTab.Local);
+                SetFilter(PackageFilterTab.InProject);
         }
 
         internal void SetCurrentSearch(string text)
@@ -105,9 +105,9 @@ namespace UnityEditor.PackageManager.UI
             {
                 case PackageFilterTab.All:
                     return L10n.Tr("All packages");
-                case PackageFilterTab.Local:
+                case PackageFilterTab.InProject:
                     return L10n.Tr("In Project");
-                case PackageFilterTab.Modules:
+                case PackageFilterTab.BuiltIn:
                     return L10n.Tr("Built-in packages");
                 case PackageFilterTab.AssetStore:
                     return L10n.Tr("My Assets");
@@ -189,10 +189,10 @@ namespace UnityEditor.PackageManager.UI
                 SetFilterFromMenu(PackageFilterTab.All);
             }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.All ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.Local), a =>
+            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.InProject), a =>
             {
-                SetFilterFromMenu(PackageFilterTab.Local);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.Local ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                SetFilterFromMenu(PackageFilterTab.InProject);
+            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.InProject ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.InDevelopment), a =>
             {
@@ -212,10 +212,10 @@ namespace UnityEditor.PackageManager.UI
             }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             filterMenu.menu.AppendSeparator();
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.Modules), a =>
+            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.BuiltIn), a =>
             {
-                SetFilterFromMenu(PackageFilterTab.Modules);
-            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.Modules ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                SetFilterFromMenu(PackageFilterTab.BuiltIn);
+            }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.BuiltIn ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {

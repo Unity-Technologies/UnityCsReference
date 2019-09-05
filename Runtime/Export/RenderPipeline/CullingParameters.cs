@@ -52,7 +52,7 @@ namespace UnityEngine.Rendering
         {
             return !left.Equals(right);
         }
-    };
+    }
 
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -258,7 +258,7 @@ namespace UnityEngine.Rendering
         {
             return !left.Equals(right);
         }
-    };
+    }
 
     // Keep in sync with CameraCullingParameters.h CullingOptions
     [Flags]
@@ -272,7 +272,7 @@ namespace UnityEngine.Rendering
         Stereo = 1 << 4,
         DisablePerObjectCulling = 1 << 5,
         ShadowCasters = 1 << 6
-    };
+    }
 
 
     [UsedByNativeCode]

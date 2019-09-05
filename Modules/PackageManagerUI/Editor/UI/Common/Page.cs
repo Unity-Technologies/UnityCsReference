@@ -24,13 +24,6 @@ namespace UnityEditor.PackageManager.UI
         public event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
         public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>> onPageUpdate = delegate {};
 
-        public bool isLoading => false;
-
-        [SerializeField]
-        internal bool m_IsAlreadyFetched;
-
-        public bool isAlreadyFetched => m_IsAlreadyFetched;
-
         [SerializeField]
         private bool m_MorePackagesToFetch;
 
@@ -62,7 +55,6 @@ namespace UnityEditor.PackageManager.UI
         public Page(PackageFilterTab tab)
         {
             m_Tab = tab;
-            m_IsAlreadyFetched = false;
         }
 
         public void OnBeforeSerialize() {}
@@ -171,7 +163,6 @@ namespace UnityEditor.PackageManager.UI
                     removeList.Add(package);
             }
 
-            m_IsAlreadyFetched = true;
             RebuildList(addOrUpdateList, removeList);
         }
 
@@ -224,8 +215,8 @@ namespace UnityEditor.PackageManager.UI
                 m_PackageVisualStateLookup = newLookupTable;
             }
 
-            if (addOrUpdateList != null && removeList != null)
-                onPageUpdate?.Invoke(addOrUpdateList, removeList);
+            if (addOrUpdateList != null || removeList != null)
+                onPageUpdate?.Invoke(addOrUpdateList ?? Enumerable.Empty<IPackage>(), removeList ?? Enumerable.Empty<IPackage>());
 
             FilterBySearchText();
         }
@@ -255,7 +246,6 @@ namespace UnityEditor.PackageManager.UI
                 m_MorePackagesToFetch = targetList.total > targetList.list.Count;
             }
 
-            m_IsAlreadyFetched = true;
             RebuildList(new[] { package }, Enumerable.Empty<IPackage>());
             SetSelected(package.uniqueId, version?.uniqueId ?? package.primaryVersion?.uniqueId);
         }
@@ -291,8 +281,24 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
+            var rebuildList = PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore;
+
+            HashSet<long> removed = null;
+            List<long> added = null;
             if (productList.startIndex == 0)
             {
+                if (rebuildList)
+                {
+                    removed = new HashSet<long>(targetList.list);
+                    added = new List<long>();
+                    foreach (var id in productList.list)
+                    {
+                        if (removed.Contains(id))
+                            removed.Remove(id);
+                        else
+                            added.Add(id);
+                    }
+                }
                 // override the result if the new list starts from index 0 (meaning it's a refresh)
                 targetList.list = productList.list;
                 targetList.total = productList.total;
@@ -302,6 +308,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 // append the result if it is the next page
                 targetList.list.AddRange(productList.list);
+                if (rebuildList)
+                    added = productList.list;
             }
             else
             {
@@ -316,10 +324,11 @@ namespace UnityEditor.PackageManager.UI
             if (!fetchDetailsCalled && productList.list.Any())
                 AssetStore.AssetStoreClient.instance.FetchDetails(productList.list);
 
-            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            if (rebuildList)
             {
-                m_IsAlreadyFetched = true;
-                RebuildList();
+                var addedPackages = added?.Select(id => PackageDatabase.instance.GetPackage(id.ToString()));
+                var removedPackages = removed?.Select(id => PackageDatabase.instance.GetPackage(id.ToString()));
+                RebuildList(addedPackages, removedPackages);
             }
         }
 

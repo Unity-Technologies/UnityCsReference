@@ -67,10 +67,7 @@ namespace UnityEditorInternal
             if (item is AnimationWindowHierarchyAddButtonNode || item is AnimationWindowHierarchyMasterNode || item is AnimationWindowHierarchyClipNode)
                 return false;
 
-            if ((item as AnimationWindowHierarchyNode).path.Length == 0)
-                return false;
-
-            return true;
+            return (item as AnimationWindowHierarchyNode).path.Length != 0;
         }
 
         public List<AnimationWindowHierarchyNode> CreateTreeFromCurves()

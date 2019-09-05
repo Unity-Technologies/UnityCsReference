@@ -31,7 +31,6 @@ namespace UnityEditorInternal
 
         static private UndoPropertyModification[] FilterModifications(IAnimationRecordingState state, ref UndoPropertyModification[] modifications)
         {
-            AnimationClip clip = state.activeAnimationClip;
             GameObject rootGameObject = state.activeRootGameObject;
 
             List<UndoPropertyModification> discardedModifications = new List<UndoPropertyModification>();
@@ -163,7 +162,6 @@ namespace UnityEditorInternal
 
         static private UndoPropertyModification[] FilterRotationModifications(IAnimationRecordingState state, ref Dictionary<object, RotationModification> rotationModifications)
         {
-            AnimationClip clip = state.activeAnimationClip;
             GameObject rootGameObject = state.activeRootGameObject;
 
             List<object> itemsToRemove = new List<object>();
@@ -213,9 +211,6 @@ namespace UnityEditorInternal
 
         static private void ProcessRotationModifications(IAnimationRecordingState state, ref Dictionary<object, RotationModification> rotationModifications)
         {
-            AnimationClip clip = state.activeAnimationClip;
-            GameObject root = state.activeRootGameObject;
-
             foreach (KeyValuePair<object, RotationModification> item in rotationModifications)
             {
                 RotationModification m = item.Value;
@@ -387,9 +382,6 @@ namespace UnityEditorInternal
 
         static public void ProcessVector3Modifications(IAnimationRecordingState state, ref Dictionary<object, Vector3Modification> vector3Modifications)
         {
-            AnimationClip clip = state.activeAnimationClip;
-            GameObject root = state.activeRootGameObject;
-
             foreach (KeyValuePair<object, Vector3Modification> item in vector3Modifications)
             {
                 Vector3Modification m = item.Value;
@@ -411,7 +403,6 @@ namespace UnityEditorInternal
 
         static public void ProcessModifications(IAnimationRecordingState state, UndoPropertyModification[] modifications)
         {
-            AnimationClip clip = state.activeAnimationClip;
             GameObject root = state.activeRootGameObject;
 
             // Record modified properties
@@ -500,7 +491,6 @@ namespace UnityEditorInternal
 
         static void AddKey(IAnimationRecordingState state, EditorCurveBinding binding, Type type, object previousValue, object currentValue)
         {
-            GameObject root = state.activeRootGameObject;
             AnimationClip clip = state.activeAnimationClip;
 
             if ((clip.hideFlags & HideFlags.NotEditable) != 0)
@@ -573,7 +563,6 @@ namespace UnityEditorInternal
         static private void ProcessRootMotionModifications(IAnimationRecordingState state,
             ref Dictionary<object, RootMotionModification> rootMotionModifications)
         {
-            AnimationClip clip = state.activeAnimationClip;
             GameObject root = state.activeRootGameObject;
             Animator animator = root.GetComponent<Animator>();
 

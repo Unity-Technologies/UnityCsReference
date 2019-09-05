@@ -44,10 +44,11 @@ namespace UnityEditor
             state.draggedTo = -1;
             state.fileNames = null;
 
-            if ((lvOptions & ListViewOptions.wantsReordering) != 0) state.ilvState.wantsReordering = true;
-            if ((lvOptions & ListViewOptions.wantsExternalFiles) != 0) state.ilvState.wantsExternalFiles = true;
-            if ((lvOptions & ListViewOptions.wantsToStartCustomDrag) != 0) state.ilvState.wantsToStartCustomDrag = true;
-            if ((lvOptions & ListViewOptions.wantsToAcceptCustomDrag) != 0) state.ilvState.wantsToAcceptCustomDrag = true;
+            state.ilvState.wantsReordering = (lvOptions & ListViewOptions.wantsReordering) != 0;
+            state.ilvState.wantsExternalFiles = (lvOptions & ListViewOptions.wantsExternalFiles) != 0;
+            state.ilvState.wantsToStartCustomDrag = (lvOptions & ListViewOptions.wantsToStartCustomDrag) != 0;
+            state.ilvState.wantsToAcceptCustomDrag = (lvOptions & ListViewOptions.wantsToAcceptCustomDrag) != 0;
+            state.ilvState.wantsRowMultiSelection = (lvOptions & ListViewOptions.wantsRowMultiSelection) != 0;
 
             return DoListView(state, null, dragTitle);
         }

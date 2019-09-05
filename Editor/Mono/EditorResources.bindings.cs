@@ -22,6 +22,7 @@ namespace UnityEditor.Experimental
         [NativeProperty("k_GeneratedIconsPath", true, TargetType.Field)] public static extern string generatedIconsPath { get; }
         [NativeProperty("k_FolderIconName", true, TargetType.Field)] public static extern string folderIconName { get; }
         [NativeProperty("k_EmptyFolderIconName", true, TargetType.Field)] public static extern string emptyFolderIconName { get; }
+        [NativeProperty("k_OpenedFolderIconName", true, TargetType.Field)] internal static extern string openedFolderIconName { get; }
         [NativeProperty("k_EditorDefaultResourcesPath", true, TargetType.Field)] public static extern string editorDefaultResourcesPath { get; }
         [NativeProperty("k_LibraryBundlePath", true, TargetType.Field)] public static extern string libraryBundlePath { get; }
 

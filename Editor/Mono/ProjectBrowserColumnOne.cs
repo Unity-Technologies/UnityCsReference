@@ -112,7 +112,17 @@ namespace UnityEditor
         protected override Texture GetIconForItem(TreeViewItem item)
         {
             if (item != null && item.icon != null)
-                return item.icon;
+            {
+                var icon = item.icon;
+                AssetsTreeViewDataSource.FolderTreeItemBase folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
+
+                if (folderItem != null && m_TreeView.data.IsExpanded(folderItem))
+                {
+                    icon = openFolderTexture;
+                }
+
+                return icon;
+            }
 
             SearchFilterTreeItem searchFilterItem = item as SearchFilterTreeItem;
             if (searchFilterItem != null)
@@ -265,6 +275,8 @@ namespace UnityEditor
             m_RootItem = new TreeViewItem(0, 0, null, "Invisible Root Item");
             SetExpanded(m_RootItem, true); // ensure always visible
 
+            Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
+
             // We want three roots: Favorites, Assets, and Saved Filters
             List<TreeViewItem> visibleRoots = new List<TreeViewItem>();
 
@@ -272,18 +284,16 @@ namespace UnityEditor
             int assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
             int depth = 0;
             string displayName = "Assets"; //CreateDisplayName (assetsFolderInstanceID);
-            TreeViewItem assetRootItem = new TreeViewItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
+            AssetsTreeViewDataSource.RootTreeItem assetRootItem = new AssetsTreeViewDataSource.RootTreeItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
+            assetRootItem.icon = folderIcon;
             ReadAssetDatabase("Assets", assetRootItem, depth + 1);
 
             // Fetch packages folder
             displayName = PackageManager.Folders.GetPackagesPath();
-            TreeViewItem packagesRootItem = new TreeViewItem(ProjectBrowser.kPackagesFolderInstanceId, depth, m_RootItem, displayName);
+            AssetsTreeViewDataSource.RootTreeItem packagesRootItem = new AssetsTreeViewDataSource.RootTreeItem(ProjectBrowser.kPackagesFolderInstanceId, depth, m_RootItem, displayName);
             depth++;
 
-            Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
-            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
-
-            packagesRootItem.icon = emptyFolderIcon;
+            packagesRootItem.icon = folderIcon;
 
             var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(skipHiddenPackages);
             foreach (var package in packages)
@@ -291,10 +301,10 @@ namespace UnityEditor
                 var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
 
                 displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
-                TreeViewItem packageItem = new TreeViewItem(packageFolderInstanceId, depth, packagesRootItem, displayName);
+                AssetsTreeViewDataSource.PackageTreeItem packageItem = new AssetsTreeViewDataSource.PackageTreeItem(packageFolderInstanceId, depth, packagesRootItem, displayName);
+                packageItem.icon = folderIcon;
                 packagesRootItem.AddChild(packageItem);
                 ReadAssetDatabase(package.assetPath, packageItem, depth + 1);
-                packagesRootItem.icon = folderIcon;
             }
 
             // Fetch saved filters
@@ -328,15 +338,14 @@ namespace UnityEditor
             property.Reset();
 
             Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
-            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
 
             List<TreeViewItem> allFolders = new List<TreeViewItem>();
             while (property.Next(null))
             {
                 if (property.isFolder)
                 {
-                    TreeViewItem folderItem = new TreeViewItem(property.instanceID, baseDepth + property.depth, null, property.name);
-                    folderItem.icon = property.hasChildren ? folderIcon : emptyFolderIcon;
+                    AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, property.instanceID, baseDepth + property.depth, null, property.name);
+                    folderItem.icon = folderIcon;
                     allFolders.Add(folderItem);
                 }
             }

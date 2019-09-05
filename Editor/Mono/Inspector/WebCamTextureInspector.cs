@@ -100,7 +100,7 @@ namespace UnityEditor
         public override string GetInfoString()
         {
             Texture t = target as Texture;
-            string info = t.width.ToString() + "x" + t.height.ToString();
+            string info = t.width + "x" + t.height;
             GraphicsFormat format = GraphicsFormatUtility.GetFormat(t);
             info += "  " + GraphicsFormatUtility.GetFormatString(format);
             return info;

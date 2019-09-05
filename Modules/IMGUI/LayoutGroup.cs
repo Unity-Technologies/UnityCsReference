@@ -619,7 +619,7 @@ namespace UnityEngine
             indent += 4;
             foreach (GUILayoutEntry i in entries)
             {
-                str += i.ToString() + "\n";
+                str += i + "\n";
             }
             str += space + "}";
             indent -= 4;

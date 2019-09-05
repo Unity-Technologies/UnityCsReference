@@ -124,7 +124,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             // HACK: This should never happen.
             if (string.IsNullOrEmpty(imp.assetPath))
             {
-                UnityEngine.Debug.LogWarning("Got empty plugin importer path for " + args.target.ToString());
+                UnityEngine.Debug.LogWarning("Got empty plugin importer path for " + args.target);
                 continue;
             }
 

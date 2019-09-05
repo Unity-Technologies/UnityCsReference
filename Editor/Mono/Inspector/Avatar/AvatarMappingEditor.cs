@@ -22,7 +22,7 @@ namespace UnityEditor
         InvalidHierarchy,
         BoneLenghtIsZero,
         Valid
-    };
+    }
 
     [System.Serializable]
     internal class AvatarMappingEditor : AvatarSubEditor

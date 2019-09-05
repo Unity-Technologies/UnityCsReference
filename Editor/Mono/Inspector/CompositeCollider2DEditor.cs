@@ -30,9 +30,9 @@ namespace UnityEditor
             m_VertexDistance = serializedObject.FindProperty("m_VertexDistance");
             m_EdgeRadius = serializedObject.FindProperty("m_EdgeRadius");
             m_OffsetDistance = serializedObject.FindProperty("m_OffsetDistance");
-            m_ShowEdgeRadius.value = targets.Where(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons).Count() == 0;
+            m_ShowEdgeRadius.value = targets.Count(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons) == 0;
             m_ShowEdgeRadius.valueChanged.AddListener(Repaint);
-            m_ShowManualGenerationButton.value = targets.Where(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual).Count() == 0;
+            m_ShowManualGenerationButton.value = targets.Count(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual) == 0;
             m_ShowManualGenerationButton.valueChanged.AddListener(Repaint);
         }
 
@@ -53,7 +53,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_VertexDistance);
             EditorGUILayout.PropertyField(m_OffsetDistance);
 
-            m_ShowManualGenerationButton.target = targets.Where(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual).Count() == 0;
+            m_ShowManualGenerationButton.target = targets.Count(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual) == 0;
             if (EditorGUILayout.BeginFadeGroup(m_ShowManualGenerationButton.faded))
             {
                 if (GUILayout.Button("Regenerate Collider"))
@@ -62,15 +62,14 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
-            m_ShowEdgeRadius.target = targets.Where(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons).Count() == 0;
+            m_ShowEdgeRadius.target = targets.All(x => (x as CompositeCollider2D).geometryType != CompositeCollider2D.GeometryType.Polygons);
             if (EditorGUILayout.BeginFadeGroup(m_ShowEdgeRadius.faded))
                 EditorGUILayout.PropertyField(m_EdgeRadius);
             EditorGUILayout.EndFadeGroup();
 
-            if (targets.Where(x =>
-                (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Outlines &&
+            if (targets.Count(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Outlines &&
                 (x as CompositeCollider2D).attachedRigidbody != null &&
-                (x as CompositeCollider2D).attachedRigidbody.bodyType == RigidbodyType2D.Dynamic).Count() > 0)
+                (x as CompositeCollider2D).attachedRigidbody.bodyType == RigidbodyType2D.Dynamic) > 0)
                 EditorGUILayout.HelpBox("Outline geometry is composed of edges and will not preserve the original collider's center-of-mass or rotational inertia.  The CompositeCollider2D is attached to a Dynamic Rigidbody2D so you may need to explicitly set these if they are required.", MessageType.Info);
 
             serializedObject.ApplyModifiedProperties();

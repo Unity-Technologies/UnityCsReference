@@ -24,7 +24,7 @@ namespace UnityEditor
             Focus = 1 << 2,
             SizeMove = 1 << 3,
             ModalDialog = 1 << 4,
-        };
+        }
 
         internal static extern Vector3 MakeNiceVector3(Vector3 vector);
 

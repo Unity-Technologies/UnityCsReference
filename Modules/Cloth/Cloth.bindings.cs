@@ -103,7 +103,7 @@ namespace UnityEngine
         [Obsolete("Parameter solverFrequency is obsolete and no longer supported. Please use clothSolverFrequency instead.")]
         public bool solverFrequency
         {
-            get { return clothSolverFrequency > 0.0f ? true : false; }
+            get { return clothSolverFrequency > 0.0f; }
             set { clothSolverFrequency = value == true ? 120f : 0.0f; }  // use the default value
         }
 

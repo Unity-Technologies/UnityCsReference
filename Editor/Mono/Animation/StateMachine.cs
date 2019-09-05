@@ -55,7 +55,7 @@ namespace UnityEditor.Animations
             }
 
             public bool m_PushUndo;
-        };
+        }
     }
 
 

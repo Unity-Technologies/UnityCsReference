@@ -243,7 +243,7 @@ namespace UnityEditor
                 // Draw item count in group
                 const float rightMargin = 4f;
 
-                string label = ItemsAvailable.ToString() + " Total";
+                string label = ItemsAvailable + " Total";
                 Vector2 labelDims = s_Styles.groupHeaderLabelCount.CalcSize(new GUIContent(label));
                 if (labelDims.x < rect.width)
                     rect.x = m_Owner.GetVisibleWidth() - labelDims.x - rightMargin; // right align if room

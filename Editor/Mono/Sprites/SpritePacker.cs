@@ -71,7 +71,6 @@ namespace UnityEditor.Sprites
                 {
                     Type otherT = m_policyTypeCache[t.Name];
                     Debug.LogError(string.Format("Duplicate Sprite Packer policies found: {0} and {1}. Please rename one.", t.FullName, otherT.FullName));
-                    continue;
                 }
                 else
                     m_policyTypeCache[t.Name] = t;

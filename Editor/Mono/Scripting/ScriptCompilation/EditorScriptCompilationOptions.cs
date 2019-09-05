@@ -19,5 +19,5 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingIncludingTestAssemblies = 1 << 5,
         BuildingPredefinedAssembliesAllowUnsafeCode = (1 << 6),
         BuildingForHeadlessPlayer = 1 << 7
-    };
+    }
 }

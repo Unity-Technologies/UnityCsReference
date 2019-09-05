@@ -19,7 +19,7 @@ namespace UnityEditor.AssetImporters
         public Texture texture;
         public string relativePath;
         public string path;
-    };
+    }
 
     [RequiredByNativeCode]
     [NativeHeader("Editor/Src/AssetPipeline/ModelImporting/MaterialDescription.h")]

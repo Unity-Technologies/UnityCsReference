@@ -332,7 +332,6 @@ namespace UnityEditor
             background = "dockarea";
 
             Rect dockAreaRect = new Rect(0, 0, position.width, position.height);
-            Rect wPos = windowPosition;
             Rect containerWindowPosition = window.position;
             containerWindowPosition.width = Mathf.Ceil(containerWindowPosition.width);
             containerWindowPosition.height = Mathf.Ceil(containerWindowPosition.height);
@@ -1077,7 +1076,9 @@ namespace UnityEditor
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
 
-            Rect maximizedViewRect = position;
+            Rect maximizedViewRect = Rect.zero;
+
+            maximizedViewRect.size = position.size;
             maximizedViewRect = Styles.background.margin.Remove(maximizedViewRect);
 
             Rect backRect = new Rect(maximizedViewRect.x + 1, maximizedViewRect.y, maximizedViewRect.width - 2, DockArea.kTabHeight);

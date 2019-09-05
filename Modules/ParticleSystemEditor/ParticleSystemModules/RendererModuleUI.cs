@@ -41,6 +41,8 @@ namespace UnityEditor
         SerializedProperty m_SortingFudge;      //< Lower the number, most likely that these particles will appear in front of other transparent objects, including other particles.
         SerializedProperty m_NormalDirection;
         SerializedProperty m_AllowRoll;
+        SerializedProperty m_FreeformStretching;
+        SerializedProperty m_RotateWithStretchDirection;
         RendererEditorBase.Probes m_Probes;
 
         SerializedProperty m_RenderAlignment;
@@ -73,7 +75,7 @@ namespace UnityEditor
             BillboardFixedVertical = 3,
             Mesh = 4,
             None = 5
-        };
+        }
 
         class Texts
         {
@@ -85,7 +87,9 @@ namespace UnityEditor
             public GUIContent maxParticleSize = EditorGUIUtility.TrTextContent("Max Particle Size", "How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.");
             public GUIContent cameraSpeedScale = EditorGUIUtility.TrTextContent("Camera Scale", "How much the camera speed is factored in when determining particle stretching.");
             public GUIContent speedScale = EditorGUIUtility.TrTextContent("Speed Scale", "Defines the length of the particle compared to its speed.");
-            public GUIContent lengthScale = EditorGUIUtility.TrTextContent("Length Scale", "Defines the length of the particle compared to its width.");
+            public GUIContent lengthScale = EditorGUIUtility.TrTextContent("Length Scale", "Defines the length of the particle compared to its width. This determines the base length of particles when they don't move. A value of 1 is neutral, causing no stretching or squashing.");
+            public GUIContent freeformStretching = EditorGUIUtility.TrTextContent("Freeform Stretching", "Enables alternative stretching behavior where particles don't get thin when viewed head-on and where particle rotation can be independent from stretching direction.");
+            public GUIContent rotateWithStretchDirection = EditorGUIUtility.TrTextContent("Rotate With Stretch", "Rotate the particles based on the direction they are stretched in. This is added on top of other particle rotation.");
             public GUIContent sortingFudge = EditorGUIUtility.TrTextContent("Sorting Fudge", "Lower the number and most likely these particles will appear in front of other transparent objects, including other particles.");
             public GUIContent sortingFudgeDisabledDueToSortingGroup = EditorGUIUtility.TrTextContent("Sorting Fudge", "This is disabled as the Sorting Group component handles the sorting for this Renderer.");
             public GUIContent sortMode = EditorGUIUtility.TrTextContent("Sort Mode", "The draw order of particles can be sorted by distance, oldest in front, or youngest in front.");
@@ -206,6 +210,8 @@ namespace UnityEditor
             m_SortMode = GetProperty0("m_SortMode");
             m_NormalDirection = GetProperty0("m_NormalDirection");
             m_AllowRoll = GetProperty0("m_AllowRoll");
+            m_FreeformStretching = GetProperty0("m_FreeformStretching");
+            m_RotateWithStretchDirection = GetProperty0("m_RotateWithStretchDirection");
 
             m_Probes = new RendererEditorBase.Probes();
             m_Probes.Initialize(serializedObject);
@@ -269,6 +275,18 @@ namespace UnityEditor
                     GUIFloat(s_Texts.cameraSpeedScale, m_CameraVelocityScale);
                     GUIFloat(s_Texts.speedScale, m_VelocityScale);
                     GUIFloat(s_Texts.lengthScale, m_LengthScale);
+                    GUIToggle(s_Texts.freeformStretching, m_FreeformStretching);
+                    if (m_FreeformStretching.boolValue && !m_FreeformStretching.hasMultipleDifferentValues)
+                    {
+                        GUIToggle(s_Texts.rotateWithStretchDirection, m_RotateWithStretchDirection);
+                    }
+                    else
+                    {
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            GUIToggle(s_Texts.rotateWithStretchDirection, true);
+                        }
+                    }
                     EditorGUI.indentLevel--;
                 }
 

@@ -187,14 +187,18 @@ namespace UnityEditor
                         if (count < 0 || quote2 == -1)
                             count = searchString.Length - startIndex;
 
-                        // Strip filepath from quotes
-                        assetPath = "Assets/" + searchString.Substring(startIndex, count);
+                        // Strip filepath from quotes, don't prefix with Assets/, we need to support Packages/ (https://fogbugz.unity3d.com/f/cases/1161019/)
+                        assetPath = searchString.Substring(startIndex, count);
                     }
                     else
-                        // Otherwise use string from colon to end
-                        assetPath = "Assets/" + searchString.Substring(firstColon + 1);
+                        // Otherwise use string from colon to end, don't prefix with Assets/, we need to support Packages/ (https://fogbugz.unity3d.com/f/cases/1161019/)
+                        assetPath = searchString.Substring(firstColon + 1);
 
                     Object obj = AssetDatabase.LoadMainAssetAtPath(assetPath);
+                    if (obj == null)
+                        // Backward compatibility, in case Assets/ was strip from path
+                        obj = AssetDatabase.LoadMainAssetAtPath("Assets/" + assetPath);
+
                     if (obj != null)
                         instanceID = obj.GetInstanceID();
                     //else

@@ -58,6 +58,171 @@
     <Compile Include="..\..\Modules\AndroidJNI\AndroidJava.cs">
       <Link>Modules\AndroidJNI\AndroidJava.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
+      <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\AnimationPlayableBinding.cs">
+      <Link>Modules\Animation\Managed\AnimationPlayableBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\AnimationPlayableUtilities.cs">
+      <Link>Modules\Animation\Managed\AnimationPlayableUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\Animator.deprecated.cs">
+      <Link>Modules\Animation\Managed\Animator.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\IAnimationClipSource.cs">
+      <Link>Modules\Animation\Managed\IAnimationClipSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\IAnimationJob.cs">
+      <Link>Modules\Animation\Managed\IAnimationJob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\IAnimationJobPlayable.cs">
+      <Link>Modules\Animation\Managed\IAnimationJobPlayable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\IAnimationWindowPreview.cs">
+      <Link>Modules\Animation\Managed\IAnimationWindowPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\NotKeyableAttribute.cs">
+      <Link>Modules\Animation\Managed\NotKeyableAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\ProcessAnimationJobStruct.cs">
+      <Link>Modules\Animation\Managed\ProcessAnimationJobStruct.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\StateMachineBehaviour.cs">
+      <Link>Modules\Animation\Managed\StateMachineBehaviour.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AimConstraint.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AimConstraint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\Animation.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\Animation.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationClip.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationClip.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationHumanStream.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationHumanStream.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableGraphExtensions.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationPlayableGraphExtensions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableOutputExtensions.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationPlayableOutputExtensions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPosePlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationPosePlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationStream.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationStream.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationStreamHandles.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimationStreamHandles.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\Animator.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\Animator.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorControllerParameter.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimatorControllerParameter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorJobExtensions.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimatorJobExtensions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorUtility.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AnimatorUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\Avatar.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\Avatar.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AvatarBuilder.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AvatarBuilder.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\AvatarMask.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\AvatarMask.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\Constraint.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\Constraint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\HumanPoseHandler.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\HumanPoseHandler.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\HumanTrait.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\HumanTrait.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\LookAtConstraint.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\LookAtConstraint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\Motion.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\Motion.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\MuscleHandle.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\MuscleHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\ParentConstraint.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\ParentConstraint.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\RuntimeAnimatorController.bindings.cs">
+      <Link>Modules\Animation\ScriptBindings\RuntimeAnimatorController.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssemblyInfo.cs">
+      <Link>Modules\AssetBundle\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundle.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundle.deprecated.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundle.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleRecompressOperation.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleRecompressOperation.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleRequest.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleRequest.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\BuildCompression.cs">
+      <Link>Modules\AssetBundle\Managed\BuildCompression.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs</Link>
     </Compile>
@@ -321,6 +486,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\File\AsyncReadManager.bindings.cs">
       <Link>Runtime\Export\File\AsyncReadManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\File\File.bindings.cs">
+      <Link>Runtime\Export\File\File.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\FriendAttributes.cs">
       <Link>Runtime\Export\FriendAttributes.cs</Link>
@@ -1072,32 +1240,14 @@
     <Compile Include="..\..\Runtime\Export\XR\Pose.cs">
       <Link>Runtime\Export\XR\Pose.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\OnDemandResources.bindings.cs">
-      <Link>Runtime\Export\iOS\OnDemandResources.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOS.deprecated.cs">
       <Link>Runtime\Export\iOS\iOS.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\iOSDevice.bindings.cs">
-      <Link>Runtime\Export\iOS\iOSDevice.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSNotifications.bindings.cs">
       <Link>Runtime\Export\iOS\iOSNotifications.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\iOSReplayKit.bindings.cs">
-      <Link>Runtime\Export\iOS\iOSReplayKit.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSSystemGestureDeferMode.cs">
       <Link>Runtime\Export\iOS\iOSSystemGestureDeferMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\tvOS.bindings.cs">
-      <Link>Runtime\Export\iOS\tvOS.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\tvOS.bindings.deprecated.cs">
-      <Link>Runtime\Export\iOS\tvOS.bindings.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\tvOSDevice.bindings.cs">
-      <Link>Runtime\Export\iOS\tvOSDevice.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Jobs\Managed\BatchQueries.cs">
       <Link>Runtime\Jobs\Managed\BatchQueries.cs</Link>
@@ -1149,171 +1299,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
-      <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\AnimationPlayableBinding.cs">
-      <Link>Modules\Animation\Managed\AnimationPlayableBinding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\AnimationPlayableUtilities.cs">
-      <Link>Modules\Animation\Managed\AnimationPlayableUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\Animator.deprecated.cs">
-      <Link>Modules\Animation\Managed\Animator.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\IAnimationClipSource.cs">
-      <Link>Modules\Animation\Managed\IAnimationClipSource.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\IAnimationJob.cs">
-      <Link>Modules\Animation\Managed\IAnimationJob.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\IAnimationJobPlayable.cs">
-      <Link>Modules\Animation\Managed\IAnimationJobPlayable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\IAnimationWindowPreview.cs">
-      <Link>Modules\Animation\Managed\IAnimationWindowPreview.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\NotKeyableAttribute.cs">
-      <Link>Modules\Animation\Managed\NotKeyableAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\ProcessAnimationJobStruct.cs">
-      <Link>Modules\Animation\Managed\ProcessAnimationJobStruct.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\Managed\StateMachineBehaviour.cs">
-      <Link>Modules\Animation\Managed\StateMachineBehaviour.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AimConstraint.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AimConstraint.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationClip.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationClip.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationHumanStream.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationHumanStream.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableGraphExtensions.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationPlayableGraphExtensions.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPlayableOutputExtensions.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationPlayableOutputExtensions.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationPosePlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationPosePlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationStream.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationStream.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimationStreamHandles.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimationStreamHandles.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\Animator.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\Animator.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorControllerParameter.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimatorControllerParameter.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorJobExtensions.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimatorJobExtensions.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AnimatorUtility.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AnimatorUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\Avatar.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\Avatar.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AvatarBuilder.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AvatarBuilder.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\AvatarMask.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\AvatarMask.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\Constraint.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\Constraint.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\HumanPoseHandler.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\HumanPoseHandler.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\HumanTrait.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\HumanTrait.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\LookAtConstraint.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\LookAtConstraint.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\Motion.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\Motion.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\MuscleHandle.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\MuscleHandle.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\ParentConstraint.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\ParentConstraint.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Animation\ScriptBindings\RuntimeAnimatorController.bindings.cs">
-      <Link>Modules\Animation\ScriptBindings\RuntimeAnimatorController.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssemblyInfo.cs">
-      <Link>Modules\AssetBundle\Managed\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundle.bindings.cs">
-      <Link>Modules\AssetBundle\Managed\AssetBundle.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundle.deprecated.cs">
-      <Link>Modules\AssetBundle\Managed\AssetBundle.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs">
-      <Link>Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs">
-      <Link>Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleRecompressOperation.bindings.cs">
-      <Link>Modules\AssetBundle\Managed\AssetBundleRecompressOperation.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleRequest.bindings.cs">
-      <Link>Modules\AssetBundle\Managed\AssetBundleRequest.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs">
-      <Link>Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\BuildCompression.cs">
-      <Link>Modules\AssetBundle\Managed\BuildCompression.cs</Link>
-    </Compile>
-    <Compile Include="..\..\artifacts\generated\OldBindingsForCsProjects\Animation\AnimationsBindings.gen.cs">
-      <Link>artifacts\generated\OldBindingsForCsProjects\Animation\AnimationsBindings.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
       <Link>External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs</Link>
@@ -1509,9 +1494,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Director\ScriptBindings\PlayableDirector.bindings.cs">
       <Link>Modules\Director\ScriptBindings\PlayableDirector.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GameCenter\Managed\GameCenterServices.cs">
-      <Link>Modules\GameCenter\Managed\GameCenterServices.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GameCenter\Managed\LocalService.cs">
       <Link>Modules\GameCenter\Managed\LocalService.cs</Link>

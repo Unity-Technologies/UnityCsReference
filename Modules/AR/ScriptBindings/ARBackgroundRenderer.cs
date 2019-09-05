@@ -12,7 +12,7 @@ namespace UnityEngine.XR
     {
         StandardBackground,
         MaterialAsBackground
-    };
+    }
 
     public partial class ARBackgroundRenderer
     {
@@ -57,7 +57,7 @@ namespace UnityEngine.XR
             }
             set
             {
-                if (m_BackgroundTexture = value)
+                if (m_BackgroundTexture == value)
                     return;
 
                 RemoveCommandBuffersIfNeeded();

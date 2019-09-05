@@ -353,7 +353,7 @@ namespace UnityEditor
 
         public void DrawInstantTooltip(Rect position)
         {
-            if (m_InstantTooltipText != null && m_InstantTooltipText != "")
+            if (!string.IsNullOrEmpty(m_InstantTooltipText))
             {
                 // Draw body of tooltip
                 GUIStyle style = (GUIStyle)"AnimationEventTooltip";

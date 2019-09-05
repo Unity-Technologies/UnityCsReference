@@ -65,6 +65,10 @@ namespace UnityEditor
         extern internal static void RegisterAssetFolder(string path, bool immutable, string guid);
         extern internal static void UnregisterAssetFolder(string path);
 
+        // used by integration tests
+        extern internal static void RegisterRedirectedAssetFolder(string mountPoint, string folder, string physicalPath, bool immutable, string guid);
+        extern internal static void UnregisterRedirectedAssetFolder(string mountPoint, string folder);
+
         // returns true if the folder is known by the asset database
         // rootFolder is true if the path is a registered root folder
         // immutable is true when the root of the path was registered with the immutable flag (e.g. shared package)
@@ -292,72 +296,66 @@ namespace UnityEditor
 
         extern internal static string GetUniquePathNameAtSelectedPath(string fileName);
 
-        [System.Obsolete("AssetDatabase.IsOpenForEdit without StatusQueryOptions has been deprecated. Use the version with StatusQueryOptions instead. This will always request the cached status (StatusQueryOptions.UseCachedIfPossible)")]
-        public static bool IsOpenForEdit(UnityEngine.Object assetObject)
+        [uei.ExcludeFromDocs] public static bool IsOpenForEdit(UnityEngine.Object assetObject)
         {
             return IsOpenForEdit(assetObject, StatusQueryOptions.UseCachedIfPossible);
         }
 
-        public static bool IsOpenForEdit(UnityEngine.Object assetObject, StatusQueryOptions StatusQueryOptions)
+        public static bool IsOpenForEdit(UnityEngine.Object assetObject, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
         {
             string assetPath = GetAssetOrScenePath(assetObject);
-            return IsOpenForEdit(assetPath, StatusQueryOptions);
+            return IsOpenForEdit(assetPath, statusOptions);
         }
 
-        [System.Obsolete("AssetDatabase.IsOpenForEdit without StatusQueryOptions has been deprecated. Use the version with StatusQueryOptions instead. This will always request the cached status (StatusQueryOptions.UseCachedIfPossible)")]
-        public static bool IsOpenForEdit(string assetOrMetaFilePath)
+        [uei.ExcludeFromDocs] public static bool IsOpenForEdit(string assetOrMetaFilePath)
         {
             return IsOpenForEdit(assetOrMetaFilePath, StatusQueryOptions.UseCachedIfPossible);
         }
 
-        public static bool IsOpenForEdit(string assetOrMetaFilePath, StatusQueryOptions StatusQueryOptions)
+        public static bool IsOpenForEdit(string assetOrMetaFilePath, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
         {
             string message;
-            return IsOpenForEdit(assetOrMetaFilePath, out message, StatusQueryOptions);
+            return IsOpenForEdit(assetOrMetaFilePath, out message, statusOptions);
         }
 
-        [System.Obsolete("AssetDatabase.IsOpenForEdit without StatusQueryOptions has been deprecated. Use the version with StatusQueryOptions instead. This will always request the cached status (StatusQueryOptions.UseCachedIfPossible)")]
-        public static bool IsOpenForEdit(UnityEngine.Object assetObject, out string message)
+        [uei.ExcludeFromDocs] public static bool IsOpenForEdit(UnityEngine.Object assetObject, out string message)
         {
             return IsOpenForEdit(assetObject, out message, StatusQueryOptions.UseCachedIfPossible);
         }
 
-        public static bool IsOpenForEdit(UnityEngine.Object assetObject, out string message, StatusQueryOptions statusOptions)
+        public static bool IsOpenForEdit(UnityEngine.Object assetObject, out string message, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
         {
             string assetPath = GetAssetOrScenePath(assetObject);
             return IsOpenForEdit(assetPath, out message, statusOptions);
         }
 
-        [System.Obsolete("AssetDatabase.IsOpenForEdit without StatusQueryOptions has been deprecated. Use the version with StatusQueryOptions instead. This will always request the cached status (StatusQueryOptions.UseCachedIfPossible)")]
-        public static bool IsOpenForEdit(string assetOrMetaFilePath, out string message)
+        [uei.ExcludeFromDocs] public static bool IsOpenForEdit(string assetOrMetaFilePath, out string message)
         {
             return IsOpenForEdit(assetOrMetaFilePath, out message, StatusQueryOptions.UseCachedIfPossible);
         }
 
-        public static bool IsOpenForEdit(string assetOrMetaFilePath, out string message, StatusQueryOptions statusOptions)
+        public static bool IsOpenForEdit(string assetOrMetaFilePath, out string message, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
         {
             return AssetModificationProcessorInternal.IsOpenForEdit(assetOrMetaFilePath, out message, statusOptions);
         }
 
-        [System.Obsolete("AssetDatabase.IsMetaFileOpenForEdit without StatusQueryOptions has been deprecated. Use the version with StatusQueryOptions instead. This will always request the cached status (StatusQueryOptions.UseCachedIfPossible)")]
-        public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject)
+        [uei.ExcludeFromDocs] public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject)
         {
             return IsMetaFileOpenForEdit(assetObject, StatusQueryOptions.UseCachedIfPossible);
         }
 
-        public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject, StatusQueryOptions statusOptions)
+        public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
         {
             string message;
             return IsMetaFileOpenForEdit(assetObject, out message, statusOptions);
         }
 
-        [System.Obsolete("AssetDatabase.IsMetaFileOpenForEdit without StatusQueryOptions has been deprecated. Use the version with StatusQueryOptions instead. This will always request the cached status (StatusQueryOptions.UseCachedIfPossible)")]
-        public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject, out string message)
+        [uei.ExcludeFromDocs] public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject, out string message)
         {
             return IsMetaFileOpenForEdit(assetObject, out message, StatusQueryOptions.UseCachedIfPossible);
         }
 
-        public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject, out string message, StatusQueryOptions statusOptions)
+        public static bool IsMetaFileOpenForEdit(UnityEngine.Object assetObject, out string message, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusOptions)
         {
             string assetPath = GetAssetOrScenePath(assetObject);
             string metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
@@ -385,8 +383,6 @@ namespace UnityEditor
         extern internal static bool IsV1Enabled();
         [FreeFunction("AssetDatabase::IsV2Enabled")]
         extern internal static bool IsV2Enabled();
-        [FreeFunction("AssetDatabase::IsOnDemandModeEnabled")]
-        extern internal static bool IsOnDemandModeEnabled();
         [FreeFunction("AssetDatabase::CloseCachedFiles")]
         extern internal static void CloseCachedFiles();
 

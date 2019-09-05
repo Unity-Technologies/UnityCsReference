@@ -19,7 +19,7 @@ namespace UnityEditor
             AnyCPU,
             x86,
             x86_64
-        };
+        }
 
         internal enum EditorPluginOSArchitecture
         {
@@ -27,7 +27,7 @@ namespace UnityEditor
             OSX,
             Windows,
             Linux
-        };
+        }
 
         internal class EditorProperty : Property
         {

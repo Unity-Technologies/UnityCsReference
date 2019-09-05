@@ -280,7 +280,7 @@ namespace UnityEditorInternal
                 string delim = "";
                 foreach (JSONValue i in AsList())
                 {
-                    res += delim + i.ToString();
+                    res += delim + i;
                     delim = ", ";
                 }
                 return res + "]";
@@ -291,7 +291,7 @@ namespace UnityEditorInternal
                 string delim = "";
                 foreach (KeyValuePair<string, JSONValue> kv in AsDict())
                 {
-                    res += delim + '"' + EncodeString(kv.Key) + "\" : " + kv.Value.ToString();
+                    res += delim + '"' + EncodeString(kv.Key) + "\" : " + kv.Value;
                     delim = ", ";
                 }
                 return res + "}";
@@ -427,7 +427,7 @@ namespace UnityEditorInternal
 
         private string PosMsg()
         {
-            return "line " + line.ToString() + ", column " + linechar.ToString();
+            return "line " + line + ", column " + linechar;
         }
 
         private JSONValue ParseValue()

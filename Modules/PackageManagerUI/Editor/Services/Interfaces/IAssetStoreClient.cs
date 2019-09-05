@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.PackageManager.UI.AssetStore;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -15,40 +14,37 @@ namespace UnityEditor.PackageManager.UI
         event Action<long> onProductFetched;
 
         event Action<IEnumerable<IPackage>> onPackagesChanged;
+        event Action<string, IPackageVersion> onPackageVersionUpdated;
 
         event Action<DownloadProgress> onDownloadProgress;
 
-        event Action onListOperationStart;
-        event Action onListOperationFinish;
+        event Action<IOperation> onListOperation;
 
         event Action onFetchDetailsStart;
         event Action onFetchDetailsFinish;
-
-        event Action<Error> onOperationError;
+        event Action<Error> onFetchDetailsError;
 
         void List(int offset, int limit, string searchText = "", bool fetchDetails = true);
 
         void Fetch(long productId);
 
-        void FetchDetails(IEnumerable<long> packageIds);
+        void FetchDetails(IEnumerable<long> productIds);
 
-        void Refresh(IPackage package);
-
-        void Refresh(IEnumerable<IPackage> packages);
+        void RefreshLocal();
 
         bool IsAnyDownloadInProgress();
 
-        bool IsDownloadInProgress(string packageId);
+        bool IsDownloadInProgress(string productId);
 
-        bool GetDownloadProgress(string packageId, out DownloadProgress progress);
+        bool GetDownloadProgress(string productId, out DownloadProgress progress);
 
-        void AbortDownload(string packageId);
+        void AbortDownload(string productId);
 
         void AbortAllDownloads();
 
-        void Download(string packageId);
+        void Download(string productId);
 
-        void OnDownloadProgress(string packageId, string message, ulong bytes, ulong total);
+        void OnDownloadProgress(string productId, string message, ulong bytes, ulong total);
 
         void Setup();
 

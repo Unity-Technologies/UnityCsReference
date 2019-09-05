@@ -53,7 +53,7 @@ namespace UnityEditor.Experimental.AssetImporters
         public string[] importWarnings { get { return m_ImportWarnings; } }
         public Texture2D thumbNail { get { return m_ThumbNail; } }
         public Sprite[] sprites { get { return m_Sprites; } }
-    };
+    }
 
 
     [StructLayout(LayoutKind.Sequential)]
@@ -73,7 +73,7 @@ namespace UnityEditor.Experimental.AssetImporters
         public int height { get { return m_Height; } set {m_Height = value; } }
         public bool containsAlpha { get { return m_SourceContainsAlpha; } set {m_SourceContainsAlpha = value; } }
         public bool hdr { get { return m_SourceWasHDR; } set {m_SourceWasHDR = value; } }
-    };
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct TextureGenerationSettings
@@ -214,7 +214,7 @@ namespace UnityEditor.Experimental.AssetImporters
         public SpriteImportData[] spriteImportData { get { return m_SpriteImportData; } set { m_SpriteImportData = value; } }
         public string spritePackingTag { get { return m_SpritePackingTag; } set { m_SpritePackingTag = value; } }
         public SecondarySpriteTexture[] secondarySpriteTextures { get { return m_SecondarySpriteTextures; } set { m_SecondarySpriteTextures = value; } }
-    };
+    }
 
 
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureGenerator.h")]

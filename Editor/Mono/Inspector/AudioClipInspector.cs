@@ -272,7 +272,7 @@ namespace UnityEditor
                     if (c > 1 && r.width > 64)
                     {
                         var labelRect = new Rect(s_WantedRect.x + 5, s_WantedRect.y + (s_WantedRect.height / c) * i, 30, 20);
-                        EditorGUI.DropShadowLabel(labelRect, "ch " + (i + 1).ToString());
+                        EditorGUI.DropShadowLabel(labelRect, "ch " + (i + 1));
                     }
                 }
 
@@ -309,12 +309,12 @@ namespace UnityEditor
         {
             AudioClip clip = target as AudioClip;
             int c = AudioUtil.GetChannelCount(clip);
-            string ch = c == 1 ? "Mono" : c == 2 ? "Stereo" : (c - 1).ToString() + ".1";
+            string ch = c == 1 ? "Mono" : c == 2 ? "Stereo" : (c - 1) + ".1";
             AudioCompressionFormat platformFormat = AudioUtil.GetTargetPlatformSoundCompressionFormat(clip);
             AudioCompressionFormat editorFormat = AudioUtil.GetSoundCompressionFormat(clip);
             string s = platformFormat.ToString();
             if (platformFormat != editorFormat)
-                s += " (" + editorFormat.ToString() + " in editor" + ")";
+                s += " (" + editorFormat + " in editor" + ")";
             s += ", " + AudioUtil.GetFrequency(clip) + " Hz, " + ch + ", ";
 
             System.TimeSpan ts = new System.TimeSpan(0, 0, 0, 0, (int)AudioUtil.GetDuration(clip));

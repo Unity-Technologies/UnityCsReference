@@ -49,5 +49,5 @@ namespace UnityEditor.PackageManager.UI
             };
             EditorAnalytics.SendEventWithLimit("packageManagerWindowUserAction", parameters);
         }
-    };
+    }
 }

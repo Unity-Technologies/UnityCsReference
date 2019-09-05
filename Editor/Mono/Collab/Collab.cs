@@ -80,7 +80,7 @@ namespace UnityEditor.Collaboration
             ChooseMine    = 1 << 9,
             ChooseTheirs  = 1 << 10,
             ExternalMerge = 1 << 11,
-        };
+        }
 
         // Must keep in sync with C++ in CollabCommon.h
         // Explicit uint so "Any" state works with C++
@@ -120,9 +120,9 @@ namespace UnityEditor.Collaboration
             kAnyLocalChanged        = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabDeletedLocal | kCollabMovedLocal),
             kAnyLocalEdited         = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabMovedLocal),
             kCollabAny = 0xFFFFFFFF
-        };
+        }
 
-        internal enum CollabStateID { None, Uninitialized, Initialized };
+        internal enum CollabStateID { None, Uninitialized, Initialized }
 
         public static string[] clientType =
         {

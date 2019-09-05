@@ -795,7 +795,7 @@ namespace UnityEditor
             {
                 s_ParentDragTime = Time.realtimeSinceStartup;
                 Canvas.ForceUpdateCanvases();
-                PreviewEditorWindow.RepaintAll();
+                PlayModeView.RepaintAll();
                 return;
             }
 
@@ -816,7 +816,7 @@ namespace UnityEditor
             }
             Canvas.ForceUpdateCanvases();
             SceneView.RepaintAll();
-            PreviewEditorWindow.RepaintAll();
+            PlayModeView.RepaintAll();
         }
 
         void AllAnchorsSceneGUI(RectTransform gui, RectTransform guiParent, Transform parentSpace, Transform transform)
@@ -1169,11 +1169,11 @@ namespace UnityEditor
                 int midValue   = RoundToInt((gui.anchorMax[1 - axis] - gui.anchorMin[1 - axis]) * 100);
                 int endValue   = RoundToInt((1 - gui.anchorMax[1 - axis]) * 100);
                 if (startValue > 0)
-                    DrawLabelBetweenPoints(points[axis, 0] - dir, points[axis, 1] - dir, GUIContent.Temp(startValue.ToString() + "%"));
+                    DrawLabelBetweenPoints(points[axis, 0] - dir, points[axis, 1] - dir, GUIContent.Temp(startValue + "%"));
                 if (midValue > 0)
-                    DrawLabelBetweenPoints(points[axis, 1] - dir, points[axis, 2] - dir, GUIContent.Temp(midValue.ToString() + "%"));
+                    DrawLabelBetweenPoints(points[axis, 1] - dir, points[axis, 2] - dir, GUIContent.Temp(midValue + "%"));
                 if (endValue > 0)
-                    DrawLabelBetweenPoints(points[axis, 2] - dir, points[axis, 3] - dir, GUIContent.Temp(endValue.ToString() + "%"));
+                    DrawLabelBetweenPoints(points[axis, 2] - dir, points[axis, 3] - dir, GUIContent.Temp(endValue + "%"));
             }
         }
 

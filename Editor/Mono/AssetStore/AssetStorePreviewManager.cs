@@ -201,7 +201,7 @@ namespace UnityEditor
                 {
                     if (client.state != AsyncHTTPClient.State.ABORTED)
                     {
-                        string err = "error " + client.text + " " + client.state.ToString() + " '" + url + "'";
+                        string err = "error " + client.text + " " + client.state + " '" + url + "'";
                         if (ObjectListArea.s_Debug)
                             Debug.LogError(err);
                         else
@@ -344,7 +344,7 @@ namespace UnityEditor
         // Abort fetching all previews with the specified size
         public static void AbortSize(int size)
         {
-            AsyncHTTPClient.AbortByTag("previewSize-" + size.ToString());
+            AsyncHTTPClient.AbortByTag("previewSize-" + size);
 
             // Mark any pending requests for that width in the cases as invalid
             // now that requests has been aborted.

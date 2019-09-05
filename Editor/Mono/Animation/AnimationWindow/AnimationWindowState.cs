@@ -23,14 +23,14 @@ namespace UnityEditorInternal
             None = 0,
             CurvesOnly = 1,
             Everything = 2
-        };
+        }
 
         public enum SnapMode
         {
             Disabled = 0,
             SnapToFrame = 1,
             SnapToClipFrame = 2
-        };
+        }
 
         [SerializeField] public AnimationWindowHierarchyState hierarchyState; // Persistent state of treeview on the left side of window
         [SerializeField] public AnimEditor animEditor; // Reference to owner of this state. Used to trigger repaints.
@@ -1204,7 +1204,7 @@ namespace UnityEditorInternal
                     clipboardCurves.Add(keyframe.curve);
 
             // If we have equal number of target and source curves, then match by index. If not, then try to match with AnimationWindowUtility.BestMatchForPaste.
-            bool matchCurveByIndex = clipboardCurves.Count() == activeCurves.Count();
+            bool matchCurveByIndex = clipboardCurves.Count == activeCurves.Count;
             int targetIndex = 0;
 
             foreach (AnimationWindowKeyframe keyframe in s_KeyframeClipboard)
@@ -1737,7 +1737,7 @@ namespace UnityEditorInternal
 
         public string FormatFrame(int frame, int frameDigits)
         {
-            return (frame / (int)frameRate).ToString() + ":" + (frame % frameRate).ToString().PadLeft(frameDigits, '0');
+            return (frame / (int)frameRate) + ":" + (frame % frameRate).ToString().PadLeft(frameDigits, '0');
         }
 
         //@TODO: Remove. Replace with animationkeytime

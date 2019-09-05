@@ -144,6 +144,14 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_CollisionDetection);
                     EditorGUILayout.PropertyField(m_SleepingMode);
                     EditorGUILayout.PropertyField(m_Interpolate);
+                    if (targets.Any(x => (x as Rigidbody2D).interpolation != RigidbodyInterpolation2D.None))
+                    {
+                        if (Physics2D.simulationMode == SimulationMode2D.Update)
+                            EditorGUILayout.HelpBox("The physics simulation mode is set to run per-frame. Any interpolation mode will be ignored and can be set to 'None'.", MessageType.Info);
+
+                        if (Physics2D.simulationMode == SimulationMode2D.Script)
+                            EditorGUILayout.HelpBox("The physics simulation mode is set to run manually in the scripts. Some or all selected Rigidbody2D are using an interpolation mode other than 'None' which will be executed per-frame. If the manual simulation is being run per-frame then the interpolation mode should be set to 'None'.", MessageType.Info);
+                    }
 
                     GUILayout.BeginHorizontal();
                     m_Constraints.isExpanded = EditorGUILayout.Foldout(m_Constraints.isExpanded, "Constraints", true);
@@ -157,10 +165,6 @@ namespace UnityEditor
                         ToggleFreezeRotation(constraints, m_FreezeRotationLabel, 2);
                         EditorGUI.indentLevel--;
                     }
-
-                    // Provide end-user warning about the equivalence of all constraints on versus no Rigidbody2D component.
-                    if (constraints == RigidbodyConstraints2D.FreezeAll)
-                        EditorGUILayout.HelpBox("Rather than turning on all constraints, you may want to consider removing the Rigidbody2D component which makes any colliders static.  This gives far better performance overall.", MessageType.Info);
                 }
                 EditorGUILayout.EndFadeGroup();
             }

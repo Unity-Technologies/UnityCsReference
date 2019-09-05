@@ -172,9 +172,7 @@ namespace UnityEditor
                 //Build a list of the current platform selection and draw it.
                 foreach (var platform in m_ValidPlatforms)
                 {
-                    bool isDefaultQuality = false;
-                    if (platformDefaultQualitySettings.ContainsKey(platform.name) &&  platformDefaultQualitySettings[platform.name] == i)
-                        isDefaultQuality = true;
+                    bool isDefaultQuality = platformDefaultQualitySettings.ContainsKey(platform.name) &&  platformDefaultQualitySettings[platform.name] == i;
 
                     var toggleRect = GUILayoutUtility.GetRect(Content.kPlatformTooltip, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth));
                     if (Event.current.type == EventType.Repaint)
@@ -523,7 +521,7 @@ namespace UnityEditor
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(customRenderPipeline);
+            customRenderPipeline.objectReferenceValue = EditorGUILayout.ObjectField(customRenderPipeline.objectReferenceValue, typeof(RenderPipelineAsset), false);
 
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);

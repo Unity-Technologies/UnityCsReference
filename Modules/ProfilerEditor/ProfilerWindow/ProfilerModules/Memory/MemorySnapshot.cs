@@ -445,7 +445,7 @@ namespace UnityEditor.MemoryProfiler
             kValueType = 1 << 0,
             kArray = 1 << 1,
             kArrayRankMask = unchecked((int)0xFFFF0000)
-        };
+        }
     }
 
     [Serializable]
@@ -515,5 +515,5 @@ namespace UnityEditor.MemoryProfiler
             m_ArraySizeOffsetInHeader = virtualMachineInformation.arraySizeOffsetInHeader;
             m_AllocationGranularity = virtualMachineInformation.allocationGranularity;
         }
-    };
+    }
 }

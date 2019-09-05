@@ -649,7 +649,6 @@ namespace UnityEditorInternal
             if (hasSearch)
             {
                 GUIStyle.SetMouseTooltip(kFrameTooltip.tooltip, args.rowRect);
-                return;
             }
         }
 

@@ -147,7 +147,7 @@ namespace UnityEditor.UIElements.Debugger
         private void SelectElement(VisualElement ve)
         {
             m_SelectedElement = ve;
-            visible = m_SelectedElement != null ? true : false;
+            visible = m_SelectedElement != null;
 
             m_MarginBox.SelectElement(ve);
             m_BorderBox.SelectElement(ve);

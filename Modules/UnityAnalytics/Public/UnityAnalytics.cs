@@ -44,7 +44,7 @@ namespace UnityEngine.Analytics
         kHighPriorityEvent                  = kFlushQueueFlag,
         kHighPriorityEvent_InStopMode       = kFlushQueueFlag | kAllowInStopModeFlag,
         kHighestPriorityEvent               = kFlushQueueFlag | kSendImmediateFlag
-    };
+    }
 
     public static partial class Analytics
     {
@@ -135,7 +135,7 @@ namespace UnityEngine.Analytics
         {
             public string custom_userid;
             public string sex;
-        };
+        }
 
         public static AnalyticsResult SetUserId(string userId)
         {
@@ -153,7 +153,7 @@ namespace UnityEngine.Analytics
         private struct UserInfoBirthYear
         {
             public int birth_year;
-        };
+        }
 
         public static AnalyticsResult SetUserBirthYear(int birthYear)
         {

@@ -406,7 +406,6 @@ namespace UnityEditor.VersionControl
 
             CreateResources();
 
-            Event e = Event.current;
             float toolBarHeight = EditorStyles.toolbar.fixedHeight;
             bool refresh = false;
 
@@ -420,7 +419,7 @@ namespace UnityEditor.VersionControl
             int incomingChangesetCount = incomingList.Root == null ? 0 : incomingList.Root.ChildCount;
             m_ShowIncoming = !GUILayout.Toggle(!m_ShowIncoming, "Outgoing", EditorStyles.toolbarButton);
 
-            GUIContent cont = GUIContent.Temp("Incoming" + (incomingChangesetCount == 0 ? "" : " (" + incomingChangesetCount.ToString() + ")"));
+            GUIContent cont = GUIContent.Temp("Incoming" + (incomingChangesetCount == 0 ? "" : " (" + incomingChangesetCount + ")"));
             m_ShowIncoming = GUILayout.Toggle(m_ShowIncoming, cont, EditorStyles.toolbarButton);
 
             if (EditorGUI.EndChangeCheck())
@@ -455,11 +454,8 @@ namespace UnityEditor.VersionControl
                 GUIUtility.ExitGUI();
             }
 
-            Color origColor = GUI.color;
-            GUI.color = new Color(1, 1, 1, 1 * .5f);
             bool refreshButtonClicked = GUILayout.Button(refreshIcon, EditorStyles.toolbarButton);
             refresh = refresh || refreshButtonClicked;
-            GUI.color = origColor;
 
             if (refresh)
             {
@@ -481,7 +477,6 @@ namespace UnityEditor.VersionControl
 
             if (EditorUserSettings.WorkOffline)
             {
-                Color tmpColor = GUI.color;
                 GUI.color = new Color(0.8f, 0.5f, 0.5f);
                 rect.height = toolBarHeight;
                 GUILayout.BeginArea(rect);

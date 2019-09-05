@@ -139,7 +139,7 @@ namespace UnityEditor
 
                                 for (int i = 0; i < count && !atLeastOneSelected; i++)
                                 {
-                                    atLeastOneSelected = bodyMask.GetArrayElementAtIndex(i).intValue == 1 ? true : false;
+                                    atLeastOneSelected = bodyMask.GetArrayElementAtIndex(i).intValue == 1;
                                 }
 
                                 for (int i = 0; i < count; i++)
@@ -675,7 +675,7 @@ namespace UnityEditor
 
         private class SerializedNodeInfo : ToggleTreeViewItem
         {
-            public enum State { Disabled, Enabled, Invalid };
+            public enum State { Disabled, Enabled, Invalid }
             public State m_State;
 
             // SerializedProperties

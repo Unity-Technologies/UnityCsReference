@@ -4,11 +4,12 @@
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal enum PackageOrigin
+    internal enum PackageProgress
     {
-        Unknown,
-        Builtin,
-        Registry,
-        AssetStore,
+        None,
+        Refreshing,
+        Downloading,
+        Installing,
+        Removing
     }
 }

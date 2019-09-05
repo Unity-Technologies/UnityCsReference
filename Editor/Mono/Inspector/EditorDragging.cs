@@ -260,7 +260,7 @@ namespace UnityEditor
                     foreach (var targetComponent in targetComponents)
                     {
                         var gameObject = targetComponent.gameObject;
-                        if (scripts.Any(s => !ComponentUtility.WarnCanAddScriptComponent(targetComponent.gameObject, s)))
+                        if (scripts.Any(s => !ComponentUtility.WarnCanAddScriptComponent(gameObject, s)))
                         {
                             valid = false;
                             break;

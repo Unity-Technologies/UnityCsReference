@@ -96,14 +96,11 @@ namespace UnityEditor.PackageManager.UI
             if (offline)
                 return GetOfflineDocumentationUrl(upmVersion);
 
-            if (upmVersion.source == PackageSource.BuiltIn)
+            if (upmVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(upmVersion.description))
             {
-                if (!string.IsNullOrEmpty(upmVersion.description))
-                {
-                    var split = SplitBuiltinDescription(upmVersion);
-                    if (split.Length > 1)
-                        return split[1];
-                }
+                var split = SplitBuiltinDescription(upmVersion);
+                if (split.Length > 1)
+                    return split[1];
             }
             return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html";
         }
@@ -157,9 +154,19 @@ namespace UnityEditor.PackageManager.UI
             return string.Empty;
         }
 
+        public static bool HasDocs(IPackageVersion version)
+        {
+            return (version as UpmPackageVersion) != null;
+        }
+
         public static bool HasChangelog(IPackageVersion version)
         {
-            return version != null && !version.HasTag(PackageTag.BuiltIn) && string.IsNullOrEmpty(GetPackageUrlRedirect(version));
+            return (version as UpmPackageVersion) != null && !version.HasTag(PackageTag.BuiltIn) && string.IsNullOrEmpty(GetPackageUrlRedirect(version));
+        }
+
+        public static bool HasLicenses(IPackageVersion version)
+        {
+            return (version as UpmPackageVersion) != null && !version.HasTag(PackageTag.BuiltIn);
         }
     }
 }

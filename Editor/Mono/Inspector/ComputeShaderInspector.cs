@@ -21,7 +21,7 @@ namespace UnityEditor
         {
             internal string name;
             internal string platforms;
-        };
+        }
 
         internal class Styles
         {

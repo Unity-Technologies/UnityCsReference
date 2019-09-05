@@ -203,7 +203,7 @@ namespace UnityEditor
             AssetStoreClient.AssetsInfo(queryAssets,
                 delegate(AssetStoreAssetsInfo results) {
                     AssetStoreAssetInspector.paymentAvailability = AssetStoreAssetInspector.PaymentAvailability.ServiceDisabled;
-                    if (results.error != null && results.error != "")
+                    if (!string.IsNullOrEmpty(results.error))
                     {
                         System.Console.WriteLine("Error performing Asset Store Info search: " + results.error);
                         AssetStoreAssetInspector.OfflineNoticeEnabled = true;

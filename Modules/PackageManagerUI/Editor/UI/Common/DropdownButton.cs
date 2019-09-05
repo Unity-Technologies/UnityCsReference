@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI
 {
-    enum DropdownStatus { None = 0, Success, Error };
+    enum DropdownStatus { None = 0, Success, Error }
 
     class DropdownButton : Button
     {

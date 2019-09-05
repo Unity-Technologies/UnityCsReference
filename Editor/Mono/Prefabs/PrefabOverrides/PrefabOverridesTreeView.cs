@@ -22,8 +22,8 @@ namespace UnityEditor
         int m_LastShownPreviewWindowRowID = -1;
         PrefabOverridesWindow m_Window;
 
-        enum ToggleValue { FALSE, TRUE, MIXED };
-        enum ItemType { PREFAB_OBJECT, ADDED_OBJECT, REMOVED_OBJECT };
+        enum ToggleValue { FALSE, TRUE, MIXED }
+        enum ItemType { PREFAB_OBJECT, ADDED_OBJECT, REMOVED_OBJECT }
 
         class PrefabOverridesTreeViewItem : TreeViewItem
         {
@@ -112,6 +112,15 @@ namespace UnityEditor
             Reload();
             ExpandAll();
             EnableAllItems(true);
+        }
+
+        public void CullNonExistingItemsFromSelection()
+        {
+            for (int i = state.selectedIDs.Count - 1; i >= 0; i--)
+            {
+                if (TreeViewUtility.FindItem(state.selectedIDs[i], rootItem) == null)
+                    state.selectedIDs.RemoveAt(i);
+            }
         }
 
         void BuildPrefabOverridesPerObject(out Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap)
@@ -376,16 +385,6 @@ namespace UnityEditor
                     GUI.DrawTexture(rect, item.overlayIcon, ScaleMode.ScaleToFit);
                 }
             }
-
-            if (args.selected && state.selectedIDs.Count == 1 && item.id != m_LastShownPreviewWindowRowID)
-            {
-                DoPreviewPopup(item, args.rowRect);
-            }
-            // Ensure preview is shown when clicking on an already selected item (the preview might have been closed)
-            if (Event.current.type == EventType.MouseDown && args.rowRect.Contains(Event.current.mousePosition))
-            {
-                DoPreviewPopup(item, args.rowRect);
-            }
         }
 
         internal void ReloadOverridesDisplay()
@@ -397,13 +396,32 @@ namespace UnityEditor
             // before collecting overrides.
             Canvas.ForceUpdateCanvases();
 
-            base.Reload();
             if (m_Window != null)
                 m_Window.RefreshStatus();
         }
 
-        void DoPreviewPopup(PrefabOverridesTreeViewItem item, Rect rowRect)
+        protected override void SelectionChanged(IList<int> selectedIds)
         {
+            DoPreviewPopup();
+        }
+
+        protected override void SingleClickedItem(int id)
+        {
+            // Ensure preview is shown when clicking on an already selected item
+            // (the preview might have been closed).
+            DoPreviewPopup();
+        }
+
+        void DoPreviewPopup()
+        {
+            if (state.selectedIDs.Count != 1)
+            {
+                PopupWindowWithoutFocus.Hide();
+                return;
+            }
+
+            var item = FindItem(state.selectedIDs[0], rootItem) as PrefabOverridesTreeViewItem;
+
             if (item == null || item.obj == null)
                 return;
 
@@ -413,7 +431,11 @@ namespace UnityEditor
                     return;
             }
 
-            Rect buttonRect = rowRect;
+            int row = FindRowOfItem(item);
+            if (row == -1)
+                return;
+
+            Rect buttonRect = GetRowRect(row);
             buttonRect.width = EditorGUIUtility.currentViewWidth;
             Object rowObject = item.obj;
 
@@ -452,6 +474,14 @@ namespace UnityEditor
         {
             public Object target { get; set; }
             public string propertyPath { get; set; }
+        }
+
+        public PrefabOverride FindOverride(int itemId)
+        {
+            var item = FindItem(itemId, rootItem) as PrefabOverridesTreeViewItem;
+            if (item == null)
+                return null;
+            return item.singleModification;
         }
 
         class IdSequence

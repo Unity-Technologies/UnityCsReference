@@ -1588,7 +1588,6 @@ namespace UnityEditor.TextCore
                 if (secondGlyph.ToString().Contains(searchPattern))
                 {
                     searchResults.Add(i);
-                    continue;
                 }
 
                 //if (secondGlyph.ToString("x").Contains(searchPattern))

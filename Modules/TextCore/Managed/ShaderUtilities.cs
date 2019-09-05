@@ -256,10 +256,7 @@ namespace UnityEngine.TextCore
             if (material == null || !material.HasProperty(ID_ClipRect))
                 return false;
 
-            if (material.shaderKeywords.Contains(Keyword_MASK_SOFT) || material.shaderKeywords.Contains(Keyword_MASK_HARD) || material.shaderKeywords.Contains(Keyword_MASK_TEX))
-                return true;
-
-            return false;
+            return material.shaderKeywords.Contains(Keyword_MASK_SOFT) || material.shaderKeywords.Contains(Keyword_MASK_HARD) || material.shaderKeywords.Contains(Keyword_MASK_TEX);
         }
 
         // Function to determine how much extra padding is required as a result of material properties like dilate, outline thickness, softness, glow, etc...

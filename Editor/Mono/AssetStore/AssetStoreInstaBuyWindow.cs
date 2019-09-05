@@ -29,7 +29,7 @@ namespace UnityEditor
             StartBuild,
             Building,
             Downloading
-        };
+        }
 
         // Open the dialog to allow the user to purchase the asset
         static public AssetStoreInstaBuyWindow ShowAssetStoreInstaBuyWindow(AssetStoreAsset asset, string purchaseMessage, string paymentMethodCard, string paymentMethodExpire, string priceText)
@@ -184,8 +184,8 @@ namespace UnityEditor
             GUILayout.Label(s_AssetStoreLogo, GUIStyle.none, GUILayout.ExpandWidth(false));
             GUILayout.BeginVertical();
             GUILayout.Label("Complete purchase by entering your AssetStore password", EditorStyles.boldLabel);
-            bool hasMessage = m_PurchaseMessage != null && m_PurchaseMessage != "";
-            bool hasErrorMessage = m_Message != null && m_Message != "";
+            bool hasMessage = !string.IsNullOrEmpty(m_PurchaseMessage);
+            bool hasErrorMessage = !string.IsNullOrEmpty(m_Message);
             float newHeight = kStandardHeight + (hasMessage ? 20 : 0) + (hasErrorMessage ? 20 : 0);
             if (newHeight != position.height)
                 position = new Rect(position.x, position.y, position.width, newHeight);
@@ -247,7 +247,7 @@ namespace UnityEditor
             GUILayout.Label("Purchase completed succesfully", EditorStyles.boldLabel);
             GUILayout.Label("You will receive a receipt in your email soon.");
 
-            bool hasMessage = m_Message != null && m_Message != "";
+            bool hasMessage = !string.IsNullOrEmpty(m_Message);
             float newHeight = kStandardHeight + (hasMessage ? 20 : 0);
             if (newHeight != position.height)
                 position = new Rect(position.x, position.y, position.width, newHeight);
@@ -300,7 +300,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
             {
                 Rect r = GUILayoutUtility.GetLastRect();
-                r.height += 1;
+                r.height += 4;
                 bool downloading = item.downloadProgress >= 0;
                 EditorGUI.ProgressBar(r,
                     downloading ? item.downloadProgress : item.buildProgress,
@@ -333,7 +333,7 @@ namespace UnityEditor
             GUILayout.Label("Purchase declined", EditorStyles.boldLabel);
             GUILayout.Label("No money has been drawn from you credit card");
 
-            bool hasMessage = m_Message != null && m_Message != "";
+            bool hasMessage = !string.IsNullOrEmpty(m_Message);
             float newHeight = kStandardHeight + (hasMessage ? 20 : 0);
             if (newHeight != position.height)
                 position = new Rect(position.x, position.y, position.width, newHeight);
@@ -463,7 +463,7 @@ namespace UnityEditor
                 }
 
                 string url = result.asset.previewInfo.packageUrl;
-                if (url != null && url != "")
+                if (!string.IsNullOrEmpty(url))
                 {
                     DownloadPackage();
                 }

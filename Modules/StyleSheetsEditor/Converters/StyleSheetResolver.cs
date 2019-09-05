@@ -814,6 +814,10 @@ namespace UnityEditor.StyleSheets
                         }
 
                         break;
+
+                    case StyleValueType.AssetReference:
+                        helper.builder.AddValue(value.AsAssetReference());
+                        break;
                     default:
                         throw new Exception("Unhandled value type: " + value.ValueType);
                 }

@@ -421,7 +421,7 @@ namespace UnityEditor
             if (objectNames.Length == 0)
                 return;
 
-            string countString = counts.Length > 0 ? (SumCounts(counts).ToString() + " tris, ") : "";
+            string countString = counts.Length > 0 ? (SumCounts(counts) + " tris, ") : "";
             string sizeString = SizeString(SumSizes(sizes));
             string foldoutNameFull = foldoutName + " (" + countString + sizeString + ")";
             bool showDetailsOld = EditorPrefs.GetBool(editorPrefsName, false);

@@ -623,9 +623,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_WorldClipMinusGroup = m_WorldClip = panel != null ?
-                    panel.visualTree.rect :
-                    panel.contextType == ContextType.Player ? s_InfiniteRect : GUIClip.topmostRect;
+                m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;
             }
 
             if (ShouldClip() && computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
@@ -1071,7 +1069,7 @@ namespace UnityEngine.UIElements
                 return new T();
             }
 
-            string keyWithType = key + "__" + typeof(T).ToString();
+            string keyWithType = key + "__" + typeof(T);
 
             if (!viewData.ContainsKey(keyWithType))
                 viewData.Set(keyWithType, new T());
@@ -1095,7 +1093,7 @@ namespace UnityEngine.UIElements
                 return ScriptableObject.CreateInstance<T>();
             }
 
-            string keyWithType = key + "__" + typeof(T).ToString();
+            string keyWithType = key + "__" + typeof(T);
 
             if (!viewData.ContainsKey(keyWithType))
                 viewData.Set(keyWithType, ScriptableObject.CreateInstance<T>());

@@ -46,7 +46,7 @@ namespace UnityEditor
             public GUIContent farClipPlane = EditorGUIUtility.TrTextContent("Far Clip Plane", "Far Clip Plane used during baking. This should match the largest far clip plane used by any camera in the scene. A value of 0.0 sets the far plane to Infinity.");
             public GUIContent smallestOccluder = EditorGUIUtility.TrTextContent("Smallest Occluder", "The size of the smallest object that will be used to hide other objects when doing occlusion culling. For example, if a value of 4 is chosen, then all the objects that are higher or wider than 4 meters will block visibility and the objects that are smaller than that will not. This value is a tradeoff between occlusion accuracy and storage size.");
             public GUIContent defaultParameterText = EditorGUIUtility.TrTextContent("Default Parameters", "The default parameters guarantee that any given scene computes fast and the occlusion culling results are good. As the parameters are always scene specific, better results will be achieved when fine tuning the parameters on a scene to scene basis. All the parameters are dependent on the unit scale of the scene and it is imperative that the unit scale parameter is set correctly before setting the default values.");
-        };
+        }
 
         enum Mode
         {

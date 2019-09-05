@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
+
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,11 +14,42 @@ using uei = UnityEngine.Internal;
 
 namespace UnityEditor.Experimental
 {
+    public enum OnDemandState
+    {
+        Unavailable = 0,
+        Processing = 1,
+        Downloading = 2,
+        Available = 3
+    }
+
+    [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseTypes.h")]
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct OnDemandProgress
+    {
+        public OnDemandState state;
+        public float progress;
+    }
+
     [NativeHeader("Modules/AssetDatabase/Editor/V2/AssetDatabaseCounters.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/V2/V1Compatibility.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseExperimental.h")]
     public sealed partial class AssetDatabaseExperimental
     {
+        public enum OnDemandMode
+        {
+            Off = 0,
+            Lazy = 1,
+            Background = 2
+        }
+
+        public enum ImportSyncMode
+        {
+            Block = 0,
+            Queue = 1,
+            Poll = 2
+        }
+
         public struct AssetDatabaseCounters
         {
             public struct Counter
@@ -85,16 +118,22 @@ namespace UnityEditor.Experimental
         [FreeFunction("ImportCountersResetDeltas")]
         private extern static void ImportCountersResetDeltas();
 
-        private extern static Hash128 GetArtifactHash_Internal_Guid_SelectImporter(string guid);
-        private extern static Hash128 GetArtifactHash_Internal_Guid(string guid, Type importerType);
+        public extern static OnDemandMode ActiveOnDemandMode
+        {
+            [FreeFunction("GetOnDemandModeV2")] get;
+            [FreeFunction("SetOnDemandModeV2")] set;
+        }
+        private extern static Hash128 GetArtifactHash_Internal_Guid_SelectImporter(string guid, ImportSyncMode mode);
+        private extern static Hash128 GetArtifactHash_Internal_Guid(string guid, Type importerType, ImportSyncMode mode);
+        private extern static Hash128[] GetArtifactHashes_Internal_Guids_SelectImporter(string[] guid, ImportSyncMode mode);
 
-        [uei.ExcludeFromDocs] public static Hash128 GetArtifactHash(string guid) { return GetArtifactHash(guid, null); }
-        public static Hash128 GetArtifactHash(string guid, [uei.DefaultValue("null")] Type importerType)
+        [uei.ExcludeFromDocs] public static Hash128 GetArtifactHash(string guid, ImportSyncMode mode = ImportSyncMode.Block) { return GetArtifactHash(guid, null, mode); }
+        public static Hash128 GetArtifactHash(string guid, [uei.DefaultValue("null")] Type importerType, ImportSyncMode mode = ImportSyncMode.Block)
         {
             if (importerType == null)
-                return GetArtifactHash_Internal_Guid_SelectImporter(guid);
+                return GetArtifactHash_Internal_Guid_SelectImporter(guid, mode);
             else
-                return GetArtifactHash_Internal_Guid(guid, importerType);
+                return GetArtifactHash_Internal_Guid(guid, importerType, mode);
         }
 
         public static bool GetArtifactPaths(Hash128 hash, out string[] paths)
@@ -105,7 +144,25 @@ namespace UnityEditor.Experimental
             return success;
         }
 
+        public static Hash128[] GetArtifactHashes(string[] guids, ImportSyncMode mode = ImportSyncMode.Block)
+        {
+            return GetArtifactHashes_Internal_Guids_SelectImporter(guids, mode);
+        }
+
         extern private static string[] GetArtifactPathsImpl(Hash128 hash, out bool success);
+
+        private extern static OnDemandProgress GetOnDemandArtifactProgress_Internal_SelectImporter(string guid);
+        private extern static OnDemandProgress GetOnDemandArtifactProgress_Internal(string guid, Type importerType);
+
+        public static OnDemandProgress GetOnDemandArtifactProgress(string guid)
+        {
+            return GetOnDemandArtifactProgress_Internal_SelectImporter(guid);
+        }
+
+        public static OnDemandProgress GetOnDemandArtifactProgress(string guid, Type importerType)
+        {
+            return GetOnDemandArtifactProgress_Internal(guid, importerType);
+        }
 
         [RequiredByNativeCode]
         static string[] OnSourceAssetsModified(string[] changedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)

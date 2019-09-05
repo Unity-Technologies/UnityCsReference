@@ -253,6 +253,8 @@ namespace UnityEditor.Experimental.GraphView
         static void RegisterAll()
         {
             VisualElementFactoryRegistry.RegisterFactory(new Pill.UxmlFactory());
+            VisualElementFactoryRegistry.RegisterFactory(new ResizableElement.UxmlFactory());
+            VisualElementFactoryRegistry.RegisterFactory(new StickyNote.UxmlFactory());
         }
     }
 }

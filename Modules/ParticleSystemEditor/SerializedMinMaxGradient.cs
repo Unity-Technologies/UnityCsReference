@@ -15,7 +15,7 @@ namespace UnityEditor
         k_RandomBetweenTwoColors = 2,
         k_RandomBetweenTwoGradients = 3,
         k_RandomColor = 4
-    };
+    }
 
     internal class SerializedMinMaxGradient
     {

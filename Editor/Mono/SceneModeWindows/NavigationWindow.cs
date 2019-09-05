@@ -95,7 +95,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Bake", "Navmesh bake settings."),
                 EditorGUIUtility.TrTextContent("Object", "Bake settings for the currently selected object."),
             };
-        };
+        }
 
         [MenuItem("Window/AI/Navigation", false, 1)]
         public static void SetupWindow()
@@ -454,7 +454,7 @@ namespace UnityEditor
         static void RepaintSceneAndGameViews()
         {
             SceneView.RepaintAll();
-            PreviewEditorWindow.RepaintAll();
+            PlayModeView.RepaintAll();
         }
 
         public void OnSceneViewGUI(SceneView sceneView)

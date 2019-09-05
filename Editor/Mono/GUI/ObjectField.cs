@@ -86,6 +86,41 @@ namespace UnityEditor
             }
         }
 
+        static bool HasValidScript(UnityEngine.Object obj)
+        {
+            MonoScript script = MonoScript.FromScriptedObject(obj);
+            if (script == null)
+            {
+                return false;
+            }
+            Type type = script.GetClass();
+            if (type == null)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        static bool ValidDroppedObject(Object[] references, System.Type objType, SerializedProperty property, out string errorString)
+        {
+            errorString = "";
+            if (references == null || references.Length == 0)
+            {
+                return true;
+            }
+
+            var reference = references[0];
+            Object obj = EditorUtility.InstanceIDToObject(reference.GetInstanceID());
+            if (obj is MonoBehaviour || obj is ScriptableObject)
+            {
+                if (!HasValidScript(obj))
+                {
+                    errorString = $"Type cannot be found: {reference.GetType()}. Containing file and class name must match.";
+                }
+            }
+            return true;
+        }
+
         internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
         {
             if (validator == null)
@@ -121,6 +156,17 @@ namespace UnityEditor
                     break;
                 case EventType.DragUpdated:
                 case EventType.DragPerform:
+
+                    if (eventType == EventType.DragPerform)
+                    {
+                        string errorString;
+                        if (!ValidDroppedObject(DragAndDrop.objectReferences, objType, property, out errorString))
+                        {
+                            Object reference = DragAndDrop.objectReferences[0];
+                            EditorUtility.DisplayDialog("Can't assign script", errorString, "OK");
+                            break;
+                        }
+                    }
 
                     if (dropRect.Contains(Event.current.mousePosition) && GUI.enabled)
                     {

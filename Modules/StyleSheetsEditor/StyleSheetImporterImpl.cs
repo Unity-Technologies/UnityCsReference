@@ -170,7 +170,7 @@ namespace UnityEditor.StyleSheets
                     string varName = variableTerm?.Value as string;
                     if (string.IsNullOrEmpty(varName))
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, $"Variable name is missing");
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, "Variable name is missing");
                         return false;
                     }
                     else if (!varName.StartsWith("--"))
@@ -212,7 +212,7 @@ namespace UnityEditor.StyleSheets
                     }
 
                     if (arg.GetType() != typeof(Whitespace))
-                        msg = $"{msg} got {arg.ToString()}";
+                        msg = $"{msg} got {arg}";
 
                     m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, msg);
                     return false;

@@ -378,7 +378,7 @@ namespace UnityEditor.Scripting.Compilers
         //do not change the returntype, native unity depends on this one.
         public virtual CompilerMessage[] GetCompilerMessages()
         {
-            if (!Poll())
+            if (process != null && !process.HasExited)
                 Debug.LogWarning("Compile process is not finished yet. This should not happen.");
 
             if (process == null)

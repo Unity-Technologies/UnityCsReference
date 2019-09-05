@@ -45,7 +45,7 @@ namespace UnityEditor.Audio
 
             prefix += "  ";
             foreach (var f in effects)
-                Console.WriteLine(prefix + "effect=" + f.ToString());
+                Console.WriteLine(prefix + "effect=" + f);
 
             foreach (var g in children)
                 g.DumpHierarchy("", level + 1);

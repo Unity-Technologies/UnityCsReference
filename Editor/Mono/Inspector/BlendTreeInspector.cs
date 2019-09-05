@@ -505,7 +505,6 @@ namespace UnityEditor
                         GUIUtility.hotControl = id;
                         GUIUtility.keyboardControl = id;
                         EditorGUIUtility.editingTextField = false;
-                        break;
                     }
                     break;
                 case EventType.MouseDrag:
@@ -620,7 +619,7 @@ namespace UnityEditor
                             // draw the animation triangle
                             float last = (i == 0) ? points[i] : points[i - 1];
                             float next = (i == points.Length - 1) ? points[i] : points[i + 1];
-                            bool drawSelected = (m_ReorderableList.index == i) ? true : false;
+                            bool drawSelected = (m_ReorderableList.index == i);
                             DrawAnimation(points[i], last, next, drawSelected, area);
                         }
                         Color oldColor = Handles.color;
@@ -988,7 +987,7 @@ namespace UnityEditor
                     for (int i = 0; i < points.Length; i++)
                     {
                         Rect pointRect = new Rect(points[i].x - 6, points[i].y - 6, 13, 13);
-                        bool drawSelected = (m_ReorderableList.index == i) ? true : false;
+                        bool drawSelected = (m_ReorderableList.index == i);
 
                         if (presences[i] < 0)
                             GUI.color = styles.visPointEmptyColor;

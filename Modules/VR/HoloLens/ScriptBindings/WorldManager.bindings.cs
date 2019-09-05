@@ -20,7 +20,7 @@ namespace UnityEngine.XR.WSA
         Activating = 2,
         Active = 3,
         Inhibited = 4
-    };
+    }
 
     // Augmented Reality specific world methods
     // exposes information about the real world

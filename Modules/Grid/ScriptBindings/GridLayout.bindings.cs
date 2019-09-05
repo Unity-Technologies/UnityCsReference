@@ -30,7 +30,7 @@ namespace UnityEngine
             YZX = 3,
             ZXY = 4,
             ZYX = 5
-        };
+        }
 
         public extern Vector3 cellSize
         {

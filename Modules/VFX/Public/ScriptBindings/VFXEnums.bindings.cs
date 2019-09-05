@@ -16,7 +16,7 @@ namespace UnityEngine.VFX
         CullSimulation = 1 << 0,
         CullBoundsUpdate = 1 << 1,
         CullDefault = CullSimulation | CullBoundsUpdate,
-    };
+    }
 
     internal enum VFXExpressionOperation
     {
@@ -216,7 +216,7 @@ namespace UnityEngine.VFX
         VariableRateSpawner         = Spawner | 3,
         CustomCallbackSpawner       = Spawner | 4,
         SetAttributeSpawner         = Spawner | 5,
-    };
+    }
 
     internal enum VFXSystemType
     {

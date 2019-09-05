@@ -11,103 +11,85 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageStatusBar> {}
 
-        private static readonly string k_OfflineErrorMessage = "You seem to be offline";
+        internal static readonly string k_OfflineErrorMessage = "You seem to be offline";
 
-        private string[] m_LastErrorMessages;
-
-        private enum StatusType { Normal, Loading, Error };
+        private enum StatusType { Normal, Loading, Error }
 
         public PackageStatusBar()
         {
             var root = Resources.GetTemplate("PackageStatusBar.uxml");
             Add(root);
             cache = new VisualElementCache(root);
-
-            m_LastErrorMessages = new string[Enum.GetNames(typeof(PackageFilterTab)).Length];
         }
 
         public void OnEnable()
         {
-            UpdateStatusMessage(PackageFiltering.instance.currentFilterTab);
+            UpdateStatusMessage();
 
-            PackageDatabase.instance.onUpdateTimeChange += SetUpdateTimestamp;
+            PageManager.instance.onRefreshOperationStart += UpdateStatusMessage;
+            PageManager.instance.onRefreshOperationFinish += UpdateStatusMessage;
+            PageManager.instance.onRefreshOperationError += OnRefreshOperationError;
 
-            PackageDatabase.instance.onRefreshOperationStart += () =>
-            {
-                if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
-                    SetStatusMessage(StatusType.Loading, L10n.Tr("Fetching packages..."));
-                else
-                    SetStatusMessage(StatusType.Loading, L10n.Tr("Loading packages..."));
-            };
-            PackageDatabase.instance.onRefreshOperationFinish += UpdateStatusMessage;
-            PackageDatabase.instance.onRefreshOperationError += error =>
-            {
-                var errorMessage = string.Empty;
-                if (error != null)
-                {
-                    errorMessage = PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore ? L10n.Tr("Error fetching packages, see console") : L10n.Tr("Error loading packages, see console");
-                }
-
-                m_LastErrorMessages[(int)PackageFiltering.instance.currentFilterTab] = errorMessage;
-                UpdateStatusMessage(PackageFiltering.instance.currentFilterTab);
-            };
-
-            PackageFiltering.instance.onFilterTabChanged += UpdateStatusMessage;
-
+            PackageFiltering.instance.onFilterTabChanged += OnFilterTabChanged;
             ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             refreshButton.clickable.clicked += () =>
             {
                 if (!EditorApplication.isPlaying)
-                    PageManager.instance.Refresh(RefreshOptions.CurrentFilter);
+                    PageManager.instance.Refresh();
             };
         }
 
         public void OnDisable()
         {
-            PackageDatabase.instance.onUpdateTimeChange -= SetUpdateTimestamp;
-            PackageDatabase.instance.onRefreshOperationFinish -= UpdateStatusMessage;
-            PackageFiltering.instance.onFilterTabChanged -= UpdateStatusMessage;
+            PageManager.instance.onRefreshOperationStart -= UpdateStatusMessage;
+            PageManager.instance.onRefreshOperationFinish -= UpdateStatusMessage;
+            PageManager.instance.onRefreshOperationError -= OnRefreshOperationError;
+
+            PackageFiltering.instance.onFilterTabChanged -= OnFilterTabChanged;
             ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
         }
 
         private void OnInternetReachabilityChange(bool value)
         {
-            UpdateStatusMessage(PackageFiltering.instance.currentFilterTab);
-            if (value && !EditorApplication.isPlaying)
-                PageManager.instance.Refresh(PackageFiltering.instance.currentFilterTab);
+            UpdateStatusMessage();
         }
 
-        private static string GetUpdateTimeLabel(long timestamp)
+        private void OnFilterTabChanged(PackageFilterTab tab)
         {
-            return $"{new DateTime(timestamp):MMM d, HH:mm}";
+            UpdateStatusMessage();
         }
 
-        private void SetUpdateTimestamp(long lastUpdateTimestamp)
+        private void OnRefreshOperationError(Error error)
         {
-            // Only refresh update time after a search operation successfully returns while online
-            if (ApplicationUtil.instance.isInternetReachable && lastUpdateTimestamp != 0)
-                SetUpdateTimeLabel(GetUpdateTimeLabel(lastUpdateTimestamp));
+            UpdateStatusMessage();
         }
 
-        private void SetUpdateTimeLabel(string lastUpdateTime)
+        private void UpdateStatusMessage()
         {
-            if (!string.IsNullOrEmpty(lastUpdateTime))
-                SetStatusMessage(StatusType.Normal, "Last update " + lastUpdateTime);
-            else
-                SetStatusMessage(StatusType.Normal, string.Empty);
-        }
+            var tab = PackageFiltering.instance.currentFilterTab;
 
-        private void UpdateStatusMessage(PackageFilterTab tab)
-        {
-            var errorMessage = m_LastErrorMessages[(int)tab];
+            if (PageManager.instance.IsRefreshInProgress(tab))
+            {
+                SetStatusMessage(StatusType.Loading, L10n.Tr("Refreshing packages..."));
+                return;
+            }
+
+            var errorMessage = string.Empty;
             if (!ApplicationUtil.instance.isInternetReachable)
                 errorMessage = L10n.Tr(k_OfflineErrorMessage);
+            else if (PageManager.instance.GetRefreshError(tab) != null)
+                errorMessage = L10n.Tr("Error refreshing packages, see console");
 
             if (!string.IsNullOrEmpty(errorMessage))
+            {
                 SetStatusMessage(StatusType.Error, errorMessage);
-            else
-                SetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp != 0 ? GetUpdateTimeLabel(PackageDatabase.instance.lastUpdateTimestamp) : string.Empty);
+                return;
+            }
+
+            var timestamp = PageManager.instance.GetRefreshTimestamp(tab);
+            var label = timestamp == 0L ? string.Empty : L10n.Tr($"Last update {new DateTime(timestamp):MMM d, HH:mm}");
+            SetStatusMessage(StatusType.Normal, label);
         }
 
         private void SetStatusMessage(StatusType status, string message)

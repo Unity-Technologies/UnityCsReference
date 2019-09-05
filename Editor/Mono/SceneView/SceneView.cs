@@ -472,10 +472,11 @@ namespace UnityEditor
         public class CameraSettings
         {
             const float defaultEasingDuration = .4f;
-            const float kAbsoluteSpeedMin = .01f;
+            const float kAbsoluteSpeedMin = .001f;
             const float kAbsoluteSpeedMax = 99f;
             const float kAbsoluteEasingDurationMin = .1f;
             const float kAbsoluteEasingDurationMax = 2f;
+            const float kMinSpeedMinMaxRange = .001f;
 
             [SerializeField]
             float m_Speed;
@@ -507,7 +508,7 @@ namespace UnityEditor
             {
                 m_Speed = 1f;
                 m_SpeedNormalized = .5f;
-                m_SpeedMin = .01f;
+                m_SpeedMin = kAbsoluteSpeedMin;
                 m_SpeedMax = 2f;
                 m_EasingEnabled = true;
                 m_EasingDuration = defaultEasingDuration;
@@ -540,10 +541,7 @@ namespace UnityEditor
                 set
                 {
                     m_SpeedNormalized = Mathf.Clamp01(value);
-                    float speed = Mathf.Lerp(m_SpeedMin, m_SpeedMax, m_SpeedNormalized);
-                    // Round to nearest decimal: 2 decimal points when between [0.01, 0.1]; 1 decimal point when between [0.1, 10]; integral between [10, 99]
-                    speed = (float)(System.Math.Round((double)speed, speed < 0.1f ? 2 : speed < 10f ? 1 : 0));
-                    m_Speed = Mathf.Clamp(speed, m_SpeedMin, m_SpeedMax);
+                    m_Speed = Mathf.Lerp(m_SpeedMin, m_SpeedMax, m_SpeedNormalized);
                 }
             }
 
@@ -592,7 +590,7 @@ namespace UnityEditor
                 set
                 {
                     // Clamp and round to 1 decimal point
-                    m_EasingDuration = (float)(Math.Round((double)Mathf.Clamp(value, kAbsoluteEasingDurationMin, kAbsoluteEasingDurationMax), 1));
+                    m_EasingDuration = (float)Math.Round(Mathf.Clamp(value, kAbsoluteEasingDurationMin, kAbsoluteEasingDurationMax), 1);
                 }
             }
 
@@ -604,24 +602,25 @@ namespace UnityEditor
                 set { m_AccelerationEnabled = value; }
             }
 
+            // this ensures that the resolution the slider snaps to is sufficient given the minimum speed, and the
+            // range of appropriate values
+            internal float RoundSpeedToNearestSignificantDecimal(float value)
+            {
+                float rng = speedMax - speedMin;
+                int min_rnd = speedMin < .01f ? 3 : speedMin < .1f ? 2 : speedMin < 1f ? 1 : 0;
+                int rng_rnd = rng < 1f ? 2 : rng < 10f ? 1 : 0;
+                return (float)Math.Round(value, Mathf.Max(min_rnd, rng_rnd));
+            }
+
             internal void SetSpeedMinMax(float[] floatValues)
             {
-                // Round to nearest decimal: 2 decimal points when between [0.01, 0.1]; 1 decimal point when between [0.1, 10]; integral between [10, 99]
-                floatValues[0] = (float)(Math.Round((double)floatValues[0], floatValues[0] < 0.1f ? 2 : floatValues[0] < 10f ? 1 : 0));
-                floatValues[1] = (float)(Math.Round((double)floatValues[1], floatValues[1] < 0.1f ? 2 : floatValues[1] < 10f ? 1 : 0));
+                // Clamp min to valid ranges
+                float min = Mathf.Clamp(floatValues[0], kAbsoluteSpeedMin, kAbsoluteSpeedMax - kMinSpeedMinMaxRange);
+                float minRange = min < .1f ? .01f : min < 1f ? .1f : 1f;
+                float max = Mathf.Clamp(floatValues[1], min + minRange, kAbsoluteSpeedMax);
 
-                floatValues[0] = Mathf.Clamp(floatValues[0], kAbsoluteSpeedMin, kAbsoluteSpeedMax - 1f);
-
-                bool floatsAreEqual = Mathf.Abs(floatValues[0] - floatValues[1]) < Mathf.Epsilon;
-
-                // Ensure there is at least a range of 1
-                if (floatsAreEqual || floatValues[0] > floatValues[1])
-                    floatValues[1] = floatValues[0] + 1f;
-
-                floatValues[1] = Mathf.Clamp(floatValues[1], kAbsoluteSpeedMin + 0.01f, kAbsoluteSpeedMax);
-
-                m_SpeedMin = floatValues[0];
-                m_SpeedMax = floatValues[1];
+                m_SpeedMin = min;
+                m_SpeedMax = max;
 
                 // This will clamp the speed to the new range
                 speed = m_Speed;
@@ -916,10 +915,10 @@ namespace UnityEditor
         internal void OnLostFocus()
         {
             // don't bleed our scene view rendering into game view
-            var previewWindow = PreviewEditorWindow.GetMainPreviewWindow();
-            if (previewWindow && previewWindow.m_Parent != null && m_Parent != null && previewWindow.m_Parent == m_Parent)
+            var playModeView = PlayModeView.GetMainPlayModeView();
+            if (playModeView && playModeView.m_Parent != null && m_Parent != null && playModeView.m_Parent == m_Parent)
             {
-                previewWindow.m_Parent.backgroundValid = false;
+                playModeView.m_Parent.backgroundValid = false;
             }
 
             if (s_LastActiveSceneView == this)
@@ -3655,9 +3654,9 @@ namespace UnityEditor
         internal static void ShowSceneViewPlayModeSaveWarning()
         {
             // In this case, we want to explicitly try the GameView before passing it on to whatever notificationView we have
-            var preview = (PreviewEditorWindow)WindowLayout.FindEditorWindowOfType(typeof(PreviewEditorWindow));
-            if (preview != null && preview.hasFocus)
-                preview.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
+            var playModeView = (PlayModeView)WindowLayout.FindEditorWindowOfType(typeof(PlayModeView));
+            if (playModeView != null && playModeView.hasFocus)
+                playModeView.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
             else
                 ShowNotification("You must exit play mode to save the scene!");
         }

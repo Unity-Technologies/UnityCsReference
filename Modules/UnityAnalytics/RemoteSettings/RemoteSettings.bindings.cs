@@ -283,7 +283,7 @@ namespace UnityEngine
             kMixedArrayVal,
             kMapVal,
             kMaxTags
-        };
+        }
 
         internal extern static IntPtr GetSafeMap(IntPtr m, string key);
         internal extern static string[] GetSafeMapKeys(IntPtr m);

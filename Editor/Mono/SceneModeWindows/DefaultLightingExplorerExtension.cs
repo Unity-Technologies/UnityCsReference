@@ -62,7 +62,7 @@ namespace UnityEditor
 
         protected virtual UnityEngine.Object[] GetLights()
         {
-            return UnityEngine.Object.FindObjectsOfType<Light>();
+            return Resources.FindObjectsOfTypeAll<Light>();
         }
 
         protected virtual LightingExplorerTableColumn[] GetLightColumns()
@@ -161,7 +161,7 @@ namespace UnityEditor
 
         protected virtual UnityEngine.Object[] GetReflectionProbes()
         {
-            return UnityEngine.Object.FindObjectsOfType<ReflectionProbe>();
+            return Resources.FindObjectsOfTypeAll<ReflectionProbe>();
         }
 
         protected virtual LightingExplorerTableColumn[] GetReflectionProbeColumns()
@@ -188,7 +188,7 @@ namespace UnityEditor
 
         protected virtual UnityEngine.Object[] GetLightProbes()
         {
-            return UnityEngine.Object.FindObjectsOfType<LightProbeGroup>();
+            return Resources.FindObjectsOfTypeAll<LightProbeGroup>();
         }
 
         protected virtual LightingExplorerTableColumn[] GetLightProbeColumns()
@@ -202,7 +202,7 @@ namespace UnityEditor
 
         protected virtual UnityEngine.Object[] GetEmissives()
         {
-            return Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
+            return Resources.FindObjectsOfTypeAll<MeshRenderer>().Where((MeshRenderer mr) => {
                 return (GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.ContributeGI));
             }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                     return m != null && ((m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0) && m.HasProperty("_EmissionColor");

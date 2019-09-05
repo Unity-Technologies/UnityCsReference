@@ -117,7 +117,7 @@ namespace UnityEditor
 				TRUE,
 				FALSE,
 				NULL
-			};
+			}
 
 			StringReader json;
 

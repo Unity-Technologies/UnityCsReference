@@ -851,7 +851,7 @@ namespace UnityEngine
         {
             Fixed,
             FitToContents
-        };
+        }
 
         public static int Toolbar(Rect position, int selected, string[] texts)
         {
@@ -1534,23 +1534,94 @@ namespace UnityEngine
 
             scrollViewStates.Pop();
 
+            bool needApply = false;
+
+            float deltaTime = Time.realtimeSinceStartup - state.previousTimeSinceStartup;
+            state.previousTimeSinceStartup = Time.realtimeSinceStartup;
+            // If touch scroll, then handle inertia
+            if (Event.current.type == EventType.Repaint && state.velocity != Vector2.zero)
+            {
+                for (int axis = 0; axis < 2; axis++)
+                {
+                    state.velocity[axis] *= Mathf.Pow(0.1f, deltaTime); // Decrease in a timely fashion (~/10 per second)
+                    float velocityToSubstract = 0.1f / deltaTime;
+                    if (Mathf.Abs(state.velocity[axis]) < velocityToSubstract)
+                        state.velocity[axis] = 0;
+                    else
+                    {
+                        state.velocity[axis] += state.velocity[axis] < 0 ? velocityToSubstract : -velocityToSubstract; // Substract directly to stop it faster on low velocity
+                        state.scrollPosition[axis] += state.velocity[axis] * deltaTime;
+
+                        needApply = true;
+                        // Reset the scrolling start info so that dragging works fine after inertia
+                        state.touchScrollStartMousePosition = Event.current.mousePosition;
+                        state.touchScrollStartPosition = state.scrollPosition;
+                    }
+                }
+
+                if (state.velocity != Vector2.zero)
+                    InternalRepaintEditorWindow(); // Repaint to smooth the scroll
+            }
+
             // This is the mac way of handling things: if the mouse is over a scrollview, the scrollview gets the event.
-            if (handleScrollWheel && Event.current.type == EventType.ScrollWheel && state.position.Contains(Event.current.mousePosition)
+            if (handleScrollWheel &&
+                (Event.current.type == EventType.ScrollWheel
+                 || Event.current.type == EventType.TouchDown
+                 || Event.current.type == EventType.TouchUp
+                 || Event.current.type == EventType.TouchMove)
                 // avoid eating scroll events if a scroll view is not necessary
-                && ((state.viewRect.width > state.visibleRect.width && !Mathf.Approximately(0f, Event.current.delta.x))
-                    || (state.viewRect.height > state.visibleRect.height && !Mathf.Approximately(0f, Event.current.delta.y)))
+                && (state.viewRect.width > state.visibleRect.width || state.viewRect.height > state.visibleRect.height)
             )
             {
-                state.scrollPosition.x = Mathf.Clamp(state.scrollPosition.x + (Event.current.delta.x * 20f), 0f, state.viewRect.width - state.visibleRect.width);
-                state.scrollPosition.y = Mathf.Clamp(state.scrollPosition.y + (Event.current.delta.y * 20f), 0f, state.viewRect.height - state.visibleRect.height);
+                // Using scrollwheel
+                if (Event.current.type == EventType.ScrollWheel
+                    // avoid eating scroll events if a scroll view is not necessary
+                    && ((state.viewRect.width > state.visibleRect.width && !Mathf.Approximately(0f, Event.current.delta.x))
+                        || (state.viewRect.height > state.visibleRect.height && !Mathf.Approximately(0f, Event.current.delta.y)))
+                    && state.position.Contains(Event.current.mousePosition)
+                )
+                {
+                    state.scrollPosition.x = Mathf.Clamp(state.scrollPosition.x + (Event.current.delta.x * 20f), 0f, state.viewRect.width - state.visibleRect.width);
+                    state.scrollPosition.y = Mathf.Clamp(state.scrollPosition.y + (Event.current.delta.y * 20f), 0f, state.viewRect.height - state.visibleRect.height);
+                    Event.current.Use();
 
+                    needApply = true;
+                }
+                // Using touch
+                else if (Event.current.type == EventType.TouchDown && (Event.current.modifiers & EventModifiers.Alt) == EventModifiers.Alt && state.position.Contains(Event.current.mousePosition))
+                {
+                    state.isDuringTouchScroll = true;
+                    state.touchScrollStartMousePosition = Event.current.mousePosition;
+                    state.touchScrollStartPosition = state.scrollPosition;
+
+                    GUIUtility.hotControl = GUIUtility.GetControlID(s_ScrollviewHash, FocusType.Passive, state.position);;
+                    Event.current.Use();
+                }
+                else if (state.isDuringTouchScroll && Event.current.type == EventType.TouchUp)
+                    state.isDuringTouchScroll = false;
+                else if (state.isDuringTouchScroll && Event.current.type == EventType.TouchMove)
+                {
+                    Vector2 previousPosition = state.scrollPosition;
+
+                    state.scrollPosition.x = Mathf.Clamp(state.touchScrollStartPosition.x - (Event.current.mousePosition.x - state.touchScrollStartMousePosition.x), 0f, state.viewRect.width - state.visibleRect.width);
+                    state.scrollPosition.y = Mathf.Clamp(state.touchScrollStartPosition.y - (Event.current.mousePosition.y - state.touchScrollStartMousePosition.y), 0f, state.viewRect.height - state.visibleRect.height);
+                    Event.current.Use();
+
+                    // Sets the new volicity
+                    Vector2 newVelocity = (state.scrollPosition - previousPosition) / deltaTime;
+                    state.velocity = Vector2.Lerp(state.velocity, newVelocity, deltaTime * 10);
+
+                    needApply = true;
+                }
+            }
+            if (needApply)
+            {
                 // If one of the visible rect dimensions is larger than the view rect dimensions
                 if (state.scrollPosition.x < 0f)
                     state.scrollPosition.x = 0f;
                 if (state.scrollPosition.y < 0f)
                     state.scrollPosition.y = 0f;
                 state.apply = true;
-                Event.current.Use();
             }
         }
 

@@ -83,6 +83,7 @@ namespace UnityEditor
         public static string currentId => currentIndex == -1 ? k_DefaultModeId : modes[currentIndex].id;
         public static int currentIndex { get; private set; }
         private static ModeEntry[] modes { get; set; } = new ModeEntry[0];
+        internal static bool hasSwitchableModes { get; private set; }
 
         public static event Action<ModeChangedArgs> modeChanged;
 
@@ -290,9 +291,41 @@ namespace UnityEditor
             EditorApplication.delayCall += () => RaiseModeChanged(-1, currentIndex);
         }
 
-        private static void ScanModes()
+        private static void FillModeData(string path, Dictionary<string, object> modesData)
+        {
+            try
+            {
+                var json = SJSON.Load(path);
+                foreach (var rawModeId in json.Keys)
+                {
+                    var modeId = ((string)rawModeId).ToLower();
+                    if (IsValidModeId(modeId))
+                    {
+                        object modeData = null;
+                        if (modesData.TryGetValue(modeId, out modeData))
+                            modesData[modeId] = JsonUtils.DeepMerge(modeData as JSONObject, json[modeId] as JSONObject);
+                        else
+                            modesData[modeId] = json[modeId];
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Invalid Mode Id: {modeId} contains non alphanumeric characters.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[ModeService] Error while parsing mode file {path}.\n{ex}");
+            }
+        }
+
+        internal static void ScanModes()
         {
             var modesData = new Dictionary<string, object> { [k_DefaultModeId] = new Dictionary<string, object> { [k_LabelSectionName] = "Default" } };
+
+            var builtinModeFile = Path.Combine(EditorApplication.applicationContentsPath, "Resources/default.mode");
+            FillModeData(builtinModeFile, modesData);
+
             var modeDescriptors = AssetDatabase.EnumerateAllAssets(new SearchFilter
             {
                 searchArea = SearchFilter.SearchArea.InPackagesOnly,
@@ -305,39 +338,20 @@ namespace UnityEditor
                 var md = modeDescriptors.Current.pptrValue as ModeDescriptor;
                 if (md == null)
                     continue;
-                try
-                {
-                    var json = SJSON.Load(md.path);
-                    foreach (var rawModeId in json.Keys)
-                    {
-                        var modeId = ((string)rawModeId).ToLower();
-                        if (IsValidModeId(modeId))
-                        {
-                            if (modesData.ContainsKey(modeId))
-                                modesData[modeId] = JsonUtils.DeepMerge(modesData[modeId] as JSONObject, json[modeId] as JSONObject);
-                            else
-                                modesData[modeId] = json[modeId];
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"Invalid Mode Id: {modeId} contains non alphanumeric characters.");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[ModeService] Error while parsing mode file {md.path}.\n{ex}");
-                }
+                FillModeData(md.path, modesData);
             }
 
             modes = new ModeEntry[modesData.Keys.Count];
             modes[0] = CreateEntry(k_DefaultModeId, (JSONObject)modesData[k_DefaultModeId]);
             var modeIndex = 1;
+            hasSwitchableModes = false;
             foreach (var modeId in modesData.Keys)
             {
                 if (modeId == k_DefaultModeId)
                     continue;
-                modes[modeIndex] = CreateEntry(modeId, (JSONObject)modesData[modeId]);
+                var modeFields = (JSONObject)modesData[modeId];
+                modes[modeIndex] = CreateEntry(modeId, modeFields);
+                hasSwitchableModes |= !JsonUtils.JsonReadBoolean(modeFields, "builtin");
                 modeIndex++;
             }
         }
@@ -350,13 +364,6 @@ namespace UnityEditor
                 name = JsonUtils.JsonReadString(data, k_LabelSectionName, modeId),
                 data = data
             };
-        }
-
-        private static bool IsEditorModeDescriptor(string path)
-        {
-            var pathLowerCased = path.ToLower();
-            // Limit the authoring of editor modes to Unity packages for now.
-            return pathLowerCased.StartsWith("packages/com.unity") && pathLowerCased.EndsWith(".mode");
         }
 
         private static void SetModeIndex(int modeIndex)
@@ -522,7 +529,8 @@ namespace UnityEditor
                 }
             }
 
-            WindowLayout.ReloadWindowLayoutMenu();
+            if (HasCapability(ModeCapability.LayoutWindowMenu, true))
+                WindowLayout.ReloadWindowLayoutMenu();
         }
 
         private static void OnModeChangeUpdate(ModeChangedArgs args)

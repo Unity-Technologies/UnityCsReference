@@ -84,7 +84,7 @@ namespace UnityEngine.Windows.Speech
             this.phraseStartTime = phraseStartTime;
             this.phraseDuration = phraseDuration;
         }
-    };
+    }
 
     static partial class PhraseRecognitionSystem
     {

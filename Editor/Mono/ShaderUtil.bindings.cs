@@ -110,7 +110,7 @@ namespace UnityEditor
             Float,
             Range,
             TexEnv,
-        };
+        }
 
         extern internal static int GetAvailableShaderCompilerPlatforms();
 

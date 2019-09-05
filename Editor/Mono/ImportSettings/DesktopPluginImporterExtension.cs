@@ -18,7 +18,7 @@ namespace UnityEditor
             AnyCPU,
             x86,
             x86_64
-        };
+        }
 
         internal class DesktopSingleCPUProperty : Property
         {

@@ -124,7 +124,7 @@ namespace UnityEditor
             Center,
             Left,
             Right
-        };
+        }
 
         public Alignment alignment;
         public Color headColor;

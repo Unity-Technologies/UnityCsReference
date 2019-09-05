@@ -14,7 +14,7 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
         ConstantSizeArray,
         DynamicSizeArray,
         Count
-    };
+    }
 
     abstract class Chapter
     {

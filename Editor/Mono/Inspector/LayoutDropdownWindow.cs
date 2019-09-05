@@ -219,11 +219,7 @@ namespace UnityEditor
 
                     bool selected = (cellHMode == hMode) && (cellVMode == vMode);
 
-                    bool selectedHeader = false;
-                    if (i == 0 && cellVMode == vMode)
-                        selectedHeader = true;
-                    if (j == 0 && cellHMode == hMode)
-                        selectedHeader = true;
+                    bool selectedHeader = (i == 0 && cellVMode == vMode) || (j == 0 && cellHMode == hMode);
 
                     if (Event.current.type == EventType.Repaint)
                     {

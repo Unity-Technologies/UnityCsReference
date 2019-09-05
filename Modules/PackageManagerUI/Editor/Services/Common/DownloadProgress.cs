@@ -20,15 +20,15 @@ namespace UnityEditor.PackageManager.UI
             Error
         }
 
-        public string packageId;
+        public string productId;
         public State state;
         public ulong current;
         public ulong total;
         public string message;
 
-        public DownloadProgress(string packageId)
+        public DownloadProgress(string productId)
         {
-            this.packageId = packageId;
+            this.productId = productId;
             state = State.Started;
             current = 0;
             total = 0;

@@ -583,15 +583,6 @@ namespace Unity.SerializationLogic
             if (IsNonSerialized(typeDeclaration))
                 return false;
 
-            var genericInstance = typeDeclaration as GenericInstanceType;
-            if (genericInstance != null)
-            {
-                if (genericInstance.ElementType.FullName == "UnityEngine.ExposedReference`1")
-                    return true;
-
-                return false;
-            }
-
             try
             {
                 if (UnityEngineTypePredicates.ShouldHaveHadSerializableAttribute(typeDeclaration))
@@ -604,7 +595,7 @@ namespace Unity.SerializationLogic
                 }
                 else
                 {
-                    return (resolvedTypeDeclaration.IsSerializable && !resolvedTypeDeclaration.IsAbstract && !resolvedTypeDeclaration.CustomAttributes.Any(a => a.AttributeType.FullName.Contains("System.Runtime.CompilerServices.CompilerGenerated"))) ||
+                    return (resolvedTypeDeclaration.IsSerializable && !resolvedTypeDeclaration.CustomAttributes.Any(a => a.AttributeType.FullName.Contains("System.Runtime.CompilerServices.CompilerGenerated"))) ||
                         resolvedTypeDeclaration.IsSubclassOf(UnityEngineTypePredicates.MonoBehaviour, UnityEngineTypePredicates.ScriptableObject);
                 }
             }

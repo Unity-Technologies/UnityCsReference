@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -181,6 +182,14 @@ namespace UnityEditor
                 BuildMaterialsCache();
                 BuildExternalObjectsCache();
             }
+
+            Undo.undoRedoPerformed += ResetValues;
+        }
+
+        internal override void OnDisable()
+        {
+            Undo.undoRedoPerformed -= ResetValues;
+            base.OnDisable();
         }
 
         private void BuildMaterialsCache()
@@ -385,24 +394,16 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button(Styles.RemapMaterialsInProject))
                         {
-                            try
+                            Undo.RecordObjects(targets, "Search and Remap Materials");
+                            foreach (var t in targets)
                             {
-                                AssetDatabase.StartAssetEditing();
-
-                                foreach (var t in targets)
-                                {
-                                    var importer = t as ModelImporter;
-                                    // SearchAndReplaceMaterials will ensure the material name and search options get saved, while all other pending changes stay pending.
-                                    importer.SearchAndRemapMaterials((ModelImporterMaterialName)m_MaterialName.intValue, (ModelImporterMaterialSearch)m_MaterialSearch.intValue);
-
-                                    AssetDatabase.WriteImportSettingsIfDirty(importer.assetPath);
-                                    AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
-                                }
+                                var importer = t as ModelImporter;
+                                // SearchAndReplaceMaterials will ensure the material name and search options get saved, while all other pending changes stay pending.
+                                importer.SearchAndRemapMaterials((ModelImporterMaterialName)m_MaterialName.intValue, (ModelImporterMaterialSearch)m_MaterialSearch.intValue);
                             }
-                            finally
-                            {
-                                AssetDatabase.StopAssetEditing();
-                            }
+
+                            ResetValues();
+                            EditorGUIUtility.ExitGUI();
 
                             return true;
                         }
@@ -522,8 +523,7 @@ namespace UnityEditor
             {
                 GUILayout.Label(Styles.ExternalMaterialMappings, EditorStyles.boldLabel);
 
-                if (MaterialRemapOptions())
-                    return;
+                MaterialRemapOptions();
 
                 DoMaterialRemapList();
             }
@@ -531,12 +531,16 @@ namespace UnityEditor
 
         internal override void ResetValues()
         {
+            serializedObject.Update();
             BuildMaterialsCache();
             BuildExternalObjectsCache();
         }
 
         void DoMaterialRemapList()
         {
+            // OnEnabled is not called consistently when the asset gets reimported, we need to rebuild the cache here if it's outdated.
+            if (m_ExternalObjects.arraySize != m_ExternalObjectsCache.Count())
+                ResetValues();
             // The list of material names is immutable, whereas the map of external objects can change based on user actions.
             // For each material name, map the external object associated with it.
             // The complexity comes from the fact that we may not have an external object in the map, so we can't make a property out of it

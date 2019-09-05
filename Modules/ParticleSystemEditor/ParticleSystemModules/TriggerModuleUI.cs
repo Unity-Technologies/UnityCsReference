@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         // Keep in sync with TriggerModule.h
         const int k_MaxNumCollisionShapes = 6;
-        enum OverlapOptions { Ignore = 0, Kill = 1, Callback = 2 };
+        enum OverlapOptions { Ignore = 0, Kill = 1, Callback = 2 }
 
         SerializedProperty[] m_CollisionShapes = new SerializedProperty[k_MaxNumCollisionShapes];
         SerializedProperty m_Inside;

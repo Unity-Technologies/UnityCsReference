@@ -7,26 +7,6 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI
 {
-    [Flags]
-    internal enum RefreshOptions : uint
-    {
-        None             = 0,
-
-        UpmListOffline   = 1 << 0,
-        UpmList          = 1 << 1,
-        UpmSearchOffline = 1 << 2,
-        UpmSearch        = 1 << 3,
-        Purchased        = 1 << 4,
-        PurchasedOffline = 1 << 5,
-
-        CurrentFilter    = 1 << 6,
-
-        // combinations
-        AllOnline        = UpmList | UpmSearch,
-        AllOffline       = UpmListOffline | UpmSearchOffline,
-        All              = AllOnline | AllOffline
-    }
-
     internal interface IPageManager
     {
         event Action<IPackageVersion> onSelectionChanged;
@@ -36,6 +16,10 @@ namespace UnityEditor.PackageManager.UI
         event Action<IPage> onPageRebuild;
 
         event Action<IEnumerable<VisualState>> onVisualStateChange;
+
+        event Action onRefreshOperationStart;
+        event Action onRefreshOperationFinish;
+        event Action<Error> onRefreshOperationError;
 
         IPackageVersion GetSelectedVersion();
 
@@ -53,7 +37,7 @@ namespace UnityEditor.PackageManager.UI
 
         void Clear();
 
-        void Refresh(PackageFilterTab tab);
+        void Refresh(PackageFilterTab? tab = null);
 
         void Refresh(RefreshOptions options);
 
@@ -61,7 +45,9 @@ namespace UnityEditor.PackageManager.UI
 
         IPage GetCurrentPage();
 
-        bool HasFetchedPageForFilterTab(PackageFilterTab? tab = null);
+        long GetRefreshTimestamp(PackageFilterTab? tab = null);
+        Error GetRefreshError(PackageFilterTab? tab = null);
+        bool IsRefreshInProgress(PackageFilterTab? tab = null);
 
         void LoadMore();
     }

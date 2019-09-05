@@ -115,7 +115,7 @@ namespace UnityEditor
 
             public GUIContent content;
             public float value;
-        };
+        }
 
         internal static FrameRateMenuEntry[] kAvailableFrameRates = new FrameRateMenuEntry[]
         {

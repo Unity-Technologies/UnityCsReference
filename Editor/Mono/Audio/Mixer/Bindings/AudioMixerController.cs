@@ -791,7 +791,7 @@ namespace UnityEditor.Audio
                     s += s_GroupEffectDisplaySeperator + FixNameForPopupMenu(effect.effectName);
                 return s;
             }
-        };
+        }
 
         // Builds a graph over all connections going out of a group (the parent counts as one).
         // While building the map, the existing routing of effectSlotUnderTest are ignored and pretended it is connected to targetToTest instead.

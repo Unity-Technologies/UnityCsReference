@@ -163,7 +163,7 @@ namespace UnityEditorInternal
                     if (elementType == typeof(string))
                         list.index = list.list.Add("");
                     else if (elementType != null && elementType.GetConstructor(Type.EmptyTypes) == null)
-                        Debug.LogError("Cannot add element. Type " + elementType.ToString() + " has no default constructor. Implement a default constructor or implement your own add behaviour.");
+                        Debug.LogError("Cannot add element. Type " + elementType + " has no default constructor. Implement a default constructor or implement your own add behaviour.");
                     else if (list.list.GetType().GetGenericArguments()[0] != null)
                         list.index = list.list.Add(Activator.CreateInstance(list.list.GetType().GetGenericArguments()[0]));
                     else if (elementType != null)

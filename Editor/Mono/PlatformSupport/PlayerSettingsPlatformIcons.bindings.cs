@@ -311,7 +311,7 @@ namespace UnityEditor
             else if (requiredIconCount != icons.Length)
             {
                 throw new InvalidOperationException(string.Format("Attempting to set an incorrect number of icons for {0} {1} kind, it requires {2} icons but trying to assign {3}.", platform.ToString(),
-                    kind.ToString(),
+                    kind,
                     requiredIconCount,
                     icons.Length)
                 );

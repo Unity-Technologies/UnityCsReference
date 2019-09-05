@@ -773,7 +773,6 @@ namespace UnityEditor
 
             // Best best child matches
             bool sameAsParentOrChild = (match.bone == match.humanBoneParent.bone);
-            int childCount = 0;
             if (childMatchesLists.Count > 0)
             {
                 SimpleProfiler.Begin("GetBestChildMatches");
@@ -788,7 +787,6 @@ namespace UnityEditor
                         EvaluateBoneMatch(childMatch, confirmedChoice);
 
                     // Transfer info from best child match to parent
-                    childCount++;
                     match.score += childMatch.score;
                     if (kDebug)
                         match.debugTracker.AddRange(childMatch.debugTracker);

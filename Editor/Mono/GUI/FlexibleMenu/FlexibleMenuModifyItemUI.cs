@@ -9,7 +9,7 @@ namespace UnityEditor
 {
     abstract class FlexibleMenuModifyItemUI : PopupWindowContent
     {
-        public enum MenuType { Add, Edit };
+        public enum MenuType { Add, Edit }
         protected MenuType m_MenuType;
         public object m_Object;
         protected Action<object> m_AcceptedCallback;

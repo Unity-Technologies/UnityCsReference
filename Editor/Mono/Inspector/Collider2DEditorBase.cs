@@ -93,7 +93,7 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
 
             // Only show 'Used By Composite' if all targets are capable of being composited.
-            if (targets.Where(x => (x as Collider2D).compositeCapable == false).Count() == 0)
+            if (targets.Count(x => (x as Collider2D).compositeCapable == false) == 0)
                 EditorGUILayout.PropertyField(m_UsedByComposite);
 
             if (m_AutoTiling != null)
