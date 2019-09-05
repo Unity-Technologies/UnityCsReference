@@ -185,6 +185,13 @@ namespace UnityEditor
                 BuildMaterialsCache();
                 BuildExternalObjectsCache();
             }
+            Undo.undoRedoPerformed += ResetValues;
+        }
+
+        internal override void OnDisable()
+        {
+            Undo.undoRedoPerformed -= ResetValues;
+            base.OnDisable();
         }
 
         private void BuildMaterialsCache()
@@ -389,24 +396,15 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button(Styles.RemapMaterialsInProject))
                         {
-                            try
+                            foreach (var t in targets)
                             {
-                                AssetDatabase.StartAssetEditing();
-
-                                foreach (var t in targets)
-                                {
-                                    var importer = t as ModelImporter;
-                                    // SearchAndReplaceMaterials will ensure the material name and search options get saved, while all other pending changes stay pending.
-                                    importer.SearchAndRemapMaterials((ModelImporterMaterialName)m_MaterialName.intValue, (ModelImporterMaterialSearch)m_MaterialSearch.intValue);
-
-                                    AssetDatabase.WriteImportSettingsIfDirty(importer.assetPath);
-                                    AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
-                                }
+                                var importer = t as ModelImporter;
+                                // SearchAndReplaceMaterials will ensure the material name and search options get saved, while all other pending changes stay pending.
+                                importer.SearchAndRemapMaterials((ModelImporterMaterialName)m_MaterialName.intValue, (ModelImporterMaterialSearch)m_MaterialSearch.intValue);
                             }
-                            finally
-                            {
-                                AssetDatabase.StopAssetEditing();
-                            }
+
+                            ResetValues();
+                            EditorGUIUtility.ExitGUI();
 
                             return true;
                         }
@@ -500,15 +498,14 @@ namespace UnityEditor
             {
                 GUILayout.Label(Styles.ExternalMaterialMappings, EditorStyles.boldLabel);
 
-                if (MaterialRemapOptions())
-                    return;
-
+                MaterialRemapOptions();
                 DoMaterialRemapList();
             }
         }
 
         internal override void ResetValues()
         {
+            serializedObject.Update();
             BuildMaterialsCache();
             BuildExternalObjectsCache();
         }

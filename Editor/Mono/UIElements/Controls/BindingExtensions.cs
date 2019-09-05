@@ -115,7 +115,14 @@ namespace UnityEditor.UIElements
 
         public static SerializedProperty BindProperty(this IBindable field, SerializedObject obj)
         {
-            return BindPropertyWithParent(field, new SerializedObjectUpdateWrapper(obj), null);
+            var property = obj?.FindProperty(field.bindingPath);
+
+            if (property != null)
+            {
+                Bind(field as VisualElement, new SerializedObjectUpdateWrapper(obj), null);
+            }
+
+            return property;
         }
 
         public static void BindProperty(this IBindable field, SerializedProperty property)
@@ -125,7 +132,8 @@ namespace UnityEditor.UIElements
                 throw new ArgumentNullException(nameof(property));
             }
 
-            DoBindProperty(field, new SerializedObjectUpdateWrapper(property.serializedObject), property);
+            field.bindingPath = property.propertyPath;
+            Bind(field as VisualElement, new SerializedObjectUpdateWrapper(property.serializedObject), null);
         }
 
         private static void DoBindProperty(IBindable field, SerializedObjectUpdateWrapper obj, SerializedProperty property)
