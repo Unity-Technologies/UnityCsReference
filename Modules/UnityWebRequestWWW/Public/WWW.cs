@@ -298,11 +298,15 @@ namespace UnityEngine
 
         public string url { get { return _uwr.url; } }
 
-        public override bool keepWaiting { get { return !_uwr.isDone; } }
+        public override bool keepWaiting { get { return _uwr == null ? false : !_uwr.isDone; } }
 
         public void Dispose()
         {
-            _uwr.Dispose();
+            if (_uwr != null)
+            {
+                _uwr.Dispose();
+                _uwr = null;
+            }
         }
 
         internal Object GetAudioClipInternal(bool threeD, bool stream, bool compressed, AudioType audioType)
