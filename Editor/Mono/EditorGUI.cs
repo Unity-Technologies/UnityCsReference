@@ -4867,12 +4867,19 @@ namespace UnityEditor
         {
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
             GUIStyle iconButtonStyle = EditorStyles.iconButton;
+            Event evt = Event.current;
+            bool pressed = GUIUtility.hotControl == id;
+            bool hasFocus = GUIUtility.HasKeyFocus(id);
+            bool hovered = position.Contains(evt.mousePosition);
 
             Rect iconRect = GetIconRect(position, baseStyle);
             Rect settingsRect = GetSettingsRect(position, baseStyle, iconButtonStyle);
             Rect textRect = GetTextRect(position, iconRect, settingsRect, baseStyle, textStyle);
 
-            Event evt = Event.current;
+            if (evt.type == EventType.Repaint)
+            {
+                baseStyle.Draw(position, GUIContent.none, hovered, pressed, foldout, hasFocus);
+            }
 
             bool isAddedComponentAndEventIsRepaint = false;
             Component comp = targetObjs[0] as Component;
@@ -4999,8 +5006,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
-                    baseStyle.Draw(position, GUIContent.none, id, foldout, position.Contains(Event.current.mousePosition));
-                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), id, foldout, textRect.Contains(Event.current.mousePosition));
+                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), hovered, pressed, foldout, hasFocus);
                     if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                     {
                         EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, foldout, settingsRect.Contains(Event.current.mousePosition));
@@ -5158,15 +5164,38 @@ namespace UnityEditor
             // Important to get controlId for the foldout first, so it gets keyboard focus before the toggle does.
             int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
 
-            if (Event.current.type == EventType.Repaint)
+            switch (Event.current.type)
             {
-                GUIStyle foldoutStyle = EditorStyles.foldout;
-                Rect textRect = new Rect(position.x + baseStyle.padding.left + (skipIconSpacing ? 0 : (kInspTitlebarIconWidth + kInspTitlebarSpacing)), position.y + baseStyle.padding.top, EditorGUIUtility.labelWidth, kInspTitlebarIconWidth);
+                case EventType.KeyDown:
+                    if (GUIUtility.keyboardControl == id)
+                    {
+                        KeyCode kc = Event.current.keyCode;
+                        if (kc == KeyCode.LeftArrow && foldout || (kc == KeyCode.RightArrow && foldout == false))
+                        {
+                            foldout = !foldout;
+                            GUI.changed = true;
+                            Event.current.Use();
+                            return foldout;
+                        }
+                    }
 
-                baseStyle.Draw(position, GUIContent.none, id, foldout);
-                foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none, id, foldout);
-                position = baseStyle.padding.Remove(position);
-                textStyle.Draw(textRect, EditorGUIUtility.TempContent(label.text), id, foldout);
+                    break;
+                case EventType.Repaint:
+                    GUIStyle foldoutStyle = EditorStyles.foldout;
+                    Rect textRect =
+                        new Rect(
+                            position.x + baseStyle.padding.left +
+                            (skipIconSpacing ? 0 : (kInspTitlebarIconWidth + kInspTitlebarSpacing)),
+                            position.y + baseStyle.padding.top, EditorGUIUtility.labelWidth, kInspTitlebarIconWidth);
+                    bool hovered = position.Contains(Event.current.mousePosition);
+                    baseStyle.Draw(position, GUIContent.none, id, foldout, hovered);
+                    foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none,
+                        id, foldout, hovered);
+                    position = baseStyle.padding.Remove(position);
+                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(label.text), id, foldout, hovered);
+                    break;
+                default:
+                    break;
             }
 
             return EditorGUIInternal.DoToggleForward(IndentedRect(position), id, foldout, GUIContent.none, GUIStyle.none);

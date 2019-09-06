@@ -15,91 +15,25 @@ namespace UnityEditor.PackageManager.UI
         public string name { get { return m_Name; } }
         public string uniqueId { get { return m_Name; } }
 
-        public string displayName { get { return m_Versions.First().displayName; } }
-
-        private PackageState m_State;
-        public PackageState state { get { return m_State; } }
+        public string displayName { get { return versions.First().displayName; } }
 
         private bool m_IsDiscoverable;
         public bool isDiscoverable { get { return m_IsDiscoverable; } }
 
-        private List<UpmPackageVersion> m_Versions;
-        public IEnumerable<IPackageVersion> versions { get { return m_Versions.Cast<IPackageVersion>(); } }
+        private UpmVersionList m_VersionList;
+        public IVersionList versionList => m_VersionList;
 
-        public IEnumerable<IPackageVersion> keyVersions
-        {
-            get
-            {
-                // Get key versions -- Latest, Verified, LatestPatch, Installed.
-                var keyVersions = new HashSet<IPackageVersion>();
+        public IEnumerable<IPackageVersion> keyVersions => versionList?.key;
 
-                var installed = installedVersion;
-                var latestRelease = m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release));
-                var verifiedVersion = m_Versions.FirstOrDefault(v => v.HasTag(PackageTag.Verified));
-                keyVersions.Add(installed);
-                keyVersions.Add(latestRelease);
-                keyVersions.Add(verifiedVersion);
-                keyVersions.Add(latestPatch);
-                keyVersions.Add(recommendedVersion);
-                if (installed == null && latestRelease == null)
-                    keyVersions.Add(latestVersion);
-                return keyVersions.Where(v => v != null).OrderBy(package => package.version);
-            }
-        }
+        public IPackageVersion installedVersion => versionList?.installed;
 
-        // keeping the index makes it easier to find newer versions
-        private int m_InstalledIndex;
-        public IPackageVersion installedVersion { get { return m_InstalledIndex < 0 ? null : m_Versions[m_InstalledIndex]; } }
+        public IPackageVersion latestPatch => versionList?.latestPatch;
 
-        public IPackageVersion latestPatch
-        {
-            get
-            {
-                if (m_InstalledIndex < 0)
-                    return null;
+        public IPackageVersion latestVersion => versionList?.latest;
 
-                var installed = m_Versions[m_InstalledIndex].version;
-                for (var i = m_Versions.Count - 1; i > m_InstalledIndex; --i)
-                {
-                    if (m_Versions[i].version.IsPatchOf(installed))
-                        return m_Versions[i];
-                }
-                return null;
-            }
-        }
+        public IPackageVersion recommendedVersion => versionList?.recommended;
 
-        public IPackageVersion latestVersion { get { return m_Versions.Last(); } }
-
-        public IPackageVersion recommendedVersion
-        {
-            get
-            {
-                // Override with current when it's version locked
-                var installed = installedVersion;
-                if (installed != null && installed.isVersionLocked)
-                    return installed;
-
-                // Only try to find recommended version in versions newer than the installed version
-                var newerVersions = installed == null ? m_Versions : m_Versions.Skip(m_InstalledIndex + 1).SkipWhile(v => v.version <= installed.version);
-
-                var verifiedVersion = newerVersions.FirstOrDefault(v => v.HasTag(PackageTag.Verified));
-                if (verifiedVersion != null)
-                    return verifiedVersion;
-
-                var latestRelease = newerVersions.LastOrDefault(v => v.HasTag(PackageTag.Release));
-                if (latestRelease != null && (installed == null || !installed.HasTag(PackageTag.Verified)))
-                    return latestRelease;
-
-                var latestPreview = newerVersions.LastOrDefault(package => package.HasTag(PackageTag.Preview));
-                if (latestPreview != null && (installed == null || installed.HasTag(PackageTag.Preview)))
-                    return latestPreview;
-
-                // Show current if it exists, otherwise latest user visible, and then otherwise show the absolute latest
-                return installed ?? latestVersion;
-            }
-        }
-
-        public IPackageVersion primaryVersion { get { return installedVersion ?? recommendedVersion; } }
+        public IPackageVersion primaryVersion => versionList?.primary;
 
         // errors on the package level (not just about a particular version)
         List<Error> m_UpmErrors;
@@ -108,100 +42,51 @@ namespace UnityEditor.PackageManager.UI
         // Stop lookup after first error encountered on a version to save time not looking up redundant errors.
         public IEnumerable<Error> errors => (versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? new List<Error>()).Concat(m_UpmErrors);
 
-        public UpmPackage(string name, IEnumerable<UpmPackageVersion> versions, bool isDiscoverable)
+        public IEnumerable<PackageImage> images => Enumerable.Empty<PackageImage>();
+
+        public IEnumerable<PackageLink> links => Enumerable.Empty<PackageLink>();
+
+        public IEnumerable<IPackageVersion> versions => versionList?.all;
+
+        private PackageProgress m_Progress;
+        public PackageProgress progress => m_Progress;
+
+        private PackageType m_Type;
+        public bool Is(PackageType type)
         {
-            Initialize(name, versions, isDiscoverable);
+            return (m_Type & type) != 0;
+        }
+
+        public UpmPackage(string name, bool isDiscoverable, PackageType type = PackageType.None)
+        {
+            m_Progress = PackageProgress.None;
+            m_Name = name;
+            m_IsDiscoverable = isDiscoverable;
+            m_VersionList = new UpmVersionList();
+            m_UpmErrors = new List<Error>();
+            m_Type = type;
         }
 
         public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable)
         {
-            var mainVersion = new UpmPackageVersion(info, isInstalled);
-
-            var versions = info.versions.compatible.Select(v => new UpmPackageVersion(info, false, v, mainVersion.displayName)).ToList();
-            AddToSortedVersions(versions, mainVersion);
-            Initialize(info.name, versions, isDiscoverable);
-        }
-
-        private void Initialize(string name, IEnumerable<UpmPackageVersion> versions, bool isDiscoverable)
-        {
-            m_Name = name;
-            m_Versions = versions.ToList();
-            m_IsDiscoverable = isDiscoverable;
-
+            m_Progress = PackageProgress.None;
+            m_Name = info.name;
             m_UpmErrors = new List<Error>();
-
-            SetInstalledVersion(m_Versions.FindIndex(v => v.isInstalled));
-        }
-
-        private void SetInstalledVersion(int newInstalledIndex)
-        {
-            m_InstalledIndex = newInstalledIndex;
-            m_State = PackageState.UpToDate;
-            if (m_Versions.Any(v => v.errors.Any()))
-                m_State = PackageState.Error;
-            else if (m_InstalledIndex >= 0 && !recommendedVersion.isInstalled)
-                m_State = PackageState.Outdated;
+            m_IsDiscoverable = isDiscoverable;
+            m_VersionList = new UpmVersionList(info, isInstalled);
+            m_Type = primaryVersion.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
         }
 
         internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
         {
-            Initialize(name, updatedVersions, isDiscoverable);
-        }
-
-        internal void UpdateVersion(UpmPackageVersion version)
-        {
-            for (var i = 0; i < m_Versions.Count; ++i)
-            {
-                if (m_Versions[i].uniqueId != version.uniqueId)
-                    continue;
-                m_Versions[i] = version;
-                return;
-            }
-        }
-
-        private static int AddToSortedVersions(List<UpmPackageVersion> sortedVersions, UpmPackageVersion versionToAdd)
-        {
-            for (var i = 0; i < sortedVersions.Count; ++i)
-            {
-                if (sortedVersions[i].version.CompareByPrecedence(versionToAdd.version) < 0)
-                    continue;
-                // note that the difference between this and the previous function is that
-                // two upm package versions could have the the same version but different package id
-                if (sortedVersions[i].uniqueId == versionToAdd.uniqueId)
-                {
-                    sortedVersions[i] = versionToAdd;
-                    return i;
-                }
-                sortedVersions.Insert(i, versionToAdd);
-                return i;
-            }
-            sortedVersions.Add(versionToAdd);
-            return sortedVersions.Count - 1;
+            m_VersionList = new UpmVersionList(updatedVersions);
+            m_UpmErrors.Clear();
         }
 
         // This function is only used to update the object, not to actually perform the add operation
         public void AddInstalledVersion(UpmPackageVersion newVersion)
         {
-            if (m_InstalledIndex >= 0)
-            {
-                m_Versions[m_InstalledIndex].isInstalled = false;
-                if (m_Versions[m_InstalledIndex].HasTag(PackageTag.Git | PackageTag.Local | PackageTag.InDevelopment))
-                    m_Versions.RemoveAt(m_InstalledIndex);
-            }
-            newVersion.isInstalled = true;
-            SetInstalledVersion(AddToSortedVersions(m_Versions, newVersion));
-        }
-
-        // This function is only used to update the object, not to actually perform the remove operation
-        public void RemoveInstalledVersion()
-        {
-            if (m_InstalledIndex >= 0)
-            {
-                m_Versions[m_InstalledIndex].isInstalled = false;
-                if (m_Versions[m_InstalledIndex].HasTag(PackageTag.Git | PackageTag.Local | PackageTag.InDevelopment))
-                    m_Versions.RemoveAt(m_InstalledIndex);
-                SetInstalledVersion(-1);
-            }
+            m_VersionList.AddInstalledVersion(newVersion);
         }
 
         public void AddError(Error error)

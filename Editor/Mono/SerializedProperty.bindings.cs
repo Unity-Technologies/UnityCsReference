@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
 using UnityObject = UnityEngine.Object;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor
 {
@@ -74,6 +76,9 @@ namespace UnityEditor
 
         // Bounds with int property.
         BoundsInt = 23,
+
+        // Managed reference property.
+        ManagedReference = 24,
     }
 
     [NativeHeader("Editor/Src/Utility/SerializedProperty.h")]
@@ -487,6 +492,28 @@ namespace UnityEditor
         [NativeName("GetPropertyPath")]
         private extern string GetPropertyPathInternal();
 
+        /// <summary>
+        /// This is a more generic and less specialized form as the one below
+        /// 'hashCodeForPropertyPathWithoutArrayIndex' that assumes that
+        /// we dont have managed references.
+        /// </summary>
+        internal int hashCodeForPropertyPath
+        {
+            get
+            {
+                Verify();
+
+                // For managed references we cannot ignore the array index since
+                // instances might change from index to index.
+                if (propertyType == SerializedPropertyType.ManagedReference)
+                {
+                    return GetHashCodeForPropertyPathInternal();
+                }
+
+                return hashCodeForPropertyPathWithoutArrayIndex;
+            }
+        }
+
         internal int hashCodeForPropertyPathWithoutArrayIndex
         {
             get
@@ -498,6 +525,9 @@ namespace UnityEditor
 
         [NativeName("GetHasCodeForPropertyPathWithoutArrayIndex")]
         private extern int GetHasCodeForPropertyPathWithoutArrayIndexInternal();
+
+        [NativeName("GetHashCodeForPropertyPath")]
+        private extern int GetHashCodeForPropertyPathInternal();
 
         // Is this property editable? (RO)
         public bool editable
@@ -862,6 +892,87 @@ namespace UnityEditor
                 SetPPtrValueInternal(value);
             }
         }
+
+        // Value of an object reference property.
+        public object managedReferenceValue
+        {
+            set
+            {
+                if (propertyType != SerializedPropertyType.ManagedReference)
+                {
+                    throw new System.InvalidOperationException(
+                        $"Attempting to set the managed reference value on a SerializedProperty that is set to a '{this.type}'");
+                }
+
+                // Make sure that the underlying base type is compatible with the current object
+                Type type;
+                var fieldInfo = UnityEditor.ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(this, out type);
+                var propertyBaseType = type;
+
+                if (!propertyBaseType.IsAssignableFrom(value.GetType()))
+                {
+                    throw new System.InvalidOperationException(
+                        $"Cannot assign an object of type '{value.GetType().Name}' to a managed reference with a base type of '{propertyBaseType.Name}': types are not compatible");
+                }
+
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetManagedReferenceValueInternal(value);
+            }
+            // No getter for managed reference since it adds a few notions that might be hard to reason about from the user's perspective.
+            // A serializedobject is a serialized version of a UnityObject. A serialized property is a view on that serialized object.
+            // All operations and all that a serialized knows about are around that serialzied view of the managed world.
+            // Managed references in the context of SO/SP does not have the same semantics as C# references. All the references are
+            // serialized properly but the original C# reference is lost in the process and cannot be retrieved unless e.g. cached locally
+            // on the C# side (i.e. in this file). BUT this would not world properly or involve tricky reconstruction with domain reloads
+            // after which all those C# references would have to be reconstructed etc.
+            // So for now we dont allow getting a managed reference.
+
+            // If we ever wanted to add one though, the approach would be to add an explicit setting that takes an reference ID and an object instance as
+            // input, this would allow serialized properties to edit relations between managed references. We would also need a method to get
+            // an instance from a managed reference id along with a nice safe API around it.
+        }
+
+        // Dynamic type for the current managed reference.
+        public string managedReferenceFullTypename
+        {
+            get
+            {
+                if (propertyType != SerializedPropertyType.ManagedReference)
+                {
+                    throw new System.InvalidOperationException(
+                        $"Attempting to get the managed reference full typename on a SerializedProperty that is set to a '{this.type}'");
+                }
+                if (serializedObject.targetObject == null)
+                {
+                    return null;
+                }
+                return GetManagedReferenceFullTypeNameInternal();
+            }
+        }
+
+        // Static type for the current managed reference.
+        public string managedReferenceFieldTypename
+        {
+            get
+            {
+                if (propertyType != SerializedPropertyType.ManagedReference)
+                {
+                    throw new System.InvalidOperationException(
+                        $"Attempting to get the managed reference full typename on a SerializedProperty that is set to a '{this.type}'");
+                }
+
+                Type type;
+                var fieldInfo = UnityEditor.ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(this, out type);
+
+                return $"{type.Assembly.GetName().Name} {type.FullName.Replace("+", "/")}";
+            }
+        }
+
+        [NativeName("GetManagedReferenceFullTypeName")]
+        private extern string GetManagedReferenceFullTypeNameInternal();
+
+        [NativeName("SetManagedReferenceValue")]
+        private extern void SetManagedReferenceValueInternal(object value);
 
         [NativeName("GetPPtrValue")]
         private extern UnityObject GetPPtrValueInternal();

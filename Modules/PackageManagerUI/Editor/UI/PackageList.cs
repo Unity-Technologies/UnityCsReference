@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI
             viewDataKey = "package-list-key";
             scrollView.viewDataKey = "package-list-scrollview-key";
 
-            UIUtils.SetElementDisplay(emptyArea, false);
+            SetEmptyAreaDisplay(false);
             UIUtils.SetElementDisplay(loadMoreContainer, false);
 
             loginButton.clickable.clicked += OnLoginClicked;
@@ -139,13 +139,13 @@ namespace UnityEditor.PackageManager.UI
         {
             if (!value)
             {
-                UIUtils.SetElementDisplay(emptyArea, false);
+                SetEmptyAreaDisplay(false);
                 return;
             }
 
             var showLogin = !ApplicationUtil.instance.isUserLoggedIn && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore;
 
-            UIUtils.SetElementDisplay(emptyArea, true);
+            SetEmptyAreaDisplay(true);
             UIUtils.SetElementDisplay(noPackagesLabel, !showLogin);
             UIUtils.SetElementDisplay(loginContainer, showLogin);
 
@@ -158,10 +158,17 @@ namespace UnityEditor.PackageManager.UI
         {
             if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
             {
-                UIUtils.SetElementDisplay(emptyArea, true);
+                SetEmptyAreaDisplay(true);
                 UIUtils.SetElementDisplay(loginContainer, !loggedIn);
                 UIUtils.SetElementDisplay(noPackagesLabel, loggedIn);
             }
+        }
+
+        private void SetEmptyAreaDisplay(bool value)
+        {
+            // empty area & scroll view should never be shown at the same time
+            UIUtils.SetElementDisplay(emptyArea, value);
+            UIUtils.SetElementDisplay(scrollView, !value);
         }
 
         private void OnLoginClicked()
@@ -404,7 +411,7 @@ namespace UnityEditor.PackageManager.UI
             itemsList.Clear();
             m_PackageItemsLookup.Clear();
 
-            UIUtils.SetElementDisplay(emptyArea, false);
+            SetEmptyAreaDisplay(false);
         }
 
         private void ShowResults()

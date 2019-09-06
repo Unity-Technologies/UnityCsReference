@@ -51,7 +51,10 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetDependencies(DependencyInfo[] dependencies)
         {
-            if (dependencies == null || dependencies.Length == 0)
+            var showDependency = PackageManagerPrefs.instance.showPackageDependencies && dependencies != null;
+            UIUtils.SetElementDisplay(this, showDependency);
+
+            if (!showDependency || dependencies.Length == 0)
             {
                 ClearDependencies();
                 return;

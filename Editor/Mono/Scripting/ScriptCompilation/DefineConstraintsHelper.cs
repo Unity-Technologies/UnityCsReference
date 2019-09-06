@@ -2,17 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    internal static class DefineConstraintsHelper
+    static class DefineConstraintsHelper
     {
         public const string Not = "!";
         public const string Or = "||";
+
+        public static readonly char[] k_ValidWhitespaces = { ' ', '\t' };
+        public static readonly char[] k_Whitespaces = { ' ', '\t', '\r', '\n' };
 
         [RequiredByNativeCode]
         public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
@@ -40,10 +43,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal static bool IsDefineConstraintValid(string[] defines, string defineConstraints)
         {
-            var splitDefines = new HashSet<string>(defineConstraints.Split(new[] { Or }, StringSplitOptions.RemoveEmptyEntries));
+            // Split by "||" (OR) and keep it in the resulting array
+            var splitDefines = Regex.Split(defineConstraints, "(\\|\\|)");
 
-            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not)).Select(x => x.Substring(1)));
-            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not)));
+            // Trim what we consider valid space characters
+            for (var i = 0; i < splitDefines.Length; ++i)
+            {
+                splitDefines[i] = splitDefines[i].Trim(k_ValidWhitespaces);
+            }
+
+            // Check for consecutive Or
+            for (var i = 0; i < splitDefines.Length; ++i)
+            {
+                if (splitDefines[i] == Or && (i < splitDefines.Length - 1 && splitDefines[i + 1] == Or))
+                {
+                    return false;
+                }
+            }
+
+            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not.ToString()) && x != Or).Select(x => x.Substring(1)));
+            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not.ToString()) && x != Or));
 
             if (defines == null)
             {
@@ -51,7 +70,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     return false;
                 }
+
                 return true;
+            }
+
+            foreach (var define in expectedDefines)
+            {
+                if (!IsTokenValid(define))
+                {
+                    return false;
+                }
+            }
+
+            foreach (var define in notExpectedDefines)
+            {
+                if (!IsTokenValid(define))
+                {
+                    return false;
+                }
             }
 
             if (expectedDefines.Overlaps(notExpectedDefines))
@@ -72,6 +108,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return expectedDefines.Any(defines.Contains) || !notExpectedDefines.Any(defines.Contains);
+        }
+
+        static bool IsTokenValid(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+
+            if (k_Whitespaces.Any(token.Contains))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

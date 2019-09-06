@@ -2,16 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEditor.PackageManager.UI
 {
-    internal enum PackageState
+    [Flags]
+    internal enum PackageType
     {
-        UpToDate,
-        Installed,
-        ImportAvailable,
-        InDevelopment,
-        Outdated,
-        InProgress,
-        Error
+        None            = 0,
+
+        Installable     = 1 << 0,
+        BuiltIn         = 1 << 1,
+        AssetStore      = 1 << 2
     }
 }

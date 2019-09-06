@@ -241,7 +241,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             foreach (var tuple in namespaceScopeStack)
             {
-                if (tuple.Item1 && tuple.Item2 == stackCount)
+                if (tuple.Item1 && (stackCount == -1 || tuple.Item2 == stackCount))
                     return true;
             }
             return false;
@@ -261,11 +261,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var s in split)
             {
-                // Check for new namespace deeper than top level of directives
+                // Check for new namespace declarations, when we have are inside of multiple #ifs,
+                // and also have seen previous namespace declarations (likely namespace modification).
                 if (k_Namespace.IsMatch(s))
                 {
-                    if (stack.Count > 1)
-                        namespaceModificationFound = true;
+                    namespaceModificationFound |= (stack.Count > 1 && CheckForNamespaceModification(namespaceScopeStack, -1));
                     foundNamespace = true;
                 }
                 if (s.IndexOf("{", StringComparison.Ordinal) >= 0)
@@ -291,7 +291,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var directive = match.Groups[1].Value;
                 if (directive == "else")
                 {
-                    namespaceModificationFound = CheckForNamespaceModification(namespaceScopeStack, stack.Count);
+                    namespaceModificationFound |= CheckForNamespaceModification(namespaceScopeStack, stack.Count);
                     var elseEmitting = stack.Peek().Item2;
                     stack.Pop();
                     stack.Push(new Tuple<bool, bool>(elseEmitting, false));
@@ -316,7 +316,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
                 else if (directive == "elif")
                 {
-                    namespaceModificationFound = CheckForNamespaceModification(namespaceScopeStack, stack.Count);
+                    namespaceModificationFound |= CheckForNamespaceModification(namespaceScopeStack, stack.Count);
                     var evalResult = true;
                     var elseEmitting = stack.Peek().Item2;
                     stack.Pop();

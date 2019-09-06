@@ -43,12 +43,12 @@ namespace UnityEditor.UIElements
 
             if (listView.makeItem == null)
             {
-                listView.makeItem = MakeListViewItem;
+                listView.makeItem = () => MakeListViewItem();
             }
 
             if (listView.bindItem == null)
             {
-                listView.bindItem = BindListViewItem;
+                listView.bindItem = (v, i) => BindListViewItem(v, i);
             }
 
             listView.itemsSource = m_DataList;

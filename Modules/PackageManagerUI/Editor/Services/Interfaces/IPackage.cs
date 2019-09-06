@@ -14,6 +14,8 @@ namespace UnityEditor.PackageManager.UI
 
         string displayName { get; }
 
+        IVersionList versionList { get; }
+
         IEnumerable<IPackageVersion> versions { get; }
 
         IEnumerable<IPackageVersion> keyVersions { get; }
@@ -31,7 +33,13 @@ namespace UnityEditor.PackageManager.UI
         // it will be the default that will be displayed if no versions are selected
         IPackageVersion primaryVersion { get; }
 
-        PackageState state { get; }
+        PackageProgress progress { get; }
+
+        IEnumerable<PackageImage> images { get; }
+
+        IEnumerable<PackageLink> links { get; }
+
+        bool Is(PackageType type);
 
         bool isDiscoverable { get; }
 

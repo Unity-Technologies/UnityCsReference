@@ -42,18 +42,20 @@ namespace UnityEditor.PackageManager.UI
             Start();
         }
 
-        public void Search(string packageNameOrId)
+        public void Search(string packageNameOrId, string productId = null)
         {
             m_OfflineMode = false;
             SetPackageNameOrId(packageNameOrId);
+            m_PackageUniqueId = productId ?? packageName;
             Start();
         }
 
-        public void SearchOffline(string packageNameOrId, long timestamp)
+        public void SearchOffline(string packageNameOrId, long timestamp, string productId = null)
         {
             m_OfflineMode = true;
             m_Timestamp = timestamp;
             SetPackageNameOrId(packageNameOrId);
+            m_PackageUniqueId = productId ?? packageName;
             Start();
         }
 

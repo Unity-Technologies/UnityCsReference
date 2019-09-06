@@ -41,6 +41,8 @@ namespace UnityEditor
             public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
             public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Expression outcome", "Shows the mathematical equation that your Expression represents.");
             public static readonly GUIContent noEngineReferences = EditorGUIUtility.TrTextContent("No Engine References", "When enabled, references to UnityEngine/UnityEditor will not be added when compiling this assembly.");
+            public static readonly GUIContent validDefineConstraint = new GUIContent(EditorGUIUtility.FindTexture("TestPassed"), L10n.Tr("Define constraint is valid."));
+            public static readonly GUIContent invalidDefineConstraint = new GUIContent(EditorGUIUtility.FindTexture("TestFailed"), L10n.Tr("Define constraint is invalid."));
         }
 
         GUIStyle m_TextStyle;
@@ -177,6 +179,32 @@ namespace UnityEditor
                 GUILayout.Space(10f);
 
                 GUILayout.Label(Styles.defineConstraints, EditorStyles.boldLabel);
+                if (m_DefineConstraints.serializedProperty.arraySize > 0)
+                {
+                    var defineConstraintsValid = true;
+                    for (var i = 0; i < m_DefineConstraints.serializedProperty.arraySize && defineConstraintsValid; ++i)
+                    {
+                        var defineConstraint = m_DefineConstraints.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue;
+                        if (!DefineConstraintsHelper.IsDefineConstraintValid(m_Defines, defineConstraint))
+                        {
+                            defineConstraintsValid = false;
+                        }
+                    }
+                    var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
+                    constraintValidityRect.x += constraintValidityRect.width - 23;
+                    if (defineConstraintsValid)
+                    {
+                        constraintValidityRect.width = Styles.validDefineConstraint.image.width;
+                        constraintValidityRect.height = Styles.validDefineConstraint.image.height;
+                        EditorGUI.LabelField(constraintValidityRect, Styles.validDefineConstraint);
+                    }
+                    else
+                    {
+                        constraintValidityRect.width = Styles.invalidDefineConstraint.image.width;
+                        constraintValidityRect.height = Styles.invalidDefineConstraint.image.height;
+                        EditorGUI.LabelField(constraintValidityRect, Styles.invalidDefineConstraint);
+                    }
+                }
                 m_DefineConstraints.DoLayoutList();
 
                 GUILayout.Label(Styles.references, EditorStyles.boldLabel);
@@ -368,9 +396,9 @@ namespace UnityEditor
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
 
-            var textFieldRect = new Rect(rect.x, rect.y + 1, rect.width - ReorderableList.Defaults.dragHandleWidth, rect.height);
+            var textFieldRect = new Rect(rect.x, rect.y + 1, rect.width - ReorderableList.Defaults.dragHandleWidth + 1, rect.height);
 
-            var validRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + 1, rect.y + 1, ReorderableList.Defaults.dragHandleWidth, rect.height);
+            var constraintValidityRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + ReorderableList.Defaults.dragHandleWidth / 2f - Styles.invalidDefineConstraint.image.width / 2f, rect.y , ReorderableList.Defaults.dragHandleWidth, rect.height);
 
             string noValue = L10n.Tr("(Missing)");
 
@@ -382,9 +410,18 @@ namespace UnityEditor
 
             if (m_Defines != null)
             {
-                EditorGUI.BeginDisabled(true);
-                EditorGUI.Toggle(validRect, DefineConstraintsHelper.IsDefineConstraintValid(m_Defines, defineConstraint.stringValue));
-                EditorGUI.EndDisabled();
+                if (DefineConstraintsHelper.IsDefineConstraintValid(m_Defines, defineConstraint.stringValue))
+                {
+                    constraintValidityRect.width = Styles.validDefineConstraint.image.width;
+                    constraintValidityRect.height = Styles.validDefineConstraint.image.height;
+                    EditorGUI.LabelField(constraintValidityRect, Styles.validDefineConstraint);
+                }
+                else
+                {
+                    constraintValidityRect.width = Styles.invalidDefineConstraint.image.width;
+                    constraintValidityRect.height = Styles.invalidDefineConstraint.image.height;
+                    EditorGUI.LabelField(constraintValidityRect, Styles.invalidDefineConstraint);
+                }
             }
 
             if (!string.IsNullOrEmpty(textFieldValue) && textFieldValue != noValue)

@@ -98,6 +98,7 @@ namespace UnityEditor
         static EditorGUIUtility()
         {
             GUISkin.m_SkinChanged += SkinChanged;
+            s_HasCurrentWindowKeyFocusFunc = HasCurrentWindowKeyFocus;
         }
 
         internal static void RepaintCurrentWindow()

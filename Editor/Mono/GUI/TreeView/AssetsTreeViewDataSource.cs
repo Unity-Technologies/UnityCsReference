@@ -164,7 +164,6 @@ namespace UnityEditor
             }
 
             m_Rows = new List<TreeViewItem>(m_Roots.Count * 256);
-            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
             Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
             var assetsInstanceIDs = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
             var projectPath = Path.GetFileName(Directory.GetCurrentDirectory());
@@ -245,10 +244,7 @@ namespace UnityEditor
                             else
                                 item = new NonFolderTreeItem(property.guid, property.GetInstanceIDIfImported(), depth + subDepth, null, property.name);
 
-                            if (property.isFolder && !property.hasChildren)
-                                item.icon = emptyFolderIcon;
-                            else
-                                item.icon = property.icon;
+                            item.icon = property.icon;
 
                             if (property.hasChildren)
                             {
@@ -524,7 +520,15 @@ namespace UnityEditor
             string Guid { get; }
         }
 
-        internal class RootTreeItem : TreeViewItem
+        internal abstract class FolderTreeItemBase : TreeViewItem
+        {
+            protected FolderTreeItemBase(int id, int depth, TreeViewItem parent, string displayName)
+                : base(id, depth, parent, displayName)
+            {
+            }
+        }
+
+        internal class RootTreeItem : FolderTreeItemBase
         {
             public RootTreeItem(int id, int depth, TreeViewItem parent, string displayName)
                 : base(id, depth, parent, displayName)
@@ -532,7 +536,15 @@ namespace UnityEditor
             }
         }
 
-        class FolderTreeItem : TreeViewItem, IAssetTreeViewItem
+        internal class PackageTreeItem : FolderTreeItemBase
+        {
+            public PackageTreeItem(int id, int depth, TreeViewItem parent, string displayName)
+                : base(id, depth, parent, displayName)
+            {
+            }
+        }
+
+        internal class FolderTreeItem : FolderTreeItemBase, IAssetTreeViewItem
         {
             public string Guid { get; }
 

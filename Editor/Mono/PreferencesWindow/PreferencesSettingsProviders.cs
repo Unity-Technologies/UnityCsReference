@@ -550,8 +550,7 @@ namespace UnityEditor
 
                     // Refresh skin to get new font
                     Unsupported.ClearSkinCache();
-                    EditorResources.BuildCatalog();
-                    EditorUtility.RequestScriptReload();
+                    InternalEditorUtility.RequestScriptReload();
                     InternalEditorUtility.RepaintAllViews();
                 }
             }

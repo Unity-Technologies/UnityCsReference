@@ -11,19 +11,26 @@ namespace UnityEditor.PackageManager.UI
     {
         None            = 0,
 
-        // package source/origin
+        // package type
         InDevelopment   = 1 << 0,
         Local           = 1 << 1,
         Git             = 1 << 2,
-        BuiltIn         = 1 << 3,
-        Core            = 1 << 4,
-        AssetStore      = 1 << 5,
-        Published       = 1 << 6,
-        Deprecated      = 1 << 7,
+        Bundled         = 1 << 3,
+        BuiltIn         = 1 << 4,
 
-        // preview status
-        Verified        = 1 << 10,   // the recommended version if major version > 0
-        Preview         = 1 << 11,   // with `preview`, `preview.x` tag or with `0` as major version
-        Release         = 1 << 12    // no pre-release tag & major version > 0
+        // attributes
+        VersionLocked   = 1 << 8,
+        Installable     = 1 << 9,
+        Removable       = 1 << 10,
+        Downloadable    = 1 << 11,
+        Importable      = 1 << 12,
+        Embeddable      = 1 << 13,
+
+        // status
+        Published       = 1 << 16,
+        Deprecated      = 1 << 17,
+        Verified        = 1 << 18,   // the recommended version if major version > 0
+        Preview         = 1 << 19,   // with `preview`, `preview.x` tag or with `0` as major version
+        Release         = 1 << 20    // no pre-release tag & major version > 0
     }
 }

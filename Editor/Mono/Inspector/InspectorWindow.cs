@@ -48,6 +48,7 @@ namespace UnityEditor
         const float kAddComponentButtonHeight = 45f;
         internal const int kInspectorPaddingLeft = 8 + 10;
         internal const int kInspectorPaddingRight = 4;
+        internal const int kInspectorPaddingTop = 4;
         internal const float kEditorElementPaddingBottom = 2f;
 
         const float k_MinAreaAbovePreview = 130;

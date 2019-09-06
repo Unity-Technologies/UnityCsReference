@@ -139,7 +139,7 @@ namespace UnityEditor
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
-            public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode*");
+            public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
@@ -195,7 +195,8 @@ namespace UnityEditor
             public static string undoChangedIconString { get { return LocalizationDatabase.GetLocalizedString("Changed Icon"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
             public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
-            public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Settings"); } }
+            public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
+            public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
         }
 
         // Icon layout constants
@@ -1646,9 +1647,10 @@ namespace UnityEditor
                 // no need for a drop down popup for XBoxOne
                 // also if XboxOneD3D12 is selected as GraphicsAPI, then we want to set graphics jobs and disable the user option
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                GraphicsJobMode newGfxJobMode = GraphicsJobMode.Legacy;
                 if (gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12)
                 {
-                    PlayerSettings.graphicsJobMode = GraphicsJobMode.Native;
+                    newGfxJobMode = GraphicsJobMode.Native;
                     graphicsJobsOptionEnabled = false;
                     if (graphicsJobs == false)
                     {
@@ -1657,10 +1659,7 @@ namespace UnityEditor
                         newGraphicsJobs = true;
                     }
                 }
-                else
-                {
-                    PlayerSettings.graphicsJobMode = GraphicsJobMode.Legacy;
-                }
+                PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
                 graphicsJobsModeOptionEnabled = false;
             }
             EditorGUI.BeginChangeCheck();
@@ -1696,13 +1695,15 @@ namespace UnityEditor
 
             if (gfxJobModesSupported)
             {
+                EditorGUI.BeginChangeCheck();
                 using (new EditorGUI.DisabledScope(!graphicsJobsModeOptionEnabled))
                 {
-                    GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
+                    GraphicsJobMode currGfxJobMode = PlayerSettings.GetGraphicsJobModeForPlatform(platform.defaultTarget);
                     GraphicsJobMode newGfxJobMode = BuildEnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
-                    if (newGfxJobMode != currGfxJobMode)
+                    if (EditorGUI.EndChangeCheck() && (newGfxJobMode != currGfxJobMode))
                     {
-                        PlayerSettings.graphicsJobMode = newGfxJobMode;
+                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobModeString);
+                        PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
                     }
                 }
             }

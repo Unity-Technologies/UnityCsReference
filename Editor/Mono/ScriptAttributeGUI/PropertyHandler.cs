@@ -43,7 +43,7 @@ namespace UnityEditor
             }
         }
 
-        public void HandleAttribute(PropertyAttribute attribute, FieldInfo field, Type propertyType)
+        public void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, FieldInfo field, Type propertyType)
         {
             if (attribute is TooltipAttribute)
             {
@@ -63,12 +63,12 @@ namespace UnityEditor
             }
 
             // Look for its drawer type of this attribute
-            HandleDrawnType(attribute.GetType(), propertyType, field, attribute);
+            HandleDrawnType(property, attribute.GetType(), propertyType, field, attribute);
         }
 
-        public void HandleDrawnType(Type drawnType, Type propertyType, FieldInfo field, PropertyAttribute attribute)
+        public void HandleDrawnType(SerializedProperty property, Type drawnType, Type propertyType, FieldInfo field, PropertyAttribute attribute)
         {
-            Type drawerType = ScriptAttributeUtility.GetDrawerTypeForType(drawnType);
+            Type drawerType = ScriptAttributeUtility.GetDrawerTypeForPropertyAndType(property, drawnType);
 
             // If we found a drawer type, instantiate the drawer, cache it, and return it.
             if (drawerType != null)

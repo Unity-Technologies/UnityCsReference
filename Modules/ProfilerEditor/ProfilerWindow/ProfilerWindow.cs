@@ -430,8 +430,11 @@ namespace UnityEditor
             if (!Profiler.supported)
                 return;
 
-            // Track enabled state per Editor session
-            m_Recording = SessionState.GetBool(kProfilerEnabledSessionKey, true);
+            // Track enabled state
+            if (ProfilerUserSettings.rememberLastRecordState)
+                m_Recording = EditorPrefs.GetBool(kProfilerEnabledSessionKey, ProfilerUserSettings.defaultRecordState);
+            else
+                m_Recording = SessionState.GetBool(kProfilerEnabledSessionKey, ProfilerUserSettings.defaultRecordState);
 
             // This event gets called every time when some other window is maximized and then unmaximized
             ProfilerDriver.enabled = m_Recording;
@@ -497,7 +500,7 @@ namespace UnityEditor
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
         static void ShowProfilerWindow()
         {
-            if (ProfilerUserSettings.useOutOfProcessProfiler)
+            if (ProfilerUserSettings.useOutOfProcessProfiler && Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
                 ProfilerRoleProvider.LaunchProfilerSlave();
             else
                 EditorWindow.GetWindow<ProfilerWindow>(false);
@@ -791,7 +794,7 @@ namespace UnityEditor
             SetRecordMode((ProfilerMemoryRecordMode)selected);
         }
 
-        void SaveProfilingData()
+        internal void SaveProfilingData()
         {
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string directory = string.IsNullOrEmpty(recent)
@@ -807,12 +810,9 @@ namespace UnityEditor
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
                 ProfilerDriver.SaveProfile(selected);
             }
-
-            // Opened a save pop-up, MacOS will redraw the window so bail out now
-            EditorGUIUtility.ExitGUI();
         }
 
-        void LoadProfilingData(bool keepExistingData)
+        internal void LoadProfilingData(bool keepExistingData)
         {
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string selected = EditorUtility.OpenFilePanelWithFilters(Styles.loadWindowTitle.text, recent, Styles.loadProfilingDataFileFilters);
@@ -825,14 +825,13 @@ namespace UnityEditor
                     // Stop current profiling if data was loaded successfully
                     ProfilerDriver.enabled = m_Recording = false;
                     SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
-#pragma warning disable CS0618
+                    if (ProfilerUserSettings.rememberLastRecordState)
+                        EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
+                    #pragma warning disable CS0618
                     NetworkDetailStats.m_NetworkOperations.Clear();
-#pragma warning restore
+                    #pragma warning restore
                 }
             }
-
-            // Opened a load pop-up, MacOS will redraw the window so bail out now
-            EditorGUIUtility.ExitGUI();
         }
 
         public void SetRecordingEnabled(bool profilerEnabled)
@@ -840,6 +839,8 @@ namespace UnityEditor
             ProfilerDriver.enabled = profilerEnabled;
             m_Recording = profilerEnabled;
             SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
+            if (ProfilerUserSettings.rememberLastRecordState)
+                EditorPrefs.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
             recordingStateChanged?.Invoke(m_Recording);
             Repaint();
         }
@@ -906,13 +907,23 @@ namespace UnityEditor
 
             // Load profile
             if (GUILayout.Button(Styles.loadProfilingData, EditorStyles.toolbarButton, GUILayout.MaxWidth(25)))
+            {
                 LoadProfilingData(Event.current.shift);
+
+                // Opened a load pop-up, MacOS will redraw the window so bail out now
+                EditorGUIUtility.ExitGUI();
+            }
 
             // Save profile
             using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == -1))
             {
                 if (GUILayout.Button(Styles.saveProfilingData, EditorStyles.toolbarButton))
+                {
                     SaveProfilingData();
+
+                    // Opened a save pop-up, MacOS will redraw the window so bail out now
+                    EditorGUIUtility.ExitGUI();
+                }
             }
 
             // Open Manual
@@ -1143,9 +1154,11 @@ namespace UnityEditor
                 case EditorConnectionTarget.None:
                 case EditorConnectionTarget.MainEditorProcessPlaymode:
                     ProfilerDriver.profileEditor = false;
+                    recordingStateChanged?.Invoke(m_Recording);
                     break;
                 case EditorConnectionTarget.MainEditorProcessEditmode:
                     ProfilerDriver.profileEditor = true;
+                    recordingStateChanged?.Invoke(m_Recording);
                     break;
                 default:
                     ProfilerDriver.profileEditor = false;

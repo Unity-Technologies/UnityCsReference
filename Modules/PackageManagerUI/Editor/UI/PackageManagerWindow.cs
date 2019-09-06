@@ -244,10 +244,14 @@ namespace UnityEditor.PackageManager.UI
             if (string.IsNullOrEmpty(url))
                 return;
 
-            var lastIndex = url.LastIndexOf('/');
-            if (lastIndex > 0)
+            var startIndex = url.LastIndexOf('/');
+            if (startIndex > 0)
             {
-                SelectPackageAndFilter(url.Substring(lastIndex + 1), PackageFilterTab.AssetStore);
+                var id = url.Substring(startIndex + 1);
+                var endIndex = id.IndexOf('?');
+                if (endIndex > 0)
+                    id = id.Substring(0, endIndex);
+                SelectPackageAndFilter(id, PackageFilterTab.AssetStore);
             }
         }
 

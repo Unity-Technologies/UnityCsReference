@@ -38,6 +38,6 @@ namespace UnityEditor.PackageManager.UI
 
         void GetDownloadDetail(long productID, Action<DownloadInformation> doneCallbackAction);
 
-        void GetProductUpdateDetail(List<UnityEditor.PackageInfo> localPackages, Action<Dictionary<string, object>> doneCallbackAction);
+        void GetProductUpdateDetail(IEnumerable<AssetStore.LocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction);
     }
 }

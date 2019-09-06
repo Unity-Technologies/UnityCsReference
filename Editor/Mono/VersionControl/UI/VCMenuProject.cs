@@ -153,7 +153,7 @@ namespace UnityEditorInternal.VersionControl
         static bool RevertUnchangedTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
-            return Provider.enabled && Provider.RevertIsValid(selected, RevertMode.Normal);
+            return Provider.enabled && Provider.RevertIsValid(selected, RevertMode.Unchanged);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Revert Unchanged" menu handler

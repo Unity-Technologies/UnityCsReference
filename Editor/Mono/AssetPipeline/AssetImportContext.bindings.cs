@@ -30,6 +30,8 @@ namespace UnityEditor.Experimental.AssetImporters
         AssetImportContext() {}
 
         public extern string assetPath { get; internal set; }
+        public extern string GetResultPath(string extension);
+
         public extern BuildTarget selectedBuildTarget { get; }
 
         extern void LogMessage(string msg, string file, int line, UnityEngine.Object obj, bool isAnError);

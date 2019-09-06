@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEditorInternal.VersionControl;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
+using UnityEditor.Experimental;
 using UnityEngine.Assertions;
 
 namespace UnityEditor
@@ -16,6 +17,17 @@ namespace UnityEditor
     {
         static bool s_VCEnabled;
         const float k_IconOverlayPadding = 7f;
+
+        internal static ScalableGUIContent s_OpenFolderIcon = new ScalableGUIContent(null, null, EditorResources.openedFolderIconName);
+
+        internal static Texture2D openFolderTexture
+        {
+            get
+            {
+                GUIContent folderContent = s_OpenFolderIcon;
+                return folderContent.image as Texture2D;
+            }
+        }
 
         internal delegate void OnAssetIconDrawDelegate(Rect iconRect, string guid);
         internal static event OnAssetIconDrawDelegate postAssetIconDrawCallback = null;
@@ -134,6 +146,14 @@ namespace UnityEditor
                 string path = AssetDatabase.GetAssetPath(item.id);
                 icon = AssetDatabase.GetCachedIcon(path);
             }
+
+            AssetsTreeViewDataSource.FolderTreeItemBase folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
+
+            if (folderItem != null && m_TreeView.data.IsExpanded(folderItem))
+            {
+                icon = openFolderTexture;
+            }
+
             return icon;
         }
 

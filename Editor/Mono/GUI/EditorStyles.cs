@@ -492,7 +492,7 @@ namespace UnityEditor
             {
                 padding = new RectOffset(
                     InspectorWindow.kInspectorPaddingLeft,
-                    InspectorWindow.kInspectorPaddingRight, 0, 0)
+                    InspectorWindow.kInspectorPaddingRight, InspectorWindow.kInspectorPaddingTop, 0)
             };
 
             // For the full width margins, use padding from right side in both sides,

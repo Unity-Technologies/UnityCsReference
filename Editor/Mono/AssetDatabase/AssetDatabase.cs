@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
+using uei = UnityEngine.Internal;
 
 namespace UnityEditor
 {
@@ -56,7 +57,7 @@ namespace UnityEditor
                 importPackageFailed(packageName, errorMessage);
         }
 
-        public static void IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
+        public static void IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
         {
             if (assetOrMetaFilePaths == null)
                 throw new ArgumentNullException(nameof(assetOrMetaFilePaths));

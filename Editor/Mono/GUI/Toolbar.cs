@@ -200,8 +200,7 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            const float space = 10;
-            const float largeSpace = 20;
+            const float space = 8;
             const float standardButtonWidth = 32;
             const float dropdownWidth = 80;
             const float playPauseStopWidth = 140;
@@ -222,12 +221,12 @@ namespace UnityEditor
             ReserveWidthRight(standardButtonWidth * s_ShownToolIcons.Length, ref pos);
             DoToolButtons(EditorToolGUI.GetThickArea(pos));
 
-            ReserveWidthRight(largeSpace, ref pos);
+            ReserveWidthRight(space, ref pos);
 
             int playModeControlsStart = Mathf.RoundToInt((position.width - playPauseStopWidth) / 2);
 
             pos.x += pos.width;
-            pos.width = (playModeControlsStart - pos.x) - largeSpace;
+            pos.width = (playModeControlsStart - pos.x) - space;
             DoToolSettings(EditorToolGUI.GetThickArea(pos));
 
             // Position centered controls.
@@ -286,7 +285,7 @@ namespace UnityEditor
                 subToolbar.OnGUI(EditorToolGUI.GetThinArea(pos));
             }
 
-            if (ModeService.modeCount > 1 && Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperBuild() && ModeService.hasSwitchableModes)
             {
                 EditorGUI.BeginChangeCheck();
                 ReserveWidthLeft(space, ref pos);

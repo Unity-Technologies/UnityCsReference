@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI
         event Action<long> onProductFetched;
 
         event Action<IEnumerable<IPackage>> onPackagesChanged;
+        event Action<string, IPackageVersion> onPackageVersionUpdated;
 
         event Action<DownloadProgress> onDownloadProgress;
 
@@ -32,9 +33,7 @@ namespace UnityEditor.PackageManager.UI
 
         void FetchDetails(IEnumerable<long> packageIds);
 
-        void Refresh(IPackage package);
-
-        void Refresh(IEnumerable<IPackage> packages);
+        void RefreshLocal();
 
         bool IsAnyDownloadInProgress();
 

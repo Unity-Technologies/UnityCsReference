@@ -13,42 +13,64 @@ namespace UnityEditor.PackageManager.UI.AssetStore
     internal class AssetStorePackage : IPackage
     {
         [SerializeField]
-        private string m_ProductId;
+        private string m_Name;
+        public string name => m_Name;
 
-        public string name => string.Empty;
+        [SerializeField]
+        private string m_ProductId;
         public string uniqueId => m_ProductId;
 
-        public string displayName => m_Versions.FirstOrDefault()?.displayName;
+        public string displayName => versions.FirstOrDefault()?.displayName;
 
         [SerializeField]
-        private List<AssetStorePackageVersion> m_Versions;
-
-        internal AssetStorePackageVersion m_InstalledVersion => m_Versions.FirstOrDefault(pv => pv.isAvailableOnDisk);
-        internal AssetStorePackageVersion m_FetchedVersion => m_Versions.FirstOrDefault();
-        internal AssetStorePackageVersion m_LocalVersion => m_Versions.LastOrDefault();
-
-        public IEnumerable<IPackageVersion> versions => m_Versions.Cast<IPackageVersion>();
-        public IEnumerable<IPackageVersion> keyVersions => m_Versions.Cast<IPackageVersion>();
-        public IPackageVersion installedVersion => m_InstalledVersion;
-        public IPackageVersion latestVersion => m_FetchedVersion;
-        public IPackageVersion latestPatch => latestVersion;
-        public IPackageVersion recommendedVersion => latestVersion;
-        public IPackageVersion primaryVersion => installedVersion ?? latestVersion;
+        private AssetStoreVersionList m_VersionList;
 
         [SerializeField]
-        private PackageState m_State;
-        public PackageState state => m_State;
+        private UpmVersionList m_UpmVersionList;
 
-        public void SetState(PackageState state)
-        {
-            m_State = state;
-        }
+        public IVersionList versionList => string.IsNullOrEmpty(name) ? m_VersionList as IVersionList : m_UpmVersionList as IVersionList;
+
+        [SerializeField]
+        private PackageProgress m_Progress;
+        public PackageProgress progress => m_Progress;
 
         public bool isDiscoverable => true;
 
         [SerializeField]
         private List<Error> m_Errors;
-        public IEnumerable<Error> errors => m_Errors;
+        // Combined errors for this package or any version.
+        // Stop lookup after first error encountered on a version to save time not looking up redundant errors.
+        public IEnumerable<Error> errors => (versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? new List<Error>()).Concat(m_Errors);
+
+        [SerializeField]
+        private PackageType m_Type;
+        public bool Is(PackageType type)
+        {
+            return (m_Type & type) != 0;
+        }
+
+        [SerializeField]
+        private List<PackageImage> m_Images;
+        [SerializeField]
+        private List<PackageLink> m_Links;
+
+        public IEnumerable<PackageImage> images => m_Images;
+
+        public IEnumerable<PackageLink> links => m_Links;
+
+        public IEnumerable<IPackageVersion> versions => versionList?.all;
+
+        public IEnumerable<IPackageVersion> keyVersions => versionList?.key;
+
+        public IPackageVersion installedVersion => versionList?.installed;
+
+        public IPackageVersion latestVersion => versionList?.latest;
+
+        public IPackageVersion latestPatch => versionList?.latestPatch;
+
+        public IPackageVersion recommendedVersion => versionList?.recommended;
+
+        public IPackageVersion primaryVersion => versionList?.primary;
 
         public void AddError(Error error)
         {
@@ -60,39 +82,68 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             m_Errors?.Clear();
         }
 
-        public void AddVersion(AssetStorePackageVersion version)
-        {
-            m_Versions.Add(version);
-        }
-
-        public void RemoveVersion(AssetStorePackageVersion version)
-        {
-            m_Versions.Remove(version);
-        }
-
         public AssetStorePackage(string productId, Error error)
         {
             m_Errors = new List<Error> { error };
-            m_State = PackageState.Error;
+            m_Progress = PackageProgress.None;
+            m_Type = PackageType.AssetStore;
+            m_Name = string.Empty;
             m_ProductId = productId;
-            m_Versions = new List<AssetStorePackageVersion>();
+
+            m_Images = new List<PackageImage>();
+            m_Links = new List<PackageLink>();
+            m_VersionList = new AssetStoreVersionList();
+            m_UpmVersionList = new UpmVersionList();
         }
 
-        public AssetStorePackage(string productId, IDictionary<string, object> productDetail)
+        public AssetStorePackage(FetchedInfo fetchedInfo, LocalInfo localInfo = null)
         {
             m_Errors = new List<Error>();
-            m_State = PackageState.UpToDate;
-            m_ProductId = productId;
-            m_Versions = new List<AssetStorePackageVersion>();
-            try
+            m_Progress = PackageProgress.None;
+            m_Type = PackageType.AssetStore;
+            m_Name = string.Empty;
+            m_ProductId = fetchedInfo?.id.ToString();
+            m_Images = fetchedInfo?.images ?? new List<PackageImage>();
+            m_Links = fetchedInfo?.links ?? new List<PackageLink>();
+            m_VersionList = new AssetStoreVersionList();
+            m_UpmVersionList = new UpmVersionList();
+
+            if (string.IsNullOrEmpty(fetchedInfo?.id) || string.IsNullOrEmpty(fetchedInfo?.versionId))
             {
-                m_Versions.Add(new AssetStorePackageVersion(productId, productDetail));
+                AddError(new Error(NativeErrorCode.Unknown, "Invalid product details."));
             }
-            catch (Exception e)
+            else if (localInfo == null)
             {
-                m_Errors.Add(new Error(NativeErrorCode.Unknown, e.Message));
-                m_State = PackageState.Error;
+                m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo));
             }
+            else
+            {
+                m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo, localInfo));
+                if (localInfo.canUpdate && (localInfo.versionId != fetchedInfo.versionId || localInfo.versionString != fetchedInfo.versionString))
+                    m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo));
+            }
+        }
+
+        public AssetStorePackage(FetchedInfo fetchedInfo, UpmPackage package)
+        {
+            m_Errors = new List<Error>();
+            m_Progress = PackageProgress.None;
+            m_Type = PackageType.AssetStore;
+            m_Name = package?.name ?? string.Empty;
+            m_ProductId = fetchedInfo?.id.ToString();
+
+            m_Images = fetchedInfo?.images ?? new List<PackageImage>();
+            m_Links = fetchedInfo?.links ?? new List<PackageLink>();
+            m_VersionList = new AssetStoreVersionList();
+
+            m_UpmVersionList = package?.versionList as UpmVersionList ?? new UpmVersionList();
+            foreach (var version in m_UpmVersionList.all.Cast<UpmPackageVersion>())
+                version.UpdateFetchedInfo(fetchedInfo);
+
+            if (string.IsNullOrEmpty(fetchedInfo?.id) || string.IsNullOrEmpty(fetchedInfo?.versionId))
+                AddError(new Error(NativeErrorCode.Unknown, "Invalid product details."));
+            else if (string.IsNullOrEmpty(package?.name))
+                AddError(new Error(NativeErrorCode.Unknown, "Invalid package info."));
         }
 
         public IPackage Clone()

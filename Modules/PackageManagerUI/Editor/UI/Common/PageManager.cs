@@ -223,7 +223,7 @@ namespace UnityEditor.PackageManager.UI
                 if ((options & RefreshOptions.Purchased) != 0)
                     AssetStore.AssetStoreClient.instance.List(0, k_DefaultPageSize, string.Empty);
                 if ((options & RefreshOptions.PurchasedOffline) != 0)
-                    AssetStore.AssetStoreClient.instance.Refresh(PackageDatabase.instance.assetStorePackages);
+                    AssetStore.AssetStoreClient.instance.RefreshLocal();
             }
 
             public void Fetch(string uniqueId)

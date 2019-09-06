@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -14,21 +15,10 @@ namespace UnityEditor.PackageManager.UI.AssetStore
     [Serializable]
     internal class AssetStorePackageVersion : IPackageVersion
     {
-        public class SpecificVersionInfo
-        {
-            public string versionString;
-            public string versionId;
-            public string publishedDate;
-            public string supportedVersion;
-            public string packagePath;
-        }
-
         [SerializeField]
         private string m_PackageUniqueId;
         [SerializeField]
         private string m_DisplayName;
-        [SerializeField]
-        private string m_Type;
         [SerializeField]
         private string m_Author;
         [SerializeField]
@@ -40,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         [SerializeField]
         private SemVersion m_Version;
         [SerializeField]
-        private DateTime m_PublishedDate;
+        private long m_PublishedDateTicks;
         [SerializeField]
         private string m_PublisherId;
         [SerializeField]
@@ -56,11 +46,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         [SerializeField]
         private SemVersion m_SupportedUnityVersion;
         [SerializeField]
-        private List<PackageImage> m_Images;
-        [SerializeField]
         private List<PackageSizeInfo> m_SizeInfos;
-        [SerializeField]
-        private List<PackageLink> m_Links;
         [SerializeField]
         private PackageTag m_Tag;
 
@@ -68,19 +54,39 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
         public string displayName => m_DisplayName;
 
-        public string type => m_Type;
-
         public string author => m_Author;
+
+        public string authorLink => $"{AssetStoreUtils.instance.assetStoreUrl}/publishers/{publisherId}";
 
         public string description => m_Description;
 
         public string category => m_Category;
 
+        private Dictionary<string, string> m_CategoryLinks;
+        public IDictionary<string, string> categoryLinks
+        {
+            get
+            {
+                if (m_CategoryLinks == null)
+                {
+                    m_CategoryLinks = new Dictionary<string, string>();
+                    var categories = m_Category.Split('/');
+                    var parentCategory = "/";
+                    foreach (var category in categories)
+                    {
+                        var lower = category.ToLower(CultureInfo.InvariantCulture);
+                        var url = $"{AssetStoreUtils.instance.assetStoreUrl}{parentCategory}{lower}";
+                        parentCategory += lower + "/";
+                        m_CategoryLinks[category] = url;
+                    }
+                }
+                return m_CategoryLinks;
+            }
+        }
+
         public string packageUniqueId => m_PackageUniqueId;
 
         public string uniqueId => m_VersionId;
-
-        public PackageSource source => PackageSource.Unknown;
 
         public IEnumerable<Error> errors => m_Errors;
 
@@ -94,7 +100,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             set { m_Version = value; }
         }
 
-        public DateTime? publishedDate => m_PublishedDate;
+        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? (DateTime?)null : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
 
         public string publisherId => m_PublisherId;
 
@@ -107,8 +113,6 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         public bool isInstalled => false;
 
         public bool isFullyFetched => true;
-
-        public bool isUserVisible => true;
 
         public bool isAvailableOnDisk => m_IsAvailableOnDisk;
 
@@ -146,314 +150,75 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
         public IEnumerable<SemVersion> supportedVersions => m_SupportedUnityVersions;
 
-        public IEnumerable<PackageImage> images => m_Images;
-
         public IEnumerable<PackageSizeInfo> sizes => m_SizeInfos;
-
-        public IEnumerable<PackageLink> links => m_Links;
 
         public bool HasTag(PackageTag tag)
         {
             return (m_Tag & tag) == tag;
         }
 
-        public AssetStorePackageVersion(AssetStorePackageVersion other, SpecificVersionInfo localInfo = null)
+        public AssetStorePackageVersion(FetchedInfo fetchedInfo, LocalInfo localInfo = null)
         {
-            m_PackageUniqueId = other.m_PackageUniqueId;
-            m_DisplayName = other.m_DisplayName;
-            m_Type = other.m_Type;
-            m_Author = other.m_Author;
-            m_Description = other.m_Description;
-            m_Category = other.m_Category;
-            m_Errors = other.m_Errors;
-            m_Version = other.m_Version;
-            m_PublishedDate = other.m_PublishedDate;
-            m_PublisherId = other.m_PublisherId;
-            m_IsAvailableOnDisk = other.m_IsAvailableOnDisk;
-            m_LocalPath = other.m_LocalPath;
-            m_VersionString = other.m_VersionString;
-            m_VersionId = other.m_VersionId;
-            m_SupportedUnityVersions = other.m_SupportedUnityVersions;
-            m_SupportedUnityVersion = other.m_SupportedUnityVersion;
-            m_Images = other.m_Images;
-            m_SizeInfos = other.m_SizeInfos;
-            m_Links = other.m_Links;
-            m_Tag = other.m_Tag;
+            if (fetchedInfo == null)
+                throw new ArgumentNullException(nameof(fetchedInfo));
+
+            m_Errors = new List<Error>();
+            m_Tag = PackageTag.Downloadable | PackageTag.Importable;
+            m_PackageUniqueId = fetchedInfo.id.ToString();
+
+            m_Description = fetchedInfo.description;
+            m_Author = fetchedInfo.author;
+            m_PublisherId = fetchedInfo.publisherId;
+
+            m_Category = fetchedInfo.category;
+
+            m_VersionString = localInfo?.versionString ?? fetchedInfo.versionString ?? string.Empty;
+            m_VersionId = localInfo?.versionId ?? fetchedInfo.versionId ?? string.Empty;
+            m_Version = SemVersion.TryParse(m_VersionString.Trim(), out m_Version) ? m_Version : new SemVersion(0);
+
+            var publishDateString = localInfo?.publishedDate ?? fetchedInfo.publishedDate ?? string.Empty;
+            m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;
+            m_DisplayName = !string.IsNullOrEmpty(fetchedInfo.displayName) ? fetchedInfo.displayName : $"Package {m_PackageUniqueId}@{m_VersionId}";
+
+            m_SupportedUnityVersions = new List<SemVersion>();
+            if (fetchedInfo.supportedVersions?.Any() ?? false)
+            {
+                foreach (var supportedVersion in fetchedInfo.supportedVersions)
+                {
+                    SemVersion version;
+                    if (SemVersion.TryParse(supportedVersion as string, out version))
+                        m_SupportedUnityVersions.Add(version);
+                }
+                m_SupportedUnityVersions.Sort((left, right) => left.CompareByPrecedence(right));
+            }
 
             if (localInfo != null)
             {
-                m_VersionString = localInfo.versionString;
-                m_VersionId = localInfo.versionId;
-
-                SemVersion semVer;
-                if (!SemVersion.TryParse(m_VersionString.Trim(), out semVer))
-                {
-                    semVer = new SemVersion(0);
-                }
-                m_Version = semVer;
-
-                m_PublishedDate = DateTime.Parse(localInfo.publishedDate);
-
                 var simpleVersion = Regex.Replace(localInfo.supportedVersion, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
                 SemVersion.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
             }
+            else
+            {
+                m_SupportedUnityVersion = m_SupportedUnityVersions.LastOrDefault();
+            }
+
+            m_SizeInfos = new List<PackageSizeInfo>(fetchedInfo.sizeInfos);
+            m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareByPrecedence(right.supportedUnityVersion));
+
+            var state = fetchedInfo.state ?? string.Empty;
+            if (state.Equals("published", StringComparison.InvariantCultureIgnoreCase))
+                m_Tag |= PackageTag.Published;
+            else if (state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase))
+                m_Tag |= PackageTag.Deprecated;
+
+            m_LocalPath = localInfo?.packagePath ?? string.Empty;
+            m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && File.Exists(m_LocalPath);
         }
 
-        public AssetStorePackageVersion(string productId, IDictionary<string, object> productDetail, SpecificVersionInfo localInfo = null)
+        public void SetUpmPackageFetchError(Error error)
         {
-            if (productDetail == null)
-            {
-                throw new ArgumentNullException(nameof(productDetail));
-            }
-
-            m_Errors = new List<Error>();
-            m_Type = "assetstore";
-            m_Tag = PackageTag.AssetStore;
-            m_PackageUniqueId = productId;
-
-            try
-            {
-                var description = productDetail.ContainsKey("description") ? productDetail["description"] as string : string.Empty;
-                m_Description = CleanUpHtml(description);
-
-                var publisher = new Dictionary<string, object>();
-                if (productDetail.ContainsKey("productPublisher"))
-                {
-                    publisher = productDetail["productPublisher"] as Dictionary<string, object>;
-                    if (publisher.ContainsKey("url") && publisher["url"] is string && (string)publisher["url"] == "http://unity3d.com")
-                        m_Author = "Unity Technologies Inc.";
-                    else
-                        m_Author = publisher.ContainsKey("name") ? publisher["name"] as string : L10n.Tr("Unknown publisher");
-
-                    m_PublisherId = publisher.ContainsKey("externalRef") ? publisher["externalRef"] as string : string.Empty;
-                }
-                else
-                {
-                    m_Author = string.Empty;
-                    m_PublisherId = string.Empty;
-                }
-
-                m_Category = string.Empty;
-                if (productDetail.ContainsKey("category"))
-                {
-                    var categoryInfo = productDetail["category"] as IDictionary<string, object>;
-                    m_Category = categoryInfo["name"] as string;
-                }
-
-                if (localInfo != null)
-                {
-                    m_VersionString = localInfo.versionString;
-                    m_VersionId = localInfo.versionId;
-
-                    SemVersion semVer;
-                    if (!SemVersion.TryParse(m_VersionString.Trim(), out semVer))
-                    {
-                        semVer = new SemVersion(0);
-                    }
-                    m_Version = semVer;
-
-                    m_PublishedDate = DateTime.Parse(localInfo.publishedDate);
-                }
-                else if (productDetail.ContainsKey("version"))
-                {
-                    var versionInfo = productDetail["version"] as IDictionary<string, object>;
-                    m_VersionString = versionInfo["name"] as string;
-                    m_VersionId = versionInfo["id"] as string;
-                    SemVersion semVer;
-                    if (!SemVersion.TryParse(m_VersionString.Trim(), out semVer))
-                    {
-                        semVer = new SemVersion(0);
-                    }
-                    m_Version = semVer;
-
-                    if (versionInfo.ContainsKey("publishedDate"))
-                    {
-                        var date = versionInfo["publishedDate"] as string;
-                        m_PublishedDate = DateTime.Parse(date);
-                    }
-                    else
-                    {
-                        m_PublishedDate = new DateTime();
-                    }
-                }
-                else
-                {
-                    m_VersionString = string.Empty;
-                    m_VersionId = string.Empty;
-                    m_Version = new SemVersion(0);
-                }
-
-                m_DisplayName = productDetail.ContainsKey("displayName") ? productDetail["displayName"] as string : $"Package {m_PackageUniqueId}@{m_VersionId}";
-
-                m_SupportedUnityVersions = new List<SemVersion>();
-                if (productDetail.ContainsKey("supportedUnityVersions"))
-                {
-                    var supportedVersions = productDetail["supportedUnityVersions"] as IList<object>;
-                    foreach (var supportedVersion in supportedVersions.Where(v => v is string))
-                    {
-                        SemVersion version;
-                        if (SemVersion.TryParse(supportedVersion as string, out version))
-                            m_SupportedUnityVersions.Add(version);
-                    }
-
-                    m_SupportedUnityVersions.Sort((left, right) => left.CompareByPrecedence(right));
-                }
-
-                if (localInfo != null)
-                {
-                    var simpleVersion = Regex.Replace(localInfo.supportedVersion, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
-                    SemVersion.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
-                }
-                else
-                {
-                    m_SupportedUnityVersion = m_SupportedUnityVersions.LastOrDefault();
-                }
-
-                m_Images = new List<PackageImage>();
-                if (productDetail.ContainsKey("mainImage"))
-                {
-                    var mainImage = productDetail["mainImage"] as IDictionary<string, object>;
-                    var thumbnailUrl = mainImage["url"] as string;
-                    thumbnailUrl = thumbnailUrl.Replace("//d2ujflorbtfzji.cloudfront.net/", "//assetstorev1-prd-cdn.unity3d.com/");
-                    m_Images.Add(new PackageImage
-                    {
-                        type = PackageImage.ImageType.Main,
-                        thumbnailUrl = "http:" + thumbnailUrl,
-                        url = string.Empty
-                    });
-                }
-
-                if (productDetail.ContainsKey("images"))
-                {
-                    var images = productDetail["images"] as IList<object>;
-                    foreach (var image in images)
-                    {
-                        var imageInfo = image as IDictionary<string, object>;
-                        var type = imageInfo["type"] as string;
-                        if (string.IsNullOrEmpty(type))
-                            continue;
-
-                        var imageType = PackageImage.ImageType.Screenshot;
-                        var thumbnailUrl = imageInfo["thumbnailUrl"] as string;
-                        thumbnailUrl = thumbnailUrl.Replace("//d2ujflorbtfzji.cloudfront.net/", "//assetstorev1-prd-cdn.unity3d.com/");
-
-                        if (type == "sketchfab")
-                            imageType = PackageImage.ImageType.Sketchfab;
-                        else if (type == "youtube")
-                            imageType = PackageImage.ImageType.Youtube;
-
-                        var imageUrl = imageInfo["imageUrl"] as string;
-                        if (imageType == PackageImage.ImageType.Screenshot)
-                            imageUrl = "http:" + imageUrl;
-
-                        m_Images.Add(new PackageImage
-                        {
-                            type = imageType,
-                            thumbnailUrl = "http:" + thumbnailUrl,
-                            url = imageUrl
-                        });
-                    }
-                }
-
-                m_SizeInfos = new List<PackageSizeInfo>();
-                if (productDetail.ContainsKey("uploads"))
-                {
-                    var uploads = productDetail["uploads"] as IDictionary<string, object>;
-                    foreach (var key in uploads.Keys)
-                    {
-                        var simpleVersion = Regex.Replace(key, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
-                        SemVersion version;
-                        if (SemVersion.TryParse(simpleVersion.Trim(), out version))
-                        {
-                            var info = uploads[key] as IDictionary<string, object>;
-                            var assetCount = info["assetCount"] as string;
-                            var downloadSize = info["downloadSize"] as string;
-
-                            m_SizeInfos.Add(new PackageSizeInfo
-                            {
-                                supportedUnityVersion = version,
-                                assetCount = string.IsNullOrEmpty(assetCount) ? 0 : ulong.Parse(assetCount),
-                                downloadSize = string.IsNullOrEmpty(downloadSize) ? 0 : ulong.Parse(downloadSize)
-                            });
-                        }
-                    }
-
-                    m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareByPrecedence(right.supportedUnityVersion));
-                }
-
-                m_Links = new List<PackageLink>();
-
-                var slug = productDetail.ContainsKey("slug") ? productDetail["slug"] as string : m_PackageUniqueId;
-                m_Links.Add(new PackageLink {name = "View in the Asset Store", url = $"/packages/p/{slug}"});
-
-                if (publisher.ContainsKey("url"))
-                {
-                    var url = publisher["url"] as string;
-                    if (!string.IsNullOrEmpty(url) && Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
-                        m_Links.Add(new PackageLink {name = "Publisher Web Site", url = url});
-                }
-
-                if (publisher.ContainsKey("supportUrl"))
-                {
-                    var url = publisher["supportUrl"] as string;
-                    if (!string.IsNullOrEmpty(url) && Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
-                        m_Links.Add(new PackageLink {name = "Publisher Support", url = url});
-                }
-
-                if (productDetail.ContainsKey("state"))
-                {
-                    var state = productDetail["state"] as string;
-                    if (state.Equals("published", StringComparison.InvariantCultureIgnoreCase))
-                        m_Tag |= PackageTag.Published;
-                    else if (state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase))
-                        m_Tag |= PackageTag.Deprecated;
-                }
-
-                m_LocalPath = productDetail.ContainsKey("localPath") ? productDetail["localPath"] as string : string.Empty;
-                m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && File.Exists(m_LocalPath);
-            }
-            catch (Exception e)
-            {
-                m_Errors.Add(new Error(NativeErrorCode.Unknown, e.Message));
-            }
-        }
-
-        private static string CleanUpHtml(string source)
-        {
-            if (string.IsNullOrEmpty(source))
-                return source;
-
-            source = source.Replace("<br>", "\n");
-
-            var array = new char[source.Length];
-            var arrayIndex = 0;
-            var inside = false;
-
-            foreach (var c in source.ToCharArray())
-            {
-                if (c == '<')
-                    inside = true;
-                else if (c == '>')
-                    inside = false;
-                else
-                {
-                    if (!inside)
-                        array[arrayIndex++] = c;
-                }
-            }
-
-            var text = new string(array, 0, arrayIndex);
-            text = Regex.Replace(text, @"&#x?\d+;", "");
-            text = text.Replace("&nbsp;", " ");
-            text = text.Replace("&lt;", "<");
-            text = text.Replace("&gt;", ">");
-            text = text.Replace("&amp;", "&");
-            text = text.Replace("&quot;", "\"");
-            text = text.Replace("&apos;", "'");
-            text = Regex.Replace(text, @"[\n\r]+", "\n");
-            text = text.Trim(' ', '\r', '\n', '\t');
-
-            return text;
+            m_Errors.Add(error);
+            m_Tag &= ~(PackageTag.Downloadable | PackageTag.Importable);
         }
     }
 }

@@ -30,7 +30,7 @@ namespace Unity.CodeEditor
         }
 
         [RequiredByNativeCode]
-        static bool OpenFileAtLineColumn(string path, int line, int column)
+        static bool OpenProject(string path, int line, int column)
         {
             return Editor.Current.OpenProject(path, line, column);
         }
@@ -155,6 +155,11 @@ namespace Unity.CodeEditor
         public static IExternalCodeEditor CurrentEditor => Editor.Current;
 
         public static string CurrentEditorInstallation => Editor.EditorInstallation.Path;
+
+        public static bool OSOpenFile(string appPath, string arguments)
+        {
+            return ExternalEditor.OSOpenFileWithArgument(appPath, arguments);
+        }
 
         public static string ParseArgument(string arguments, string path, int line, int column)
         {

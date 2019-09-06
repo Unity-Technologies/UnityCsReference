@@ -234,6 +234,11 @@ namespace UnityEditor
             return countedBits > 0 && countedBits != numFlags;
         }
 
+        public override bool UseDefaultMargins()
+        {
+            return false;
+        }
+
         protected override void OnHeaderGUI()
         {
             bool enabledTemp = GUI.enabled;

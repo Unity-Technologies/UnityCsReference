@@ -14,11 +14,12 @@ namespace UnityEditor.PackageManager.UI
 
         public override string specialUniqueId { get { return m_SpecialUniqueId; } }
 
-        public void Add(string packageId)
+        public void Add(string packageId, string packageUniqueId = null)
         {
             m_PackageId = packageId;
             m_PackageName = string.Empty;
             m_SpecialUniqueId = string.Empty;
+            m_PackageUniqueId = packageUniqueId ?? packageName;
             Start();
         }
 
