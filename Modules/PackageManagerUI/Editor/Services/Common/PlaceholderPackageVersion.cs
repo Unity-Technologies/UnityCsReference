@@ -21,19 +21,17 @@ namespace UnityEditor.PackageManager.UI
         public string uniqueId => m_UniqueId;
         public string name => string.Empty;
 
-        [SerializeField]
-        private PackageSource m_Source;
-        public PackageSource source => m_Source;
-
         public string displayName => string.Empty;
 
-        public string type => string.Empty;
-
         public string author => string.Empty;
+
+        public string authorLink => string.Empty;
 
         public string description => string.Empty;
 
         public string category => string.Empty;
+
+        public IDictionary<string, string> categoryLinks => null;
 
         public IEnumerable<Error> errors => Enumerable.Empty<Error>();
 
@@ -57,8 +55,6 @@ namespace UnityEditor.PackageManager.UI
 
         public bool isFullyFetched => true;
 
-        public bool isUserVisible => true;
-
         public bool isAvailableOnDisk => false;
 
         public bool isVersionLocked => true;
@@ -77,11 +73,7 @@ namespace UnityEditor.PackageManager.UI
 
         public IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
 
-        public IEnumerable<PackageImage> images => Enumerable.Empty<PackageImage>();
-
         public IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
-
-        public IEnumerable<PackageLink> links => Enumerable.Empty<PackageLink>();
 
         public SemVersion supportedVersion => null;
 
@@ -97,7 +89,6 @@ namespace UnityEditor.PackageManager.UI
             m_PackageUniqueId = packageUniqueId;
             m_UniqueId = uniqueId;
             m_Tag = tag;
-            m_Source = source;
         }
     }
 }

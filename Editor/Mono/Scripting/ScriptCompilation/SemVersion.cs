@@ -129,7 +129,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (currentPartIsNumber && otherPartIsNumber)
                 {
                     result = currentNumber.CompareTo(otherNumber);
-                    if (result != 0) return currentPart.CompareTo(otherNumber);
+                    if (result != 0)
+                    {
+                        return result;
+                    }
                 }
                 else
                 {
@@ -145,10 +148,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     result = string.CompareOrdinal(currentPart, otherPart);
                     if (result != 0)
+                    {
                         return result;
+                    }
                 }
             }
-
             return currentParts.Length.CompareTo(otherParts.Length);
         }
 

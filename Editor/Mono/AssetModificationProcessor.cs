@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
@@ -274,11 +275,24 @@ namespace UnityEditor
             return isOpenForEditMethods;
         }
 
-        static bool IsAssetInReadOnlyFolder(string assetPath)
+        static bool IsPathNotEditable(string assetPath)
         {
+            // read-only asset locations (e.g. shared packages) are considered not editable
             bool rootFolder, readOnly;
             bool validPath = AssetDatabase.GetAssetFolderInfo(assetPath, out rootFolder, out readOnly);
-            return validPath && readOnly;
+            if (validPath && readOnly)
+                return true;
+
+            // paths under Library are considered to be editable, even if they are not versioned
+            if (assetPath.StartsWith("Library/", true, CultureInfo.InvariantCulture))
+                return false;
+
+            // other paths that are not know to asset database, and not versioned, are considered
+            // not editable
+            if (!Provider.PathIsVersioned(assetPath))
+                return true;
+
+            return false;
         }
 
         static bool IsOpenForEditViaScriptCallbacks(string assetPath, ref string message)
@@ -301,7 +315,7 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(assetPath))
                 return true; // treat empty/null paths as editable (might be under Library folders etc.)
 
-            if (IsAssetInReadOnlyFolder(assetPath))
+            if (IsPathNotEditable(assetPath))
                 return false;
             if (!AssetModificationHook.IsOpenForEdit(assetPath, out message, statusOptions))
                 return false;
@@ -322,7 +336,7 @@ namespace UnityEditor
             {
                 if (string.IsNullOrEmpty(path))
                     continue; // treat empty/null paths as editable (might be under Library folders etc.)
-                if (IsAssetInReadOnlyFolder(path))
+                if (IsPathNotEditable(path))
                 {
                     outNotEditablePaths.Add(path);
                     continue;

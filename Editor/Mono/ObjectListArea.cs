@@ -428,7 +428,8 @@ namespace UnityEditor
 
         void ClearAssetStoreGroups()
         {
-            EndRename(true);
+            if (!GetCreateAssetUtility().IsCreatingNewAsset())
+                EndRename(true);
             m_Groups.Clear();
             m_Groups.Add(m_LocalAssets);
             m_StoreAssets.Clear();

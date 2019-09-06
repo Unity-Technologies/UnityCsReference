@@ -8,9 +8,10 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class UpmEmbedOperation : UpmBaseOperation<EmbedRequest>
     {
-        public void Embed(string packageName)
+        public void Embed(string packageName, string packageUniqueId = null)
         {
             m_PackageName = packageName;
+            m_PackageUniqueId = packageUniqueId ?? packageName;
             Start();
         }
 

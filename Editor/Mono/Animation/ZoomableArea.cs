@@ -258,12 +258,12 @@ namespace UnityEditor
                 if (minimalGUI)
                 {
                     visualSliderWidth = 0;
-                    sliderWidth = 12;
+                    sliderWidth = 13;
                 }
                 else
                 {
-                    visualSliderWidth = 12;
-                    sliderWidth = 12;
+                    visualSliderWidth = 13;
+                    sliderWidth = 13;
                 }
             }
 

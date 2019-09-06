@@ -184,12 +184,22 @@ namespace UnityEditor.VersionControl
             return Internal_Checkout(consolidatedAssetList.ToArray(), mode, changeset);
         }
 
-        static public Task Checkout(AssetList assets, CheckoutMode mode, ChangeSet changeset = null)
+        static public Task Checkout(AssetList assets, CheckoutMode mode)
+        {
+            return Checkout(assets, mode, null);
+        }
+
+        static public Task Checkout(AssetList assets, CheckoutMode mode, ChangeSet changeset)
         {
             return CheckCallbackAndCheckout(assets, mode, changeset);
         }
 
-        static public Task Checkout(string[] assets, CheckoutMode mode, ChangeSet changeset = null)
+        static public Task Checkout(string[] assets, CheckoutMode mode)
+        {
+            return Checkout(assets, mode, null);
+        }
+
+        static public Task Checkout(string[] assets, CheckoutMode mode, ChangeSet changeset)
         {
             var assetList = new AssetList();
             foreach (var path in assets)
@@ -201,7 +211,12 @@ namespace UnityEditor.VersionControl
             return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
-        static public Task Checkout(Object[] assets, CheckoutMode mode, ChangeSet changeset = null)
+        static public Task Checkout(Object[] assets, CheckoutMode mode)
+        {
+            return Checkout(assets, mode, null);
+        }
+
+        static public Task Checkout(Object[] assets, CheckoutMode mode, ChangeSet changeset)
         {
             var assetList = new AssetList();
             foreach (var o in assets)
@@ -222,7 +237,12 @@ namespace UnityEditor.VersionControl
             return Internal_CheckoutIsValid(new Asset[] { asset }, mode);
         }
 
-        static public Task Checkout(Asset asset, CheckoutMode mode, ChangeSet changeset = null)
+        static public Task Checkout(Asset asset, CheckoutMode mode)
+        {
+            return Checkout(asset, mode, null);
+        }
+
+        static public Task Checkout(Asset asset, CheckoutMode mode, ChangeSet changeset)
         {
             var assetList = new AssetList();
             assetList.Add(asset);
@@ -230,7 +250,12 @@ namespace UnityEditor.VersionControl
             return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
-        static public Task Checkout(string asset, CheckoutMode mode, ChangeSet changeset = null)
+        static public Task Checkout(string asset, CheckoutMode mode)
+        {
+            return Checkout(asset, mode, null);
+        }
+
+        static public Task Checkout(string asset, CheckoutMode mode, ChangeSet changeset)
         {
             var assetList = new AssetList();
             assetList.Add(GetAssetByPath(asset));
@@ -238,7 +263,12 @@ namespace UnityEditor.VersionControl
             return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
-        static public Task Checkout(UnityEngine.Object asset, CheckoutMode mode, ChangeSet changeset = null)
+        static public Task Checkout(UnityEngine.Object asset, CheckoutMode mode)
+        {
+            return Checkout(asset, mode, null);
+        }
+
+        static public Task Checkout(UnityEngine.Object asset, CheckoutMode mode, ChangeSet changeset)
         {
             var path = AssetDatabase.GetAssetPath(asset);
             var vcasset = GetAssetByPath(path);

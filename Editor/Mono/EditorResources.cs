@@ -50,10 +50,7 @@ namespace UnityEditor.Experimental
 
         internal static string GetDefaultFont()
         {
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-                return "Verdana";
-            else
-                return "Roboto";
+            return "Inter";
         }
 
         internal static string GetCurrentFont()
@@ -84,9 +81,9 @@ namespace UnityEditor.Experimental
                 }
                 else
                 {
-                    if (currentFont == "Roboto")
+                    if (currentFont == "Inter")
                     {
-                        s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/roboto/Roboto-Small.ttf") as Font;
+                        s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/Inter/Inter-Small.ttf") as Font;
                     }
                     else if (currentFont == "Lucida Grande")
                     {
@@ -137,9 +134,9 @@ namespace UnityEditor.Experimental
                 }
                 else
                 {
-                    if (currentFont == "Roboto")
+                    if (currentFont == "Inter")
                     {
-                        s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/roboto/Roboto-Bold.ttf") as Font;
+                        s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/Inter/Inter-Bold.ttf") as Font;
                     }
                     else if (currentFont == "Lucida Grande")
                     {
@@ -165,7 +162,7 @@ namespace UnityEditor.Experimental
 
                 if (Application.platform == RuntimePlatform.WindowsEditor)
                 {
-                    s_SupportedFonts.Add("Segoe UI");
+                    s_SupportedFonts.Add("Verdana");
                 }
 
                 foreach (var builtinFont in EditorResources.builtInFonts.Keys)
@@ -188,7 +185,7 @@ namespace UnityEditor.Experimental
                 {
                     s_BuiltInFonts = new Dictionary<string, string>
                     {
-                        ["Roboto"] = "Fonts/roboto/Roboto-Regular.ttf"
+                        ["Inter"] = "Fonts/Inter/Inter-Regular.ttf"
                     };
 
                     if (Application.platform != RuntimePlatform.WindowsEditor)
@@ -230,36 +227,41 @@ namespace UnityEditor.Experimental
             return catalogFiles;
         }
 
-        [UsedImplicitly, RequiredByNativeCode]
         internal static void BuildCatalog()
         {
-            s_StyleCatalog = new StyleCatalog();
-            s_RefreshGlobalStyleCatalog = false;
+            using (new PerformanceTracker(nameof(BuildCatalog)))
+            {
+                s_StyleCatalog = new StyleCatalog();
+                s_RefreshGlobalStyleCatalog = false;
 
-            var paths = GetDefaultStyleCatalogPaths();
-            foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
-                paths.Add(editorUssPath);
+                var paths = GetDefaultStyleCatalogPaths();
+                foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
+                    paths.Add(editorUssPath);
 
-            Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
-            styleCatalog.Load(paths);
+                Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
+                styleCatalog.Load(paths);
+            }
         }
 
         internal static void RefreshSkin()
         {
-            if (!CanEnableExtendedStyles())
-                return;
-
-            GUIStyle.onDraw = StylePainter.DrawStyle;
-
-            // Update gui skin style layouts
-            var skin = GUIUtility.GetDefaultSkin();
-            if (skin != null)
+            using (new PerformanceTracker(nameof(RefreshSkin)))
             {
-                // TODO: Emit OnStyleCatalogLoaded
-                if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
-                    ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
-                skin.font = GetNormalFont();
-                UpdateGUIStyleProperties(skin);
+                if (!CanEnableExtendedStyles())
+                    return;
+
+                GUIStyle.onDraw = StylePainter.DrawStyle;
+
+                // Update gui skin style layouts
+                var skin = GUIUtility.GetDefaultSkin();
+                if (skin != null)
+                {
+                    // TODO: Emit OnStyleCatalogLoaded
+                    if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
+                        ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
+                    skin.font = GetNormalFont();
+                    UpdateGUIStyleProperties(skin);
+                }
             }
         }
 

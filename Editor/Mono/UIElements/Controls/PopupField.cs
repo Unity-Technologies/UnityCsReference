@@ -89,6 +89,10 @@ namespace UnityEditor.UIElements
         public new static readonly string labelUssClassName = ussClassName + "__label";
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        public PopupField()
+            : this(null)
+        {}
+
         public PopupField(string label = null)
             : base(label)
         {

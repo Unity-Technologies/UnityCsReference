@@ -32,8 +32,11 @@ namespace UnityEditor
         const string k_ProjectSettings = "Edit/Project Settings";
         static SettingsService()
         {
-            EditorApplication.update -= CheckProjectSettings;
-            EditorApplication.update += CheckProjectSettings;
+            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
+            {
+                EditorApplication.update -= CheckProjectSettings;
+                EditorApplication.update += CheckProjectSettings;
+            }
         }
 
         internal static event Action settingsProviderChanged;

@@ -37,7 +37,7 @@ namespace UnityEditorInternal.VersionControl
         //[MenuItem ("CONTEXT/Pending/Revert Unchanged", true, 201)]
         static bool RevertUnchangedTest(int userData)
         {
-            return Provider.RevertIsValid(ListControl.FromID(userData).SelectedAssets, RevertMode.Normal);
+            return Provider.RevertIsValid(ListControl.FromID(userData).SelectedAssets, RevertMode.Unchanged);
         }
 
         //[MenuItem ("CONTEXT/Pending/Revert Unchanged", false, 201)]

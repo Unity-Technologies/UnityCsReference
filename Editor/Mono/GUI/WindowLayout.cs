@@ -174,8 +174,11 @@ namespace UnityEditor
         {
             EditorApplication.delayCall += () =>
             {
-                ReloadWindowLayoutMenu();
-                EditorUtility.Internal_UpdateAllMenus();
+                if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
+                {
+                    ReloadWindowLayoutMenu();
+                    EditorUtility.Internal_UpdateAllMenus();
+                }
             };
         }
 

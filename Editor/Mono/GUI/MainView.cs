@@ -10,7 +10,7 @@ namespace UnityEditor
     {
         const float kStatusbarHeight = 20;
 
-        private static readonly Vector2 kMinSize = new Vector2(950, 300);
+        private static readonly Vector2 kMinSize = new Vector2(875, 300);
         private static readonly Vector2 kMaxSize = new Vector2(10000, 10000);
 
         void OnEnable()
@@ -23,22 +23,36 @@ namespace UnityEditor
             base.SetPosition(newPos);
             if (children.Length == 0)
                 return;
-            Toolbar t = (Toolbar)children[0];
-            children[0].position = new Rect(0, 0, newPos.width, t.CalcHeight());
             if (children.Length > 2)
             {
+                // toolbar - dock area view - status bar
+                Toolbar t = (Toolbar)children[0];
+                children[0].position = new Rect(0, 0, newPos.width, t.CalcHeight());
                 children[1].position = new Rect(0,  t.CalcHeight(), newPos.width, newPos.height - t.CalcHeight() - children[2].position.height);
                 children[2].position = new Rect(0, newPos.height - children[2].position.height, newPos.width, children[2].position.height);
+            }
+            else
+            {
+                // dock area view - status bar
+                children[0].position = new Rect(0, 0, newPos.width, newPos.height - children[1].position.height);
+                children[1].position = new Rect(0, newPos.height - children[1].position.height, newPos.width, children[1].position.height);
             }
         }
 
         protected override void ChildrenMinMaxChanged()
         {
-            if (children.Length == 3)
+            if (children.Length == 3 && children[0] is Toolbar)
             {
+                // toolbar - dock area view - status bar
                 Toolbar t = (Toolbar)children[0];
-                var min = new Vector2(kMinSize.x, Mathf.Max(kMinSize.y, t.CalcHeight() + kStatusbarHeight + children[1].minSize.y));
-                SetMinMaxSizes(min, kMaxSize);
+                var min = new Vector2(minSize.x, Mathf.Max(minSize.y, t.CalcHeight() + kStatusbarHeight + children[1].minSize.y));
+                SetMinMaxSizes(min, maxSize);
+            }
+            else if (children.Length == 2)
+            {
+                // dock area view - status bar
+                var min = new Vector2(minSize.x, Mathf.Max(minSize.y, kStatusbarHeight + children[1].minSize.y));
+                SetMinMaxSizes(min, maxSize);
             }
             base.ChildrenMinMaxChanged();
         }
@@ -65,7 +79,7 @@ namespace UnityEditor
             // If we only have one child left, this means all views have been dragged out.
             // So we resize the window to be just the toolbar
             // On windows, this might need some special handling for the main menu
-            if (children[1].children.Length == 0)
+            if (children.Length == 3 && children[1].children.Length == 0)
             {
                 Rect r = window.position;
                 Toolbar t = (Toolbar)children[0];

@@ -207,6 +207,7 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.Setup();
 
                 AssetStore.AssetStoreClient.instance.onPackagesChanged += OnPackagesChanged;
+                AssetStore.AssetStoreClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
                 AssetStore.AssetStoreClient.instance.onDownloadProgress += OnDownloadProgress;
                 AssetStore.AssetStoreClient.instance.onListOperationStart += OnAssetStoreOperationStart;
                 AssetStore.AssetStoreClient.instance.onListOperationFinish += OnAssetStoreOperationFinish;
@@ -214,9 +215,6 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.Setup();
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
-
-                //if (m_RefreshedOnce)
-                //    Refresh(RefreshOptions.Purchased | RefreshOptions.OfflineMode);
             }
 
             public void Clear()
@@ -235,6 +233,7 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.Clear();
 
                 AssetStore.AssetStoreClient.instance.onPackagesChanged -= OnPackagesChanged;
+                AssetStore.AssetStoreClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
                 AssetStore.AssetStoreClient.instance.onDownloadProgress -= OnDownloadProgress;
                 AssetStore.AssetStoreClient.instance.onListOperationStart -= OnAssetStoreOperationStart;
                 AssetStore.AssetStoreClient.instance.onListOperationFinish -= OnAssetStoreOperationFinish;
@@ -275,7 +274,7 @@ namespace UnityEditor.PackageManager.UI
 
                     if (progress.state == DownloadProgress.State.Completed)
                     {
-                        AssetStore.AssetStoreClient.instance.Refresh(package);
+                        AssetStore.AssetStoreClient.instance.RefreshLocal();
                     }
 
                     onDownloadProgress?.Invoke(package, progress);
@@ -455,14 +454,15 @@ namespace UnityEditor.PackageManager.UI
                 onRefreshOperationFinish(operation is UpmListOperation ? PackageFilterTab.Local : PackageFilterTab.All);
             }
 
-            private void OnUpmPackageVersionUpdated(IPackageVersion version)
+            private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)
             {
-                var upmPackage = GetPackage(version.packageInfo.name) as UpmPackage;
-                if (upmPackage != null)
+                var package = GetPackage(packageUniqueId);
+                var upmVersions = package?.versions as UpmVersionList;
+                if (upmVersions != null)
                 {
-                    var packagePreUpdate = upmPackage.Clone();
-                    upmPackage.UpdateVersion(version as UpmPackageVersion);
-                    onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { upmPackage });
+                    var packagePreUpdate = package.Clone();
+                    upmVersions.UpdateVersion(version as UpmPackageVersion);
+                    onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
                 }
             }
 
@@ -487,7 +487,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (package.installedVersion == null)
                     return;
-                UpmClient.instance.RemoveByName(package.uniqueId);
+                UpmClient.instance.RemoveByName(package.name);
             }
 
             public void Embed(IPackageVersion packageVersion)
@@ -501,7 +501,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (package.installedVersion == null)
                     return;
-                UpmClient.instance.RemoveEmbeddedByName(package.uniqueId);
+                UpmClient.instance.RemoveEmbeddedByName(package.name);
             }
 
             public void FetchExtraInfo(IPackageVersion version)

@@ -69,9 +69,8 @@ namespace UnityEngine.UIElements
                 // later on, they'll be filtered based on render mode
                 if (panel.contextType == ContextType.Player && (panel as RuntimePanel).targetTexture == null)
                 {
-                    s_RepaintProfilerMarker.Begin();
-                    panel.Repaint(Event.current);
-                    s_RepaintProfilerMarker.End();
+                    using (s_RepaintProfilerMarker.Auto())
+                        panel.Repaint(Event.current);
                 }
             }
         }
@@ -331,9 +330,8 @@ namespace UnityEngine.UIElements
 
             if (s_EventInstance.type == EventType.Repaint)
             {
-                s_RepaintProfilerMarker.Begin();
-                panel.Repaint(s_EventInstance);
-                s_RepaintProfilerMarker.End();
+                using (s_RepaintProfilerMarker.Auto())
+                    panel.Repaint(s_EventInstance);
 
                 // TODO get rid of this when we wrap every GUIView inside IMGUIContainers
                 // here we pretend to use the repaint event
@@ -349,9 +347,8 @@ namespace UnityEngine.UIElements
                 {
                     bool immediate = s_EventInstance.type == EventType.Used || s_EventInstance.type == EventType.Layout || s_EventInstance.type == EventType.ExecuteCommand || s_EventInstance.type == EventType.ValidateCommand;
 
-                    s_EventProfilerMarker.Begin();
-                    panel.SendEvent(evt, immediate ? DispatchMode.Immediate : DispatchMode.Queued);
-                    s_EventProfilerMarker.End();
+                    using (s_EventProfilerMarker.Auto())
+                        panel.SendEvent(evt, immediate ? DispatchMode.Immediate : DispatchMode.Queued);
 
                     // The dispatcher should have finished processing the event,
                     // otherwise we cannot return a value for usesEvent.

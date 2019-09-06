@@ -18,15 +18,13 @@ namespace UnityEditor.PackageManager.UI
             switch (tab)
             {
                 case PackageFilterTab.Modules:
-                    return package.versions.Any(v => v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore));
+                    return package.Is(PackageType.BuiltIn);
                 case PackageFilterTab.All:
-                    return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore))
-                        && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
+                    return package.Is(PackageType.Installable) && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
                 case PackageFilterTab.Local:
-                    return package.versions.Any(v => !v.HasTag(PackageTag.BuiltIn) && !v.HasTag(PackageTag.AssetStore))
-                        && (package.installedVersion?.isDirectDependency ?? false);
+                    return !package.Is(PackageType.BuiltIn) && (package.installedVersion?.isDirectDependency ?? false);
                 case PackageFilterTab.AssetStore:
-                    return ApplicationUtil.instance.isUserLoggedIn && (package.primaryVersion?.HasTag(PackageTag.AssetStore) ?? false);
+                    return ApplicationUtil.instance.isUserLoggedIn && package.Is(PackageType.AssetStore);
                 case PackageFilterTab.InDevelopment:
                     return package.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false;
                 default:
@@ -34,12 +32,12 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        internal static bool FilterByText(IPackageVersion version, string text)
+        internal static bool FilterByText(IPackage package, IPackageVersion version, string text)
         {
             if (string.IsNullOrEmpty(text))
                 return true;
 
-            if (version == null)
+            if (package == null || version == null)
                 return false;
 
             if (version.name.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
@@ -48,39 +46,24 @@ namespace UnityEditor.PackageManager.UI
             if (!string.IsNullOrEmpty(version.displayName) && version.displayName.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
-            if (!version.HasTag(PackageTag.BuiltIn))
+            var prerelease = text.StartsWith("-") ? text.Substring(1) : text;
+            if (version.version != null && version.version.Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (version.HasTag(PackageTag.Preview) && PackageTag.Preview.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (version.HasTag(PackageTag.Verified) && PackageTag.Verified.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (version.version.StripTag().StartsWith(text, StringComparison.CurrentCultureIgnoreCase))
+                return true;
+
+            if (!string.IsNullOrEmpty(version.category))
             {
-                var prerelease = text.StartsWith("-") ? text.Substring(1) : text;
-                if (version.version != null && version.version.Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                    return true;
-
-                if (version.version.StripTag().StartsWith(text, StringComparison.CurrentCultureIgnoreCase))
-                    return true;
-
-                if (version.HasTag(PackageTag.Preview))
-                {
-                    if (PackageTag.Preview.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                        return true;
-                }
-
-                if (version.HasTag(PackageTag.Verified))
-                {
-                    if (PackageTag.Verified.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                        return true;
-                }
-
-                if (version.HasTag(PackageTag.Core))
-                {
-                    if (PackageTag.BuiltIn.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                        return true;
-                }
-            }
-
-            if (version.HasTag(PackageTag.AssetStore))
-            {
-                var words = text.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-                var categories = version.category?.Split('/');
-                if (categories != null && words.All(word => word.Length >= 2 && categories.Any(category => category.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
+                var words = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                var categories = version.category.Split('/');
+                if (words.All(word => word.Length >= 2 && categories.Any(category => category.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
                     return true;
             }
 
@@ -133,7 +116,7 @@ namespace UnityEditor.PackageManager.UI
 
                 var trimText = currentSearchText.Trim(' ', '\t');
                 trimText = Regex.Replace(trimText, @"[ ]{2,}", " ");
-                return string.IsNullOrEmpty(trimText) || FilterByText(package.primaryVersion, trimText);
+                return string.IsNullOrEmpty(trimText) || FilterByText(package, package.primaryVersion, trimText);
             }
 
             public bool FilterByCurrentTab(IPackage package)

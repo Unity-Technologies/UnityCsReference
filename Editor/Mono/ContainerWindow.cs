@@ -337,6 +337,8 @@ namespace UnityEditor
             {
                 if (m_ShowMode == (int)ShowMode.MainWindow && rootView && rootView.children.Length == 3)
                     return rootView.children[1] as SplitView;
+                if (m_ShowMode == (int)ShowMode.MainWindow && rootView && rootView.children.Length == 2)
+                    return rootView.children[0] as SplitView;
                 else
                     return rootView as SplitView;
             }
@@ -364,7 +366,7 @@ namespace UnityEditor
 
         public void HandleWindowDecorationStart(Rect windowPosition)
         {
-            bool hasTitleBar = (windowPosition.y == 0 && showMode != ShowMode.Utility && !isPopup);
+            bool hasTitleBar = (windowPosition.y == 0 && (showMode != ShowMode.Utility && showMode != ShowMode.MainWindow) && !isPopup);
 
             if (!hasTitleBar)
                 return;

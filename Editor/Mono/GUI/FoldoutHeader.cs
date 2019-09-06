@@ -33,6 +33,7 @@ namespace UnityEditor
     public sealed partial class EditorGUI
     {
         static bool s_FoldoutHeaderGroupActive;
+        private static readonly int s_FoldoutHeaderHash = "FoldoutHeader".GetHashCode();
 
         public static bool BeginFoldoutHeaderGroup(Rect position, bool foldout, string content, [DefaultValue("EditorStyles.foldoutHeader")]
             GUIStyle style = null, Action<Rect> menuAction = null, GUIStyle menuIcon = null)
@@ -46,6 +47,7 @@ namespace UnityEditor
             if (EditorGUIUtility.hierarchyMode)
             {
                 position.xMin -= EditorStyles.inspectorDefaultMargins.padding.left - EditorStyles.inspectorDefaultMargins.padding.right;
+                position.xMax += EditorStyles.inspectorDefaultMargins.padding.right;
             }
 
             if (style == null)
@@ -72,8 +74,22 @@ namespace UnityEditor
                 menuAction.Invoke(menuRect);
                 Event.current.Use();
             }
+            int id = GUIUtility.GetControlID(s_FoldoutHeaderHash, FocusType.Keyboard, position);
 
-            foldout = GUI.Toggle(position, foldout, content, style);
+            if (Event.current.type == EventType.KeyDown && GUIUtility.keyboardControl == id)
+            {
+                KeyCode kc = Event.current.keyCode;
+                if (kc == KeyCode.LeftArrow && foldout || (kc == KeyCode.RightArrow && foldout == false))
+                {
+                    foldout = !foldout;
+                    GUI.changed = true;
+                    Event.current.Use();
+                }
+            }
+            else
+            {
+                foldout = EditorGUIInternal.DoToggleForward(position, id, foldout, content, style);
+            }
 
             // Menu icon
             if (menuAction != null && Event.current.type == EventType.Repaint)

@@ -10,9 +10,10 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class UpmRemoveOperation : UpmBaseOperation<RemoveRequest>
     {
-        public void Remove(string packageName)
+        public void Remove(string packageName, string packageUniqueId = null)
         {
             m_PackageName = packageName;
+            m_PackageUniqueId = packageUniqueId ?? packageName;
             Start();
         }
 

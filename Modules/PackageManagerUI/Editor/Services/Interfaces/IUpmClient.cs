@@ -16,8 +16,10 @@ namespace UnityEditor.PackageManager.UI
         event Action<IOperation> onEmbedOperation;
 
         event Action<IEnumerable<IPackage>> onPackagesChanged;
-
-        event Action<IPackageVersion> onPackageVersionUpdated;
+        event Action<string, IPackage> onProductPackageChanged;
+        event Action<string, IPackageVersion> onPackageVersionUpdated;
+        event Action<string, IPackageVersion> onProductPackageVersionUpdated;
+        event Action<string, Error> onProductPackageFetchError;
 
         bool isAddRemoveOrEmbedInProgress { get; }
 
@@ -27,6 +29,8 @@ namespace UnityEditor.PackageManager.UI
 
         void SearchAll(bool offlineMode = false);
         void ExtraFetch(string packageId);
+
+        void FetchForProduct(string productId, string packageName);
 
         void List(bool offlineMode = false);
         void AddById(string packageId);
@@ -43,5 +47,7 @@ namespace UnityEditor.PackageManager.UI
         void Clear();
 
         void Reset();
+
+        void ResetProductCache();
     }
 }

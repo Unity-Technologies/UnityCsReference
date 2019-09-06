@@ -172,7 +172,7 @@ namespace UnityEditor
                 }
                 else if (Unsupported.IsDeveloperMode())
                 {
-                    GUI.Label(new Rect(progressBarHorizontalPosition - 200 - spacing, 0, 200, barHeight), m_MiniMemoryOverview, EditorStyles.progressBarText);
+                    GUI.Label(new Rect(progressBarHorizontalPosition - 300 - spacing, 0, 300, barHeight), m_MiniMemoryOverview, EditorStyles.progressBarText);
                     EditorGUIUtility.CleanCache(m_MiniMemoryOverview);
                 }
             }

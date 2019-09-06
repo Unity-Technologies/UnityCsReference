@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -22,6 +23,9 @@ namespace UnityEditor.PackageManager.UI
         public string name { get { return m_PackageInfo.name; } }
         public string type { get { return m_PackageInfo.type; } }
         public string category { get { return m_PackageInfo.category; } }
+
+        public IDictionary<string, string> categoryLinks => null;
+
         public IEnumerable<Error> errors => m_PackageInfo.errors.Concat(entitlementsError != null ? new List<Error> { entitlementsError } : new List<Error>());
         public bool isDirectDependency { get { return isFullyFetched && m_PackageInfo.isDirectDependency; } }
 
@@ -34,13 +38,13 @@ namespace UnityEditor.PackageManager.UI
         private string m_PackageId;
         public string uniqueId { get { return m_PackageId; } }
 
-        public string packageUniqueId { get { return name; } }
-
-        private PackageSource m_Source;
-        public PackageSource source { get { return m_Source; } }
+        private string m_PackageUniqueId;
+        public string packageUniqueId => m_PackageUniqueId;
 
         private string m_Author;
         public string author { get { return m_Author; } }
+
+        public string authorLink => string.Empty;
 
         private string m_DisplayName;
         public string displayName { get { return m_DisplayName; } }
@@ -116,11 +120,9 @@ namespace UnityEditor.PackageManager.UI
             set
             {
                 m_IsInstalled = value;
-                m_Source = m_PackageInfo.source == PackageSource.BuiltIn || m_IsInstalled ? m_PackageInfo.source : PackageSource.Registry;
+                RefreshTags();
             }
         }
-
-        public bool isUserVisible { get { return isInstalled || HasTag(PackageTag.Release | PackageTag.Preview | PackageTag.Verified | PackageTag.Core); } }
 
         private string m_Description;
         public string description { get { return !string.IsNullOrEmpty(m_Description) ? m_Description :  m_PackageInfo.description; } }
@@ -132,28 +134,13 @@ namespace UnityEditor.PackageManager.UI
             return (m_Tag & tag) != 0;
         }
 
-        public bool isVersionLocked
-        {
-            get { return source == PackageSource.Embedded || source == PackageSource.Git || source == PackageSource.BuiltIn; }
-        }
+        public bool isVersionLocked => HasTag(PackageTag.VersionLocked);
 
-        public bool canBeRemoved
-        {
-            get { return source != PackageSource.Unknown; }
-        }
+        public bool canBeRemoved => HasTag(PackageTag.Removable);
 
-        public bool canBeEmbedded
-        {
-            get
-            {
-                return isInstalled && isDirectDependency && (source == PackageSource.Registry || HasTag(PackageTag.Core));
-            }
-        }
+        public bool canBeEmbedded => HasTag(PackageTag.Embeddable);
 
-        private bool hasPathInId
-        {
-            get { return source == PackageSource.Local || source == PackageSource.Embedded || source == PackageSource.LocalTarball; }
-        }
+        public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.InDevelopment | PackageTag.Git);
 
         public bool isAvailableOnDisk
         {
@@ -162,7 +149,8 @@ namespace UnityEditor.PackageManager.UI
 
         public string shortVersionId { get { return FormatPackageId(name, version.ShortVersion()); } }
 
-        public DateTime? publishedDate { get { return m_PackageInfo.datePublished; } }
+        private long m_PublishedDateTicks;
+        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? m_PackageInfo.datePublished : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
 
         public string publisherId => m_Author;
 
@@ -183,17 +171,14 @@ namespace UnityEditor.PackageManager.UI
 
         public IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
 
-        public IEnumerable<PackageImage> images => Enumerable.Empty<PackageImage>();
-
         public IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
-
-        public IEnumerable<PackageLink> links => Enumerable.Empty<PackageLink>();
 
         public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion version, string displayName)
         {
             m_Version = version;
             m_DisplayName = displayName;
             m_IsInstalled = isInstalled;
+            m_PackageUniqueId = packageInfo.name;
 
             UpdatePackageInfo(packageInfo);
         }
@@ -207,14 +192,19 @@ namespace UnityEditor.PackageManager.UI
         {
             m_IsFullyFetched = m_Version == newPackageInfo.version;
             m_PackageInfo = newPackageInfo;
-            m_Source = m_PackageInfo.source == PackageSource.BuiltIn || m_IsInstalled ? m_PackageInfo.source : PackageSource.Registry;
+            m_PackageUniqueId = m_PackageInfo.name;
 
             RefreshTags();
+
+            // For core packages, or packages that are bundled with Unity without being published, use Unity's build date
+            m_PublishedDateTicks = 0;
+            if (HasTag(PackageTag.Bundled) && m_PackageInfo.datePublished == null)
+                m_PublishedDateTicks = new DateTime(1970, 1, 1).Ticks + InternalEditorUtility.GetUnityVersionDate() * TimeSpan.TicksPerSecond;
 
             m_Author = string.IsNullOrEmpty(m_PackageInfo.author.name) &&
                 m_PackageInfo.name.StartsWith(k_UnityPrefix) ? "Unity Technologies Inc." : m_PackageInfo.author.name;
 
-            if (m_Source == PackageSource.BuiltIn)
+            if (HasTag(PackageTag.BuiltIn))
                 m_Description = UpmPackageDocs.SplitBuiltinDescription(this)[0];
 
             // reset sample parse status on package info update, such that the sample list gets regenerated
@@ -224,7 +214,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 m_DisplayName = GetDisplayName(m_PackageInfo);
                 m_PackageId = m_PackageInfo.packageId;
-                if (hasPathInId)
+                if (installedFromPath)
                     m_PackageId = m_PackageId.Replace("\\", "/");
             }
             else
@@ -233,24 +223,38 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        internal void UpdateFetchedInfo(AssetStore.FetchedInfo fetchedInfo)
+        {
+            m_PackageUniqueId = fetchedInfo.id;
+
+            // override version info with product info
+            m_DisplayName = fetchedInfo.displayName;
+            m_Description = fetchedInfo.description;
+        }
+
         private void RefreshTags()
         {
-            switch (m_Source)
+            // in the case of git/local packages, we always assume that the non-installed versions are from the registry
+            var source = m_PackageInfo.source == PackageSource.BuiltIn || m_IsInstalled ? m_PackageInfo.source : PackageSource.Registry;
+            switch (source)
             {
                 case PackageSource.BuiltIn:
-                    m_Tag = type.Equals("module") ? PackageTag.BuiltIn : PackageTag.Core;
+                    m_Tag = PackageTag.Bundled | PackageTag.VersionLocked;
+                    if (m_PackageInfo.type == "module")
+                        m_Tag |= PackageTag.BuiltIn;
                     break;
 
                 case PackageSource.Embedded:
-                    m_Tag = PackageTag.InDevelopment;
+                    m_Tag = PackageTag.InDevelopment | PackageTag.VersionLocked;
                     break;
 
                 case PackageSource.Local:
+                case PackageSource.LocalTarball:
                     m_Tag = PackageTag.Local;
                     break;
 
                 case PackageSource.Git:
-                    m_Tag = PackageTag.Git;
+                    m_Tag = PackageTag.Git | PackageTag.VersionLocked;
                     break;
 
                 case PackageSource.Unknown:
@@ -260,10 +264,14 @@ namespace UnityEditor.PackageManager.UI
                     break;
             }
 
+            m_Tag |= PackageTag.Installable | PackageTag.Removable;
+            if (isInstalled && isDirectDependency && !installedFromPath && !HasTag(PackageTag.BuiltIn))
+                m_Tag |= PackageTag.Embeddable;
+
             if (m_Version.IsRelease())
             {
                 m_Tag |= PackageTag.Release;
-                if (m_Version == m_PackageInfo.versions.verified && !HasTag(PackageTag.InDevelopment | PackageTag.Local | PackageTag.Git))
+                if (m_Version == m_PackageInfo.versions.verified && !installedFromPath)
                     m_Tag |= PackageTag.Verified;
             }
             else

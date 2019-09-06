@@ -283,9 +283,9 @@ namespace UnityEditor.Experimental.GraphView
                 Font graphViewFont = EditorGUIUtility.LoadRequired("GraphView/DummyFont(LucidaGrande).ttf") as Font;
 
                 if (Application.platform == RuntimePlatform.WindowsEditor)
-                    graphViewFont.fontNames = new string[] { "Segoe UI", "Helvetica Neue", "Helvetica", "Arial", "Verdana" };
+                    graphViewFont.fontNames = new string[] { "Verdana" };
                 else if (Application.platform == RuntimePlatform.OSXEditor)
-                    graphViewFont.fontNames = new string[] { "Helvetica Neue", "Lucida Grande" };
+                    graphViewFont.fontNames = new string[] { "Lucida Grande" };
 
                 m_FontsOverridden = true;
             }

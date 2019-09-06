@@ -120,6 +120,14 @@ namespace UnityEngine
             }
         }
 
+        internal static Func<bool> s_HasCurrentWindowKeyFocusFunc;
+
+        internal static bool HasKeyFocus(int controlID)
+        {
+            return controlID == GUIUtility.keyboardControl &&
+                (s_HasCurrentWindowKeyFocusFunc != null ? s_HasCurrentWindowKeyFocusFunc() : true);
+        }
+
         //*undocumented*
         public static void ExitGUI()
         {

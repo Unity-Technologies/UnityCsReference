@@ -47,8 +47,7 @@ namespace UnityEditor
                     }
                     return false;
                 case EventType.Repaint:
-                    style.Draw(position, content, id);
-                    //          Handles.Repaint ();
+                    style.Draw(position, content, id, false, position.Contains(Event.current.mousePosition));
                     return id == GUIUtility.hotControl && position.Contains(Event.current.mousePosition);
             }
             return false;
