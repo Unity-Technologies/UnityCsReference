@@ -108,7 +108,8 @@ namespace UnityEditor
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
         [SerializeField]
-        ProfilerArea? m_CurrentArea = ProfilerArea.CPU;
+        ProfilerArea m_CurrentArea = ProfilerArea.CPU;
+        const ProfilerArea k_InvalidArea = unchecked((ProfilerArea)Profiler.invalidProfilerArea);
 
         int m_CurrentFrame = -1;
         int m_LastFrameFromTick = -1;
@@ -147,7 +148,6 @@ namespace UnityEditor
         HierarchyFrameDataView m_FrameDataView;
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
-        [SerializeField]
         ProfilerModuleBase[] m_ProfilerModules;
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests.SelectAndDisplayDetailsForAFrame_WithSearchFiltering to avoid brittle tests due to reflection
@@ -241,6 +241,11 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
             ProfilerUserSettings.settingsChanged += OnSettingsChanged;
+
+            foreach (var module in m_ProfilerModules)
+            {
+                module?.OnEnable(this);
+            }
         }
 
         void InitializeIfNeeded()
@@ -360,11 +365,11 @@ namespace UnityEditor
         void OnChartClosed(Chart sender)
         {
             ProfilerChart profilerChart = (ProfilerChart)sender;
-            m_CurrentArea = null;
+            m_CurrentArea = k_InvalidArea;
             profilerChart.active = false;
             m_ProfilerModules[(int)profilerChart.m_Area].OnDisable();
             m_ProfilerModules[(int)profilerChart.m_Area].OnClosed();
-            m_CurrentArea = null;
+            m_CurrentArea = k_InvalidArea;
         }
 
         void OnChartSelected(Chart sender)
@@ -382,9 +387,9 @@ namespace UnityEditor
                 ClearSelectedPropertyPath();
             }
 
-            if (oldArea.HasValue)
+            if (oldArea != k_InvalidArea)
             {
-                m_ProfilerModules[(int)oldArea.Value].OnDisable();
+                m_ProfilerModules[(int)oldArea].OnDisable();
             }
 
             m_ProfilerModules[(int)newArea].OnEnable(this);
@@ -1069,7 +1074,7 @@ namespace UnityEditor
             CheckForPlatformModuleChange();
             InitializeIfNeeded();
 
-            if (!m_CurrentArea.HasValue && Event.current.type == EventType.Repaint)
+            if (m_CurrentArea == k_InvalidArea && Event.current.type == EventType.Repaint)
             {
                 for (int i = 0; i < m_Charts.Length; i++)
                 {
@@ -1113,7 +1118,7 @@ namespace UnityEditor
             EditorGUILayout.EndScrollView();
 
             GUILayout.BeginVertical();
-            if (m_CurrentArea.HasValue)
+            if (m_CurrentArea != k_InvalidArea)
             {
                 var detailViewPosition = new Rect(0, m_VertSplit.realSizes[0] + EditorGUI.kWindowToolbarHeight, position.width, m_VertSplit.realSizes[1]);
                 var detailViewToolbar = detailViewPosition;

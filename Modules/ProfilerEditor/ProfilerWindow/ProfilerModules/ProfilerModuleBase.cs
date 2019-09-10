@@ -32,12 +32,12 @@ namespace UnityEditorInternal.Profiling
         public abstract void DrawToolbar(Rect position);
         public abstract void DrawView(Rect position);
 
-        protected void DrawOverviewText(ProfilerArea? area, Rect position)
+        protected void DrawOverviewText(ProfilerArea area, Rect position)
         {
-            if (!area.HasValue)
+            if ((uint)area == Profiler.invalidProfilerArea)
                 return;
 
-            string activeText = ProfilerDriver.GetOverviewText(area.Value, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+            string activeText = ProfilerDriver.GetOverviewText(area, m_ProfilerWindow.GetActiveVisibleFrameIndex());
             float height = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(activeText), position.width);
 
             m_PaneScroll = GUILayout.BeginScrollView(m_PaneScroll, ProfilerWindow.Styles.background);
@@ -45,7 +45,7 @@ namespace UnityEditorInternal.Profiling
             GUILayout.EndScrollView();
         }
 
-        protected static void DrawOtherToolbar(ProfilerArea? area)
+        protected static void DrawOtherToolbar(ProfilerArea area)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             GUILayout.FlexibleSpace();

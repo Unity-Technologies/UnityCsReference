@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Unity.CodeEditor;
 using UnityEngine;
 
@@ -85,8 +87,33 @@ namespace UnityEditor
             m_ChosenInstallation = editorInstallationPath;
         }
 
+        static string[] defaultExtensions
+        {
+            get
+            {
+                var customExtensions = new[] {"json", "asmdef", "log"};
+                return EditorSettings.projectGenerationBuiltinExtensions
+                    .Concat(EditorSettings.projectGenerationUserExtensions)
+                    .Concat(customExtensions)
+                    .Distinct().ToArray();
+            }
+        }
+
+        static bool SupportsExtension(string path)
+        {
+            var extension = Path.GetExtension(path);
+            if (string.IsNullOrEmpty(extension))
+                return false;
+            return defaultExtensions.Contains(extension.TrimStart('.'));
+        }
+
         public bool OpenProject(string path, int line, int column)
         {
+            if (path != "" && !SupportsExtension(path)) // Assets - Open C# Project passes empty path here
+            {
+                return false;
+            }
+
             string applicationPath = EditorPrefs.GetString("kScriptsDefaultApp");
 
             if (IsOSX)

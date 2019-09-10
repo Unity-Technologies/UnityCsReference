@@ -3040,6 +3040,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\DefineConstraintsHelper.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\DefineConstraintsHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\DirtySource.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\DirtySource.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\EditorBuildRules.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\EditorBuildRules.cs</Link>
     </Compile>
@@ -3061,17 +3064,20 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ExpressionTypeKey.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ExpressionTypeKey.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\FindReferences.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\FindReferences.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ILPostProcessCompiledAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ILPostProcessCompiledAssembly.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ILPostProcessing.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\ILPostProcessing.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs</Link>

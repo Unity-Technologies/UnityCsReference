@@ -8,22 +8,35 @@ using System.IO;
 using System.Linq;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Profiling;
 
 internal class ILPostProcessCompiledAssembly : ICompiledAssembly
 {
-    readonly ScriptAssembly m_ScriptAssembly;
+    readonly string m_AssemblyFilename;
     readonly string m_OutputPath;
-    readonly FindReferences m_FindReferences;
     InMemoryAssembly m_InMemoryAssembly;
 
-    public ILPostProcessCompiledAssembly(ScriptAssembly scriptAssembly, string outputPath, FindReferences findReferences)
+    public ILPostProcessCompiledAssembly(ScriptAssembly scriptAssembly, string outputPath)
     {
-        m_ScriptAssembly = scriptAssembly;
-        Name = Path.GetFileNameWithoutExtension(scriptAssembly.Filename);
-        References = scriptAssembly.GetAllReferences().Select(Path.GetFileName).ToArray();
+        m_AssemblyFilename = scriptAssembly.Filename;
+        Name = Path.GetFileNameWithoutExtension(m_AssemblyFilename);
+        References = scriptAssembly.GetAllReferences();
 
         m_OutputPath = outputPath;
-        m_FindReferences = findReferences;
+    }
+
+    public ILPostProcessCompiledAssembly(EditorBuildRules.TargetAssembly targetAssembly, string outputPath)
+    {
+        m_AssemblyFilename = targetAssembly.Filename;
+
+        Name = Path.GetFileNameWithoutExtension(m_AssemblyFilename);
+
+        var precompiledAssemblyReferences = targetAssembly.PrecompiledReferences.Select(a => a.Path);
+        var targetAssemblyReferences = targetAssembly.References.Select(a => a.FullPath(outputPath));
+
+        References = precompiledAssemblyReferences.Concat(targetAssemblyReferences).ToArray();
+
+        m_OutputPath = outputPath;
     }
 
     private InMemoryAssembly CreateOrGetInMemoryAssembly()
@@ -33,9 +46,9 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
             return m_InMemoryAssembly;
         }
 
-        byte[] peData = File.ReadAllBytes(Path.Combine(m_OutputPath, m_ScriptAssembly.Filename));
+        byte[] peData = File.ReadAllBytes(Path.Combine(m_OutputPath, m_AssemblyFilename));
 
-        var pdbFileName = Path.GetFileNameWithoutExtension(m_ScriptAssembly.Filename) + ".pdb";
+        var pdbFileName = Path.GetFileNameWithoutExtension(m_AssemblyFilename) + ".pdb";
         byte[] pdbData = File.ReadAllBytes(Path.Combine(m_OutputPath, pdbFileName));
 
         m_InMemoryAssembly = new InMemoryAssembly(peData, pdbData);
@@ -51,40 +64,6 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
     public string Name { get; set; }
     public string[] References { get; set; }
 
-    public ReferenceQueryResult HasReferences(ReferenceQueryInput input)
-    {
-        if (input.References == null)
-        {
-            throw new ArgumentNullException(nameof(input.References));
-        }
-
-        HashSet<string> result = m_FindReferences.Execute(m_ScriptAssembly.Filename, input.References, (FindReferencesQueryOptions)input.Options);
-        var found = new bool[input.References.Length];
-        var isAllReferencesFound = result.Any();
-        for (int i = 0; i < input.References.Length; i++)
-        {
-            found[i] = result.Contains(input.References[i]);
-            isAllReferencesFound &= found[i];
-        }
-
-        return new ReferenceQueryResult(found, isAllReferencesFound);
-    }
-
-    public bool HasReference(string reference, ReferencesQueryOptions options = ReferencesQueryOptions.Direct)
-    {
-        if (string.IsNullOrEmpty(reference))
-        {
-            throw new ArgumentException(nameof(reference));
-        }
-
-        var hasReferencesResult = HasReferences(new ReferenceQueryInput()
-        {
-            References = new string[] { reference },
-            Options = options
-        });
-        return hasReferencesResult.HasAllReferences && hasReferencesResult.HasReference.All(x => x);
-    }
-
     public void WriteAssembly()
     {
         if (m_InMemoryAssembly == null)
@@ -92,11 +71,15 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
             throw new ArgumentException("InMemoryAssembly has never been accessed or modified");
         }
 
-        var assemblyPath = Path.Combine(m_OutputPath, m_ScriptAssembly.Filename);
-        var pdbFileName = Path.GetFileNameWithoutExtension(m_ScriptAssembly.Filename) + ".pdb";
+        Profiler.BeginSample("ILPostProcessCompiledAssembly.WriteAssembly");
+
+        var assemblyPath = Path.Combine(m_OutputPath, m_AssemblyFilename);
+        var pdbFileName = Path.GetFileNameWithoutExtension(m_AssemblyFilename) + ".pdb";
         var pdbPath = Path.Combine(m_OutputPath, pdbFileName);
 
         File.WriteAllBytes(assemblyPath, InMemoryAssembly.PeData);
         File.WriteAllBytes(pdbPath, InMemoryAssembly.PdbData);
+
+        Profiler.EndSample();
     }
 }

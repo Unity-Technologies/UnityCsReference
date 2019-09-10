@@ -455,11 +455,8 @@ namespace UnityEditor.VersionControl
                 GUIUtility.ExitGUI();
             }
 
-            Color origColor = GUI.color;
-            GUI.color = new Color(1, 1, 1, 1 * .5f);
             bool refreshButtonClicked = GUILayout.Button(refreshIcon, EditorStyles.toolbarButton);
             refresh = refresh || refreshButtonClicked;
-            GUI.color = origColor;
 
             if (refresh)
             {

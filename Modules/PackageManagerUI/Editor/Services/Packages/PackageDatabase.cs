@@ -457,7 +457,7 @@ namespace UnityEditor.PackageManager.UI
             private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)
             {
                 var package = GetPackage(packageUniqueId);
-                var upmVersions = package?.versions as UpmVersionList;
+                var upmVersions = package?.versionList as UpmVersionList;
                 if (upmVersions != null)
                 {
                     var packagePreUpdate = package.Clone();

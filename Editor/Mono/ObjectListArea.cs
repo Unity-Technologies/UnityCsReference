@@ -265,6 +265,9 @@ namespace UnityEditor
 
             // Prepare data
             SetupData(true);
+
+            // End renaming if a rename was in progress
+            EndRename(true);
         }
 
         bool HasFocus()
@@ -428,8 +431,6 @@ namespace UnityEditor
 
         void ClearAssetStoreGroups()
         {
-            if (!GetCreateAssetUtility().IsCreatingNewAsset())
-                EndRename(true);
             m_Groups.Clear();
             m_Groups.Add(m_LocalAssets);
             m_StoreAssets.Clear();

@@ -64,6 +64,11 @@ namespace UnityEditorInternal.VersionControl
             if (!Provider.enabled || EditorUserSettings.WorkOffline)
                 return AssetMoveResult.DidNotMove;
 
+            if (!Provider.PathIsVersioned(from))
+                return AssetMoveResult.DidNotMove;
+            if (!Provider.PathIsVersioned(to))
+                return AssetMoveResult.DidNotMove;
+
             if (InternalEditorUtility.isHumanControllingUs && Directory.Exists(from) && !EditorUtility.DisplayDialog("Confirm version control operation", L10n.Tr($"You are about to move or rename a folder that is under version control.\n\nFrom:\t{from}\nTo:\t{to}\n\nAre you sure you want to perform this action?"), "Yes", "No"))
             {
                 return AssetMoveResult.FailedMove;
@@ -107,6 +112,9 @@ namespace UnityEditorInternal.VersionControl
         public static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions option)
         {
             if (!Provider.enabled || EditorUserSettings.WorkOffline)
+                return AssetDeleteResult.DidNotDelete;
+
+            if (!Provider.PathIsVersioned(assetPath))
                 return AssetDeleteResult.DidNotDelete;
 
             Task task = Provider.Delete(assetPath);

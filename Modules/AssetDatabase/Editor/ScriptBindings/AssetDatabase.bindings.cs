@@ -65,6 +65,10 @@ namespace UnityEditor
         extern internal static void RegisterAssetFolder(string path, bool immutable, string guid);
         extern internal static void UnregisterAssetFolder(string path);
 
+        // used by integration tests
+        extern internal static void RegisterRedirectedAssetFolder(string mountPoint, string folder, string physicalPath, bool immutable, string guid);
+        extern internal static void UnregisterRedirectedAssetFolder(string mountPoint, string folder);
+
         // returns true if the folder is known by the asset database
         // rootFolder is true if the path is a registered root folder
         // immutable is true when the root of the path was registered with the immutable flag (e.g. shared package)

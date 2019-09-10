@@ -12,11 +12,16 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class GPUProfilerModule : CPUorGPUProfilerModule
     {
+        const string k_ViewTypeSettingsKey = "Profiler.GPUProfilerModule.ViewType";
+        protected override string ViewTypeSettingsKey => k_ViewTypeSettingsKey;
+        protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Hierarchy;
+
         public override void OnEnable(IProfilerWindowController profilerWindow)
         {
             base.OnEnable(profilerWindow);
             m_FrameDataHierarchyView.gpuView = true;
-            m_ViewType = ProfilerViewType.Hierarchy;
+            if (m_ViewType == ProfilerViewType.Timeline)
+                m_ViewType = ProfilerViewType.Hierarchy;
         }
     }
 }
