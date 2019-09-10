@@ -336,7 +336,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static void DirtyAllNonCodeGenAssemblies()
         {
-            EmitExceptionAsError(() => Instance.DirtyAllNonCodeGenAssemblies());
+            var options = GetAdditionalEditorScriptCompilationOptions();
+            EmitExceptionAsError(() => Instance.DirtyAllNonCodeGenAssemblies(options));
         }
 
         [RequiredByNativeCode]

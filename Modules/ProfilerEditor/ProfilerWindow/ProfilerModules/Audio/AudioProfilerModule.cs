@@ -43,9 +43,41 @@ namespace UnityEditorInternal.Profiling
             Simple = 0,
             Detailed = 1
         }
-        ProfilerAudioView m_ShowDetailedAudioPane = ProfilerAudioView.Channels;
+        ProfilerAudioView m_ShowDetailedAudioPane = (ProfilerAudioView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerAudioView.Channels);
 
         int m_LastAudioProfilerFrame = -1;
+
+        const string k_ViewTypeSettingsKey = "Profiler.AudioProfilerModule.ViewType";
+        const string k_ShowInactiveDSPChainsSettingsKey = "Profiler.MemoryProfilerModule.ShowInactiveDSPChains";
+        const string k_HighlightAudibleDSPChainsSettingsKey = "Profiler.MemoryProfilerModule.HighlightAudibleDSPChains";
+        const string k_DSPGraphZoomFactorSettingsKey = "Profiler.MemoryProfilerModule.DSPGraphZoomFactor";
+        const string k_AudioProfilerGroupTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerGroupTreeViewState";
+        const string k_AudioProfilerClipTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerClipTreeViewState";
+
+        public override void OnEnable(IProfilerWindowController profilerWindow)
+        {
+            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
+            base.OnEnable(profilerWindow);
+
+            m_ShowDetailedAudioPane = (ProfilerAudioView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerAudioView.Channels);
+            m_ShowInactiveDSPChains = EditorPrefs.GetBool(k_ShowInactiveDSPChainsSettingsKey, m_ShowInactiveDSPChains);
+            m_HighlightAudibleDSPChains = EditorPrefs.GetBool(k_HighlightAudibleDSPChainsSettingsKey, m_HighlightAudibleDSPChains);
+            m_DSPGraphZoomFactor = SessionState.GetFloat(k_DSPGraphZoomFactorSettingsKey, m_DSPGraphZoomFactor);
+            EditorJsonUtility.FromJsonOverwrite(SessionState.GetString(k_AudioProfilerGroupTreeViewStateSettingsKey, EditorJsonUtility.ToJson(m_AudioProfilerGroupTreeViewState)), m_AudioProfilerGroupTreeViewState);
+            EditorJsonUtility.FromJsonOverwrite(SessionState.GetString(k_AudioProfilerClipTreeViewStateSettingsKey, EditorJsonUtility.ToJson(m_AudioProfilerClipTreeViewState)), m_AudioProfilerClipTreeViewState);
+        }
+
+        public override void OnDisable()
+        {
+            base.OnDisable();
+            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
+            EditorPrefs.SetInt(k_ViewTypeSettingsKey, (int)m_ShowDetailedAudioPane);
+            EditorPrefs.SetBool(k_ShowInactiveDSPChainsSettingsKey, m_ShowInactiveDSPChains);
+            EditorPrefs.SetBool(k_HighlightAudibleDSPChainsSettingsKey, m_HighlightAudibleDSPChains);
+            SessionState.SetFloat(k_DSPGraphZoomFactorSettingsKey, m_DSPGraphZoomFactor);
+            SessionState.SetString(k_AudioProfilerGroupTreeViewStateSettingsKey, EditorJsonUtility.ToJson(m_AudioProfilerGroupTreeViewState));
+            SessionState.SetString(k_AudioProfilerClipTreeViewStateSettingsKey, EditorJsonUtility.ToJson(m_AudioProfilerClipTreeViewState));
+        }
 
         public override void DrawToolbar(Rect position)
         {

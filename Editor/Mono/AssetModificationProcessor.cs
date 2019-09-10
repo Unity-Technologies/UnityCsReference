@@ -275,24 +275,26 @@ namespace UnityEditor
             return isOpenForEditMethods;
         }
 
-        static bool IsPathNotEditable(string assetPath)
+        enum Editability
+        {
+            Never,
+            Always,
+            Maybe
+        }
+
+        static Editability GetPathEditability(string assetPath)
         {
             // read-only asset locations (e.g. shared packages) are considered not editable
             bool rootFolder, readOnly;
             bool validPath = AssetDatabase.GetAssetFolderInfo(assetPath, out rootFolder, out readOnly);
             if (validPath && readOnly)
-                return true;
+                return Editability.Never;
 
-            // paths under Library are considered to be editable, even if they are not versioned
-            if (assetPath.StartsWith("Library/", true, CultureInfo.InvariantCulture))
-                return false;
-
-            // other paths that are not know to asset database, and not versioned, are considered
-            // not editable
+            // other paths that are not know to asset database, and not versioned, are considered always editable
             if (!Provider.PathIsVersioned(assetPath))
-                return true;
+                return Editability.Always;
 
-            return false;
+            return Editability.Maybe;
         }
 
         static bool IsOpenForEditViaScriptCallbacks(string assetPath, ref string message)
@@ -315,7 +317,10 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(assetPath))
                 return true; // treat empty/null paths as editable (might be under Library folders etc.)
 
-            if (IsPathNotEditable(assetPath))
+            var editability = GetPathEditability(assetPath);
+            if (editability == Editability.Always)
+                return true;
+            if (editability == Editability.Never)
                 return false;
             if (!AssetModificationHook.IsOpenForEdit(assetPath, out message, statusOptions))
                 return false;
@@ -336,7 +341,10 @@ namespace UnityEditor
             {
                 if (string.IsNullOrEmpty(path))
                     continue; // treat empty/null paths as editable (might be under Library folders etc.)
-                if (IsPathNotEditable(path))
+                var editability = GetPathEditability(path);
+                if (editability == Editability.Always)
+                    continue;
+                if (editability == Editability.Never)
                 {
                     outNotEditablePaths.Add(path);
                     continue;

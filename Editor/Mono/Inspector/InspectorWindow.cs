@@ -149,7 +149,7 @@ namespace UnityEditor
             public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
             public static readonly GUIContent vcsUnlock = EditorGUIUtility.TrTextContent("Unlock");
             public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
-            public static GUIStyle vcsButtonStyle = "preButton";
+            public static readonly GUIStyle vcsButtonStyle = EditorStyles.miniButton;
             public static readonly string objectDisabledModuleWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
@@ -1258,9 +1258,8 @@ namespace UnityEditor
             var hasAssetState = !string.IsNullOrEmpty(currentState);
             var hasMetaState = !string.IsNullOrEmpty(currentMetaState);
 
-            GUILayout.Label(GUIContent.none, Styles.preToolbar, GUILayout.Height(kBottomToolbarHeight));
-
-            var rect = GUILayoutUtility.GetLastRect();
+            GUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar);
+            var rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.toolbar, GUILayout.ExpandWidth(true));
 
             var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
             var overlayRect = new Rect(rect.x, rect.y + 1, 28, 16);
@@ -1295,6 +1294,7 @@ namespace UnityEditor
                 fullState = "State: " + fullState;
             content.tooltip = fullState;
             GUI.Label(textRect, content, EditorStyles.label);
+            GUILayout.EndHorizontal();
 
             VersionControlCheckoutHint(assetEditor, connected);
         }
@@ -1326,6 +1326,7 @@ namespace UnityEditor
 
             var buttonRect = rect;
             var buttonStyle = Styles.vcsButtonStyle;
+            buttonRect.y += 1;
             buttonRect.height = buttonStyle.CalcSize(Styles.vcsAdd).y;
 
             var isFolder = asset.isFolder && !Provider.isVersioningFolders;

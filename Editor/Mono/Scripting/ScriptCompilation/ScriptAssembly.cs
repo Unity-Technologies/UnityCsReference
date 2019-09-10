@@ -66,6 +66,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool CallOnBeforeCompilationStarted { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public string GeneratedResponseFile { get; set; }
+        public DirtySource DirtySource { get; set; }
+
+        public ScriptAssembly()
+        {
+            DirtySource = DirtySource.None;
+        }
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -23,34 +24,50 @@ namespace UnityEditor.Scripting.ScriptCompilation
         const string k_UnityEditorModules = "UnityEditor";
         const string k_UnityEditorModulesLower = "unityeditor";
 
+        public struct ScriptCodeGenAssemblies
+        {
+            public List<ScriptAssembly> ScriptAssemblies;
+            public List<ScriptAssembly> CodeGenAssemblies;
+        }
+
         public static bool IsCodeGen(string assemblyName, bool includesExtension = true)
         {
             var name = (includesExtension ? Path.GetFileNameWithoutExtension(assemblyName) : assemblyName);
-            var isCodeGen = name.StartsWith(k_CodeGenPrefix) && name.EndsWith(k_CodeGenSuffix, StringComparison.OrdinalIgnoreCase);
+            var isCodeGen = name.StartsWith(k_CodeGenPrefix, StringComparison.OrdinalIgnoreCase) && name.EndsWith(k_CodeGenSuffix, StringComparison.OrdinalIgnoreCase);
             return isCodeGen;
         }
 
         public static void UpdateCodeGenScriptAssembly(ref ScriptAssembly scriptAssembly)
         {
-            scriptAssembly.ScriptAssemblyReferences = new ScriptAssembly[0];
+            int referencesLength = scriptAssembly.References.Length;
+            var newReferences = new string[referencesLength + 1];
+            Array.Copy(scriptAssembly.References, newReferences, referencesLength);
+            newReferences[referencesLength] = AssetPath.Combine(EditorApplication.applicationContentsPath, "Managed", "Unity.CompilationPipeline.Common.dll");
+            scriptAssembly.References = newReferences;
+        }
 
-            int newReferenceCount = 0;
-            var references = new string[scriptAssembly.References.Length];
+        public static ScriptCodeGenAssemblies ToScriptCodeGenAssemblies(ScriptAssembly[] scriptAssemblies)
+        {
+            var result = new ScriptCodeGenAssemblies();
 
-            foreach (var reference in scriptAssembly.References)
+            result.ScriptAssemblies = new List<ScriptAssembly>(scriptAssemblies.Length);
+            result.CodeGenAssemblies = new List<ScriptAssembly>(scriptAssemblies.Length);
+
+            foreach (var scriptAssembly in scriptAssemblies)
             {
-                var name = AssetPath.GetFileName(reference);
-                if (!Utility.FastStartsWith(name, k_UnityEngineModules, k_UnityEngineModulesLower)
-                    && !Utility.FastStartsWith(name, k_UnityEditorModules, k_UnityEditorModulesLower))
+                bool isCodeGen = IsCodeGen(scriptAssembly.Filename, true);
+
+                if (isCodeGen)
                 {
-                    references[newReferenceCount] = reference;
-                    newReferenceCount++;
+                    result.CodeGenAssemblies.Add(scriptAssembly);
+                }
+                else
+                {
+                    result.ScriptAssemblies.Add(scriptAssembly);
                 }
             }
-            var result = new string[newReferenceCount + 1];
-            Array.Copy(references, result, newReferenceCount);
-            result[newReferenceCount] = AssetPath.Combine(EditorApplication.applicationContentsPath, "Managed", "Unity.CompilationPipeline.Common.dll");
-            scriptAssembly.References = result;
+
+            return result;
         }
     }
 }

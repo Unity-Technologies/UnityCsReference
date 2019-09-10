@@ -15,6 +15,10 @@ namespace UnityEditorInternal.Profiling
     {
         ProfilerTimelineGUI m_TimelineGUI;
 
+        const string k_ViewTypeSettingsKey = "Profiler.CPUProfilerModule.ViewType";
+        protected override string ViewTypeSettingsKey => k_ViewTypeSettingsKey;
+        protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Timeline;
+
         public override void OnEnable(IProfilerWindowController profilerWindow)
         {
             base.OnEnable(profilerWindow);
