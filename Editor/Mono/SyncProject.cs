@@ -12,6 +12,7 @@ using UnityEditor.VisualStudioIntegration;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
+using Unity.CodeEditor;
 
 namespace UnityEditor
 {
@@ -160,7 +161,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static void SyncVisualStudioProjectIfItAlreadyExists()
         {
-            if (Synchronizer.SolutionExists())
+            #pragma warning disable 618
+            if (Synchronizer.SolutionExists() && ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other)
             {
                 Synchronizer.Sync();
             }

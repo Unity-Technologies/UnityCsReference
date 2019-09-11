@@ -14,6 +14,8 @@ namespace UnityEditor
     internal class DefaultExternalCodeEditor : IExternalCodeEditor
     {
         static readonly GUIContent k_ResetArguments = EditorGUIUtility.TrTextContent("Reset argument");
+        static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
+
         string m_ChosenInstallation;
         const string k_ArgumentKey = "kScriptEditorArgs";
         const string k_DefaultArgument = "$(File)";
@@ -113,6 +115,12 @@ namespace UnityEditor
             }
 
             string applicationPath = EditorPrefs.GetString("kScriptsDefaultApp");
+
+            if (IsOSX)
+            {
+                return CodeEditor.OSOpenFile(applicationPath, CodeEditor.ParseArgument(Arguments, path, line, column));
+            }
+
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
