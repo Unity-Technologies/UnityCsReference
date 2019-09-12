@@ -689,9 +689,6 @@ namespace UnityEngine.Events
         [SerializeField]
         private PersistentCallGroup m_PersistentCalls;
 
-#pragma warning disable 414, CS0169 //used by serialized properties
-        [SerializeField] private string m_TypeName;
-
         // Dirtying can happen outside of MainThread, but we need to rebuild on the MainThread.
         private bool m_CallsDirty = true;
 
@@ -699,7 +696,6 @@ namespace UnityEngine.Events
         {
             m_Calls = new InvokableCallList();
             m_PersistentCalls = new PersistentCallGroup();
-            m_TypeName = GetType().AssemblyQualifiedName;
         }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
@@ -708,7 +704,6 @@ namespace UnityEngine.Events
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             DirtyPersistentCalls();
-            m_TypeName = GetType().AssemblyQualifiedName;
         }
 
         protected abstract MethodInfo FindMethod_Impl(string name, object targetObj);
