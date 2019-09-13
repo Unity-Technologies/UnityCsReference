@@ -67,6 +67,30 @@ namespace UnityEditorInternal
             [NativeMethod("SetOculusDashSupportEnabled")]
             set;
         }
+
+        public static extern bool lowOverheadMode
+        {
+            [NativeMethod("GetOculusLowOverheadModeEnabled")]
+            get;
+            [NativeMethod("SetOculusLowOverheadModeEnabled")]
+            set;
+        }
+
+        public static extern bool protectedContext
+        {
+            [NativeMethod("GetOculusProtectedContextEnabled")]
+            get;
+            [NativeMethod("SetOculusProtectedContextEnabled")]
+            set;
+        }
+
+        public static extern bool v2Signing
+        {
+            [NativeMethod("GetOculusV2SigningEnabled")]
+            get;
+            [NativeMethod("SetOculusV2SigningEnabled")]
+            set;
+        }
     }
 
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]
@@ -99,6 +123,24 @@ namespace UnityEditor
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.dashSupport; }
                 set { UnityEditorInternal.PlayerSettingsOculus.dashSupport = value; }
+            }
+
+            public static bool lowOverheadMode
+            {
+                get { return UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode; }
+                set { UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode = value; }
+            }
+
+            public static bool protectedContext
+            {
+                get { return UnityEditorInternal.PlayerSettingsOculus.protectedContext; }
+                set { UnityEditorInternal.PlayerSettingsOculus.protectedContext = value; }
+            }
+
+            public static bool v2Signing
+            {
+                get { return UnityEditorInternal.PlayerSettingsOculus.v2Signing; }
+                set { UnityEditorInternal.PlayerSettingsOculus.v2Signing = value; }
             }
         }
     }

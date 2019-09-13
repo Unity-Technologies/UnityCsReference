@@ -347,7 +347,7 @@ namespace UnityEditor
                             info.instanceObject = targetComponent;
                             info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
                             GameObject rootObject = PrefabUtility.GetRootGameObject(sourceGo);
-                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(instanceGo))
                                 pm.AddDisabledItem(menuItemContent);
                             else
                                 pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedComponent, info);
@@ -387,7 +387,7 @@ namespace UnityEditor
                                 info.instanceObject = targetObject;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabObjectOverride, info);

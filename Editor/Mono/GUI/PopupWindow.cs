@@ -133,7 +133,6 @@ namespace UnityEditor
         {
             if (m_WindowContent != null)
                 m_WindowContent.OnClose();
-            m_WindowContent = null;
         }
     }
 }

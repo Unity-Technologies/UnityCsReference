@@ -611,7 +611,7 @@ namespace UnityEditor
 
                     ContainerWindow containerWindow = newWindows[i] as ContainerWindow;
                     if (containerWindow && containerWindow != mainWindow)
-                        containerWindow.Show(containerWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
+                        containerWindow.Show(containerWindow.showMode, loadPosition: false, displayImmediately: true, setFocus: true);
                 }
 
                 // Unmaximize maximized GameView if maximize on play is enabled
@@ -900,6 +900,7 @@ namespace UnityEditor
                 Toolbar.lastLoadedLayoutName = s_LayoutName;
                 WindowLayout.SaveWindowLayout(path);
                 InternalEditorUtility.ReloadWindowLayoutMenu();
+                EditorUtility.Internal_UpdateAllMenus();
                 GUIUtility.ExitGUI();
             }
             else
@@ -964,6 +965,7 @@ namespace UnityEditor
 
                     System.IO.File.Delete(path);
                     InternalEditorUtility.ReloadWindowLayoutMenu();
+                    EditorUtility.Internal_UpdateAllMenus();
                     InitializePaths();
                 }
             }

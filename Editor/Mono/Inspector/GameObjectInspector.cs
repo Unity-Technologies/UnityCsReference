@@ -124,6 +124,7 @@ namespace UnityEditor
         bool m_IsMissing;
         bool m_IsPrefabInstanceAnyRoot;
         bool m_IsPrefabInstanceOutermostRoot;
+        bool m_IsAssetRoot;
         bool m_AllOfSamePrefabType = true;
 
         public void OnEnable()
@@ -156,6 +157,7 @@ namespace UnityEditor
             m_IsPrefabInstanceAnyRoot = true;
             m_IsPrefabInstanceOutermostRoot = true;
             m_AllOfSamePrefabType = true;
+            m_IsAssetRoot = false;
             PrefabAssetType firstType = PrefabUtility.GetPrefabAssetType(targets[0]);
             PrefabInstanceStatus firstStatus = PrefabUtility.GetPrefabInstanceStatus(targets[0]);
 
@@ -172,8 +174,14 @@ namespace UnityEditor
                     m_IsPrefabInstanceAnyRoot = false; // Conservative is false if any is false
                 if (!m_IsPrefabInstanceAnyRoot || !PrefabUtility.IsOutermostPrefabInstanceRoot(go))
                     m_IsPrefabInstanceOutermostRoot = false; // Conservative is false if any is false
+
                 if (PrefabUtility.IsPartOfPrefabAsset(go))
+                {
                     m_IsAsset = true; // Conservative is true if any is true
+                    if (go.transform.parent == null)
+                        m_IsAssetRoot = true;
+                }
+
                 if (m_IsAsset && PrefabUtility.IsPartOfImmutablePrefab(go))
                     m_ImmutableSelf = true; // Conservative is true if any is true
                 GameObject originalSourceOrVariant = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
@@ -273,8 +281,12 @@ namespace UnityEditor
                         }
                         EditorGUILayout.EndHorizontal();
 
-                        // Name
-                        EditorGUILayout.DelayedTextField(m_Name, GUIContent.none);
+                        // Disable the name field of root GO in prefab asset
+                        using (new EditorGUI.DisabledScope(m_IsAsset && m_IsAssetRoot))
+                        {
+                            // Name
+                            EditorGUILayout.DelayedTextField(m_Name, GUIContent.none);
+                        }
 
                         // Static flags toggle
                         DoStaticToggleField(go);
@@ -311,7 +323,7 @@ namespace UnityEditor
 
         private void DoPrefabButtons()
         {
-            if (!m_IsPrefabInstanceAnyRoot)
+            if (!m_IsPrefabInstanceAnyRoot || m_IsAsset)
                 return;
 
             using (new EditorGUI.DisabledScope(m_PlayModeObjects))

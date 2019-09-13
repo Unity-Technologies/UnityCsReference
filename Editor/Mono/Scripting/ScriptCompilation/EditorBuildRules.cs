@@ -250,10 +250,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 if (groupedPrecompiledAssemblies.Count() > 1)
                 {
+                    var pathsString = string.Join(", ", groupedPrecompiledAssemblies.Select(x => x.Path).ToArray());
+
                     throw new PrecompiledAssemblyException(
-                        $"Multiple precompiled assemblies with the same name {groupedPrecompiledAssemblies.Key} included for the current platform. Only one assembly with the same name is allowed per platform. Assembly path: {{0}}",
-                        groupedPrecompiledAssemblies.Select(x => x.Path).ToArray()
-                    );
+                        $"Multiple precompiled assemblies with the same name {groupedPrecompiledAssemblies.Key} included for the current platform. Only one assembly with the same name is allowed per platform. Assembly paths: {pathsString}");
                 }
                 nameToPrecompiledAssemblies.Add(groupedPrecompiledAssemblies.Key, groupedPrecompiledAssemblies.Single());
             }

@@ -71,6 +71,9 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "FitWindowRectToScreen", HasExplicitThis = true)]
         public extern Rect FitWindowRectToScreen(Rect r, bool forceCompletelyVisible, bool useMouseScreen);
 
+        [FreeFunction(k_ScriptingPrefix + "SendCaptionEvent", HasExplicitThis = true)]
+        public extern void SendCaptionEvent(bool mouseDown);
+
         // Close the editor window.
         [FreeFunction(k_ScriptingPrefix + "InternalClose", HasExplicitThis = true)]
         public extern void InternalClose();

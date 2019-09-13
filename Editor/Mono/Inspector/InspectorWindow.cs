@@ -364,6 +364,8 @@ namespace UnityEditor
             if (m_Tracker.activeEditors[0].targets.Length != 1)
                 return;
             GameObject go = m_Tracker.activeEditors[0].target as GameObject;
+            if (go == null && m_Tracker.activeEditors[0] is PrefabImporterEditor)
+                go = m_Tracker.activeEditors[1].target as GameObject;
             if (go == null)
                 return;
             GameObject sourceGo = PrefabUtility.GetCorrespondingConnectedObjectFromSource(go);
@@ -484,6 +486,10 @@ namespace UnityEditor
                 DrawEditors(editors);
                 Profiler.EndSample();
 
+                // The PrefabImporterEditor can hide its imported objects if it detects missing scripts. In this case
+                // do not add the multi editing warning
+                var assetImporter = GetAssetImporter(editors);
+                bool hideImportedObject = (assetImporter != null && !assetImporter.showImportedObject);
 
                 if (tracker.hasComponentsWhichCannotBeMultiEdited)
                 {
@@ -491,7 +497,7 @@ namespace UnityEditor
                     {
                         DrawSelectionPickerList();
                     }
-                    else
+                    else if (!hideImportedObject)
                     {
                         // Visually separates the Add Component button from the existing components
                         Rect lineRect = GUILayoutUtility.GetRect(10, 4, EditorStyles.inspectorTitlebar);
@@ -1082,11 +1088,25 @@ namespace UnityEditor
 
             if ((editors.Length > 0 && editors[0].GetInstanceID() != m_LastInitialEditorInstanceID) || m_RemovedComponents == null)
                 OnTrackerRebuilt();
+            if (m_RemovedComponents == null)
+                ExtractPrefabComponents(); // needed after assembly reload (due to HashSet not being serializable)
+
+            bool checkForRemovedComponents = m_ComponentsInPrefabSource != null;
             int prefabComponentIndex = -1;
+            int targetGameObjectIndex = -1;
+            GameObject targetGameObject = null;
+            if (checkForRemovedComponents)
+            {
+                targetGameObjectIndex = editors[0] is PrefabImporterEditor ? 1 : 0;
+                targetGameObject = (GameObject)editors[targetGameObjectIndex].target;
+            }
+
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
-                if (m_ComponentsInPrefabSource != null && editorIndex != 0)
+                if (checkForRemovedComponents && editorIndex > targetGameObjectIndex)
                 {
+                    if (prefabComponentIndex == -1)
+                        prefabComponentIndex = 0;
                     while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
                     {
                         Object target = editors[editorIndex].target;
@@ -1099,13 +1119,13 @@ namespace UnityEditor
                             if (correspondingSource == nextInSource)
                                 break;
 
-                            DisplayRemovedComponent((GameObject)editors[0].target, nextInSource);
+                            DisplayRemovedComponent(targetGameObject, nextInSource);
                         }
 
                         prefabComponentIndex++;
                     }
+                    prefabComponentIndex++;
                 }
-                prefabComponentIndex++;
 
                 if (ShouldCullEditor(editors, editorIndex))
                 {
@@ -1125,12 +1145,12 @@ namespace UnityEditor
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
-            if (m_ComponentsInPrefabSource != null)
+            if (checkForRemovedComponents)
             {
                 while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
                 {
                     Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
-                    DisplayRemovedComponent((GameObject)editors[0].target, nextInSource);
+                    DisplayRemovedComponent(targetGameObject, nextInSource);
                     prefabComponentIndex++;
                 }
             }
@@ -1138,16 +1158,17 @@ namespace UnityEditor
             EditorGUIUtility.ResetGUIState();
 
             // Draw the bar to show that the imported object is below
-            DrawImportedObjectLabel(importedObjectBarRect);
+            DrawImportedObjectLabel(importedObjectBarRect, editors[0]);
         }
 
-        private static void DrawImportedObjectLabel(Rect importedObjectBarRect)
+        private static void DrawImportedObjectLabel(Rect importedObjectBarRect, Editor mainEditor)
         {
             if (importedObjectBarRect.height > 0)
             {
                 // Clip the label to avoid a black border at the bottom
                 GUI.BeginGroup(importedObjectBarRect);
-                GUI.Label(new Rect(0, 0, importedObjectBarRect.width, importedObjectBarRect.height), "Imported Object", "OL Title");
+                var headerText = mainEditor is PrefabImporterEditor ? "Root in Prefab Asset" : "Imported Object";
+                GUI.Label(new Rect(0, 0, importedObjectBarRect.width, importedObjectBarRect.height), headerText, "OL Title");
                 GUI.EndGroup();
             }
         }
@@ -1527,7 +1548,7 @@ namespace UnityEditor
             // Let asset importers decide if the imported object should be shown or not
             if (m_InspectorMode == InspectorMode.Normal && editorIndex != 0)
             {
-                AssetImporterEditor importerEditor = editors[0] as AssetImporterEditor;
+                AssetImporterEditor importerEditor = GetAssetImporter(editors);
                 if (importerEditor != null && !importerEditor.showImportedObject)
                     return true;
             }
@@ -1580,10 +1601,23 @@ namespace UnityEditor
             }
         }
 
+        AssetImporterEditor GetAssetImporter(Editor[] editors)
+        {
+            if (editors == null || editors.Length == 0)
+                return null;
+
+            return editors[0] as AssetImporterEditor;
+        }
+
         private void AddComponentButton(Editor[] editors)
         {
+            // Don't show the Add Component button if we are not showing imported objects for Asset Importers
+            var assetImporter = GetAssetImporter(editors);
+            if (assetImporter != null && !assetImporter.showImportedObject)
+                return;
+
             Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
-            if (editor != null && editor.target != null && editor.target is GameObject && editor.IsEnabled() && !EditorUtility.IsPersistent(editor.target))
+            if (editor != null && editor.target != null && editor.target is GameObject && editor.IsEnabled())
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();

@@ -1430,6 +1430,7 @@ namespace UnityEditor
             m_GPUFrameDataHierarchyView.Clear();
 
             ProfilerDriver.ClearAllFrames();
+            m_LastFrameFromTick = -1;
 
             NetworkDetailStats.m_NetworkOperations.Clear();
         }

@@ -684,28 +684,28 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Terrain/Raise Height", "f1")]
-        [Shortcut("Terrain/Raise Height", typeof(TerrainToolContext), "f1")]
+        [Shortcut("Terrain/Raise Height", typeof(TerrainToolContext), "F1")]
         static void RaiseHeight(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.Paint);
         }
 
         [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
-        [Shortcut("Terrain/Set Height", typeof(TerrainToolContext), "f2")]
+        [Shortcut("Terrain/Set Height", typeof(TerrainToolContext), "F2")]
         static void SetHeight(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
         }
 
         [FormerlyPrefKeyAs("Terrain/Smooth Height", "f3")]
-        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolContext), "f3")]
+        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolContext), "F3")]
         static void SmoothHeight(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);
         }
 
         [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
-        [Shortcut("Terrain/Texture Paint", typeof(TerrainToolContext), "f4")]
+        [Shortcut("Terrain/Texture Paint", typeof(TerrainToolContext), "F4")]
         static void TexturePaint(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.TerrainSettings);

@@ -379,12 +379,40 @@ namespace UnityEditorInternal
 
         static UnityEventBase GetDummyEvent(SerializedProperty prop)
         {
-            // Create dummy instance of this type... we need it for function validation ect
-            var typeName = prop.FindPropertyRelative("m_TypeName").stringValue;
-            Type type = Type.GetType(typeName, false);
-            if (type == null)
+            //Use the SerializedProperty path to iterate through the fields of the inspected targetObject
+            Object tgtobj = prop.serializedObject.targetObject;
+            if (tgtobj == null)
                 return new UnityEvent();
-            return Activator.CreateInstance(type) as UnityEventBase;
+
+            string propPath = prop.propertyPath;
+            Type ft = tgtobj.GetType();
+            while (propPath.Length != 0)
+            {
+                //we could have a leftover '.' if the previous iteration handled an array element
+                if (propPath.StartsWith("."))
+                    propPath = propPath.Substring(1);
+
+                var splits = propPath.Split(new[] { '.' }, 2);
+                var newField = ft.GetField(splits[0]);
+                if (newField == null)
+                    break;
+
+                ft = newField.FieldType;
+                if (ft.IsArrayOrList())
+                    ft = ft.GetArrayOrListElementType();
+
+                //the last item in the property path could have been an array element
+                //bail early in that case
+                if (splits.Length == 1)
+                    break;
+
+                propPath = splits[1];
+                if (propPath.StartsWith("Array.data["))
+                    propPath = propPath.Split(new[] { ']' }, 2)[1];
+            }
+            if (ft.IsSubclassOf(typeof(UnityEventBase)))
+                return Activator.CreateInstance(ft) as UnityEventBase;
+            return new UnityEvent();
         }
 
         struct ValidMethodMap
