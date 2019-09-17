@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,24 +15,18 @@ namespace UnityEditorInternal.VersionControl
     // Monitor the behavior of assets.  This is where general unity asset operations are handled
     public class AssetModificationHook
     {
-        private enum CachedStatusMode
+        static Asset GetStatusCachedIfPossible(string fromPath, bool synchronous)
         {
-            Sync,
-            Async
-        };
-
-        private static Asset GetStatusCachedIfPossible(string from, CachedStatusMode mode)
-        {
-            Asset asset = Provider.CacheStatus(from);
+            Asset asset = Provider.CacheStatus(fromPath);
             if (asset == null || asset.IsState(Asset.States.Updating))
             {
-                if (mode == CachedStatusMode.Sync)
+                if (synchronous)
                 {
                     // Fetch status
-                    Task statusTask = Provider.Status(from, false);
+                    Task statusTask = Provider.Status(fromPath, false);
                     statusTask.Wait();
                     if (statusTask.success)
-                        asset = Provider.CacheStatus(from);
+                        asset = Provider.CacheStatus(fromPath);
                     else
                         asset = null;
                 }
@@ -38,11 +34,26 @@ namespace UnityEditorInternal.VersionControl
             return asset;
         }
 
-        private static Asset GetStatusForceUpdate(string from)
+        static AssetList GetStatusCachedIfPossible(List<string> fromPaths, bool synchronous)
         {
-            Task statusTask = Provider.Status(from);
-            statusTask.Wait();
-            return statusTask.assetList.Count > 0 ? statusTask.assetList[0] : null;
+            var assets = new AssetList {Capacity = fromPaths.Count};
+            foreach (var path in fromPaths)
+                assets.Add(GetStatusCachedIfPossible(path, synchronous));
+            return assets;
+        }
+
+        static Asset GetStatusForceUpdate(string fromPath)
+        {
+            var task = Provider.Status(fromPath);
+            task.Wait();
+            return task.assetList.Count > 0 ? task.assetList[0] : null;
+        }
+
+        static AssetList GetStatusForceUpdate(List<string> fromPaths)
+        {
+            var task = Provider.Status(fromPaths.ToArray());
+            task.Wait();
+            return task.success ? task.assetList : null;
         }
 
         // Handle asset moving
@@ -51,7 +62,7 @@ namespace UnityEditorInternal.VersionControl
             if (!Provider.enabled || EditorUserSettings.WorkOffline)
                 return AssetMoveResult.DidNotMove;
 
-            Asset asset = GetStatusCachedIfPossible(from, CachedStatusMode.Sync);
+            Asset asset = GetStatusCachedIfPossible(from, true);
 
             if (asset == null || !asset.IsUnderVersionControl)
                 return AssetMoveResult.DidNotMove;
@@ -113,12 +124,9 @@ namespace UnityEditorInternal.VersionControl
             if (string.IsNullOrEmpty(assetPath))
                 return true;
 
-            Asset asset = null;
+            Asset asset;
             if (statusOptions == StatusQueryOptions.UseCachedIfPossible || statusOptions == StatusQueryOptions.UseCachedAsync)
-            {
-                CachedStatusMode mode = statusOptions == StatusQueryOptions.UseCachedAsync ? CachedStatusMode.Async : CachedStatusMode.Sync;
-                asset = GetStatusCachedIfPossible(assetPath, mode);
-            }
+                asset = GetStatusCachedIfPossible(assetPath, statusOptions == StatusQueryOptions.UseCachedIfPossible);
             else
                 asset = GetStatusForceUpdate(assetPath);
 
@@ -130,6 +138,35 @@ namespace UnityEditorInternal.VersionControl
             }
 
             return Provider.IsOpenForEdit(asset);
+        }
+
+        internal static void IsOpenForEdit(List<string> assetPaths, List<string> outNotOpenPaths, StatusQueryOptions statusOptions)
+        {
+            if (!Provider.enabled || EditorUserSettings.WorkOffline || assetPaths == null || assetPaths.Count == 0)
+                return; // everything is editable
+
+            // paths that are empty/null are considered to be editable, so remove them from consideration
+            assetPaths = assetPaths.Where(p => !string.IsNullOrEmpty(p)).ToList();
+
+            AssetList assets;
+            if (statusOptions == StatusQueryOptions.UseCachedIfPossible || statusOptions == StatusQueryOptions.UseCachedAsync)
+                assets = GetStatusCachedIfPossible(assetPaths, statusOptions == StatusQueryOptions.UseCachedIfPossible);
+            else
+                assets = GetStatusForceUpdate(assetPaths);
+
+            if (assets == null)
+            {
+                // nothing is editable (we might be disconnected)
+                outNotOpenPaths.AddRange(assetPaths);
+                return;
+            }
+
+            for (var i = 0; i < assetPaths.Count; ++i)
+            {
+                var asset = assets[i];
+                if (asset == null || !Provider.IsOpenForEdit(asset))
+                    outNotOpenPaths.Add(assetPaths[i]);
+            }
         }
     }
 }

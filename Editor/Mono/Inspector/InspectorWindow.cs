@@ -55,6 +55,7 @@ namespace UnityEditor
         const float k_InspectorPreviewMinTotalHeight = k_InspectorPreviewMinHeight + kBottomToolbarHeight;
         const int k_MinimumRootVisualHeight = 81;
         const int k_MinimumWindowWidth = 275;
+        const int k_AutoScrollZoneHeight = 24;
 
         private const long delayRepaintWhilePlayingAnimation = 150; // Delay between repaints in milliseconds while playing animation
         private long s_LastUpdateWhilePlayingAnimation = 0;
@@ -107,6 +108,10 @@ namespace UnityEditor
         VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByClassName(s_FooterInfoClassName));
 
         VisualElement m_MultiEditLabel;
+
+        ScrollView m_ScrollView;
+        [SerializeField] int m_LastInspectedObjectInstanceID = -1;
+        [SerializeField] float m_LastVerticalScrollValue = 0;
 
         VisualElement FindVisualElementInTreeByClassName(string elementClassName)
         {
@@ -220,6 +225,7 @@ namespace UnityEditor
             var container = tpl.CloneTree();
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
+            m_ScrollView = container.Q<ScrollView>();
 
             var multiContainer = rootVisualElement.Q(className: s_MultiEditClassName);
             multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
@@ -242,6 +248,7 @@ namespace UnityEditor
                     m_PreviewResizer.SetExpanded(false);
                 }
             }
+            RestoreVerticalScrollIfNeeded();
         }
 
         private void OnProjectWasLoaded()
@@ -270,6 +277,10 @@ namespace UnityEditor
 
         protected virtual void OnDisable()
         {
+            // save vertical scroll position
+            m_LastInspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
+            m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
+
             RemoveInspectorWindow(this);
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
@@ -770,6 +781,21 @@ namespace UnityEditor
             {
                 if (editorsElement.ContainsPoint(dragUpdatedEvent.mousePosition))
                 {
+                    if (m_ScrollView != null)
+                    {
+                        // implement auto-scroll for easier component drag'n'drop,
+                        // we define a zone of height = k_AutoScrollZoneHeight
+                        // at the top/bottom of the scrollView viewport,
+                        // while dragging, when the mouse moves in these zones,
+                        // we automatically scroll up/down
+                        var localDragPosition = m_ScrollView.contentViewport.WorldToLocal(dragUpdatedEvent.mousePosition);
+
+                        if (localDragPosition.y < k_AutoScrollZoneHeight)
+                            m_ScrollView.verticalScroller.ScrollPageUp();
+                        else if (localDragPosition.y > m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight)
+                            m_ScrollView.verticalScroller.ScrollPageDown();
+                    }
+
                     return;
                 }
 
@@ -1484,6 +1510,16 @@ namespace UnityEditor
                     m_RemovedPrefabComponentsElement = prefabsComponentElement;
                 }
             }
+        }
+
+        void RestoreVerticalScrollIfNeeded()
+        {
+            if (m_LastInspectedObjectInstanceID == -1)
+                return;
+            var inspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
+            if (inspectedObjectInstanceID == m_LastInspectedObjectInstanceID && inspectedObjectInstanceID != -1)
+                m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
+            m_LastInspectedObjectInstanceID = -1; // reset to make sure the restore occurs once
         }
 
         void AddRemovedPrefabComponentElement(GameObject targetGameObject, Component nextInSource, VisualElement element)

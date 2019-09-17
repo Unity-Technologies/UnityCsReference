@@ -166,11 +166,7 @@ namespace UnityEditor
             }
 
             var assetsNotOpened = new List<string>();
-            foreach (string asset in assetsThatShouldBeSaved)
-            {
-                if (!AssetDatabase.IsOpenForEdit(asset, StatusQueryOptions.ForceUpdate))
-                    assetsNotOpened.Add(asset);
-            }
+            AssetDatabase.IsOpenForEdit(assetsThatShouldBeSaved, assetsNotOpened, StatusQueryOptions.ForceUpdate);
             assets = assetsNotOpened.ToArray();
 
             // Try to checkout if needed. This may fail but is caught below.
@@ -249,8 +245,8 @@ namespace UnityEditor
             return finalResult;
         }
 
-        internal static MethodInfo[] isOpenForEditMethods = null;
-        internal static MethodInfo[] GetIsOpenForEditMethods()
+        static MethodInfo[] isOpenForEditMethods = null;
+        static MethodInfo[] GetIsOpenForEditMethods()
         {
             if (isOpenForEditMethods == null)
             {
@@ -278,32 +274,77 @@ namespace UnityEditor
             return isOpenForEditMethods;
         }
 
-        internal static bool IsOpenForEdit(string assetPath, out string message, StatusQueryOptions statusOptions)
+        static bool IsAssetInReadOnlyFolder(string assetPath)
         {
-            message = "";
-            if (String.IsNullOrEmpty(assetPath))
-                return true; // assetPath can be empty in some cases where Unity is checking for stuff in Library folder
-
             bool rootFolder, readOnly;
             bool validPath = AssetDatabase.GetAssetFolderInfo(assetPath, out rootFolder, out readOnly);
-            if (validPath && readOnly)
-            {
-                return false;
-            }
+            return validPath && readOnly;
+        }
 
-            bool finalResult = AssetModificationHook.IsOpenForEdit(assetPath, out message, statusOptions);
-
+        static bool IsOpenForEditViaScriptCallbacks(string assetPath, ref string message)
+        {
             foreach (var method in GetIsOpenForEditMethods())
             {
                 object[] args = {assetPath, message};
-                if (!((bool)method.Invoke(null, args)))
+                if (!(bool)method.Invoke(null, args))
                 {
                     message = args[1] as string;
                     return false;
                 }
             }
+            return true;
+        }
 
-            return finalResult;
+        internal static bool IsOpenForEdit(string assetPath, out string message, StatusQueryOptions statusOptions)
+        {
+            message = string.Empty;
+            if (string.IsNullOrEmpty(assetPath))
+                return true; // treat empty/null paths as editable (might be under Library folders etc.)
+
+            if (IsAssetInReadOnlyFolder(assetPath))
+                return false;
+            if (!AssetModificationHook.IsOpenForEdit(assetPath, out message, statusOptions))
+                return false;
+            if (!IsOpenForEditViaScriptCallbacks(assetPath, ref message))
+                return false;
+
+            return true;
+        }
+
+        internal static void IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
+        {
+            outNotEditablePaths.Clear();
+            if (assetOrMetaFilePaths == null || assetOrMetaFilePaths.Length == 0)
+                return;
+
+            var queryList = new List<string>();
+            foreach (var path in assetOrMetaFilePaths)
+            {
+                if (string.IsNullOrEmpty(path))
+                    continue; // treat empty/null paths as editable (might be under Library folders etc.)
+                if (IsAssetInReadOnlyFolder(path))
+                {
+                    outNotEditablePaths.Add(path);
+                    continue;
+                }
+                queryList.Add(path);
+            }
+
+            // check with VCS
+            AssetModificationHook.IsOpenForEdit(queryList, outNotEditablePaths, statusQueryOptions);
+
+            // check with possible script callbacks
+            var scriptCallbacks = GetIsOpenForEditMethods();
+            if (scriptCallbacks != null && scriptCallbacks.Length > 0)
+            {
+                var stillEditable = assetOrMetaFilePaths.Except(outNotEditablePaths).Where(f => !string.IsNullOrEmpty(f));
+                var message = string.Empty;
+                foreach (var path in stillEditable)
+                {
+                    if (!IsOpenForEditViaScriptCallbacks(path, ref message))
+                        outNotEditablePaths.Add(path);
+                }
+            }
         }
 
         internal static void OnStatusUpdated()

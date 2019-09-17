@@ -46,7 +46,7 @@ namespace UnityEditor
         private GUIStyle m_WordWrappedLabel;
 
         // Style for link label.
-        internal static GUIStyle linkLabel { get { return s_Current.m_LinkLabel; } }
+        public static GUIStyle linkLabel { get { return s_Current.m_LinkLabel; } }
         private GUIStyle m_LinkLabel;
 
         // Style for white label.

@@ -412,6 +412,8 @@ namespace UnityEditor
 
                 imp.SetPlatformTextureSettings(platformSettings);
             }
+
+            m_HasChanged = false;
         }
 
         public static readonly int[] kAndroidETC2FallbackOverrideValues =

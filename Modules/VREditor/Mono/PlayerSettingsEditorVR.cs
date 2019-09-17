@@ -37,6 +37,7 @@ namespace UnityEditorInternal.VR
             public static readonly GUIContent[] kMultiviewStereoRenderingPaths =
             {
                 EditorGUIUtility.TrTextContent("Multi Pass"),
+                EditorGUIUtility.TrTextContent("Multiview"),
                 EditorGUIUtility.TrTextContent("Single Pass")
             };
 
