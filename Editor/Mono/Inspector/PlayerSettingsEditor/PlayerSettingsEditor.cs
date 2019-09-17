@@ -1899,6 +1899,11 @@ namespace UnityEditor
             }
         }
 
+        private bool ShouldRestartEditorToApplySetting()
+        {
+            return EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.  Cancel to revert changes.", "Apply", "Cancel");
+        }
+
         private void OtherSectionConfigurationGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             // Configuration
@@ -1996,10 +2001,20 @@ namespace UnityEditor
 
                 using (new EditorGUI.DisabledScope(!gcIncrementalEnabled))
                 {
-                    if (gcIncrementalEnabled)
-                        EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
-                    else
-                        EditorGUILayout.Toggle(SettingsContent.gcIncremental, false);
+                    var oldValue = m_GCIncremental.boolValue;
+                    EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
+                    if (m_GCIncremental.boolValue != oldValue)
+                    {
+                        // Give the user a chance to change mind and revert changes.
+                        if (ShouldRestartEditorToApplySetting())
+                        {
+                            m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                                EditorApplication.OpenProject(Environment.CurrentDirectory);
+                        }
+                        else
+                            m_GCIncremental.boolValue = oldValue;
+                    }
                 }
             }
 
@@ -2098,7 +2113,7 @@ namespace UnityEditor
                 if (inputOption != oldInputOption)
                 {
                     // Give the user a chance to change mind and revert changes.
-                    if (EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.  Cancel to revert changes.", "Apply", "Cancel"))
+                    if (ShouldRestartEditorToApplySetting())
                     {
                         m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
                         m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);

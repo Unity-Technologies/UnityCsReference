@@ -92,6 +92,26 @@ namespace UnityEditor.ShortcutManagement
         static IEnumerable<string> GetAllShortcutProfilePaths()
         {
             var shortcutsFolderPath = GetShortcutFolderPath();
+            if (ModeService.currentId == ModeService.k_DefaultModeId)
+            {
+                var legacyShortcutFolder = Paths.Combine(InternalEditorUtility.unityPreferencesFolder, "shortcuts");
+                if (System.IO.Directory.Exists(legacyShortcutFolder))
+                {
+                    var legacyShortcutFiles = System.IO.Directory.GetFiles(legacyShortcutFolder, "*.shortcut", System.IO.SearchOption.TopDirectoryOnly).ToArray();
+                    if (legacyShortcutFiles.Length > 0 && !System.IO.Directory.Exists(shortcutsFolderPath))
+                        System.IO.Directory.CreateDirectory(shortcutsFolderPath);
+                    foreach (var shortcutPath in legacyShortcutFiles)
+                    {
+                        var fileName = Path.GetFileName(shortcutPath);
+                        var dst = Path.Combine(shortcutsFolderPath, fileName);
+                        if (!File.Exists(dst))
+                        {
+                            FileUtil.CopyFileIfExists(shortcutPath, dst, false);
+                        }
+                    }
+                }
+            }
+
             if (!System.IO.Directory.Exists(shortcutsFolderPath))
                 return Enumerable.Empty<string>();
 

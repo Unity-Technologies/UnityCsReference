@@ -204,11 +204,17 @@ namespace UnityEditor.Experimental.AssetImporters
             {
                 if (!typeof(ScriptableObject).IsAssignableFrom(extraDataType))
                 {
-                    Debug.LogError("Custom Data objects needs to be ScriptableObject to support assembly reloads and Undo/Redo");
+                    Debug.LogError("Extra Data objects needs to be ScriptableObject to support assembly reloads and Undo/Redo");
                     m_ExtraDataTargets = null;
                 }
                 else
                 {
+                    var tempObject = ScriptableObject.CreateInstance(extraDataType);
+                    if (MonoScript.FromScriptableObject(tempObject) == null)
+                    {
+                        Debug.LogWarning($"Unable to find a MonoScript for {extraDataType.FullName}. The inspector may not reload properly after an assembly reload. Check that the definition is in a file of the same name.");
+                    }
+                    DestroyImmediate(tempObject);
                     m_ExtraDataTargets = new Object[targets.Length];
                 }
             }
@@ -643,7 +649,10 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             // When using the cache server we have to write all import settings to disk first.
             // Then perform the import (Otherwise the cache server will not be used for the import)
-            AssetDatabase.ForceReserializeAssets(paths, ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
+            foreach (var path in paths)
+            {
+                AssetDatabase.WriteImportSettingsIfDirty(path);
+            }
             AssetDatabase.StartAssetEditing();
             foreach (string path in paths)
                 AssetDatabase.ImportAsset(path);
