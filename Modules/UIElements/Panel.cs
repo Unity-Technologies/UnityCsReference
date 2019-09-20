@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -321,10 +321,6 @@ namespace UnityEngine.UIElements
         private VisualElement m_RootContainer;
         private VisualTreeUpdater m_VisualTreeUpdater;
         private string m_PanelName;
-        private string m_ProfileUpdateName;
-        private string m_ProfileLayoutName;
-        private string m_ProfileBindingsName;
-        private string m_ProfileAnimationsName;
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
 
@@ -332,6 +328,12 @@ namespace UnityEngine.UIElements
         internal static Action BeforeUpdaterChange;
         internal static Action AfterUpdaterChange;
 #pragma warning restore CS0649
+
+        ProfilerMarker m_MarkerUpdate;
+        ProfilerMarker m_MarkerLayout;
+        ProfilerMarker m_MarkerBindings;
+        ProfilerMarker m_MarkerAnimations;
+        static ProfilerMarker s_MarkerPickAll = new ProfilerMarker("Panel.PickAll");
 
         public override VisualElement visualTree
         {
@@ -413,20 +415,25 @@ namespace UnityEngine.UIElements
             {
                 m_PanelName = value;
 
-                if (!string.IsNullOrEmpty(m_PanelName))
-                {
-                    m_ProfileUpdateName = $"PanelUpdate.{m_PanelName}";
-                    m_ProfileLayoutName = $"PanelLayout.{m_PanelName}";
-                    m_ProfileBindingsName = $"PanelBindings.{m_PanelName}";
-                    m_ProfileAnimationsName = $"PanelAnimations.{m_PanelName}";
-                }
-                else
-                {
-                    m_ProfileUpdateName = "PanelUpdate";
-                    m_ProfileLayoutName = "PanelLayout";
-                    m_ProfileBindingsName = "PanelBindings";
-                    m_ProfileAnimationsName = "PanelAnimations";
-                }
+                CreateMarkers();
+            }
+        }
+
+        void CreateMarkers()
+        {
+            if (!string.IsNullOrEmpty(m_PanelName))
+            {
+                m_MarkerUpdate = new ProfilerMarker($"Panel.Update.{m_PanelName}");
+                m_MarkerLayout = new ProfilerMarker($"Panel.Layout.{m_PanelName}");
+                m_MarkerBindings = new ProfilerMarker($"Panel.Bindings.{m_PanelName}");
+                m_MarkerAnimations = new ProfilerMarker($"Panel.Animations.{m_PanelName}");
+            }
+            else
+            {
+                m_MarkerUpdate = new ProfilerMarker("Panel.Update");
+                m_MarkerLayout = new ProfilerMarker("Panel.Layout");
+                m_MarkerBindings = new ProfilerMarker("Panel.Bindings");
+                m_MarkerAnimations = new ProfilerMarker("Panel.Animations");
             }
         }
 
@@ -496,10 +503,8 @@ namespace UnityEngine.UIElements
             // Required!
             visualTree.SetPanel(this);
             focusController = new FocusController(new VisualElementFocusRing(visualTree));
-            m_ProfileUpdateName = "PanelUpdate";
-            m_ProfileLayoutName = "PanelLayout";
-            m_ProfileBindingsName = "PanelBindings";
-            m_ProfileAnimationsName = "PanelAnimations";
+
+            CreateMarkers();
 
             InvokeHierarchyChanged(visualTree, HierarchyChangeType.Add);
         }
@@ -533,9 +538,9 @@ namespace UnityEngine.UIElements
 
         private static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
-            Profiler.BeginSample("Panel.PickAll");
+            s_MarkerPickAll.Begin();
             var result = PerformPick(root, point, picked);
-            Profiler.EndSample();
+            s_MarkerPickAll.End();
             return result;
         }
 
@@ -624,11 +629,11 @@ namespace UnityEngine.UIElements
             {
                 m_ValidatingLayout = true;
 
-                Profiler.BeginSample(m_ProfileLayoutName);
+                m_MarkerLayout.Begin();
                 m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
                 m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
                 m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
-                Profiler.EndSample();
+                m_MarkerLayout.End();
 
                 m_ValidatingLayout = false;
             }
@@ -636,16 +641,16 @@ namespace UnityEngine.UIElements
 
         public override void UpdateAnimations()
         {
-            Profiler.BeginSample(m_ProfileAnimationsName);
+            m_MarkerAnimations.Begin();
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Animation);
-            Profiler.EndSample();
+            m_MarkerAnimations.End();
         }
 
         public override void UpdateBindings()
         {
-            Profiler.BeginSample(m_ProfileBindingsName);
+            m_MarkerBindings.Begin();
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Bindings);
-            Profiler.EndSample();
+            m_MarkerBindings.End();
         }
 
         public override void ApplyStyles()
@@ -671,15 +676,10 @@ namespace UnityEngine.UIElements
                 pixelsPerPoint = GUIUtility.pixelsPerPoint;
 
             repaintData.repaintEvent = e;
-            Profiler.BeginSample(m_ProfileUpdateName);
 
-            try
+            using (m_MarkerUpdate.Auto())
             {
                 m_VisualTreeUpdater.UpdateVisualTree();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
 
             panelDebug?.Refresh();

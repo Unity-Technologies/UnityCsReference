@@ -623,9 +623,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_WorldClipMinusGroup = m_WorldClip = panel != null ?
-                    panel.visualTree.rect :
-                    panel.contextType == ContextType.Player ? s_InfiniteRect : GUIClip.topmostRect;
+                m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;
             }
 
             if (ShouldClip() && computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)

@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI
         void Setup();
 
         void Clear();
-        void Reset();
+        void Reload();
 
         bool isEmpty { get; }
         bool isInstallOrUninstallInProgress { get; }

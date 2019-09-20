@@ -25,22 +25,29 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             if (string.IsNullOrEmpty(localInfo.jsonInfo))
                 return null;
 
-            var jsonInfo = Json.Deserialize(localInfo.jsonInfo) as Dictionary<string, object>;
-            var id = jsonInfo?.GetString("id");
-            if (string.IsNullOrEmpty(id))
-                return null;
-
-            return new LocalInfo
+            try
             {
-                id = id,
-                packagePath = localInfo.packagePath ?? string.Empty,
-                versionString = jsonInfo.GetString("version") ?? string.Empty,
-                versionId = jsonInfo.GetString("version_id") ?? string.Empty,
-                publishedDate = jsonInfo.GetString("pubdate") ?? string.Empty,
-                supportedVersion = jsonInfo.GetString("unity_version") ?? string.Empty,
-                updateInfoFetched = false,
-                canUpdate = false
-            };
+                var jsonInfo = Json.Deserialize(localInfo.jsonInfo) as Dictionary<string, object>;
+                var id = jsonInfo?.GetString("id");
+                if (string.IsNullOrEmpty(id))
+                    return null;
+
+                return new LocalInfo
+                {
+                    id = id,
+                    packagePath = localInfo.packagePath ?? string.Empty,
+                    versionString = jsonInfo.GetString("version") ?? string.Empty,
+                    versionId = jsonInfo.GetString("version_id") ?? string.Empty,
+                    publishedDate = jsonInfo.GetString("pubdate") ?? string.Empty,
+                    supportedVersion = jsonInfo.GetString("unity_version") ?? string.Empty,
+                    updateInfoFetched = false,
+                    canUpdate = false
+                };
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }

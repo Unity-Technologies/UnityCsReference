@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -12,8 +12,8 @@ namespace UnityEngine.UIElements.UIR
     /// </summary>
     class GradientSettingsAtlas : IDisposable
     {
-        static readonly CustomSampler k_WriteSampler = CustomSampler.Create("UIR.GradientSettingsAtlas.Write");
-        static readonly CustomSampler k_CommitSampler = CustomSampler.Create("UIR.GradientSettingsAtlas.Commit");
+        static ProfilerMarker s_MarkerWrite = new ProfilerMarker("UIR.GradientSettingsAtlas.Write");
+        static ProfilerMarker s_MarkerCommit = new ProfilerMarker("UIR.GradientSettingsAtlas.Commit");
 
         readonly int m_Length;
         readonly int m_ElemWidth;
@@ -123,7 +123,7 @@ namespace UnityEngine.UIElements.UIR
                     m_RawAtlas.rgba[i] = Color.black;
             }
 
-            k_WriteSampler.Begin();
+            s_MarkerWrite.Begin();
 
             int destY = (int)alloc.start;
             for (int i = 0, settingsCount = settings.Length; i < settingsCount; ++i)
@@ -160,7 +160,7 @@ namespace UnityEngine.UIElements.UIR
 
             MustCommit = true;
 
-            k_WriteSampler.End();
+            s_MarkerWrite.End();
         }
 
         public bool MustCommit { get; private set; }
@@ -178,11 +178,11 @@ namespace UnityEngine.UIElements.UIR
 
             PrepareAtlas();
 
-            k_CommitSampler.Begin();
+            s_MarkerCommit.Begin();
             // TODO: This way of transferring is costly since it is a synchronous operation that flushes the pipeline.
             m_Atlas.SetPixels32(m_RawAtlas.rgba);
             m_Atlas.Apply();
-            k_CommitSampler.End();
+            s_MarkerCommit.End();
 
             MustCommit = false;
         }

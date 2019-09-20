@@ -17,7 +17,7 @@ namespace UnityEditor
         const string k2DPref = "Avatarpreview2D";
         const string kReferencePref = "AvatarpreviewShowReference";
         const string kSpeedPref = "AvatarpreviewSpeed";
-        const float kTimeControlRectHeight = 21;
+        const float kTimeControlRectHeight = 20;
 
         public delegate void OnAvatarChange();
         OnAvatarChange m_OnAvatarChangeFunc = null;
@@ -191,10 +191,14 @@ namespace UnityEditor
             public GUIContent speedScale = EditorGUIUtility.TrIconContent("SpeedScale", "Changes animation preview speed");
             public GUIContent pivot = EditorGUIUtility.TrIconContent("AvatarPivot", "Displays avatar's pivot and mass center");
             public GUIContent ik = EditorGUIUtility.TrTextContent("IK", "Toggles feet IK preview");
-            public GUIContent is2D = EditorGUIUtility.TrTextContent("2D", "Toggles 2D preview mode");
-            public GUIContent avatarIcon = EditorGUIUtility.TrIconContent<Avatar>("Changes the model to use for previewing.");
+            public GUIContent is2D = EditorGUIUtility.TrIconContent("SceneView2D", "Toggles 2D preview mode");
+            public GUIContent avatarIcon = EditorGUIUtility.TrIconContent("AvatarSelector", "Changes the model to use for previewing.");
 
-            public GUIStyle preButton = "preButton";
+            public GUIStyle avatarDropdown = new GUIStyle(EditorStyles.toolbarButton)
+            {
+                stretchWidth = false
+            };
+            public GUIStyle preButton = "toolbarbutton";
             public GUIStyle preSlider = "preSlider";
             public GUIStyle preSliderThumb = "preSliderThumb";
             public GUIStyle preLabel = "preLabel";
@@ -499,9 +503,9 @@ namespace UnityEditor
             InitInstance(previewObjectInScene, objectOnSameAsset);
         }
 
-        float PreviewSlider(float val, float snapThreshold)
+        float PreviewSlider(Rect rect, float val, float snapThreshold)
         {
-            val = GUILayout.HorizontalSlider(val, 0.1f, 2.0f, s_Styles.preSlider, s_Styles.preSliderThumb, GUILayout.MaxWidth(64));
+            val = GUI.HorizontalSlider(rect, val, 0.1f, 2.0f, s_Styles.preSlider, s_Styles.preSliderThumb);//, GUILayout.MaxWidth(64));
             if (val > 0.25f - snapThreshold && val < 0.25f + snapThreshold)
                 val = 0.25f;
             else if (val > 0.5f - snapThreshold && val < 0.5f + snapThreshold)
@@ -545,12 +549,14 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
                 EditorPrefs.SetBool(kReferencePref, m_ShowReference);
 
-            GUILayout.Box(s_Styles.speedScale, s_Styles.preLabel);
-            EditorGUI.BeginChangeCheck();
-            timeControl.playbackSpeed = PreviewSlider(timeControl.playbackSpeed, 0.03f);
-            if (EditorGUI.EndChangeCheck())
-                EditorPrefs.SetFloat(kSpeedPref, timeControl.playbackSpeed);
-            GUILayout.Label(timeControl.playbackSpeed.ToString("f2", CultureInfo.InvariantCulture.NumberFormat), s_Styles.preLabel);
+            if (EditorGUILayout.DropdownButton(s_Styles.avatarIcon, FocusType.Passive, EditorStyles.toolbarDropDownRight))
+            {
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(EditorGUIUtility.TrTextContent("Auto"), false, SetPreviewAvatarOption, PreviewPopupOptions.Auto);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Unity Model"), false, SetPreviewAvatarOption, PreviewPopupOptions.DefaultModel);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Other..."), false, SetPreviewAvatarOption, PreviewPopupOptions.Other);
+                menu.ShowAsContext();
+            }
         }
 
         private RenderTexture RenderPreviewShadowmap(Light light, float scale, Vector3 center, Vector3 floorPos, out Matrix4x4 outShadowMatrix)
@@ -834,13 +840,38 @@ namespace UnityEditor
 
         public void AvatarTimeControlGUI(Rect rect)
         {
+            const float kSliderWidth = 150f;
+            const float kSpacing = 4f;
             Rect timeControlRect = rect;
+
+            // background
+            GUI.Box(rect, GUIContent.none, EditorStyles.toolbar);
+
             timeControlRect.height = kTimeControlRectHeight;
+            timeControlRect.xMax -= kSliderWidth;
+
+            Rect sliderControlRect = rect;
+            sliderControlRect.height = kTimeControlRectHeight;
+            sliderControlRect.yMin += 1;
+            sliderControlRect.yMax -= 1;
+            sliderControlRect.xMin = sliderControlRect.xMax - kSliderWidth + kSpacing;
 
             timeControl.DoTimeControl(timeControlRect);
+            Rect labelRect = new Rect(new Vector2(rect.x, rect.y), EditorStyles.toolbarLabel.CalcSize(EditorGUIUtility.TrTempContent("xxxxx")));;
+            labelRect.x = rect.xMax - labelRect.width;
+            labelRect.yMin = rect.yMin;
+            labelRect.yMax = rect.yMax;
+
+            sliderControlRect.xMax = labelRect.xMin;
+
+            EditorGUI.BeginChangeCheck();
+            timeControl.playbackSpeed = PreviewSlider(sliderControlRect, timeControl.playbackSpeed, 0.03f);
+            if (EditorGUI.EndChangeCheck())
+                EditorPrefs.SetFloat(kSpeedPref, timeControl.playbackSpeed);
+            GUI.Label(labelRect, timeControl.playbackSpeed.ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "x", EditorStyles.toolbarLabel);
 
             // Show current time in seconds:frame and in percentage
-            rect.y = rect.yMax - 20;
+            rect.y = rect.yMax - 24;
             float time = timeControl.currentTime - timeControl.startTime;
             EditorGUI.DropShadowLabel(new Rect(rect.x, rect.y, rect.width, 20),
                 UnityString.Format("{0,2}:{1:00} ({2:000.0%}) Frame {3}", (int)time, Repeat(Mathf.FloorToInt(time * fps), fps), timeControl.normalizedTime, Mathf.FloorToInt(timeControl.currentTime * fps))
@@ -1060,7 +1091,6 @@ namespace UnityEditor
 
             AvatarTimeControlGUI(rect);
 
-            GUI.DrawTexture(choserRect, s_Styles.avatarIcon.image);
 
             int previewSceneID = GUIUtility.GetControlID(m_PreviewSceneHint, FocusType.Passive);
             type = evt.GetTypeForControl(previewSceneID);

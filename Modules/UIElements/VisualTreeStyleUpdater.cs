@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEngine.Profiling;
 
 namespace UnityEngine.UIElements
 {

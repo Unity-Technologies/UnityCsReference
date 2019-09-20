@@ -133,7 +133,7 @@ namespace UnityEngine.UIElements.UIR
                     GL.modelview = drawParams.view.Peek().transform;
                     break;
                 case CommandType.PushScissor:
-                    Rect elemRect = CombineScissorRects(owner.worldBound, drawParams.scissor.Peek());
+                    Rect elemRect = CombineScissorRects(owner.worldClip, drawParams.scissor.Peek());
                     drawParams.scissor.Push(elemRect);
                     Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, drawParams.viewport, pixelsPerPoint));
                     break;

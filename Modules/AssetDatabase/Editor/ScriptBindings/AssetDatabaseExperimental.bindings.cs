@@ -19,7 +19,8 @@ namespace UnityEditor.Experimental
         Unavailable = 0,
         Processing = 1,
         Downloading = 2,
-        Available = 3
+        Available = 3,
+        Failed = 4
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseTypes.h")]
@@ -184,5 +185,14 @@ namespace UnityEditor.Experimental
 
             return assetsReportedChanged.ToArray();
         }
+
+        [FreeFunction("RegisterCustomDependency")]
+        public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
+
+        [FreeFunction("UnregisterCustomDependencyPrefixFilter")]
+        public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
+
+        [FreeFunction("AssetDatabase::IsAssetImportProcess")]
+        public extern static bool IsAssetImportWorkerProcess();
     }
 }

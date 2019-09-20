@@ -1133,8 +1133,8 @@ namespace UnityEditor
             // render mode popup
             GUIContent modeContent = EditorGUIUtility.TextContent(cameraMode.name);
             modeContent.tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
-            Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
-            if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDownLeft, GUILayout.Width(120));
+            if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
                 PopupWindow.Show(rect, new SceneRenderModeWindow(this));

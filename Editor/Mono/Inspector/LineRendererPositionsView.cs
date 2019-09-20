@@ -123,7 +123,7 @@ namespace UnityEditor
             var prop = m_Positions.GetArrayElementAtIndex(id);
 
             var sceneView = SceneView.lastActiveSceneView;
-            if (sceneView != null)
+            if (sceneView != null && lineRenderer != null)
             {
                 var pos = prop.vector3Value;
                 if (!lineRenderer.useWorldSpace)

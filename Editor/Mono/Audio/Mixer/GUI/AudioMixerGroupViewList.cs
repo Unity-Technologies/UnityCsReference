@@ -22,7 +22,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent header = EditorGUIUtility.TrTextContent("Views", "A view is the saved visibility state of the current Mixer Groups. Use views to setup often used combinations of Mixer Groups.");
-            public GUIContent addButton = new GUIContent("+");
+            public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew");
             public Texture2D viewsIcon = EditorGUIUtility.FindTexture("AudioMixerView Icon");
         }
         static Styles s_Styles;
@@ -118,7 +118,7 @@ namespace UnityEditor
                 m_ReorderableListWithRenameAndScrollView.OnGUI(contentRect);
 
                 // Call after list to prevent id mismatch
-                if (GUI.Button(new Rect(headerRect.xMax - 15f, headerRect.y + 3f, 15f, 15f), s_Styles.addButton, EditorStyles.label))
+                if (GUI.Button(new Rect(headerRect.xMax - 17f, headerRect.y + 3f, 16f, 16f), s_Styles.addButton, EditorStyles.iconButton))
                     Add();
             }
         }

@@ -372,7 +372,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 UpmClient.instance.onProductPackageFetchError -= OnProductPackageFetchError;
             }
 
-            public void Reset()
+            public void Reload()
             {
                 m_LocalInfos.Clear();
                 m_FetchedInfos.Clear();
@@ -387,7 +387,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 {
                     AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                     AbortAllDownloads();
-                    Reset();
+                    Reload();
                     UpmClient.instance.ResetProductCache();
                 }
                 else

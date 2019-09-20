@@ -269,51 +269,6 @@ namespace UnityEngine.UIElements.UIR
         uint m_HighWatermark;
     }
 
-    // A very fast allocator that can serve one block at a time without guarantee on adjacency
-    // Suitable for serving allocations of the same fixed size from a relatively small-size heap
-    class BlockAllocator
-    {
-        UInt32 m_TotalBlocks;
-        UInt32 m_NewBlocksRemaining;
-        UInt32 m_Allocated; // For statistics only
-
-        public BlockAllocator(UInt32 blockCount)
-        {
-            m_TotalBlocks = blockCount;
-            m_NewBlocksRemaining = blockCount;
-        }
-
-        public Alloc Allocate()
-        {
-            if (m_NewBlocksRemaining == 0)
-                return new Alloc(); // Signifies a failed allocation, don't throw an exception
-            Block block = m_BlockPool.Get();
-            if (block.indexPlus1 == 0)
-                block.indexPlus1 = m_TotalBlocks - (--m_NewBlocksRemaining);
-            m_Allocated++;
-            return new Alloc() { handle = block, start = block.indexPlus1, size = 1 };
-        }
-
-        public void Free(Alloc alloc)
-        {
-            Debug.Assert(((Block)alloc.handle).indexPlus1 == alloc.start);
-            Debug.Assert(alloc.start != 0);
-            Debug.Assert(alloc.start <= m_TotalBlocks);
-            m_Allocated--;
-            m_BlockPool.Return((Block)alloc.handle);
-        }
-
-        internal uint TotalBlocks { get { return m_TotalBlocks; } }
-        internal uint FreeBlocks { get { return m_TotalBlocks - m_Allocated; } }
-        internal uint AllocatedBlocks { get { return m_Allocated; } }
-
-        class Block : PoolItem
-        {
-            public uint indexPlus1;
-        }
-        Pool<Block> m_BlockPool = new Pool<Block>();
-    }
-
     // The GPU buffer allocator supports allocations with 3 different types of lifetimes: permanent, temp and 1-frame
     // Permanent allocations grow from bottom to top, while temp grow from top to bottom, and 1-frame grow from the middle
     // towards both sides

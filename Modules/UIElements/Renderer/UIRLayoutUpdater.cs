@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -16,7 +15,6 @@ namespace UnityEngine.UIElements
     internal class UIRLayoutUpdater : BaseVisualTreeUpdater
     {
         const int kMaxValidateLayoutCount = 5;
-
 
         private static readonly string s_Description = "UIR Update Layout";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);

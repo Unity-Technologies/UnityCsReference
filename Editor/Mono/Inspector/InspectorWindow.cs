@@ -44,7 +44,7 @@ namespace UnityEditor
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
 
-        protected const float kBottomToolbarHeight = 17f;
+        protected const float kBottomToolbarHeight = 21f;
         const float kAddComponentButtonHeight = 45f;
         internal const int kInspectorPaddingLeft = 8 + 10;
         internal const int kInspectorPaddingRight = 4;
@@ -56,6 +56,7 @@ namespace UnityEditor
         const float k_InspectorPreviewMinTotalHeight = k_InspectorPreviewMinHeight + kBottomToolbarHeight;
         const int k_MinimumRootVisualHeight = 81;
         const int k_MinimumWindowWidth = 275;
+        const int k_AutoScrollZoneHeight = 24;
 
         private const long delayRepaintWhilePlayingAnimation = 150; // Delay between repaints in milliseconds while playing animation
         private long s_LastUpdateWhilePlayingAnimation = 0;
@@ -111,6 +112,10 @@ namespace UnityEditor
 
         VisualElement m_MultiEditLabel;
 
+        ScrollView m_ScrollView;
+        [SerializeField] int m_LastInspectedObjectInstanceID = -1;
+        [SerializeField] float m_LastVerticalScrollValue = 0;
+
         VisualElement FindVisualElementInTreeByClassName(string elementClassName)
         {
             var element = rootVisualElement.Q(className: elementClassName);
@@ -128,6 +133,7 @@ namespace UnityEditor
         {
             public static readonly GUIStyle preToolbar = "preToolbar";
             public static readonly GUIStyle preToolbar2 = "preToolbar2";
+            public static readonly GUIStyle preToolbarLabel = "ToolbarBoldLabel";
             public static readonly GUIStyle preDropDown = "preDropDown";
             public static readonly GUIStyle dragHandle = "RL DragHandle";
             public static readonly GUIStyle lockButton = "IN LockButton";
@@ -136,8 +142,12 @@ namespace UnityEditor
             public static readonly GUIContent labelTitle = EditorGUIUtility.TrTextContent("Asset Labels");
             public static readonly GUIContent addComponentLabel = EditorGUIUtility.TrTextContent("Add Component");
             public static GUIStyle preBackground = "preBackground";
+            public static GUIStyle footer = "IN Footer";
+            public static GUIStyle preMargins = new GUIStyle() {margin = new RectOffset(0, 0, 0, 4)};
+            public static GUIStyle preOptionsButton = new GUIStyle(EditorStyles.toolbarButtonRight) { padding = new RectOffset(), contentOffset = new Vector2(1, 0) };
             public static GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
             public static GUIStyle addComponentButtonStyle = "AC Button";
+            public static readonly GUIContent menuIcon = EditorGUIUtility.TrIconContent("_Menu");
             public static GUIStyle previewMiniLabel = EditorStyles.whiteMiniLabel;
             public static GUIStyle typeSelection = "IN TypeSelection";
 
@@ -231,6 +241,7 @@ namespace UnityEditor
             var container = tpl.CloneTree();
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
+            m_ScrollView = container.Q<ScrollView>();
 
             var multiContainer = rootVisualElement.Q(className: s_MultiEditClassName);
             multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
@@ -253,6 +264,7 @@ namespace UnityEditor
                     m_PreviewResizer.SetExpanded(false);
                 }
             }
+            RestoreVerticalScrollIfNeeded();
         }
 
         private void OnProjectWasLoaded()
@@ -281,6 +293,10 @@ namespace UnityEditor
 
         protected virtual void OnDisable()
         {
+            // save vertical scroll position
+            m_LastInspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
+            m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
+
             RemoveInspectorWindow(this);
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
@@ -784,6 +800,21 @@ namespace UnityEditor
             {
                 if (editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragUpdatedEvent.mousePosition)))
                 {
+                    if (m_ScrollView != null)
+                    {
+                        // implement auto-scroll for easier component drag'n'drop,
+                        // we define a zone of height = k_AutoScrollZoneHeight
+                        // at the top/bottom of the scrollView viewport,
+                        // while dragging, when the mouse moves in these zones,
+                        // we automatically scroll up/down
+                        var localDragPosition = m_ScrollView.contentViewport.WorldToLocal(dragUpdatedEvent.mousePosition);
+
+                        if (localDragPosition.y < k_AutoScrollZoneHeight)
+                            m_ScrollView.verticalScroller.ScrollPageUp();
+                        else if (localDragPosition.y > m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight)
+                            m_ScrollView.verticalScroller.ScrollPageDown();
+                    }
+
                     return;
                 }
 
@@ -1038,7 +1069,7 @@ namespace UnityEditor
                 }
 
                 dragIconRect.x = dragRect.x + dragPadding;
-                dragIconRect.y = dragRect.y + (kBottomToolbarHeight - Styles.dragHandle.fixedHeight) / 2 + 1;
+                dragIconRect.y = dragRect.y + (kBottomToolbarHeight - Styles.dragHandle.fixedHeight) / 2;
                 dragIconRect.width = dragRect.width - dragPadding * 2;
                 dragIconRect.height = Styles.dragHandle.fixedHeight;
 
@@ -1097,7 +1128,7 @@ namespace UnityEditor
 
                     dragIconRect.xMin = labelRect.xMax + dragPadding;
 
-                    GUI.Label(labelRect, title, Styles.preToolbar2);
+                    GUI.Label(labelRect, title, Styles.preToolbarLabel);
                 }
 
                 if (m_HasPreview && Event.current.type == EventType.Repaint)
@@ -1109,6 +1140,36 @@ namespace UnityEditor
 
                 if (m_HasPreview && m_PreviewResizer.GetExpandedBeforeDragging())
                     previewEditor.OnPreviewSettings();
+
+                if (m_HasPreview || m_PreviewWindow != null)
+                {
+                    if (EditorGUILayout.DropdownButton(Styles.menuIcon, FocusType.Passive, Styles.preOptionsButton))
+                    {
+                        GenericMenu menu = new GenericMenu();
+                        menu.AddItem(
+                            EditorGUIUtility.TrTextContent(m_PreviewWindow == null
+                                ? "Convert to Floating Window"
+                                : "Dock Preview to Inspector"), false,
+                            () =>
+                            {
+                                if (m_PreviewWindow == null)
+                                    DetachPreview(false);
+                                else
+                                    m_PreviewWindow.Close();
+                            });
+                        menu.AddItem(
+                            EditorGUIUtility.TrTextContent(m_PreviewResizer.GetExpanded()
+                                ? "Minimize in Inspector"
+                                : "Restore in Inspector"), false,
+                            () =>
+                            {
+                                m_PreviewResizer.SetExpanded(position, k_InspectorPreviewMinTotalHeight,
+                                    k_MinAreaAbovePreview, kBottomToolbarHeight, dragRect,
+                                    !m_PreviewResizer.GetExpanded());
+                            });
+                        menu.ShowAsContext();
+                    }
+                }
             }
             EditorGUILayout.EndHorizontal();
 
@@ -1157,6 +1218,7 @@ namespace UnityEditor
                     }
                 }
 
+                GUILayout.BeginVertical(Styles.footer);
                 if (hasLabels)
                 {
                     using (new EditorGUI.DisabledScope(assets.Any(a => EditorUtility.IsPersistent(a) && !Editor.IsAppropriateFileOpenForEdit(a))))
@@ -1169,6 +1231,7 @@ namespace UnityEditor
                 {
                     m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
                 }
+                GUILayout.EndVertical();
             }
             GUILayout.EndVertical();
 
@@ -1203,15 +1266,17 @@ namespace UnityEditor
             m_SelectedPreview = availablePreviews[selected];
         }
 
-        private void DetachPreview()
+        private void DetachPreview(bool exitGUI = true)
         {
-            Event.current.Use();
+            if (Event.current != null)
+                Event.current.Use();
             m_PreviewWindow = CreateInstance(typeof(PreviewWindow)) as PreviewWindow;
             m_PreviewWindow.SetParentInspector(this);
             m_PreviewWindow.Show();
             Repaint();
             UIElementsUtility.MakeCurrentIMGUIContainerDirty();
-            GUIUtility.ExitGUI();
+            if (exitGUI)
+                GUIUtility.ExitGUI();
         }
 
         internal static void VersionControlBar(Editor assetEditor)
@@ -1502,6 +1567,16 @@ namespace UnityEditor
                     m_RemovedPrefabComponentsElement = prefabsComponentElement;
                 }
             }
+        }
+
+        void RestoreVerticalScrollIfNeeded()
+        {
+            if (m_LastInspectedObjectInstanceID == -1)
+                return;
+            var inspectedObjectInstanceID = GetInspectedObject()?.GetInstanceID() ?? -1;
+            if (inspectedObjectInstanceID == m_LastInspectedObjectInstanceID && inspectedObjectInstanceID != -1)
+                m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
+            m_LastInspectedObjectInstanceID = -1; // reset to make sure the restore occurs once
         }
 
         void AddRemovedPrefabComponentElement(GameObject targetGameObject, Component nextInSource, VisualElement element)

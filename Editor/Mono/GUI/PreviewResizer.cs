@@ -127,6 +127,56 @@ namespace UnityEditor
             return previewSize;
         }
 
+        public float SetExpanded(Rect windowPosition, float minSize, float minRemainingSize, float resizerHeight, Rect dragRect, bool isExpanded)
+        {
+            // Sanity check the cached value. It can be positive or negative, but never smaller than the minSize
+            if (Mathf.Abs(m_CachedPref) < minSize)
+                m_CachedPref = minSize * Mathf.Sign(m_CachedPref);
+
+            float maxPreviewSize = windowPosition.height - minRemainingSize;
+
+            float previewSize = Mathf.Max(0, m_CachedPref);
+            bool expanded = (m_CachedPref > 0);
+            float lastSize = Mathf.Abs(m_CachedPref);
+
+            Rect resizerRect = new Rect(0, windowPosition.height - previewSize - resizerHeight, windowPosition.width, resizerHeight);
+            if (dragRect.width != 0)
+            {
+                resizerRect.x = dragRect.x;
+                resizerRect.width = dragRect.width;
+            }
+
+            bool expandedBefore = expanded;
+            expanded = isExpanded;
+            previewSize = -previewSize;
+            previewSize = Mathf.Min(previewSize, maxPreviewSize);
+
+            // First snap size between 0 and minimum size
+            if (previewSize < minSize)
+                previewSize = (previewSize < minSize * 0.5f ? 0 : minSize);
+
+            // If user clicked area, adjust size
+            if (expanded != expandedBefore)
+            {
+                previewSize = (expanded ? lastSize : 0);
+            }
+
+            // Determine new expanded state
+            expanded = (previewSize >= minSize / 2);
+            if (previewSize > 0)
+                lastSize = previewSize;
+            float newPref = lastSize * (expanded ? 1 : -1);
+            if (newPref != m_CachedPref)
+            {
+                // Save the value to prefs
+                m_CachedPref = newPref;
+                EditorPrefs.SetFloat(m_PrefName, m_CachedPref);
+            }
+
+            s_CachedPreviewSizeWhileDragging = previewSize;
+            return previewSize;
+        }
+
         // This value will change in realtime while dragging
         public bool GetExpanded()
         {
@@ -152,6 +202,8 @@ namespace UnityEditor
 
         public void SetExpanded(bool expanded)
         {
+            if (GetExpanded() == expanded)
+                return;
             // Set the sign based on whether it's collapsed or not, then save to prefs
             m_CachedPref = Mathf.Abs(m_CachedPref) * (expanded ? 1 : -1);
             EditorPrefs.SetFloat(m_PrefName, m_CachedPref);

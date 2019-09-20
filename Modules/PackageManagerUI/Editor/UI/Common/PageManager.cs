@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI
             [MenuItem("internal:Packages/Reset Package Database")]
             public static void ResetPackageDatabase()
             {
-                instance.Reset();
+                instance.Reload();
                 instance.Refresh(RefreshOptions.All | RefreshOptions.Purchased);
             }
 
@@ -280,7 +280,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageDatabase.instance.Clear();
             }
 
-            internal void Reset()
+            internal void Reload()
             {
                 Clear();
 
@@ -292,7 +292,7 @@ namespace UnityEditor.PackageManager.UI
                 }
                 m_Pages.Clear();
 
-                PackageDatabase.instance.Reset();
+                PackageDatabase.instance.Reload();
 
                 Setup();
             }

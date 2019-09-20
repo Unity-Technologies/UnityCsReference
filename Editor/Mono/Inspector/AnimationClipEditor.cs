@@ -744,10 +744,10 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    GUILayout.Label(Styles.Length, EditorStyles.miniLabel, GUILayout.Width(50 - 4));
-                    GUILayout.Label(GetClipLength().ToString("0.000", CultureInfo.InvariantCulture.NumberFormat), EditorStyles.miniLabel);
+                    GUILayout.Label(Styles.Length, EditorStyles.label, GUILayout.Width(50 - 4));
+                    GUILayout.Label(GetClipLength().ToString("0.000", CultureInfo.InvariantCulture.NumberFormat), EditorStyles.label);
                     GUILayout.FlexibleSpace();
-                    GUILayout.Label(m_Clip.frameRate + " FPS", EditorStyles.miniLabel);
+                    GUILayout.Label(m_Clip.frameRate + " FPS", EditorStyles.label);
                 }
             }
             EditorGUILayout.EndHorizontal();
