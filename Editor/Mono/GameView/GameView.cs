@@ -492,7 +492,7 @@ namespace UnityEditor
 
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
-                    int display = EditorGUILayout.Popup(targetDisplay, DisplayUtility.GetDisplayNames(), EditorStyles.toolbarPopup, GUILayout.Width(80));
+                    int display = EditorGUILayout.Popup(targetDisplay, DisplayUtility.GetDisplayNames(), EditorStyles.toolbarPopupLeft, GUILayout.Width(80));
                     if (display != targetDisplay)
                     {
                         targetDisplay = display;

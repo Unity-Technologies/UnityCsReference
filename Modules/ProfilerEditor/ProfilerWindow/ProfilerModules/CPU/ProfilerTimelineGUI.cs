@@ -1193,7 +1193,7 @@ namespace UnityEditorInternal
 
                 position.yMin -= 1; // Workaround: Adjust the y position as a temporary fix to a 1px vertical offset that need to be investigated.
                 Rect fullRect = position;
-                float sideWidth = Chart.kSideWidth - 1;
+                float sideWidth = Chart.kSideWidth;
 
                 Rect timeRulerRect = new Rect(fullRect.x + sideWidth, fullRect.y, fullRect.width - sideWidth, k_LineHeight);
 

@@ -400,7 +400,7 @@ namespace UnityEditorInternal
                     propPath = propPath.Substring(1);
 
                 var splits = propPath.Split(new[] { '.' }, 2);
-                var newField = ft.GetField(splits[0]);
+                var newField = ft.GetField(splits[0], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 if (newField == null)
                     break;
 

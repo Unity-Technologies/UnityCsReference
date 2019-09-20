@@ -243,14 +243,14 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
             }
 
-            public void Reset()
+            public void Reload()
             {
                 onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), m_Packages.Values, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
 
                 Clear();
 
-                AssetStore.AssetStoreClient.instance.Reset();
-                UpmClient.instance.Reset();
+                AssetStore.AssetStoreClient.instance.Reload();
+                UpmClient.instance.Reload();
 
                 m_Packages.Clear();
                 m_SerializedUpmPackages = new List<UpmPackage>();

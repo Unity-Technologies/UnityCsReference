@@ -659,6 +659,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     UnityCodeGenHelpers.UpdateCodeGenScriptAssembly(ref scriptAssembly);
                 }
+
+                if (!buildingForEditor)
+                {
+                    PlatformSupportModuleHelpers.AddAdditionalPlatformSupportData(settings.CompilationExtension, ref scriptAssembly);
+                }
             }
 
             return scriptAssemblies;

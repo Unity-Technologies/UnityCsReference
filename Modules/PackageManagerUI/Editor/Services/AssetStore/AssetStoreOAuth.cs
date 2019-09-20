@@ -238,41 +238,47 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
                 m_AccessTokenRequest.doneCallback = httpClient =>
                 {
+                    m_AccessTokenRequest = null;
+                    m_UserInfo.accessToken = null;
                     if (httpClient.IsSuccess())
                     {
-                        var res = Json.Deserialize(httpClient.text) as Dictionary<string, object>;
-                        if (res != null)
+                        try
                         {
-                            var accessTokenResponse = new AccessToken();
-                            accessTokenResponse.access_token = res["access_token"] as string;
-                            accessTokenResponse.token_type = res["token_type"] as string;
-                            accessTokenResponse.expires_in = res["expires_in"] as string;
-                            accessTokenResponse.refresh_token = res["refresh_token"] as string;
-                            accessTokenResponse.user = res["user"] as string;
-                            accessTokenResponse.display_name = res["display_name"] as string;
-                            m_UserInfo.accessToken = accessTokenResponse;
-                            if (m_UserInfo.accessToken.IsValid())
-                                GetTokenInfo();
+                            var res = Json.Deserialize(httpClient.text) as Dictionary<string, object>;
+                            if (res != null)
+                            {
+                                var accessTokenResponse = new AccessToken();
+                                accessTokenResponse.access_token = res["access_token"] as string;
+                                accessTokenResponse.token_type = res["token_type"] as string;
+                                accessTokenResponse.expires_in = res["expires_in"] as string;
+                                accessTokenResponse.refresh_token = res["refresh_token"] as string;
+                                accessTokenResponse.user = res["user"] as string;
+                                accessTokenResponse.display_name = res["display_name"] as string;
+                                m_UserInfo.accessToken = accessTokenResponse;
+                                if (m_UserInfo.accessToken.IsValid())
+                                {
+                                    GetTokenInfo();
+                                    return;
+                                }
+
+                                m_UserInfo.errorMessage = "Access token invalid";
+                            }
                             else
                             {
-                                m_UserInfo.errorMessage = "Access token invalid";
-                                OnDoneFetchUserInfo();
+                                m_UserInfo.errorMessage = "Failed to parse JSON.";
                             }
                         }
-                        else
+                        catch (Exception e)
                         {
-                            m_UserInfo.errorMessage = "Failed to parse JSON.";
-                            m_UserInfo.accessToken = null;
-                            OnDoneFetchUserInfo();
+                            m_UserInfo.errorMessage = $"Failed to parse JSON: {e.Message}";
                         }
                     }
                     else
                     {
                         m_UserInfo.errorMessage = httpClient.text;
-                        m_UserInfo.accessToken = null;
-                        OnDoneFetchUserInfo();
                     }
-                    m_AccessTokenRequest = null;
+
+                    OnDoneFetchUserInfo();
                 };
                 m_AccessTokenRequest.Begin();
             }
@@ -298,41 +304,48 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_TokenRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kTokenInfoUri}?access_token={m_UserInfo.accessToken.access_token}");
                 m_TokenRequest.doneCallback = httpClient =>
                 {
+                    m_TokenRequest = null;
+                    m_UserInfo.tokenInfo = null;
+
                     if (httpClient.IsSuccess())
                     {
-                        var res = Json.Deserialize(httpClient.text) as Dictionary<string, object>;
-                        if (res != null)
+                        try
                         {
-                            var tokenInfo = new TokenInfo();
-                            tokenInfo.sub = res["sub"] as string;
-                            tokenInfo.scopes = res["scopes"] as string;
-                            tokenInfo.expires_in = res["expires_in"] as string;
-                            tokenInfo.client_id = res["client_id"] as string;
-                            tokenInfo.ip_address = res["ip_address"] as string;
-                            tokenInfo.access_token = res["access_token"] as string;
-                            m_UserInfo.tokenInfo = tokenInfo;
-                            if (m_UserInfo.tokenInfo.IsValid())
-                                GetUserInfo();
+                            var res = Json.Deserialize(httpClient.text) as Dictionary<string, object>;
+                            if (res != null)
+                            {
+                                var tokenInfo = new TokenInfo();
+                                tokenInfo.sub = res["sub"] as string;
+                                tokenInfo.scopes = res["scopes"] as string;
+                                tokenInfo.expires_in = res["expires_in"] as string;
+                                tokenInfo.client_id = res["client_id"] as string;
+                                tokenInfo.ip_address = res["ip_address"] as string;
+                                tokenInfo.access_token = res["access_token"] as string;
+                                m_UserInfo.tokenInfo = tokenInfo;
+                                if (m_UserInfo.tokenInfo.IsValid())
+                                {
+                                    GetUserInfo();
+                                    return;
+                                }
+
+                                m_UserInfo.errorMessage = "TokenInfo invalid";
+                            }
                             else
                             {
-                                m_UserInfo.errorMessage = "TokenInfo invalid";
-                                OnDoneFetchUserInfo();
+                                m_UserInfo.errorMessage = "Failed to parse JSON.";
                             }
                         }
-                        else
+                        catch (Exception e)
                         {
-                            m_UserInfo.errorMessage = "Failed to parse JSON.";
-                            m_UserInfo.tokenInfo = null;
-                            OnDoneFetchUserInfo();
+                            m_UserInfo.errorMessage = $"Failed to parse JSON: {e.Message}";
                         }
                     }
                     else
                     {
                         m_UserInfo.errorMessage = httpClient.text;
-                        m_UserInfo.tokenInfo = null;
-                        OnDoneFetchUserInfo();
                     }
-                    m_TokenRequest = null;
+
+                    OnDoneFetchUserInfo();
                 };
                 m_TokenRequest.Begin();
             }
@@ -359,33 +372,38 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_UserInfoRequest.header["Authorization"] = "Bearer " + m_UserInfo.accessToken.access_token;
                 m_UserInfoRequest.doneCallback = httpClient =>
                 {
+                    m_UserInfoRequest = null;
+                    m_UserInfo.isValid = false;
+
                     if (httpClient.IsSuccess())
                     {
-                        var res = Json.Deserialize(httpClient.text) as Dictionary<string, object>;
-                        if (res != null)
+                        try
                         {
-                            m_UserInfo.id = res["id"] as string;
-                            m_UserInfo.username = res["username"] as string;
-                            var extended = res["extendedProperties"] as Dictionary<string, object>;
-                            m_UserInfo.defaultOrganization = extended["UNITY_DEFAULT_ORGANIZATION"] as string;
-                            m_UserInfo.isValid = true;
-                            m_UserInfo.errorMessage = "";
-                            OnDoneFetchUserInfo();
+                            var res = Json.Deserialize(httpClient.text) as Dictionary<string, object>;
+                            if (res != null)
+                            {
+                                m_UserInfo.id = res["id"] as string;
+                                m_UserInfo.username = res["username"] as string;
+                                var extended = res["extendedProperties"] as Dictionary<string, object>;
+                                m_UserInfo.defaultOrganization = extended["UNITY_DEFAULT_ORGANIZATION"] as string;
+                                m_UserInfo.isValid = true;
+                                m_UserInfo.errorMessage = "";
+                            }
+                            else
+                            {
+                                m_UserInfo.errorMessage = "Failed to parse JSON.";
+                            }
                         }
-                        else
+                        catch (Exception e)
                         {
-                            m_UserInfo.isValid = false;
-                            m_UserInfo.errorMessage = "Failed to parse JSON.";
-                            OnDoneFetchUserInfo();
+                            m_UserInfo.errorMessage = $"Failed to parse JSON: {e.Message}";;
                         }
                     }
                     else
                     {
-                        m_UserInfo.isValid = false;
                         m_UserInfo.errorMessage = httpClient.text;
-                        OnDoneFetchUserInfo();
                     }
-                    m_UserInfoRequest = null;
+                    OnDoneFetchUserInfo();
                 };
                 m_UserInfoRequest.Begin();
             }

@@ -627,7 +627,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             using (new EditorGUI.DisabledScope(!isSupported))
             {
-                GUILayout.Toggle(FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled(), styles.recordButton, EditorStyles.toolbarButton, GUILayout.MinWidth(80));
+                GUILayout.Toggle(FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled(), styles.recordButton, EditorStyles.toolbarButtonLeft, GUILayout.MinWidth(80));
             }
             if (EditorGUI.EndChangeCheck())
             {
@@ -675,7 +675,7 @@ namespace UnityEditor
             }
             using (new EditorGUI.DisabledScope(newLimit >= FrameDebuggerUtility.count))
             {
-                if (GUILayout.Button(styles.nextFrame, EditorStyles.toolbarButton))
+                if (GUILayout.Button(styles.nextFrame, EditorStyles.toolbarButtonRight))
                 {
                     ChangeFrameEventLimit(newLimit + 1);
                 }

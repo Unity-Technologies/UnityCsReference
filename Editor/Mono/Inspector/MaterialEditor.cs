@@ -21,7 +21,7 @@ namespace UnityEditor
         private static class Styles
         {
             public static readonly GUIStyle inspectorBigInner = "IN BigTitle inner";
-            public static readonly GUIStyle kReflectionProbePickerStyle = "PaneOptions";
+            public static readonly GUIContent reflectionProbePickerIcon = EditorGUIUtility.TrIconContent("ReflectionProbeSelector");
             public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is baked or realtime.\n\nBaked only has effect in scenes where baked global illumination is enabled.\n\nRealtime uses realtime global illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
             public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
             public static int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
@@ -1879,18 +1879,11 @@ namespace UnityEditor
                 DefaultPreviewSettingsGUI();
         }
 
-        private bool PreviewSettingsMenuButton(out Rect buttonRect)
+        private bool DoReflectionProbePicker(out Rect buttonRect)
         {
-            buttonRect = GUILayoutUtility.GetRect(14, 24, 14, 20);
+            buttonRect = GUILayoutUtility.GetRect(Styles.reflectionProbePickerIcon, EditorStyles.toolbarDropDownRight);
 
-            const float iconWidth = 16f;
-            const float iconHeight = 16f;
-            Rect iconRect = new Rect(buttonRect.x + (buttonRect.width - iconWidth) / 2, buttonRect.y + (buttonRect.height - iconHeight) / 2, iconWidth, iconHeight);
-
-            if (Event.current.type == EventType.Repaint)
-                Styles.kReflectionProbePickerStyle.Draw(iconRect, false, false, false, false);
-
-            if (EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
+            if (EditorGUI.DropdownButton(buttonRect, Styles.reflectionProbePickerIcon, FocusType.Passive, EditorStyles.toolbarDropDownRight))
                 return true;
 
             return false;
@@ -1912,7 +1905,7 @@ namespace UnityEditor
                 m_LightMode = PreviewGUI.CycleButton(m_LightMode, s_LightIcons);
 
                 Rect settingsButton;
-                if (PreviewSettingsMenuButton(out settingsButton))
+                if (DoReflectionProbePicker(out settingsButton))
                     PopupWindow.Show(settingsButton, m_ReflectionProbePicker);
             }
         }

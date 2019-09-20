@@ -956,7 +956,10 @@ namespace UnityEditor
                 InitAreas();
             m_NavMeshProjectSettingsObject.Update();
 
-            m_AreasList.DoLayoutList();
+            using (new GUILayout.VerticalScope(EditorStyles.defaultContentMargins))
+            {
+                m_AreasList.DoLayoutList();
+            }
 
             m_NavMeshProjectSettingsObject.ApplyModifiedProperties();
         }
@@ -970,7 +973,10 @@ namespace UnityEditor
             if (m_AgentsList.index < 0)
                 m_AgentsList.index = 0;
 
-            m_AgentsList.DoLayoutList();
+            using (new GUILayout.VerticalScope(EditorStyles.defaultContentMargins))
+            {
+                m_AgentsList.DoLayoutList();
+            }
 
             if (m_AgentsList.index >= 0 && m_AgentsList.index < m_Agents.arraySize)
             {

@@ -609,7 +609,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
             }
 
-            public void Reset()
+            public void Reload()
             {
                 m_InstalledPackageInfos.Clear();
                 m_SearchPackageInfos.Clear();

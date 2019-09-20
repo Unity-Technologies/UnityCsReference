@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Profiling;
 
 namespace UnityEngine.UIElements.StyleSheets
 {

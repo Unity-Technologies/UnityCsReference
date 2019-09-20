@@ -18,11 +18,6 @@ namespace UnityEditor.Modules
             return new string[] {};
         }
 
-        public virtual IAssemblyResolver GetAssemblyResolver(bool buildingForEditor, string assemblyPath, string[] searchDirectories)
-        {
-            return null;
-        }
-
         public virtual IEnumerable<string> GetWindowsMetadataReferences()
         {
             return new string[0];

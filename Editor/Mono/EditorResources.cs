@@ -235,7 +235,7 @@ namespace UnityEditor.Experimental
                 s_RefreshGlobalStyleCatalog = false;
 
                 var paths = GetDefaultStyleCatalogPaths();
-                foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
+                foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
                     paths.Add(editorUssPath);
 
                 Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");

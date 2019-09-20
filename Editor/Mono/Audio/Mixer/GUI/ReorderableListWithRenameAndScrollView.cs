@@ -146,7 +146,7 @@ namespace UnityEditorInternal
         {
             if (Event.current.type == EventType.Repaint && onGetNameAtIndex != null)
             {
-                elementStyle.Draw(r, onGetNameAtIndex(index), false, false, isSelected, true);
+                elementStyle.Draw(r, onGetNameAtIndex(index), false, false, isSelected, isFocused);
             }
         }
 

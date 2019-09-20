@@ -53,6 +53,6 @@ namespace UnityEditor.PackageManager.UI
 
         void Clear();
 
-        void Reset();
+        void Reload();
     }
 }

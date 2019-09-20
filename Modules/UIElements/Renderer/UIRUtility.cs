@@ -12,7 +12,6 @@ namespace UnityEngine.UIElements
         public static readonly string k_DefaultShaderName = "Hidden/Internal-UIRDefault";
         public const float k_MeshPosZ = -1.0f; // The correct z value to use to draw a shape regularly (no clipping)
         public const float k_MaskPosZ = 0.0f; // The correct z value to use to mark a shape to be clipped
-        public static readonly Vector4 k_InfiniteClipRect = new Vector4(-float.MaxValue, -float.MaxValue, float.MaxValue, float.MaxValue);
 
         public static Vector4 ToVector4(this Rect rc)
         {

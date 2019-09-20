@@ -154,36 +154,76 @@ namespace UnityEngine.UIElements
         public void ScrollTo(VisualElement child)
         {
             if (child == null)
-            {
                 throw new ArgumentNullException(nameof(child));
-            }
 
             // Child not in content view, no need to continue.
             if (!contentContainer.Contains(child))
-                throw new ArgumentException("Cannot scroll to null child");
+                throw new ArgumentException("Cannot scroll to a VisualElement that is not a child of the ScrollView content-container.");
 
-            float yTransform = contentContainer.transform.position.y * -1;
-            float viewMin = contentViewport.layout.yMin + yTransform;
-            float viewMax = contentViewport.layout.yMax + yTransform;
+            float yDeltaOffset = 0, xDeltaOffset = 0;
 
-            float childBoundaryMin = child.layout.yMin;
-            float childBoundaryMax = child.layout.yMax;
-            if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
+            if (scrollableHeight > 0)
+            {
+                yDeltaOffset = GetYDeltaOffset(child);
+                verticalScroller.value = scrollOffset.y + yDeltaOffset;
+            }
+            if (scrollableWidth > 0)
+            {
+                xDeltaOffset = GetXDeltaOffset(child);
+                horizontalScroller.value = scrollOffset.x + xDeltaOffset;
+            }
+
+            if (yDeltaOffset == 0 && xDeltaOffset == 0)
                 return;
 
-            bool scrollUpward = false;
+            UpdateContentViewTransform();
+        }
+
+        private float GetXDeltaOffset(VisualElement child)
+        {
+            float xTransform = contentContainer.transform.position.x * -1;
+
+            float viewMin = contentViewport.worldBound.xMin + xTransform;
+            float viewMax = contentViewport.worldBound.xMax + xTransform;
+
+            float childBoundaryMin = child.worldBound.xMin + xTransform;
+            float childBoundaryMax = child.worldBound.xMax + xTransform;
+
+            if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
+                return 0;
+
+            float deltaDistance = GetDeltaDistance(viewMin, viewMax, childBoundaryMin, childBoundaryMax);
+
+            return deltaDistance * horizontalScroller.highValue / scrollableWidth;
+        }
+
+        private float GetYDeltaOffset(VisualElement child)
+        {
+            float yTransform = contentContainer.transform.position.y * -1;
+
+            float viewMin = contentViewport.worldBound.yMin + yTransform;
+            float viewMax = contentViewport.worldBound.yMax + yTransform;
+
+            float childBoundaryMin = child.worldBound.yMin + yTransform;
+            float childBoundaryMax = child.worldBound.yMax + yTransform;
+
+            if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
+                return 0;
+
+            float deltaDistance = GetDeltaDistance(viewMin, viewMax, childBoundaryMin, childBoundaryMax);
+
+            return deltaDistance * verticalScroller.highValue / scrollableHeight;
+        }
+
+        private float GetDeltaDistance(float viewMin, float viewMax, float childBoundaryMin, float childBoundaryMax)
+        {
             float deltaDistance = childBoundaryMax - viewMax;
             if (deltaDistance < -1)
             {
-                // Direction = upward
-                deltaDistance = viewMin - childBoundaryMin;
-                scrollUpward = true;
+                deltaDistance = childBoundaryMin - viewMin;
             }
 
-            float deltaOffset = deltaDistance * verticalScroller.highValue / scrollableHeight;
-
-            verticalScroller.value = scrollOffset.y + (scrollUpward ? -deltaOffset : deltaOffset);
-            UpdateContentViewTransform();
+            return deltaDistance;
         }
 
         public VisualElement contentViewport { get; private set; } // Represents the visible part of contentContainer

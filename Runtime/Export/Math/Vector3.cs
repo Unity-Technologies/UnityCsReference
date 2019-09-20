@@ -62,7 +62,7 @@ namespace UnityEngine
 
             float sqdist = toVector_x * toVector_x + toVector_y * toVector_y + toVector_z * toVector_z;
 
-            if (sqdist == 0 || sqdist <= maxDistanceDelta * maxDistanceDelta)
+            if (sqdist == 0 || (maxDistanceDelta >= 0 && sqdist <= maxDistanceDelta * maxDistanceDelta))
                 return target;
             var dist = (float)Math.Sqrt(sqdist);
 

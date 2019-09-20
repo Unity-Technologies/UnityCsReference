@@ -529,7 +529,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent header = EditorGUIUtility.TrTextContent("Mixers", "All mixers in the project are shown here. By default, a mixer outputs to the AudioListener but mixers can also route their output to other mixers. Each mixer shows where it outputs (in parenthesis). To reroute a mixer simply drag the mixer upon another mixer and select a group from the popup.");
-            public GUIContent addText = EditorGUIUtility.TrTextContent("+", "Add mixer asset. The asset will be saved in the same folder as the current selected mixer or, if none is selected, saved in the Assets folder.");
+            public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew", "Add mixer asset. The asset will be saved in the same folder as the current selected mixer or, if none is selected, saved in the Assets folder.");
             public Texture2D audioMixerIcon = EditorGUIUtility.FindTexture(typeof(AudioMixerController));
         }
         static Styles s_Styles;
@@ -604,7 +604,7 @@ namespace UnityEditor
             AudioMixerDrawUtils.DrawRegionBg(rect, out headerRect, out contentRect);
             AudioMixerDrawUtils.HeaderLabel(headerRect, s_Styles.header, s_Styles.audioMixerIcon);
 
-            if (GUI.Button(new Rect(headerRect.xMax - 15f, headerRect.y + 3f, 15f, 15f), s_Styles.addText, EditorStyles.label))
+            if (GUI.Button(new Rect(headerRect.xMax - 17f, headerRect.y + 3f, 16f, 16f), s_Styles.addButton, EditorStyles.iconButton))
             {
                 AudioMixersTreeViewGUI gui = m_TreeView.gui as AudioMixersTreeViewGUI;
                 gui.BeginCreateNewMixer();

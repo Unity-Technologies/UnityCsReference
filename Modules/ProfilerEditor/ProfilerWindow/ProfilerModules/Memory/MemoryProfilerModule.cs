@@ -71,7 +71,7 @@ namespace UnityEditorInternal.Profiling
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorGUILayout.EnumPopup(m_ShowDetailedMemoryPane, EditorStyles.toolbarDropDown, GUILayout.Width(70f));
+            m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorGUILayout.EnumPopup(m_ShowDetailedMemoryPane, EditorStyles.toolbarDropDownLeft, GUILayout.Width(70f));
 
             GUILayout.Space(5f);
 

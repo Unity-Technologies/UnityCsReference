@@ -371,6 +371,7 @@ namespace UnityEditorInternal
                 arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(Path.GetFullPath(GetCppOutputDirectoryInStagingArea()))}");
                 arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
+                arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
                 var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
 
@@ -439,12 +440,6 @@ namespace UnityEditorInternal
 
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
-
-            // Working around gcc bug 41091
-            if (m_PlatformProvider.target == BuildTarget.StandaloneLinux64)
-            {
-                arguments.Add("--disable-aggressive-inlining");
-            }
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);

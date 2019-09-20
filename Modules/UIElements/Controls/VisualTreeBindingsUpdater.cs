@@ -22,6 +22,9 @@ namespace UnityEngine.UIElements
         private const int kMinUpdateDelay = 100;
         private long m_LastUpdateTime = 0;
 
+        static ProfilerMarker s_MarkerUpdate = new ProfilerMarker("Bindings.Update");
+        static ProfilerMarker s_MarkerPoll = new ProfilerMarker("Bindings.PollElementsWithBindings");
+
         IBinding GetUpdaterFromElement(VisualElement ve)
         {
             return (ve as IBindable)?.binding;
@@ -146,7 +149,7 @@ namespace UnityEngine.UIElements
         private List<IBinding> updatedBindings = new List<IBinding>();
         private void UpdateBindings()
         {
-            Profiler.BeginSample("Binding.Update");
+            s_MarkerUpdate.Begin();
             foreach (VisualElement element in m_ElementsWithBindings)
             {
                 var updater = GetUpdaterFromElement(element);
@@ -173,12 +176,12 @@ namespace UnityEngine.UIElements
             }
 
             updatedBindings.Clear();
-            Profiler.EndSample();
+            s_MarkerUpdate.End();
         }
 
         internal void PollElementsWithBindings(Action<VisualElement, IBinding> callback)
         {
-            Profiler.BeginSample("Binding.PollElementsWithBindings");
+            s_MarkerPoll.Begin();
 
             PerformTrackingOperations();
 
@@ -200,7 +203,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            Profiler.EndSample();
+            s_MarkerPoll.End();
         }
     }
 }

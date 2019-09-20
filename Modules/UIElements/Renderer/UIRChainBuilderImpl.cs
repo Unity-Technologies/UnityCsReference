@@ -19,27 +19,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal static class RenderEvents
     {
-        internal static void OnRestoreTransformIDs(VisualElement ve, UIRenderDevice device)
-        {
-            // A small portion of the logic in DepthFirstOnChildAdded for fast device restoration purposes
-            Debug.Assert(ve.renderChainData.isInChain);
-
-            if (NeedsTransformID(ve, ve.renderChainData.clipMethod))
-            {
-                Debug.Assert(ve.renderChainData.transformID.size == 0);
-                ve.renderChainData.transformID = device.AllocateTransform(); // The allocation might fail, it's ok. It will cause the use of manual transform
-            }
-            else
-            {
-                var parent = ve.hierarchy.parent;
-                if (parent != null)
-                {
-                    ve.renderChainData.transformID = parent.renderChainData.transformID;
-                    ve.renderChainData.transformID.shortLived = true; // Mark this allocation as not owned by us
-                }
-            }
-        }
-
         internal static Shader ResolveShader(Shader shader)
         {
             if (shader == null)
@@ -50,8 +29,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
         {
-            stats.recursiveClipUpdates++;
-            DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, false, true, false, false, false, device, ref stats);
+            bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
+            if (hierarchical)
+                stats.recursiveClipUpdates++;
+            else stats.nonRecursiveClipUpdates++;
+            DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, hierarchical, true, false, false, false, device, ref stats);
         }
 
         internal static void ProcessOnOpacityChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -86,7 +68,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
         {
-            Debug.Assert(ve.renderChainData.allocatedTransformID || (ve.renderHints & (RenderHints.GroupTransform)) != 0);
+            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || (ve.renderHints & (RenderHints.GroupTransform)) != 0);
             Matrix4x4 transform;
             if (ve.renderChainData.groupTransformAncestor != null)
                 transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
@@ -95,9 +77,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return transform;
         }
 
-        static Vector4 GetTransformIDClipInfo(VisualElement ve)
+        static Vector4 GetClipRectIDClipInfo(VisualElement ve)
         {
-            Debug.Assert(ve.renderChainData.allocatedTransformID);
+            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID));
             if (ve.renderChainData.groupTransformAncestor == null)
                 return ve.worldClip.ToVector4();
 
@@ -109,9 +91,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return new Vector4(Mathf.Min(min.x, max.x), Mathf.Min(min.y, max.y), Mathf.Max(min.x, max.x), Mathf.Max(min.y, max.y));
         }
 
-        static void GetVerticesTransformInfo(VisualElement ve, out Matrix4x4 transform, out float transformID)
+        static void GetVerticesTransformInfo(VisualElement ve, out Matrix4x4 transform)
         {
-            if (ve.renderChainData.allocatedTransformID || (ve.renderHints & (RenderHints.GroupTransform)) != 0)
+            if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || (ve.renderHints & (RenderHints.GroupTransform)) != 0)
                 transform = Matrix4x4.identity;
             else if (ve.renderChainData.boneTransformAncestor != null)
                 transform = ve.renderChainData.boneTransformAncestor.worldTransform.inverse * ve.worldTransform;
@@ -119,7 +101,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse * ve.worldTransform;
             else transform = ve.worldTransform;
             transform.m22 = transform.m33 = 1.0f; // Once world-space mode is introduced, this should become conditional
-            transformID = ve.renderChainData.transformID.start;
         }
 
         internal static uint DepthFirstOnChildAdded(RenderChain renderChain, VisualElement parent, VisualElement ve, int index, bool resetState)
@@ -134,7 +115,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             ve.renderChainData.isInChain = true;
             ve.renderChainData.verticesSpace = Matrix4x4.identity;
-            ve.renderChainData.shaderInfoAlloc = renderChain.defaultShaderInfo;
+            ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
+            ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
+            ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
             ve.renderChainData.compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
 
             if (parent != null)
@@ -164,6 +147,31 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 ve.renderChainData.prev.renderChainData.next = ve;
             if (ve.renderChainData.next != null)
                 ve.renderChainData.next.renderChainData.prev = ve;
+
+            // TransformID
+            // Since transform type is controlled by render hints which are locked on the VE by now, we can
+            // go ahead and prep transform data now and never check on it again under regular circumstances
+            Debug.Assert(!RenderChainVEData.AllocatesID(ve.renderChainData.transformID));
+            if (NeedsTransformID(ve))
+                ve.renderChainData.transformID = renderChain.shaderInfoAllocator.AllocTransform(); // May fail, that's ok
+            else ve.renderChainData.transformID = BMPAlloc.Invalid;
+            ve.renderChainData.boneTransformAncestor = null;
+
+            if (!RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
+            {
+                if (parent != null && (ve.renderHints & RenderHints.GroupTransform) == 0)
+                {
+                    if (RenderChainVEData.AllocatesID(parent.renderChainData.transformID))
+                        ve.renderChainData.boneTransformAncestor = parent;
+                    else
+                        ve.renderChainData.boneTransformAncestor = parent.renderChainData.boneTransformAncestor;
+
+                    ve.renderChainData.transformID = parent.renderChainData.transformID;
+                    ve.renderChainData.transformID.owned = 0; // Mark this allocation as not owned by us (inherited)
+                }
+                else ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
+            }
+            else renderChain.shaderInfoAllocator.SetTransformValue(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve));
 
             // Recurse on children
             int childrenCount = ve.hierarchy.childCount;
@@ -196,15 +204,20 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (ve.renderChainData.prev != null)
                     ve.renderChainData.prev.renderChainData.next = ve.renderChainData.next;
 
-                if (ve.renderChainData.shaderInfoAlloc.owned == 1)
+                if (RenderChainVEData.AllocatesID(ve.renderChainData.opacityID))
                 {
-                    renderChain.FreeShaderInfo(ve.renderChainData.shaderInfoAlloc);
-                    ve.renderChainData.shaderInfoAlloc = renderChain.defaultShaderInfo;
+                    renderChain.shaderInfoAllocator.FreeOpacity(ve.renderChainData.opacityID);
+                    ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
                 }
-                if (ve.renderChainData.allocatedTransformID)
+                if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
                 {
-                    renderChain.device.Free(ve.renderChainData.transformID);
-                    ve.renderChainData.transformID = new Alloc();
+                    renderChain.shaderInfoAllocator.FreeClipRect(ve.renderChainData.clipRectID);
+                    ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
+                }
+                if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
+                {
+                    renderChain.shaderInfoAllocator.FreeTransform(ve.renderChainData.transformID);
+                    ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
                 }
                 ve.renderChainData.boneTransformAncestor = ve.renderChainData.groupTransformAncestor = null;
                 if (ve.renderChainData.closingData != null)
@@ -225,30 +238,27 @@ namespace UnityEngine.UIElements.UIR.Implementation
             VisualElement parent,
             VisualElement ve,
             uint dirtyID,
-            bool hierarchical,                  // MUST be false on the root call. Indicates that ALL descendants MUST be processed.
+            bool hierarchical,
             bool isRootOfChange,                // MUST be true  on the root call.
             bool isPendingHierarchicalRepaint,  // MUST be false on the root call.
-            bool inheritedTransformIDChanged,   // MUST be false on the root call.
+            bool inheritedClipRectIDChanged,    // MUST be false on the root call.
             bool inheritedStencilClippedChanged,// MUST be false on the root call.
             UIRenderDevice device,
             ref ChainBuilderStats stats)
         {
             bool upToDate = dirtyID == ve.renderChainData.dirtyID;
-            if (upToDate && !inheritedTransformIDChanged && !inheritedStencilClippedChanged)
+            if (upToDate && !inheritedClipRectIDChanged && !inheritedStencilClippedChanged)
                 return;
 
             ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
-            stats.recursiveClipUpdatesExpanded++;
 
-            // Despite an originally non-hierarchical processing, we may need to recurse to propagate some values. When
-            // doing so, we may update elements that required hierarchical processing. In this case, we need to set
-            // this flag because otherwise, their own individual processing may be skipped since the dirtyID has been set.
-            hierarchical |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
+            if (!isRootOfChange)
+                stats.recursiveClipUpdatesExpanded++;
 
             isPendingHierarchicalRepaint |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
 
             // Internal operations (done in this call) to do:
-            bool mustUpdateTransformID = hierarchical || isRootOfChange || inheritedTransformIDChanged;
+            bool mustUpdateClipRectID = hierarchical || isRootOfChange || inheritedClipRectIDChanged;
             bool mustUpdateClippingMethod = hierarchical || isRootOfChange;
             bool mustUpdateStencilClippedFlag = hierarchical || isRootOfChange || inheritedStencilClippedChanged;
 
@@ -261,58 +271,41 @@ namespace UnityEngine.UIElements.UIR.Implementation
             // As a result, hierarchical implies mustRecurse
             bool mustRecurse = hierarchical;
 
-            // Update the clipping method.
             ClipMethod oldClippingMethod = ve.renderChainData.clipMethod;
-            ClipMethod newClippingMethod = oldClippingMethod;
-            if (mustUpdateClippingMethod)
-                newClippingMethod = DetermineClipMethod(ve);
+            ClipMethod newClippingMethod = mustUpdateClippingMethod ? DetermineSelfClipMethod(ve) : oldClippingMethod;
 
-            // Update the transform ID.
-            Alloc oldTransformID = ve.renderChainData.transformID;
-            Alloc newTransformID = oldTransformID;
-            if (mustUpdateTransformID)
+            // Shader discard support
+            bool clipRectIDChanged = false;
+            if (mustUpdateClipRectID)
             {
-                if (NeedsTransformID(ve, newClippingMethod))
+                BMPAlloc newClipRectID = ve.renderChainData.clipRectID;
+                if (newClippingMethod == ClipMethod.ShaderDiscard)
                 {
-                    if (!ve.renderChainData.allocatedTransformID)
+                    if (!RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
                     {
-                        newTransformID = device.AllocateTransform();
-                        ve.renderChainData.transformID = newTransformID;
+                        newClipRectID = renderChain.shaderInfoAllocator.AllocClipRect();
+                        if (!newClipRectID.IsValid())
+                        {
+                            newClippingMethod = ClipMethod.Scissor; // Fallback to scissor since we couldn't allocate a clipRectID
+                            // Both shader discard and scisorring work with world-clip rectangles, so no need
+                            // to inherit any clipRectIDs for such elements, our own scissor rect clips up correctly
+                            newClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
+                        }
                     }
                 }
                 else
                 {
-                    if (ve.renderChainData.allocatedTransformID)
-                    {
-                        device.Free(ve.renderChainData.transformID);
-                        newTransformID = new Alloc();
-                        ve.renderChainData.transformID = newTransformID;
-                    }
+                    if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
+                        renderChain.shaderInfoAllocator.FreeClipRect(ve.renderChainData.clipRectID);
+
+                    // Inherit parent's clipRectID if possible
+                    newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
+                    newClipRectID.owned = 0;
                 }
 
-                if (!ve.renderChainData.allocatedTransformID)
-                {
-                    if (parent != null && (ve.renderHints & RenderHints.GroupTransform) == 0)
-                    {
-                        if (parent.renderChainData.allocatedTransformID)
-                            ve.renderChainData.boneTransformAncestor = parent;
-                        else
-                            ve.renderChainData.boneTransformAncestor = parent.renderChainData.boneTransformAncestor;
-
-                        newTransformID = parent.renderChainData.transformID;
-                        // Mark this allocation as not owned by us. Note that we are hijacking this field since it is
-                        // actually unused in the case of transform ids.
-                        newTransformID.shortLived = true;
-                        ve.renderChainData.transformID = newTransformID;
-                    }
-                    else
-                        ve.renderChainData.boneTransformAncestor = null;
-                }
+                clipRectIDChanged = !ve.renderChainData.clipRectID.Equals(newClipRectID);
+                ve.renderChainData.clipRectID = newClipRectID;
             }
-
-            if (!ve.renderChainData.allocatedTransformID && newClippingMethod == ClipMethod.ShaderDiscard)
-                // Fallback to scissoring since we couldn't allocate a transform ID
-                newClippingMethod = ClipMethod.Scissor;
 
             if (oldClippingMethod != newClippingMethod)
             {
@@ -330,20 +323,17 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     // We need to add/remove scissor push/pop commands
                     mustRepaintThis = true;
 
-                if (newClippingMethod == ClipMethod.ShaderDiscard || oldClippingMethod == ClipMethod.ShaderDiscard && ve.renderChainData.allocatedTransformID)
+                if (newClippingMethod == ClipMethod.ShaderDiscard || oldClippingMethod == ClipMethod.ShaderDiscard && RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
                     // We must update the clipping rects.
                     mustProcessSizeChange = true;
             }
 
-            bool transformIdChanged = false;
-            if (TransformIDHasChanged(oldTransformID, newTransformID))
+            if (clipRectIDChanged)
             {
-                transformIdChanged = true;
-
-                // Our children MUST update their render data transformIDs
+                // Our children MUST update their render data clipRectIDs
                 mustRecurse = true;
 
-                // Our children MUST update their vertex transformIDs
+                // Our children MUST update their vertex clipRectIDs
                 mustRepaintHierarchy = true;
             }
 
@@ -385,7 +375,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         hierarchical,
                         false,
                         isPendingHierarchicalRepaint,
-                        transformIdChanged,
+                        clipRectIDChanged,
                         isStencilClippedChanged,
                         device,
                         ref stats);
@@ -403,37 +393,40 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (newOpacity == ve.renderChainData.compositeOpacity)
                 return; // Nothing changed effectively
 
+            bool becameVisible = (ve.renderChainData.compositeOpacity < Mathf.Epsilon && newOpacity >= Mathf.Epsilon);
             ve.renderChainData.compositeOpacity = newOpacity;
 
-            bool changedShaderInfoID = false;
+            bool changedOpacityID = false;
             if (newOpacity != parentCompositeOpacity)
             {
-                if (ve.renderChainData.shaderInfoAlloc.owned == 0)
+                if (ve.renderChainData.opacityID.owned == 0)
                 {
-                    changedShaderInfoID = true;
-                    ve.renderChainData.shaderInfoAlloc = renderChain.AllocateShaderInfo();
+                    changedOpacityID = true;
+                    ve.renderChainData.opacityID = renderChain.shaderInfoAllocator.AllocOpacity();
                 }
-                if (ve.renderChainData.shaderInfoAlloc.IsValid())
-                    renderChain.atlasManager.EnqueueBlit(UIRenderDevice.whiteTexel, ve.renderChainData.shaderInfoAlloc.x, ve.renderChainData.shaderInfoAlloc.y, false, new Color(1, 1, 1, newOpacity));
+                if (ve.renderChainData.opacityID.IsValid())
+                    renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
             }
-            else if (ve.renderChainData.shaderInfoAlloc.owned == 0)
+            else if (ve.renderChainData.opacityID.owned == 0)
             {
                 // Just follow my parent's alloc
-                if (ve.hierarchy.parent != null && !ve.renderChainData.shaderInfoAlloc.Equals(ve.hierarchy.parent.renderChainData.shaderInfoAlloc))
+                if (ve.hierarchy.parent != null && !ve.renderChainData.opacityID.Equals(ve.hierarchy.parent.renderChainData.opacityID))
                 {
-                    changedShaderInfoID = true;
-                    ve.renderChainData.shaderInfoAlloc = ve.hierarchy.parent.renderChainData.shaderInfoAlloc;
-                    ve.renderChainData.shaderInfoAlloc.owned = 0;
+                    changedOpacityID = true;
+                    ve.renderChainData.opacityID = ve.hierarchy.parent.renderChainData.opacityID;
+                    ve.renderChainData.opacityID.owned = 0;
                 }
             }
             else
             {
-                // I have an owned allocation, but I must match my paren't opacity, just set the opacity
-                if (ve.renderChainData.shaderInfoAlloc.IsValid())
-                    renderChain.atlasManager.EnqueueBlit(UIRenderDevice.whiteTexel, ve.renderChainData.shaderInfoAlloc.x, ve.renderChainData.shaderInfoAlloc.y, false, new Color(1, 1, 1, newOpacity));
+                // I have an owned allocation, but I must match my paren't opacity, just set the opacity rather than free and inherit our parent's
+                if (ve.renderChainData.opacityID.IsValid())
+                    renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
             }
 
-            if (changedShaderInfoID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0))
+            if (becameVisible)
+                renderChain.UIEOnVisualsChanged(ve, true); // Force a full visuals repaint, as this element was considered as hidden from the hierarchy
+            else if (changedOpacityID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0))
                 renderChain.UIEOnVisualsChanged(ve, false); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
 
             // Recurse on children
@@ -451,10 +444,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             transformChanged |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
 
+            if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
+                renderChain.shaderInfoAllocator.SetClipRectValue(ve.renderChainData.clipRectID, GetClipRectIDClipInfo(ve));
+
             bool dirtyHasBeenResolved = true;
-            if (ve.renderChainData.allocatedTransformID)
+            if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
             {
-                device.UpdateTransform(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve), GetTransformIDClipInfo(ve));
+                renderChain.shaderInfoAllocator.SetTransformValue(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve));
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }
@@ -468,8 +464,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             else if (isAncestorOfChangeSkinned)
             {
-                // Children of a bone element inherit the transform and clip data change automatically when the root updates that data, no need to do anything for children
-                Debug.Assert(ve.renderChainData.transformID.size > 0); // The element MUST have a transformID that has been inherited from an ancestor
+                // Children of a bone element inherit the transform data change automatically when the root updates that data, no need to do anything for children
+                Debug.Assert(RenderChainVEData.InheritsID(ve.renderChainData.transformID)); // The element MUST have a transformID that has been inherited from an ancestor
                 dirtyHasBeenResolved = false; // We just skipped processing, if another later transform change is queued on this element this pass then we should still process it
                 stats.skipTransformed++;
             }
@@ -514,7 +510,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 hierarchical = true;
 
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
-            Debug.Assert(ve.renderChainData.allocatedTransformID || ve.hierarchy.parent == null || ve.renderChainData.transformID.start == ve.hierarchy.parent.renderChainData.transformID.start || (ve.renderHints & RenderHints.GroupTransform) != 0);
+            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || (ve.renderHints & RenderHints.GroupTransform) != 0);
 
             var painterClosingInfo = new UIRStylePainter.ClosingInfo();
             var painter = PaintElement(renderChain, ve, ref stats);
@@ -588,7 +584,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return false;
         }
 
-        static ClipMethod DetermineClipMethod(VisualElement ve)
+        static ClipMethod DetermineSelfClipMethod(VisualElement ve)
         {
             if (!ve.ShouldClip())
                 return ClipMethod.NotClipped;
@@ -603,9 +599,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return ClipMethod.Stencil;
         }
 
-        static bool NeedsTransformID(VisualElement ve, ClipMethod newClipMethod)
+        static bool NeedsTransformID(VisualElement ve)
         {
-            return (ve.renderHints & RenderHints.GroupTransform) == 0 && ((newClipMethod == ClipMethod.ShaderDiscard) || ((ve.renderHints & RenderHints.BoneTransform) == RenderHints.BoneTransform));
+            return ((ve.renderHints & RenderHints.GroupTransform) == 0) &&
+                ((ve.renderHints & RenderHints.BoneTransform) == RenderHints.BoneTransform);
         }
 
         // Indicates whether the transform id assigned to an element has changed. It does not care who the owner is.
@@ -669,9 +666,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             var entries = painter.entries;
 
-            if (ve.renderChainData.allocatedTransformID)
-                painter.device.UpdateTransform(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve), GetTransformIDClipInfo(ve)); // Update the transform if we allocated it
-
             MeshHandle data = ve.renderChainData.data;
             if (painter.totalVertices <= UInt16.MaxValue && (entries.Count > 0))
             {
@@ -683,20 +677,44 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 int vertsFilled = 0, indicesFilled = 0;
 
-                float transformID;
-                Matrix4x4 transform;
-                GetVerticesTransformInfo(ve, out transform, out transformID);
-                ve.renderChainData.verticesSpace = transform; // This is the space for the generated vertices below
-
                 RenderChainCommand cmdPrev = oldCmdPrev, cmdNext = oldCmdNext;
                 if (oldCmdPrev == null && oldCmdNext == null)
                     FindCommandInsertionPoint(ve, out cmdPrev, out cmdNext);
+
+                // Vertex data, lazily computed
+                bool vertexDataComputed = false;
+                Matrix4x4 transform = Matrix4x4.identity;
+                Color32 xformClipPages = new Color32(0, 0, 0, 0);
+                Color32 idsAddFlags = new Color32(0, 0, 0, 0);
+                Color32 opacityPage = new Color32(0, 0, 0, 0);
 
                 int firstDisplacementUV = -1, lastDisplacementUVPlus1 = -1;
                 foreach (var entry in painter.entries)
                 {
                     if (entry.vertices.Length > 0 && entry.indices.Length > 0)
                     {
+                        if (!vertexDataComputed)
+                        {
+                            vertexDataComputed = true;
+                            GetVerticesTransformInfo(ve, out transform);
+                            ve.renderChainData.verticesSpace = transform; // This is the space for the generated vertices below
+
+                            Color32 transformData = renderChain.shaderInfoAllocator.TransformAllocToVertexData(ve.renderChainData.transformID);
+                            Color32 opacityData = renderChain.shaderInfoAllocator.OpacityAllocToVertexData(ve.renderChainData.opacityID);
+                            xformClipPages.r = transformData.r;
+                            xformClipPages.g = transformData.g;
+                            idsAddFlags.r = transformData.b;
+                            opacityPage.r = opacityData.r;
+                            opacityPage.g = opacityData.g;
+                            idsAddFlags.b = opacityData.b;
+                        }
+
+                        Color32 clipRectData = renderChain.shaderInfoAllocator.ClipRectAllocToVertexData(entry.clipRectID);
+                        xformClipPages.b = clipRectData.r;
+                        xformClipPages.a = clipRectData.g;
+                        idsAddFlags.g = clipRectData.b;
+                        idsAddFlags.a = (byte)entry.addFlags;
+
                         // Copy vertices, transforming them as necessary
                         var targetVerticesSlice = verts.Slice(vertsFilled, entry.vertices.Length);
                         if (entry.uvIsDisplacement)
@@ -710,9 +728,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                                 lastDisplacementUVPlus1 += entry.vertices.Length;
                             else ve.renderChainData.disableNudging = true; // Disjoint displacement UV entries, we can't keep track of them, so disable nudging optimization altogether
 
-                            CopyTransformVertsPosAndVec(entry.vertices, targetVerticesSlice, transform, transformID, entry.clipRectID, (float)entry.addFlags, ve.renderChainData.shaderInfoAlloc.x, ve.renderChainData.shaderInfoAlloc.y);
+                            CopyTransformVertsPosAndVec(entry.vertices, targetVerticesSlice, transform, xformClipPages, idsAddFlags, opacityPage);
                         }
-                        else CopyTransformVertsPos(entry.vertices, targetVerticesSlice, transform, transformID, entry.clipRectID, (float)entry.addFlags, ve.renderChainData.shaderInfoAlloc.x, ve.renderChainData.shaderInfoAlloc.y);
+                        else CopyTransformVertsPos(entry.vertices, targetVerticesSlice, transform, xformClipPages, idsAddFlags, opacityPage);
 
                         // Copy indices
                         int entryIndexCount = entry.indices.Length;
@@ -848,23 +866,25 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
         }
 
-        static void CopyTransformVertsPos(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, float transformID, float clipRectID, float addFlags, UInt16 siX, UInt16 siY)
+        static void CopyTransformVertsPos(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 idsAddFlags, Color32 opacityPage)
         {
             int count = source.Length;
             for (int i = 0; i < count; i++)
             {
                 Vertex v = source[i];
-                v.transformID = transformID;
-                v.clipRectID = clipRectID;
                 v.position = mat.MultiplyPoint3x4(v.position);
-                v.flags += addFlags;
-                v.siX = siX;
-                v.siY = siY;
+                v.xformClipPages = xformClipPages;
+                v.idsFlags.r = idsAddFlags.r;
+                v.idsFlags.g = idsAddFlags.g;
+                v.idsFlags.b = idsAddFlags.b;
+                v.idsFlags.a += idsAddFlags.a;
+                v.opacityPageSVGSettingIndex.r = opacityPage.r;
+                v.opacityPageSVGSettingIndex.g = opacityPage.g;
                 target[i] = v;
             }
         }
 
-        static void CopyTransformVertsPosAndVec(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, float transformID, float clipRectID, float addFlags, UInt16 siX, UInt16 siY)
+        static void CopyTransformVertsPosAndVec(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 idsAddFlags, Color32 opacityPage)
         {
             int count = source.Length;
             Vector3 vec = new Vector3(0, 0, UIRUtility.k_MeshPosZ);
@@ -872,15 +892,17 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < count; i++)
             {
                 Vertex v = source[i];
-                v.transformID = transformID;
-                v.clipRectID = clipRectID;
                 v.position = mat.MultiplyPoint3x4(v.position);
-                v.flags += addFlags;
                 vec.x = v.uv.x;
                 vec.y = v.uv.y;
                 v.uv = mat.MultiplyVector(vec);
-                v.siX = siX;
-                v.siY = siY;
+                v.xformClipPages = xformClipPages;
+                v.idsFlags.r = idsAddFlags.r;
+                v.idsFlags.g = idsAddFlags.g;
+                v.idsFlags.b = idsAddFlags.b;
+                v.idsFlags.a += idsAddFlags.a;
+                v.opacityPageSVGSettingIndex.r = opacityPage.r;
+                v.opacityPageSVGSettingIndex.g = opacityPage.g;
                 target[i] = v;
             }
         }
@@ -924,9 +946,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             Debug.Assert(!ve.renderChainData.disableNudging);
 
-            float transformID;
             Matrix4x4 newTransform;
-            GetVerticesTransformInfo(ve, out newTransform, out transformID);
+            GetVerticesTransformInfo(ve, out newTransform);
             Matrix4x4 nudgeTransform = newTransform * ve.renderChainData.verticesSpace.inverse;
 
             // Attempt to reconstruct the absolute transform. If the result diverges from the absolute
@@ -1227,7 +1248,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public Material material; // Responsible for enabling immediate clipping
             public Texture custom, font;
             public RenderChainCommand customCommand;
-            public float clipRectID;
+            public BMPAlloc clipRectID;
             public VertexFlags addFlags;
             public bool uvIsDisplacement;
             public bool isTextEntry;
@@ -1311,7 +1332,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         Entry m_CurrentEntry;
         ClosingInfo m_ClosingInfo;
         bool m_StencilClip = false;
-        float m_ClipRectID = 0;
+        BMPAlloc m_ClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
         int m_SVGBackgroundEntryIndex = -1;
         TempDataAlloc<Vertex> m_VertsPool = new TempDataAlloc<Vertex>(8192);
         TempDataAlloc<UInt16> m_IndicesPool = new TempDataAlloc<UInt16>(8192 << 1);
@@ -1413,12 +1434,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (currentElement.hierarchy.parent != null)
             {
                 m_StencilClip = currentElement.hierarchy.parent.renderChainData.isStencilClipped;
-                m_ClipRectID = isGroupTransform ? 0 : currentElement.hierarchy.parent.renderChainData.transformID.start;
+                m_ClipRectID = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : currentElement.hierarchy.parent.renderChainData.clipRectID;
             }
             else
             {
                 m_StencilClip = false;
-                m_ClipRectID = 0;
+                m_ClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
             }
         }
 
@@ -1705,7 +1726,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     GenerateStencilClipEntryForSVGBackground();
                 else GenerateStencilClipEntryForRoundedRectBackground();
             }
-            m_ClipRectID = currentElement.renderChainData.transformID.start;
+            m_ClipRectID = currentElement.renderChainData.clipRectID;
         }
 
         public void DrawVectorImage(MeshGenerationContextUtils.RectangleParams rectParams)
@@ -1866,7 +1887,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         NativeArray<Vertex> m_DudVerts;
         NativeArray<UInt16> m_DudIndices;
         NativeSlice<Vertex> m_MeshDataVerts;
-        float m_TransformID, m_ClippingRectID;
+        Color32 m_XFormClipPages, m_IDsFlags, m_OpacityPagesSettingsIndex;
 
         public MeshGenerationContext meshGenerationContext { get; }
 
@@ -1885,8 +1906,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             device.Update(ve.renderChainData.data, ve.renderChainData.data.allocVerts.size, out m_MeshDataVerts);
             if (ve.renderChainData.textEntries.Count > 1 || ve.renderChainData.textEntries[0].vertexCount != m_MeshDataVerts.Length)
                 m_MeshDataVerts.CopyFrom(oldVertexData); // Preserve old data because we're not just updating the text vertices, but the entire mesh surrounding it though we won't touch but the text vertices
-            m_TransformID = oldVertexData[0].transformID;
-            m_ClippingRectID = oldVertexData[0].clipRectID;
+
+            m_XFormClipPages = oldVertexData[0].xformClipPages;
+            m_IDsFlags = oldVertexData[0].idsFlags;
+            m_OpacityPagesSettingsIndex = oldVertexData[0].opacityPageSVGSettingIndex;
         }
 
         public void End()
@@ -1956,8 +1979,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var textEntry = m_CurrentElement.renderChainData.textEntries[m_TextEntryIndex++];
 
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
-                MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace, m_TransformID, m_ClippingRectID,
-                    m_CurrentElement.renderChainData.shaderInfoAlloc.x, m_CurrentElement.renderChainData.shaderInfoAlloc.y,
+                MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace,
+                    m_XFormClipPages, m_IDsFlags, m_OpacityPagesSettingsIndex,
                     m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
                 textEntry.command.state.font = textParams.font.material.mainTexture;
             }

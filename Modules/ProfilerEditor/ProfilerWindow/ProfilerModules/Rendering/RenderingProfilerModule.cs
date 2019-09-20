@@ -24,7 +24,7 @@ namespace UnityEditorInternal.Profiling
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (GUILayout.Button(GUI.enabled
                 ? Styles.frameDebugger
-                : Styles.noFrameDebugger, EditorStyles.toolbarButton))
+                : Styles.noFrameDebugger, EditorStyles.toolbarButtonLeft))
             {
                 FrameDebuggerWindow dbg = FrameDebuggerWindow.ShowFrameDebuggerWindow();
                 dbg.EnableIfNeeded();

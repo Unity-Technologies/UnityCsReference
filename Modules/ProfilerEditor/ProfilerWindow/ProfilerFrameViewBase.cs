@@ -24,7 +24,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIStyle toolbar = EditorStyles.toolbar;
             public static readonly GUIStyle tooltip = "AnimationEventTooltip";
             public static readonly GUIStyle tooltipArrow = "AnimationEventTooltipArrow";
-            public static readonly GUIStyle viewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
+            public static readonly GUIStyle viewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDownLeft);
             public static readonly GUIStyle detailedViewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
 
             static BaseStyles()

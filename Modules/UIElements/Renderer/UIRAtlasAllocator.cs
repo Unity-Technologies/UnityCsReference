@@ -4,7 +4,7 @@
 
 using System;
 using UnityEngine.Assertions;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -120,6 +120,9 @@ namespace UnityEngine.UIElements
 
         AreaNode m_FirstUnpartitionedArea;
         Row[] m_OpenRows;
+        int m_1SidePadding, m_2SidePadding;
+
+        static ProfilerMarker s_MarkerTryAllocate = new ProfilerMarker("UIRAtlasAllocator.TryAllocate");
 
         #region Dispose Pattern
 
@@ -173,7 +176,7 @@ namespace UnityEngine.UIElements
 
         /// <param name="initialAtlasSize">Initial size of the atlas (POT).</param>
         /// <param name="maxAtlasSize">Maximum size of the atlas (POT).</param>
-        public UIRAtlasAllocator(int initialAtlasSize, int maxAtlasSize)
+        public UIRAtlasAllocator(int initialAtlasSize, int maxAtlasSize, int sidePadding = 1)
         {
             // Validate Size Coherence.
             Assert.IsTrue(initialAtlasSize > 0 && initialAtlasSize <= maxAtlasSize);
@@ -182,9 +185,11 @@ namespace UnityEngine.UIElements
             Assert.IsTrue(initialAtlasSize == Mathf.NextPowerOfTwo(initialAtlasSize));
             Assert.IsTrue(maxAtlasSize == Mathf.NextPowerOfTwo(maxAtlasSize));
 
+            m_1SidePadding = sidePadding;
+            m_2SidePadding = sidePadding << 1;
             this.maxAtlasSize = maxAtlasSize;
             maxImageWidth = maxAtlasSize;
-            maxImageHeight = (initialAtlasSize == maxAtlasSize) ? maxAtlasSize / 2 + 2 : maxAtlasSize / 4 + 2;
+            maxImageHeight = (initialAtlasSize == maxAtlasSize) ? maxAtlasSize / 2 + m_2SidePadding : maxAtlasSize / 4 + m_2SidePadding;
             virtualWidth = initialAtlasSize;
             virtualHeight = initialAtlasSize;
 
@@ -198,8 +203,7 @@ namespace UnityEngine.UIElements
 
         public bool TryAllocate(int width, int height, out RectInt location)
         {
-            Profiler.BeginSample("UIRAtlasAllocator.TryAllocate");
-            try
+            using (s_MarkerTryAllocate.Auto())
             {
                 location = new RectInt();
 
@@ -217,8 +221,8 @@ namespace UnityEngine.UIElements
                 // 2 pixels. Accounting for the border produced better packing because it avoids, for example, fitting a
                 // 16x16 pixel (which turns into 18x18) into a row with a height of 32. So the actual heights of the rows
                 // are: 3, 4, 6, 10, 18, 34, 66, etc...
-                int rowIndex = GetLog2OfNextPower(Mathf.Max(height - 2, 1));
-                int rowHeight = (1 << rowIndex) + 2;
+                int rowIndex = GetLog2OfNextPower(Mathf.Max(height - m_2SidePadding, 1));
+                int rowHeight = (1 << rowIndex) + m_2SidePadding;
                 Row row = m_OpenRows[rowIndex];
 
                 // Ensure that there is enough place
@@ -252,10 +256,6 @@ namespace UnityEngine.UIElements
                 physicalHeight = Mathf.NextPowerOfTwo(Mathf.Max(physicalHeight, location.yMax));
 
                 return true;
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

@@ -3076,6 +3076,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PlatformSupportModuleHelpers.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\PlatformSupportModuleHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs</Link>
     </Compile>

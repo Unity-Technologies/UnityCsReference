@@ -21,9 +21,9 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent starIcon = new GUIContent(EditorGUIUtility.FindTexture("Favorite"), "Start snapshot");
+            public GUIContent starIcon = EditorGUIUtility.TrIconContent("Favorite", "Start snapshot");
             public GUIContent header = EditorGUIUtility.TrTextContent("Snapshots", "A snapshot is a set of values for all parameters in the mixer. When using the mixer, you modify parameters in the selected snapshot. Blend between multiple snapshots at runtime.");
-            public GUIContent addButton = new GUIContent("+");
+            public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew");
             public Texture2D snapshotsIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerSnapshot));
         }
         static Styles s_Styles;
@@ -106,7 +106,7 @@ namespace UnityEditor
                 evt.Use();
             }
 
-            const float iconSize = 14f;
+            const float iconSize = 16f;
             const float spacing = 5f;
 
             bool isSelected = (index == m_ReorderableListWithRenameAndScrollView.list.index) && !m_ReorderableListWithRenameAndScrollView.IsRenamingIndex(index);
@@ -155,7 +155,7 @@ namespace UnityEditor
                 }
                 m_ReorderableListWithRenameAndScrollView.OnGUI(contentRect);
 
-                if (GUI.Button(new Rect(headerRect.xMax - 15f, headerRect.y + 3f, 15f, 15f), s_Styles.addButton, EditorStyles.label))
+                if (GUI.Button(new Rect(headerRect.xMax - 17f, headerRect.y + 3f, 16f, 16f), s_Styles.addButton, EditorStyles.iconButton))
                     Add();
             }
         }

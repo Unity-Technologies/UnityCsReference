@@ -25,6 +25,7 @@ namespace UnityEditor
             private static bool ms_Loaded;
             private static int ms_logStyleLineCount;
             public static GUIStyle Box;
+            public static GUIStyle MiniButtonLeft;
             public static GUIStyle MiniButton;
             public static GUIStyle MiniButtonRight;
             public static GUIStyle LogStyle;
@@ -79,6 +80,7 @@ namespace UnityEditor
                 Box = "CN Box";
 
 
+                MiniButtonLeft = "ToolbarButtonLeft";
                 MiniButton = "ToolbarButton";
                 MiniButtonRight = "ToolbarButtonRight";
                 Toolbar = "Toolbar";
@@ -473,7 +475,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(Constants.Toolbar);
 
-            if (GUILayout.Button(Constants.ClearLabel, Constants.MiniButton))
+            if (GUILayout.Button(Constants.ClearLabel, Constants.MiniButtonLeft))
             {
                 LogEntries.Clear();
                 GUIUtility.keyboardControl = 0;

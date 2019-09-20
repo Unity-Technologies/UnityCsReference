@@ -199,7 +199,7 @@ namespace UnityEditor.U2D
             m_PackableList.onRemoveCallback = RemovePackable;
             m_PackableList.drawElementCallback = DrawPackableElement;
             m_PackableList.elementHeight = EditorGUIUtility.singleLineHeight;
-            m_PackableList.headerHeight = 0f;
+            m_PackableList.headerHeight = 3f;
 
             SyncPlatformSettings();
 

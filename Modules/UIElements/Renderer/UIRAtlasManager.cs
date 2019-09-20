@@ -5,7 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -51,26 +51,40 @@ namespace UnityEngine.UIElements
             return s_InstancesreadOnly;
         }
 
+        private int m_InitialSize;
         private UIRAtlasAllocator m_Allocator;
         private Dictionary<Texture2D, RectInt> m_UVs;
         private bool m_ForceReblitAll;
+        private bool m_FloatFormat;
+        private FilterMode m_FilterMode;
         private ColorSpace m_ColorSpace;
         private TextureBlitter m_Blitter;
+        private int m_2SidePadding, m_1SidePadding;
 
-        static CustomSampler s_ResetSampler = CustomSampler.Create("UIR.AtlasManager.Reset");
+        static ProfilerMarker s_MarkerReset = new ProfilerMarker("UIR.AtlasManager.Reset");
 
         public int maxImageSize { get; }
+        public RenderTextureFormat format { get; }
 
         /// <summary>
         /// Current atlas texture in use. The texture could change after <c>UIRAtlasManager.Commit</c> is called.
         /// </summary>
         public RenderTexture atlas { get; private set; }
 
-        public UIRAtlasManager(int maxImageSize = 64)
+        public UIRAtlasManager(RenderTextureFormat format = RenderTextureFormat.ARGB32, FilterMode filterMode = FilterMode.Bilinear, int maxImageSize = 64, int initialSize = 64)
         {
+            if (filterMode != FilterMode.Bilinear && filterMode != FilterMode.Point)
+                throw new NotSupportedException("The only supported atlas filter modes are point or bilinear");
+
+            this.format = format;
             this.maxImageSize = maxImageSize;
+            m_FloatFormat = (format == RenderTextureFormat.ARGBFloat); // Identify any other formats to be used as float here
+            m_FilterMode = filterMode;
             m_UVs = new Dictionary<Texture2D, RectInt>(64);
             m_Blitter = new TextureBlitter(64);
+            m_InitialSize = initialSize;
+            m_2SidePadding = filterMode == FilterMode.Point ? 0 : 2;
+            m_1SidePadding = filterMode == FilterMode.Point ? 0 : 1;
             Reset();
 
             s_Instances.Add(this);
@@ -160,16 +174,16 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            s_ResetSampler.Begin();
+            s_MarkerReset.Begin();
 
             m_Blitter.Reset();
             m_UVs.Clear();
-            m_Allocator = new UIRAtlasAllocator(64, 4096);
+            m_Allocator = new UIRAtlasAllocator(m_InitialSize, 4096, m_1SidePadding);
             m_ForceReblitAll = false;
             m_ColorSpace = QualitySettings.activeColorSpace;
             UIRUtility.Destroy(atlas);
 
-            s_ResetSampler.End();
+            s_MarkerReset.End();
 
             m_ResetVersion = s_GlobalResetVersion;
         }
@@ -213,9 +227,9 @@ namespace UnityEngine.UIElements
         public bool AllocateRect(int width, int height, out RectInt uvs)
         {
             // Attempt to allocate.
-            if (!m_Allocator.TryAllocate(width + 2, height + 2, out uvs))
+            if (!m_Allocator.TryAllocate(width + m_2SidePadding, height + m_2SidePadding, out uvs))
                 return false;
-            uvs = new RectInt(uvs.x + 1, uvs.y + 1, width, height);
+            uvs = new RectInt(uvs.x + m_1SidePadding, uvs.y + m_1SidePadding, width, height);
             return true;
         }
 
@@ -328,7 +342,7 @@ namespace UnityEngine.UIElements
 
             // When in linear color space, the atlas will have sRGB read/write enabled. This means we can't store
             // linear data without potentially causing banding.
-            if (m_ColorSpace == ColorSpace.Linear && image.activeTextureColorSpace != ColorSpace.Gamma)
+            if (!m_FloatFormat && m_ColorSpace == ColorSpace.Linear && image.activeTextureColorSpace != ColorSpace.Gamma)
                 return false;
 
             if (SystemInfo.graphicsShaderLevel >= 35)
@@ -338,7 +352,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                if (image.filterMode != FilterMode.Bilinear)
+                if (m_FilterMode != image.filterMode)
                     return false;
             }
 
@@ -398,11 +412,11 @@ namespace UnityEngine.UIElements
                 return null;
 
             // The RenderTextureReadWrite setting is purposely omitted in order to get the "Default" behavior.
-            return new RenderTexture(m_Allocator.physicalWidth, m_Allocator.physicalHeight, 0, RenderTextureFormat.ARGB32)
+            return new RenderTexture(m_Allocator.physicalWidth, m_Allocator.physicalHeight, 0, format)
             {
                 hideFlags = HideFlags.HideAndDontSave,
                 name = "UIR Atlas " + Random.Range(int.MinValue, int.MaxValue),
-                filterMode = FilterMode.Bilinear
+                filterMode = m_FilterMode
             };
         }
     }

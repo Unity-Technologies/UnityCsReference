@@ -134,6 +134,8 @@ namespace UnityEditor
 
             m_PositionsView = new LineRendererPositionsView(m_Positions);
             m_PositionsView.selectionChangedCallback += PositionsViewSelectionChanged;
+            if (targets.Length == 1)
+                m_PositionsView.lineRenderer = target as LineRenderer;
 
             m_ShowPositionsAnimation = new AnimBool(false, Repaint) { value = m_Positions.isExpanded };
             EditorApplication.contextualPropertyMenu += OnPropertyContextMenu;

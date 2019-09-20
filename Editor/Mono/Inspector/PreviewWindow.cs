@@ -100,7 +100,7 @@ namespace UnityEditor
             bool hasPreview = (editor != null) && editor.HasPreviewGUI();
 
             // Toolbar
-            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.preToolbar, GUILayout.Height(kBottomToolbarHeight));
+            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar, GUILayout.Height(kBottomToolbarHeight));
             {
                 GUILayout.FlexibleSpace();
                 var labelRect = GUILayoutUtility.GetLastRect();
@@ -110,7 +110,7 @@ namespace UnityEditor
                 {
                     label = editor.GetPreviewTitle().text;
                 }
-                GUI.Label(labelRect, label, Styles.preToolbar2);
+                GUI.Label(labelRect, label, Styles.preToolbarLabel);
                 if (hasPreview)
                     editor.OnPreviewSettings();
             } EditorGUILayout.EndHorizontal();
@@ -137,7 +137,10 @@ namespace UnityEditor
                 editor.DrawPreview(previewPosition);
         }
 
-        public override void AddItemsToMenu(GenericMenu menu) {}
+        public override void AddItemsToMenu(GenericMenu menu)
+        {
+            menu.AddItem(EditorGUIUtility.TrTextContent("Dock Preview to Inspector"), false, Close);
+        }
 
         protected override void ShowButton(Rect r) {}
     }

@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -53,8 +53,8 @@ namespace UnityEngine.UIElements.UIR
 
     class VectorImageManager : IDisposable
     {
-        static readonly CustomSampler k_RegisterSampler = CustomSampler.Create("UIR.VectorImageManager.Register");
-        static readonly CustomSampler k_UnregisterSampler = CustomSampler.Create("UIR.VectorImageManager.Unregister");
+        static ProfilerMarker s_MarkerRegister = new ProfilerMarker("UIR.VectorImageManager.Register");
+        static ProfilerMarker s_MarkerUnregister = new ProfilerMarker("UIR.VectorImageManager.Unregister");
 
         readonly UIRAtlasManager m_AtlasManager;
 
@@ -198,7 +198,7 @@ namespace UnityEngine.UIElements.UIR
 
         VectorImageRenderInfo Register(VectorImage vi)
         {
-            k_RegisterSampler.Begin();
+            s_MarkerRegister.Begin();
 
             VectorImageRenderInfo renderInfo = m_RenderInfoPool.Get();
             renderInfo.useCount = 1;
@@ -274,14 +274,14 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-            k_RegisterSampler.End();
+            s_MarkerRegister.End();
 
             return renderInfo;
         }
 
         void Unregister(VectorImage vi, VectorImageRenderInfo renderInfo)
         {
-            k_UnregisterSampler.Begin();
+            s_MarkerUnregister.Begin();
 
             if (renderInfo.gradientSettingsAlloc.size > 0)
                 m_GradientSettingsAtlas.Remove(renderInfo.gradientSettingsAlloc);
@@ -297,7 +297,7 @@ namespace UnityEngine.UIElements.UIR
             m_Registered.Remove(vi);
             m_RenderInfoPool.Return(renderInfo);
 
-            k_UnregisterSampler.End();
+            s_MarkerUnregister.End();
         }
     }
 }

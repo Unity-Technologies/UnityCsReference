@@ -98,7 +98,7 @@ namespace UnityEngine
 
         // The tangent mode of the keyframe.
         // This is used only in the editor and will always return 0 in the player.
-        [Obsolete("Use AnimationUtility.SetLeftTangentMode, AnimationUtility.SetRightTangentMode, AnimationUtility.GetLeftTangentMode or AnimationUtility.GetRightTangentMode instead.")]
+        [Obsolete("Use AnimationUtility.SetKeyLeftTangentMode, AnimationUtility.SetKeyRightTangentMode, AnimationUtility.GetKeyLeftTangentMode or AnimationUtility.GetKeyRightTangentMode instead.")]
         public int tangentMode { get { return tangentModeInternal; } set { tangentModeInternal = value; } }
 
         internal int tangentModeInternal

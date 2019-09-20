@@ -182,7 +182,7 @@ namespace UnityEditor
             const float headerIndent = 2f;
             headerRect = new Rect(rect.x + headerIndent, rect.y, rect.width - headerIndent, kSectionHeaderHeight);
             contentRect = new Rect(rect.x, headerRect.yMax, rect.width, rect.height - kSectionHeaderHeight);
-            GUI.Label(new RectOffset(1, 1, 1, 1).Add(contentRect), GUIContent.none, EditorStyles.helpBox);
+            GUI.Label(new RectOffset(1, 1, 1, 1).Add(contentRect), GUIContent.none, EditorStyles.frameBox);
         }
 
         public static void HeaderLabel(Rect r, GUIContent text, Texture2D icon)

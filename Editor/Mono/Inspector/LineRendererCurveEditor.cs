@@ -100,6 +100,9 @@ namespace UnityEditor
 
         public void CheckCurveChangedExternally()
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             CurveWrapper cw = m_Editor.GetCurveWrapperFromID(0);
             if (m_WidthCurve != null)
             {
