@@ -24,9 +24,9 @@ namespace UnityEditor
         static bool s_PlayFirst;
         static AudioClipInspector s_PlayingInstance;
 
-        static GUIContent[] s_PlayIcons = {null, null};
-        static GUIContent[] s_AutoPlayIcons = {null, null};
-        static GUIContent[] s_LoopIcons = {null, null};
+        static GUIContent s_PlayIcon;
+        static GUIContent s_AutoPlayIcon;
+        static GUIContent s_LoopIcon;
 
         static Texture2D s_DefaultIcon;
 
@@ -48,12 +48,9 @@ namespace UnityEditor
             s_AutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
             s_Loop = false;
 
-            s_AutoPlayIcons[0] = EditorGUIUtility.TrIconContent("preAudioAutoPlayOff", "Turn Auto Play on");
-            s_AutoPlayIcons[1] = EditorGUIUtility.TrIconContent("preAudioAutoPlayOn", "Turn Auto Play off");
-            s_PlayIcons[0] = EditorGUIUtility.TrIconContent("preAudioPlayOff", "Play");
-            s_PlayIcons[1] = EditorGUIUtility.TrIconContent("preAudioPlayOn", "Stop");
-            s_LoopIcons[0] = EditorGUIUtility.TrIconContent("preAudioLoopOff", "Loop on");
-            s_LoopIcons[1] = EditorGUIUtility.TrIconContent("preAudioLoopOn", "Loop off");
+            s_AutoPlayIcon = EditorGUIUtility.TrIconContent("preAudioAutoPlayOff", "Turn Auto Play on/off");
+            s_PlayIcon = EditorGUIUtility.TrIconContent("PlayButton", "Play");
+            s_LoopIcon = EditorGUIUtility.TrIconContent("preAudioLoopOff", "Loop on/off");
 
             s_DefaultIcon = EditorGUIUtility.LoadIcon("Profiler.Audio");
         }
@@ -122,20 +119,9 @@ namespace UnityEditor
             m_MultiEditing = targets.Length > 1;
 
             {
-                using (new EditorGUI.DisabledScope(m_MultiEditing))
-                {
-                    s_AutoPlay = s_AutoPlay && !m_MultiEditing;
-                    s_AutoPlay = PreviewGUI.CycleButton(s_AutoPlay ? 1 : 0, s_AutoPlayIcons) != 0;
-                }
-
-                bool loop = s_Loop;
-                s_Loop = PreviewGUI.CycleButton(s_Loop ? 1 : 0, s_LoopIcons) != 0;
-                if ((loop != s_Loop) && playing)
-                    AudioUtil.LoopClip(clip, s_Loop);
-
                 using (new EditorGUI.DisabledScope(m_MultiEditing && !playing))
                 {
-                    bool newPlaying = PreviewGUI.CycleButton(playing ? 1 : 0, s_PlayIcons) != 0;
+                    bool newPlaying = GUILayout.Toggle(playing, s_PlayIcon, EditorStyles.toolbarButton);
 
                     if (newPlaying != playing)
                     {
@@ -148,6 +134,17 @@ namespace UnityEditor
                         }
                     }
                 }
+
+                using (new EditorGUI.DisabledScope(m_MultiEditing))
+                {
+                    s_AutoPlay = s_AutoPlay && !m_MultiEditing;
+                    s_AutoPlay = GUILayout.Toggle(s_AutoPlay, s_AutoPlayIcon, EditorStyles.toolbarButton);
+                }
+
+                bool loop = s_Loop;
+                s_Loop = GUILayout.Toggle(s_Loop, s_LoopIcon, EditorStyles.toolbarButton);
+                if ((loop != s_Loop) && playing)
+                    AudioUtil.LoopClip(clip, s_Loop);
             }
         }
 

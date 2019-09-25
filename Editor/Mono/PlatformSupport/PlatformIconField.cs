@@ -270,8 +270,28 @@ namespace UnityEditor.PlatformSupport
             EnsureMinimumNumberOfTextures();
 
             m_IconLayers.DoLayoutList();
+            EditorGUILayout.Space();
+
+            var validLayerCount = this.platformIcon.GetValidLayerCount();
+
+            // Don't show warning if no layers are set in that case the default placeholder icon will be used.
+            if (validLayerCount > 0 && validLayerCount < this.platformIcon.minLayerCount)
+            {
+                var errorMsg = string.Format("{0} icons require at least {1} layers to be set with valid textures, however currently only {2} {3} set.",
+                    this.platformIcon.kind.ToString(),
+                    this.platformIcon.minLayerCount,
+                    validLayerCount,
+                    validLayerCount == 1 ? "layer is" : "layers are"
+                );
+
+                EditorGUILayout.Space();
+                EditorGUILayout.HelpBox(errorMsg, MessageType.Error);
+                EditorGUILayout.Space();
+            }
 
             platformIcon.SetTextures(m_IconLayers.textures.ToArray());
+
+            EditorGUILayout.Space();
         }
     }
 }

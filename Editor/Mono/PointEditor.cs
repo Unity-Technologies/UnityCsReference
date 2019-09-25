@@ -94,7 +94,7 @@ namespace UnityEditor
                 Vector3 collisionPoint = Vector3.zero;
 
                 Vector3 position = cloudTransform != null ? cloudTransform.TransformPoint(points.GetPosition(i)) : points.GetPosition(i);
-                if (MathUtils.IntersectRaySphere(r, position, points.GetPointScale(), ref distance, ref collisionPoint))
+                if (MathUtils.IntersectRaySphere(r, position, (points.GetPointScale() / 2.0f), ref distance, ref collisionPoint))
                 {
                     //Only care if we start outside a probe
                     if (distance > 0)

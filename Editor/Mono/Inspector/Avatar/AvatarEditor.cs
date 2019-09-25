@@ -7,6 +7,7 @@ using UnityEditor.SceneManagement;
 using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using UnityEditor.Experimental.SceneManagement;
 
 namespace UnityEditor
 {
@@ -321,11 +322,11 @@ namespace UnityEditor
                 SwitchToAssetMode(false);
         }
 
-        void OnStageChanging(StageNavigationItem previousStage, StageNavigationItem newStage)
+        void OnStageChanging(Stage previousStage, Stage newStage)
         {
             // Exit Avatar Editing before entering Prefab Mode so the camera states of the Prefab Mode is set last.
             // This is why we use the stageChanging and not stageChanged event.
-            if (newStage.isPrefabStage && m_EditMode == EditMode.Editing)
+            if (newStage is PrefabStage && m_EditMode == EditMode.Editing)
                 SwitchToAssetMode(false);
         }
 
@@ -478,7 +479,7 @@ namespace UnityEditor
         internal void SwitchToEditMode()
         {
             // Ensure we show the main stage before starting editing the Avatar since it will be edited on the Main stage (we are using a main scene for it)
-            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            if (StageNavigationManager.instance.currentStage is PrefabStage)
             {
                 StageNavigationManager.instance.GoToMainStage(false, StageNavigationManager.Analytics.ChangeType.GoToMainViaAvatarSetup);
             }

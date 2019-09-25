@@ -47,7 +47,7 @@ namespace UnityEditor
         private GUIStyle m_WordWrappedLabel;
 
         // Style for link label.
-        internal static GUIStyle linkLabel { get { return s_Current.m_LinkLabel; } }
+        public static GUIStyle linkLabel { get { return s_Current.m_LinkLabel; } }
         private GUIStyle m_LinkLabel;
 
         // Style for white label.
@@ -203,6 +203,8 @@ namespace UnityEditor
         // Style for Button and Toggles in toolbars.
         public static GUIStyle toolbarButton { get { return s_Current.m_ToolbarButton; } }
         private GUIStyle m_ToolbarButton;
+        internal static GUIStyle toolbarButtonLeft { get { return s_Current.m_ToolbarButtonLeft; } }
+        private GUIStyle m_ToolbarButtonLeft;
 
         internal static GUIStyle toolbarButtonRight { get { return s_Current.m_ToolbarButtonRight; } }
         private GUIStyle m_ToolbarButtonRight;
@@ -217,7 +219,9 @@ namespace UnityEditor
         internal static GUIStyle toolbarPopupRight { get { return s_Current.m_ToolbarPopupRight; } }
         private GUIStyle m_ToolbarPopupRight;
 
-        // Toolbar Dropdown
+        internal static GUIStyle toolbarDropDownLeft { get { return s_Current.m_ToolbarDropDownLeft; } }
+        private GUIStyle m_ToolbarDropDownLeft;
+
         public static GUIStyle toolbarDropDown { get { return s_Current.m_ToolbarDropDown; } }
         private GUIStyle m_ToolbarDropDown;
 
@@ -249,6 +253,9 @@ namespace UnityEditor
 
         public static GUIStyle inspectorFullWidthMargins { get { return s_Current.m_InspectorFullWidthMargins; } }
         private GUIStyle m_InspectorFullWidthMargins;
+
+        internal static GUIStyle defaultContentMargins { get { return s_Current.m_DefaultContentMargins; } }
+        private GUIStyle m_DefaultContentMargins;
 
         internal static GUIStyle frameBox => s_Current.m_FrameBox;
         private GUIStyle m_FrameBox;
@@ -418,11 +425,13 @@ namespace UnityEditor
             m_Toolbar = GetStyle("toolbar");
             m_ContentToolbar = GetStyle("contentToolbar");
             m_ToolbarButton = GetStyle("toolbarbutton");
+            m_ToolbarButtonLeft = GetStyle("toolbarbuttonLeft");
             m_ToolbarButtonRight = GetStyle("toolbarbuttonRight");
             m_ToolbarPopup = GetStyle("toolbarPopup");
             m_ToolbarPopupLeft = GetStyle("toolbarPopupLeft");
             m_ToolbarPopupRight = GetStyle("toolbarPopupRight");
             m_ToolbarDropDown = GetStyle("toolbarDropDown");
+            m_ToolbarDropDownLeft = GetStyle("toolbarDropDownLeft");
             m_ToolbarDropDownRight = GetStyle("toolbarDropDownRight");
             m_ToolbarDropDownToggle = GetStyle("toolbarDropDownToggle");
             m_ToolbarDropDownToggleRight = GetStyle("toolbarDropDownToggleRight");
@@ -505,6 +514,11 @@ namespace UnityEditor
                 padding = new RectOffset(
                     InspectorWindow.kInspectorPaddingRight + 1,
                     InspectorWindow.kInspectorPaddingRight, 0, 0)
+            };
+
+            m_DefaultContentMargins = new GUIStyle
+            {
+                padding = new RectOffset(4, 4, 4, 4)
             };
 
             // Derive centered grey mini label from base minilabel

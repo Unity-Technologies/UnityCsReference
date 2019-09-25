@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.Experimental;
 using System.IO;
 using System.Collections.Generic;
+using UnityEngine.Experimental.Rendering;
 
 /* Some notes on icon caches and loading
  *
@@ -267,7 +268,7 @@ namespace UnityEditorInternal
                 return null;
 
             // Create our icon
-            Texture2D iconWithMips = new Texture2D(maxResolution, maxResolution, TextureFormat.RGBA32, true, false);
+            Texture2D iconWithMips = new Texture2D(maxResolution, maxResolution, GraphicsFormat.R8G8B8A8_SRGB, -1, TextureCreationFlags.MipChain);
 
             // Add max mip
             if (BlitMip(iconWithMips, allMips, 0))

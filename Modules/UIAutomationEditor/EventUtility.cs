@@ -24,12 +24,18 @@ namespace UnityEditor.UIAutomation
 
         internal static bool Click(EditorWindow window, Vector2 mousePosition, EventModifiers modifiers)
         {
+            return Click(window, mousePosition, modifiers, 0);
+        }
+
+        internal static bool Click(EditorWindow window, Vector2 mousePosition, EventModifiers modifiers, int mouseButton)
+        {
             var anyEventsUsed = false;
 
             var evt = new Event()
             {
                 mousePosition = mousePosition,
-                modifiers = modifiers
+                modifiers = modifiers,
+                button = mouseButton
             };
 
             evt.type = EventType.MouseDown;

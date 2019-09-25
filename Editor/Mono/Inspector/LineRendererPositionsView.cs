@@ -29,6 +29,7 @@ namespace UnityEditor
             showBorder = true;
             showAlternatingRowBackgrounds = true;
             useScrollView = false;
+            rowHeight = EditorStyles.numberField.lineHeight;
 
             MultiColumnHeaderState.Column[] columns = new MultiColumnHeaderState.Column[4];
             for (int i = 0; i < columns.Length; ++i)
@@ -123,7 +124,7 @@ namespace UnityEditor
             var prop = m_Positions.GetArrayElementAtIndex(id);
 
             var sceneView = SceneView.lastActiveSceneView;
-            if (sceneView != null)
+            if (sceneView != null && lineRenderer != null)
             {
                 var pos = prop.vector3Value;
                 if (!lineRenderer.useWorldSpace)

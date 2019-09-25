@@ -15,6 +15,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
     internal interface IDownloadOperation
     {
+        void ClearDownloadInformation(string productID);
+
         void AbortDownloadPackageAsync(long productID, Action<DownloadResult> doneCallbackAction = null);
 
         void DownloadUnityPackageAsync(long productID, Action<DownloadResult> doneCallbackAction = null);

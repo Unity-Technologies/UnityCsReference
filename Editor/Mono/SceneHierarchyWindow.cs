@@ -23,7 +23,7 @@ namespace UnityEditor
             const string kCustomSorting = "CustomSorting";
             const string kWarningSymbol = "console.warnicon.sml";
             const string kWarningMessage = "The current sorting method is taking a lot of time. Consider using 'Transform Sort' in playmode for better performance.";
-            public const float kPrefabHeaderHeight = 25f;
+            public const float kStageHeaderHeight = 25f;
 
             public static GUIStyle lockButton = "IN LockButton";
 
@@ -40,7 +40,7 @@ namespace UnityEditor
 
         public SceneHierarchy sceneHierarchy { get { return m_SceneHierarchy; } }
 
-        bool showingPrefabHeader { get { return PrefabStageUtility.GetCurrentPrefabStage() != null; } }
+        bool showingStageHeader { get { return !(StageNavigationManager.instance.currentStage is MainStage); } }
 
         void Awake()
         {
@@ -146,24 +146,24 @@ namespace UnityEditor
 
         void DoSceneHierarchy()
         {
-            if (showingPrefabHeader)
+            if (showingStageHeader)
             {
-                m_StageHandling.PrefabStageHeaderGUI(prefabHeaderRect);
+                m_StageHandling.StageHeaderGUI(stageHeaderRect);
             }
 
             m_SceneHierarchy.OnGUI(treeViewRect);
         }
 
-        Rect prefabHeaderRect
+        Rect stageHeaderRect
         {
-            get { return new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, Styles.kPrefabHeaderHeight); }
+            get { return new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, Styles.kStageHeaderHeight); }
         }
 
         Rect treeViewRect
         {
             get
             {
-                float startY = EditorGUI.kWindowToolbarHeight + (showingPrefabHeader ? Styles.kPrefabHeaderHeight : 0);
+                float startY = EditorGUI.kWindowToolbarHeight + (showingStageHeader ? Styles.kStageHeaderHeight : 0);
                 return new Rect(0, startY, position.width, position.height - startY);
             }
         }
@@ -278,6 +278,18 @@ namespace UnityEditor
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
             m_SceneHierarchy.AddItemsToWindowMenu(menu);
+        }
+
+        internal static void RebuildStageHeaderInAll()
+        {
+            var sceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
+            foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
+                sceneHierarchyWindow.RebuildStageHeader();
+        }
+
+        internal void RebuildStageHeader()
+        {
+            m_StageHandling.CacheStageHeaderContent();
         }
     }
 

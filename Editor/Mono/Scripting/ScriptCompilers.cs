@@ -102,8 +102,7 @@ namespace UnityEditor.Scripting
             }).ToArray();
         }
 
-        internal static void GetClassAndNamespace(string file, string definedSymbols, out string outClassName,
-            out string outNamespace)
+        internal static void GetClassAndNamespace(string file, out string outClassName, out string outNamespace)
         {
             if (string.IsNullOrEmpty(file)) throw new ArgumentException("Invalid file");
 
@@ -112,23 +111,9 @@ namespace UnityEditor.Scripting
             {
                 if (lang.GetExtensionICanCompile() == extension)
                 {
-                    lang.GetClassAndNamespace(file, definedSymbols, out outClassName, out outNamespace);
+                    lang.GetClassAndNamespace(file, out outClassName, out outNamespace);
                     return;
                 }
-            }
-
-            throw new ApplicationException("Unable to find a suitable compiler");
-        }
-
-        internal static string GetNamespace(string file, string definedSymbols)
-        {
-            if (string.IsNullOrEmpty(file)) throw new ArgumentException("Invalid file");
-
-            string extension = GetExtensionOfSourceFile(file);
-            foreach (var lang in SupportedLanguages)
-            {
-                if (lang.GetExtensionICanCompile() == extension)
-                    return lang.GetNamespace(file, definedSymbols);
             }
 
             throw new ApplicationException("Unable to find a suitable compiler");

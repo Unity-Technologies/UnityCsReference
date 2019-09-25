@@ -66,10 +66,10 @@ namespace UnityEditor
             EditorSceneManager.sceneOpened += EditorSceneManagerOnSceneOpened;
             EditorSceneManager.sceneClosing += EditorSceneManagerOnSceneClosing;
             EditorApplication.playModeStateChanged += EditorApplicationPlayModeStateChanged;
-            StageNavigationManager.instance.stageChanged += StageNavigationManagerOnStageChanging;
+            StageNavigationManager.instance.afterSuccessfullySwitchedToStage += StageNavigationManagerAfterSuccessfullySwitchedToStage;
             SceneVisibilityState.internalStructureChanged += InternalStructureChanged;
-            PrefabStage stage = StageNavigationManager.instance.GetCurrentPrefabStage();
-            SceneVisibilityState.SetPrefabStageScene(stage?.scene ?? default(Scene));
+            PrefabStage stage = StageNavigationManager.instance.currentStage as PrefabStage;
+            SceneVisibilityState.ForceDataUpdate();
 
             s_ShortcutContext = new ShortcutContext();
             EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
@@ -90,23 +90,20 @@ namespace UnityEditor
             if (mode == OpenSceneMode.Additive)
             {
                 //make sure added scenes are isolated when opened if main stage is isolated
-                if (!StageNavigationManager.instance.currentItem.isPrefabStage)
+                if (StageNavigationManager.instance.currentStage is MainStage)
                 {
                     Undo.ClearUndo(SceneVisibilityState.GetInstance());
                 }
             }
         }
 
-        private static void StageNavigationManagerOnStageChanging(StageNavigationItem oldItem, StageNavigationItem newItem)
+        internal static void StageNavigationManagerAfterSuccessfullySwitchedToStage(Stage newStage)
         {
             RevertIsolationCurrentStage();
-            if (!newItem.isMainStage && newItem.prefabStage != null)
+            SceneVisibilityState.ForceDataUpdate();
+            if (newStage is MainStage)
             {
-                SceneVisibilityState.SetPrefabStageScene(newItem.prefabStage.scene);
-            }
-            else
-            {
-                SceneVisibilityState.SetPrefabStageScene(default(Scene));
+                SceneVisibilityState.CleanTempScenes();
             }
         }
 
@@ -163,18 +160,10 @@ namespace UnityEditor
 
         private void HideAllNoUndo()
         {
-            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            Stage stage = StageNavigationManager.instance.currentStage;
+            for (int i = 0; i < stage.sceneCount; i++)
             {
-                var scene = StageNavigationManager.instance.GetCurrentPrefabStage().scene;
-                SceneVisibilityState.ShowScene(StageNavigationManager.instance.GetCurrentPrefabStage().scene);
-                SceneVisibilityState.SetGameObjectsHidden(scene.GetRootGameObjects(), true, true);
-            }
-            else
-            {
-                for (int i = 0; i < SceneManager.sceneCount; i++)
-                {
-                    HideNoUndo(SceneManager.GetSceneAt(i));
-                }
+                HideNoUndo(stage.GetSceneAt(i));
             }
         }
 
@@ -186,10 +175,11 @@ namespace UnityEditor
 
         private void DisableAllPickingNoUndo()
         {
-            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            PrefabStage prefabStage = StageNavigationManager.instance.currentStage as PrefabStage;
+            if (prefabStage != null)
             {
-                var scene = StageNavigationManager.instance.GetCurrentPrefabStage().scene;
-                SceneVisibilityState.EnablePicking(StageNavigationManager.instance.GetCurrentPrefabStage().scene);
+                var scene = prefabStage.scene;
+                SceneVisibilityState.EnablePicking(prefabStage.scene);
                 SceneVisibilityState.DisablePicking(scene);
             }
             else
@@ -234,25 +224,20 @@ namespace UnityEditor
         public void ShowAll()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show All");
-            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            Stage stage = StageNavigationManager.instance.currentStage;
+            for (int i = 0; i < stage.sceneCount; i++)
             {
-                SceneVisibilityState.ShowScene(StageNavigationManager.instance.GetCurrentPrefabStage().scene);
-            }
-            else
-            {
-                for (int i = 0; i < SceneManager.sceneCount; i++)
-                {
-                    Show(SceneManager.GetSceneAt(i), false);
-                }
+                Show(stage.GetSceneAt(i), false);
             }
         }
 
         public void EnableAllPicking()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Enable All Picking");
-            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            PrefabStage prefabStage = StageNavigationManager.instance.currentStage as PrefabStage;
+            if (prefabStage != null)
             {
-                SceneVisibilityState.EnablePicking(StageNavigationManager.instance.GetCurrentPrefabStage().scene);
+                SceneVisibilityState.EnablePicking(prefabStage.scene);
             }
             else
             {
@@ -622,7 +607,6 @@ namespace UnityEditor
                     {
                         break;
                     }
-
                     shouldDisablePicking = false;
                 }
                 Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Picking");

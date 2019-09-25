@@ -49,7 +49,13 @@ namespace UnityEditor.PackageManager.UI
         public IEnumerable<IPackageVersion> versions => versionList?.all;
 
         private PackageProgress m_Progress;
-        public PackageProgress progress => m_Progress;
+        public PackageProgress progress
+        {
+            get { return m_Progress; }
+            set { m_Progress = value; }
+        }
+
+        public PackageState state => PackageExtensions.GetState(this);
 
         private PackageType m_Type;
         public bool Is(PackageType type)

@@ -26,7 +26,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
     internal static class CSharpNamespaceParser
     {
-        static readonly Regex k_ReDefineExpr = new Regex(@"r'\s+|([=!]=)\s*(true|false)|([_a-zA-Z][_a-zA-Z0-9]*)|([()!]|&&|\|\|)", RegexOptions.Compiled);
         static readonly Regex k_BlockComments = new Regex(@"((?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:\/\/.*))", RegexOptions.Compiled);
         static readonly Regex k_LineComments = new Regex(@"//.*?\n", RegexOptions.Compiled);
         static readonly Regex k_Strings = new Regex(@"""((\\[^\n]|[^""\n])*)""", RegexOptions.Compiled);
@@ -38,8 +37,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly Regex k_Namespace = new Regex(@"\s*namespace\s.", RegexOptions.Compiled);
         static readonly string k_GenerateAuthoringComponentAttribute = "[GenerateAuthoringComponent]";
         static readonly string k_AuthoringComponentSuffix = "Authoring";
-        static string s_ClassName;
-        static HashSet<string> s_FoundTypes = new HashSet<string>();
 
         // Used for detecting warning in PureCSharpTests
         public static Action<string> s_LogWarningAction;
@@ -49,7 +46,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public static void GetClassAndNamespace(string sourceCode, string className,
-            out string outClassName, out string outNamespace, params string[] defines)
+            out string outClassName, out string outNamespace)
         {
             bool namespaceParsed = false;
             outClassName = className;
@@ -69,7 +66,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     foundClassName = match.Groups[1].Value;
                     outClassName = foundClassName + k_AuthoringComponentSuffix;
-                    outNamespace = FindNamespace(sourceCode, foundClassName, true, defines);
+                    outNamespace = FindNamespace(sourceCode, foundClassName, true);
                     namespaceParsed = true;
                 }
             }
@@ -78,19 +75,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!namespaceParsed)
             {
                 outClassName = className;
-                outNamespace = FindNamespace(sourceCode, className, false, defines);
+                outNamespace = FindNamespace(sourceCode, className, false);
             }
         }
 
-        public static string GetNamespace(string sourceCode, string className, params string[] defines)
+        static string FindNamespace(string sourceCode, string className, bool acceptStruct)
         {
-            return FindNamespace(sourceCode, className, false, defines);
-        }
-
-        static string FindNamespace(string sourceCode, string className, bool acceptStruct, params string[] defines)
-        {
-            s_ClassName = className;
-
             sourceCode = k_NewlineRegex.Replace(sourceCode, "\n");
             sourceCode = k_SingleQuote.Replace(sourceCode, "");
             sourceCode = k_Strings.Replace(sourceCode, "");
@@ -110,7 +100,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static string FindClassAndNamespace(string className, string source, bool acceptStruct = false)
         {
-            s_FoundTypes.Clear();
             source = FixBraces(source);
             var split = source.Split(new[] { ' ', '\t', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
             var parent = new Node { Name = "-1" };
@@ -334,42 +323,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static bool IsNullOrWhiteSpace(string value)
         {
             return value == null || value.All(char.IsWhiteSpace);
-        }
-
-        public static bool EvaluateDefine(string expr, ICollection<string> defines)
-        {
-            var res = new List<string>();
-            var pos = 0;
-            while (pos < expr.Length)
-            {
-                var match = k_ReDefineExpr.Match(expr, pos); // eq_operator, bool_val, symbol, operator
-                // TODO: C# 4.0+ Replace with string.IsNullOrWhiteSpace when available
-                if (IsNullOrWhiteSpace(expr.Substring(pos)))
-                    break;
-
-                if (!match.Success)
-                    throw new InvalidOperationException($"Error while searching for {s_ClassName}: invalid #ifdef expression: {expr} (error while searching for {expr.Substring(pos)}");
-
-                pos = match.Index + match.Length;
-
-                if (match.Groups[1].Success)
-                    res.Add(match.Groups[1].Value + (match.Groups[2].Value == "true").ToString().ToLower());
-                else if (match.Groups[3].Value == "true" || match.Groups[3].Value == "false")
-                    res.Add((match.Groups[3].Value == "true").ToString().ToLower());
-                else if (match.Groups[3].Success)
-                    res.Add(defines.Contains(match.Groups[3].Value).ToString().ToLower());
-                else if (match.Groups[4].Success)
-                    res.Add(match.Groups[4].Value);
-            }
-
-            try
-            {
-                return EvaluateBooleanExpression(string.Join(" ", res.ToArray()));
-            }
-            catch (InvalidOperationException)
-            {
-                throw new UnsupportedDefineExpression($"{expr}: caused an error in CSharpNamespaceParser");
-            }
         }
 
         static bool EvaluateBooleanExpression(string expression)

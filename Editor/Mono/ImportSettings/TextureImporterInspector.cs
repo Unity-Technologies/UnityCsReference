@@ -913,7 +913,7 @@ namespace UnityEditor
                 }
 
                 bool showAlphaIsTransparency = success && (TextureImporterAlphaSource)m_AlphaSource.intValue != TextureImporterAlphaSource.None && countHDR == 0; // AlphaIsTransparency is not properly implemented for HDR texture yet.
-                using (new EditorGUI.DisabledScope(!showAlphaIsTransparency))
+                using (new EditorGUI.DisabledScope(assetTarget != null && !showAlphaIsTransparency))
                 {
                     ToggleFromInt(m_AlphaIsTransparency, s_Styles.alphaIsTransparency);
                 }

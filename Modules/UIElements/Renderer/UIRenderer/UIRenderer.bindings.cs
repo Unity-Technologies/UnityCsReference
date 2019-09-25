@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements.UIR
@@ -83,16 +83,16 @@ namespace UnityEngine.UIElements.UIR
             GraphicsResourcesRecreate?.Invoke(recreate);
         }
 
-        static CustomSampler s_RaiseEngineUpdateSampler = CustomSampler.Create("UIR.RaiseEngineUpdate");
+        static ProfilerMarker s_MarkerRaiseEngineUpdate = new ProfilerMarker("UIR.RaiseEngineUpdate");
 
         [RequiredByNativeCode]
         internal static void RaiseEngineUpdate()
         {
             if (EngineUpdate != null)
             {
-                s_RaiseEngineUpdateSampler.Begin();
+                s_MarkerRaiseEngineUpdate.Begin();
                 EngineUpdate.Invoke();
-                s_RaiseEngineUpdateSampler.End();
+                s_MarkerRaiseEngineUpdate.End();
             }
         }
 

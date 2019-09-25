@@ -23,6 +23,9 @@ namespace UnityEditor
         // Delegate to be called when package import completes
         public static event ImportPackageCallback importPackageCompleted;
 
+        // Called when package import completes, listing the selected items
+        public static Action<string[]> onImportPackageItemsCompleted;
+
         // Delegate to be called when package import is cancelled
         public static event ImportPackageCallback importPackageCancelled;
 
@@ -41,6 +44,13 @@ namespace UnityEditor
         {
             if (importPackageCompleted != null)
                 importPackageCompleted(packageName);
+        }
+
+        [RequiredByNativeCode]
+        private static void Internal_CallOnImportPackageItemsCompleted(string[] items)
+        {
+            if (onImportPackageItemsCompleted != null)
+                onImportPackageItemsCompleted(items);
         }
 
         [RequiredByNativeCode]

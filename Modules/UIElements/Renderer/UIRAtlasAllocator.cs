@@ -4,7 +4,7 @@
 
 using System;
 using UnityEngine.Assertions;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -122,6 +122,8 @@ namespace UnityEngine.UIElements
         Row[] m_OpenRows;
         int m_1SidePadding, m_2SidePadding;
 
+        static ProfilerMarker s_MarkerTryAllocate = new ProfilerMarker("UIRAtlasAllocator.TryAllocate");
+
         #region Dispose Pattern
 
         protected bool disposed { get; private set; }
@@ -201,8 +203,7 @@ namespace UnityEngine.UIElements
 
         public bool TryAllocate(int width, int height, out RectInt location)
         {
-            Profiler.BeginSample("UIRAtlasAllocator.TryAllocate");
-            try
+            using (s_MarkerTryAllocate.Auto())
             {
                 location = new RectInt();
 
@@ -255,10 +256,6 @@ namespace UnityEngine.UIElements
                 physicalHeight = Mathf.NextPowerOfTwo(Mathf.Max(physicalHeight, location.yMax));
 
                 return true;
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

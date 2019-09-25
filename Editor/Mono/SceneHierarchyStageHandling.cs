@@ -16,230 +16,73 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static GUIStyle prefabHeaderBg;
+            public static GUIStyle stageHeaderBg;
             public static GUIStyle leftArrow = "ArrowNavigationLeft";
 
             static Styles()
             {
-                prefabHeaderBg = new GUIStyle("SceneTopBarBg");
-                prefabHeaderBg.fixedHeight = 0;
-                prefabHeaderBg.border = new RectOffset(3, 3, 3, 3);
+                stageHeaderBg = new GUIStyle("ProjectBrowserTopBarBg");
+                stageHeaderBg.fixedHeight = 0;
+                stageHeaderBg.border = new RectOffset(3, 3, 3, 3);
             }
         }
 
-        SceneHierarchy m_SceneHierarchy;
         SceneHierarchyWindow m_SceneHierarchyWindow;
-        StateCache<SceneHierarchyState> m_StateCache = new StateCache<SceneHierarchyState>("Library/StateCache/Hierarchy/");
-        GUIContent m_PrefabHeaderContent;
-        bool m_LastPrefabStageModifiedState;
+
+        GUIContent m_StageHeaderContent;
+        bool m_LastStageUnsavedChangesState;
+
+        Stage currentStage { get { return StageNavigationManager.instance.currentStage; } }
 
         public SceneHierarchyStageHandling(SceneHierarchyWindow sceneHierarchyWindow)
         {
             m_SceneHierarchyWindow = sceneHierarchyWindow;
-            m_SceneHierarchy = sceneHierarchyWindow.sceneHierarchy;
         }
 
         public void OnEnable()
         {
             StageNavigationManager.instance.stageChanged += OnStageChanged;
-            StageNavigationManager.instance.prefabStageReloading += OnPrefabStageReloading;
-            StageNavigationManager.instance.prefabStageReloaded += OnPrefabStageReloaded;
-            StageNavigationManager.instance.prefabStageToBeDestroyed += OnPrefabStageBeingDestroyed;
-            PrefabStage.prefabIconChanged += OnPrefabStageIconChanged;
-            PrefabStage.prefabRootTransformChanged += OnPrefabStageRootTransformChanged;
+            StageNavigationManager.instance.beforeSwitchingAwayFromStage += OnBeforeSwitchingAwayFromStage;
 
-            // To support expanded state of new unsaved GameObject in Prefab Mode across domain reloading we do not load the
+            // To support expanded state of new unsaved GameObject in stages across domain reloading we do not load the
             // last saved expanded state here but instead rely on the fact that the Hierarchy serializes its own expanded state already.
-            SyncHierarchyToCurrentStage(StageNavigationManager.instance.currentItem, false);
+            currentStage.SyncSceneHierarchyToStage(m_SceneHierarchyWindow);
         }
 
         public void OnDisable()
         {
-            SaveHierarchyState(m_SceneHierarchyWindow, StageNavigationManager.instance.currentItem);
+            StageNavigationManager.instance.currentStage.SaveHierarchyState(m_SceneHierarchyWindow);
 
             StageNavigationManager.instance.stageChanged -= OnStageChanged;
-            StageNavigationManager.instance.prefabStageReloading -= OnPrefabStageReloading;
-            StageNavigationManager.instance.prefabStageReloaded -= OnPrefabStageReloaded;
-            StageNavigationManager.instance.prefabStageToBeDestroyed -= OnPrefabStageBeingDestroyed;
-            PrefabStage.prefabIconChanged -= OnPrefabStageIconChanged;
-            PrefabStage.prefabRootTransformChanged -= OnPrefabStageRootTransformChanged;
+            StageNavigationManager.instance.beforeSwitchingAwayFromStage -= OnBeforeSwitchingAwayFromStage;
         }
 
-        void OnPrefabStageBeingDestroyed(StageNavigationItem prefabStage)
+        void OnBeforeSwitchingAwayFromStage(Stage stage)
         {
-            SaveHierarchyState(m_SceneHierarchyWindow, prefabStage);
+            stage.SaveHierarchyState(m_SceneHierarchyWindow);
         }
 
-        void OnPrefabStageReloading(StageNavigationItem prefabStage)
+        void OnStageChanged(Stage previousStage, Stage newStage)
         {
-            SaveHierarchyState(m_SceneHierarchyWindow, prefabStage); // Save hierarchy state so we can load it after the prefab have been reloaded (with new instanceIDs)
-        }
+            if (previousStage is MainStage)
+                previousStage.SaveHierarchyState(m_SceneHierarchyWindow); // Non-main stages are saved before they are destroyed
+            newStage.SyncSceneHierarchyToStage(m_SceneHierarchyWindow);
 
-        void OnPrefabStageReloaded(StageNavigationItem prefabStage)
-        {
-            LoadHierarchyState(m_SceneHierarchyWindow, prefabStage); // Load hierarchy state before reloading the tree so the correct rows are loaded
-            m_SceneHierarchy.customParentForNewGameObjects = prefabStage.prefabStage.prefabContentsRoot.transform;
-            m_SceneHierarchy.customScenes = new[] { prefabStage.prefabStage.scene}; // This will re-init the TreeView (new scenes to show)
-        }
+            newStage.LoadHierarchyState(m_SceneHierarchyWindow);
 
-        void SyncHierarchyToCurrentStage(StageNavigationItem stage, bool loadExpandedState)
-        {
-            if (loadExpandedState)
-                LoadHierarchyState(m_SceneHierarchyWindow, stage);
-
-            if (stage.isMainStage)
-            {
-                m_SceneHierarchy.customParentForNewGameObjects = null;
-                m_SceneHierarchy.SetCustomDragHandler(null);
-                m_SceneHierarchy.customScenes = null;
-            }
-            else
-            {
-                m_SceneHierarchy.customParentForNewGameObjects = stage.prefabStage.prefabContentsRoot.transform;
-                m_SceneHierarchy.SetCustomDragHandler(PrefabModeDraggingHandler);
-                m_SceneHierarchy.customScenes = new[] { stage.prefabStage.scene};
-                HandleFirstTimePrefabStageIsOpened(stage);
-                m_SceneHierarchy.FrameObject(stage.prefabStage.prefabContentsRoot.GetInstanceID(), false);
-            }
-        }
-
-        void HandleFirstTimePrefabStageIsOpened(StageNavigationItem stage)
-        {
-            if (stage.isPrefabStage && GetStoredHierarchyState(m_SceneHierarchyWindow, stage) == null)
-            {
-                SetDefaultExpandedStateForOpenedPrefab(stage.prefabStage.prefabContentsRoot);
-            }
-        }
-
-        void SetDefaultExpandedStateForOpenedPrefab(GameObject root)
-        {
-            var expandedIDs = new List<int>();
-            AddParentsBelowButIgnoreNestedPrefabsRecursive(root.transform, expandedIDs);
-            expandedIDs.Sort();
-            m_SceneHierarchy.treeViewState.expandedIDs = expandedIDs;
-        }
-
-        void AddParentsBelowButIgnoreNestedPrefabsRecursive(Transform transform, List<int> gameObjectInstanceIDs)
-        {
-            gameObjectInstanceIDs.Add(transform.gameObject.GetInstanceID());
-
-            int count = transform.childCount;
-            for (int i = 0; i < count; ++i)
-            {
-                var child = transform.GetChild(i);
-                if (child.childCount > 0 && !PrefabUtility.IsAnyPrefabInstanceRoot(child.gameObject))
-                {
-                    AddParentsBelowButIgnoreNestedPrefabsRecursive(child, gameObjectInstanceIDs);
-                }
-            }
-        }
-
-        static DragAndDropVisualMode PrefabModeDraggingHandler(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, TreeViewDragging.DropPosition dropPos, bool perform)
-        {
-            var stage = StageNavigationManager.instance.currentItem;
-            if (!stage.isPrefabStage)
-                throw new InvalidOperationException("PrefabModeDraggingHandler should only be called in Prefab Mode");
-
-            // Disallow dropping as sibling to the prefab instance root (In Prefab Mode we only want to show one root).
-            if (parentItem != null && parentItem.parent == null && dropPos != TreeViewDragging.DropPosition.Upon)
-                return DragAndDropVisualMode.Rejected;
-
-            // Disallow dragging scenes into the hierarchy when it is in Prefab Mode (we do not support multi-scenes for prefabs yet)
-            foreach (var dragged in DragAndDrop.objectReferences)
-            {
-                if (dragged is SceneAsset)
-                    return DragAndDropVisualMode.Rejected;
-            }
-
-            // Check for cyclic nesting (only on perform since it is an expensive operation)
-            if (perform)
-            {
-                var prefabAssetThatIsAddedTo = AssetDatabase.LoadMainAssetAtPath(stage.prefabAssetPath);
-                foreach (var dragged in DragAndDrop.objectReferences)
-                {
-                    if (dragged is GameObject && EditorUtility.IsPersistent(dragged))
-                    {
-                        var prefabAssetThatWillBeAdded = dragged;
-                        if (PrefabUtility.CheckIfAddingPrefabWouldResultInCyclicNesting(prefabAssetThatIsAddedTo, prefabAssetThatWillBeAdded))
-                        {
-                            PrefabUtility.ShowCyclicNestingWarningDialog();
-                            return DragAndDropVisualMode.Rejected;
-                        }
-                    }
-                }
-            }
-
-            return DragAndDropVisualMode.None;
-        }
-
-        void OnStageChanged(StageNavigationItem previousStage, StageNavigationItem newStage)
-        {
-            if (previousStage.isMainStage)
-                SaveHierarchyState(m_SceneHierarchyWindow, previousStage); // prefab stage is saved before it is destroyed
-            var stage = StageNavigationManager.instance.currentItem;
-            SyncHierarchyToCurrentStage(newStage, true);
-            CachePrefabHeaderText(stage);
+            m_StageHeaderContent = GUIContent.none; // Stage header content is being rebuild on demand in a OnGUI code path (required since it uses EditorStyles)
 
             if (m_SceneHierarchyWindow.hasSearchFilter)
                 m_SceneHierarchyWindow.SetSearchFilter(string.Empty, m_SceneHierarchyWindow.searchMode, true);
         }
 
-        void SaveHierarchyState(SceneHierarchyWindow hierarchyWindow, StageNavigationItem stage)
+        internal void CacheStageHeaderContent()
         {
-            if (stage == null)
+            Stage stage = currentStage;
+            if (stage == null || !stage.isValid)
                 return;
 
-            if (stage.prefabStage != null && !stage.prefabStage.isValid)
-                return;
-
-            string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, stage);
-            var state = m_StateCache.GetState(key);
-            if (state == null)
-                state = new SceneHierarchyState();
-            state.SaveStateFromHierarchy(hierarchyWindow, stage);
-            m_StateCache.SetState(key, state);
-        }
-
-        SceneHierarchyState GetStoredHierarchyState(SceneHierarchyWindow hierarchyWindow, StageNavigationItem stage)
-        {
-            string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, stage);
-            return m_StateCache.GetState(key);
-        }
-
-        void LoadHierarchyState(SceneHierarchyWindow hierarchy, StageNavigationItem stage)
-        {
-            if (stage == null)
-                return;
-
-            var state = GetStoredHierarchyState(hierarchy, stage);
-            if (state != null)
-                state.LoadStateIntoHierarchy(hierarchy, stage);
-        }
-
-        void OnPrefabStageIconChanged(PrefabStage prefabStage)
-        {
-            if (m_PrefabHeaderContent != null)
-                m_PrefabHeaderContent.image = prefabStage.prefabFileIcon;
-        }
-
-        void OnPrefabStageRootTransformChanged(PrefabStage prefabStage)
-        {
-            m_SceneHierarchy.customParentForNewGameObjects = prefabStage.prefabContentsRoot.transform;
-        }
-
-        void CachePrefabHeaderText(StageNavigationItem stage)
-        {
-            if (!stage.isPrefabStage)
-                return;
-
-            var prefabStage = stage.prefabStage;
-            if (prefabStage == null)
-                return;
-
-            var prefabAssetPath = prefabStage.prefabAssetPath;
-
-            m_PrefabHeaderContent = new GUIContent();
-            m_PrefabHeaderContent.text = System.IO.Path.GetFileNameWithoutExtension(prefabAssetPath);
+            m_StageHeaderContent = stage.CreateBreadCrumbItem().content;
 
             // Make room for version control overlay icons.
             // GUIStyles don't allow controlling the space between icon and text.
@@ -247,37 +90,24 @@ namespace UnityEditor
             // but just adding a space character is a lot simpler and ends up amounting to the same thing.
             // This is cached text so there is minimal overhead.
             if (VersionControl.Provider.isActive)
-                m_PrefabHeaderContent.text = " " + m_PrefabHeaderContent.text;
+                m_StageHeaderContent.text = " " + m_StageHeaderContent.text;
 
-            PrefabUtility.GetPrefabAssetType(prefabStage.prefabContentsRoot);
-            m_PrefabHeaderContent.image = prefabStage.prefabFileIcon;
-            if (!stage.prefabAssetExists)
-                m_PrefabHeaderContent.tooltip = L10n.Tr("Prefab asset has been deleted");
-
-            if (PrefabStageUtility.GetCurrentPrefabStage().HasSceneBeenModified())
-                m_PrefabHeaderContent.text += "*";
+            if (stage.hasUnsavedChanges)
+                m_StageHeaderContent.text += "*";
         }
 
-        public void PrefabStageHeaderGUI(Rect rect)
+        public void StageHeaderGUI(Rect rect)
         {
-            var currentItem = StageNavigationManager.instance.currentItem;
-            if (currentItem.isMainStage)
-            {
-                Debug.LogError("Not a Prefab scene");
-                return;
-            }
-
-            var prefabStage = currentItem.prefabStage;
-            if (prefabStage == null || !prefabStage.isValid)
+            var stage = currentStage;
+            if (stage == null || !stage.isValid)
                 return;
 
-            // Cache header text
-            if (m_PrefabHeaderContent == null || m_LastPrefabStageModifiedState == prefabStage.HasSceneBeenModified())
-                CachePrefabHeaderText(currentItem);
-            m_LastPrefabStageModifiedState = prefabStage.HasSceneBeenModified();
+            if (m_StageHeaderContent == GUIContent.none || m_LastStageUnsavedChangesState == stage.hasUnsavedChanges)
+                CacheStageHeaderContent();
+            m_LastStageUnsavedChangesState = stage.hasUnsavedChanges;
 
             // Background
-            GUI.Label(rect, GUIContent.none, Styles.prefabHeaderBg);
+            GUI.Label(rect, GUIContent.none, Styles.stageHeaderBg);
 
             // Back button
             if (Event.current.type == EventType.Repaint)
@@ -299,15 +129,15 @@ namespace UnityEditor
                 StageNavigationManager.instance.NavigateBack(StageNavigationManager.Analytics.ChangeType.NavigateBackViaHierarchyHeaderLeftArrow);
             }
 
-            // Prefab icon and name
+            // Icon and name
             EditorGUIUtility.SetIconSize(new Vector2(16, 16));
-            float width = TreeViewGUI.Styles.lineBoldStyle.CalcSize(m_PrefabHeaderContent).x;
+            float width = TreeViewGUI.Styles.lineBoldStyle.CalcSize(m_StageHeaderContent).x;
             float xStart = Styles.leftArrow.margin.left + Styles.leftArrow.fixedWidth;
             float space = rect.width;
             float offsetFromStart = Mathf.Max(xStart, (space - width) / 2);
             Rect labelRect = new Rect(offsetFromStart, rect.y + 2, rect.width - xStart, 20);
-            if (GUI.Button(labelRect, m_PrefabHeaderContent, currentItem.valid ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.labelBoldMissing))
-                EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(prefabStage.prefabAssetPath));
+            if (GUI.Button(labelRect, m_StageHeaderContent, stage.isAssetMissing ? BreadcrumbBar.DefaultStyles.labelBoldMissing : BreadcrumbBar.DefaultStyles.labelBold))
+                EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(stage.assetPath));
             EditorGUIUtility.SetIconSize(Vector2.zero);
 
             // Version control overlay icons
@@ -318,10 +148,10 @@ namespace UnityEditor
                 overlayRect.y += (overlayRect.height - 16) / 2;
                 overlayRect.height = 16;
 
-                // The source prefab can have been deleted while open in Prefab Mode so the library object can be null here (case 1086613)
-                var prefabAsset = AssetDatabase.LoadMainAssetAtPath(currentItem.prefabAssetPath);
-                if (prefabAsset != null)
-                    AssetsTreeViewGUI.OnIconOverlayGUI(prefabAsset.GetInstanceID(), overlayRect, true);
+                // The source asset can have been deleted while open in stage so the library object can be null here (case 1086613)
+                var asset = AssetDatabase.LoadMainAssetAtPath(stage.assetPath);
+                if (asset != null)
+                    AssetsTreeViewGUI.OnIconOverlayGUI(asset.GetInstanceID(), overlayRect, true);
             }
         }
     }

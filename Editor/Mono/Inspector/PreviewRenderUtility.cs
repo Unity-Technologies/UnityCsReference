@@ -94,6 +94,11 @@ namespace UnityEditor
 
         private string m_Type;
 
+        // This is used to track colour space changes
+        // and try to keep colour values in sync
+        private ColorSpace colorSpace;
+        private Color defaultBackgroundColor;
+
         public PreviewRenderUtility(bool renderFullScene) : this()
         {}
 
@@ -119,6 +124,11 @@ namespace UnityEditor
             Light1.color = new Color(.4f, .4f, .45f, 0f) * .7f;
 
             m_PixelPerfect = false;
+
+            // Set a default background color
+            defaultBackgroundColor = new Color(49.0f / 255.0f, 49.0f / 255.0f, 49.0f / 255.0f, 1.0f);
+            colorSpace = QualitySettings.activeColorSpace;
+            camera.backgroundColor = colorSpace == ColorSpace.Gamma ? defaultBackgroundColor : defaultBackgroundColor.linear;
 
             if (Unsupported.IsDeveloperMode())
             {
@@ -259,9 +269,15 @@ namespace UnityEditor
 
         private void InitPreview(Rect r)
         {
-            camera.backgroundColor = new Color(49.0f / 255.0f, 49.0f / 255.0f, 49.0f / 255.0f, 1.0f);
-            if (QualitySettings.activeColorSpace == ColorSpace.Linear)
-                camera.backgroundColor = camera.backgroundColor.linear;
+            // If the background colour has changed then we can't make any assumptions
+            // about colour space, otherwise flip to the background colour to the correct one
+            if (colorSpace != QualitySettings.activeColorSpace
+                && (camera.backgroundColor == defaultBackgroundColor || camera.backgroundColor.linear == defaultBackgroundColor.linear))
+            {
+                camera.backgroundColor = QualitySettings.activeColorSpace == ColorSpace.Linear
+                    ? defaultBackgroundColor.linear
+                    : defaultBackgroundColor;
+            }
 
             m_TargetRect = r;
             float scaleFac = GetScaleFactor(r.width, r.height);
@@ -280,7 +296,7 @@ namespace UnityEditor
                 // garbage collected each N frames, and in the editor we might be wildly resizing
                 // the inspector, thus using up tons of memory.
                 GraphicsFormat format = camera.allowHDR ? GraphicsFormat.R16G16B16A16_SFloat : GraphicsFormat.R8G8B8A8_UNorm;
-                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, format);
+                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 32, format);
                 m_RenderTexture.hideFlags = HideFlags.HideAndDontSave;
 
                 camera.targetTexture = m_RenderTexture;

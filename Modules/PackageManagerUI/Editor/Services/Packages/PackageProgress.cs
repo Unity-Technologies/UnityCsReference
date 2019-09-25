@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal enum PackageProgress
     {
-        None,
+        None = 0,
         Refreshing,
         Downloading,
         Installing,

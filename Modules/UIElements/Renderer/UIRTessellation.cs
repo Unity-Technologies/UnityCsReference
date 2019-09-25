@@ -4,7 +4,7 @@
 
 using System;
 using Unity.Collections;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -12,6 +12,9 @@ namespace UnityEngine.UIElements.UIR
     {
         internal static float kEpsilon = 0.001f;
         internal static UInt16 kSubdivisions = 6;
+
+        static ProfilerMarker s_MarkerTessellateRect = new ProfilerMarker("TessellateRect");
+        static ProfilerMarker s_MarkerTessellateBorder = new ProfilerMarker("TessellateBorder");
 
         ///<summary>
         /// Tessellates the border OR the content:
@@ -24,7 +27,7 @@ namespace UnityEngine.UIElements.UIR
             if (rectParams.rect.width < kEpsilon || rectParams.rect.height < kEpsilon)
                 return;
 
-            Profiler.BeginSample("TessellateRect");
+            s_MarkerTessellateRect.Begin();
 
             var halfSize = new Vector2(rectParams.rect.width * 0.5f, rectParams.rect.height * 0.5f);
             rectParams.topLeftRadius = Vector2.Min(rectParams.topLeftRadius, halfSize);
@@ -45,7 +48,7 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(vertexCount == mesh.vertexCount);
             Debug.Assert(indexCount == mesh.indexCount);
 
-            Profiler.EndSample();
+            s_MarkerTessellateRect.End();
         }
 
         public static void TessellateBorder(MeshGenerationContextUtils.BorderParams borderParams, float posZ, MeshBuilder.AllocMeshData meshAlloc)
@@ -53,7 +56,7 @@ namespace UnityEngine.UIElements.UIR
             if (borderParams.rect.width < kEpsilon || borderParams.rect.height < kEpsilon)
                 return;
 
-            Profiler.BeginSample("TessellateBorder");
+            s_MarkerTessellateBorder.Begin();
 
             var halfSize = new Vector2(borderParams.rect.width * 0.5f, borderParams.rect.height * 0.5f);
             borderParams.topLeftRadius = Vector2.Min(borderParams.topLeftRadius, halfSize);
@@ -76,7 +79,7 @@ namespace UnityEngine.UIElements.UIR
             TessellateBorderInternal(ref borderParams, posZ, mesh, ref vertexCount, ref indexCount);
             Debug.Assert(vertexCount == mesh.vertexCount);
             Debug.Assert(indexCount == mesh.indexCount);
-            Profiler.EndSample();
+            s_MarkerTessellateBorder.End();
         }
 
         private static void CountRectTriangles(ref MeshGenerationContextUtils.RectangleParams rectParams, ref UInt16 vertexCount, ref UInt16 indexCount)

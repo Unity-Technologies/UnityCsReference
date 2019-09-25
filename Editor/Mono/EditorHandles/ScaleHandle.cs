@@ -125,6 +125,7 @@ namespace UnityEditor
         }
 
         static Vector3 s_DoScaleHandle_AxisHandlesOctant = Vector3.one;
+        static Vector3 s_InitialScale;
 
         public static Vector3 DoScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size)
         {
@@ -140,7 +141,7 @@ namespace UnityEditor
             var invDrawToWorldMatrix = drawToWorldMatrix.inverse;
             var viewVectorDrawSpace = GetCameraViewFrom(handlePosition, invDrawToWorldMatrix);
 
-            var isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
+            var isDisabled = !GUI.enabled;
 
             var isHot = ids.Has(GUIUtility.hotControl);
 
@@ -155,6 +156,13 @@ namespace UnityEditor
             }
 
             var isCenterIsHot = ids.xyz == GUIUtility.hotControl;
+
+            switch (Event.current.type)
+            {
+                case EventType.MouseDown:
+                    s_InitialScale = scale;
+                    break;
+            }
 
             for (var i = 0; i < 3; ++i)
             {
@@ -184,7 +192,7 @@ namespace UnityEditor
                 var cameraLerp = id == GUIUtility.hotControl ? 0 : GetCameraViewLerpForWorldAxis(viewVectorDrawSpace, axisDir);
                 // If we are here and is hot, then this axis is hot and must be opaque
                 cameraLerp = isHot ? 0 : cameraLerp;
-                color = isStatic ? Color.Lerp(axisColor, staticColor, staticBlend) : axisColor;
+                color = isDisabled ? Color.Lerp(axisColor, staticColor, staticBlend) : axisColor;
 
                 axisDir *= s_DoScaleHandle_AxisHandlesOctant[i];
 
@@ -217,12 +225,9 @@ namespace UnityEditor
                 color = ToActiveColorSpace(centerColor);
                 EditorGUI.BeginChangeCheck();
                 var s = ScaleValueHandle(ids.xyz, scale.x, position, rotation, handleSize * param.xyzSize, CubeHandleCap, EditorSnapSettings.scale);
-                if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(scale.x, 0))
+                if (EditorGUI.EndChangeCheck())
                 {
-                    var dif = s / scale.x;
-                    scale.x *= dif;
-                    scale.y *= dif;
-                    scale.z *= dif;
+                    scale = s_InitialScale * s;
                 }
             }
 

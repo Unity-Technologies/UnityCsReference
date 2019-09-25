@@ -149,8 +149,7 @@ namespace UnityEditor.PackageManager.UI
             PackageDatabase.instance.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
             PackageDatabase.instance.onPackagesChanged += (added, removed, preUpdate, postUpdate) => RefreshDependencies();
 
-            PackageDatabase.instance.onPackageOperationStart += OnOperationStartOrFinish;
-            PackageDatabase.instance.onPackageOperationFinish += OnOperationStartOrFinish;
+            PackageDatabase.instance.onPackageProgressUpdate += OnPackageProgressUpdate;
 
             PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
 
@@ -169,8 +168,7 @@ namespace UnityEditor.PackageManager.UI
         {
             ApplicationUtil.instance.onFinishCompiling -= RefreshPackageActionButtons;
 
-            PackageDatabase.instance.onPackageOperationStart -= OnOperationStartOrFinish;
-            PackageDatabase.instance.onPackageOperationFinish -= OnOperationStartOrFinish;
+            PackageDatabase.instance.onPackageProgressUpdate -= OnPackageProgressUpdate;
 
             PackageDatabase.instance.onDownloadProgress -= OnDownloadProgress;
 
@@ -187,7 +185,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (progress.state == DownloadProgress.State.Error || progress.state == DownloadProgress.State.Aborted)
                 {
-                    downloadProgress.Hide();
+                    downloadProgress.SetDisplay(false);
                     RefreshErrorDisplay();
                 }
                 else
@@ -215,7 +213,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshDependencies()
         {
-            dependencies.SetDependencies(displayVersion?.dependencies);
+            dependencies.SetPackageVersion(displayVersion);
         }
 
         private void SetUpdateVisibility(bool value)
@@ -407,8 +405,28 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshSupportedUnityVersions()
         {
-            UIUtils.SetElementDisplay(detailUnityVersionsContainer, displayVersion.supportedVersion != null);
-            detailUnityVersions.text = $"{displayVersion.supportedVersion} or higher";
+            var supportedVersion = displayVersion.supportedVersions?.FirstOrDefault();
+            if (supportedVersion == null)
+                supportedVersion = displayVersion.supportedVersion;
+
+            UIUtils.SetElementDisplay(detailUnityVersionsContainer, supportedVersion != null);
+            if (supportedVersion != null)
+            {
+                detailUnityVersions.text = $"{supportedVersion} or higher";
+                var tooltip = supportedVersion.ToString();
+                if (displayVersion.supportedVersions != null)
+                {
+                    var versions = displayVersion.supportedVersions.Select(version => version.ToString()).ToArray();
+                    tooltip = versions.Length == 1 ? versions[0] :
+                        $"{string.Join(", ", versions, 0, versions.Length - 1)} and {versions[versions.Length - 1]} to improve compatibility with the range of these versions of Unity";
+                }
+                detailUnityVersions.tooltip = $"Package has been submitted using Unity {tooltip}.";
+            }
+            else
+            {
+                detailUnityVersions.text = string.Empty;
+                detailUnityVersions.tooltip = string.Empty;
+            }
         }
 
         private void RefreshSizeInfo()
@@ -421,7 +439,7 @@ namespace UnityEditor.PackageManager.UI
                 sizeInfo = displayVersion.sizes.LastOrDefault();
 
             if (sizeInfo != null)
-                detailSizes.Add(new Label($"Size: {UIUtils.convertToHumanReadableSize(sizeInfo.downloadSize)} (Number of files: {sizeInfo.assetCount})"));
+                detailSizes.Add(new Label($"Size: {UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize)} (Number of files: {sizeInfo.assetCount})"));
         }
 
         private void ClearSupportingImages()
@@ -519,7 +537,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        internal void OnOperationStartOrFinish(IPackage package)
+        internal void OnPackageProgressUpdate(IPackage package)
         {
             RefreshPackageActionButtons();
         }
@@ -588,14 +606,11 @@ namespace UnityEditor.PackageManager.UI
 
             var downloadable = displayVersion.HasTag(PackageTag.Downloadable);
             UIUtils.SetElementDisplay(downloadButton, downloadable);
-            if (downloadable && downloadInProgress)
-                downloadProgress.Show();
-            else
-                downloadProgress.Hide();
+            downloadProgress.SetDisplay(downloadable && downloadInProgress);
             if (downloadable)
             {
                 var progress = PackageDatabase.instance.GetDownloadProgress(displayVersion);
-                var state = package.GetState();
+                var state = package.state;
                 downloadInProgress = progress != null && (progress.state == DownloadProgress.State.InProgress || progress.state == DownloadProgress.State.Started);
                 downloadButton.text = GetButtonText(state == PackageState.UpdateAvailable ? PackageAction.Upgrade : PackageAction.Download, downloadInProgress);
 
@@ -644,6 +659,14 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateClick()
         {
+            // dissuade users from updating by showing a warning message
+            if (package.installedVersion != null && !package.installedVersion.isDirectDependency && package.installedVersion != targetVersion)
+            {
+                var message = L10n.Tr("This version of the package is being used by other packages. Upgrading a different version might break your project. Are you sure you want to continue?");
+                if (!EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Yes"), L10n.Tr("No")))
+                    return;
+            }
+
             detailError.ClearError();
             PackageDatabase.instance.Install(targetVersion);
             RefreshPackageActionButtons();
@@ -691,9 +714,9 @@ namespace UnityEditor.PackageManager.UI
 
         private void RemoveClick()
         {
-            var roots = PackageDatabase.instance.GetDependentVersions(displayVersion).Where(p => p.isDirectDependency && p.isInstalled).ToList();
+            var roots = PackageDatabase.instance.GetReverseDependencies(displayVersion)?.Where(p => p.isDirectDependency && p.isInstalled).ToList();
             // Only show this message on a package if it is installed by dependency only. This allows it to still be removed from the installed list.
-            var showDialog = roots.Any() && !(!displayVersion.HasTag(PackageTag.BuiltIn) && displayVersion.isDirectDependency);
+            var showDialog = (roots?.Any() ?? false) && !(!displayVersion.HasTag(PackageTag.BuiltIn) && displayVersion.isDirectDependency);
             if (showDialog)
             {
                 if (roots.Count > MaxDependentList)
@@ -837,14 +860,14 @@ namespace UnityEditor.PackageManager.UI
 
         private void DownloadOrCancelClick()
         {
-            if (!ApplicationUtil.instance.isInternetReachable)
+            var downloadInProgress = PackageDatabase.instance.IsDownloadInProgress(displayVersion);
+            if (!downloadInProgress && !ApplicationUtil.instance.isInternetReachable)
             {
                 detailError.SetError(new Error(NativeErrorCode.Unknown, "No internet connection"));
                 return;
             }
 
             detailError.ClearError();
-            var downloadInProgress = PackageDatabase.instance.IsDownloadInProgress(displayVersion);
             if (downloadInProgress)
                 PackageDatabase.instance.AbortDownload(package);
             else

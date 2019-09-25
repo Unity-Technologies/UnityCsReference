@@ -13,17 +13,17 @@ namespace UnityEngine.XR
     public struct XRMirrorViewBlitMode
     {
         // *MUST* be in sync with the kUnityXRMirrorBlitNone
-        public const int kXRMirrorBlitNone = 0;
+        public const int None = 0;
         // *MUST* be in sync with the kUnityXRMirrorBlitLeftEye
-        public const int kXRMirrorBlitLeftEye = -1;
+        public const int LeftEye = -1;
         // *MUST* be in sync with the kUnityXRMirrorBlitRightEye
-        public const int kXRMirrorBlitRightEye = -2;
+        public const int RightEye = -2;
         // *MUST* be in sync with the kUnityXRMirrorBlitSideBySide
-        public const int kXRMirrorBlitSideBySide = -3;
+        public const int SideBySide = -3;
         // *MUST* be in sync with the kUnityXRMirrorBlitSideBySideOcclusionMesh
-        public const int kXRMirrorBlitSideBySideOcclusionMesh = -4;
+        public const int SideBySideOcclusionMesh = -4;
         // *MUST* be in sync with the kUnityXRMirrorBlitDistort
-        public const int kXRMirrorBlitDistort = -5;
+        public const int Distort = -5;
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]

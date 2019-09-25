@@ -4,20 +4,32 @@
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
-using System.Linq;
 
 namespace UnityEditor.Experimental.SceneManagement
 {
     public class PrefabStageUtility
     {
-        [Shortcut("Stage/Enter Prefab Mode", KeyCode.P)]
-        static void EnterPrefabModeShortcut()
+        [Shortcut("Stage/Enter Prefab Mode", KeyCode.P, displayName = "Stage/Edit Prefab in Context")]
+        static void EnterInContextPrefabModeShortcut()
+        {
+            EnterPrefabModeFromCurrentSelection(PrefabStage.Mode.InContext);
+        }
+
+        [Shortcut("Stage/Edit Prefab in Isolation")]
+        static void EnterIsolationPrefabModeShortcut()
+        {
+            EnterPrefabModeFromCurrentSelection(PrefabStage.Mode.InIsolation);
+        }
+
+        static void EnterPrefabModeFromCurrentSelection(PrefabStage.Mode preferredMode)
         {
             var activeGameObject = Selection.activeGameObject;
             if (activeGameObject == null)
@@ -28,26 +40,48 @@ namespace UnityEditor.Experimental.SceneManagement
                 var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(activeGameObject);
                 if (!string.IsNullOrEmpty(prefabPath) && prefabPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
                 {
-                    var instanceObject = !EditorUtility.IsPersistent(activeGameObject) ? activeGameObject : null;
-                    OpenPrefab(prefabPath, instanceObject);
+                    PrefabStage.Mode prefabStageMode = preferredMode;
+                    GameObject openedFromInstance = null;
+                    if (preferredMode == PrefabStage.Mode.InContext)
+                    {
+                        openedFromInstance = !EditorUtility.IsPersistent(activeGameObject) ? activeGameObject : null;
+                        prefabStageMode = openedFromInstance != null ? PrefabStage.Mode.InContext : PrefabStage.Mode.InIsolation;
+                    }
+
+                    OpenPrefab(prefabPath, openedFromInstance, prefabStageMode);
                 }
             }
         }
 
         internal static PrefabStage OpenPrefab(string prefabAssetPath)
         {
-            return OpenPrefab(prefabAssetPath, null);
+            return OpenPrefab(prefabAssetPath, null, PrefabStage.Mode.InIsolation);
         }
 
-        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject instanceRoot)
+        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance)
         {
-            return OpenPrefab(prefabAssetPath, instanceRoot, StageNavigationManager.Analytics.ChangeType.EnterViaUnknown);
+            var prefabStageMode = openedFromInstance != null ? PrefabStage.Mode.InContext : PrefabStage.Mode.InIsolation;
+            return OpenPrefab(prefabAssetPath, openedFromInstance, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaUnknown);
         }
 
-        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject instanceRoot, StageNavigationManager.Analytics.ChangeType changeTypeAnalytics)
+        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance, StageNavigationManager.Analytics.ChangeType changeTypeAnalytics)
+        {
+            var prefabStageMode = openedFromInstance != null ? PrefabStage.Mode.InContext : PrefabStage.Mode.InIsolation;
+            return OpenPrefab(prefabAssetPath, openedFromInstance, prefabStageMode, changeTypeAnalytics);
+        }
+
+        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance, PrefabStage.Mode prefabStageMode)
+        {
+            return OpenPrefab(prefabAssetPath, openedFromInstance, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaUnknown);
+        }
+
+        internal static PrefabStage OpenPrefab(string prefabAssetPath, GameObject openedFromInstance, PrefabStage.Mode prefabStageMode, StageNavigationManager.Analytics.ChangeType changeTypeAnalytics)
         {
             if (string.IsNullOrEmpty(prefabAssetPath))
                 throw new ArgumentNullException(prefabAssetPath);
+
+            if (openedFromInstance != null && !PrefabUtility.IsPartOfPrefabInstance(openedFromInstance))
+                throw new ArgumentException("GameObject must be part of a Prefab instance, or null.", nameof(openedFromInstance));
 
             if (!prefabAssetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Incorrect file extension: " + prefabAssetPath + ". Must be '.prefab'", prefabAssetPath);
@@ -55,12 +89,160 @@ namespace UnityEditor.Experimental.SceneManagement
             if (AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) == null)
                 throw new ArgumentException("Prefab not found at path " + prefabAssetPath, prefabAssetPath);
 
-            return StageNavigationManager.instance.OpenPrefabMode(prefabAssetPath, instanceRoot, changeTypeAnalytics);
+            return OpenPrefabMode(prefabAssetPath, openedFromInstance, prefabStageMode, changeTypeAnalytics);
+        }
+
+        static PrefabStage GetExistingPrefabStage(string prefabAssetPath, GameObject openedFromInstance, PrefabStage.Mode prefabStageMode)
+        {
+            var stageHistory = StageNavigationManager.instance.stageHistory;
+            for (int i = 1; i < stageHistory.Count; i++)
+            {
+                var prefabStage = stageHistory[i] as PrefabStage;
+                if (prefabStage != null && prefabStage.assetPath == prefabAssetPath)
+                {
+                    // If PrefabStage.Mode did not match on existing PrefabStage we do not reuse the stage
+                    // so we create a new PrefabStage with the correct mode
+                    if (prefabStage.mode == prefabStageMode)
+                        return prefabStage;
+                }
+            }
+            return null;
+        }
+
+        internal static PrefabStage OpenPrefabMode(string prefabAssetPath, GameObject openedFromInstance, PrefabStage.Mode prefabStageMode, StageNavigationManager.Analytics.ChangeType changeTypeAnalytics)
+        {
+            if (EditorApplication.isPlaying)
+            {
+                bool blockPrefabModeInPlaymode = CheckIfAnyComponentShouldBlockPrefabModeInPlayMode(prefabAssetPath);
+                if (blockPrefabModeInPlaymode)
+                    return null;
+            }
+
+            PrefabStage prevPrefabStage = GetCurrentPrefabStage();
+            bool setAsFirstItemAfterMainStage = prevPrefabStage == null || !IsPartOfPrefabStage(openedFromInstance, prevPrefabStage);
+
+            var previousSelection = Selection.activeGameObject;
+            UInt64 previousFileID = (openedFromInstance != null) ? GetFileIDForCorrespondingObjectFromSourceAtPath(previousSelection, prefabAssetPath) : 0;
+
+            // Ensure valid prefabStageMode (if no context then do not allow Prefab Mode in Context)
+            if (openedFromInstance == null && prefabStageMode != PrefabStage.Mode.InIsolation)
+                prefabStageMode = PrefabStage.Mode.InIsolation;
+
+            Stage contextStage = null;
+            if (prefabStageMode == PrefabStage.Mode.InContext)
+            {
+                var stageHistory = StageNavigationManager.instance.stageHistory;
+                contextStage = stageHistory[stageHistory.Count - 1].GetContextStage();
+            }
+
+            var prefabStage = GetExistingPrefabStage(prefabAssetPath, openedFromInstance, prefabStageMode);
+            if (prefabStage == null)
+                prefabStage = PrefabStage.CreatePrefabStage(prefabAssetPath, openedFromInstance, prefabStageMode, contextStage);
+            if (StageNavigationManager.instance.SwitchToStage(prefabStage, setAsFirstItemAfterMainStage, false, changeTypeAnalytics))
+            {
+                // If selection did not change by switching stage (by us or user) then handle automatic selection in new prefab mode
+                if (Selection.activeGameObject == previousSelection)
+                {
+                    HandleSelectionWhenSwithingToNewPrefabMode(GetCurrentPrefabStage().prefabContentsRoot, previousFileID);
+                }
+
+                SceneView.RepaintAll();
+                return prefabStage;
+            }
+            else
+            {
+                // Failed to switch to new stage
+                return null;
+            }
+        }
+
+        static void HandleSelectionWhenSwithingToNewPrefabMode(GameObject prefabContentsRoot, UInt64 previousFileID)
+        {
+            GameObject newSelection = null;
+
+            if (previousFileID != 0)
+                newSelection = FindFirstGameObjectThatMatchesFileID(prefabContentsRoot.transform, previousFileID, true);
+
+            if (newSelection == null)
+                newSelection = prefabContentsRoot;
+
+            Selection.activeGameObject = newSelection;
+
+            // For Prefab Mode we restore the last expanded tree view state for the opened Prefab. For usability
+            // if a child GameObject on the Prefab Instance is selected when entering the Prefab Asset Mode we select the corresponding
+            // child GameObject in the Asset. Here we ensure that selction is revealed and framed in the Scene hierarchy.
+            if (newSelection != prefabContentsRoot)
+            {
+                foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
+                    shw.FrameObject(newSelection.GetInstanceID(), false);
+            }
+        }
+
+        static bool IsPartOfPrefabStage(GameObject gameObject, PrefabStage prefabStage)
+        {
+            if (gameObject == null)
+                return false;
+            return FindGameObjectRecursive(prefabStage.prefabContentsRoot.transform, gameObject);
+        }
+
+        static bool FindGameObjectRecursive(Transform transform, GameObject gameObject)
+        {
+            if (transform.gameObject == gameObject)
+                return true;
+
+            for (int i = 0; i < transform.childCount; ++i)
+            {
+                if (FindGameObjectRecursive(transform.GetChild(i), gameObject))
+                    return true;
+            }
+            return false;
+        }
+
+        static UInt64 GetFileIDForCorrespondingObjectFromSourceAtPath(GameObject gameObject, string prefabAssetPath)
+        {
+            if (gameObject == null)
+                return 0;
+
+            if (EditorUtility.IsPersistent(gameObject))
+                return 0;
+
+            if (!PrefabUtility.IsPartOfNonAssetPrefabInstance(gameObject))
+                return 0;
+
+            GameObject assetGameObject = PrefabUtility.GetCorrespondingObjectFromSourceAtPath(gameObject, prefabAssetPath);
+            if (assetGameObject == null)
+                return 0;
+
+            return Unsupported.GetOrGenerateFileIDHint(assetGameObject);
+        }
+
+        // Returns true any component in prefab is blocking Prefab Mode in Play Mode
+        internal static bool CheckIfAnyComponentShouldBlockPrefabModeInPlayMode(string prefabAssetPath)
+        {
+            var assetRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabAssetPath);
+            var monoBehaviors = assetRoot.GetComponentsInChildren<MonoBehaviour>(true);  // also check the inactive since these can be made active while in play mode
+            var warnList = new List<MonoBehaviour>();
+            foreach (var m in monoBehaviors)
+            {
+                if (m != null && !m.allowPrefabModeInPlayMode)
+                    warnList.Add(m);
+            }
+
+            if (warnList.Count > 0)
+            {
+                foreach (var m in warnList)
+                {
+                    var monoScript = MonoScript.FromMonoBehaviour(m);
+                    Debug.LogWarningFormat(monoScript, "Prefab Mode in Play Mode was blocked by the script '{0}' to prevent the script accidentally affecting Play Mode. See the documentation for [ExecuteInEditMode] and [ExecuteAlways] for info on how to make scripts compatible with Prefab Mode during Play Mode.", monoScript.name);
+                }
+                return true;
+            }
+            return false;
         }
 
         public static PrefabStage GetCurrentPrefabStage()
         {
-            return StageNavigationManager.instance.GetCurrentPrefabStage();
+            return StageNavigationManager.instance.currentStage as PrefabStage;
         }
 
         public static PrefabStage GetPrefabStage(GameObject gameObject)
@@ -77,7 +259,11 @@ namespace UnityEditor.Experimental.SceneManagement
         internal static bool SaveCurrentModifiedPrefabStagesIfUserWantsTo()
         {
             // Returns false if the user clicked Cancel to save otherwise returns true
-            return StageNavigationManager.instance.AskUserToSaveModifiedPrefabStageBeforeDestroyingStage(PrefabStageUtility.GetCurrentPrefabStage());
+            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (prefabStage != null)
+                return prefabStage.AskUserToSaveModifiedStageBeforeSwitchingStage();
+
+            return true;
         }
 
         [UsedByNativeCode]
@@ -121,14 +307,16 @@ namespace UnityEditor.Experimental.SceneManagement
             return Unsupported.GetFileIDHint(gameObject);
         }
 
-        static GameObject FindFirstGameObjectThatMatchesFileID(Transform searchRoot, UInt64 fileID)
+        static GameObject FindFirstGameObjectThatMatchesFileID(Transform searchRoot, UInt64 fileID, bool generate)
         {
             GameObject result = null;
             var transformVisitor = new TransformVisitor();
             transformVisitor.VisitAndAllowEarlyOut(searchRoot,
                 (transform, userdata) =>
                 {
-                    UInt64 id = GetPrefabOrVariantFileID(transform.gameObject);
+                    UInt64 id = generate ?
+                        Unsupported.GetOrGenerateFileIDHint(transform.gameObject) :
+                        GetPrefabOrVariantFileID(transform.gameObject);
                     if (id == fileID)
                     {
                         result = transform.gameObject;
@@ -206,7 +394,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 if (root == null)
                     continue;
 
-                var prefabRoot = FindFirstGameObjectThatMatchesFileID(root.transform, prefabAssetRootFileID);
+                var prefabRoot = FindFirstGameObjectThatMatchesFileID(root.transform, prefabAssetRootFileID, false);
                 if (prefabRoot != null)
                     return prefabRoot;
             }
@@ -439,6 +627,28 @@ namespace UnityEditor.Experimental.SceneManagement
                     return canvas;
             }
             return null;
+        }
+
+        internal static PrefabStage.Mode GetPrefabStageModeFromModifierKeys()
+        {
+            // Update GetPrefabButtonContent if this logic changes
+            return Event.current.alt ? PrefabStage.Mode.InIsolation : PrefabStage.Mode.InContext;
+        }
+
+        static Dictionary<int, GUIContent> m_PrefabButtonContents = new Dictionary<int, GUIContent>();
+        internal static GUIContent GetPrefabButtonContent(int instanceID)
+        {
+            GUIContent result;
+            if (m_PrefabButtonContents.TryGetValue(instanceID, out result))
+            {
+                return result;
+            }
+
+            string path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(EditorUtility.InstanceIDToObject(instanceID) as GameObject);
+            string filename = System.IO.Path.GetFileNameWithoutExtension(path);
+            result = new GUIContent("", null, "Open Prefab Asset '" + filename + "'" + "\nPress modifier key [Alt] to open in isolation.");
+            m_PrefabButtonContents[instanceID] = result;
+            return result;
         }
     }
 }

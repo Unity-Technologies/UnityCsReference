@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Profiling;
-using UnityEngine.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -72,14 +71,9 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < (int)VisualTreeUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
-                updater.profilerMarker.Begin();
-                try
+                using (updater.profilerMarker.Auto())
                 {
                     updater.Update();
-                }
-                finally
-                {
-                    updater.profilerMarker.End();
                 }
             }
         }
@@ -88,14 +82,9 @@ namespace UnityEngine.UIElements
         {
             var updater = m_UpdaterArray[phase];
 
-            updater.profilerMarker.Begin();
-            try
+            using (updater.profilerMarker.Auto())
             {
                 updater.Update();
-            }
-            finally
-            {
-                updater.profilerMarker.End();
             }
         }
 

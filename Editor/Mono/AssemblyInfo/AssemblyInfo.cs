@@ -108,5 +108,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.PackageCleanConsoleTest.Editor")]
 
 [assembly: AssemblyIsEditorAssembly]

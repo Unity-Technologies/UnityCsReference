@@ -543,7 +543,7 @@ namespace UnityEditor
             }
 
             bool showingSceneTab = !m_IsShowingAssets;
-            GUIContent sceneLabel = StageNavigationManager.instance.currentItem.isPrefabStage ? Styles.selfTabLabel : Styles.sceneTabLabel;
+            GUIContent sceneLabel = StageNavigationManager.instance.currentStage is MainStage ? Styles.sceneTabLabel : Styles.selfTabLabel;
             showingSceneTab = GUILayout.Toggle(showingSceneTab, sceneLabel, Styles.tab);
             if (m_IsShowingAssets && showingSceneTab)
                 m_IsShowingAssets = false;

@@ -109,7 +109,7 @@ namespace UnityEditor
                 toolbarButton = "toolbarbutton";
                 previewSlider = "preSlider";
                 previewSliderThumb = "preSliderThumb";
-                previewLabel = "preLabelUpper";
+                previewLabel = "toolbarLabel";
             }
         }
         static Styles s_Styles;

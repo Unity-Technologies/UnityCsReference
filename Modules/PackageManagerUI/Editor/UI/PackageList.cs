@@ -56,10 +56,8 @@ namespace UnityEditor.PackageManager.UI
         {
             PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
-            PackageDatabase.instance.onPackageOperationStart += OnPackageOperationStart;
-            PackageDatabase.instance.onPackageOperationFinish += OnPackageOperationFinish;
+            PackageDatabase.instance.onPackageProgressUpdate += OnPackageProgressUpdate;
 
-            PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
             PageManager.instance.onRefreshOperationStart += OnRefreshOperationStart;
             PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
 
@@ -78,10 +76,8 @@ namespace UnityEditor.PackageManager.UI
         {
             PageManager.instance.onSelectionChanged -= OnSelectionChanged;
 
-            PackageDatabase.instance.onPackageOperationStart -= OnPackageOperationStart;
-            PackageDatabase.instance.onPackageOperationFinish -= OnPackageOperationFinish;
+            PackageDatabase.instance.onPackageProgressUpdate -= OnPackageProgressUpdate;
 
-            PackageDatabase.instance.onDownloadProgress -= OnDownloadProgress;
             PageManager.instance.onRefreshOperationStart -= OnRefreshOperationStart;
             PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
 
@@ -99,8 +95,7 @@ namespace UnityEditor.PackageManager.UI
 
         private PackageItem GetPackageItem(string packageUniqueId)
         {
-            PackageItem result = null;
-            return (string.IsNullOrEmpty(packageUniqueId) || !m_PackageItemsLookup.TryGetValue(packageUniqueId, out result)) ? null : result;
+            return string.IsNullOrEmpty(packageUniqueId) ? null : m_PackageItemsLookup.Get(packageUniqueId);
         }
 
         private ISelectableItem GetSelectedItem()
@@ -188,14 +183,9 @@ namespace UnityEditor.PackageManager.UI
                 panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
-        private void OnPackageOperationFinish(IPackage package)
+        private void OnPackageProgressUpdate(IPackage package)
         {
-            GetPackageItem(package)?.StopSpinner();
-        }
-
-        private void OnPackageOperationStart(IPackage package)
-        {
-            GetPackageItem(package)?.StartSpinner();
+            GetPackageItem(package)?.UpdateProgressSpinner();
         }
 
         private void OnRefreshOperationStart()
@@ -208,21 +198,6 @@ namespace UnityEditor.PackageManager.UI
         {
             m_RefreshInProgress = false;
             UpdateNoPackagesLabel();
-        }
-
-        private void OnDownloadProgress(IPackage package, DownloadProgress progress)
-        {
-            var item = GetPackageItem(package);
-            if (item != null)
-            {
-                if (progress.state == DownloadProgress.State.Completed || progress.state == DownloadProgress.State.Aborted || progress.state == DownloadProgress.State.Error)
-                {
-                    item.StopSpinner();
-                    item.SetPackage(package);
-                }
-                else
-                    item.StartSpinner();
-            }
         }
 
         private void ScrollIfNeeded(ScrollView container = null, VisualElement target = null)

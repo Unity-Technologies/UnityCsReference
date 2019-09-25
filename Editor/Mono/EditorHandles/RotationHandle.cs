@@ -137,12 +137,12 @@ namespace UnityEditor
 
             var size = HandleUtility.GetHandleSize(position);
             var temp = color;
-            var isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
+            bool isDisabled = !GUI.enabled;
 
             var isHot = ids.Has(GUIUtility.hotControl);
 
             // Draw freerotation first to give it the lowest priority
-            if (!isStatic
+            if (!isDisabled
                 && param.ShouldShow(RotationHandleParam.Handle.XYZ)
                 && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
             {
@@ -158,7 +158,7 @@ namespace UnityEditor
                     continue;
 
                 var axisColor = GetColorByAxis(i);
-                color = isStatic ? Color.Lerp(axisColor, staticColor, staticBlend) : axisColor;
+                color = isDisabled ? Color.Lerp(axisColor, staticColor, staticBlend) : axisColor;
                 color = ToActiveColorSpace(color);
                 var axisDir = GetAxisVector(i);
 
@@ -180,7 +180,7 @@ namespace UnityEditor
                 Handles.DrawWireDisc(position, camForward, size * param.axisSize[0]);
             }
 
-            if (!isStatic
+            if (!isDisabled
                 && param.ShouldShow(RotationHandleParam.Handle.CameraAxis)
                 && (isHot && ids.cameraAxis == GUIUtility.hotControl || !isHot))
             {

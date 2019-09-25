@@ -428,6 +428,7 @@ namespace UnityEditor
 
         public float GetPointScale()
         {
+            // Should match LightProbeVisualizationSettings::GetLightProbeSize()
             return 10.0f * AnnotationUtility.iconSize;
         }
 

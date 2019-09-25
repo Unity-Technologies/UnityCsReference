@@ -89,7 +89,7 @@ namespace UnityEditor
             window.SetAlpha(1.0f);
             s_guiView.mouseRayInvisible = true;
 
-            RepaintImmediately(); // Force repaint to fix that the tooltip text did sometimes not update (we did not get a new OnGUI if the rect had the same size)
+            Repaint(); // Flag for repaint but allow time for updates
         }
 
         public static void Show(string tooltip, Rect rect, GUIView hostView = null)

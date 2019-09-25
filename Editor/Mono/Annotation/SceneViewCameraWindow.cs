@@ -46,6 +46,9 @@ namespace UnityEditor
         const float kPrefixLabelWidth = 120f;
         const float kNearClipMin = .01f;
         const int k_HeaderSpacing = 2;
+        // FOV values chosen to be the smallest and largest before extreme visual corruption
+        const float k_MinFieldOfView = 4f;
+        const float k_MaxFieldOfView = 160f;
 
         Vector2 m_WindowSize;
         Vector2 m_Scroll;
@@ -118,7 +121,7 @@ namespace UnityEditor
             // fov isn't applicable in orthographic mode, and orthographic size is controlled by the user zoom
             using (new EditorGUI.DisabledScope(m_SceneView.orthographic))
             {
-                settings.fieldOfView = EditorGUILayout.Slider(m_FieldOfView, settings.fieldOfView, 4f, 179f);
+                settings.fieldOfView = EditorGUILayout.Slider(m_FieldOfView, settings.fieldOfView, k_MinFieldOfView, k_MaxFieldOfView);
             }
 
             settings.dynamicClip = EditorGUILayout.Toggle(m_DynamicClip, settings.dynamicClip);
@@ -127,11 +130,7 @@ namespace UnityEditor
             {
                 float near = settings.nearClip, far = settings.farClip;
                 DrawClipPlanesField(EditorGUI.s_ClipingPlanesLabel, ref near, ref far, EditorGUI.kNearFarLabelsWidth);
-                settings.nearClip = near;
-                settings.farClip = far;
-                settings.nearClip = Mathf.Max(kNearClipMin, settings.nearClip);
-                if (settings.nearClip > settings.farClip)
-                    settings.farClip = settings.nearClip + kNearClipMin;
+                settings.SetClipPlanes(near, far);
             }
 
             settings.occlusionCulling = EditorGUILayout.Toggle(m_OcclusionCulling, settings.occlusionCulling);

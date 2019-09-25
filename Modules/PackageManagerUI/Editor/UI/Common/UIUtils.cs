@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI
             return GetParentsOfType<T>(element).FirstOrDefault();
         }
 
-        public static string convertToHumanReadableSize(ulong sizeInBytes)
+        public static string ConvertToHumanReadableSize(ulong sizeInBytes)
         {
             var len = sizeInBytes / 1024.0;
             var order = 0;

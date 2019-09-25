@@ -33,7 +33,9 @@ namespace UnityEditor.PackageManager.UI
         // it will be the default that will be displayed if no versions are selected
         IPackageVersion primaryVersion { get; }
 
-        PackageProgress progress { get; }
+        PackageState state { get; }
+
+        PackageProgress progress { get; set; }
 
         IEnumerable<PackageImage> images { get; }
 

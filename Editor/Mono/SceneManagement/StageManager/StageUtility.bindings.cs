@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor.SceneManagement
 {
@@ -38,5 +40,30 @@ namespace UnityEditor.SceneManagement
         [NativeThrows]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static bool IsGameObjectInSameStageAsSceneInternal(GameObject gameObject, int sceneHandle);
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static void SetPrefabInstanceHiddenForInContextEditingInternal(GameObject gameObject, bool hide);
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static bool IsPrefabInstanceHiddenForInContextEditingInternal(GameObject gameObject);
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static bool IsGameObjectConsideredHiddenInSceneViewInternal(GameObject gameObject);
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static void EnableHidingForInContextEditingInSceneViewInternal(bool enable);
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static void SetFocusedSceneInternal(int sceneHandle);
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static Scene GetFocusedSceneInternal();
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static void SetFocusedSceneContextRenderModeInternal(StageUtility.ContextRenderMode contextRenderMode);
+
+        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static void
+        CallAwakeFromLoadOnSubHierarchyInternal(GameObject prefabInstanceRoot);
     }
 }

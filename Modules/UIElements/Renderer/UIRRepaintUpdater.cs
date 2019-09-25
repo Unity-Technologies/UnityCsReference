@@ -4,7 +4,6 @@
 
 using System;
 using Unity.Profiling;
-using UnityEngine.Profiling;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -12,6 +11,8 @@ namespace UnityEngine.UIElements
     internal class UIRRepaintUpdater : BaseVisualTreeUpdater
     {
         internal RenderChain renderChain;
+
+        static ProfilerMarker s_MarkerDrawChain = new ProfilerMarker("DrawChain");
 
         public UIRRepaintUpdater()
         {
@@ -66,14 +67,9 @@ namespace UnityEngine.UIElements
         protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel, panel.standardShader); }
         protected virtual void DrawChain(Rect viewport, Matrix4x4 projection)
         {
-            Profiler.BeginSample("DrawChain");
-            try
+            using (s_MarkerDrawChain.Auto())
             {
                 renderChain.Render(viewport, projection);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

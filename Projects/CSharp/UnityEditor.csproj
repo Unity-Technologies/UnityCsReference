@@ -1318,6 +1318,12 @@
     <Compile Include="..\..\Editor\Mono\GUI\MainView.cs">
       <Link>Editor\Mono\GUI\MainView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\ManagedDebuggerToggle.cs">
+      <Link>Editor\Mono\GUI\ManagedDebuggerToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\ManagedDebuggerWindow.cs">
+      <Link>Editor\Mono\GUI\ManagedDebuggerWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\MaskFieldGUI.cs">
       <Link>Editor\Mono\GUI\MaskFieldGUI.cs</Link>
     </Compile>
@@ -2734,14 +2740,23 @@
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\BreadcrumbBar.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\BreadcrumbBar.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\MainStage.cs">
+      <Link>Editor\Mono\SceneManagement\StageManager\MainStage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\MainStageHierarchyState.cs">
+      <Link>Editor\Mono\SceneManagement\StageManager\MainStageHierarchyState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\PrefabStageHierarchyState.cs">
+      <Link>Editor\Mono\SceneManagement\StageManager\PrefabStageHierarchyState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStage.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStage.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStage.deprecated.cs">
+      <Link>Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStage.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStageUtility.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStageUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\SceneHierarchyState.cs">
-      <Link>Editor\Mono\SceneManagement\StageManager\SceneHierarchyState.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\SceneViewCameraState.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\SceneViewCameraState.cs</Link>
@@ -2751,9 +2766,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageNavigationHistory.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\StageNavigationHistory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageNavigationItem.cs">
-      <Link>Editor\Mono\SceneManagement\StageManager\StageNavigationItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageNavigationManager.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\StageNavigationManager.cs</Link>
@@ -2938,6 +2950,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\UWPReferences.cs">
       <Link>Editor\Mono\Scripting\Compilers\UWPReferences.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ManagedDebugger.bindings.cs">
+      <Link>Editor\Mono\Scripting\ManagedDebugger.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\NativeClassExtensionUtilities.cs">
       <Link>Editor\Mono\Scripting\NativeClassExtensionUtilities.cs</Link>
     </Compile>
@@ -3021,6 +3036,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PlatformSupportModuleHelpers.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\PlatformSupportModuleHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PostProcessorTask.cs</Link>

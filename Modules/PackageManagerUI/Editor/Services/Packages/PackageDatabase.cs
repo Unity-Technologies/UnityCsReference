@@ -21,12 +21,11 @@ namespace UnityEditor.PackageManager.UI
         {
             public event Action<IPackage, IPackageVersion> onInstallSuccess = delegate {};
             public event Action<IPackage> onUninstallSuccess = delegate {};
-            public event Action<IPackage> onPackageOperationStart = delegate {};
-            public event Action<IPackage> onPackageOperationFinish = delegate {};
+            public event Action<IPackage> onPackageProgressUpdate = delegate {};
 
             public event Action<IPackage, DownloadProgress> onDownloadProgress = delegate {};
 
-            // args 1,2, 3 are added, removed and preUpdated, and postUpdated packages respectively
+            // args 1 ,2, 3, 4 are added, removed and preUpdated, and postUpdated packages respectively
             public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged = delegate {};
 
             private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
@@ -133,8 +132,10 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            public IEnumerable<IPackageVersion> GetDependentVersions(IPackageVersion version)
+            public IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version)
             {
+                if (version?.dependencies == null)
+                    return null;
                 var installedRoots = allPackages.Select(p => p.installedVersion).Where(p => p?.isDirectDependency ?? false);
                 var dependsOnPackage = installedRoots.Where(p => p.resolvedDependencies?.Any(r => r.name == version.name) ?? false);
                 return dependsOnPackage;
@@ -179,9 +180,28 @@ namespace UnityEditor.PackageManager.UI
 
             public IEnumerable<IPackage> packagesInError => allPackages.Where(p => p.errors.Any());
 
+            public void SetPackageProgress(IPackage package, PackageProgress progress)
+            {
+                if (package.progress == progress)
+                    return;
+                package.progress = progress;
+                onPackageProgressUpdate?.Invoke(package);
+            }
+
+            public void OnEnable()
+            {
+                if (m_SetupDone)
+                {
+                    Clear();
+                    Setup();
+                }
+            }
+
             public void Setup()
             {
-                System.Diagnostics.Debug.Assert(!m_SetupDone);
+                if (m_SetupDone)
+                    return;
+
                 m_SetupDone = true;
 
                 UpmClient.instance.onPackagesChanged += OnPackagesChanged;
@@ -201,7 +221,6 @@ namespace UnityEditor.PackageManager.UI
 
             public void Clear()
             {
-                System.Diagnostics.Debug.Assert(m_SetupDone);
                 m_SetupDone = false;
 
                 UpmClient.instance.onPackagesChanged -= OnPackagesChanged;
@@ -219,14 +238,14 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
             }
 
-            public void Reset()
+            public void Reload()
             {
                 onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), m_Packages.Values, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
 
                 Clear();
 
-                AssetStore.AssetStoreClient.instance.Reset();
-                UpmClient.instance.Reset();
+                AssetStore.AssetStoreClient.instance.Reload();
+                UpmClient.instance.Reload();
 
                 m_Packages.Clear();
                 m_SerializedUpmPackages = new List<UpmPackage>();
@@ -242,14 +261,14 @@ namespace UnityEditor.PackageManager.UI
                 if (package != null)
                 {
                     var hasError = progress.state == DownloadProgress.State.Error || progress.state == DownloadProgress.State.Aborted;
+                    var completed = progress.state == DownloadProgress.State.Completed;
                     if (hasError)
-                        package.AddError(new Error(NativeErrorCode.Unknown, progress.message));
+                        AddPackageError(package, new Error(NativeErrorCode.Unknown, progress.message));
 
-                    if (progress.state == DownloadProgress.State.Completed)
-                    {
+                    if (completed)
                         AssetStore.AssetStoreClient.instance.RefreshLocal();
-                    }
 
+                    SetPackageProgress(package, hasError || completed ? PackageProgress.None : PackageProgress.Downloading);
                     onDownloadProgress?.Invoke(package, progress);
                 }
             }
@@ -317,7 +336,7 @@ namespace UnityEditor.PackageManager.UI
                     if (match != null)
                     {
                         onInstallSuccess(match, match.installedVersion);
-                        onPackageOperationFinish(match);
+                        SetPackageProgress(match, PackageProgress.None);
                         m_SpecialInstallations.RemoveAt(i);
                     }
                 }
@@ -330,16 +349,13 @@ namespace UnityEditor.PackageManager.UI
                 if (string.IsNullOrEmpty(operation.packageUniqueId))
                 {
                     m_SpecialInstallations.Add(operation.specialUniqueId);
-                    onPackageOperationStart(null);
                     operation.onOperationError += error =>
                     {
                         m_SpecialInstallations.Remove(operation.specialUniqueId);
-                        onPackageOperationFinish(null);
                     };
                     return;
                 }
-
-                onPackageOperationStart(GetPackage(operation.packageUniqueId));
+                SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
                 operation.onOperationSuccess += () =>
                 {
                     IPackage package;
@@ -353,12 +369,12 @@ namespace UnityEditor.PackageManager.UI
                     if (package != null)
                         AddPackageError(package, error);
                 };
-                operation.onOperationFinalized += () => onPackageOperationFinish(GetPackage(operation.packageUniqueId));
+                operation.onOperationFinalized += () => SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
             }
 
             private void OnUpmEmbedOperation(IOperation operation)
             {
-                onPackageOperationStart(GetPackage(operation.packageUniqueId));
+                SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
                 operation.onOperationSuccess += () =>
                 {
                     var package = GetPackage(operation.packageUniqueId);
@@ -370,12 +386,12 @@ namespace UnityEditor.PackageManager.UI
                     if (package != null)
                         AddPackageError(package, error);
                 };
-                operation.onOperationFinalized += () => onPackageOperationFinish(GetPackage(operation.packageUniqueId));
+                operation.onOperationFinalized += () => SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
             }
 
             private void OnUpmRemoveOperation(IOperation operation)
             {
-                onPackageOperationStart(GetPackage(operation.packageUniqueId));
+                SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Removing);
                 operation.onOperationSuccess += () => onUninstallSuccess(GetPackage(operation.packageUniqueId));
                 operation.onOperationError += error =>
                 {
@@ -383,7 +399,7 @@ namespace UnityEditor.PackageManager.UI
                     if (package != null)
                         AddPackageError(package, error);
                 };
-                operation.onOperationFinalized += () => onPackageOperationFinish(GetPackage(operation.packageUniqueId));
+                operation.onOperationFinalized += () => SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
             }
 
             private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)
@@ -463,6 +479,7 @@ namespace UnityEditor.PackageManager.UI
                 if (!PlayModeDownload.CanBeginDownload())
                     return;
 
+                SetPackageProgress(package, PackageProgress.Downloading);
                 AssetStore.AssetStoreClient.instance.Download(package.uniqueId);
             }
 
@@ -470,7 +487,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (!(package is AssetStorePackage))
                     return;
-
+                SetPackageProgress(package, PackageProgress.None);
                 AssetStore.AssetStoreClient.instance.AbortDownload(package.uniqueId);
             }
 

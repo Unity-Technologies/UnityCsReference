@@ -856,7 +856,7 @@ namespace UnityEditor
 
             // Graph types
             Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, GUILayout.Width(Chart.kSideWidth - 1));
-            if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDown))
+            if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
             {
                 int length = m_Charts.Length;
                 var names = new string[length];
@@ -938,8 +938,8 @@ namespace UnityEditor
             }
 
             // Overflow Menu
-            var overflowMenuRect = GUILayoutUtility.GetRect(Styles.optionsButtonContent, EditorStyles.toolbarButton);
-            if (GUI.Button(overflowMenuRect, Styles.optionsButtonContent, EditorStyles.toolbarButton))
+            var overflowMenuRect = GUILayoutUtility.GetRect(Styles.optionsButtonContent, EditorStyles.toolbarButtonRight);
+            if (GUI.Button(overflowMenuRect, Styles.optionsButtonContent, EditorStyles.toolbarButtonRight))
             {
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);

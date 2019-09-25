@@ -25,6 +25,12 @@ namespace UnityEngine
         }
 
         [Conditional("UNITY_EDITOR")]
+        public static void TryRegisterProperty(Object driver, Object target, string propertyPath)
+        {
+            TryRegisterPropertyPartial(driver, target, propertyPath);
+        }
+
+        [Conditional("UNITY_EDITOR")]
         public static void UnregisterProperty(Object driver, Object target, string propertyPath)
         {
             UnregisterPropertyPartial(driver, target, propertyPath);
@@ -38,6 +44,10 @@ namespace UnityEngine
         [NativeConditional("UNITY_EDITOR")]
         [StaticAccessor("GetDrivenPropertyManager()", StaticAccessorType.Dot)]
         extern private static void RegisterPropertyPartial([NotNull] Object driver, [NotNull] Object target, [NotNull] string propertyPath);
+
+        [NativeConditional("UNITY_EDITOR")]
+        [StaticAccessor("GetDrivenPropertyManager()", StaticAccessorType.Dot)]
+        extern private static void TryRegisterPropertyPartial([NotNull] Object driver, [NotNull] Object target, [NotNull] string propertyPath);
 
         [NativeConditional("UNITY_EDITOR")]
         [StaticAccessor("GetDrivenPropertyManager()", StaticAccessorType.Dot)]

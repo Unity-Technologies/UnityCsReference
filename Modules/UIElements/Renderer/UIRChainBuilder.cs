@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -117,12 +117,12 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand firstCommand { get { return m_FirstCommand; } }
 
         // Profiling
-        static CustomSampler s_RenderSampler = CustomSampler.Create("RenderChain.Draw");
-        static CustomSampler s_ClipProcessingSampler = CustomSampler.Create("RenderChain.UpdateClips");
-        static CustomSampler s_OpacityProcessingSampler = CustomSampler.Create("RenderChain.UpdateOpacity");
-        static CustomSampler s_TransformProcessingSampler = CustomSampler.Create("RenderChain.UpdateTransforms");
-        static CustomSampler s_VisualsProcessingSampler = CustomSampler.Create("RenderChain.UpdateVisuals");
-        static CustomSampler s_TextRegenSampler = CustomSampler.Create("RenderChain.RegenText");
+        static ProfilerMarker s_MarkerRender = new ProfilerMarker("RenderChain.Draw");
+        static ProfilerMarker s_MarkerClipProcessing = new ProfilerMarker("RenderChain.UpdateClips");
+        static ProfilerMarker s_MarkerOpacityProcessing = new ProfilerMarker("RenderChain.UpdateOpacity");
+        static ProfilerMarker s_MarkerTransformProcessing = new ProfilerMarker("RenderChain.UpdateTransforms");
+        static ProfilerMarker s_MarkerVisualsProcessing = new ProfilerMarker("RenderChain.UpdateVisuals");
+        static ProfilerMarker s_MarkerTextRegen = new ProfilerMarker("RenderChain.RegenText");
 
 
         public RenderChain(IPanel panel, Shader standardShader)
@@ -207,11 +207,14 @@ namespace UnityEngine.UIElements.UIR
 
         public void Render(Rect viewport, Matrix4x4 projection)
         {
-            s_RenderSampler.Begin();
+            s_MarkerRender.Begin();
             m_Stats = new ChainBuilderStats();
             m_Stats.elementsAdded += m_StatsElementsAdded;
             m_Stats.elementsRemoved += m_StatsElementsRemoved;
             m_StatsElementsAdded = m_StatsElementsRemoved = 0;
+
+            if (shaderInfoAllocator.isReleased)
+                RecreateDevice(); // The shader info texture was released, recreate the device to start fresh
 
             if (OnPreRender != null)
                 OnPreRender();
@@ -238,7 +241,7 @@ namespace UnityEngine.UIElements.UIR
             var dirtyClass = (int)RenderDataDirtyTypeClasses.Clipping;
             var dirtyFlags = RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy;
             var clearDirty = ~dirtyFlags;
-            s_ClipProcessingSampler.Begin();
+            s_MarkerClipProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -254,13 +257,13 @@ namespace UnityEngine.UIElements.UIR
                     ve = veNext;
                 }
             }
-            s_ClipProcessingSampler.End();
+            s_MarkerClipProcessing.End();
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Opacity;
             dirtyFlags = RenderDataDirtyTypes.Opacity;
             clearDirty = ~dirtyFlags;
-            s_OpacityProcessingSampler.Begin();
+            s_MarkerOpacityProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -276,13 +279,13 @@ namespace UnityEngine.UIElements.UIR
                     ve = veNext;
                 }
             }
-            s_OpacityProcessingSampler.End();
+            s_MarkerOpacityProcessing.End();
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.TransformSize;
             dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size;
             clearDirty = ~dirtyFlags;
-            s_TransformProcessingSampler.Begin();
+            s_MarkerTransformProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -298,14 +301,14 @@ namespace UnityEngine.UIElements.UIR
                     ve = veNext;
                 }
             }
-            s_TransformProcessingSampler.End();
+            s_MarkerTransformProcessing.End();
 
             m_BlockDirtyRegistration = true; // Processing visuals may call generateVisualContent, which must be restricted to the allowed operations
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
             dirtyFlags = RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy;
             clearDirty = ~dirtyFlags;
-            s_VisualsProcessingSampler.Begin();
+            s_MarkerVisualsProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -321,7 +324,7 @@ namespace UnityEngine.UIElements.UIR
                     ve = veNext;
                 }
             }
-            s_VisualsProcessingSampler.End();
+            s_MarkerVisualsProcessing.End();
             m_BlockDirtyRegistration = false;
 
             // Done with all dirtied elements
@@ -358,7 +361,7 @@ namespace UnityEngine.UIElements.UIR
                 (panel as BaseVisualElementPanel).scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
                 ref immediateException);
 
-            s_RenderSampler.End();
+            s_MarkerRender.End();
 
             if (immediateException != null)
                 throw immediateException;
@@ -372,7 +375,7 @@ namespace UnityEngine.UIElements.UIR
             if ((timeSliced && m_DirtyTextRemaining == 0) || m_TextElementCount == 0)
                 return;
 
-            s_TextRegenSampler.Begin();
+            s_MarkerTextRegen.Begin();
             if (m_TextUpdatePainter == null)
                 m_TextUpdatePainter = new Implementation.UIRTextUpdatePainter();
 
@@ -399,7 +402,7 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTextRemaining = Math.Max(0, m_DirtyTextRemaining - maxCount);
             if (m_DirtyTextRemaining > 0)
                 (panel as BaseVisualElementPanel)?.OnVersionChanged(m_FirstTextElement, VersionChangeType.Transform); // Force a window refresh
-            s_TextRegenSampler.End();
+            s_MarkerTextRegen.End();
         }
 
         public event Action<UIRenderDevice> BeforeDrawChain;
@@ -626,6 +629,12 @@ namespace UnityEngine.UIElements.UIR
 
             Constructor(panelObj, deviceObj, atlasManObj, vectorImageManObj);
             UIEOnChildAdded(root.parent, root, root.hierarchy.parent == null ? 0 : root.hierarchy.parent.IndexOf(panel.visualTree));
+        }
+
+        internal void RecreateDevice()
+        {
+            BeforeRenderDeviceRelease();
+            AfterRenderDeviceRelease();
         }
 
         private void RepaintAtlassedElements()

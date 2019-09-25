@@ -652,7 +652,7 @@ namespace UnityEditor
                 if (!reflectiveMaterial)
                     return;
 
-                if (!StageUtility.IsGameObjectRenderedByCamera(p.gameObject, Camera.current))
+                if (!StageUtility.IsGameObjectRenderedByCameraAndPartOfEditableScene(p.gameObject, Camera.current))
                     return;
 
                 Matrix4x4 m = new Matrix4x4();

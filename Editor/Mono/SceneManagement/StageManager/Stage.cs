@@ -3,12 +3,140 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using UnityEditor.Experimental.SceneManagement;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace UnityEditor.SceneManagement
 {
+    public abstract class Stage : ScriptableObject
+    {
+        static List<Stage> s_AllStages = new List<Stage>();
+        internal static ReadOnlyCollection<Stage> allStages {  get { return s_AllStages.AsReadOnly(); } }
+
+        // Stage interface
+        internal virtual bool isValid { get { return true; } }
+
+        internal virtual bool isAssetMissing { get { return false; } }
+
+        public virtual string assetPath { get { return string.Empty; } }
+
+        internal abstract int sceneCount { get; }
+        internal abstract Scene GetSceneAt(int index);
+
+        internal virtual bool SupportsSaving() { return false; }
+        internal virtual bool hasUnsavedChanges { get { return false; } }
+        internal virtual bool Save()
+        {
+            if (!SupportsSaving() || !hasUnsavedChanges)
+                return true;
+            throw new System.NotImplementedException("This Stage returns true for SupportsSaving() but has not implemented an override for the Save() method.");
+        }
+
+        internal virtual bool SaveAsNew()
+        {
+            if (!SupportsSaving())
+                return true;
+            throw new System.NotImplementedException("This Stage returns true for SupportsSaving() but has not implemented an override for the SaveAsNew() method.");
+        }
+
+        // Transient state since it is set every time we switch stage
+        internal bool setSelectionAndScrollWhenBecomingCurrentStage { get; set; } = true;
+
+        internal virtual string GetErrorMessage()
+        {
+            return null;
+        }
+
+        internal virtual BreadcrumbBar.Item CreateBreadCrumbItem()
+        {
+            return null;
+        }
+
+        internal virtual ulong GetSceneCullingMask(SceneView sceneView) { return EditorSceneManager.DefaultSceneCullingMask; }
+
+        public virtual StageHandle stageHandle
+        {
+            get { return StageHandle.GetMainStageHandle(); }
+        }
+
+        internal virtual ulong GetCombinedSceneCullingMaskForSceneViewCamera(SceneView sceneView) { return GetSceneCullingMask(sceneView); }
+
+        internal virtual Stage GetContextStage() { return this; }
+
+        internal virtual Color GetBackgroundColor() { return SceneView.kSceneViewBackground.Color; }
+
+        // Called before and after the Scene view renders.
+        internal virtual void OnPreSceneViewRender(SceneView sceneView) {}
+        internal virtual void OnPostSceneViewRender(SceneView sceneView) {}
+
+        // Called when new stage is created, after script reloads, and possibly at other times by the stage itself.
+        internal abstract void SyncSceneViewToStage(SceneView sceneView);
+        internal abstract void SyncSceneHierarchyToStage(SceneHierarchyWindow sceneHierarchyWindow);
+
+        internal virtual void SaveHierarchyState(SceneHierarchyWindow hierarchyWindow) {}
+        internal virtual void LoadHierarchyState(SceneHierarchyWindow hierarchyWindow) {}
+
+        // Called after respective sync methods first time this stage is opened in this window.
+        internal virtual void OnFirstTimeOpenStageInSceneView(SceneView sceneView) {}
+        internal virtual void OnFirstTimeOpenStageInSceneHierachyWindow(SceneHierarchyWindow sceneHierarchyWindow) {}
+
+        internal virtual void OnControlsGUI(SceneView sceneView) {}
+
+        internal virtual void Tick()
+        {
+        }
+
+        // Called when stage is accepted (should load itself) if false is returned then did not succeed and should fall back to previous stage
+        internal abstract bool ActivateStage(Stage previousStage);
+
+        // Only called if Activate was called (can unload but maybe not)
+        internal virtual void DeactivateStage(Stage newStage)
+        {
+        }
+
+        // Called on the the current stage when trying to switch to new stage. Should return true if it OK to continue to switch away
+        // from current stage. False if not ok to continue.
+        internal virtual bool AskUserToSaveModifiedStageBeforeSwitchingStage()
+        {
+            return true;
+        }
+
+        internal abstract void PlaceGameObjectInStage(GameObject rootGameObject);
+
+        // Used for writing state files to HDD
+        // Should typically be a persistent unique id per content shown.
+        // As an example, for Prefabs the ID is a subset of the asset GUID.
+        internal virtual string GetStageID(int maxCharacters)
+        {
+            Debug.LogError("Needs to be overridden by inheriting class " + this);
+            return string.Empty;
+        }
+
+        // Lifetime callbacks from ScriptableObject
+        protected virtual void Awake()
+        {
+        }
+
+        protected virtual void OnDestroy()
+        {
+        }
+
+        protected virtual void OnEnable()
+        {
+            hideFlags = HideFlags.HideAndDontSave;
+            s_AllStages.Add(this);
+        }
+
+        protected virtual void OnDisable()
+        {
+            s_AllStages.Remove(this);
+        }
+    }
+
     public struct StageHandle : System.IEquatable<StageHandle>
     {
         private bool m_IsMainStage;
@@ -93,11 +221,9 @@ namespace UnityEditor.SceneManagement
         // Use public API StageUtility.GetCurrentStage
         internal static StageHandle GetCurrentStageHandle()
         {
-            PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            if (prefabStage == null)
-                return new StageHandle() { m_IsMainStage = true };
-            else
-                return new StageHandle() { m_CustomScene = prefabStage.scene };
+            if (StageNavigationManager.instance != null && StageNavigationManager.instance.currentStage != null)
+                return StageNavigationManager.instance.currentStage.stageHandle;
+            return new StageHandle() { m_IsMainStage = true };
         }
 
         // Use public API StageUtility.GetStage

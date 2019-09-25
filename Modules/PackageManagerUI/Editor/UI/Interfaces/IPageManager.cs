@@ -9,6 +9,8 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IPageManager
     {
+        bool isSetupDone { get; }
+
         event Action<IPackageVersion> onSelectionChanged;
 
         // arg1: the updated page, arg2: packages added/updated in the page, arg3: packages removed from the page

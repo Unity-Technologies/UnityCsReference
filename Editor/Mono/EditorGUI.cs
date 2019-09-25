@@ -133,6 +133,7 @@ namespace UnityEditor
         private static readonly GUIContent s_PositionLabel = EditorGUIUtility.TrTextContent("Position");
         private static readonly GUIContent s_SizeLabel = EditorGUIUtility.TrTextContent("Size");
         internal static GUIContent s_PleasePressAKey = EditorGUIUtility.TrTextContent("[Please press a key]");
+        private static string s_PrefabInContextPreviewValuesTooltip = L10n.Tr("This property is previewing the overridden value on the Prefab instance.\n\nTo edit this property, open this Prefab Asset in isolation by pressing the modifier key [Alt] while you open it.");
 
         internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TrTextContent("Clipping Planes", "The distances from the Camera where rendering starts and stops.");
         internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TrTextContent("Near", "The closest point to the Camera where drawing occurs."), EditorGUIUtility.TrTextContent("Far", "The furthest point from the Camera that drawing occurs.") };
@@ -5673,7 +5674,8 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
-            if (property.serializedObject.targetObjectsCount == 1 &&
+            if (Event.current.type == EventType.Repaint &&
+                property.serializedObject.targetObjectsCount == 1 &&
                 property.isInstantiatedPrefab &&
                 EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
             {
@@ -5712,6 +5714,24 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
                 animatedColor.a *= GUI.backgroundColor.a;
                 GUI.backgroundColor = animatedColor;
+            }
+            else
+            {
+                Object target = property.serializedObject.targetObject;
+                GameObject go = PrefabUtility.GetGameObject(target);
+                if (go != null && go.scene.IsValid() && EditorSceneManager.IsPreviewScene(go.scene))
+                {
+                    ScriptableObject driver = Experimental.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                    if (
+                        (DrivenPropertyManagerInternal.IsDriving(driver, target, property.propertyPath))
+                        ||
+                        ((target is Transform || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, property.propertyPath)))
+                    {
+                        GUI.enabled = false;
+                        if (isCollectingTooltips)
+                            s_PropertyFieldTempContent.tooltip = s_PrefabInContextPreviewValuesTooltip;
+                    }
+                }
             }
 
             GUI.enabled &= property.editable;

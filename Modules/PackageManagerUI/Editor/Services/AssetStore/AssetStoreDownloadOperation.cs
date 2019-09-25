@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -24,9 +25,13 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             private IASyncHTTPClientFactory m_AsyncHTTPClient;
 
+            private List<DownloadInformation> m_DownloadInformations;
+
             private AssetStoreDownloadOperationInternal()
             {
                 m_AsyncHTTPClient = new ASyncHTTPClientFactory();
+
+                m_DownloadInformations = new List<DownloadInformation>();
             }
 
             public void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
@@ -58,30 +63,28 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 httpRequest.Begin();
             }
 
+            public void ClearDownloadInformation(string productID)
+            {
+                m_DownloadInformations.RemoveAll(d => d.productId == productID);
+            }
+
             public void AbortDownloadPackageAsync(long productID, Action<DownloadResult> doneCallbackAction = null)
             {
                 var ret = new DownloadResult();
 
-                AssetStoreRestAPI.instance.GetDownloadDetail(productID, downloadInformation =>
+                var downloadInfo = m_DownloadInformations.FirstOrDefault(d => d.productId == productID.ToString());
+                if (downloadInfo != null)
                 {
-                    if (!downloadInformation.isValid)
-                    {
-                        ret.downloadState = DownloadProgress.State.Error;
-                        ret.errorMessage = downloadInformation.errorMessage;
-                        doneCallbackAction?.Invoke(ret);
-                        return;
-                    }
-
-                    string[] dest = { downloadInformation.publisherName, downloadInformation.categoryName, downloadInformation.packageName };
-                    var res = AssetStoreUtils.instance.AbortDownload($"content__{productID}", dest);
+                    var res = AssetStoreUtils.instance.AbortDownload($"content__{productID}", downloadInfo.destination);
                     ret.downloadState = res ? DownloadProgress.State.Aborted : DownloadProgress.State.Error;
                     if (!res)
                     {
                         ret.errorMessage = "Cannot abort download.";
                     }
-
                     doneCallbackAction?.Invoke(ret);
-                });
+
+                    ClearDownloadInformation(downloadInfo.productId);
+                }
             }
 
             public void DownloadUnityPackageAsync(long productID, Action<DownloadResult> doneCallbackAction = null)
@@ -97,12 +100,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    string[] dest =
-                    {
-                        downloadInfo.publisherName.Replace(".", ""),
-                        downloadInfo.categoryName.Replace(".", ""),
-                        downloadInfo.packageName.Replace(".", "")
-                    };
+                    var dest = downloadInfo.destination;
 
                     var json = AssetStoreUtils.instance.CheckDownload(
                         $"content__{downloadInfo.productId}",
@@ -154,6 +152,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         downloadInfo.key,
                         json,
                         resumeOK);
+
+                    m_DownloadInformations.Add(downloadInfo);
 
                     ret.downloadState = DownloadProgress.State.Started;
                     doneCallbackAction?.Invoke(ret);

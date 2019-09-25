@@ -9,7 +9,7 @@ using Unity.Collections;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -111,11 +111,11 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
         static readonly int s_ClipRectsPropID = Shader.PropertyToID("_ClipRects");
 
-        static CustomSampler s_AllocateSampler = CustomSampler.Create("UIR.Allocate");
-        static CustomSampler s_FreeSampler = CustomSampler.Create("UIR.Free");
-        static CustomSampler s_AdvanceFrameSampler = CustomSampler.Create("UIR.AdvanceFrame");
-        static CustomSampler s_FenceSampler = CustomSampler.Create("UIR.WaitOnFence");
-        static CustomSampler s_BeforeDrawSampler = CustomSampler.Create("UIR.BeforeDraw");
+        static ProfilerMarker s_MarkerAllocate = new ProfilerMarker("UIR.Allocate");
+        static ProfilerMarker s_MarkerFree = new ProfilerMarker("UIR.Free");
+        static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker("UIR.AdvanceFrame");
+        static ProfilerMarker s_MarkerFence = new ProfilerMarker("UIR.WaitOnFence");
+        static ProfilerMarker s_MarkerBeforeDraw = new ProfilerMarker("UIR.BeforeDraw");
 
         static bool? s_VertexTexturingIsAvailable;
         const string k_VertexTexturingIsAvailableTag = "UIE_VertexTexturingIsAvailable";
@@ -393,7 +393,7 @@ namespace UnityEngine.UIElements.UIR
 
         void Allocate(MeshHandle meshHandle, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, bool shortLived)
         {
-            s_AllocateSampler.Begin();
+            s_MarkerAllocate.Begin();
 
             Page page = null;
             Alloc va = new Alloc(), ia = new Alloc();
@@ -461,7 +461,7 @@ namespace UnityEngine.UIElements.UIR
             meshHandle.allocIndices = ia;
             meshHandle.allocTime = m_FrameIndex;
 
-            s_AllocateSampler.End();
+            s_MarkerAllocate.End();
         }
 
         void UpdateAfterGPUUsedData(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset, out AllocToUpdate allocToUpdate, bool copyBackIndices)
@@ -656,7 +656,7 @@ namespace UnityEngine.UIElements.UIR
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
             m_DrawStats.currentDrawRangeStart = m_DrawRangeStart;
 
-            s_BeforeDrawSampler.Begin();
+            s_MarkerBeforeDraw.Begin();
 
             // Send changes
             Page page = m_FirstPage;
@@ -666,7 +666,7 @@ namespace UnityEngine.UIElements.UIR
                 page.indices.SendUpdates();
                 page = page.next;
             }
-            s_BeforeDrawSampler.End();
+            s_MarkerBeforeDraw.End();
         }
 
         void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, Texture shaderInfo,
@@ -909,7 +909,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void AdvanceFrame()
         {
-            s_AdvanceFrameSampler.Begin();
+            s_MarkerAdvanceFrame.Begin();
 
             m_FrameIndex++;
             m_FrameIndexIncremented = true;
@@ -922,9 +922,9 @@ namespace UnityEngine.UIElements.UIR
                 uint fence = m_Fences[fenceIndex];
                 if (fence != 0 && !Utility.CPUFencePassed(fence))
                 {
-                    s_FenceSampler.Begin();
+                    s_MarkerFence.Begin();
                     Utility.WaitForCPUFencePassed(fence);
-                    s_FenceSampler.End();
+                    s_MarkerFence.End();
                 }
                 m_Fences[fenceIndex] = 0;
             }
@@ -974,7 +974,7 @@ namespace UnityEngine.UIElements.UIR
             }
             queueToUpdate.Clear();
 
-            s_AdvanceFrameSampler.End();
+            s_MarkerAdvanceFrame.End();
         }
 
         internal static void PrepareForGfxDeviceRecreate()
@@ -1061,7 +1061,7 @@ namespace UnityEngine.UIElements.UIR
 
         private static void ProcessDeviceFreeQueue()
         {
-            s_FreeSampler.Begin();
+            s_MarkerFree.Begin();
 
             if (m_SynchronousFree)
                 Utility.SyncRenderThread();
@@ -1100,7 +1100,7 @@ namespace UnityEngine.UIElements.UIR
                 m_SubscribedToNotifications = false;
             }
 
-            s_FreeSampler.End();
+            s_MarkerFree.End();
         }
 
         private static void OnEngineUpdateGlobal()

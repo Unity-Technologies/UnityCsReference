@@ -26,9 +26,9 @@ namespace UnityEngine
 
         internal static extern Vector2 s_EditorScreenPointOffset
         {
-            [NativeMethod("GetGUIManager().GetGUIPixelOffset", true)]
+            [NativeMethod("GetGUIState().GetGUIPixelOffset", true)]
             get;
-            [NativeMethod("GetGUIManager().SetGUIPixelOffset", true)]
+            [NativeMethod("GetGUIState().SetGUIPixelOffset", true)]
             set;
         }
 

@@ -10,8 +10,17 @@ namespace UnityEditor.Compilation
     public static partial class CompilationPipeline
     {
         [FreeFunction]
-        extern internal static void ClearEditorCompilationErrors();
+        internal static extern void ClearEditorCompilationErrors();
         [FreeFunction]
-        extern internal static void LogEditorCompilationError(string message, int instanceID);
+        internal static extern void LogEditorCompilationError(string message, int instanceID);
+
+        [FreeFunction]
+        internal static extern void DisableScriptDebugInfo();
+
+        [FreeFunction]
+        internal static extern void EnableScriptDebugInfo();
+
+        [FreeFunction]
+        internal static extern bool IsScriptDebugInfoEnabled();
     }
 }

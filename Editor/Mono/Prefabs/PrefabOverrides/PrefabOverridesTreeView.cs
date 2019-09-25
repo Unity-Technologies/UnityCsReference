@@ -577,7 +577,7 @@ namespace UnityEditor
 
                 EditorGUIUtility.comparisonViewMode = EditorGUIUtility.ComparisonViewMode.Original;
                 EditorGUIUtility.wideMode = true;
-                EditorGUIUtility.labelWidth = 100;
+                EditorGUIUtility.labelWidth = 120;
                 int middleCol = Mathf.RoundToInt(rect.width * 0.5f);
 
                 if (Event.current.type == EventType.Repaint)

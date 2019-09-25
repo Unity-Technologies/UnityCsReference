@@ -65,7 +65,6 @@ namespace UnityEngine.UIElements
         WhiteSpace IResolvedStyle.whiteSpace => computedStyle.whiteSpace.value;
         Color IResolvedStyle.color => computedStyle.color.value;
         Color IResolvedStyle.backgroundColor => computedStyle.backgroundColor.value;
-        Color IResolvedStyle.borderColor => computedStyle.borderLeftColor.value;
         Font IResolvedStyle.unityFont => computedStyle.unityFont.value;
         ScaleMode IResolvedStyle.unityBackgroundScaleMode => computedStyle.unityBackgroundScaleMode.value;
         Color IResolvedStyle.unityBackgroundImageTintColor => computedStyle.unityBackgroundImageTintColor.value;

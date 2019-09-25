@@ -10,8 +10,7 @@ namespace UnityEditor.PackageManager.UI
     {
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            var windows = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
-            if (windows == null || windows.Length == 0)
+            if (!PageManager.instance.isSetupDone)
                 return;
 
             var allUpdatedAssets = importedAssets.Concat(deletedAssets).Concat(movedAssets).Concat(movedFromAssetPaths);

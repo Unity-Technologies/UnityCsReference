@@ -55,14 +55,13 @@ namespace UnityEditor.UIElements
         internal Editor editor
         {
             get { return m_Editor; }
-            set
+            private set
             {
                 if (m_Editor != value)
                 {
                     DestroyOwnedEditor();
                     m_Editor = value;
                     ownsEditor = false;
-                    PartialReset(m_Editor.serializedObject);
                 }
             }
         }
@@ -145,6 +144,15 @@ namespace UnityEditor.UIElements
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             DestroyOwnedEditor();
+        }
+
+        internal void AssignExistingEditor(Editor value)
+        {
+            if (m_Editor != value)
+            {
+                editor = value;
+                PartialReset(m_Editor.serializedObject);
+            }
         }
 
         void DestroyOwnedEditor()

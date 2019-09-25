@@ -5,7 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -61,7 +61,7 @@ namespace UnityEngine.UIElements
         private TextureBlitter m_Blitter;
         private int m_2SidePadding, m_1SidePadding;
 
-        static CustomSampler s_ResetSampler = CustomSampler.Create("UIR.AtlasManager.Reset");
+        static ProfilerMarker s_MarkerReset = new ProfilerMarker("UIR.AtlasManager.Reset");
 
         public int maxImageSize { get; }
         public RenderTextureFormat format { get; }
@@ -161,6 +161,13 @@ namespace UnityEngine.UIElements
             return m_ResetVersion != s_GlobalResetVersion;
         }
 
+        public bool IsReleased()
+        {
+            // Returns true when the atlas hardware resources are released.
+            // This can occur when RenderTexture::ReleaseAll() is called.
+            return atlas != null && !atlas.IsCreated();
+        }
+
         /// <remarks>
         /// When textures that have been previously allowed into the atlas manager change, or if the project color
         /// space changes, this method MUST be called. Textures that had been previously accepted into the atlas may
@@ -174,7 +181,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            s_ResetSampler.Begin();
+            s_MarkerReset.Begin();
 
             m_Blitter.Reset();
             m_UVs.Clear();
@@ -183,7 +190,7 @@ namespace UnityEngine.UIElements
             m_ColorSpace = QualitySettings.activeColorSpace;
             UIRUtility.Destroy(atlas);
 
-            s_ResetSampler.End();
+            s_MarkerReset.End();
 
             m_ResetVersion = s_GlobalResetVersion;
         }

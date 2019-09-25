@@ -42,8 +42,6 @@ namespace UnityEngine.UIElements
         StyleEnum<WhiteSpace> whiteSpace { get; set; }
         StyleColor color { get; set; }
         StyleColor backgroundColor { get; set; }
-        [Obsolete("IStyle.borderColor is deprecated. Use left/right/top/bottom border properties instead.")]
-        StyleColor borderColor { get; set; }
         StyleBackground backgroundImage { get; set; }
         StyleEnum<ScaleMode> unityBackgroundScaleMode { get; set; }
         StyleColor unityBackgroundImageTintColor { get; set;}

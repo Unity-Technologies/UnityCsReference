@@ -240,7 +240,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint && text != string.Empty)
             {
                 var textHeight = Styles.dropShadowLabelStyle.CalcHeight(GUIContent.Temp(text), previewArea.width);
-                EditorGUI.LabelField(new Rect(previewArea.x, previewArea.yMax - textHeight - kPreviewLabelPadding, previewArea.width, textHeight), text, Styles.preOverlayLabel);
+                EditorGUI.DropShadowLabel(new Rect(previewArea.x, previewArea.yMax - textHeight - kPreviewLabelPadding, previewArea.width, textHeight), text);
             }
         }
 

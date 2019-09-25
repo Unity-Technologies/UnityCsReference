@@ -7,37 +7,37 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using UnityEditor.Callbacks;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
+using System.Collections.ObjectModel;
 
 namespace UnityEditor.SceneManagement
 {
     internal class StageNavigationManager : ScriptableSingleton<StageNavigationManager>
     {
-        List<PrefabStage> m_PrefabStages = new List<PrefabStage>();
         StageNavigationHistory m_NavigationHistory;                                 // Not marked with SerializeField since it should be reset on every restart of Unity
         SavedBool m_AutoSave = new SavedBool("PrefabEditing.AutoSave", true);
+        SavedInt m_ContextRenderMode = new SavedInt("PrefabEditing.ContextRenderMode", (int)StageUtility.ContextRenderMode.GreyedOut);
         Analytics m_Analytics = new Analytics();
         [NonSerialized]
         double m_NextUpdate;
+        [NonSerialized]
+        bool m_DebugLogging = false;
 
-        public event Action<StageNavigationItem, StageNavigationItem> stageChanging;                             // previousStage, newStage
-        public event Action<StageNavigationItem, StageNavigationItem> stageChanged;                              // previousStage, newStage
-        public event Action<StageNavigationItem> prefabStageReloading;
-        public event Action<StageNavigationItem> prefabStageReloaded;
-        public event Action<StageNavigationItem> prefabStageToBeDestroyed;
-        public event Action<PrefabStage> prefabStageDirtinessChanged;
+        public event Action<Stage, Stage> stageChanging;                             // previousStage, newStage
+        public event Action<Stage, Stage> stageChanged;                              // previousStage, newStage
+        public event Action<Stage> beforeSwitchingAwayFromStage;
+        public event Action<Stage> afterSuccessfullySwitchedToStage;
 
-        internal StageNavigationItem currentItem
+        internal Stage currentStage
         {
-            get { return m_NavigationHistory.currentItem; }
+            get { return m_NavigationHistory.currentStage; }
             // No setter since invoking code should explicitly specify desired effect on history.
         }
 
-        internal StageNavigationItem[] stageHistory
+        internal ReadOnlyCollection<Stage> stageHistory
         {
             get { return m_NavigationHistory.GetHistory(); }
         }
@@ -46,6 +46,11 @@ namespace UnityEditor.SceneManagement
         {
             get { return m_AutoSave.value; }
             set { m_AutoSave.value = value; }
+        }
+        internal StageUtility.ContextRenderMode contextRenderMode
+        {
+            get { return (StageUtility.ContextRenderMode)m_ContextRenderMode.value; }
+            set { m_ContextRenderMode.value = (int)value; }
         }
 
         internal Analytics analytics
@@ -58,17 +63,14 @@ namespace UnityEditor.SceneManagement
             if (m_NavigationHistory == null)
             {
                 m_NavigationHistory = new StageNavigationHistory();
-                m_NavigationHistory.ClearForwardHistoryAndAddItem(m_NavigationHistory.GetOrCreateMainStage());
+                var mainStage = CreateInstance<MainStage>();
+                m_NavigationHistory.ClearForwardHistoryAndAddItem(mainStage);
             }
 
             EditorApplication.update += Update;
             EditorSceneManager.sceneOpened += OnSceneOpened;
             EditorSceneManager.newSceneCreated += OnNewSceneCreated;
-            AssetEvents.assetsChangedOnHDD += OnAssetsChangedOnHDD;
-            PrefabUtility.savingPrefab += OnSavingPrefab;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.editorApplicationQuit += OnQuit;
-            PrefabStage.prefabStageSavedAsNewPrefab += OnPrefabStageSavedAsNewPrefab;
         }
 
         void OnDisable()
@@ -76,54 +78,20 @@ namespace UnityEditor.SceneManagement
             EditorApplication.update -= Update;
             EditorSceneManager.sceneOpened -= OnSceneOpened;
             EditorSceneManager.newSceneCreated -= OnNewSceneCreated;
-            AssetEvents.assetsChangedOnHDD -= OnAssetsChangedOnHDD;
-            PrefabUtility.savingPrefab -= OnSavingPrefab;
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.editorApplicationQuit -= OnQuit;
-            PrefabStage.prefabStageSavedAsNewPrefab -= OnPrefabStageSavedAsNewPrefab;
         }
 
         void OnQuit()
         {
-            // Ensure we destroy the prefab scene so all hidden editor objects (environment objects are hidden)
+            // Ensure we destroy the prefab stages so all hidden editor objects (environment objects are hidden)
             // are removed before closing down. Currently editor objects should be cleaned up if they have interest
             // in transform changes before shutting down.
-            if (currentItem.isPrefabStage)
-            {
-                GoToMainStage(false, Analytics.ChangeType.GoToMainViaQuitApplication);
-            }
-        }
-
-        void OnPlayModeStateChanged(PlayModeStateChange playmodeState)
-        {
-            if (playmodeState == PlayModeStateChange.ExitingEditMode)
-            {
-                if (GetCurrentPrefabStage() != null)
-                {
-                    bool blockPrefabModeInPlaymode = CheckIfAnyComponentShouldBlockPrefabModeInPlayMode(GetCurrentPrefabStage().prefabAssetPath);
-                    if (blockPrefabModeInPlaymode)
-                    {
-                        GoToMainStage(true, Analytics.ChangeType.GoToMainViaPlayModeBlocking);
-                    }
-                }
-            }
-        }
-
-        void OnSavingPrefab(GameObject gameObject, string path)
-        {
-            foreach (var prefabStage in m_PrefabStages)
-                prefabStage.OnSavingPrefab(gameObject, path);
-        }
-
-        void OnPrefabStageSavedAsNewPrefab(PrefabStage prefabStage)
-        {
-            // Current open path has changed: update state in breadcrumbs
-            currentItem.SetPrefabAssetPath(prefabStage.prefabAssetPath);
+            GoToMainStage(false, Analytics.ChangeType.GoToMainViaQuitApplication);
         }
 
         void OnSceneOpened(Scene scene, OpenSceneMode mode)
         {
-            if (!currentItem.isMainStage)
+            if (!(currentStage is MainStage))
             {
                 GoToMainStage(false, Analytics.ChangeType.GoToMainViaSceneOpened); // Do not set previous selection as this would e.g remove the selection from the Project Browser when double clicking a scene asset
             }
@@ -131,18 +99,10 @@ namespace UnityEditor.SceneManagement
 
         void OnNewSceneCreated(Scene scene, NewSceneSetup setup, NewSceneMode mode)
         {
-            if (!currentItem.isMainStage)
+            if (!(currentStage is MainStage))
             {
                 GoToMainStage(false, Analytics.ChangeType.GoToMainViaNewSceneCreated);
             }
-        }
-
-        void OnAssetsChangedOnHDD(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
-        {
-            m_NavigationHistory.OnAssetsChangedOnHDD(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
-
-            foreach (var prefabStage in m_PrefabStages)
-                prefabStage.OnAssetsChangedOnHDD(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
         }
 
         void Update()
@@ -151,139 +111,28 @@ namespace UnityEditor.SceneManagement
             if (time > m_NextUpdate)
             {
                 m_NextUpdate = time + 0.2;
-                ValidateAndUpdatePrefabStages(true);
+                ValidateAndTickStages(true);
             }
         }
 
         // internal for testing
-        internal void ValidateAndUpdatePrefabStages(bool showDialogIfInvalid)
+        internal void ValidateAndTickStages(bool showDialogIfInvalid)
         {
-            foreach (var prefabStage in m_PrefabStages)
+            var stageHistory = m_NavigationHistory.GetHistory();
+            foreach (var stage in stageHistory)
             {
-                if (!prefabStage.isValid)
+                if (stage == stageHistory.Last() && !stage.isValid)
                 {
-                    var errorMsg = prefabStage.GetErrorMessage();
+                    var errorMsg = stage.GetErrorMessage();
                     Assert.IsNotNull(errorMsg);
                     if (showDialogIfInvalid)
-                        EditorUtility.DisplayDialog("Exiting Prefab Mode", errorMsg, "OK");
+                        EditorUtility.DisplayDialog("Stage Error", errorMsg, "OK");
 
-                    Assert.IsTrue(m_NavigationHistory.CanGoBackward());
-                    NavigateBack(Analytics.ChangeType.EnterViaUnknown);
+                    NavigateBack(Analytics.ChangeType.EnterViaUnknown); // removes invalid
                     return;
                 }
 
-                prefabStage.Update();
-            }
-        }
-
-        internal PrefabStage GetPrefabStage(string prefabAssetPath)
-        {
-            foreach (var prefabStage in m_PrefabStages)
-                if (prefabStage.prefabAssetPath == prefabAssetPath)
-                    return prefabStage;
-
-            return null;
-        }
-
-        public bool IsPrefabStage(Scene scene)
-        {
-            foreach (var prefabStage in m_PrefabStages)
-                if (prefabStage.scene == scene)
-                    return true;
-
-            return false;
-        }
-
-        public PrefabStage GetCurrentPrefabStage()
-        {
-            // We currently only support one prefab stage at a time
-            if (m_PrefabStages.Count == 0)
-                return null;
-
-            return m_PrefabStages[0];
-        }
-
-        void DestroyPrefabStage(PrefabStage prefabStage)
-        {
-            if (prefabStage == null)
-                return;
-
-            prefabStage.CloseStage();
-            m_PrefabStages.Remove(prefabStage);
-        }
-
-        // Returns false if the user clicked Cancel to save otherwise returns true
-        internal bool AskUserToSaveModifiedPrefabStageBeforeDestroyingStage(PrefabStage prefabStage)
-        {
-            if (prefabStage != null)
-                return prefabStage.AskUserToSaveDirtySceneBeforeDestroyingScene();
-
-            return true;
-        }
-
-        // Returns true if we cleaned up (saved changes or user discarded changes), false if the user cancelled cleaning up.
-        bool CleanupCurrentStageBeforeSwitchingStage()
-        {
-            var prefabStage = currentItem.prefabStage;
-
-            // Allow user to save any unsaved changes only after recompiling have finished so any new scripts can be
-            // saved properly to the Prefab file (but only if the stage is valid)
-            if (prefabStage != null && prefabStage.isValid)
-            {
-                if (EditorApplication.isCompiling && prefabStage.HasSceneBeenModified())
-                {
-                    SceneView.ShowNotification("Compiling must finish before you can exit Prefab Mode");
-                    SceneView.RepaintAll();
-                    return false;
-                }
-
-                bool continueDestroyingScene = AskUserToSaveModifiedPrefabStageBeforeDestroyingStage(prefabStage);
-                if (!continueDestroyingScene)
-                    return false;
-            }
-
-            // We want to track the time from destroying a prefab stage and until the new stage is up and running, so we place the start
-            m_Analytics.ChangingStageStarted(currentItem);
-
-            if (prefabStage != null)
-            {
-                if (prefabStageToBeDestroyed != null)
-                    prefabStageToBeDestroyed(currentItem);
-
-                DestroyPrefabStage(prefabStage);
-            }
-            return true;
-        }
-
-        internal void PrefabStageDirtinessChanged(PrefabStage prefabStage)
-        {
-            if (prefabStageDirtinessChanged != null)
-                prefabStageDirtinessChanged(prefabStage);
-        }
-
-        internal void PrefabStageReloading(PrefabStage prefabStage)
-        {
-            if (prefabStage == currentItem.prefabStage)
-            {
-                if (prefabStageReloading != null)
-                    prefabStageReloading(currentItem);
-            }
-            else
-            {
-                Debug.LogError("Reloading a Prefab scene that is not the current stage is not supported currently.");
-            }
-        }
-
-        internal void PrefabStageReloaded(PrefabStage prefabStage)
-        {
-            if (prefabStage == currentItem.prefabStage)
-            {
-                if (prefabStageReloaded != null)
-                    prefabStageReloaded(currentItem);
-            }
-            else
-            {
-                Debug.LogError("Reloading a Prefab scene that is not the current stage is not supported currently.");
+                stage.Tick();
             }
         }
 
@@ -298,10 +147,10 @@ namespace UnityEditor.SceneManagement
 
         internal void GoToMainStage(bool setPreviousSelection, Analytics.ChangeType stageChangeAnalytics)
         {
-            if (currentItem.isMainStage)
+            if (currentStage is MainStage)
                 return;
 
-            SwitchToStage(m_NavigationHistory.GetOrCreateMainStage(), false, setPreviousSelection, stageChangeAnalytics);
+            SwitchToStage(m_NavigationHistory.GetMainStage(), false, setPreviousSelection, stageChangeAnalytics);
         }
 
         static void StopAnimationPlaybackAndPreviewing()
@@ -314,220 +163,155 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        internal bool SwitchToStage(StageNavigationItem newStage, bool setAsFirstItemAfterMainStage, bool setPreviousSelection, Analytics.ChangeType changeTypeAnalytics)
+        internal bool SwitchToStage(Stage stage, bool setAsFirstItemAfterMainStage, bool setPreviousSelection, Analytics.ChangeType changeTypeAnalytics)
         {
-            if (newStage.isPrefabStage && !newStage.prefabAssetExists)
+            if (stage == null)
             {
-                Debug.LogError("Cannot switch to new stage! Prefab asset does not exist: " + (!string.IsNullOrEmpty(newStage.prefabAssetPath) ? newStage.prefabAssetPath : newStage.prefabAssetGUID));
-                {
-                    return false;
-                }
+                Debug.LogError("Cannot switch to new stage. Input stage is null");
+                return false;
+            }
+
+            if (stage.isAssetMissing)
+            {
+                Debug.LogError($"Cannot switch to new stage. Asset does not exist so stage cannot be reconstructed: {stage.assetPath}");
+                DestroyImmediate(stage);
+                return false;
             }
 
             StopAnimationPlaybackAndPreviewing();
 
-            // Close current stage (returns false if user cancels closing prefab scene)
-            if (!CleanupCurrentStageBeforeSwitchingStage())
+            Stage previousStage = currentStage;
+            if (!previousStage.AskUserToSaveModifiedStageBeforeSwitchingStage())
             {
+                // User canceled switching stage.
+                // If the history contains the new stage we do not destroy it (the user
+                // can have clicked a previous stage in the breadcrumb bar).
+                if (!stageHistory.Contains(stage))
+                    DestroyImmediate(stage);
                 return false;
             }
 
-            newStage.setSelectionAndScrollWhenBecomingCurrentStage = setPreviousSelection;
+            // User accepted to switch stage (and lose any data if not saved)
 
-            if (stageChanging != null)
-                stageChanging(currentItem, newStage);
+            // Here we save current Hierarchy and SceneView stage state
+            beforeSwitchingAwayFromStage?.Invoke(previousStage);
 
-            // Switch to new stage.
-            if (!newStage.isMainStage)
-            {
-                // Create prefab stage and add it to the list of Prefab stages before loading the prefab contents so the
-                // user callbacks Awake and OnEnable are able to query the current prefab stage
-                PrefabStage prefabStage = new PrefabStage();
-                m_PrefabStages.Add(prefabStage);
+            // Used by the Avatar Editor to exit its editing mode before opening new stage
+            stageChanging?.Invoke(previousStage, stage);
 
-                var success = prefabStage.OpenStage(newStage.prefabAssetPath);
-                if (!success)
-                {
-                    m_PrefabStages.RemoveAt(m_PrefabStages.Count - 1);
-                    return false;
-                }
-            }
+            // Set/Add stage in m_NavigationHistory (and detect what stages should be removed)
+            if (m_DebugLogging)
+                Debug.Log("Set Navigation History (setAsFirstItemAfterMainStage " + setAsFirstItemAfterMainStage);
 
-            // Set new stage after we allowed the user to cancel changing stage
-            OnStageSwitched(newStage, setAsFirstItemAfterMainStage, changeTypeAnalytics);
-
-            return true;
-        }
-
-        void OnStageSwitched(StageNavigationItem newStage, bool setAsFirstItemAfterMainStage, Analytics.ChangeType changeTypeAnalytics)
-        {
-            var previousStage = currentItem;
-
+            var deleteStages = new List<Stage>();
             if (setAsFirstItemAfterMainStage)
             {
-                m_NavigationHistory.ClearHistory();
-                m_NavigationHistory.AddItem(newStage);
+                deleteStages = m_NavigationHistory.ClearHistory();
+                m_NavigationHistory.AddStage(stage);
             }
             else
             {
-                if (m_NavigationHistory.TrySetToIndexOfItem(newStage))
-                    m_NavigationHistory.ClearForwardHistoryAfterCurrentStage();
+                if (m_NavigationHistory.TrySetToIndexOfItem(stage))
+                    deleteStages = m_NavigationHistory.ClearForwardHistoryAfterCurrentStage();
                 else
-                    m_NavigationHistory.ClearForwardHistoryAndAddItem(newStage);
+                    deleteStages = m_NavigationHistory.ClearForwardHistoryAndAddItem(stage);
             }
 
-            if (stageChanged != null)
-                stageChanged(previousStage, newStage);
+            m_Analytics.ChangingStageStarted(previousStage);
 
-            m_Analytics.ChangingStageEnded(newStage, changeTypeAnalytics);
-        }
+            if (m_DebugLogging)
+                Debug.Log("Activate new stage");
 
-        // Returns true any component in prefab is blocking Prefab Mode in Play Mode
-        static bool CheckIfAnyComponentShouldBlockPrefabModeInPlayMode(string prefabAssetPath)
-        {
-            var assetRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabAssetPath);
-            var monoBehaviors = assetRoot.GetComponentsInChildren<MonoBehaviour>(true);  // also check the inactive since these can be made active while in play mode
-            var warnList = new List<MonoBehaviour>();
-            foreach (var m in monoBehaviors)
+            // Activate stage after setting up the history above so objects loaded during ActivateStage can query current stage
+            bool success;
+            try
             {
-                if (m != null && !m.allowPrefabModeInPlayMode)
-                    warnList.Add(m);
-            }
-
-            if (warnList.Count > 0)
-            {
-                foreach (var m in warnList)
+                success = stage.ActivateStage(previousStage);
+                if (success)
                 {
-                    var monoScript = MonoScript.FromMonoBehaviour(m);
-                    Debug.LogWarningFormat(monoScript, "Prefab Mode in Play Mode was blocked by the script '{0}' to prevent the script accidentally affecting Play Mode. See the documentation for [ExecuteInEditMode] and [ExecuteAlways] for info on how to make scripts compatible with Prefab Mode during Play Mode.", monoScript.name);
+                    if (m_DebugLogging)
+                        Debug.Log("Deactivate previous stage");
+
+                    previousStage.DeactivateStage(stage);
+
+                    // Here the Hierarchy and SceneView sync's up to the new stage
+                    stage.setSelectionAndScrollWhenBecomingCurrentStage = setPreviousSelection;
+                    stageChanged?.Invoke(previousStage, stage);
                 }
-                return true;
             }
-            return false;
-        }
-
-        internal PrefabStage OpenPrefabMode(string prefabAssetPath, GameObject instanceRoot, Analytics.ChangeType changeTypeAnalytics)
-        {
-            if (EditorApplication.isPlaying)
+            catch (Exception e)
             {
-                bool blockPrefabModeInPlaymode = CheckIfAnyComponentShouldBlockPrefabModeInPlayMode(prefabAssetPath);
-                if (blockPrefabModeInPlaymode)
-                    return null;
+                success = false;
+                Debug.LogError("Error while changing Stage: " + e);
             }
 
-            PrefabStage prefabStage = GetCurrentPrefabStage();
-            bool setAsFirstItemAfterMainStage = prefabStage == null || !IsPartOfPrefabStage(instanceRoot, prefabStage);
-
-            var previousSelection = Selection.activeGameObject;
-            UInt64 previousFileID = (instanceRoot != null) ? GetFileIDForCorrespondingObjectFromSourceAtPath(previousSelection, prefabAssetPath) : 0;
-
-            if (SwitchToStage(m_NavigationHistory.GetOrCreatePrefabStage(prefabAssetPath), setAsFirstItemAfterMainStage, false, changeTypeAnalytics))
+            if (success)
             {
-                // If selection did not change by switching stage (by us or user) then handle automatic selection in new prefab mode
-                if (Selection.activeGameObject == previousSelection)
-                {
-                    HandleSelectionWhenSwithingToNewPrefabMode(GetCurrentPrefabStage().prefabContentsRoot, previousFileID);
-                }
+                // Activation and changing stage succeeded. Now destroy removed stages
+                if (m_DebugLogging)
+                    Debug.Log("Destroying " + deleteStages.Count + " stages");
 
-                var newPrefabStage = m_PrefabStages.Last();
-                Assert.IsTrue(newPrefabStage.prefabAssetPath == prefabAssetPath);
-                SceneView.RepaintAll();
-                return newPrefabStage;
+                // A previous existing stage can have been requested to set as the current so don't delete that
+                deleteStages.Remove(stage);
+
+                DeleteStagesInReverseOrder(deleteStages);
+
+                // Here we update state that relies on old scenes having been destroyed entirely.
+                afterSuccessfullySwitchedToStage?.Invoke(stage);
+
+                m_Analytics.ChangingStageEnded(stage, changeTypeAnalytics);
             }
             else
             {
-                // Failed to switch to new stage
-                return null;
+                if (m_DebugLogging)
+                    Debug.Log("Switching stage failed (" + stage + ")");
+
+                RecoverFromStageChangeError(previousStage, deleteStages);
             }
+
+            return success;
         }
 
-        static UInt64 GetFileIDForCorrespondingObjectFromSourceAtPath(GameObject gameObject, string prefabAssetPath)
+        static void DeleteStagesInReverseOrder(List<Stage> stagesToDelete)
         {
-            if (gameObject == null)
-                return 0;
-
-            if (EditorUtility.IsPersistent(gameObject))
-                return 0;
-
-            if (!PrefabUtility.IsPartOfNonAssetPrefabInstance(gameObject))
-                return 0;
-
-            GameObject assetGameObject = PrefabUtility.GetCorrespondingObjectFromSourceAtPath(gameObject, prefabAssetPath);
-            if (assetGameObject == null)
-                return 0;
-
-            return SceneHierarchyState.GetOrGenerateFileID(assetGameObject);
-        }
-
-        static void HandleSelectionWhenSwithingToNewPrefabMode(GameObject prefabContentsRoot, UInt64 previousFileID)
-        {
-            GameObject newSelection = null;
-
-            if (previousFileID != 0)
-                newSelection = SceneHierarchyState.FindFirstGameObjectThatMatchesFileID(prefabContentsRoot.transform, previousFileID);
-
-            if (newSelection == null)
-                newSelection = prefabContentsRoot;
-
-            Selection.activeGameObject = newSelection;
-
-            // For Prefab Mode we restore the last expanded tree view state for the opened Prefab. For usability
-            // if a child GameObject on the Prefab Instance is selected when entering the Prefab Asset Mode we select the corresponding
-            // child GameObject in the Asset. Here we ensure that selction is revealed and framed in the Scene hierarchy.
-            if (newSelection != prefabContentsRoot)
+            // Remove in reverse order of added (simulates going back one stage at a time)
+            for (int i = stagesToDelete.Count - 1; i >= 0; --i)
             {
-                foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
-                    shw.FrameObject(newSelection.GetInstanceID(), false);
+                var removeStage = stagesToDelete[i];
+                if (removeStage != null)
+                    DestroyImmediate(removeStage);
             }
         }
 
-        static bool IsPartOfPrefabStage(GameObject gameObject, PrefabStage prefabStage)
+        void RecoverFromStageChangeError(Stage previousStage, List<Stage> deleteStages)
         {
-            if (gameObject == null)
-                return false;
-            return FindGameObjectRecursive(prefabStage.prefabContentsRoot.transform, gameObject);
-        }
-
-        static bool FindGameObjectRecursive(Transform transform, GameObject gameObject)
-        {
-            if (transform.gameObject == gameObject)
-                return true;
-
-            for (int i = 0; i < transform.childCount; ++i)
+            // Recover by going back to main stage
+            if (m_NavigationHistory.TrySetToIndexOfItem(m_NavigationHistory.GetMainStage()))
             {
-                if (FindGameObjectRecursive(transform.GetChild(i), gameObject))
-                    return true;
+                var lastStages = m_NavigationHistory.ClearForwardHistoryAfterCurrentStage();
+                if (lastStages.Count > 0)
+                    deleteStages.InsertRange(0, lastStages); // Insert at start so we ensure the same order as in history
+
+                try
+                {
+                    // Here the Hierarchy and SceneView sync's up to the new stage
+                    stageChanged?.Invoke(previousStage, m_NavigationHistory.GetMainStage());
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError("Error while recovering from Stage change error: " + e);
+                }
+
+                DeleteStagesInReverseOrder(deleteStages);
             }
-            return false;
+            else
+                Debug.LogError("Could not set MainStage to recover from error");
         }
 
-        [OnOpenAsset]
-        static bool OnOpenAsset(int instanceID, int line)
+        public void PlaceGameObjectInCurrentStage(GameObject gameObject)
         {
-            string assetPath = AssetDatabase.GetAssetPath(instanceID);
-
-            if (assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
-            {
-                // The 'line' parameter can be used for passing an instanceID of a prefab instance
-                GameObject instanceRoot = line == -1 ? null : EditorUtility.InstanceIDToObject(line) as GameObject;
-
-                PrefabStageUtility.OpenPrefab(assetPath, instanceRoot, Analytics.ChangeType.EnterViaAssetOpened);
-                return true;
-            }
-            return false;
-        }
-
-        public void PlaceGameObjectInCurrentStage(GameObject go)
-        {
-            // For prefab stages we want to ensure new root GameObjects are auto-parented under the prefab root if possible.
-            // Note that users can get Awake and OnEnable callbacks while loading a Prefab into Prefab Mode, at this time
-            // the PrefabStage is not fully initialized as it does not have a reference to the prefabContentsRoot yet. In this case
-            // the go is not auto parented and the parenting must be handled by the client.
-            var prefabStage = GetCurrentPrefabStage();
-            if (prefabStage != null && prefabStage.isValid && go != null && go.transform.parent == null)
-            {
-                go.transform.SetParent(prefabStage.prefabContentsRoot.transform, true);
-            }
+            if (gameObject != null && gameObject.transform.parent == null)
+                currentStage.PlaceGameObjectInStage(gameObject);
         }
 
         [RequiredByNativeCode]
@@ -537,27 +321,31 @@ namespace UnityEditor.SceneManagement
         }
 
         [RequiredByNativeCode]
-        internal static bool Internal_HasCurrentPrefabStage()
+        internal static bool Internal_HasCurrentNonMainStage()
         {
-            return instance.GetCurrentPrefabStage() != null;
+            return !(instance.currentStage is MainStage);
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_SaveCurrentPrefabStage()
+        internal static bool Internal_CurrentNonMainStageSupportsSaving()
         {
-            var prefabStage = instance.GetCurrentPrefabStage();
-            if (prefabStage != null && prefabStage.HasSceneBeenModified())
-                prefabStage.SavePrefabWithVersionControlDialogAndRenameDialog();
+            return instance.currentStage.SupportsSaving();
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_SaveCurrentPrefabStageWithSavePanel()
+        internal static void Internal_SaveCurrentStage()
         {
-            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            if (prefabStage != null)
-            {
-                prefabStage.SaveAsNewPrefabWithSavePanel();
-            }
+            var stage = instance.currentStage;
+            if (stage != null && stage.SupportsSaving() && stage.hasUnsavedChanges)
+                stage.Save();
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_SaveCurrentStageAsNew()
+        {
+            var stage = instance.currentStage;
+            if (stage != null && stage.SupportsSaving())
+                stage.SaveAsNew();
         }
 
         [Serializable]
@@ -605,36 +393,37 @@ namespace UnityEditor.SceneManagement
             EventData m_EventData;
             DateTime m_StartedTime;
 
-            public void ChangingStageStarted(StageNavigationItem previousStageItem)
+            public void ChangingStageStarted(Stage previousStage)
             {
                 m_StartedTime = DateTime.UtcNow;
 
                 m_EventData = new EventData();
-                m_EventData.existingStage = GetStageType(previousStageItem);
-                m_EventData.existingBreadcrumbCount = StageNavigationManager.instance.stageHistory.Length;
-                if (previousStageItem.prefabStage != null)
+                m_EventData.existingStage = GetStageType(previousStage);
+                m_EventData.existingBreadcrumbCount = StageNavigationManager.instance.stageHistory.Count;
+                if (previousStage is PrefabStage)
                 {
-                    m_EventData.didUserModify = previousStageItem.prefabStage.analyticsDidUserModify;
-                    m_EventData.didUserSave = previousStageItem.prefabStage.analyticsDidUserSave;
+                    var prefabStage = (PrefabStage)previousStage;
+                    m_EventData.didUserModify = prefabStage.analyticsDidUserModify;
+                    m_EventData.didUserSave = prefabStage.analyticsDidUserSave;
                 }
             }
 
-            public void ChangingStageEnded(StageNavigationItem newStageItem, Analytics.ChangeType changeTypeAnalytics)
+            public void ChangingStageEnded(Stage newStage, Analytics.ChangeType changeTypeAnalytics)
             {
                 m_EventData.changeType = changeTypeAnalytics;
-                m_EventData.newStage = GetStageType(newStageItem);
-                m_EventData.newBreadcrumbCount = StageNavigationManager.instance.stageHistory.Length;
+                m_EventData.newStage = GetStageType(newStage);
+                m_EventData.newBreadcrumbCount = StageNavigationManager.instance.stageHistory.Count;
                 m_EventData.autoSaveEnabled = StageNavigationManager.instance.autoSave;
                 var duration = DateTime.UtcNow.Subtract(m_StartedTime);
 
                 UsabilityAnalytics.SendEvent("stageChange", m_StartedTime, duration, true, m_EventData);
             }
 
-            static StageType GetStageType(StageNavigationItem item)
+            static StageType GetStageType(Stage stage)
             {
-                if (item.isMainStage)
+                if (stage is MainStage)
                     return StageType.MainStage;
-                if (item.isPrefabStage)
+                if (stage is PrefabStage)
                     return StageType.PrefabStage;
                 return StageType.Unknown;
             }

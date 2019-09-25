@@ -62,10 +62,14 @@ namespace UnityEditor.PackageManager.UI
             [SerializeField]
             private Page[] m_SerializedPages = new Page[0];
 
+            [SerializeField]
+            private bool m_SetupDone;
+            public bool isSetupDone => m_SetupDone;
+
             [MenuItem("internal:Packages/Reset Package Database")]
             public static void ResetPackageDatabase()
             {
-                instance.Reset();
+                instance.Reload();
                 instance.Refresh();
             }
 
@@ -189,6 +193,16 @@ namespace UnityEditor.PackageManager.UI
                 onPageRebuild?.Invoke(page);
             }
 
+            private void OnShowDependenciesChanged(bool value)
+            {
+                if (PackageFiltering.instance.currentFilterTab != PackageFilterTab.InProject)
+                    return;
+
+                var page = GetPageFromFilterTab();
+                page.RebuildList();
+                onPageRebuild?.Invoke(page);
+            }
+
             private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
             {
                 GetPageFromFilterTab().OnPackagesChanged(added, removed, preUpdate, postUpdate);
@@ -262,8 +276,22 @@ namespace UnityEditor.PackageManager.UI
                     Refresh();
             }
 
+            public void OnEnable()
+            {
+                if (m_SetupDone)
+                {
+                    Clear();
+                    Setup();
+                }
+            }
+
             public void Setup()
             {
+                if (m_SetupDone)
+                    return;
+
+                m_SetupDone = true;
+
                 PackageDatabase.instance.Setup();
 
                 UpmClient.instance.onListOperation += OnRefreshOperation;
@@ -280,12 +308,16 @@ namespace UnityEditor.PackageManager.UI
                 PackageFiltering.instance.onFilterTabChanged += OnFilterChanged;
                 PackageFiltering.instance.onSearchTextChanged += OnSearchTextChanged;
 
+                PackageManagerPrefs.instance.onShowDependenciesChanged += OnShowDependenciesChanged;
+
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
                 ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
             }
 
             public void Clear()
             {
+                m_SetupDone = false;
+
                 UpmClient.instance.onListOperation -= OnRefreshOperation;
                 UpmClient.instance.onSearchAllOperation -= OnRefreshOperation;
 
@@ -300,13 +332,15 @@ namespace UnityEditor.PackageManager.UI
                 PackageFiltering.instance.onFilterTabChanged -= OnFilterChanged;
                 PackageFiltering.instance.onSearchTextChanged -= OnSearchTextChanged;
 
+                PackageManagerPrefs.instance.onShowDependenciesChanged -= OnShowDependenciesChanged;
+
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
                 ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
                 PackageDatabase.instance.Clear();
             }
 
-            internal void Reset()
+            internal void Reload()
             {
                 Clear();
 
@@ -321,7 +355,7 @@ namespace UnityEditor.PackageManager.UI
                 m_RefreshErrors.Clear();
                 m_RefreshOperationsInProgress.Clear();
 
-                PackageDatabase.instance.Reset();
+                PackageDatabase.instance.Reload();
 
                 Setup();
             }

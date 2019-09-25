@@ -733,22 +733,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        StyleColor IStyle.borderColor
-        {
-            get { return GetStyleColor(StylePropertyID.BorderLeftColor); }
-            set
-            {
-                bool anySet = SetStyleValue(StylePropertyID.BorderLeftColor, value, ve.sharedStyle.borderLeftColor);
-                anySet |= SetStyleValue(StylePropertyID.BorderTopColor, value, ve.sharedStyle.borderTopColor);
-                anySet |= SetStyleValue(StylePropertyID.BorderRightColor, value, ve.sharedStyle.borderRightColor);
-                anySet |= SetStyleValue(StylePropertyID.BorderBottomColor, value, ve.sharedStyle.borderBottomColor);
-                if (anySet)
-                {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
-                }
-            }
-        }
-
         StyleBackground IStyle.backgroundImage
         {
             get { return GetStyleBackground(StylePropertyID.BackgroundImage); }

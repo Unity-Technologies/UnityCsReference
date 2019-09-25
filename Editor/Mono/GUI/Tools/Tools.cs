@@ -130,7 +130,9 @@ namespace UnityEditor
                 if (GUIUtility.hotControl != 0 && s_LockedViewTool == ViewTool.None)
                     return false;
 
-                return s_LockedViewTool != ViewTool.None || (current == 0) || Event.current.alt || (s_ButtonDown == 1) || (s_ButtonDown == 2);
+                Event evt = Event.current;
+                bool viewShortcut = evt.type != EventType.Used && (evt.alt || evt.button == 1 || evt.button == 2);
+                return s_LockedViewTool != ViewTool.None || current == Tool.View || viewShortcut;
             }
         }
 

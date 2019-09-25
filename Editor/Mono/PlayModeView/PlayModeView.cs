@@ -133,7 +133,7 @@ namespace UnityEditor
         protected PlayModeView()
         {
             RegisterWindow();
-            SetPlayModeView();
+            SetPlayModeView(true);
         }
 
         protected RenderTexture RenderView(Vector2 mousePosition, bool clearTexture)

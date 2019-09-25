@@ -203,6 +203,25 @@ namespace UnityEditor
         [NativeThrows]
         internal static extern UInt64 GenerateFileIDHint([NotNull] UnityEngine.Object obj);
 
+        internal static UInt64 GetOrGenerateFileIDHint(UnityEngine.Object obj)
+        {
+            UInt64 fileID = Unsupported.GetFileIDHint(obj);
+
+            if (fileID == 0)
+            {
+                // GenerateFileIDHint only work on saved nested prefabs instances.
+                var instanceHandle = PrefabUtility.GetPrefabInstanceHandle(obj);
+                if (instanceHandle != null)
+                {
+                    bool isPrefabInstanceSaved = Unsupported.GetFileIDHint(instanceHandle) != 0;
+                    if (isPrefabInstanceSaved && PrefabUtility.IsPartOfNonAssetPrefabInstance(obj) && PrefabUtility.GetPrefabAssetType(obj) != PrefabAssetType.MissingAsset)
+                        fileID = Unsupported.GenerateFileIDHint(obj);
+                }
+            }
+
+            return fileID;
+        }
+
         [FreeFunction]
         public static extern bool IsHiddenFile(string path);
 

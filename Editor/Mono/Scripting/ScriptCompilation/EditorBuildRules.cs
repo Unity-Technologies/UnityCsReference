@@ -636,6 +636,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
 
+                scriptAssembly.CompilerOptions.CodeOptimization = (buildingForEditor
+                    && settings.EditorCodeOptimization == CodeOptimization.Release
+                    || !buildingForEditor && !settings.BuildingDevelopmentBuild)
+                    ? CodeOptimization.Release : CodeOptimization.Debug;
+
                 // Script files must always be passed in the same order to the compiler.
                 // Otherwise player builds might fail for partial classes.
                 Array.Sort(scriptAssembly.Files, StringComparer.Ordinal);
@@ -658,6 +663,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (UnityCodeGenHelpers.IsCodeGen(entry.Key.Filename))
                 {
                     UnityCodeGenHelpers.UpdateCodeGenScriptAssembly(ref scriptAssembly);
+                }
+
+                if (!buildingForEditor)
+                {
+                    PlatformSupportModuleHelpers.AddAdditionalPlatformSupportData(settings.CompilationExtension, ref scriptAssembly);
                 }
             }
 

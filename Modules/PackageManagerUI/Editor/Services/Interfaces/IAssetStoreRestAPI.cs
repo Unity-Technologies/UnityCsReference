@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI
 {
+    [Serializable]
     internal class DownloadInformation
     {
         public string categoryName;
@@ -17,6 +18,13 @@ namespace UnityEditor.PackageManager.UI
         public string url;
         public bool isValid;
         public string errorMessage;
+
+        public string[] destination => new string[]
+        {
+            publisherName.Replace(".", ""),
+            categoryName.Replace(".", ""),
+            packageName.Replace(".", "")
+        };
     }
 
     [Serializable]

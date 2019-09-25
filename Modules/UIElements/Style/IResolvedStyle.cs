@@ -39,8 +39,6 @@ namespace UnityEngine.UIElements
         WhiteSpace whiteSpace { get; }
         Color color { get; }
         Color backgroundColor { get; }
-        [Obsolete("IResolvedStyle.borderColor is deprecated. Use left/right/top/bottom border properties instead.")]
-        Color borderColor { get; }
         Font unityFont { get; }
         ScaleMode unityBackgroundScaleMode { get; }
         Color unityBackgroundImageTintColor { get; }

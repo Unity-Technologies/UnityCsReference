@@ -28,11 +28,16 @@ namespace UnityEditor
             }
             else
             {
-                SceneView.PlaceGameObjectInFrontOfSceneView(go);
+                // When creating a 3D object without a parent, this option puts it at the world origin instead of scene pivot.
+                if (EditorPrefs.GetBool("Create3DObject.PlaceAtWorldOrigin", false))
+                    go.transform.position = Vector3.zero;
+                else
+                    SceneView.PlaceGameObjectInFrontOfSceneView(go);
+
                 StageUtility.PlaceGameObjectInCurrentStage(go); // may change parent
             }
 
-            // Only at this point do we know the actual parent of the object and can mopdify its name accordingly.
+            // Only at this point do we know the actual parent of the object and can modify its name accordingly.
             GameObjectUtility.EnsureUniqueNameForSibling(go);
             Undo.SetCurrentGroupName("Create " + go.name);
 

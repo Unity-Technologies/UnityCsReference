@@ -467,7 +467,7 @@ namespace UnityEditor
                         using (new EditorGUI.DisabledScope(isPlayingAndStatic))
                         {
                             if (isPlayingAndStatic)
-                                Handles.ShowStaticLabel(position);
+                                Handles.ShowSceneViewLabel(position, Handles.s_StaticLabel);
                             if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesMove)
                                 newPosition = Handles.PositionHandle(position, rotation);
                             else if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate)

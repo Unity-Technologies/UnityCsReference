@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
+using UnityEditor.Experimental.SceneManagement;
 
 namespace UnityEditor
 {
@@ -442,16 +443,16 @@ namespace UnityEditor
 
         void UpdateText(Texture assetIcon, string assetName)
         {
-            var stage = SceneManagement.StageNavigationManager.instance.currentItem;
-            if (stage.isMainStage)
+            var stage = SceneManagement.StageNavigationManager.instance.currentStage;
+            if (stage is MainStage)
             {
                 m_StageContent.image = EditorGUIUtility.IconContent("SceneAsset Icon").image;
                 m_StageContent.text = "Scene";
             }
-            else
+            else if (stage is PrefabStage)
             {
-                m_StageContent.image = (Texture2D)AssetDatabase.GetCachedIcon(stage.prefabAssetPath);
-                m_StageContent.text = stage.displayName;
+                m_StageContent.image = (Texture2D)AssetDatabase.GetCachedIcon(stage.assetPath);
+                m_StageContent.text = System.IO.Path.GetFileNameWithoutExtension(stage.assetPath);
             }
 
             m_InstanceContent.image = assetIcon;
@@ -463,7 +464,7 @@ namespace UnityEditor
             m_ButtonWidth = k_ButtonWidth;
             var applyAllContent = Styles.applyAllContent;
             var applySelectedContent = Styles.applySelectedContent;
-            if (stage.isPrefabStage && PrefabUtility.IsPartOfVariantPrefab(AssetDatabase.LoadAssetAtPath<Object>(stage.prefabAssetPath)))
+            if (stage is PrefabStage && PrefabUtility.IsPartOfVariantPrefab(AssetDatabase.LoadAssetAtPath<Object>(stage.assetPath)))
             {
                 m_ButtonWidth = k_ButtonWidthVariant;
                 applyAllContent = Styles.applyAllToBaseContent;

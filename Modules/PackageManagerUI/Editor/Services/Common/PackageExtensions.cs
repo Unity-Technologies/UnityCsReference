@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal static class PackageExtensions
     {
-        public static PackageState GetState(this IPackage package)
+        public static PackageState GetState(IPackage package)
         {
             if (package.progress != PackageProgress.None)
                 return PackageState.InProgress;
@@ -19,6 +19,9 @@ namespace UnityEditor.PackageManager.UI
             var primary = package.primaryVersion;
             if (primary.HasTag(PackageTag.InDevelopment))
                 return PackageState.InDevelopment;
+
+            if (primary.isInstalled && !primary.isDirectDependency)
+                return PackageState.InstalledAsDependency;
 
             if (primary != package.recommendedVersion)
                 return PackageState.UpdateAvailable;

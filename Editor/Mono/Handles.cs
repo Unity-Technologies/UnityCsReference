@@ -52,7 +52,8 @@ namespace UnityEditor
         internal static Color s_ColliderHandleColorDisabled = new Color(84, 200f, 77f, 140f) / 255;
         internal static Color s_BoundingBoxHandleColor = new Color(255, 255, 255, 150) / 255;
 
-        static GUIContent s_Static = EditorGUIUtility.TrTextContent("Static");
+        internal readonly static GUIContent s_StaticLabel = EditorGUIUtility.TrTextContent("Static");
+        internal readonly static GUIContent s_PrefabLabel = EditorGUIUtility.TrTextContent("Prefab");
 
         internal static int s_SliderHash = "SliderHash".GetHashCode();
         internal static int s_Slider2DHash = "Slider2DHash".GetHashCode();
@@ -1415,8 +1416,7 @@ namespace UnityEditor
         internal enum CameraFilterMode
         {
             Off = 0,
-            ShowFiltered = 1,
-            ShowRest = 2
+            ShowFiltered = 1
         }
 
         /// *listonly*
@@ -1470,16 +1470,7 @@ namespace UnityEditor
                 Internal_SetupCamera(cam);
         }
 
-        // Label Static in Playmode
-        internal static void ShowStaticLabelIfNeeded(Vector3 pos)
-        {
-            if (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects))
-            {
-                ShowStaticLabel(pos);
-            }
-        }
-
-        internal static void ShowStaticLabel(Vector3 pos)
+        internal static void ShowSceneViewLabel(Vector3 pos, GUIContent label)
         {
             Handles.color = Color.white;
             Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
@@ -1487,10 +1478,10 @@ namespace UnityEditor
             style.alignment = TextAnchor.MiddleLeft;
             style.fixedWidth = 0;
             Handles.BeginGUI();
-            Rect rect = HandleUtility.WorldPointToSizedRect(pos, s_Static, style);
+            Rect rect = HandleUtility.WorldPointToSizedRect(pos, label, style);
             rect.x += 10;
             rect.y += 10;
-            GUI.Label(rect, s_Static, style);
+            GUI.Label(rect, label, style);
             Handles.EndGUI();
         }
 

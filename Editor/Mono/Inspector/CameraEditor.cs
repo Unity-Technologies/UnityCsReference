@@ -714,10 +714,8 @@ namespace UnityEditor
 
             var c = (Camera)target;
 
-            // Do not render the Camera Preview overlay if the target camera is not part of the stage the SceneView is rendering
-            var targetStage = StageUtility.GetStageHandle(c.gameObject);
-            var sceneViewStage = StageUtility.GetStageHandle(sceneView.customScene);
-            if (targetStage != sceneViewStage)
+            // Do not render the Camera Preview overlay if the target camera GameObject is not part of the objects the SceneView is rendering
+            if (!sceneView.IsGameObjectInThisSceneView(c.gameObject))
                 return;
 
             Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : PlayModeView.GetMainPlayModeViewTargetSize();
@@ -770,7 +768,10 @@ namespace UnityEditor
                 previewCamera.cameraType = CameraType.Preview;
 
                 // make sure the preview camera is rendering the same stage as the SceneView is
-                previewCamera.scene = sceneView.customScene;
+                if (sceneView.overrideSceneCullingMask != 0)
+                    previewCamera.overrideSceneCullingMask = sceneView.overrideSceneCullingMask;
+                else
+                    previewCamera.scene = sceneView.customScene;
 
                 // also make sure to sync any Skybox component on the preview camera
                 var dstSkybox = previewCamera.GetComponent<Skybox>();
@@ -795,7 +796,6 @@ namespace UnityEditor
                 previewCamera.pixelRect = new Rect(0, 0, cameraRect.width, cameraRect.height);
 
                 Handles.EmitGUIGeometryForCamera(c, previewCamera);
-
 
                 if (c.usePhysicalProperties)
                 {

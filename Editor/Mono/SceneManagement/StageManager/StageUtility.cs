@@ -13,6 +13,13 @@ namespace UnityEditor.SceneManagement
 {
     public static partial class StageUtility
     {
+        internal enum ContextRenderMode
+        {
+            Normal,
+            GreyedOut,
+            Hidden
+        }
+
         [Shortcut("Stage/Go Back")]
         static void GoBackShortcut()
         {
@@ -22,6 +29,18 @@ namespace UnityEditor.SceneManagement
         public static bool IsGameObjectRenderedByCamera(GameObject gameObject, Camera camera)
         {
             return IsGameObjectRenderedByCameraInternal(gameObject, camera);
+        }
+
+        public static bool IsGameObjectRenderedByCameraAndPartOfEditableScene(GameObject gameObject, Camera camera)
+        {
+            if (!IsGameObjectRenderedByCamera(gameObject, camera))
+                return false;
+
+            var scene = GetFocusedScene();
+            if (scene.handle == 0)
+                return true;
+
+            return gameObject.scene == scene;
         }
 
         internal static void SetSceneToRenderInStage(Scene scene, StageHandle stageHandle)
@@ -69,12 +88,52 @@ namespace UnityEditor.SceneManagement
             StageNavigationManager.instance.PlaceGameObjectInCurrentStage(gameObject);
         }
 
-        internal static string CreateWindowAndStageIdentifier(string windowGUID, StageNavigationItem stage)
+        internal static string CreateWindowAndStageIdentifier(string windowGUID, Stage stage)
         {
             // Limit guids to prevent long file names on Windows
             string windowID = windowGUID.Substring(0, 6);
-            string stageID = stage.isMainStage ? "mainStage" : AssetDatabase.AssetPathToGUID(stage.prefabAssetPath).Substring(0, 18);
+            string stageID = stage.GetStageID(18);
             return windowID + "-" + stageID;
+        }
+
+        internal static void SetPrefabInstanceHiddenForInContextEditing(GameObject gameObject, bool hide)
+        {
+            SetPrefabInstanceHiddenForInContextEditingInternal(gameObject, hide);
+        }
+
+        internal static bool IsPrefabInstanceHiddenForInContextEditing(GameObject gameObject)
+        {
+            return IsPrefabInstanceHiddenForInContextEditingInternal(gameObject);
+        }
+
+        internal static bool IsGameObjectConsideredHiddenInSceneView(GameObject gameObject)
+        {
+            return IsGameObjectConsideredHiddenInSceneViewInternal(gameObject);
+        }
+
+        internal static void EnableHidingForInContextEditingInSceneView(bool enable)
+        {
+            EnableHidingForInContextEditingInSceneViewInternal(enable);
+        }
+
+        internal static void SetFocusedScene(Scene scene)
+        {
+            SetFocusedSceneInternal(scene.IsValid() ? scene.handle : 0);
+        }
+
+        internal static Scene GetFocusedScene()
+        {
+            return GetFocusedSceneInternal();
+        }
+
+        internal static void SetFocusedSceneContextRenderMode(ContextRenderMode contextRenderMode)
+        {
+            SetFocusedSceneContextRenderModeInternal(contextRenderMode);
+        }
+
+        internal static void CallAwakeFromLoadOnSubHierarchy(GameObject prefabInstanceRoot)
+        {
+            CallAwakeFromLoadOnSubHierarchyInternal(prefabInstanceRoot);
         }
     }
 }

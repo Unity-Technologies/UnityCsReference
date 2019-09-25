@@ -80,6 +80,19 @@ namespace UnityEditor.Experimental.AssetImporters
         [NativeName("DependsOnImportedAsset")]
         private extern void DependsOnImportedAssetInternal(string path);
 
+        public void DependsOnCustomDependency(string dependency)
+        {
+            if (string.IsNullOrEmpty(dependency))
+            {
+                throw new ArgumentNullException("dependency", "Cannot add custom dependency on an empty custom dependency.");
+            }
+
+            DependsOnCustomDependencyInternal(dependency);
+        }
+
+        [NativeName("DependsOnCustomDependency")]
+        private extern void DependsOnCustomDependencyInternal(string path);
+
         public void LogImportError(string msg, UnityEngine.Object obj = null)
         {
             AddToLog(msg, true, obj);

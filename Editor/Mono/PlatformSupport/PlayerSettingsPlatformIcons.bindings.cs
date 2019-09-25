@@ -71,7 +71,6 @@ namespace UnityEditor
             private set
             {
                 m_Kind = value;
-                // m_KindValue = value.kind;
             }
         }
         internal PlatformIconStruct GetPlatformIconStruct()
@@ -173,6 +172,14 @@ namespace UnityEditor
             }
 
             m_Textures = textures.ToList();
+        }
+
+        internal int GetValidLayerCount()
+        {
+            var validLayerCount = m_Textures.Count(t => t != null);
+            var previewTexturesCount = GetPreviewTextures().Count(t => t != null);
+
+            return Math.Max(previewTexturesCount, validLayerCount);
         }
 
         public override string ToString() { return UnityString.Format("({0}x{1}) {2}", width, height, description); }

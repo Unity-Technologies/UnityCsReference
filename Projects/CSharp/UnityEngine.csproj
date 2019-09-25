@@ -1276,11 +1276,14 @@
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarkerUtils.cs">
-      <Link>Runtime\Profiler\ScriptBindings\ProfilerMarkerUtils.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerUtility.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Recorder.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\Recorder.bindings.cs</Link>

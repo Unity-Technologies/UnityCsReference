@@ -10,6 +10,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     // Defines a single modified property.
+    [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
     [NativeAsStruct]
@@ -24,5 +25,18 @@ namespace UnityEditor
         // The value being applied when it is a object reference (which can not be represented as a string)
         public Object objectReference;
 
+        internal void Apply()
+        {
+            ApplyPropertyModificationToObject(target, this);
+        }
+
+        internal void ApplyToObject(Object obj)
+        {
+            ApplyPropertyModificationToObject(obj, this);
+        }
+
+        [NativeMethod("ApplyPropertyModificationToObject", IsFreeFunction = true)]
+        [NativeHeader("Editor/Src/Prefabs/PropertyModification.h")]
+        extern internal static void ApplyPropertyModificationToObject(Object target, PropertyModification value);
     }
 }

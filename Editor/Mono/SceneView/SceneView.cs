@@ -21,6 +21,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.EditorTools;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.Snap;
 
 namespace UnityEditor
@@ -87,7 +88,7 @@ namespace UnityEditor
 
         public static SceneView currentDrawingSceneView { get { return s_CurrentDrawingSceneView; } }
 
-        static readonly PrefColor kSceneViewBackground = new PrefColor("Scene/Background", 0.278431f, 0.278431f, 0.278431f, 0);
+        internal static readonly PrefColor kSceneViewBackground = new PrefColor("Scene/Background", 0.278431f, 0.278431f, 0.278431f, 0);
         internal static readonly PrefColor kSceneViewPrefabBackground = new PrefColor("Scene/Background for Prefabs", 0.132f, 0.231f, 0.330f, 0);
         static readonly PrefColor kSceneViewWire = new PrefColor("Scene/Wireframe", 0.0f, 0.0f, 0.0f, 0.5f);
         static readonly PrefColor kSceneViewWireOverlay = new PrefColor("Scene/Wireframe Overlay", 0.0f, 0.0f, 0.0f, 0.25f);
@@ -188,9 +189,21 @@ namespace UnityEditor
             }
         }
 
+        [SerializeField] ulong m_OverrideSceneCullingMask;
+        internal ulong overrideSceneCullingMask
+        {
+            get { return m_OverrideSceneCullingMask; }
+            set
+            {
+                m_OverrideSceneCullingMask = value;
+                m_Camera.overrideSceneCullingMask = value;
+            }
+        }
+
         SceneViewStageHandling m_StageHandling;
 
         float toolbarHeight { get { return (m_StageHandling != null && m_StageHandling.isShowingBreadcrumbBar) ? m_StageHandling.breadcrumbHeight + EditorGUI.kWindowToolbarHeight : EditorGUI.kWindowToolbarHeight; } }
+
         float sceneViewHeight { get { return position.height - toolbarHeight; } }
 
         // Returns the calculated rect where we render the camera in the SceneView (in window space coordinates)
@@ -220,7 +233,8 @@ namespace UnityEditor
         internal const float k_MaxSceneViewSize = 3.2e38f;
         // Limit the max draw distance to Sqrt(float.MaxValue) because transparent sorting function uses dist^2, and
         // Asserts that values are finite.
-        const float k_MaxCameraFarClip = 1.844674E+19f;
+        internal const float k_MaxCameraFarClip = 1.844674E+19f;
+        internal const float k_MinCameraNearClip = 1e-5f;
 
         [NonSerialized]
         static ActiveEditorTracker s_SharedTracker;
@@ -301,7 +315,7 @@ namespace UnityEditor
             get { return m_2DMode; }
             set
             {
-                if (m_2DMode != value && Tools.viewTool != ViewTool.FPS && Tools.viewTool != ViewTool.Orbit)
+                if (m_2DMode != value)
                 {
                     m_2DMode = value;
                     On2DModeChange();
@@ -626,6 +640,12 @@ namespace UnityEditor
                 speed = m_Speed;
             }
 
+            internal void SetClipPlanes(float near, float far)
+            {
+                farClip = Mathf.Clamp(far, float.Epsilon, k_MaxCameraFarClip);
+                nearClip = Mathf.Max(k_MinCameraNearClip, near);
+            }
+
             public float fieldOfView
             {
                 get { return m_FieldOfView; }
@@ -664,6 +684,12 @@ namespace UnityEditor
         {
             get { return m_CameraSettings; }
             set { m_CameraSettings = value; }
+        }
+
+        internal Vector2 GetDynamicClipPlanes()
+        {
+            float farClip = Mathf.Clamp(2000f * size, 1000f, k_MaxCameraFarClip);
+            return new Vector2(farClip * 0.000005f, farClip);
         }
 
         internal SceneViewGrid sceneViewGrids
@@ -1116,7 +1142,7 @@ namespace UnityEditor
         // this happens *after* SceneViewStageHandling has updated the camera scene.
         // Thus, we can't just register to the StageNavigationManager.instance.stageChanged
         // event since that would not guarantee the order dependency.
-        internal void OnStageChanged(StageNavigationItem previousStage, StageNavigationItem newStage)
+        internal void OnStageChanged(Stage previousStage, Stage newStage)
         {
             VisibilityChanged();
             // audioPlay may be different in the new stage,
@@ -1132,8 +1158,8 @@ namespace UnityEditor
             // render mode popup
             GUIContent modeContent = EditorGUIUtility.TextContent(cameraMode.name);
             modeContent.tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
-            Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
-            if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDownLeft, GUILayout.Width(120));
+            if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
                 PopupWindow.Show(rect, new SceneRenderModeWindow(this));
@@ -1556,17 +1582,17 @@ namespace UnityEditor
             Shader.SetGlobalTexture("_SceneViewMipcolorsTexture", s_MipColorsTexture);
         }
 
-        private bool m_RequestedSceneViewFiltering;
+        private bool m_ForceSceneViewFiltering;
         private double m_lastRenderedTime;
 
         internal void SetSceneViewFiltering(bool enable)
         {
-            m_RequestedSceneViewFiltering = enable;
+            m_ForceSceneViewFiltering = enable;
         }
 
         private bool UseSceneFiltering()
         {
-            return !string.IsNullOrEmpty(m_SearchFilter) || m_RequestedSceneViewFiltering;
+            return !string.IsNullOrEmpty(m_SearchFilter) || m_ForceSceneViewFiltering;
         }
 
         internal bool SceneViewIsRenderingHDR()
@@ -1846,7 +1872,7 @@ namespace UnityEditor
             Graphics.Blit(m_SceneTargetTexture, colorRT);
 
             // Second pass: Blit the scene faded out in the scene target texture
-            float fade = Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
+            float fade = m_ForceSceneViewFiltering ? 1f : Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
             if (!s_FadeMaterial)
                 s_FadeMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewGrayscaleEffectFade.mat") as Material;
             s_FadeMaterial.SetFloat("_Fade", fade);
@@ -2397,6 +2423,9 @@ namespace UnityEditor
             if (m_CustomScene.IsValid())
                 restoreOverrideRenderSettings = Unsupported.SetOverrideLightingSettings(m_CustomScene);
 
+            if (m_StageHandling != null)
+                m_StageHandling.StartOnGUI();
+
             SetupCustomSceneLighting();
 
             GUI.BeginGroup(windowSpaceCameraRect);
@@ -2497,9 +2526,11 @@ namespace UnityEditor
             // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
             HandleSelectionAndOnSceneGUI();
 
-            Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
+            // Draw default scene manipulation tools (Move/Rotate/...)
+            DefaultHandles();
 
-            // Handle scene view motion when this scene view is active
+            // Handle scene view motion when this scene view is active (always after duringSceneGui and Tools, so that
+            // user tools can access RMB and alt keys if they want to override the event)
             if (s_LastActiveSceneView == this)
             {
                 // Do not pass the camera transform to the SceneViewMotion calculations.
@@ -2508,8 +2539,7 @@ namespace UnityEditor
                 SceneViewMotion.DoViewTool(this);
             }
 
-            // Draw default scene manipulation tools (Move/Rotate/...)
-            DefaultHandles();
+            Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
             // Handle scene commands after EditorTool.OnSceneGUI so that tools can handle commands
             if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
@@ -2551,6 +2581,9 @@ namespace UnityEditor
 
             s_CurrentDrawingSceneView = null;
             m_Camera.rect = origCameraRect;
+
+            if (m_StageHandling != null)
+                m_StageHandling.EndOnGUI();
         }
 
         [Shortcut("Scene View/Toggle 2D Mode", typeof(SceneView), KeyCode.Alpha2)]
@@ -2954,8 +2987,8 @@ namespace UnityEditor
             }
             else
             {
-                if (m_StageHandling != null && StageNavigationManager.instance.currentItem.isPrefabStage)
-                    m_Camera.backgroundColor = kSceneViewPrefabBackground;
+                if (m_StageHandling != null)
+                    m_Camera.backgroundColor = StageNavigationManager.instance.currentStage.GetBackgroundColor();
                 else
                     m_Camera.backgroundColor = kSceneViewBackground;
             }
@@ -2997,9 +3030,9 @@ namespace UnityEditor
 
             if (m_CameraSettings.dynamicClip)
             {
-                float farClip = Mathf.Min(Mathf.Max(1000f, 2000f * size), k_MaxCameraFarClip);
-                m_Camera.nearClipPlane = farClip * 0.000005f;
-                m_Camera.farClipPlane = farClip;
+                var clip = GetDynamicClipPlanes();
+                m_Camera.nearClipPlane = clip.x;
+                m_Camera.farClipPlane = clip.y;
             }
             else
             {
@@ -3008,7 +3041,6 @@ namespace UnityEditor
             }
 
             m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
-
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
             // In 2D mode, camera position z should not go to positive value.
@@ -3091,7 +3123,7 @@ namespace UnityEditor
 
         internal Quaternion cameraTargetRotation { get { return m_Rotation.target; } }
 
-        internal Vector3 cameraTargetPosition { get { return m_Position.target + m_Rotation.target * new Vector3(0, 0, cameraDistance); } }
+        internal Vector3 cameraTargetPosition { get { return m_Position.target + m_Rotation.target * new Vector3(0, 0, -cameraDistance); } }
 
         internal float GetVerticalFOV(float aspectNeutralFOV)
         {
@@ -3411,13 +3443,17 @@ namespace UnityEditor
             target.position = pivot;
         }
 
-        bool IsGameObjectInThisSceneView(GameObject gameObject)
+        internal bool IsGameObjectInThisSceneView(GameObject gameObject)
         {
             if (gameObject == null)
                 return false;
 
-            var stage = StageUtility.GetStageHandle(customScene);
-            return stage.Contains(gameObject);
+            var gameObjectSceneCullingMask = EditorSceneManager.GetSceneCullingMask(gameObject.scene);
+            var sceneViewCullingMask = overrideSceneCullingMask != 0 ? overrideSceneCullingMask : EditorSceneManager.GetSceneCullingMask(customScene);
+            if (sceneViewCullingMask == 0)
+                sceneViewCullingMask = EditorSceneManager.DefaultSceneCullingMask; // Use main stage culling mask if customScene was not set
+
+            return (gameObjectSceneCullingMask & sceneViewCullingMask) != 0;
         }
 
         public bool FrameSelected()
@@ -3491,6 +3527,8 @@ namespace UnityEditor
             m_Camera.enabled = false;
             m_Camera.cameraType = CameraType.SceneView;
             m_Camera.scene = m_CustomScene;
+            if (m_OverrideSceneCullingMask != 0)
+                m_Camera.overrideSceneCullingMask = m_OverrideSceneCullingMask;
 
             m_CustomLightsScene = EditorSceneManager.NewPreviewScene();
             m_CustomLightsScene.name = "CustomLightsScene-SceneView" + m_WindowGUID;
@@ -3755,6 +3793,20 @@ namespace UnityEditor
         public static CameraMode GetBuiltinCameraMode(DrawCameraMode mode)
         {
             return SceneRenderModeWindow.GetBuiltinCameraMode(mode);
+        }
+
+        internal void RebuildBreadcrumbBar()
+        {
+            if (SupportsStageHandling())
+                m_StageHandling.RebuildBreadcrumbBar();
+        }
+
+        internal static void RebuildBreadcrumbBarInAll()
+        {
+            foreach (SceneView sv in s_SceneViews)
+            {
+                sv.RebuildBreadcrumbBar();
+            }
         }
 
         internal void ResetGrid()

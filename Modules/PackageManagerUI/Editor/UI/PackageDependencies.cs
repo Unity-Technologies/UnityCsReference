@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -24,16 +26,13 @@ namespace UnityEditor.PackageManager.UI
             return label;
         }
 
-        private string BuildNameText(DependencyInfo dependency)
+        private static string GetNameText(DependencyInfo dependency)
         {
             var packageVersion = PackageDatabase.instance.GetPackageVersion(dependency);
             return packageVersion != null ? packageVersion.displayName : UpmPackageVersion.ExtractDisplayName(dependency.name);
         }
 
-        // TODO: In the original RebuildDependenciesDictionnary function there's some handling for dependencies that looks like this:
-        //  foreach (var dependency in dependencies) {if (dependency.version.StartsWith("file:")) }
-        // need to figure out what is that used for
-        private string BuildStatusText(DependencyInfo dependency)
+        private static string GetStatusText(DependencyInfo dependency)
         {
             var installedVersion = PackageDatabase.instance.GetPackage(dependency.name)?.installedVersion;
             if (installedVersion == null)
@@ -49,49 +48,70 @@ namespace UnityEditor.PackageManager.UI
                 ? "(installed \u2714)" : $"({installedVersion.version} installed \u2714)";
         }
 
-        public void SetDependencies(DependencyInfo[] dependencies)
+        public void SetPackageVersion(IPackageVersion version)
         {
-            var showDependency = PackageManagerPrefs.instance.showPackageDependencies && dependencies != null;
+            var dependencies = version?.dependencies;
+            var reverseDependencies = PackageDatabase.instance.GetReverseDependencies(version);
+            var showDependency = PackageManagerPrefs.instance.showPackageDependencies && (dependencies != null || reverseDependencies != null);
             UIUtils.SetElementDisplay(this, showDependency);
-
-            if (!showDependency || dependencies.Length == 0)
-            {
-                ClearDependencies();
+            if (!showDependency)
                 return;
-            }
 
-            dependenciesNames.Clear();
-            dependenciesVersions.Clear();
-            dependenciesStatuses.Clear();
-            foreach (var dependency in dependencies)
-            {
-                dependenciesNames.Add(BuildLabel(BuildNameText(dependency), "text"));
-                dependenciesVersions.Add(BuildLabel(dependency.version, "text"));
-                dependenciesStatuses.Add(BuildLabel(BuildStatusText(dependency), "text"));
-            }
-
-            UIUtils.SetElementDisplay(noDependencies, false);
-            UIUtils.SetElementDisplay(dependenciesNames, true);
-            UIUtils.SetElementDisplay(dependenciesVersions, true);
+            UpdateDependencies(dependencies);
+            UpdateReverseDependencies(reverseDependencies);
         }
 
-        private void ClearDependencies()
+        private void UpdateDependencies(DependencyInfo[] dependencies)
         {
             dependenciesNames.Clear();
             dependenciesVersions.Clear();
             dependenciesStatuses.Clear();
 
-            UIUtils.SetElementDisplay(noDependencies, true);
-            UIUtils.SetElementDisplay(dependenciesNames, false);
-            UIUtils.SetElementDisplay(dependenciesVersions, false);
+            var hasDependencies = dependencies?.Any() ?? false;
+            UIUtils.SetElementDisplay(noDependencies, !hasDependencies);
+            UIUtils.SetElementDisplay(dependenciesNames, hasDependencies);
+            UIUtils.SetElementDisplay(dependenciesVersions, hasDependencies);
+
+            if (!hasDependencies)
+                return;
+
+            foreach (var dependency in dependencies)
+            {
+                dependenciesNames.Add(BuildLabel(GetNameText(dependency), "text"));
+                dependenciesVersions.Add(BuildLabel(dependency.version, "text"));
+                dependenciesStatuses.Add(BuildLabel(GetStatusText(dependency), "text"));
+            }
+        }
+
+        private void UpdateReverseDependencies(IEnumerable<IPackageVersion> reverseDependencies)
+        {
+            reverseDependenciesNames.Clear();
+            reverseDependenciesVersions.Clear();
+
+            var hasReverseDependencies = reverseDependencies?.Any() ?? false;
+            UIUtils.SetElementDisplay(noReverseDependencies, !hasReverseDependencies);
+            UIUtils.SetElementDisplay(reverseDependenciesNames, hasReverseDependencies);
+            UIUtils.SetElementDisplay(reverseDependenciesVersions, hasReverseDependencies);
+
+            if (!hasReverseDependencies)
+                return;
+
+            foreach (var version in reverseDependencies)
+            {
+                reverseDependenciesNames.Add(BuildLabel(version.displayName ?? string.Empty, "text"));
+                reverseDependenciesVersions.Add(BuildLabel(version.version.ToString(), "text"));
+            }
         }
 
         private VisualElementCache cache { get; set; }
 
-        private VisualElement dependenciesContainer { get { return cache.Get<VisualElement>("dependenciesContainer"); } }
         private Label noDependencies { get { return cache.Get<Label>("noDependencies"); } }
         private VisualElement dependenciesNames { get { return cache.Get<VisualElement>("dependenciesNames"); } }
         private VisualElement dependenciesVersions { get { return cache.Get<VisualElement>("dependenciesVersions"); } }
         private VisualElement dependenciesStatuses { get { return cache.Get<VisualElement>("dependenciesStatuses"); } }
+
+        private Label noReverseDependencies { get { return cache.Get<Label>("noReverseDependencies"); } }
+        private VisualElement reverseDependenciesNames { get { return cache.Get<VisualElement>("reverseDependenciesNames"); } }
+        private VisualElement reverseDependenciesVersions { get { return cache.Get<VisualElement>("reverseDependenciesVersions"); } }
     }
 }

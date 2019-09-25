@@ -316,7 +316,7 @@ namespace UnityEditorInternal
         // header height accessor
         public float headerHeight = 20;
         // footer height accessor
-        public float footerHeight = 13;
+        public float footerHeight = 20;
         // show default background
         public bool showDefaultBackground = true;
         private float listElementTopPadding => headerHeight > 5 ? 4 : 1; // headerHeight is usually set to 3px when there is no header content. Therefore, we add a 1px top margin to match the 4px bottom margin
@@ -328,7 +328,6 @@ namespace UnityEditorInternal
             get { return m_Draggable; }
             set { m_Draggable = value; }
         }
-
 
         private Rect GetContentRect(Rect rect)
         {
@@ -875,7 +874,7 @@ namespace UnityEditorInternal
 
         public bool HasKeyboardControl()
         {
-            return GUIUtility.keyboardControl == id;
+            return GUIUtility.keyboardControl == id && EditorGUIUtility.HasCurrentWindowKeyFocus();
         }
     }
 }

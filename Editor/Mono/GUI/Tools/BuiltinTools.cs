@@ -6,6 +6,8 @@ using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
 using UnityEditor.Snap;
+using UnityEditor.Experimental.SceneManagement;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -53,21 +55,40 @@ namespace UnityEditor
             if (!view || !Selection.activeTransform || Tools.s_Hidden)
                 return;
 
-            if (!StageUtility.IsGameObjectRenderedByCamera(Selection.activeTransform.gameObject, Camera.current))
+            if (!StageUtility.IsGameObjectRenderedByCameraAndPartOfEditableScene(Selection.activeTransform.gameObject, Camera.current))
                 return;
 
-            bool isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
-            using (new EditorGUI.DisabledScope(isStatic))
+
+            GUIContent disabledLabel;
+            bool isDisabled = ShouldToolGUIBeDisabled(out disabledLabel);
+            using (new EditorGUI.DisabledScope(isDisabled))
             {
                 Vector3 handlePosition = Tools.handlePosition;
 
-                ToolGUI(view, handlePosition, isStatic);
+                ToolGUI(view, handlePosition, isDisabled);
 
-                Handles.ShowStaticLabelIfNeeded(handlePosition);
+                if (isDisabled)
+                    Handles.ShowSceneViewLabel(handlePosition, disabledLabel);
             }
         }
 
         protected abstract void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic);
+        protected virtual bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
+        {
+            disabledLabel = Handles.s_StaticLabel;
+            return (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
+        }
+
+        protected bool IsDisabledByPrefabPropertyPatching(string partialPropertyName, out GUIContent disabledLabel)
+        {
+            disabledLabel = Handles.s_PrefabLabel;
+
+            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (prefabStage == null)
+                return false;
+
+            return prefabStage.ContainsTransformPrefabPropertyPatchingFor(Selection.gameObjects, partialPropertyName);
+        }
     }
 
     static class ManipulationToolUtility
@@ -150,6 +171,23 @@ namespace UnityEditor
             get { return EditorGUIUtility.TrTextContentWithIcon("Transform Tool", "Transform Tool", "TransformTool"); }
         }
 
+        protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
+        {
+            if (IsDisabledByPrefabPropertyPatching("m_LocalPosition", out disabledLabel))
+                return true;
+
+            if (IsDisabledByPrefabPropertyPatching("m_LocalRotation", out disabledLabel))
+                return true;
+
+            if (IsDisabledByPrefabPropertyPatching("m_LocalScale", out disabledLabel))
+                return true;
+
+            if (base.ShouldToolGUIBeDisabled(out disabledLabel))
+                return true;
+
+            return false;
+        }
+
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             var ids = Handles.TransformHandleIds.Default;
@@ -227,21 +265,25 @@ namespace UnityEditor
             get { return EditorGUIUtility.TrTextContentWithIcon("Move Tool", "Move Tool", "MoveTool"); }
         }
 
+        protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
+        {
+            if (IsDisabledByPrefabPropertyPatching("m_LocalPosition", out disabledLabel))
+                return true;
+
+            if (base.ShouldToolGUIBeDisabled(out disabledLabel))
+                return true;
+
+            return false;
+        }
+
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             TransformManipulator.BeginManipulationHandling(false);
+
             EditorGUI.BeginChangeCheck();
 
-            // The AimConstraint changes the rotation of the active object as the object is moved around in the scene.
-            // This leads to very large "jumps" of the object,
-            // as the move tool assumes the handle rotation to not change while the object is dragged.
-            // Solution: when moving an object constrained with the AimConstraint, we ignore the rotation of the object.
-            Quaternion handleRotation = Tools.handleRotation;
-            var aimConstraintComponent = Selection.activeTransform.GetComponent<UnityEngine.Animations.AimConstraint>();
-            if (aimConstraintComponent != null && aimConstraintComponent.constraintActive)
-                handleRotation = TransformManipulator.mouseDownHandleRotation;
+            Vector3 pos2 = Handles.PositionHandle(handlePosition, TransformManipulator.mouseDownHandleRotation);
 
-            Vector3 pos2 = Handles.PositionHandle(handlePosition, handleRotation);
             if (EditorGUI.EndChangeCheck() && !isStatic && TransformManipulator.HandleHasMoved(pos2))
             {
                 ManipulationToolUtility.SetMinDragDifferenceForPos(handlePosition);
@@ -251,6 +293,7 @@ namespace UnityEditor
 
                 TransformManipulator.SetPositionDelta(pos2, TransformManipulator.mouseDownHandlePosition);
             }
+
             TransformManipulator.EndManipulationHandling();
         }
     }
@@ -260,6 +303,17 @@ namespace UnityEditor
         public override GUIContent toolbarIcon
         {
             get { return EditorGUIUtility.TrTextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool"); }
+        }
+
+        protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
+        {
+            if (IsDisabledByPrefabPropertyPatching("m_LocalRotation", out disabledLabel))
+                return true;
+
+            if (base.ShouldToolGUIBeDisabled(out disabledLabel))
+                return true;
+
+            return false;
         }
 
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
@@ -319,6 +373,17 @@ namespace UnityEditor
         }
 
         private static Vector3 s_CurrentScale = Vector3.one;
+
+        protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
+        {
+            if (IsDisabledByPrefabPropertyPatching("m_LocalScale", out disabledLabel))
+                return true;
+
+            if (base.ShouldToolGUIBeDisabled(out disabledLabel))
+                return true;
+
+            return false;
+        }
 
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {

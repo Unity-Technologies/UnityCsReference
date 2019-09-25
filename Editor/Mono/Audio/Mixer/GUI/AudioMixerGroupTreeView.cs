@@ -152,7 +152,8 @@ namespace UnityEditor
     internal class AudioGroupTreeViewGUI : TreeViewGUI
     {
         readonly float column1Width = 20f;
-        readonly Texture2D k_VisibleON = EditorGUIUtility.FindTexture("VisibilityOn");
+        readonly GUIContent k_VisibleON = EditorGUIUtility.TrIconContent("animationvisibilitytoggleon");
+        readonly GUIContent k_VisibleOFF = EditorGUIUtility.TrIconContent("animationvisibilitytoggleoff");
         public Action<AudioMixerTreeViewNode, bool> NodeWasToggled;
         public AudioMixerController m_Controller = null;
 
@@ -206,9 +207,10 @@ namespace UnityEditor
                 if (colorIndex > 0)
                     EditorGUI.DrawRect(new Rect(rowRect.x, iconBgRect.y, 2, iconBgRect.height), AudioMixerColorCodes.GetColor(colorIndex));
 
-                EditorGUI.DrawRect(iconBgRect, new Color(0.5f, 0.5f, 0.5f, 0.2f));
                 if (oldSelected)
-                    GUI.DrawTexture(iconRect, k_VisibleON);
+                    GUI.DrawTexture(iconRect, k_VisibleON.image);
+                else
+                    GUI.DrawTexture(iconRect, k_VisibleOFF.image);
 
                 Rect toggleRect = new Rect(2, rowRect.y, rowRect.height, rowRect.height);
                 if (evt.type == EventType.MouseUp && evt.button == 0 && toggleRect.Contains(evt.mousePosition))
@@ -290,7 +292,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent header = EditorGUIUtility.TrTextContent("Groups", "An Audio Mixer Group is used by e.g Audio Sources to modify the audio output before it reaches the Audio Listener. An Audio Mixer Group will route its output to another Audio Mixer Group if it is made a child of that group. The Master Group will route its output to the Audio Listener if it doesn't route its output into another Mixer.");
-            public GUIContent addText = EditorGUIUtility.TrTextContent("+", "Add child group");
+            public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew", "Add child group");
             public Texture2D audioMixerGroupIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerGroup));
         }
         static Styles s_Styles;
@@ -567,7 +569,7 @@ namespace UnityEditor
                 AudioMixerGroupController parent = (m_Controller.CachedSelection.Count == 1) ? m_Controller.CachedSelection[0] : m_Controller.masterGroup;
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
                 {
-                    if (GUI.Button(new Rect(headerRect.xMax - 15f, headerRect.y + 3f, 15f, 15f), s_Styles.addText, EditorStyles.label))
+                    if (GUI.Button(new Rect(headerRect.xMax - 17f, headerRect.y + 3f, 16f, 16f), s_Styles.addButton, EditorStyles.iconButton))
                         AddAudioMixerGroup(parent);
                 }
 

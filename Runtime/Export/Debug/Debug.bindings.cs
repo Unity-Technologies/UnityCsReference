@@ -59,7 +59,7 @@ namespace UnityEngine
         }
 
         // Draws a line from the /point/ start to /end/ with color for a duration of time and with or without depth testing. If duration is 0 then the line is rendered 1 frame.
-        [FreeFunction("DebugDrawLine")]
+        [FreeFunction("DebugDrawLine", IsThreadSafe = true)]
         public static extern void DrawLine(Vector3 start, Vector3 end, [DefaultValue("Color.white")] Color color, [DefaultValue("0.0f")] float duration, [DefaultValue("true")] bool depthTest);
 
         [ExcludeFromDocs]

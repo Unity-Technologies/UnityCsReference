@@ -106,7 +106,7 @@ namespace UnityEditor
         [NativeMethod(Name = "SerializedObjectBindings::InternalCreate", IsFreeFunction = true, ThrowsException = true)]
         extern static IntPtr InternalCreate(Object[] monoObjs, Object context);
 
-        private PropertyModification ExtractPropertyModification(string propertyPath)
+        internal PropertyModification ExtractPropertyModification(string propertyPath)
         {
             return InternalExtractPropertyModification(propertyPath) as PropertyModification;
         }

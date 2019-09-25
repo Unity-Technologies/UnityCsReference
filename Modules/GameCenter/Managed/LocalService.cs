@@ -59,7 +59,8 @@ namespace UnityEngine.SocialPlatforms.Impl
     public class UserProfile : IUserProfile
     {
         protected string m_UserName;
-        protected string m_ID;
+        protected string m_teamID;
+        protected string m_gameID;
         protected bool m_IsFriend;
         protected UserState m_State;
         protected Texture2D m_Image;
@@ -67,7 +68,7 @@ namespace UnityEngine.SocialPlatforms.Impl
         public UserProfile()
         {
             m_UserName = "Uninitialized";
-            m_ID = "0";
+            m_teamID = "0";
             m_IsFriend = false;
             m_State = UserState.Offline;
             m_Image = new Texture2D(32, 32);
@@ -75,10 +76,13 @@ namespace UnityEngine.SocialPlatforms.Impl
 
         public UserProfile(string name, string id, bool friend) : this(name, id, friend, UserState.Offline, new Texture2D(0, 0)) {}
 
-        public UserProfile(string name, string id, bool friend, UserState state, Texture2D image)
+        public UserProfile(string name, string id, bool friend, UserState state, Texture2D image) : this(name,  id, id, friend, state, image) {}
+
+        public UserProfile(string name, string teamId, string gameId, bool friend, UserState state, Texture2D image)
         {
             m_UserName = name;
-            m_ID = id;
+            m_teamID = teamId;
+            m_gameID = gameId;
             m_IsFriend = friend;
             m_State = state;
             m_Image = image;
@@ -99,7 +103,12 @@ namespace UnityEngine.SocialPlatforms.Impl
 
         public void SetUserID(string id)
         {
-            m_ID = id;
+            m_teamID = id;
+        }
+
+        public void SetUserGameID(string id)
+        {
+            m_gameID = id;
         }
 
         public void SetImage(Texture2D image)
@@ -118,7 +127,8 @@ namespace UnityEngine.SocialPlatforms.Impl
         }
 
         public string userName { get { return m_UserName; } }
-        public string id { get { return m_ID; } }
+        public string id { get { return m_teamID; } }
+        public string gameId { get { return m_gameID; } }
         public bool isFriend { get { return m_IsFriend; } }
         public UserState state { get { return m_State; } }
         public Texture2D image { get { return m_Image; } }

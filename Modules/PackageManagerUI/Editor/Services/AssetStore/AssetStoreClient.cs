@@ -237,6 +237,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         progress.state != DownloadProgress.State.Decrypting)
                     {
                         m_Downloads.Remove(AssetStoreCompatibleKey(productId));
+                        AssetStoreDownloadOperation.instance.ClearDownloadInformation(productId);
                     }
                     else
                     {
@@ -345,9 +346,20 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 }
             }
 
+            public void OnEnable()
+            {
+                if (m_SetupDone)
+                {
+                    Clear();
+                    Setup();
+                }
+            }
+
             public void Setup()
             {
-                System.Diagnostics.Debug.Assert(!m_SetupDone);
+                if (m_SetupDone)
+                    return;
+
                 m_SetupDone = true;
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
@@ -363,7 +375,6 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             public void Clear()
             {
-                System.Diagnostics.Debug.Assert(m_SetupDone);
                 m_SetupDone = false;
 
                 AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
@@ -373,7 +384,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 UpmClient.instance.onProductPackageFetchError -= OnProductPackageFetchError;
             }
 
-            public void Reset()
+            public void Reload()
             {
                 m_LocalInfos.Clear();
                 m_FetchedInfos.Clear();
@@ -388,7 +399,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 {
                     AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                     AbortAllDownloads();
-                    Reset();
+                    Reload();
                     UpmClient.instance.ResetProductCache();
                 }
                 else

@@ -777,7 +777,7 @@ namespace UnityEditor
             if (!EditorApplication.isPlaying)
             {
                 // Edit Mode: Play/Stop buttons
-                GUILayout.BeginHorizontal(GUILayout.Width(210.0f));
+                GUILayout.BeginHorizontal(GUILayout.Width(220.0f));
                 {
                     using (new EditorGUI.DisabledScope(disablePlayButton))
                     {

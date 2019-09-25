@@ -3596,6 +3596,17 @@ namespace UnityEngine
 
         // Get or set the points defining multiple continuous edges.
         extern public Vector2[] points { get; set; }
+
+        [NativeMethod("GetPoints_Binding")]
+        extern public int GetPoints([NotNull] List<Vector2> points);
+        [NativeMethod("SetPoints_Binding")]
+        extern public bool SetPoints([NotNull] List<Vector2> points);
+
+        // Get or set the adjacent start/end points.
+        extern public bool useAdjacentStartPoint { get; set; }
+        extern public bool useAdjacentEndPoint { get; set; }
+        extern public Vector2 adjacentStartPoint { get; set; }
+        extern public Vector2 adjacentEndPoint { get; set; }
     }
 
     [NativeHeader("Modules/Physics2D/Public/BoxCollider2D.h")]

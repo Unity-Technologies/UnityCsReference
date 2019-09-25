@@ -411,6 +411,8 @@ namespace UnityEditor
                 selectedSizeIndex = indexClicked;
                 dontClearBackground = true; // will cause re-clear
                 UpdateZoomAreaAndParent();
+                targetSize = targetRenderSize;
+                SceneView.RepaintAll();
             }
         }
 
@@ -492,7 +494,7 @@ namespace UnityEditor
 
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
-                    int display = EditorGUILayout.Popup(targetDisplay, DisplayUtility.GetDisplayNames(), EditorStyles.toolbarPopup, GUILayout.Width(80));
+                    int display = EditorGUILayout.Popup(targetDisplay, DisplayUtility.GetDisplayNames(), EditorStyles.toolbarPopupLeft, GUILayout.Width(80));
                     if (display != targetDisplay)
                     {
                         targetDisplay = display;

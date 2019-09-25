@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -14,8 +14,8 @@ namespace UnityEngine.UIElements.UIR
     /// </summary>
     internal static class MeshBuilder
     {
-        static readonly CustomSampler k_VectorGraphics9Slice = CustomSampler.Create("UIR.MakeVector9Slice");
-        static readonly CustomSampler k_VectorGraphicsStretch = CustomSampler.Create("UIR.MakeVectorStretch");
+        static ProfilerMarker s_VectorGraphics9Slice = new ProfilerMarker("UIR.MakeVector9Slice");
+        static ProfilerMarker s_VectorGraphicsStretch = new ProfilerMarker("UIR.MakeVectorStretch");
 
         internal struct AllocMeshData
         {
@@ -418,7 +418,7 @@ namespace UnityEngine.UIElements.UIR
                     throw new NotImplementedException();
             }
 
-            k_VectorGraphicsStretch.Begin();
+            s_VectorGraphicsStretch.Begin();
 
             posOffset -= svgSubRectOffset * posScale;
 
@@ -431,7 +431,7 @@ namespace UnityEngine.UIElements.UIR
                 if (svgSubRect.width <= 0 || svgSubRect.height <= 0)
                 {
                     finalVertexCount = finalIndexCount = 0;
-                    k_VectorGraphicsStretch.End();
+                    s_VectorGraphicsStretch.End();
                     return; // Totally clipped
                 }
                 svgSubRectMinMax = new Vector4(svgSubRect.xMin, svgSubRect.yMin, svgSubRect.xMax, svgSubRect.yMax);
@@ -486,7 +486,7 @@ namespace UnityEngine.UIElements.UIR
             finalVertexCount = mwd.vertexCount;
             finalIndexCount = mwd.indexCount;
 
-            k_VectorGraphicsStretch.End();
+            s_VectorGraphicsStretch.End();
         }
 
         private static void MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, bool stretch, Color tint, int settingIndexOffset, AllocMeshData meshAlloc)
@@ -497,7 +497,7 @@ namespace UnityEngine.UIElements.UIR
             if (!stretch)
                 throw new NotImplementedException("Support for repeating 9-slices is not done yet");
 
-            k_VectorGraphics9Slice.Begin();
+            s_VectorGraphics9Slice.Begin();
 
             var uvRegion = mwd.uvRegion;
             int vertsCount = svgVertices.Length;
@@ -521,7 +521,7 @@ namespace UnityEngine.UIElements.UIR
                 mwd.SetNextVertex(v);
             }
 
-            k_VectorGraphics9Slice.End();
+            s_VectorGraphics9Slice.End();
         }
 
         struct ClipCounts

@@ -8,6 +8,7 @@ namespace UnityEditor.PackageManager.UI
     {
         None = 0,
         Installed,
+        InstalledAsDependency,
         ImportAvailable,
         InDevelopment,
         UpdateAvailable,

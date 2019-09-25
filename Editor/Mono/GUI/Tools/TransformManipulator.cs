@@ -148,6 +148,9 @@ namespace UnityEditor
                         applySmartRounding = !transform.parent.localRotation.Equals(Quaternion.identity);
                 }
 
+                //If we are snapping, disable the smart rounding. If not the case, the transform will have the wrong snap value based on distance to screen.
+                applySmartRounding &= !EditorSnapSettings.active;
+
                 bool zeroXDelta = false;
                 bool zeroYDelta = false;
                 bool zeroZDelta = false;

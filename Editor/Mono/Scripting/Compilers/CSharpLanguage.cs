@@ -62,67 +62,10 @@ namespace UnityEditor.Scripting.Compilers
             return MonoLibraryHelpers.GetSystemReferenceDirectories(apiCompatibilityLevel);
         }
 
-        public string GetNamespaceNewRuntime(string filePath, string definedSymbols, string[] defines)
+        public override void GetClassAndNamespace(string filePath, out string outClassName, out string outNamespace)
         {
-            var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            var uniqueSymbols = defines.Union(definedSymbolSplit).Distinct().ToArray();
-            return CSharpNamespaceParser.GetNamespace(
-                ReadAndConverteNewLines(filePath).ReadToEnd(),
-                Path.GetFileNameWithoutExtension(filePath),
-                uniqueSymbols);
-        }
-
-        public string GetNamespaceOldRuntime(string filePath, string definedSymbols, string[] defines)
-        {
-            var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            var uniqueSymbols = defines.Union(definedSymbolSplit).Distinct().ToArray();
-            using (var parser = ParserFactory.CreateParser(ICSharpCode.NRefactory.SupportedLanguage.CSharp, ReadAndConverteNewLines(filePath)))
-            {
-                foreach (var symbol in uniqueSymbols)
-                {
-                    parser.Lexer.ConditionalCompilationSymbols.Add(symbol, string.Empty);
-                }
-
-                parser.Lexer.EvaluateConditionalCompilation = true;
-                parser.Parse();
-                try
-                {
-                    var visitor = new NamespaceVisitor();
-                    var data = new VisitorData { TargetClassName = Path.GetFileNameWithoutExtension(filePath) };
-                    parser.CompilationUnit.AcceptVisitor(visitor, data);
-                    return string.IsNullOrEmpty(data.DiscoveredNamespace) ? string.Empty : data.DiscoveredNamespace;
-                }
-                catch
-                {
-                    // Don't care; all we want is the namespace
-                }
-            }
-            return string.Empty;
-        }
-
-        public override void GetClassAndNamespace(string filePath, string definedSymbols,
-            out string outClassName, out string outNamespace)
-        {
-            var responseFilePath = Path.Combine("Assets", MicrosoftCSharpCompiler.ResponseFilename);
-            var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
-                responseFilePath,
-                Directory.GetParent(Application.dataPath).FullName,
-                GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_4_6));
-
-            var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            var uniqueSymbols = responseFileData.Defines.Union(definedSymbolSplit).Distinct().ToArray();
             CSharpNamespaceParser.GetClassAndNamespace(ReadAndConverteNewLines(filePath).ReadToEnd(),
-                Path.GetFileNameWithoutExtension(filePath), out outClassName, out outNamespace, uniqueSymbols);
-        }
-
-        public override string GetNamespace(string filePath, string definedSymbols)
-        {
-            var responseFilePath = Path.Combine("Assets", MicrosoftCSharpCompiler.ResponseFilename);
-            var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
-                responseFilePath,
-                Directory.GetParent(Application.dataPath).FullName,
-                GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_4_6));
-            return GetNamespaceNewRuntime(filePath, definedSymbols, responseFileData.Defines);
+                Path.GetFileNameWithoutExtension(filePath), out outClassName, out outNamespace);
         }
 
         // TODO: Revisit this code and switch to version 5.5.1 (or Roslyn if possible) when Editor switches to newer runtime version (on going work expected
@@ -138,48 +81,6 @@ namespace UnityEditor.Scripting.Compilers
             text = _lfOnlyRegex.Replace(text, "\r\n");
 
             return new StringReader(text);
-        }
-
-        class VisitorData
-        {
-            public VisitorData()
-            {
-                CurrentNamespaces = new Stack<string>();
-            }
-
-            public string TargetClassName;
-            public Stack<string> CurrentNamespaces;
-            public string DiscoveredNamespace;
-        }
-        class NamespaceVisitor : AbstractAstVisitor
-        {
-            public override object VisitNamespaceDeclaration(ICSharpCode.NRefactory.Ast.NamespaceDeclaration namespaceDeclaration, object data)
-            {
-                var visitorData = (VisitorData)data;
-                visitorData.CurrentNamespaces.Push(namespaceDeclaration.Name);
-                // Visit children (E.g. TypeDcelarion objects)
-                namespaceDeclaration.AcceptChildren(this, visitorData);
-                visitorData.CurrentNamespaces.Pop();
-                return null;
-            }
-
-            public override object VisitTypeDeclaration(ICSharpCode.NRefactory.Ast.TypeDeclaration typeDeclaration, object data)
-            {
-                var visitorData = (VisitorData)data;
-                if (typeDeclaration.Name == visitorData.TargetClassName)
-                {
-                    var fullNamespace = string.Empty;
-                    foreach (var ns in visitorData.CurrentNamespaces)
-                    {
-                        if (fullNamespace == string.Empty)
-                            fullNamespace = ns;
-                        else
-                            fullNamespace = ns + "." + fullNamespace;
-                    }
-                    visitorData.DiscoveredNamespace = fullNamespace;
-                }
-                return null;
-            }
         }
     }
 }

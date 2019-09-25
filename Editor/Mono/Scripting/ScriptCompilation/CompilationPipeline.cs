@@ -24,6 +24,7 @@ namespace UnityEditor.Compilation
     public class ScriptCompilerOptions
     {
         public bool AllowUnsafeCode { get; set; }
+        public CodeOptimization CodeOptimization { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
 
@@ -46,6 +47,13 @@ namespace UnityEditor.Compilation
     {
         Name = 0,
         Guid = 1
+    }
+
+    public enum CodeOptimization
+    {
+        None = 0,
+        Debug = 1,
+        Release = 2
     }
 
     public class Assembly
@@ -130,6 +138,45 @@ namespace UnityEditor.Compilation
         public static event Action<object> compilationFinished;
         public static event Action<string> assemblyCompilationStarted;
         public static event Action<string, CompilerMessage[]> assemblyCompilationFinished;
+
+        public static event Action<CodeOptimization> codeOptimizationChanged;
+
+        public static CodeOptimization codeOptimization
+        {
+            get { return IsScriptDebugInfoEnabled() ? CodeOptimization.Debug : CodeOptimization.Release; }
+            set
+            {
+                if (value == codeOptimization)
+                {
+                    return;
+                }
+
+                switch (value)
+                {
+                    case CodeOptimization.Debug:
+                    {
+                        EnableScriptDebugInfo();
+                        break;
+                    }
+
+                    case CodeOptimization.Release:
+                    {
+                        DisableScriptDebugInfo();
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw new ArgumentException(string.Format("Invalid argument {0} provided.", value.ToString()));
+                    }
+                }
+
+                if (codeOptimizationChanged != null)
+                {
+                    codeOptimizationChanged(value);
+                }
+            }
+        }
 
         static CompilationPipeline()
         {

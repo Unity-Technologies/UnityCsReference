@@ -129,7 +129,7 @@ namespace UnityEditor
         extern private static string GUIDToHexInternal(ref GUID value);
 
         //Thread safety verified, native method modified to not lazy init global lookup table.
-        [NativeMethod(Name = "CoreStringToGUID", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeMethod(Name = "StringToGUID", IsFreeFunction = true, IsThreadSafe = true)]
         extern private static GUID HexToGUIDInternal(string hex);
 
         [NativeMethod(Name = "GenerateGUID", IsFreeFunction = true)]

@@ -134,6 +134,7 @@ namespace UnityEditor
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic")};
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
+            public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
@@ -231,6 +232,9 @@ namespace UnityEditor
         SerializedProperty m_ApplicationBundleVersion;
         SerializedProperty m_UseMacAppStoreValidation;
         SerializedProperty m_MacAppStoreCategory;
+
+        // vulkan
+        SerializedProperty m_VulkanNumSwapchainBuffers;
 
         // iOS, tvOS
 #pragma warning disable 169
@@ -471,6 +475,7 @@ namespace UnityEditor
             m_ResizableWindow               = FindPropertyAssert("resizableWindow");
             m_UseMacAppStoreValidation      = FindPropertyAssert("useMacAppStoreValidation");
             m_MacAppStoreCategory           = FindPropertyAssert("macAppStoreCategory");
+            m_VulkanNumSwapchainBuffers     = FindPropertyAssert("vulkanNumSwapchainBuffers");
             m_FullscreenMode                = FindPropertyAssert("fullscreenMode");
             m_VisibleInBackground           = FindPropertyAssert("visibleInBackground");
             m_AllowFullscreenSwitch         = FindPropertyAssert("allowFullscreenSwitch");
@@ -1854,6 +1859,8 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.vulkanSettingsTitle, EditorStyles.boldLabel);
 
             PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
+            EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
+            PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
 
             EditorGUILayout.Space();
         }
@@ -1948,6 +1955,11 @@ namespace UnityEditor
             }
         }
 
+        private bool ShouldRestartEditorToApplySetting()
+        {
+            return EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.  Cancel to revert changes.", "Apply", "Cancel");
+        }
+
         private void OtherSectionConfigurationGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             // Configuration
@@ -2014,10 +2026,20 @@ namespace UnityEditor
 
                 using (new EditorGUI.DisabledScope(!gcIncrementalEnabled))
                 {
-                    if (gcIncrementalEnabled)
-                        EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
-                    else
-                        EditorGUILayout.Toggle(SettingsContent.gcIncremental, false);
+                    var oldValue = m_GCIncremental.boolValue;
+                    EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
+                    if (m_GCIncremental.boolValue != oldValue)
+                    {
+                        // Give the user a chance to change mind and revert changes.
+                        if (ShouldRestartEditorToApplySetting())
+                        {
+                            m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                                EditorApplication.OpenProject(Environment.CurrentDirectory);
+                        }
+                        else
+                            m_GCIncremental.boolValue = oldValue;
+                    }
                 }
             }
 
@@ -2122,7 +2144,7 @@ namespace UnityEditor
                 if (inputOption != oldInputOption)
                 {
                     // Give the user a chance to change mind and revert changes.
-                    if (EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.  Cancel to revert changes.", "Apply", "Cancel"))
+                    if (ShouldRestartEditorToApplySetting())
                     {
                         m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
                         m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);

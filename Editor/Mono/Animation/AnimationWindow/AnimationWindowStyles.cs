@@ -38,7 +38,7 @@ namespace UnityEditor
         public static GUIContent readOnlyPropertiesLabel = EditorGUIUtility.TrTextContent("Animation Clip is Read-Only");
         public static GUIContent readOnlyPropertiesButton = EditorGUIUtility.TrTextContent("Show Read-Only Properties");
 
-        public static GUIContent optionsContent = EditorGUIUtility.IconContent("_Popup");
+        public static GUIContent optionsContent = EditorGUIUtility.IconContent("_Menu");
 
         public static GUIStyle playHead = "AnimationPlayHead";
 
@@ -60,14 +60,19 @@ namespace UnityEditor
         public static GUIStyle popupCurveEditorBackground = "PopupCurveEditorBackground";
         public static GUIStyle popupCurveEditorSwatch = "PopupCurveEditorSwatch";
         public static GUIStyle popupCurveSwatchBackground = "PopupCurveSwatchBackground";
+        public static GUIStyle separator = new GUIStyle("AnimLeftPaneSeparator");
 
-        public static GUIStyle miniToolbar = "PreToolbar";
+        public static GUIStyle toolbarBottom = "ToolbarBottom";
+        public static GUIStyle optionsButton = new GUIStyle(EditorStyles.toolbarButtonRight);
         public static GUIStyle miniToolbarButton = new GUIStyle(EditorStyles.toolbarButton);
         public static GUIStyle toolbarLabel = new GUIStyle(AnimationWindowStyles.animClipToolbarPopup);
 
         public static void Initialize()
         {
             toolbarLabel.normal.background = null;
+            optionsButton.padding = new RectOffset();
+            optionsButton.imagePosition = ImagePosition.ImageOnly;
+            optionsButton.contentOffset = new Vector2(-7, 0);
         }
     }
 }

@@ -47,15 +47,37 @@ namespace UnityEditor
         }
 
         List<ItemData> m_Items;
-        float m_WidthOfButtons;
+
         float m_ItemSpacing;
         PopupButtonData m_PopupButtonData;
-        Vector2 m_PopupButtonSize = Vector2.zero;
+        GUIContent m_Label;
+
+        int[] m_ItemControlIDs;
+        int m_DropDownButtonControlID;
+        static readonly int s_ItemHash = "ItemButton".GetHashCode();
+        static readonly int m_DropDownButtonHash = "DropDownButton".GetHashCode();
+
+        float m_SpacingLabelToButton = 5f;
+        float m_WidthOfLabel;
+        float m_WidthOfButtons;
         float m_MinWidthOfPopup;
+        Vector2 m_PopupButtonSize = Vector2.zero;
         System.Action<ItemData> m_SelectionChangedCallback = null; // <userData>
+
+        public float widthOfButtonsAndLabel {  get { return m_WidthOfButtons + labelAndSpacingWidth; } }
+        public float widthOfPopupAndLabel { get { return m_PopupButtonSize.x + labelAndSpacingWidth; } }
+        public bool rightAligned { get; set; }
+        float labelAndSpacingWidth { get { return m_WidthOfLabel > 0 ? m_WidthOfLabel + m_SpacingLabelToButton : 0f; } }
+        bool hasLabel { get { return m_Label != null && m_Label != GUIContent.none;  } }
 
         public void Init(List<ItemData> items, float itemSpacing, float minWidthOfPopup, PopupButtonData popupButtonData, System.Action<ItemData> selectionChangedCallback)
         {
+            Init(GUIContent.none, items, itemSpacing, minWidthOfPopup, popupButtonData, selectionChangedCallback);
+        }
+
+        public void Init(GUIContent label, List<ItemData> items, float itemSpacing, float minWidthOfPopup, PopupButtonData popupButtonData,  System.Action<ItemData> selectionChangedCallback)
+        {
+            m_Label = label;
             m_Items = items;
             m_ItemSpacing = itemSpacing;
             m_PopupButtonData = popupButtonData;
@@ -66,13 +88,36 @@ namespace UnityEditor
 
         public float OnGUI(Rect rect)
         {
-            if (rect.width >= m_WidthOfButtons && rect.width > m_MinWidthOfPopup)
-            {
-                Rect buttonRect = rect;
+            // To ensure we allocate a consistent amount of controlIDs on every OnGUI we preallocate before any logic
+            if (m_Items.Count > 0 && (m_ItemControlIDs == null || m_ItemControlIDs.Length != m_Items.Count))
+                m_ItemControlIDs = new int[m_Items.Count];
+            for (int i = 0; i < m_Items.Count; ++i)
+                m_ItemControlIDs[i] = GUIUtility.GetControlID(s_ItemHash, FocusType.Passive);
+            m_DropDownButtonControlID = GUIUtility.GetControlID(m_DropDownButtonHash, FocusType.Passive);
 
+            if (rect.width >= widthOfButtonsAndLabel && rect.width > m_MinWidthOfPopup)
+            {
                 // Show as buttons
-                foreach (var item in m_Items)
+
+                if (hasLabel)
                 {
+                    Rect labelRect = rect;
+                    labelRect.width = m_WidthOfLabel;
+                    if (rightAligned)
+                        labelRect.x = rect.xMax - widthOfButtonsAndLabel;
+
+                    GUI.Label(labelRect, m_Label, EditorStyles.boldLabel);
+                    rect.xMin += (m_WidthOfLabel + m_SpacingLabelToButton);
+                }
+
+                Rect buttonRect = rect;
+                buttonRect.width = widthOfButtonsAndLabel;
+                if (rightAligned)
+                    buttonRect.x = rect.xMax - m_WidthOfButtons;
+
+                for (int i = 0; i < m_Items.Count; ++i)
+                {
+                    var item = m_Items[i];
                     buttonRect.width = item.m_Width;
                     buttonRect.y = rect.y + (rect.height - item.m_Height) / 2;
                     buttonRect.height = item.m_Height;
@@ -81,7 +126,7 @@ namespace UnityEditor
 
                     using (new EditorGUI.DisabledScope(!item.m_Enabled))
                     {
-                        GUI.Toggle(buttonRect, item.m_On, item.m_GUIContent, item.m_Style);
+                        GUI.Toggle(buttonRect, m_ItemControlIDs[i], item.m_On, item.m_GUIContent, item.m_Style);
                     }
 
                     if (EditorGUI.EndChangeCheck())
@@ -93,24 +138,37 @@ namespace UnityEditor
                     buttonRect.x += item.m_Width + m_ItemSpacing;
                 }
 
-                return m_WidthOfButtons;
+                return widthOfButtonsAndLabel;
             }
             else
             {
-                var dropDownRect = rect;
-
                 // Show as popup
-                if (m_PopupButtonSize.x < rect.width)
-                    dropDownRect.width = m_PopupButtonSize.x;
 
+                var dropDownRect = rect;
+                if (hasLabel)
+                {
+                    Rect labelRect = dropDownRect;
+                    labelRect.width = m_WidthOfLabel;
+                    if (rightAligned)
+                        labelRect.x = rect.xMax - widthOfPopupAndLabel;
+
+                    GUI.Label(labelRect, m_Label, EditorStyles.boldLabel);
+                    dropDownRect.x = labelRect.x + (m_WidthOfLabel + m_SpacingLabelToButton);
+                }
+                else
+                {
+                    if (rightAligned)
+                        dropDownRect.x = rect.xMax - dropDownRect.width;
+                }
+
+                dropDownRect.width = Mathf.Clamp(dropDownRect.width, 0, m_PopupButtonSize.x);
                 dropDownRect.height = m_PopupButtonSize.y;
                 dropDownRect.y = rect.y + (rect.height - dropDownRect.height) / 2;
 
-                //if (GUI.Button (rect, m_PopupButtonData.m_GUIContent, m_PopupButtonData.m_Style))
-                if (EditorGUI.DropdownButton(dropDownRect, m_PopupButtonData.m_GUIContent, FocusType.Passive, m_PopupButtonData.m_Style))
+                if (EditorGUI.DropdownButton(m_DropDownButtonControlID, dropDownRect, m_PopupButtonData.m_GUIContent, m_PopupButtonData.m_Style))
                     PopUpMenu.Show(dropDownRect, m_Items, this);
 
-                return m_PopupButtonSize.x;
+                return widthOfPopupAndLabel;
             }
         }
 
@@ -130,6 +188,9 @@ namespace UnityEditor
 
             // Popup
             m_PopupButtonSize = m_PopupButtonData.m_Style.CalcSize(m_PopupButtonData.m_GUIContent);
+
+            // Label
+            m_WidthOfLabel = hasLabel ? EditorStyles.boldLabel.CalcSize(m_Label).x : 0;
         }
 
         void SelectionChanged(ItemData item)

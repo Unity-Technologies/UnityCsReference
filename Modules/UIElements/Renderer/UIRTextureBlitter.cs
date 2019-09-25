@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements.UIR
         const int k_TextureSlotCount = 8;
         static readonly int[] k_TextureIds;
 
-        static CustomSampler s_CommitSampler = CustomSampler.Create("UIR.TextureBlitter.Commit");
+        static ProfilerMarker s_CommitSampler = new ProfilerMarker("UIR.TextureBlitter.Commit");
 
         BlitInfo[] m_SingleBlit = new BlitInfo[1];
         Material m_BlitMaterial;

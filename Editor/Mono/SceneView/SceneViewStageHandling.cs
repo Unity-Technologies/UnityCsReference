@@ -7,7 +7,6 @@ using System.Linq;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -18,37 +17,18 @@ namespace UnityEditor
         SceneView m_SceneView;
         StateCache<SceneViewCameraState> m_StateCache = new StateCache<SceneViewCameraState>("Library/StateCache/SceneView/");
 
-        public BreadcrumbBar m_BreadcrumbBar = new BreadcrumbBar();
-        public bool m_BreadcrumbInitialized;
-        bool m_IsPrefabInImmutableFolder;
-        bool m_IsPrefabInValidAssetFolder;
+        BreadcrumbBar m_BreadcrumbBar = new BreadcrumbBar();
+        bool m_BreadcrumbInitialized;
+        Stage m_StageClickedFromBreadcrumb;
 
         public bool isShowingBreadcrumbBar
         {
-            get { return PrefabStageUtility.GetCurrentPrefabStage() != null; }
+            get { return StageNavigationManager.instance.stageHistory.Count > 1; }
         }
 
-        public float breadcrumbHeight { get { return BreadcrumbBar.DefaultStyles.background.fixedHeight; } }
+        public float breadcrumbHeight { get { return BreadcrumbBar.DefaultStyles.background.fixedHeight; }}
 
-        static class Styles
-        {
-            public static GUIContent autoSaveGUIContent = EditorGUIUtility.TrTextContent("Auto Save", "When Auto Save is enabled, every change you make is automatically saved to the Prefab Asset. Disable Auto Save if you experience long import times.");
-            public static GUIContent saveButtonContent = EditorGUIUtility.TrTextContent("Save");
-            public static GUIContent checkoutButtonContent = EditorGUIUtility.TrTextContent("Check Out");
-            public static GUIContent autoSavingBadgeContent = EditorGUIUtility.TrTextContent("Auto Saving...");
-            public static GUIContent immutablePrefabContent = EditorGUIUtility.TrTextContent("Immutable Prefab");
-            public static GUIStyle saveToggle;
-            public static GUIStyle button;
-            public static GUIStyle savingBadge = "Badge";
-
-            static Styles()
-            {
-                saveToggle = EditorStyles.toggle;
-
-                button = EditorStyles.miniButton;
-                button.margin.top = button.margin.bottom = 0;
-            }
-        }
+        Stage currentStage { get { return StageNavigationManager.instance.currentStage; } }
 
         public SceneViewStageHandling(SceneView sceneView)
         {
@@ -58,30 +38,35 @@ namespace UnityEditor
         public void OnEnable()
         {
             StageNavigationManager.instance.stageChanged += OnStageChanged;
-            StageNavigationManager.instance.prefabStageReloaded += OnPrefabStageReloaded;
-            StageNavigationManager.instance.prefabStageDirtinessChanged += OnPrefabStageDirtinessChanged;
             AssetEvents.assetsChangedOnHDD += AssetsChangedOnHDD;
-            PrefabStage.prefabIconChanged += OnPrefabStageIconChanged;
 
             // We need to sync to the current stage to ensure we have the correct SceneView settings: We could have closed Unity while a prefab scene was open
             // this means that the SceneView settings for that prefab is saved to the window layout. Opening Unity always opens the main scenes so here we ensure
             // we have e.g the corrct sky box and other settings.
-            SyncToCurrentStage();
+            currentStage.SyncSceneViewToStage(m_SceneView);
+            LoadCameraState(m_SceneView, currentStage);
         }
 
         public void OnDisable()
         {
             // Ensure saving current stage settings so we can reconstruct them on OnEnable
-            SaveCameraState(m_SceneView, StageNavigationManager.instance.currentItem);
+            SaveCameraState(m_SceneView, currentStage);
 
             StageNavigationManager.instance.stageChanged -= OnStageChanged;
-            StageNavigationManager.instance.prefabStageReloaded -= OnPrefabStageReloaded;
-            StageNavigationManager.instance.prefabStageDirtinessChanged -= OnPrefabStageDirtinessChanged;
             AssetEvents.assetsChangedOnHDD -= AssetsChangedOnHDD;
-            PrefabStage.prefabIconChanged -= OnPrefabStageIconChanged;
         }
 
-        void OnPrefabStageIconChanged(PrefabStage prefabStage)
+        public void StartOnGUI()
+        {
+            currentStage.OnPreSceneViewRender(m_SceneView);
+        }
+
+        public void EndOnGUI()
+        {
+            currentStage.OnPostSceneViewRender(m_SceneView);
+        }
+
+        internal void RebuildBreadcrumbBar()
         {
             m_BreadcrumbInitialized = false;
         }
@@ -91,95 +76,34 @@ namespace UnityEditor
             m_BreadcrumbInitialized = false;
         }
 
-        void OnPrefabStageDirtinessChanged(PrefabStage prefabStage)
-        {
-            if (m_SceneView.customScene == prefabStage.scene)
-                m_SceneView.Repaint();
-        }
-
-        void OnPrefabStageReloaded(StageNavigationItem prefabStage)
-        {
-            m_SceneView.customScene = prefabStage.prefabStage.scene;
-            m_SceneView.customParentForDraggedObjects = prefabStage.prefabStage.prefabContentsRoot.transform;
-        }
-
-        void OnStageChanged(StageNavigationItem previousStage, StageNavigationItem newStage)
+        void OnStageChanged(Stage previousStage, Stage newStage)
         {
             SaveCameraState(m_SceneView, previousStage);
-            SyncToCurrentStage();
+            newStage.SyncSceneViewToStage(m_SceneView);
+
+            var contextStage = newStage.GetContextStage();
+            if (GetStoredCameraState(m_SceneView, contextStage) == null)
+                newStage.OnFirstTimeOpenStageInSceneView(m_SceneView);
+            else
+                LoadCameraState(m_SceneView, contextStage);
+
             m_BreadcrumbInitialized = false;
             m_SceneView.OnStageChanged(previousStage, newStage);
         }
 
-        void SyncToCurrentStage()
-        {
-            StageNavigationItem stage = StageNavigationManager.instance.currentItem;
-            if (stage.isMainStage)
-            {
-                m_SceneView.customScene = new Scene();
-                m_SceneView.customParentForDraggedObjects = null;
-            }
-            else
-            {
-                m_SceneView.customScene = PrefabStageUtility.GetCurrentPrefabStage().scene;
-                m_SceneView.customParentForDraggedObjects = PrefabStageUtility.GetCurrentPrefabStage().prefabContentsRoot.transform;
-            }
-
-            LoadCameraState(m_SceneView, stage);
-            HandleFirstTimePrefabStageIsOpened(stage);
-        }
-
-        static bool HasAnyActiveLights(Scene scene)
-        {
-            foreach (var gameObject in scene.GetRootGameObjects())
-            {
-                if (gameObject.GetComponentsInChildren<Light>(false).Length > 0)
-                    return true;
-            }
-
-            return false;
-        }
-
-        void HandleFirstTimePrefabStageIsOpened(StageNavigationItem stage)
-        {
-            if (stage.isPrefabStage && GetStoredCameraState(m_SceneView, stage) == null)
-            {
-                // Default to scene view lighting if scene itself does not have any lights
-                if (!HasAnyActiveLights(stage.prefabStage.scene))
-                    m_SceneView.sceneLighting = false;
-
-                // Default to not showing skybox if user did not specify a custom environment scene.
-                if (string.IsNullOrEmpty(stage.prefabStage.scene.path))
-                    m_SceneView.sceneViewState.showSkybox = false;
-
-                // For UI to frame properly we need to delay one full Update for the layouting to have been processed
-                EditorApplication.update += DelayedFraming;
-            }
-        }
-
-        int m_DelayCounter;
-        void DelayedFraming()
-        {
-            if (m_DelayCounter++ == 1)
-            {
-                EditorApplication.update -= DelayedFraming;
-                m_DelayCounter = 0;
-
-                // Frame the prefab if still available
-                var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-                if (prefabStage != null)
-                {
-                    Selection.activeGameObject = prefabStage.prefabContentsRoot;
-                    m_SceneView.FrameSelected(false, true);
-                }
-            }
-        }
-
-        void SaveCameraState(SceneView sceneView, StageNavigationItem stage)
+        void SaveCameraState(SceneView sceneView, Stage stage)
         {
             if (stage == null)
                 return;
-            string key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, stage);
+
+            // Allows stage to override which stage should be used for saving the state.
+            // Useful for Prefab Mode in Context where we want to save the context scene state.
+            Stage contextStage = stage.GetContextStage();
+
+            if (contextStage == null)
+                return;
+
+            string key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, contextStage);
             var state = m_StateCache.GetState(key);
             if (state == null)
                 state = new SceneViewCameraState();
@@ -187,18 +111,25 @@ namespace UnityEditor
             m_StateCache.SetState(key, state);
         }
 
-        SceneViewCameraState GetStoredCameraState(SceneView sceneView, StageNavigationItem stage)
+        SceneViewCameraState GetStoredCameraState(SceneView sceneView, Stage stage)
         {
             string key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, stage);
             return m_StateCache.GetState(key);
         }
 
-        void LoadCameraState(SceneView sceneView, StageNavigationItem stage)
+        void LoadCameraState(SceneView sceneView, Stage stage)
         {
             if (stage == null)
                 return;
 
-            var state = GetStoredCameraState(sceneView, stage);
+            // Allows stage to override which stage should be used for saving the state.
+            // Useful for Prefab Mode in Context where we want to save the context scene state.
+            Stage contextStage = stage.GetContextStage();
+
+            if (contextStage == null)
+                return;
+
+            var state = GetStoredCameraState(sceneView, contextStage);
             if (state != null)
                 state.RestoreStateToSceneView(sceneView);
         }
@@ -210,63 +141,12 @@ namespace UnityEditor
             SetupBreadCrumbBarIfNeeded();
             using (new GUILayout.VerticalScope(BreadcrumbBar.DefaultStyles.background))
             {
-                GUILayout.Space(verticalOffset);
+                GUILayout.Space(verticalOffset - 1);
                 using (new EditorGUILayout.HorizontalScope(GUILayout.Height(breadcrumbsHeight)))
                 {
                     m_BreadcrumbBar.OnGUI();
-                    AutoSaveButtons();
-                }
-            }
-        }
-
-        void AutoSaveButtons()
-        {
-            StageNavigationItem item = StageNavigationManager.instance.currentItem;
-
-            if (item.isPrefabStage)
-            {
-                if (m_IsPrefabInValidAssetFolder && !m_IsPrefabInImmutableFolder)
-                {
-                    StatusQueryOptions opts = EditorUserSettings.allowAsyncStatusUpdate ? StatusQueryOptions.UseCachedAsync : StatusQueryOptions.UseCachedIfPossible;
-                    bool openForEdit = AssetDatabase.IsOpenForEdit(item.prefabAssetPath, opts);
-
-                    PrefabStage stage = item.prefabStage;
-                    if (stage.showingSavingLabel)
-                    {
-                        GUILayout.Label(Styles.autoSavingBadgeContent, Styles.savingBadge);
-                        GUILayout.Space(4);
-                    }
-
-                    if (!stage.autoSave)
-                    {
-                        using (new EditorGUI.DisabledScope(!openForEdit || !PrefabStageUtility.GetCurrentPrefabStage().HasSceneBeenModified()))
-                        {
-                            if (GUILayout.Button(Styles.saveButtonContent, Styles.button))
-                                PrefabStageUtility.GetCurrentPrefabStage().SavePrefabWithVersionControlDialogAndRenameDialog();
-                        }
-                    }
-
-                    using (new EditorGUI.DisabledScope(stage.temporarilyDisableAutoSave))
-                    {
-                        bool autoSaveForScene = stage.autoSave;
-                        EditorGUI.BeginChangeCheck();
-                        autoSaveForScene = GUILayout.Toggle(autoSaveForScene, Styles.autoSaveGUIContent, Styles.saveToggle);
-                        if (EditorGUI.EndChangeCheck())
-                            stage.autoSave = autoSaveForScene;
-                    }
-
-                    if (!openForEdit)
-                    {
-                        if (GUILayout.Button(Styles.checkoutButtonContent, Styles.button))
-                        {
-                            Task task = Provider.Checkout(AssetDatabase.LoadAssetAtPath<GameObject>(item.prefabAssetPath), CheckoutMode.Both);
-                            task.Wait();
-                        }
-                    }
-                }
-                else
-                {
-                    GUILayout.Label(Styles.immutablePrefabContent, EditorStyles.boldLabel);
+                    GUILayout.Space(10f);
+                    currentStage.OnControlsGUI(m_SceneView);
                 }
             }
         }
@@ -278,48 +158,48 @@ namespace UnityEditor
 
             var history = StageNavigationManager.instance.stageHistory;
             var crumbs = new List<BreadcrumbBar.Item>();
-            Texture sceneIcon = EditorGUIUtility.FindTexture("UnityEditor/SceneAsset Icon");
             foreach (var stage in history)
             {
-                bool isLastCrumb = stage == history.Last();
-                var label = stage.displayName;
-                var icon = sceneIcon;
-                var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
-                var tooltip = "";
-                if (stage.isPrefabStage)
+                var breadcrumbItem = stage.CreateBreadCrumbItem();
+                if (breadcrumbItem != null)
                 {
-                    icon = isLastCrumb ? PrefabStageUtility.GetCurrentPrefabStage().prefabFileIcon : stage.prefabIcon;
-                    if (!stage.prefabAssetExists)
-                    {
-                        style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBoldMissing : BreadcrumbBar.DefaultStyles.labelMissing;
-                        tooltip = L10n.Tr("Prefab asset has been deleted");
-                    }
+                    breadcrumbItem.userdata = stage;
+                    crumbs.Add(breadcrumbItem);
                 }
-
-                crumbs.Add(new BreadcrumbBar.Item { content = new GUIContent(label, icon, tooltip), guistyle = style, userdata = stage });
             }
             m_BreadcrumbBar.SetBreadCrumbs(crumbs);
             m_BreadcrumbBar.onBreadCrumbClicked -= BreadCrumbItemClicked;
             m_BreadcrumbBar.onBreadCrumbClicked += BreadCrumbItemClicked;
             m_BreadcrumbInitialized = true;
-
-            bool isRootFolder;
-            m_IsPrefabInValidAssetFolder = AssetDatabase.GetAssetFolderInfo(StageNavigationManager.instance.currentItem.prefabAssetPath, out isRootFolder, out m_IsPrefabInImmutableFolder);
         }
 
-        static void BreadCrumbItemClicked(BreadcrumbBar.Item item)
+        void SwitchStageOnNextUpdate()
         {
-            var stageClicked = (StageNavigationItem)item.userdata;
-            if (!stageClicked.valid)
+            EditorApplication.update -= SwitchStageOnNextUpdate;
+            var stageClicked = m_StageClickedFromBreadcrumb;
+            m_StageClickedFromBreadcrumb = null;
+
+            if (stageClicked != null && stageClicked.isValid)
+                StageNavigationManager.instance.SwitchToStage(stageClicked, false, true, StageNavigationManager.Analytics.ChangeType.NavigateViaBreadcrumb);
+        }
+
+        void BreadCrumbItemClicked(BreadcrumbBar.Item item)
+        {
+            var stageClicked = (Stage)item.userdata;
+            if (!stageClicked.isValid)
                 return;
 
-            if (StageNavigationManager.instance.currentItem == stageClicked)
+            if (StageNavigationManager.instance.currentStage == stageClicked)
             {
-                EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(stageClicked.prefabAssetPath));
+                EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(stageClicked.assetPath));
             }
             else
             {
-                StageNavigationManager.instance.SwitchToStage(stageClicked, false, true, StageNavigationManager.Analytics.ChangeType.NavigateViaBreadcrumb);
+                // The BreadCrumbItemClicked event is called during the SceneView's OnGUI and if we switch stage directly we might delete the
+                // target of the SceneView's activeEditors which the rest of the SceneView's OnGUI is not expecting.
+                // E.g it will cause null ref exceptions in OnSceneGUI(). Instead we delay switching until the next Update.
+                m_StageClickedFromBreadcrumb = stageClicked;
+                EditorApplication.update += SwitchStageOnNextUpdate;
             }
         }
     }

@@ -262,7 +262,7 @@ namespace UnityEditor
                 if (GUILayout.Button(Styles.openContent, Styles.openButtonStyle))
                 {
                     // We only support opening one prefab at a time (so do not use 'targets')
-                    PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(assetTarget), null, StageNavigationManager.Analytics.ChangeType.EnterViaAssetInspectorOpenButton);
+                    PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(assetTarget), null, PrefabStage.Mode.InIsolation, StageNavigationManager.Analytics.ChangeType.EnterViaAssetInspectorOpenButton);
 
                     GUIUtility.ExitGUI();
                 }

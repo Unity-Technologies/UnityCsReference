@@ -591,11 +591,19 @@ namespace UnityEditor.PackageManager.UI
 
                 if (m_RemoveOperation.isInProgress)
                     SetupRemoveOperation();
+
+                if (m_SetupDone)
+                {
+                    Clear();
+                    Setup();
+                }
             }
 
             public void Setup()
             {
-                System.Diagnostics.Debug.Assert(!m_SetupDone);
+                if (m_SetupDone)
+                    return;
+
                 m_SetupDone = true;
 
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged += OnShowPreviewPackagesChanged;
@@ -603,13 +611,12 @@ namespace UnityEditor.PackageManager.UI
 
             public void Clear()
             {
-                System.Diagnostics.Debug.Assert(m_SetupDone);
                 m_SetupDone = false;
 
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
             }
 
-            public void Reset()
+            public void Reload()
             {
                 m_InstalledPackageInfos.Clear();
                 m_SearchPackageInfos.Clear();

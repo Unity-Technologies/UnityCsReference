@@ -706,9 +706,6 @@ namespace UnityEditor.IMGUI.Controls
                     }
                 }
 
-                // Item GUI
-                DoItemGUI(data.GetItem(row), row, rowWidth, hasFocus);
-
                 if (enableItemHovering)
                 {
                     Rect rowRect = gui.GetRowRect(row, rowWidth);
@@ -716,6 +713,11 @@ namespace UnityEditor.IMGUI.Controls
                         currentHoveredItem = data.GetItem(row);
                     m_GUIView.MarkHotRegion(GUIClip.UnclipToWindow(rowRect));
                 }
+
+                // Item GUI
+                // Note that DoItemGUI() needs to be called right before checking m_StopIteratingItems since
+                // UI in the current row can issue a reload of the TreeView data
+                DoItemGUI(data.GetItem(row), row, rowWidth, hasFocus);
 
                 if (m_StopIteratingItems)
                     break;

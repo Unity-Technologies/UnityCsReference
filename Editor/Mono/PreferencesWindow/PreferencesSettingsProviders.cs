@@ -21,6 +21,12 @@ namespace UnityEditor
 {
     internal class PreferencesProvider : SettingsProvider
     {
+        internal enum CodeOptimization
+        {
+            Debug,
+            Release
+        }
+
         internal static class Constants
         {
             public static GUIStyle sectionScrollView = "PreferencesSectionBox";
@@ -64,12 +70,13 @@ namespace UnityEditor
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage.");
+            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
         }
 
         internal class ExternalProperties
         {
             public static readonly GUIContent addUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
-            public static readonly GUIContent editorAttaching = EditorGUIUtility.TrTextContent("Editor Attaching");
+            public static readonly GUIContent codeOptimizationOnStartup = EditorGUIUtility.TrTextContent("Code Optimization On Startup");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
             public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
             public static readonly GUIContent externalScriptEditor = EditorGUIUtility.TrTextContent("External Script Editor");
@@ -125,8 +132,7 @@ namespace UnityEditor
         private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
         private bool m_DeveloperModeDirty;
-        private bool m_AllowAttachedDebuggingOfEditor;
-        private bool m_AllowAttachedDebuggingOfEditorStateChangedThisSession;
+        private bool m_ScriptDebugInfoEnabled;
         private string m_GpuDevice;
         private string[] m_CachedGpuDevices;
         private bool m_ContentScaleChangedThisSession;
@@ -161,6 +167,7 @@ namespace UnityEditor
 
         private bool m_AllowAlphaNumericHierarchy = false;
         private bool m_EnableCodeCoverage = false;
+        private bool m_Create3DObjectsAtOrigin = false;
 
         private string[] m_ScriptApps;
         private string[] m_ScriptAppsEditions;
@@ -349,7 +356,7 @@ namespace UnityEditor
         private void ShowExternalApplications(string searchContext)
         {
             // Applications
-            FilePopup(ExternalProperties.externalScriptEditor, m_ScriptEditorPath, ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
+            FilePopup(ExternalProperties.externalScriptEditor, ScriptEditorUtility.GetExternalScriptEditor(), ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
 
             #pragma warning disable 618
             if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
@@ -368,15 +375,6 @@ namespace UnityEditor
             }
 
             DoUnityProjCheckbox();
-
-            bool oldValue = m_AllowAttachedDebuggingOfEditor;
-            m_AllowAttachedDebuggingOfEditor = EditorGUILayout.Toggle(ExternalProperties.editorAttaching, m_AllowAttachedDebuggingOfEditor);
-
-            if (oldValue != m_AllowAttachedDebuggingOfEditor)
-                m_AllowAttachedDebuggingOfEditorStateChangedThisSession = true;
-
-            if (m_AllowAttachedDebuggingOfEditorStateChangedThisSession)
-                GUILayout.Label(ExternalProperties.changingThisSettingRequiresRestart, EditorStyles.helpBox);
 
             if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
             {
@@ -536,6 +534,9 @@ namespace UnityEditor
 
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(GeneralProperties.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
 
+            CodeOptimization codeOptimization = (CodeOptimization)EditorGUILayout.EnumPopup(ExternalProperties.codeOptimizationOnStartup, m_ScriptDebugInfoEnabled ? CodeOptimization.Debug : CodeOptimization.Release);
+            m_ScriptDebugInfoEnabled = (codeOptimization == CodeOptimization.Debug ? true : false);
+
             // Only show this toggle if this is a source build or we're already in developer mode.
             // We don't want to show this to users yet.
             if (Unsupported.IsSourceBuild() || m_DeveloperMode)
@@ -608,6 +609,8 @@ namespace UnityEditor
             m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
             if (m_EnableCodeCoverage != Coverage.enabled)
                 EditorGUILayout.HelpBox((m_EnableCodeCoverage ? "Enabling " : "Disabling ") + "Code Coverage will not take effect until Unity is restarted.", MessageType.Warning);
+
+            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
 
             ApplyChangesToPrefs();
 
@@ -956,13 +959,14 @@ namespace UnityEditor
                 InternalEditorUtility.RepaintAllViews();
             }
 
-            EditorPrefs.SetBool("AllowAttachedDebuggingOfEditor", m_AllowAttachedDebuggingOfEditor);
+            EditorPrefs.SetBool("ScriptDebugInfoEnabled", m_ScriptDebugInfoEnabled);
 
             EditorPrefs.SetBool("Editor.kEnableEditorLocalization", m_EnableEditorLocalization);
             EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
             EditorPrefs.SetBool("CodeCoverageEnabled", m_EnableCodeCoverage);
+            EditorPrefs.SetBool("Create3DObject.PlaceAtWorldOrigin", m_Create3DObjectsAtOrigin);
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
@@ -1071,11 +1075,12 @@ namespace UnityEditor
 
             m_SpriteAtlasCacheSize = EditorPrefs.GetInt("SpritePackerCacheMaximumSizeGB");
 
-            m_AllowAttachedDebuggingOfEditor = EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true);
+            m_ScriptDebugInfoEnabled = EditorPrefs.GetBool("ScriptDebugInfoEnabled", false);
             m_EnableEditorLocalization = EditorPrefs.GetBool("Editor.kEnableEditorLocalization", true);
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
             m_EnableCodeCoverage = EditorPrefs.GetBool("CodeCoverageEnabled", false);
+            m_Create3DObjectsAtOrigin = EditorPrefs.GetBool("Create3DObject.PlaceAtWorldOrigin", false);
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");

@@ -134,8 +134,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateStatusIcon()
         {
-            var state = package?.GetState() ?? PackageState.None;
-
+            var state = package?.state ?? PackageState.None;
             var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
             if (!string.IsNullOrEmpty(m_CurrentStateClass))
                 stateLabel.RemoveFromClassList(m_CurrentStateClass);
@@ -145,10 +144,18 @@ namespace UnityEditor.PackageManager.UI
 
             stateLabel.tooltip = GetTooltipByState(state);
 
-            if (state != PackageState.InProgress)
+            UpdateProgressSpinner();
+        }
+
+        public void UpdateProgressSpinner()
+        {
+            if (package?.state != PackageState.InProgress || package?.progress == PackageProgress.None)
                 StopSpinner();
-            else if (state == PackageState.InProgress)
+            else
+            {
                 StartSpinner();
+                spinner.tooltip = GetTooltipByProgress(package.progress);
+            }
         }
 
         private void RefreshVersions()
@@ -226,13 +233,13 @@ namespace UnityEditor.PackageManager.UI
             PageManager.instance.SetSeeAllVersions(package, true);
         }
 
-        internal void StartSpinner()
+        private void StartSpinner()
         {
             spinner.Start();
             UIUtils.SetElementDisplay(stateLabel, false);
         }
 
-        internal void StopSpinner()
+        private void StopSpinner()
         {
             spinner.Stop();
             UIUtils.SetElementDisplay(stateLabel, true);
@@ -264,6 +271,7 @@ namespace UnityEditor.PackageManager.UI
         {
             "",
             "This package is installed.",
+            "This package is installed as dependency.",
             "This package is available for import.",
             "This package is in development.",
             "A newer version of this package is available.",
@@ -274,6 +282,20 @@ namespace UnityEditor.PackageManager.UI
         public static string GetTooltipByState(PackageState state)
         {
             return L10n.Tr(k_TooltipsByState[(int)state]);
+        }
+
+        private static readonly string[] k_TooltipsByProgress =
+        {
+            "",
+            "Package refreshing in progress.",
+            "Package downloading in progress.",
+            "Package installing in progress.",
+            "Package removing in progress."
+        };
+
+        public static string GetTooltipByProgress(PackageProgress progress)
+        {
+            return L10n.Tr(k_TooltipsByProgress[(int)progress]);
         }
 
         public static string GetVersionText(IPackageVersion version, bool simplified = false)

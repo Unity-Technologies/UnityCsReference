@@ -226,7 +226,7 @@ namespace UnityEditor
         {
             Color temp = color;
 
-            bool isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
+            bool isDisabled = !GUI.enabled;
 
             // Calculate the camera view vector in Handle draw space
             // this handle the case where the matrix is skewed
@@ -293,7 +293,7 @@ namespace UnityEditor
                 var isThisAxisHot = isHot && ids[i] == GUIUtility.hotControl;
 
                 var axisColor = GetColorByAxis(i);
-                color = isStatic ? Color.Lerp(axisColor, staticColor, staticBlend) : axisColor;
+                color = isDisabled ? Color.Lerp(axisColor, staticColor, staticBlend) : axisColor;
                 GUI.SetNextControlName(s_DoPositionHandle_Internal_AxisNames[i]);
 
                 // if we are hot here, the hot handle must be opaque
@@ -360,8 +360,8 @@ namespace UnityEditor
 
             Color prevColor = Handles.color;
 
-            bool isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
-            color = isStatic ? staticColor : GetColorByAxis(axisNormalIndex);
+            bool isDisabled = !GUI.enabled;
+            color = isDisabled ? staticColor : GetColorByAxis(axisNormalIndex);
             color = Color.Lerp(color, Color.clear, cameraLerp);
 
             var updateOpacityFillColor = false;

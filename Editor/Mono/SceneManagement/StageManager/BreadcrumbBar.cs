@@ -19,7 +19,8 @@ namespace UnityEditor.IMGUI.Controls
             public static GUIStyle labelBold;
             public static GUIStyle labelBoldMissing;
             public static GUIStyle background;
-            public static GUIStyle separator = "BreadcrumbsSeparator";
+            public static GUIStyle separatorLine = "BreadcrumbsSeparator";
+            public static GUIStyle separatorArrow = "ArrowNavigationRight";
 
             static DefaultStyles()
             {
@@ -36,11 +37,18 @@ namespace UnityEditor.IMGUI.Controls
                 labelBoldMissing = new GUIStyle(labelMissing);
                 labelBoldMissing.fontStyle = FontStyle.Bold;
 
-                background = new GUIStyle("SceneTopBarBg");
+                background = new GUIStyle("ProjectBrowserTopBarBg");
                 background.padding = new RectOffset(4, 4, 0, 0);
                 background.border = new RectOffset(3, 3, 3, 3);
                 background.fixedHeight = 25f;
             }
+        }
+
+        public enum SeparatorStyle
+        {
+            None,
+            Line,
+            Arrow
         }
 
         public class Item
@@ -48,10 +56,13 @@ namespace UnityEditor.IMGUI.Controls
             public GUIContent content { get; set; }
             public GUIStyle guistyle { get; set; }
             public object userdata { get; set; }
+            public SeparatorStyle separatorstyle { get; set; }
         }
 
         public event Action<Item> onBreadCrumbClicked = null;
         public List<Item> breadcrumbs { get { return m_Breadcrumbs; } }
+
+        float lastBreadcrumbWidth { get; set; }
 
         public void SetBreadCrumbs(List<Item> breadCrumbItems)
         {
@@ -61,6 +72,14 @@ namespace UnityEditor.IMGUI.Controls
             foreach (var item in m_Breadcrumbs)
                 if (item.guistyle == null)
                     item.guistyle = DefaultStyles.label;
+
+            if (m_Breadcrumbs.Count > 0)
+            {
+                EditorGUIUtility.SetIconSize(new Vector2(16, 16));
+                var lastItem = m_Breadcrumbs[m_Breadcrumbs.Count - 1];
+                lastBreadcrumbWidth = lastItem.guistyle.CalcSize(lastItem.content).x;
+                EditorGUIUtility.SetIconSize(new Vector2(0, 0));
+            }
         }
 
         public void OnGUI()
@@ -70,16 +89,19 @@ namespace UnityEditor.IMGUI.Controls
             {
                 Item item = m_Breadcrumbs[i];
 
-                if (GUILayout.Button(item.content, item.guistyle, GUILayout.MinWidth(32)))
+                if (item.separatorstyle != SeparatorStyle.None)
+                {
+                    var separatorGUIStyle = item.separatorstyle == SeparatorStyle.Arrow ? DefaultStyles.separatorArrow : DefaultStyles.separatorLine;
+                    GUILayout.Label(GUIContent.none, separatorGUIStyle);
+                }
+
+                // Ensures last breadcrumb does not shrink
+                var minWidth = (i == m_Breadcrumbs.Count - 1) ? lastBreadcrumbWidth : 32;
+
+                if (GUILayout.Button(item.content, item.guistyle, GUILayout.MinWidth(minWidth)))
                 {
                     if (onBreadCrumbClicked != null)
                         onBreadCrumbClicked(item);
-                }
-
-                bool lastElement = i == m_Breadcrumbs.Count - 1;
-                if (!lastElement)
-                {
-                    GUILayout.Label(GUIContent.none, DefaultStyles.separator);
                 }
             }
             GUILayout.FlexibleSpace();

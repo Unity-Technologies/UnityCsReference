@@ -17,6 +17,8 @@ namespace UnityEditor
         string m_MiniMemoryOverview = "";
         string m_BakeModeString = "";
 
+        ManagedDebuggerToggle m_ManagedDebuggerToggle = null;
+
         private bool showBakeMode
         {
             get { return Lightmapping.bakedGI || Lightmapping.realtimeGI; }
@@ -30,6 +32,7 @@ namespace UnityEditor
             for (int i = 0; i < 12; i++)
                 s_StatusWheel[i] = EditorGUIUtility.IconContent("WaitSpin" + i.ToString("00"));
             s_AssemblyLock = EditorGUIUtility.IconContent("AssemblyLock", "|Assemblies are currently locked. Compilation will resume once they are unlocked");
+            m_ManagedDebuggerToggle = new ManagedDebuggerToggle();
         }
 
         [RequiredByNativeCode]
@@ -94,7 +97,7 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.MouseDown)
             {
-                Rect rect = new Rect(position.width - statusBarItemsWidth, 0, lightingBakeModeBarWidth, barHeight);
+                Rect rect = new Rect(position.width - statusBarItemsWidth - m_ManagedDebuggerToggle.GetWidth(), 0, lightingBakeModeBarWidth, barHeight);
 
                 if (rect.Contains(Event.current.mousePosition))
                 {
@@ -117,7 +120,8 @@ namespace UnityEditor
                 GUILayout.BeginVertical();
                 GUILayout.Space(1);
 
-                GUILayout.Label(statusText, errorStyle, GUILayout.MaxWidth(GUIView.current.position.width - statusBarItemsWidth - (icon != null ? icon.width : 0)));
+                float statusTextWidth = GUIView.current.position.width - statusBarItemsWidth - m_ManagedDebuggerToggle.GetWidth() - (icon != null ? icon.width : 0);
+                GUILayout.Label(statusText, errorStyle, GUILayout.MaxWidth(statusTextWidth));
 
                 GUILayout.FlexibleSpace();
 
@@ -126,17 +130,24 @@ namespace UnityEditor
                 // Handle status bar click
                 if (Event.current.type == EventType.MouseDown)
                 {
-                    Event.current.Use();
-                    LogEntries.ClickStatusBar(Event.current.clickCount);
-                    GUIUtility.ExitGUI();
+                    Rect rect = new Rect(0, 0, statusTextWidth, barHeight);
+                    if (rect.Contains(Event.current.mousePosition))
+                    {
+                        Event.current.Use();
+                        LogEntries.ClickStatusBar(Event.current.clickCount);
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
+
+            float managedDebuggerTogglePosX = position.width - statusWheelWidth - m_ManagedDebuggerToggle.GetWidth();
+            m_ManagedDebuggerToggle.OnGUI(managedDebuggerTogglePosX, 0);
 
             GUILayout.EndHorizontal();
 
             if (Event.current.type == EventType.Repaint)
             {
-                float progressBarHorizontalPosition = position.width - statusWheelWidth;
+                float progressBarHorizontalPosition = position.width - statusWheelWidth - m_ManagedDebuggerToggle.GetWidth();
 
                 if (AsyncProgressBar.isShowing)
                 {

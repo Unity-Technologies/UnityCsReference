@@ -1576,6 +1576,9 @@ namespace UnityEditor
 
         public static bool IsAddedGameObjectOverride(GameObject gameObject)
         {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject), "GameObject is null.");
+
             Transform parent = gameObject.transform.parent;
             if (parent == null)
                 return false;

@@ -1030,76 +1030,86 @@ namespace UnityEditor
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Children"));
 
-            if (IsSelectPrefabRootAvailable())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Select Prefab Root"), false, SelectPrefabRoot);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Prefab Root"));
-
             // Prefab menu items that only make sense if a single object is selected.
+            GameObject go = null;
+            string assetPath = null;
+            GameObject prefabAsset = null;
             if (m_TreeViewState.selectedIDs.Count == 1)
             {
                 GameObjectTreeViewItem item = treeView.FindItem(m_TreeViewState.selectedIDs[0]) as GameObjectTreeViewItem;
                 if (item != null && (item.objectPPTR as GameObject) != null)
                 {
-                    GameObject go = (GameObject)(item.objectPPTR);
-                    string assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
-                    GameObject prefabAsset = (GameObject)AssetDatabase.LoadMainAssetAtPath(assetPath);
-
-                    if (!string.IsNullOrEmpty(assetPath))
-                    {
-                        if (PrefabUtility.IsPartOfModelPrefab(prefabAsset))
-                        {
-                            menu.AddItem(EditorGUIUtility.TrTextContent("Open Model"), false, () =>
-                            {
-                                AssetDatabase.OpenAsset(prefabAsset);
-                            });
-                        }
-                        else
-                        {
-                            menu.AddItem(EditorGUIUtility.TrTextContent("Open Prefab Asset"), false, () =>
-                            {
-                                PrefabStageUtility.OpenPrefab(assetPath, go, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
-                            });
-                        }
-
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Select Prefab Asset"), false, () =>
-                        {
-                            Selection.activeObject = prefabAsset;
-                            EditorGUIUtility.PingObject(prefabAsset.GetInstanceID());
-                        });
-                    }
-
-                    if (PrefabUtility.IsAddedGameObjectOverride(go))
-                    {
-                        // Handle added GameObject or prefab.
-                        Transform parentTransform = go.transform.parent;
-                        PrefabUtility.HandleApplyRevertMenuItems(
-                            "Added GameObject",
-                            parentTransform.gameObject,
-                            (menuItemContent, sourceGo) =>
-                            {
-                                TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
-                                info.instanceObject = go;
-                                info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
-                                GameObject rootGo = PrefabUtility.GetRootGameObject(sourceGo);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform))
-                                    menu.AddDisabledItem(menuItemContent);
-                                else
-                                    menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedGameObject, info);
-                            },
-                            (menuItemContent) =>
-                            {
-                                menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabAddedGameObject, go);
-                            }
-                        );
-                    }
+                    go = (GameObject)(item.objectPPTR);
+                    assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
+                    prefabAsset = (GameObject)AssetDatabase.LoadMainAssetAtPath(assetPath);
                 }
+            }
+
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                if (PrefabUtility.IsPartOfModelPrefab(prefabAsset))
+                {
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Open Model"), false, () =>
+                    {
+                        AssetDatabase.OpenAsset(prefabAsset);
+                    });
+                }
+                else
+                {
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Open Asset in Context"), false, () =>
+                    {
+                        PrefabStageUtility.OpenPrefab(assetPath, go, PrefabStage.Mode.InContext, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
+                    });
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Open Asset in Isolation"), false, () =>
+                    {
+                        PrefabStageUtility.OpenPrefab(assetPath, go, PrefabStage.Mode.InIsolation, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
+                    });
+                }
+            }
+
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Asset"), false, () =>
+                {
+                    Selection.activeObject = prefabAsset;
+                    EditorGUIUtility.PingObject(prefabAsset.GetInstanceID());
+                });
+            }
+
+            if (IsSelectPrefabRootAvailable())
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Root"), false, SelectPrefabRoot);
+            }
+
+            if (go != null && PrefabUtility.IsAddedGameObjectOverride(go))
+            {
+                // Handle added GameObject or prefab.
+                Transform parentTransform = go.transform.parent;
+                PrefabUtility.HandleApplyRevertMenuItems(
+                    "Added GameObject",
+                    parentTransform.gameObject,
+                    (menuItemContent, sourceGo) =>
+                    {
+                        TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
+                        info.instanceObject = go;
+                        info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
+                        GameObject rootGo = PrefabUtility.GetRootGameObject(sourceGo);
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform))
+                            menu.AddDisabledItem(menuItemContent);
+                        else
+                            menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedGameObject, info);
+                    },
+                    (menuItemContent) =>
+                    {
+                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabAddedGameObject, go);
+                    }
+                );
             }
 
             if (AnyOutermostPrefabRoots())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Unpack Prefab"), false, UnpackPrefab);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Unpack Prefab Completely"), false, UnpackPrefabCompletely);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack"), false, UnpackPrefab);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack Completely"), false, UnpackPrefabCompletely);
             }
 
             GameObject[] selectedGameObjects = Selection.transforms.Select(t => t.gameObject).ToArray();

@@ -50,7 +50,7 @@ namespace UnityEditorInternal
                     return EditorGUIUtility.FindTexture(typeof(Font));
 
                 case "aac": case "aif": case "aiff": case "au": case "mid": case "midi": case "mp3": case "mpa":
-                case "ra": case "ram": case "wma": case "wav": case "wave": case "ogg":
+                case "ra": case "ram": case "wma": case "wav": case "wave": case "ogg": case "flac":
                     return EditorGUIUtility.FindTexture(typeof(AudioClip));
 
                 case "ai": case "apng": case "png": case "bmp": case "cdr": case "dib": case "eps": case "exif":

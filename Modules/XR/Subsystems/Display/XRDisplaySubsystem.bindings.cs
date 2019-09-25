@@ -161,13 +161,25 @@ namespace UnityEngine.XR
         [NativeConditional("ENABLE_XR")]
         extern public int GetPreferredMirrorBlitMode();
 
+        [System.Obsolete("GetMirrorViewBlitDesc(RenderTexture, out XRMirrorViewBlitDesc) is deprecated. Use GetMirrorViewBlitDesc(RenderTexture, out XRMirrorViewBlitDesc, int) instead.", false)]
+        public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc)
+        {
+            return GetMirrorViewBlitDesc(mirrorRt, out outDesc, XRMirrorViewBlitMode.LeftEye);
+        }
+
         [NativeMethod(Name = "QueryMirrorViewBlitDesc", IsThreadSafe = false)]
         [NativeConditional("ENABLE_XR")]
-        extern public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc, int mode = XRMirrorViewBlitMode.kXRMirrorBlitLeftEye);
+        extern public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc, int mode);
+
+        [System.Obsolete("AddGraphicsThreadMirrorViewBlit(CommandBuffer, bool) is deprecated. Use AddGraphicsThreadMirrorViewBlit(CommandBuffer, bool, int) instead.", false)]
+        public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate)
+        {
+            return AddGraphicsThreadMirrorViewBlit(cmd, allowGraphicsStateInvalidate, XRMirrorViewBlitMode.LeftEye);
+        }
 
         [NativeMethod(Name = "AddGraphicsThreadMirrorViewBlit", IsThreadSafe = false)]
         [NativeHeader("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
         [NativeConditional("ENABLE_XR")]
-        extern public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate, int mode = XRMirrorViewBlitMode.kXRMirrorBlitLeftEye);
+        extern public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate, int mode);
     }
 }

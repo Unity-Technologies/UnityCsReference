@@ -209,6 +209,8 @@ namespace UnityEngine.UIElements.UIR
         }
         public bool internalAtlasCreated { get { return m_AtlasReallyCreated; } } // For diagnostics really
 
+        public bool isReleased { get { return m_AtlasReallyCreated && m_Atlas?.IsReleased() == true; } }
+
         public void Construct()
         {
             // The default allocs refer to three startup pages to be allocated as below from the atlas
@@ -287,6 +289,7 @@ namespace UnityEngine.UIElements.UIR
                 m_ClipRects.Dispose();
             if (m_Transforms.IsCreated)
                 m_Transforms.Dispose();
+            m_AtlasReallyCreated = false;
         }
 
         public void IssuePendingAtlasBlits()

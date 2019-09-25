@@ -344,13 +344,13 @@ namespace UnityEditor
                     {
                         view.viewIsLockedToObject = false;
                         view.FixNegativeSize();
-                        Camera cam = view.camera;
-                        Vector3 screenPos = cam.WorldToScreenPoint(view.pivot);
-                        screenPos += new Vector3(-Event.current.delta.x, Event.current.delta.y, 0);
-                        Vector3 worldDelta = Camera.current.ScreenToWorldPoint(screenPos) - view.pivot;
-                        worldDelta *= EditorGUIUtility.pixelsPerPoint;
+
+                        Vector2 screenDelta = Event.current.delta;
+                        Vector3 worldDelta = ScreenToWorldDistance(view, new Vector2(-screenDelta.x, screenDelta.y));
+
                         if (evt.shift)
                             worldDelta *= 4;
+
                         view.pivot += worldDelta;
                     }
                     break;
@@ -376,6 +376,43 @@ namespace UnityEditor
                 }
                 evt.Use();
             }
+        }
+
+        internal static Vector3 ScreenToWorldDistance(SceneView view, Vector2 delta)
+        {
+            // Ensures that the camera matrix doesn't end up with gigantic or minuscule values in the clip to world matrix
+            const float k_MaxCameraSizeForWorldToScreen = 2.5E+7f;
+
+            // store original camera and view values
+            var camera = view.camera;
+            var near = camera.nearClipPlane;
+            var far = camera.farClipPlane;
+            var pos = camera.transform.position;
+            var size = view.size;
+
+            // set camera transform and clip values to safe values
+            view.size = Mathf.Min(view.size, k_MaxCameraSizeForWorldToScreen);
+            // account for the distance clamping
+            var scale = size / view.size;
+            var clip = view.GetDynamicClipPlanes();
+            view.camera.nearClipPlane = clip.x;
+            view.camera.farClipPlane = clip.y;
+            view.camera.transform.position = Vector3.zero;
+
+            // do the distance calculation
+            Vector3 pivot = camera.transform.rotation * new Vector3(0f, 0f, view.cameraDistance);
+            Vector3 screenPos = camera.WorldToScreenPoint(pivot);
+            screenPos += new Vector3(delta.x, delta.y, 0);
+            Vector3 worldDelta = camera.ScreenToWorldPoint(screenPos) - pivot;
+            worldDelta *= EditorGUIUtility.pixelsPerPoint * scale;
+
+            // restore original cam and scene values
+            view.size = size;
+            view.camera.nearClipPlane = near;
+            view.camera.farClipPlane = far;
+            view.camera.transform.position = pos;
+
+            return worldDelta;
         }
 
         private static void HandleKeyDown(SceneView sceneView)

@@ -442,8 +442,8 @@ namespace UnityEditor
             {
                 if (IsPrefabStageHeader(item))
                 {
-                    string prefabAssetPath = PrefabStageUtility.GetCurrentPrefabStage().prefabAssetPath;
-                    item.icon = (Texture2D)AssetDatabase.GetCachedIcon(prefabAssetPath);
+                    string assetPath = PrefabStageUtility.GetCurrentPrefabStage().assetPath;
+                    item.icon = (Texture2D)AssetDatabase.GetCachedIcon(assetPath);
                 }
                 else
                 {
@@ -618,7 +618,7 @@ namespace UnityEditor
                     GameObjectStyles.rightArrow.fixedHeight);
 
                 int instanceID = item.id;
-                GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? GetPrefabButtonContent(instanceID) : GUIContent.none;
+                GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? PrefabStageUtility.GetPrefabButtonContent(instanceID) : GUIContent.none;
                 if (GUI.Button(buttonRect, content, GameObjectStyles.rightArrow))
                 {
                     GameObject go = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
@@ -626,7 +626,8 @@ namespace UnityEditor
                     Object originalSource = AssetDatabase.LoadMainAssetAtPath(assetPath);
                     if (originalSource != null)
                     {
-                        PrefabStageUtility.OpenPrefab(assetPath, go, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyRightArrow);
+                        var prefabStageMode = PrefabStageUtility.GetPrefabStageModeFromModifierKeys();
+                        PrefabStageUtility.OpenPrefab(assetPath, go, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyRightArrow);
                     }
                 }
 
@@ -635,22 +636,5 @@ namespace UnityEditor
 
             return contentRectRight;
         }
-
-        GUIContent GetPrefabButtonContent(int instanceID)
-        {
-            GUIContent result;
-            if (m_PrefabButtonContents.TryGetValue(instanceID, out result))
-            {
-                return result;
-            }
-
-            string path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(EditorUtility.InstanceIDToObject(instanceID) as GameObject);
-            string filename = System.IO.Path.GetFileNameWithoutExtension(path);
-            result = new GUIContent("", null, "Open Prefab Asset '" + filename + "'");
-            m_PrefabButtonContents[instanceID] = result;
-            return result;
-        }
-
-        Dictionary<int, GUIContent> m_PrefabButtonContents = new Dictionary<int, GUIContent>();
     }
 }
