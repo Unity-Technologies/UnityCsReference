@@ -76,6 +76,8 @@ namespace UnityEditor
     {
         Custom = -1,
         Suspend = 0,
+
+        [Obsolete("UIApplicationExitsOnSuspend is no longer supported in iOS 13, use Custom or Suspend instead (UnityUpgradable) -> Custom", true)]
         Exit = 1,
     }
 
@@ -353,9 +355,15 @@ namespace UnityEditor
             public static bool hideHomeButton { get; set; }
 
             [NativeProperty("IOSAppInBackgroundBehavior")]
-            private extern static int  appInBackgroundBehaviorInternal { get; set; }
+            private extern static int  appInBackgroundBehaviorInternal
+            {
+                [FreeFunction("PlayerSettingsIOSBindings::GetAppInBackgroundBehavior")]
+                get;
 
-            [NativeProperty("IOSAppInBackgroundBehavior")]
+                [FreeFunction("PlayerSettingsIOSBindings::SetAppInBackgroundBehavior")]
+                set;
+            }
+
             public static iOSAppInBackgroundBehavior appInBackgroundBehavior
             {
                 get { return (iOSAppInBackgroundBehavior)appInBackgroundBehaviorInternal; }

@@ -105,7 +105,6 @@ namespace UnityEngine.Profiling
             BeginWithObject(targetObject);
         }
 
-        [Conditional("ENABLE_PROFILER")]
         [NativeMethod(Name = "ProfilerBindings::CustomSampler_BeginWithObject", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
         private extern void BeginWithObject(UnityEngine.Object targetObject);
 
