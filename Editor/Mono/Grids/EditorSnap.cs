@@ -38,6 +38,10 @@ namespace UnityEditor
         }
     }
 
+    // Most of EditorSnapSettings is private for now because we are just hard-coding grid snap and incremental snap.
+    // in the near future, we will be extending support for multiple snapping modes and this API will change.
+    // ex, snap modes will likely be implemented as objects that can be registered to this class, making user-implemented
+    // snapping behaviours possible.
     public static class EditorSnapSettings
     {
         static EditorSnapSettingsData instance
@@ -45,22 +49,25 @@ namespace UnityEditor
             get { return EditorSnapSettingsData.instance; }
         }
 
-        // Is snapping toggled as `on` in the grid toolbar
-        public static bool enabled
-        {
-            get { return instance.snapEnabled; }
-            set { instance.snapEnabled = value; }
-        }
-
-        // Is snapping active (either through shortcut key or enabled)
-        public static bool active
+        internal static bool activeToolSupportsGridSnap
         {
             get
             {
-                return Event.current == null
-                    ? instance.snapEnabled
-                    : hotkeyActive ? !instance.snapEnabled : instance.snapEnabled;
+                return (EditorTools.EditorTools.activeToolType == typeof(MoveTool)
+                    || EditorTools.EditorTools.activeToolType == typeof(TransformTool))
+                    && Tools.pivotRotation == PivotRotation.Global;
             }
+        }
+
+        internal static bool gridSnapActive
+        {
+            get { return !incrementalSnapActive && activeToolSupportsGridSnap && instance.snapEnabled; }
+        }
+
+        public static bool gridSnapEnabled
+        {
+            get { return instance.snapEnabled; }
+            set { instance.snapEnabled = value; }
         }
 
         internal static bool hotkeyActive
@@ -68,11 +75,9 @@ namespace UnityEditor
             get { return EditorGUI.actionKey; }
         }
 
-
-        public static bool preferGrid
+        internal static bool incrementalSnapActive
         {
-            get { return instance.snapSettings.preferGrid; }
-            set { instance.snapSettings.preferGrid = value; }
+            get { return Event.current != null && EditorGUI.actionKey; }
         }
 
         public static Vector3 move

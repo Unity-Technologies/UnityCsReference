@@ -225,6 +225,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 .SelectMany(x => x.VersionMetaDatas ?? new AssetPathVersionMetaData[0])
                 .Distinct(assetPathVersionMetaDataComparer)
                 .ToDictionary(x => x.Name, x => x.Version);
+            UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathMetaDatas, forceUpdate: true);
         }
 
         internal AssetPathMetaData[] GetAssetPathsMetaData()
@@ -761,7 +762,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             AssetPathMetaData[] assetPathsMetaData)
         {
             var asmrefLookup = customScriptAssemblyReferences.ToLookup(x => x.Reference);
-            var exceptions = new List<Exception>();
+
 
             // Add AdditionalPrefixes
             foreach (var assembly in customScriptAssemblies)
@@ -772,49 +773,60 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 assembly.AdditionalPrefixes = foundAsmRefs.Any() ? foundAsmRefs.Select(ar => ar.PathPrefix).ToArray() : null;
             }
 
-            // Add AssetPathMetaData
-            if (assetPathsMetaData != null)
-            {
-                var assetMetaDataPaths = new string[assetPathsMetaData.Length];
-                var lowerAssetMetaDataPaths = new string[assetPathsMetaData.Length];
+            var exceptions = UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, assetPathsMetaData);
+            return exceptions.ToArray();
+        }
 
-                for (int i = 0; i < assetPathsMetaData.Length; ++i)
+        static Exception[] UpdateCustomTargetAssembliesAssetPathsMetaData(CustomScriptAssembly[] customScriptAssemblies,
+            AssetPathMetaData[] assetPathsMetaData, bool forceUpdate = false)
+        {
+            if (assetPathsMetaData == null)
+            {
+                return new Exception[0];
+            }
+
+            var exceptions = new List<Exception>();
+            var assetMetaDataPaths = new string[assetPathsMetaData.Length];
+            var lowerAssetMetaDataPaths = new string[assetPathsMetaData.Length];
+
+            for (int i = 0; i < assetPathsMetaData.Length; ++i)
+            {
+                var assetPathMetaData = assetPathsMetaData[i];
+                assetMetaDataPaths[i] = AssetPath.ReplaceSeparators(assetPathMetaData.DirectoryPath + AssetPath.Separator);
+                lowerAssetMetaDataPaths[i] = Utility.FastToLower(assetMetaDataPaths[i]);
+            }
+
+            foreach (var assembly in customScriptAssemblies)
+            {
+                if (assembly.AssetPathMetaData != null && !forceUpdate)
                 {
-                    var assetPathMetaData = assetPathsMetaData[i];
-                    assetMetaDataPaths[i] = AssetPath.ReplaceSeparators(assetPathMetaData.DirectoryPath + AssetPath.Separator);
-                    lowerAssetMetaDataPaths[i] = Utility.FastToLower(assetMetaDataPaths[i]);
+                    continue;
                 }
 
-                foreach (var assembly in customScriptAssemblies)
+                try
                 {
-                    try
+                    for (int i = 0; i < assetMetaDataPaths.Length; ++i)
                     {
-                        if (assembly.AssetPathMetaData == null)
-                        {
-                            for (int i = 0; i < assetMetaDataPaths.Length; ++i)
-                            {
-                                var path = assetMetaDataPaths[i];
-                                var lowerPath = lowerAssetMetaDataPaths[i];
+                        var path = assetMetaDataPaths[i];
+                        var lowerPath = lowerAssetMetaDataPaths[i];
 
-                                if (Utility.FastStartsWith(assembly.PathPrefix, path, lowerPath))
-                                {
-                                    assembly.AssetPathMetaData = assetPathsMetaData[i];
-                                    break;
-                                }
-                            }
+                        if (Utility.FastStartsWith(assembly.PathPrefix, path, lowerPath))
+                        {
+                            assembly.AssetPathMetaData = assetPathsMetaData[i];
+                            break;
                         }
                     }
-                    catch (Exception e)
-                    {
-                        exceptions.Add(e);
-                    }
+                }
+                catch (Exception e)
+                {
+                    exceptions.Add(e);
                 }
             }
 
             return exceptions.ToArray();
         }
 
-        Exception[] UpdateCustomTargetAssemblies()
+        Exception[] UpdateCustomTargetAssemblies(bool forceUpdateAssetMetadata = false)
         {
             var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, customScriptAssemblyReferences, m_AssetPathsMetaData);
 

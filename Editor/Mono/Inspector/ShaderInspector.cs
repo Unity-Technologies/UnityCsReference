@@ -89,10 +89,10 @@ namespace UnityEditor
 
         private static string GetPropertyType(Shader s, int index)
         {
-            ShaderUtil.ShaderPropertyType type = ShaderUtil.GetPropertyType(s, index);
-            if (type == ShaderUtil.ShaderPropertyType.TexEnv)
+            var type = s.GetPropertyType(index);
+            if (type == ShaderPropertyType.Texture)
             {
-                return kTextureTypes[(int)ShaderUtil.GetTexDim(s, index)];
+                return kTextureTypes[(int)s.GetPropertyTextureDimension(index)];
             }
             return kPropertyTypes[(int)type];
         }
@@ -186,11 +186,11 @@ namespace UnityEditor
         {
             GUILayout.Space(kSpace);
             GUILayout.Label("Properties:", EditorStyles.boldLabel);
-            int n = ShaderUtil.GetPropertyCount(s);
+            int n = s.GetPropertyCount();
             for (int i = 0; i < n; ++i)
             {
-                string pname = ShaderUtil.GetPropertyName(s, i);
-                string pdesc = GetPropertyType(s, i) + ShaderUtil.GetPropertyDescription(s, i);
+                string pname = s.GetPropertyName(i);
+                string pdesc = s.GetPropertyType(i) + s.GetPropertyDescription(i);
                 EditorGUILayout.LabelField(pname, pdesc);
             }
         }

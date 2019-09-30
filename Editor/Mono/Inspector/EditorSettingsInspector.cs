@@ -38,7 +38,7 @@ namespace UnityEditor
             public static GUIContent overwriteFailedCheckoutAssets = EditorGUIUtility.TrTextContent("Overwrite Failed Checkout Assets", "When on, assets that can not be checked out will get saved anyway.");
             public static GUIContent overlayIcons = EditorGUIUtility.TrTextContent("Overlay Icons", "Should version control status icons be shown in project view.");
 
-            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (experimental)");
+            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline");
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
@@ -179,8 +179,8 @@ namespace UnityEditor
 
         private PopupElement[] assetPipelineModePopupList =
         {
-            new PopupElement("Version 1"),
-            new PopupElement("Version 2 (experimental)"),
+            new PopupElement("Version 1 (deprecated)"),
+            new PopupElement("Version 2"),
         };
 
         private PopupElement[] cacheServerModePopupList =
@@ -699,7 +699,14 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(assetPipelineWarning))
                 EditorGUILayout.HelpBox(assetPipelineWarning, MessageType.Info, true);
             else if (isAssetPipelineVersion1 != AssetDatabase.IsV1Enabled())
-                EditorGUILayout.HelpBox("Changes in asset pipeline version will take effect after saving and restarting the project.", MessageType.Info, true);
+            {
+                var message = "Changes in Asset Pipeline Version will take effect after saving and restarting the project.";
+
+                if (isAssetPipelineVersion1)
+                    message += "\nPlease note that Asset Pipeline Version 1 is now deprecated.";
+
+                EditorGUILayout.HelpBox(message, MessageType.Info, true);
+            }
         }
 
         private void DoCacheServerSettings()

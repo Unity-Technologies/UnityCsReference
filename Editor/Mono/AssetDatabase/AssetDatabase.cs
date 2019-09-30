@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.VersionControl;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
 
@@ -66,6 +67,25 @@ namespace UnityEditor
             UnityEngine.Profiling.Profiler.BeginSample("AssetDatabase.IsOpenForEdit");
             AssetModificationProcessorInternal.IsOpenForEdit(assetOrMetaFilePaths, outNotEditablePaths, statusQueryOptions);
             UnityEngine.Profiling.Profiler.EndSample();
+        }
+
+        public static bool MakeEditable(string path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            return MakeEditable(new[] {path});
+        }
+
+        public static bool MakeEditable(string[] paths, string prompt = null, List<string> outNotEditablePaths = null)
+        {
+            if (paths == null)
+                throw new ArgumentNullException(nameof(paths));
+
+            ChangeSet changeSet = null;
+            if (!Provider.HandlePreCheckoutCallback(ref paths, ref changeSet))
+                return false;
+
+            return Provider.MakeEditableImpl(paths, prompt, changeSet, outNotEditablePaths);
         }
     }
 }

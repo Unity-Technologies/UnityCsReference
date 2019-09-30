@@ -42,12 +42,12 @@ namespace UnityEditor.PackageManager.UI
 
         void EmbedByName(string packageName);
 
-        void Setup();
+        void RegisterEvents();
 
-        void Clear();
+        void UnregisterEvents();
 
-        void Reload();
+        void ClearCache();
 
-        void ResetProductCache();
+        void ClearProductCache();
     }
 }

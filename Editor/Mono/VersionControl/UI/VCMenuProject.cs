@@ -95,20 +95,6 @@ namespace UnityEditorInternal.VersionControl
             Provider.Checkout(list, CheckoutMode.Meta);
         }
 
-        // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Check Out (Other)/Both" menu handler
-        static bool CheckOutBothTest(MenuCommand cmd)
-        {
-            AssetList selected = Provider.GetAssetListFromSelection();
-            return Provider.enabled && Provider.CheckoutIsValid(selected, CheckoutMode.Both);
-        }
-
-        // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Check Out (Other)/Both" menu handler
-        static void CheckOutBoth(MenuCommand cmd)
-        {
-            AssetList list = Provider.GetAssetListFromSelection();
-            Provider.Checkout(list, CheckoutMode.Both);
-        }
-
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Mark Add" menu handler
         static bool MarkAddTest(MenuCommand cmd)
         {

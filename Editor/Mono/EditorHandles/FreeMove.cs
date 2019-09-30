@@ -231,7 +231,7 @@ namespace UnityEditorInternal
                                 }
                             }
 
-                            if (EditorSnapSettings.active && !evt.shift)
+                            if (EditorSnapSettings.incrementalSnapActive && !evt.shift)
                             {
                                 Vector3 delta = position - s_StartPosition;
                                 delta = Handles.SnapValue(delta, snap);

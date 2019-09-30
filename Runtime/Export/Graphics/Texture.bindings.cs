@@ -174,6 +174,9 @@ namespace UnityEngine
 
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D blackTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D redTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D grayTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D linearGrayTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D normalTexture { get; }
 
         extern public void Compress(bool highQuality);

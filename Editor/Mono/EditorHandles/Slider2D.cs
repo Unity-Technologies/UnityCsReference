@@ -76,14 +76,14 @@ namespace UnityEditorInternal
             {
                 handlePos = s_StartPosition + slideDir1 * delta.x + slideDir2 * delta.y;
 
-                if (EditorSnapSettings.active && EditorSnapSettings.preferGrid)
+                if (EditorSnapSettings.gridSnapActive)
                 {
                     var normal = Vector3.Cross(slideDir1, slideDir2);
 
                     if (Snapping.IsCardinalDirection(normal))
                     {
                         var worldSpace = Handles.matrix.MultiplyPoint(handlePos);
-                        worldSpace = Handles.SnapValue(worldSpace, (~new SnapAxisFilter(normal)) * snap);
+                        worldSpace = Snapping.Snap(worldSpace, GridSettings.size, (SnapAxis) ~new SnapAxisFilter(normal));
                         handlePos = Handles.inverseMatrix.MultiplyPoint(worldSpace);
                     }
                 }
@@ -145,14 +145,14 @@ namespace UnityEditorInternal
             {
                 handlePos = s_StartPosition + slideDir1 * delta.x + slideDir2 * delta.y;
 
-                if (EditorSnapSettings.active && EditorSnapSettings.preferGrid)
+                if (EditorSnapSettings.gridSnapActive)
                 {
                     var normal = Vector3.Cross(slideDir1, slideDir2);
 
                     if (Snapping.IsCardinalDirection(normal))
                     {
                         var worldSpace = Handles.matrix.MultiplyPoint(handlePos);
-                        worldSpace = Handles.SnapValue(worldSpace, (~new SnapAxisFilter(normal)) * snap);
+                        worldSpace = Snapping.Snap(worldSpace, GridSettings.size, (SnapAxis) ~new SnapAxisFilter(normal));
                         handlePos = Handles.inverseMatrix.MultiplyPoint(worldSpace);
                     }
                 }

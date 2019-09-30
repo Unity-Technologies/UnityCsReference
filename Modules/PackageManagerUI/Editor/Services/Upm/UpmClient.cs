@@ -81,8 +81,8 @@ namespace UnityEditor.PackageManager.UI
             private string[] m_SerializedProductIdMapKeys;
             private string[] m_SerializedProductIdMapValues;
 
-            [SerializeField]
-            private bool m_SetupDone;
+            [NonSerialized]
+            private bool m_EventsRegistered;
 
             public bool isAddRemoveOrEmbedInProgress
             {
@@ -593,23 +593,27 @@ namespace UnityEditor.PackageManager.UI
                     SetupRemoveOperation();
             }
 
-            public void Setup()
+            public void RegisterEvents()
             {
-                System.Diagnostics.Debug.Assert(!m_SetupDone);
-                m_SetupDone = true;
+                if (m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = true;
 
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged += OnShowPreviewPackagesChanged;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
-                System.Diagnostics.Debug.Assert(m_SetupDone);
-                m_SetupDone = false;
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
 
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
             }
 
-            public void Reload()
+            public void ClearCache()
             {
                 m_InstalledPackageInfos.Clear();
                 m_SearchPackageInfos.Clear();
@@ -621,10 +625,10 @@ namespace UnityEditor.PackageManager.UI
                 m_SerializedSearchPackageInfos = new PackageInfo[0];
                 m_SerializedExtraPackageInfos = new PackageInfo[0];
 
-                ResetProductCache();
+                ClearProductCache();
             }
 
-            public void ResetProductCache()
+            public void ClearProductCache()
             {
                 m_ProductPackageInfos.Clear();
                 m_ProductIdMap.Clear();

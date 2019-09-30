@@ -2,15 +2,87 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.AnimatedValues;
 using UnityEngine;
-using UnityEditor.Snap;
 
 namespace UnityEditor
 {
-    [System.Serializable]
-    internal class SceneViewGrid
+    static class GridSettings
     {
+        const float k_GridSizeMin = .0001f;
+        const float k_GridSizeMax = 1024f;
+        const float k_DefaultGridSize = 1.0f;
+        const int k_DefaultMultiplier = 0;
+
+        static SavedFloat s_GridSizeX = new SavedFloat("GridSizeX", k_DefaultGridSize);
+        static SavedFloat s_GridSizeY = new SavedFloat("GridSizeY", k_DefaultGridSize);
+        static SavedFloat s_GridSizeZ = new SavedFloat("GridSizeZ", k_DefaultGridSize);
+        static SavedInt s_GridMultiplier = new SavedInt("GridMultiplier", k_DefaultMultiplier);
+
+        static Vector3 rawSize
+        {
+            get { return new Vector3(s_GridSizeX, s_GridSizeY, s_GridSizeZ); }
+        }
+
+        internal static event Action<Vector3> sizeChanged = delegate {};
+
+        public static Vector3 size
+        {
+            get { return ApplyMultiplier(rawSize, s_GridMultiplier); }
+            set
+            {
+                if (size == value)
+                    return;
+                ResetSizeMultiplier();
+                s_GridSizeX.value = Mathf.Min(k_GridSizeMax, Mathf.Max(k_GridSizeMin, value.x));
+                s_GridSizeY.value = Mathf.Min(k_GridSizeMax, Mathf.Max(k_GridSizeMin, value.y));
+                s_GridSizeZ.value = Mathf.Min(k_GridSizeMax, Mathf.Max(k_GridSizeMin, value.z));
+                sizeChanged(size);
+            }
+        }
+
+        internal static int sizeMultiplier
+        {
+            get { return s_GridMultiplier.value; }
+            set { s_GridMultiplier.value = value; }
+        }
+
+        internal static void ResetSizeMultiplier()
+        {
+            s_GridMultiplier.value = k_DefaultMultiplier;
+        }
+
+        static Vector3 ApplyMultiplier(Vector3 value, int mul)
+        {
+            if (mul > 0)
+            {
+                for (int i = 0; i < mul; i++)
+                    value *= 2f;
+            }
+            else if (mul < 0)
+            {
+                for (int i = 0; i > mul; i--)
+                    value /= 2f;
+            }
+            return value;
+        }
+
+        public static void ResetGridSettings()
+        {
+            size = new Vector3(k_DefaultGridSize, k_DefaultGridSize, k_DefaultGridSize);
+        }
+    }
+
+    [System.Serializable]
+    class SceneViewGrid
+    {
+        const float k_DefaultGridOpacity = .5f;
+        const GridRenderAxis k_DefaultRenderAxis = GridRenderAxis.Y;
+        const bool k_DefaultShowGrid = true;
+
+        internal event Action<bool> gridVisibilityChanged = delegate(bool b) {};
+
         internal enum GridRenderAxis
         {
             X,
@@ -84,18 +156,24 @@ namespace UnityEditor
         Grid zGrid = new Grid();
 
         [SerializeField]
-        bool m_ShowGrid = true;
+        bool m_ShowGrid = k_DefaultShowGrid;
 
         [SerializeField]
-        GridRenderAxis m_GridAxis = GridRenderAxis.Y;
+        GridRenderAxis m_GridAxis = k_DefaultRenderAxis;
 
         [SerializeField]
-        float m_gridOpacity = 1.0f;
+        float m_gridOpacity = k_DefaultGridOpacity;
 
         internal bool showGrid
         {
             get { return m_ShowGrid; }
-            set { m_ShowGrid = value; }
+            set
+            {
+                if (value == m_ShowGrid)
+                    return;
+                m_ShowGrid = value;
+                gridVisibilityChanged(m_ShowGrid);
+            }
         }
 
         internal float gridOpacity
@@ -124,17 +202,32 @@ namespace UnityEditor
             }
         }
 
-        internal void OnEnable()
+        internal void OnEnable(SceneView view)
         {
             xGrid.color = yGrid.color = zGrid.color = kViewGridColor;
+
+            GridSettings.sizeChanged += GridSizeChanged;
+
+            // hook up the anims, so repainting can work correctly
+            xGrid.fade.valueChanged.AddListener(view.Repaint);
+            yGrid.fade.valueChanged.AddListener(view.Repaint);
+            zGrid.fade.valueChanged.AddListener(view.Repaint);
         }
 
-        internal void Register(SceneView source)
+        internal void OnDisable(SceneView view)
         {
-            // hook up the anims, so repainting can work correctly
-            xGrid.fade.valueChanged.AddListener(source.Repaint);
-            yGrid.fade.valueChanged.AddListener(source.Repaint);
-            zGrid.fade.valueChanged.AddListener(source.Repaint);
+            GridSettings.sizeChanged -= GridSizeChanged;
+
+            xGrid.fade.valueChanged.RemoveListener(view.Repaint);
+            yGrid.fade.valueChanged.RemoveListener(view.Repaint);
+            zGrid.fade.valueChanged.RemoveListener(view.Repaint);
+        }
+
+        void GridSizeChanged(Vector3 size)
+        {
+            SetPivot(GridRenderAxis.X, Snapping.Snap(GetPivot(GridRenderAxis.X), GridSettings.size));
+            SetPivot(GridRenderAxis.Y, Snapping.Snap(GetPivot(GridRenderAxis.Y), GridSettings.size));
+            SetPivot(GridRenderAxis.Z, Snapping.Snap(GetPivot(GridRenderAxis.Z), GridSettings.size));
         }
 
         internal void SetAllGridsPivot(Vector3 pivot)
@@ -163,6 +256,18 @@ namespace UnityEditor
             else if (axis == GridRenderAxis.Z)
                 return zGrid.pivot;
             return Vector3.zero;
+        }
+
+        internal void ResetPivot(GridRenderAxis axis)
+        {
+            if (axis == GridRenderAxis.X)
+                xGrid.pivot = Vector3.zero;
+            else if (axis == GridRenderAxis.Y)
+                yGrid.pivot = Vector3.zero;
+            else if (axis == GridRenderAxis.Z)
+                zGrid.pivot = Vector3.zero;
+            else if (axis == GridRenderAxis.All)
+                xGrid.pivot = yGrid.pivot = zGrid.pivot = Vector3.zero;
         }
 
         internal void UpdateGridsVisibility(Quaternion rotation, bool orthoMode)
@@ -196,7 +301,7 @@ namespace UnityEditor
             zGrid.fade.target = _zGrid;
         }
 
-        internal void ApplySnapConstraintsInPerspectiveMode()
+        void ApplySnapConstraintsInPerspectiveMode()
         {
             switch (gridAxis)
             {
@@ -212,7 +317,7 @@ namespace UnityEditor
             }
         }
 
-        internal void ApplySnapConstraintsInOrthogonalMode()
+        void ApplySnapConstraintsInOrthogonalMode()
         {
             if (xGrid.fade.target)
                 ApplySnapContraintsOnXAxis();
@@ -224,17 +329,20 @@ namespace UnityEditor
 
         void ApplySnapContraintsOnXAxis()
         {
-            xGrid.size = new Vector2(EditorSnapSettings.move.y, EditorSnapSettings.move.z);
+            Vector3 grid = GridSettings.size;
+            xGrid.size = new Vector2(grid.y, grid.z);
         }
 
         void ApplySnapContraintsOnYAxis()
         {
-            yGrid.size = new Vector2(EditorSnapSettings.move.z, EditorSnapSettings.move.x);
+            Vector3 grid = GridSettings.size;
+            yGrid.size = new Vector2(grid.z, grid.x);
         }
 
         void ApplySnapContraintsOnZAxis()
         {
-            zGrid.size = new Vector2(EditorSnapSettings.move.x, EditorSnapSettings.move.y);
+            Vector3 grid = GridSettings.size;
+            zGrid.size = new Vector2(grid.x, grid.y);
         }
 
         internal DrawGridParameters PrepareGridRender(Camera camera, Vector3 pivot, Quaternion rotation,
@@ -252,7 +360,7 @@ namespace UnityEditor
             return PrepareGridRenderPerspectiveMode(camera, pivot, rotation, size);
         }
 
-        internal DrawGridParameters PrepareGridRenderPerspectiveMode(Camera camera, Vector3 pivot, Quaternion rotation,
+        DrawGridParameters PrepareGridRenderPerspectiveMode(Camera camera, Vector3 pivot, Quaternion rotation,
             float size)
         {
             DrawGridParameters parameters = default(DrawGridParameters);
@@ -273,7 +381,7 @@ namespace UnityEditor
             return parameters;
         }
 
-        internal DrawGridParameters PrepareGridRenderOrthogonalMode(Camera camera, Vector3 pivot, Quaternion rotation,
+        DrawGridParameters PrepareGridRenderOrthogonalMode(Camera camera, Vector3 pivot, Quaternion rotation,
             float size)
         {
             Vector3 direction = camera.transform.TransformDirection(new Vector3(0, 0, 1));
@@ -293,6 +401,13 @@ namespace UnityEditor
                 parameters = zGrid.PrepareGridRender(2, gridOpacity);
 
             return parameters;
+        }
+
+        internal void Reset()
+        {
+            gridOpacity = k_DefaultGridOpacity;
+            showGrid = k_DefaultShowGrid;
+            gridAxis = k_DefaultRenderAxis;
         }
     }
 } // namespace

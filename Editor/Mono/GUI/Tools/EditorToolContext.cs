@@ -418,12 +418,40 @@ namespace UnityEditor.EditorTools
             // If the shared tracker is locked, use our own tracker instance so that the current selection is always
             // represented. Addresses case where a single locked inspector is open.
             var shared = ActiveEditorTracker.sharedTracker;
-            preservedActiveTool |= CollectCustomEditorToolsFromTracker(shared.isLocked ? tracker : shared, m_CustomEditorTools);
 
+            m_CustomEditorTools.Clear();
+            m_LockedCustomEditorTools.Clear();
+
+            // Collect editor tools for the shared tracker first
+            EditorToolUtility.GetEditorToolsForTracker(shared.isLocked ? tracker : shared, s_CustomEditorTools);
+
+            foreach (var customEditorTool in s_CustomEditorTools)
+            {
+                if (m_CustomEditorTools.Any(x => x.GetType() == customEditorTool.editorToolType && x.target == customEditorTool.owner.target))
+                    continue;
+                EditorTool tool;
+                preservedActiveTool |= CreateOrRestoreTool(customEditorTool, out tool);
+                m_CustomEditorTools.Add(tool);
+            }
+
+            // Next, collect tools from locked inspectors
             foreach (var inspector in inspectors)
             {
                 if (inspector.isLocked)
-                    preservedActiveTool |= CollectCustomEditorToolsFromTracker(inspector.tracker, m_LockedCustomEditorTools);
+                {
+                    EditorToolUtility.GetEditorToolsForTracker(inspector.tracker, s_CustomEditorTools);
+
+                    foreach (var customEditorTool in s_CustomEditorTools)
+                    {
+                        // Don't add duplicate tools to either another locked inspector with the same target, or a shared tracker
+                        if (m_CustomEditorTools.Any(x => x.GetType() == customEditorTool.editorToolType && x.target == customEditorTool.owner.target)
+                            || m_LockedCustomEditorTools.Any(x => x.GetType() == customEditorTool.editorToolType && x.target == customEditorTool.owner.target))
+                            continue;
+                        EditorTool tool;
+                        preservedActiveTool |= CreateOrRestoreTool(customEditorTool, out tool);
+                        m_LockedCustomEditorTools.Add(tool);
+                    }
+                }
             }
 
             if (IsCustomEditorTool(m_ActiveTool) && !preservedActiveTool)
@@ -435,54 +463,45 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        bool CollectCustomEditorToolsFromTracker(ActiveEditorTracker tracker, List<EditorTool> list)
+        bool CreateOrRestoreTool(CustomEditorTool customEditorTool, out EditorTool customEditorToolInstance)
         {
-            list.Clear();
+            var toolType = customEditorTool.editorToolType;
+            var toolOwner = customEditorTool.owner;
+            var targets = customEditorTool.targets;
+            var target = customEditorTool.owner.target;
             var activeIsCustomEditorTool = IsCustomEditorTool(m_ActiveTool);
-            var preservedActiveTool = false;
+            bool preservedActiveTool = false;
 
-            EditorToolUtility.GetEditorToolsForTracker(tracker, s_CustomEditorTools);
-
-            foreach (var customEditorTool in s_CustomEditorTools)
+            // The only case where a custom editor tool is serialized is when it is the active tool. All other
+            // instances are discarded and rebuilt on any tracker rebuild.
+            if (activeIsCustomEditorTool && CustomEditorToolIsMatch(toolOwner, toolType, m_ActiveTool))
             {
-                var toolType = customEditorTool.editorToolType;
-                var toolOwner = customEditorTool.owner;
+                preservedActiveTool = true;
 
-                EditorTool customEditorToolInstance;
+                m_ActiveTool.m_Targets = targets;
+                m_ActiveTool.m_Target = target;
 
-                // The only case where a custom editor tool is serialized is when it is the active tool. All other
-                // instances are discarded and rebuilt on any tracker rebuild.
-                if (activeIsCustomEditorTool && CustomEditorToolIsMatch(toolOwner, toolType, m_ActiveTool))
-                {
-                    preservedActiveTool = true;
+                // domain reload - the owning editor was destroyed and therefore we need to reset the EditMode active
+                if (m_ActiveTool is EditModeTool && toolOwner.GetInstanceID() != UnityEditorInternal.EditMode.ownerID)
+                    UnityEditorInternal.EditMode.EditModeToolStateChanged(toolOwner, ((EditModeTool)m_ActiveTool).editMode);
 
-                    m_ActiveTool.m_Targets = toolOwner.targets;
-                    m_ActiveTool.m_Target = toolOwner.target;
-
-                    // domain reload - the owning editor was destroyed and therefore we need to reset the EditMode active
-                    if (m_ActiveTool is EditModeTool && toolOwner.GetInstanceID() != UnityEditorInternal.EditMode.ownerID)
-                        UnityEditorInternal.EditMode.EditModeToolStateChanged(toolOwner, ((EditModeTool)m_ActiveTool).editMode);
-
-                    customEditorToolInstance = m_ActiveTool;
-                }
-                else
-                {
-                    customEditorToolInstance = (EditorTool)CreateInstance(toolType, x =>
-                    {
-                        ((EditorTool)x).m_Targets = toolOwner.targets;
-                        ((EditorTool)x).m_Target = toolOwner.target;
-                    });
-
-                    customEditorToolInstance.hideFlags = HideFlags.DontSave;
-                }
-
-                list.Add(customEditorToolInstance);
-
-                var editModeTool = customEditorToolInstance as EditModeTool;
-
-                if (editModeTool != null)
-                    editModeTool.owner = toolOwner;
+                customEditorToolInstance = m_ActiveTool;
             }
+            else
+            {
+                customEditorToolInstance = (EditorTool)CreateInstance(toolType, x =>
+                {
+                    ((EditorTool)x).m_Targets = targets;
+                    ((EditorTool)x).m_Target = target;
+                });
+
+                customEditorToolInstance.hideFlags = HideFlags.DontSave;
+            }
+
+            var editModeTool = customEditorToolInstance as EditModeTool;
+
+            if (editModeTool != null)
+                editModeTool.owner = toolOwner;
 
             return preservedActiveTool;
         }

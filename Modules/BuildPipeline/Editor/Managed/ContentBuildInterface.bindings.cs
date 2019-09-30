@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using UnityEditor.Build.Player;
 using UnityEngine.Bindings;
+
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor")]
 
 namespace UnityEditor.Build.Content
 {
@@ -36,6 +38,8 @@ namespace UnityEditor.Build.Content
         static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
 
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
+
+        internal static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInSerializedFile(string filePath, BuildTarget target);
 
         public static extern ObjectIdentifier[] GetPlayerDependenciesForObject(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB);
 

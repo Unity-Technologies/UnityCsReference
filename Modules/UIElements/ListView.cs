@@ -681,11 +681,13 @@ namespace UnityEngine.UIElements
                     int removeCount = m_VisibleItemCount - itemCount;
                     for (int i = 0; i < removeCount; i++)
                     {
-                        m_Pool[m_Pool.Count - 1].DetachElement();
-                        m_Pool.RemoveAt(m_Pool.Count - 1);
+                        int lastIndex = m_Pool.Count - 1;
 
+                        var poolItem = m_Pool[lastIndex];
+                        poolItem.element.RemoveFromHierarchy();
+                        poolItem.DetachElement();
 
-                        RemoveAt(childCount - 1);
+                        m_Pool.RemoveAt(lastIndex);
                     }
                 }
                 else

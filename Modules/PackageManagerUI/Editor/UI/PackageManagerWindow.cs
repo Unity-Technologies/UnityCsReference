@@ -152,8 +152,6 @@ namespace UnityEditor.PackageManager.UI
             packageManagerToolbar.OnDisable();
             packageStatusbar.OnDisable();
 
-            PageManager.instance.Clear();
-
             EditorApplication.focusChanged -= OnFocusChanged;
         }
 

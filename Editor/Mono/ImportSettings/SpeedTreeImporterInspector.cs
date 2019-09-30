@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.VersionControl;
 using UnityEngine;
 
 namespace UnityEditor
@@ -150,7 +149,7 @@ namespace UnityEditor
 
             bool doGenerate = true;
             if (paths.Count() > 0)
-                doGenerate = Provider.PromptAndCheckoutIfNeeded(paths.ToArray(), String.Format("Materials will be checked out in:\n{0}", String.Join("\n", matFolders.ToArray())));
+                doGenerate = AssetDatabase.MakeEditable(paths.ToArray(), $"Materials will be checked out in:\n{string.Join("\n", matFolders.ToArray())}");
 
             if (doGenerate)
             {

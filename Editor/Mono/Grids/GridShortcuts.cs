@@ -7,36 +7,37 @@ using UnityEngine;
 
 namespace UnityEditor.Snap
 {
-    internal static class Shortcuts
+    static class Shortcuts
     {
-        [Shortcut("Snap/Toggle Snap", typeof(SceneView), KeyCode.Backslash)]
-        internal static void ToggleSnap()
+        [Shortcut("Snap/Toggle Grid Snap", typeof(SceneView), KeyCode.Backslash)]
+        internal static void ToggleGridSnap()
         {
-            EditorSnapSettings.enabled = !EditorSnapSettings.enabled;
+            EditorSnapSettings.gridSnapEnabled = !EditorSnapSettings.gridSnapEnabled;
         }
 
         [Shortcut("Grid/Increase Grid Size", typeof(SceneView), KeyCode.RightBracket, ShortcutModifiers.Action)]
         internal static void IncreaseGridSize()
         {
-            EditorSnapSettingsData.instance.snapSettings.IncrementSnapMultiplier();
+            GridSettings.sizeMultiplier++;
+            SceneView.RepaintAll();
+            SnapSettingsWindow.RepaintAll();
         }
 
         [Shortcut("Grid/Decrease Grid Size", typeof(SceneView), KeyCode.LeftBracket, ShortcutModifiers.Action)]
         internal static void DecreaseGridSize()
         {
-            EditorSnapSettingsData.instance.snapSettings.DecrementSnapMultiplier();
+            GridSettings.sizeMultiplier--;
+            SceneView.RepaintAll();
+            SnapSettingsWindow.RepaintAll();
         }
 
         [Shortcut("Grid/Reset Grid", typeof(SceneView))]
         internal static void ResetGrid()
         {
             MenuNudgePerspectiveReset();
-            ResetGridSize();
-        }
-
-        internal static void ResetGridSize()
-        {
-            EditorSnapSettings.ResetMultiplier();
+            GridSettings.ResetGridSettings();
+            SceneView.RepaintAll();
+            SnapSettingsWindow.RepaintAll();
         }
 
         [Shortcut("Grid/Nudge Grid Backward", typeof(SceneView), KeyCode.LeftBracket, ShortcutModifiers.Shift)]
@@ -46,16 +47,18 @@ namespace UnityEditor.Snap
             SceneViewGrid.Grid grid = sv.sceneViewGrids.activeGrid;
             SceneViewGrid.GridRenderAxis axis = sv.sceneViewGrids.gridAxis;
             Vector3 v = sv.sceneViewGrids.GetPivot(axis);
+            Vector3 gridSize = GridSettings.size;
+
             switch (axis)
             {
                 case SceneViewGrid.GridRenderAxis.X:
-                    v -= Vector3.right * EditorSnapSettings.move.x;
+                    v -= Vector3.right * gridSize.x;
                     break;
                 case SceneViewGrid.GridRenderAxis.Y:
-                    v -= Vector3.up * EditorSnapSettings.move.y;
+                    v -= Vector3.up * gridSize.y;
                     break;
                 case SceneViewGrid.GridRenderAxis.Z:
-                    v -= Vector3.forward * EditorSnapSettings.move.z;
+                    v -= Vector3.forward * gridSize.z;
                     break;
             }
 
@@ -70,16 +73,18 @@ namespace UnityEditor.Snap
             SceneViewGrid.Grid grid = sv.sceneViewGrids.activeGrid;
             SceneViewGrid.GridRenderAxis axis = sv.sceneViewGrids.gridAxis;
             Vector3 v = sv.sceneViewGrids.GetPivot(axis);
+            Vector3 gridSize = GridSettings.size;
+
             switch (axis)
             {
                 case SceneViewGrid.GridRenderAxis.X:
-                    v += Vector3.right * EditorSnapSettings.move.x;
+                    v += Vector3.right * gridSize.x;
                     break;
                 case SceneViewGrid.GridRenderAxis.Y:
-                    v += Vector3.up * EditorSnapSettings.move.y;
+                    v += Vector3.up * gridSize.y;
                     break;
                 case SceneViewGrid.GridRenderAxis.Z:
-                    v += Vector3.forward * EditorSnapSettings.move.z;
+                    v += Vector3.forward * gridSize.z;
                     break;
             }
 
@@ -90,7 +95,7 @@ namespace UnityEditor.Snap
         internal static void MenuNudgePerspectiveReset()
         {
             SceneView sv = SceneView.lastActiveSceneView;
-            sv.ResetGrid();
+            sv.ResetGridPivot();
             sv.Repaint();
         }
 

@@ -23,8 +23,8 @@ namespace UnityEditor
             public static readonly GUIContent cleanCache = EditorGUIUtility.TrTextContent("Clean Cache");
             public static readonly GUIContent enumerateCache = EditorGUIUtility.TrTextContent("Check Cache Size", "Check the size of the local asset cache server - can take a while");
             public static readonly GUIContent browseCacheLocation = EditorGUIUtility.TrTextContent("Browse for local asset cache server location");
-            public static readonly GUIContent assetPipelineVersion1 = EditorGUIUtility.TrTextContent("Asset pipeline v1");
-            public static readonly GUIContent assetPipelineVersion2 = EditorGUIUtility.TrTextContent("Asset pipeline v2 (experimental)");
+            public static readonly GUIContent assetPipelineVersion1 = EditorGUIUtility.TrTextContent("Asset pipeline v1 (deprecated)");
+            public static readonly GUIContent assetPipelineVersion2 = EditorGUIUtility.TrTextContent("Asset pipeline v2");
             public static readonly GUIContent newProjectsAssetPipeline = EditorGUIUtility.TrTextContent("New Projects default asset pipeline", "The default asset pipeline used when creating a new project. Note that this default can be overridden by using a -adb1 or -adb2 command line argument.");
             public static readonly GUIContent activeAssetPipelineVersionLabel = EditorGUIUtility.TrTextContent("Active version", activeAssetPipelineVersionTooltip);
             public static readonly GUIContent activeAssetPipelineVersion = new GUIContent(AssetDatabase.IsV1Enabled() ? "1" : "2", activeAssetPipelineVersionTooltip);

@@ -165,7 +165,10 @@ namespace UnityEditor
 
         private static MaterialPropertyHandler GetShaderPropertyHandler(Shader shader, string name)
         {
-            string[] attribs = ShaderUtil.GetShaderPropertyAttributes(shader, name);
+            int propertyIndex = shader.FindPropertyIndex(name);
+            if (propertyIndex < 0)
+                return null;
+            string[] attribs = shader.GetPropertyAttributes(propertyIndex);
             if (attribs == null || attribs.Length == 0)
                 return null;
 
