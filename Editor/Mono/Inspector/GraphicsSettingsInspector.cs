@@ -26,7 +26,8 @@ namespace UnityEditor
             public static readonly GUIContent tierSettings = EditorGUIUtility.TrTextContent("Tier Settings");
             public static readonly GUIContent builtinSettings = EditorGUIUtility.TrTextContent("Built-in Shader Settings");
             public static readonly GUIContent shaderStrippingSettings = EditorGUIUtility.TrTextContent("Shader Stripping");
-            public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TrTextContent("Shader Preloading");
+            public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TrTextContent("Shader Loading");
+            public static readonly GUIContent logWhenShaderIsCompiled = EditorGUIUtility.TrTextContent("Log Shader Compilation", "When enabled, the player will print shader information each time a shader is being compiled (development and debug mode only).");
             public static readonly GUIContent cameraSettings = EditorGUIUtility.TrTextContent("Camera Settings");
             public static readonly GUIContent renderPipeSettings = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline Settings");
             public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline");
@@ -40,6 +41,7 @@ namespace UnityEditor
         SerializedProperty m_TransparencySortMode;
         SerializedProperty m_TransparencySortAxis;
         SerializedProperty m_ScriptableRenderLoop;
+        SerializedProperty m_LogWhenShaderIsCompiled;
 
         Object graphicsSettings
         {
@@ -77,6 +79,7 @@ namespace UnityEditor
             m_TransparencySortMode = serializedObject.FindProperty("m_TransparencySortMode");
             m_TransparencySortAxis = serializedObject.FindProperty("m_TransparencySortAxis");
             m_ScriptableRenderLoop = serializedObject.FindProperty("m_CustomRenderPipeline");
+            m_LogWhenShaderIsCompiled = serializedObject.FindProperty("m_LogWhenShaderIsCompiled");
             tierSettingsAnimator = new AnimatedValues.AnimBool(showTierSettingsUI, Repaint);
         }
 
@@ -166,6 +169,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
             GUILayout.Label(Styles.shaderPreloadSettings, EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(m_LogWhenShaderIsCompiled, Styles.logWhenShaderIsCompiled);
             shaderPreloadEditor.OnInspectorGUI();
 
             serializedObject.ApplyModifiedProperties();

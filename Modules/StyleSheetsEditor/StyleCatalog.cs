@@ -551,29 +551,75 @@ namespace UnityEditor.StyleSheets
             return GetResource<T>(key.GetHashCode(), defaultValue);
         }
 
+        static class TexturesByDPIScale
+        {
+            private static Dictionary<int, Dictionary<string, Texture2D>> s_TexturesByDPIScale = new Dictionary<int, Dictionary<string, Texture2D>>();
+
+            static TexturesByDPIScale()
+            {
+                for (int i = 1; i < 4; ++i)
+                    s_TexturesByDPIScale[i] = new Dictionary<string, Texture2D>();
+            }
+
+            public static Texture2D GetTextureByDPIScale(string resourcePath, bool autoScale, float systemScale)
+            {
+                Texture2D tex = null;
+                int scale = Mathf.RoundToInt(systemScale);
+
+                if (autoScale && systemScale > 1f)
+                {
+                    if (TryGetTexture(scale, resourcePath, out tex))
+                        return tex;
+
+                    string dirName = Path.GetDirectoryName(resourcePath).Replace('\\', '/');
+                    string fileName = Path.GetFileNameWithoutExtension(resourcePath);
+                    string fileExt = Path.GetExtension(resourcePath);
+                    for (int s = scale; scale > 1; --scale)
+                    {
+                        string scaledResourcePath = $"{dirName}/{fileName}@{s}x{fileExt}";
+                        var scaledResource = StoreTextureByScale(scale, scaledResourcePath, resourcePath, false);
+                        if (scaledResource != null)
+                            return scaledResource;
+                    }
+                }
+
+                if (TryGetTexture(scale, resourcePath, out tex))
+                    return tex;
+                return StoreTextureByScale(scale, resourcePath, resourcePath, true);
+            }
+
+            private static Texture2D StoreTextureByScale(int scale, string scaledPath, string resourcePath, bool logError)
+            {
+                var tex = EditorResources.Load<Texture2D>(scaledPath, false);
+                if (tex)
+                {
+                    if (!s_TexturesByDPIScale.ContainsKey(scale))
+                        s_TexturesByDPIScale[scale] = new Dictionary<string, Texture2D>();
+                    s_TexturesByDPIScale[scale][resourcePath] = tex;
+                }
+                else if (logError)
+                {
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, $"Failed to store {resourcePath} > {scaledPath}");
+                }
+                return tex;
+            }
+
+            private static bool TryGetTexture(int scale, string path, out Texture2D tex)
+            {
+                tex = null;
+                if (s_TexturesByDPIScale.ContainsKey(scale) && s_TexturesByDPIScale[scale].TryGetValue(path, out tex) && tex != null)
+                    return true;
+                return false;
+            }
+        }
+
         public Texture2D GetTexture(int key, bool autoScale = false)
         {
             var resourcePath = GetText(key);
             if (String.IsNullOrEmpty(resourcePath))
                 return null;
 
-            float systemScale = GUIUtility.pixelsPerPoint;
-            if (autoScale && systemScale > 1f)
-            {
-                int scale = Mathf.RoundToInt(systemScale);
-                string dirName = Path.GetDirectoryName(resourcePath).Replace('\\', '/');
-                string fileName = Path.GetFileNameWithoutExtension(resourcePath);
-                string fileExt = Path.GetExtension(resourcePath);
-                for (int s = scale; scale > 1; --scale)
-                {
-                    string scaledResourcePath = $"{dirName}/{fileName}@{s}x{fileExt}";
-                    var scaledResource = EditorResources.Load<Texture2D>(scaledResourcePath, false);
-                    if (scaledResource != null)
-                        return scaledResource;
-                }
-            }
-
-            return EditorResources.Load<Texture2D>(resourcePath, false);
+            return TexturesByDPIScale.GetTextureByDPIScale(resourcePath, autoScale, GUIUtility.pixelsPerPoint);
         }
 
         public Texture2D GetTexture(string key)
