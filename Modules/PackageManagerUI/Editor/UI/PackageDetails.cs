@@ -356,7 +356,11 @@ namespace UnityEditor.PackageManager.UI
         {
             // If the package details is not enabled, don't update the date yet as we are fetching new information
             if (enabledSelf)
-                detailDate.text = displayVersion.publishedDate != null ? $"{displayVersion.publishedDate.Value:MMMM dd,  yyyy}" : string.Empty;
+            {
+                var dt = displayVersion.publishedDate ?? DateTime.Now;
+                detailDate.text = displayVersion.publishedDate != null ? dt.ToString("MMMM dd,  yyyy", CultureInfo.CreateSpecificCulture("en-US")) : string.Empty;
+            }
+
             UIUtils.SetElementDisplay(detailDateContainer, !string.IsNullOrEmpty(detailDate.text));
         }
 
@@ -407,8 +411,28 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshSupportedUnityVersions()
         {
-            UIUtils.SetElementDisplay(detailUnityVersionsContainer, displayVersion.supportedVersion != null);
-            detailUnityVersions.text = $"{displayVersion.supportedVersion} or higher";
+            var supportedVersion = displayVersion.supportedVersions?.FirstOrDefault();
+            if (supportedVersion == null)
+                supportedVersion = displayVersion.supportedVersion;
+
+            UIUtils.SetElementDisplay(detailUnityVersionsContainer, supportedVersion != null);
+            if (supportedVersion != null)
+            {
+                detailUnityVersions.text = $"{supportedVersion} or higher";
+                var tooltip = supportedVersion.ToString();
+                if (displayVersion.supportedVersions != null && displayVersion.supportedVersions.Any())
+                {
+                    var versions = displayVersion.supportedVersions.Select(version => version.ToString()).ToArray();
+                    tooltip = versions.Length == 1 ? versions[0] :
+                        $"{string.Join(", ", versions, 0, versions.Length - 1)} and {versions[versions.Length - 1]} to improve compatibility with the range of these versions of Unity";
+                }
+                detailUnityVersions.tooltip = $"Package has been submitted using Unity {tooltip}.";
+            }
+            else
+            {
+                detailUnityVersions.text = string.Empty;
+                detailUnityVersions.tooltip = string.Empty;
+            }
         }
 
         private void RefreshSizeInfo()

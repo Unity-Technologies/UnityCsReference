@@ -324,6 +324,7 @@ namespace UnityEditor
         {
             AllowCursorLockAndHide(true);
             SetFocus(true);
+            targetSize = targetRenderSize;
         }
 
         private void OnLostFocus()
@@ -411,6 +412,8 @@ namespace UnityEditor
                 selectedSizeIndex = indexClicked;
                 dontClearBackground = true; // will cause re-clear
                 UpdateZoomAreaAndParent();
+                targetSize = targetRenderSize;
+                SceneView.RepaintAll();
             }
         }
 
@@ -772,7 +775,7 @@ namespace UnityEditor
                 clearColor = kClearBlack;
                 renderIMGUI = true;
 
-                if (!EditorApplication.isPlaying || (EditorApplication.isPlaying && Time.frameCount % OnDemandRendering.GetRenderFrameInterval() == 0))
+                if (!EditorApplication.isPlaying || (EditorApplication.isPlaying && Time.frameCount % OnDemandRendering.renderFrameInterval == 0))
                     m_RenderTexture = RenderView(gameMousePosition, clearTexture);
                 if (m_TargetClamped)
                     Debug.LogWarningFormat("GameView reduced to a reasonable size for this system ({0}x{1})", targetSize.x, targetSize.y);

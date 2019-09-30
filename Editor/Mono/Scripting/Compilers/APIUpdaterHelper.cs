@@ -246,21 +246,23 @@ namespace UnityEditor.Scripting.Compilers
 
         internal static bool CheckoutAndValidateVCSFiles(IEnumerable<string> files)
         {
+            // We're only interested in files that would be under VCS, i.e. project
+            // assets or local packages. Incoming paths might use backward slashes; replace with
+            // forward ones as that's what Unity/VCS functions operate on.
+            files = files.Select(f => f.Replace('\\', '/')).Where(Provider.PathIsVersioned).ToArray();
+
             var assetList = new AssetList();
-            foreach (string f in files)
-                assetList.Add(Provider.GetAssetByPath(f));
+            assetList.AddRange(files.Select(Provider.GetAssetByPath));
 
             // Verify that all the files are also in assetList
             // This is required to ensure the copy temp files to destination loop is only working on version controlled files
             // Provider.GetAssetByPath() can fail i.e. the asset database GUID can not be found for the input asset path
-            foreach (var rawAssetPath in files)
+            foreach (var assetPath in files)
             {
-                // VCS assets path separator is '/' , file path might be '\' or '/'
-                var assetPath = (Path.DirectorySeparatorChar == '\\') ? rawAssetPath.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : rawAssetPath;
-                var foundAsset = assetList.Where(asset => (asset.path == assetPath));
+                var foundAsset = assetList.Where(asset => (asset?.path == assetPath));
                 if (!foundAsset.Any())
                 {
-                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", rawAssetPath);
+                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", assetPath);
                     APIUpdaterManager.ReportExpectedUpdateFailure();
                     return false;
                 }

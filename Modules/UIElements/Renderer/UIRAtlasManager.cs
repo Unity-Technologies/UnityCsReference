@@ -161,6 +161,13 @@ namespace UnityEngine.UIElements
             return m_ResetVersion != s_GlobalResetVersion;
         }
 
+        public bool IsReleased()
+        {
+            // Returns true when the atlas hardware resources are released.
+            // This can occur when RenderTexture::ReleaseAll() is called.
+            return atlas != null && !atlas.IsCreated();
+        }
+
         /// <remarks>
         /// When textures that have been previously allowed into the atlas manager change, or if the project color
         /// space changes, this method MUST be called. Textures that had been previously accepted into the atlas may

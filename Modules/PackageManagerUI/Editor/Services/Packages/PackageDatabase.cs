@@ -47,8 +47,8 @@ namespace UnityEditor.PackageManager.UI
             [NonSerialized]
             private List<IOperation> m_RefreshOperationsInProgress = new List<IOperation>();
 
-            [SerializeField]
-            private bool m_SetupDone;
+            [NonSerialized]
+            private bool m_EventsRegistered;
 
             public bool isEmpty { get { return !m_Packages.Any(); } }
 
@@ -191,10 +191,12 @@ namespace UnityEditor.PackageManager.UI
 
             public IEnumerable<IPackage> packagesInError => allPackages.Where(p => p.errors.Any());
 
-            public void Setup()
+            public void RegisterEvents()
             {
-                System.Diagnostics.Debug.Assert(!m_SetupDone);
-                m_SetupDone = true;
+                if (m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = true;
 
                 UpmClient.instance.onPackagesChanged += OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
@@ -204,7 +206,7 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onAddOperation += OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation += OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation += OnUpmRemoveOperation;
-                UpmClient.instance.Setup();
+                UpmClient.instance.RegisterEvents();
 
                 AssetStore.AssetStoreClient.instance.onPackagesChanged += OnPackagesChanged;
                 AssetStore.AssetStoreClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
@@ -212,15 +214,17 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.onListOperationStart += OnAssetStoreOperationStart;
                 AssetStore.AssetStoreClient.instance.onListOperationFinish += OnAssetStoreOperationFinish;
                 AssetStore.AssetStoreClient.instance.onOperationError += OnAssetStoreOperationError;
-                AssetStore.AssetStoreClient.instance.Setup();
+                AssetStore.AssetStoreClient.instance.RegisterEvents();
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
-                System.Diagnostics.Debug.Assert(m_SetupDone);
-                m_SetupDone = false;
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
 
                 UpmClient.instance.onPackagesChanged -= OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
@@ -230,7 +234,7 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onAddOperation -= OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation -= OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation -= OnUpmRemoveOperation;
-                UpmClient.instance.Clear();
+                UpmClient.instance.UnregisterEvents();
 
                 AssetStore.AssetStoreClient.instance.onPackagesChanged -= OnPackagesChanged;
                 AssetStore.AssetStoreClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
@@ -238,7 +242,7 @@ namespace UnityEditor.PackageManager.UI
                 AssetStore.AssetStoreClient.instance.onListOperationStart -= OnAssetStoreOperationStart;
                 AssetStore.AssetStoreClient.instance.onListOperationFinish -= OnAssetStoreOperationFinish;
                 AssetStore.AssetStoreClient.instance.onOperationError -= OnAssetStoreOperationError;
-                AssetStore.AssetStoreClient.instance.Clear();
+                AssetStore.AssetStoreClient.instance.UnregisterEvents();
 
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
             }
@@ -247,10 +251,10 @@ namespace UnityEditor.PackageManager.UI
             {
                 onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), m_Packages.Values, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
 
-                Clear();
+                UnregisterEvents();
 
-                AssetStore.AssetStoreClient.instance.Reload();
-                UpmClient.instance.Reload();
+                AssetStore.AssetStoreClient.instance.ClearCache();
+                UpmClient.instance.ClearCache();
 
                 m_Packages.Clear();
                 m_SerializedUpmPackages = new List<UpmPackage>();
@@ -260,7 +264,7 @@ namespace UnityEditor.PackageManager.UI
                 m_RefreshOperationsInProgress.Clear();
                 m_LastUpdateTimestamp = 0;
 
-                Setup();
+                RegisterEvents();
             }
 
             private void OnDownloadProgress(DownloadProgress progress)

@@ -6,46 +6,15 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
+using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
 
 namespace UnityEditor
 {
     // match MonoMaterialProperty layout!
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class MaterialProperty
+    public sealed partial class MaterialProperty
     {
-        public enum PropType
-        {
-            Color,
-            Vector,
-            Float,
-            Range,
-            Texture,
-        }
-
-        [Obsolete("Use UnityEngine.Rendering.TextureDimension instead", false)]
-        public enum TexDim
-        {
-            Unknown = -1,
-            None = 0,
-            Tex2D = 2,
-            Tex3D = 3,
-            Cube = 4,
-            Any = 6,
-        }
-
-        [Flags]
-        public enum PropFlags
-        {
-            None = 0,
-            HideInInspector = (1 << 0),
-            PerRendererData = (1 << 1),
-            NoScaleOffset = (1 << 2),
-            Normal = (1 << 3),
-            HDR = (1 << 4),
-            Gamma = (1 << 5),
-            NonModifiableTextureData = (1 << 6),
-        }
-
         public delegate bool ApplyPropertyCallback(MaterialProperty prop, int changeMask, object previousValue);
 
         private Object[] m_Targets;
@@ -55,17 +24,17 @@ namespace UnityEditor
         private System.Object m_Value;
         private Vector4 m_TextureScaleAndOffset;
         private Vector2 m_RangeLimits;
-        private PropType m_Type;
-        private PropFlags m_Flags;
+        private ShaderPropertyType m_Type;
+        private ShaderPropertyFlags m_Flags;
         private UnityEngine.Rendering.TextureDimension m_TextureDimension;
         private int m_MixedValueMask;
 
 
         public Object[] targets { get { return m_Targets; } }
-        public PropType type { get { return m_Type; } }
+        public PropType type { get { return (PropType)m_Type; } }
         public string name { get { return m_Name; } }
         public string displayName { get { return m_DisplayName; } }
-        public PropFlags flags { get { return m_Flags; } }
+        public PropFlags flags { get { return (PropFlags)m_Flags; } }
         public UnityEngine.Rendering.TextureDimension textureDimension { get { return m_TextureDimension; } }
         public Vector2 rangeLimits { get { return m_RangeLimits; } }
         public bool hasMixedValue { get { return (m_MixedValueMask & 1) != 0; } }
@@ -88,13 +57,13 @@ namespace UnityEditor
         {
             get
             {
-                if (m_Type == PropType.Color)
+                if (m_Type == ShaderPropertyType.Color)
                     return (Color)m_Value;
                 return Color.black;
             }
             set
             {
-                if (m_Type != PropType.Color)
+                if (m_Type != ShaderPropertyType.Color)
                     return;
                 if (!hasMixedValue && value == (Color)m_Value)
                     return;
@@ -107,13 +76,13 @@ namespace UnityEditor
         {
             get
             {
-                if (m_Type == PropType.Vector)
+                if (m_Type == ShaderPropertyType.Vector)
                     return (Vector4)m_Value;
                 return Vector4.zero;
             }
             set
             {
-                if (m_Type != PropType.Vector)
+                if (m_Type != ShaderPropertyType.Vector)
                     return;
                 if (!hasMixedValue && value == (Vector4)m_Value)
                     return;
@@ -132,13 +101,13 @@ namespace UnityEditor
         {
             get
             {
-                if (m_Type == PropType.Float || m_Type == PropType.Range)
+                if (m_Type == ShaderPropertyType.Float || m_Type == ShaderPropertyType.Range)
                     return (float)m_Value;
                 return 0.0f;
             }
             set
             {
-                if (m_Type != PropType.Float && m_Type != PropType.Range)
+                if (m_Type != ShaderPropertyType.Float && m_Type != ShaderPropertyType.Range)
                     return;
                 if (!hasMixedValue && value == (float)m_Value)
                     return;
@@ -151,13 +120,13 @@ namespace UnityEditor
         {
             get
             {
-                if (m_Type == PropType.Texture)
+                if (m_Type == ShaderPropertyType.Texture)
                     return (Texture)m_Value;
                 return null;
             }
             set
             {
-                if (m_Type != PropType.Texture)
+                if (m_Type != ShaderPropertyType.Texture)
                     return;
                 if (!hasMixedValue && value == (Texture)m_Value)
                     return;
@@ -174,13 +143,13 @@ namespace UnityEditor
         {
             get
             {
-                if (m_Type == PropType.Texture)
+                if (m_Type == ShaderPropertyType.Texture)
                     return m_TextureScaleAndOffset;
                 return Vector4.zero;
             }
             set
             {
-                if (m_Type != PropType.Texture)
+                if (m_Type != ShaderPropertyType.Texture)
                     return;
                 if (!hasMixedValue && value == m_TextureScaleAndOffset)
                     return;

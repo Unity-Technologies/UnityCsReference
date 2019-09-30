@@ -213,6 +213,9 @@ namespace UnityEngine.UIElements.UIR
             m_Stats.elementsRemoved += m_StatsElementsRemoved;
             m_StatsElementsAdded = m_StatsElementsRemoved = 0;
 
+            if (shaderInfoAllocator.isReleased)
+                RecreateDevice(); // The shader info texture was released, recreate the device to start fresh
+
             if (OnPreRender != null)
                 OnPreRender();
 
@@ -626,6 +629,12 @@ namespace UnityEngine.UIElements.UIR
 
             Constructor(panelObj, deviceObj, atlasManObj, vectorImageManObj);
             UIEOnChildAdded(root.parent, root, root.hierarchy.parent == null ? 0 : root.hierarchy.parent.IndexOf(panel.visualTree));
+        }
+
+        internal void RecreateDevice()
+        {
+            BeforeRenderDeviceRelease();
+            AfterRenderDeviceRelease();
         }
 
         private void RepaintAtlassedElements()

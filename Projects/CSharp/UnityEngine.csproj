@@ -943,6 +943,9 @@
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderKeywordSet.bindings.cs">
       <Link>Runtime\Export\Shaders\ShaderKeywordSet.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderProperties.cs">
+      <Link>Runtime\Export\Shaders\ShaderProperties.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Snapping\SnapAxis.cs">
       <Link>Runtime\Export\Snapping\SnapAxis.cs</Link>
     </Compile>

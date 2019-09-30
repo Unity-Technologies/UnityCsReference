@@ -271,7 +271,7 @@ namespace UnityEditor
                     }
                 }
 
-                CapsuleCollider collider = (CapsuleCollider)bone.anchor.gameObject.AddComponent<CapsuleCollider>();
+                CapsuleCollider collider = Undo.AddComponent<CapsuleCollider>(bone.anchor.gameObject);
                 collider.direction = direction;
 
                 Vector3 center = Vector3.zero;
@@ -291,15 +291,15 @@ namespace UnityEditor
 
                 Component[] joints = bone.anchor.GetComponentsInChildren(typeof(Joint));
                 foreach (Joint joint in joints)
-                    DestroyImmediate(joint);
+                    Undo.DestroyObjectImmediate(joint);
 
                 Component[] bodies = bone.anchor.GetComponentsInChildren(typeof(Rigidbody));
                 foreach (Rigidbody body in bodies)
-                    DestroyImmediate(body);
+                    Undo.DestroyObjectImmediate(body);
 
                 Component[] colliders = bone.anchor.GetComponentsInChildren(typeof(Collider));
                 foreach (Collider collider in colliders)
-                    DestroyImmediate(collider);
+                    Undo.DestroyObjectImmediate(collider);
             }
         }
 
@@ -307,7 +307,7 @@ namespace UnityEditor
         {
             foreach (BoneInfo bone in bones)
             {
-                bone.anchor.gameObject.AddComponent<Rigidbody>();
+                Undo.AddComponent<Rigidbody>(bone.anchor.gameObject);
                 bone.anchor.GetComponent<Rigidbody>().mass = bone.density;
             }
         }
@@ -319,7 +319,7 @@ namespace UnityEditor
                 if (bone.parent == null)
                     continue;
 
-                CharacterJoint joint = bone.anchor.gameObject.AddComponent<CharacterJoint>();
+                CharacterJoint joint = Undo.AddComponent<CharacterJoint>(bone.anchor.gameObject);
                 bone.joint = joint;
 
                 // Setup connection and axis
@@ -479,12 +479,12 @@ namespace UnityEditor
 
                 // Middle spine bounds
                 bounds = Clip(GetBreastBounds(pelvis), pelvis, middleSpine, false);
-                box = (BoxCollider)pelvis.gameObject.AddComponent<BoxCollider>();
+                box = Undo.AddComponent<BoxCollider>(pelvis.gameObject);
                 box.center = bounds.center;
                 box.size = bounds.size;
 
                 bounds = Clip(GetBreastBounds(middleSpine), middleSpine, middleSpine, true);
-                box = (BoxCollider)middleSpine.gameObject.AddComponent<BoxCollider>();
+                box = Undo.AddComponent<BoxCollider>(middleSpine.gameObject);
                 box.center = bounds.center;
                 box.size = bounds.size;
             }
@@ -500,7 +500,7 @@ namespace UnityEditor
                 Vector3 size = bounds.size;
                 size[SmallestComponent(bounds.size)] = size[LargestComponent(bounds.size)] / 2.0F;
 
-                BoxCollider box = pelvis.gameObject.AddComponent<BoxCollider>();
+                BoxCollider box = Undo.AddComponent<BoxCollider>(pelvis.gameObject);
                 box.center = bounds.center;
                 box.size = size;
             }
@@ -514,7 +514,7 @@ namespace UnityEditor
             float radius = Vector3.Distance(leftArm.transform.position, rightArm.transform.position);
             radius /= 4;
 
-            SphereCollider sphere = head.gameObject.AddComponent<SphereCollider>();
+            SphereCollider sphere = Undo.AddComponent<SphereCollider>(head.gameObject);
             sphere.radius = radius;
             Vector3 center = Vector3.zero;
 

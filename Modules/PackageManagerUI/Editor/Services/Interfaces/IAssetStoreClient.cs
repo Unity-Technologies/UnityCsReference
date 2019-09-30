@@ -49,10 +49,10 @@ namespace UnityEditor.PackageManager.UI
 
         void OnDownloadProgress(string packageId, string message, ulong bytes, ulong total);
 
-        void Setup();
+        void RegisterEvents();
 
-        void Clear();
+        void UnregisterEvents();
 
-        void Reload();
+        void ClearCache();
     }
 }

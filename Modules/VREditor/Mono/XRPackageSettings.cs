@@ -5,10 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using UnityEditor;
 using UnityEngine;
-using UnityEditor.VersionControl;
-using UnityEditorInternal;
 
 namespace UnityEditorInternal.VR
 {
@@ -102,7 +100,7 @@ namespace UnityEditorInternal.VR
                 return;
 
             string packageInitPath = GetStorageFilePath();
-            if (!Provider.PromptAndCheckoutIfNeeded(new string[] { packageInitPath }, String.Empty))
+            if (!AssetDatabase.MakeEditable(packageInitPath))
                 return;
 
             FileInfo info = new FileInfo(packageInitPath);

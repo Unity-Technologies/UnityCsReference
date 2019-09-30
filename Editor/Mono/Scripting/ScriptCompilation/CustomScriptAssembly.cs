@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEditor.Compilation;
 using UnityEditor;
@@ -202,6 +203,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
     }
 
+    [DebuggerDisplay("{Name}")]
     class CustomScriptAssembly
     {
         public string FilePath { get; set; }

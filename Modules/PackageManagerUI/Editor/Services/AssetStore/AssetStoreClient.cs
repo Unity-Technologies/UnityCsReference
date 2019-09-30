@@ -48,8 +48,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             [SerializeField]
             private LocalInfo[] m_SerializedLocalInfos = new LocalInfo[0];
 
-            [SerializeField]
-            private bool m_SetupDone;
+            [NonSerialized]
+            private bool m_EventsRegistered;
 
             public void OnAfterDeserialize()
             {
@@ -344,10 +344,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 }
             }
 
-            public void Setup()
+            public void RegisterEvents()
             {
-                System.Diagnostics.Debug.Assert(!m_SetupDone);
-                m_SetupDone = true;
+                if (m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = true;
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
                 if (ApplicationUtil.instance.isUserLoggedIn)
@@ -360,10 +362,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 UpmClient.instance.onProductPackageFetchError += OnProductPackageFetchError;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
-                System.Diagnostics.Debug.Assert(m_SetupDone);
-                m_SetupDone = false;
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
 
                 AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
@@ -372,7 +376,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 UpmClient.instance.onProductPackageFetchError -= OnProductPackageFetchError;
             }
 
-            public void Reload()
+            public void ClearCache()
             {
                 m_LocalInfos.Clear();
                 m_FetchedInfos.Clear();
@@ -387,8 +391,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 {
                     AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                     AbortAllDownloads();
-                    Reload();
-                    UpmClient.instance.ResetProductCache();
+                    ClearCache();
+                    UpmClient.instance.ClearProductCache();
                 }
                 else
                 {

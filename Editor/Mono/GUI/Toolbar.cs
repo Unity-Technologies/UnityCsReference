@@ -92,6 +92,12 @@ namespace UnityEditor
 
             s_CloudIcon = EditorGUIUtility.IconContent("CloudConnect");
             s_AccountContent = EditorGUIUtility.TrTextContent("Account");
+
+            s_SnapToGridIcons = new GUIContent[]
+            {
+                EditorGUIUtility.TrIconContent("SceneViewSnap-Off", "Toggle Grid Snapping on and off. Available when you set tool handle rotation to Global."),
+                EditorGUIUtility.TrIconContent("SceneViewSnap-On", "Toggle Grid Snapping on and off. Available when you set tool handle rotation to Global.")
+            };
         }
 
         static GUIContent[] s_ToolIcons;
@@ -100,11 +106,10 @@ namespace UnityEditor
         static GUIContent   s_LayerContent;
         static GUIContent[] s_PlayIcons;
         static GUIContent s_CustomToolIcon;
+        static GUIContent[] s_SnapToGridIcons;
         static int s_ViewToolOnOffset;
         private static GUIContent s_AccountContent;
         static GUIContent   s_CloudIcon;
-        internal static event Action<Rect> toolSettingsGui;
-
         static class Styles
         {
             public static readonly GUIStyle dropdown = "Dropdown";
@@ -226,8 +231,12 @@ namespace UnityEditor
             int playModeControlsStart = Mathf.RoundToInt((position.width - playPauseStopWidth) / 2);
 
             pos.x += pos.width;
-            pos.width = (playModeControlsStart - pos.x) - space;
+            const float pivotButtonsWidth = 128;
+            pos.width = pivotButtonsWidth;
             DoToolSettings(EditorToolGUI.GetThickArea(pos));
+
+            ReserveWidthRight(standardButtonWidth, ref pos);
+            DoSnapButtons(EditorToolGUI.GetThickArea(pos));
 
             // Position centered controls.
             pos = new Rect(playModeControlsStart, 0, 240, 0);
@@ -393,16 +402,19 @@ namespace UnityEditor
 
         void DoToolSettings(Rect rect)
         {
-            if (toolSettingsGui != null)
-            {
-                toolSettingsGui(rect);
-                return;
-            }
-
-            const float pivotButtonsWidth = 128;
-            rect.width = pivotButtonsWidth;
             rect = EditorToolGUI.GetThinArea(rect);
             EditorToolGUI.DoBuiltinToolSettings(rect, Styles.buttonLeft, Styles.buttonRight);
+        }
+
+        void DoSnapButtons(Rect rect)
+        {
+            using (new EditorGUI.DisabledScope(!EditorSnapSettings.activeToolSupportsGridSnap))
+            {
+                var snap = EditorSnapSettings.gridSnapEnabled;
+                var icon = snap ? s_SnapToGridIcons[1] : s_SnapToGridIcons[0];
+                rect = EditorToolGUI.GetThickArea(rect);
+                EditorSnapSettings.gridSnapEnabled = GUI.Toggle(rect, snap, icon, Styles.command);
+            }
         }
 
         void DoPlayButtons(bool isOrWillEnterPlaymode)

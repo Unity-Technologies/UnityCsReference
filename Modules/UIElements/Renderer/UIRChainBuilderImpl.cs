@@ -1219,6 +1219,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             if (ve.renderChainData.firstClosingCommand != null)
             {
+                renderChain.OnRenderCommandRemoved(ve.renderChainData.firstClosingCommand, ve.renderChainData.lastClosingCommand);
+
                 var c = ve.renderChainData.firstClosingCommand;
                 while (c != ve.renderChainData.lastClosingCommand)
                 {

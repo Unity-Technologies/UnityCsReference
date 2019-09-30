@@ -349,6 +349,9 @@
     <Compile Include="..\..\Editor\Mono\MaterialProperty.cs">
       <Link>Editor\Mono\MaterialProperty.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\MaterialProperty.deprecated.cs">
+      <Link>Editor\Mono\MaterialProperty.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Menu.bindings.cs">
       <Link>Editor\Mono\Menu.bindings.cs</Link>
     </Compile>

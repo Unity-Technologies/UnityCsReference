@@ -58,7 +58,7 @@ namespace UnityEditor
         protected void DoInspectorEditButtons()
         {
             T joint = (T)target;
-            EditorGUI.BeginDisabledGroup(joint.gameObject.activeSelf == false);
+            EditorGUI.BeginDisabledGroup(joint.gameObject.activeInHierarchy == false);
             EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Angular Limits"), target);
             EditorGUI.EndDisabledGroup();
         }

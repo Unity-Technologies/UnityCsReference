@@ -362,9 +362,15 @@ namespace UnityEngine
 
         abstract public void Stop();
 
-        abstract public void Destroy();
+        public void Destroy()
+        {
+            Internal_SubsystemInstances.s_StandaloneSubsystemInstances.Remove(this);
+            OnDestroy();
+        }
 
         abstract public bool running { get; }
+
+        abstract protected void OnDestroy();
     }
 
     public abstract class Subsystem<TSubsystemDescriptor> : Subsystem where TSubsystemDescriptor : ISubsystemDescriptor

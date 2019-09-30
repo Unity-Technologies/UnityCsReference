@@ -150,8 +150,8 @@ namespace UnityEditorInternal
                         Vector3 worldDirection = Handles.matrix.MultiplyVector(slideDirection);
                         Vector3 worldPosition = Handles.matrix.MultiplyPoint(s_StartPosition) + worldDirection * dist;
 
-                        if (EditorSnapSettings.active && EditorSnapSettings.preferGrid && Snapping.IsCardinalDirection(worldDirection))
-                            worldPosition = Handles.SnapValue(worldPosition, new SnapAxisFilter(worldDirection) * snap);
+                        if (EditorSnapSettings.gridSnapActive)
+                            worldPosition = Snapping.Snap(worldPosition, GridSettings.size, (SnapAxis) new SnapAxisFilter(worldDirection));
 
                         position = Handles.inverseMatrix.MultiplyPoint(worldPosition);
 

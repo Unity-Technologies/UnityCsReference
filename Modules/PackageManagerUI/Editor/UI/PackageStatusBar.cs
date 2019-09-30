@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -80,7 +81,8 @@ namespace UnityEditor.PackageManager.UI
 
         private static string GetUpdateTimeLabel(long timestamp)
         {
-            return $"{new DateTime(timestamp):MMM d, HH:mm}";
+            var dt = new DateTime(timestamp);
+            return $"Last update {dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"))}";
         }
 
         private void SetUpdateTimestamp(long lastUpdateTimestamp)

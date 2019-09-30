@@ -29,7 +29,7 @@ namespace UnityEngine.Rendering
         }
 
         [RequiredByNativeCode]
-        internal static int GetRenderFrameInterval() { return renderFrameInterval; }
+        internal static void GetRenderFrameInterval(out int frameInterval) { frameInterval = renderFrameInterval; }
 
         public static int effectiveRenderFrameRate
         {

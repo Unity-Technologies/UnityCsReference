@@ -163,7 +163,7 @@ namespace UnityEditorInternal
                         Handles.DrawSolidArc(position, axis, from, d, size);
 
                         // Draw snap markers
-                        if (EditorSnapSettings.active && snap > 0)
+                        if (EditorSnapSettings.incrementalSnapActive && snap > 0)
                         {
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMarkerSize, snap, @from);
                             DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMajorMarkerSize, k_RotationUnitSnapMajorMarkerStep, @from);

@@ -29,6 +29,8 @@ namespace UnityEditor.PackageManager.UI
 
     internal interface IPageManager
     {
+        bool isInitialized { get; }
+
         event Action<IPackageVersion> onSelectionChanged;
 
         // arg1: the updated page, arg2: packages added/updated in the page, arg3: packages removed from the page
@@ -51,7 +53,9 @@ namespace UnityEditor.PackageManager.UI
 
         void Setup();
 
-        void Clear();
+        void RegisterEvents();
+
+        void UnregisterEvents();
 
         void Refresh(PackageFilterTab tab);
 

@@ -112,22 +112,20 @@ namespace UnityEditor
             }
         }
 
+        // ReSharper disable once UnusedMember.Local - invoked from native code
         static void FileModeChanged(string[] assets, UnityEditor.VersionControl.FileMode mode)
         {
-            // Make sure that all assets are checked out in version control and
-            // that we have the most recent status
-            if (Provider.enabled)
-            {
-                var editableAssets = new string[assets.Length];
-                if (Provider.MakeEditable(assets, editableAssets))
-                {
-                    // TODO: handle partial results from MakeEditable i.e. editableassets
-                    Provider.SetFileMode(assets, mode);
-                }
-            }
+            if (!Provider.enabled)
+                return;
+
+            // we'll want to re-serialize these assets in different (text vs binary) mode;
+            // make sure they are editable first
+            AssetDatabase.MakeEditable(assets);
+            Provider.SetFileMode(assets, mode);
         }
 
         // Postprocess on all assets once an automatic import has completed
+        // ReSharper disable once UnusedMember.Local - invoked from native code
         static void OnWillSaveAssets(string[] assets, out string[] assetsThatShouldBeSaved, out string[] assetsThatShouldBeReverted, bool explicitlySaveAsset)
         {
             assetsThatShouldBeReverted = new string[0];
@@ -170,16 +168,15 @@ namespace UnityEditor
             AssetDatabase.IsOpenForEdit(assetsThatShouldBeSaved, assetsNotOpened, StatusQueryOptions.ForceUpdate);
             assets = assetsNotOpened.ToArray();
 
-            // Try to checkout if needed. This may fail but is caught below.
-            var editableAssets = new string[assets.Length];
-            if (assets.Length != 0 && !Provider.MakeEditable(assets, editableAssets))
+            // Try to checkout if needed
+            var notEditableAssets = new List<string>();
+            if (assets.Length != 0 && !AssetDatabase.MakeEditable(assets, null, notEditableAssets))
             {
                 // only save assets that can be made editable (not locked by someone else, etc.),
                 // unless we are in the behavior mode that just overwrites everything anyway
                 if (!EditorUserSettings.overwriteFailedCheckoutAssets)
                 {
-                    editableAssets = editableAssets.Where(a => a != null).ToArray();
-                    assetsThatShouldBeReverted = assets.Except(editableAssets).ToArray();
+                    assetsThatShouldBeReverted = notEditableAssets.ToArray();
                     assetsThatShouldBeSaved = assetsThatShouldBeSaved.Except(assetsThatShouldBeReverted).ToArray();
                 }
             }

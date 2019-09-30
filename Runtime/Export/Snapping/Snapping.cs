@@ -6,16 +6,6 @@ namespace UnityEngine
 {
     public static class Snapping
     {
-        const float k_MaxRaySnapDistance = Mathf.Infinity;
-        const float k_RaySnapEpsilon = .0001f;
-
-        static float MakeNonZero(float value, float min = float.Epsilon)
-        {
-            if (float.IsNaN(value) || float.IsInfinity(value) || Mathf.Abs(value) < min)
-                return min * Mathf.Sign(value);
-            return value;
-        }
-
         internal static bool IsCardinalDirection(Vector3 direction)
         {
             return

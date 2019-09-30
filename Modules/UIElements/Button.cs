@@ -37,7 +37,20 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [Obsolete("onClick is obsolete. Use clicked instead (UnityUpgradable) -> clicked", true)]
         public event Action onClick
+        {
+            add
+            {
+                clicked += value;
+            }
+            remove
+            {
+                clicked -= value;
+            }
+        }
+
+        public event Action clicked
         {
             add
             {

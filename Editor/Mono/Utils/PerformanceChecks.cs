@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Rendering;
 using System;
 using BuildTargetDiscovery = UnityEditor.BuildTargetDiscovery;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
@@ -77,13 +78,13 @@ namespace UnityEditor.Utils
                     bool isColor = false;
 
                     Shader shader = mat.shader;
-                    int count = ShaderUtil.GetPropertyCount(shader);
+                    int count = shader.GetPropertyCount();
 
                     for (int i = 0; i < count; i++)
                     {
-                        if (ShaderUtil.GetPropertyName(shader, i) == "_Emission")
+                        if (shader.GetPropertyName(i) == "_Emission")
                         {
-                            isColor = (ShaderUtil.GetPropertyType(shader, i) == ShaderUtil.ShaderPropertyType.Color);
+                            isColor = shader.GetPropertyType(i) == ShaderPropertyType.Color;
                             break;
                         }
                     }

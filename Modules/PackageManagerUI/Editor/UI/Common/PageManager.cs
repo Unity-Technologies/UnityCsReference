@@ -30,6 +30,13 @@ namespace UnityEditor.PackageManager.UI
             [SerializeField]
             private Page[] m_SerializedPages = new Page[0];
 
+            [NonSerialized]
+            private bool m_EventsRegistered;
+
+            [SerializeField]
+            private bool m_Initialized;
+            public bool isInitialized => m_Initialized;
+
             [MenuItem("internal:Packages/Reset Package Database")]
             public static void ResetPackageDatabase()
             {
@@ -209,6 +216,9 @@ namespace UnityEditor.PackageManager.UI
 
             public void Refresh(RefreshOptions options)
             {
+                // make sure the events are registered before actually calling the actual refresh functions
+                // such that we don't lose any callbacks events
+                RegisterEvents();
                 if ((options & RefreshOptions.CurrentFilter) != 0)
                     options |= GetRefreshOptionsFromFilterTab(PackageFiltering.instance.currentFilterTab);
 
@@ -248,7 +258,18 @@ namespace UnityEditor.PackageManager.UI
 
             public void Setup()
             {
-                PackageDatabase.instance.Setup();
+                m_Initialized = true;
+                RegisterEvents();
+            }
+
+            public void RegisterEvents()
+            {
+                if (m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = true;
+
+                PackageDatabase.instance.RegisterEvents();
 
                 AssetStore.AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
                 AssetStore.AssetStoreClient.instance.onProductFetched += OnProductFetched;
@@ -263,8 +284,13 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
+
                 AssetStore.AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
                 AssetStore.AssetStoreClient.instance.onProductFetched -= OnProductFetched;
 
@@ -277,12 +303,12 @@ namespace UnityEditor.PackageManager.UI
 
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
 
-                PackageDatabase.instance.Clear();
+                PackageDatabase.instance.UnregisterEvents();
             }
 
             internal void Reload()
             {
-                Clear();
+                UnregisterEvents();
 
                 foreach (var page in m_Pages.Values)
                 {
@@ -294,7 +320,7 @@ namespace UnityEditor.PackageManager.UI
 
                 PackageDatabase.instance.Reload();
 
-                Setup();
+                RegisterEvents();
             }
         }
     }
