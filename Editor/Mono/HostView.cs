@@ -120,6 +120,52 @@ namespace UnityEditor
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
         }
 
+        private void HandleSplitView()
+        {
+            SplitView sp = parent as SplitView;
+            if (Event.current.type == EventType.Repaint && sp)
+            {
+                View view = this;
+                while (sp)
+                {
+                    int id = sp.controlID;
+
+                    if (id == GUIUtility.hotControl || GUIUtility.hotControl == 0)
+                    {
+                        int idx = sp.IndexOfChild(view);
+                        if (sp.vertical)
+                        {
+                            if (idx != 0)
+                                EditorGUIUtility.AddCursorRect(new Rect(0, 0, position.width, SplitView.kGrabDist), MouseCursor.SplitResizeUpDown, id);
+                            else if (idx != sp.children.Length - 1)
+                                EditorGUIUtility.AddCursorRect(new Rect(0, position.height - SplitView.kGrabDist, position.width, SplitView.kGrabDist), MouseCursor.SplitResizeUpDown, id);
+                        }
+                        else // horizontal
+                        {
+                            if (idx != 0)
+                                EditorGUIUtility.AddCursorRect(new Rect(0, 0, SplitView.kGrabDist, position.height), MouseCursor.SplitResizeLeftRight, id);
+                            else if (idx != sp.children.Length - 1)
+                                EditorGUIUtility.AddCursorRect(new Rect(position.width - SplitView.kGrabDist, 0, SplitView.kGrabDist, position.height), MouseCursor.SplitResizeLeftRight, id);
+                        }
+                    }
+
+                    view = sp;
+                    sp = sp.parent as SplitView;
+                }
+
+                sp = (SplitView)parent;
+            }
+
+            if (sp)
+            {
+                Event e = new Event(Event.current);
+                e.mousePosition += new Vector2(position.x, position.y);
+                sp.SplitGUI(e);
+                if (e.type == EventType.Used)
+                    Event.current.Use();
+            }
+        }
+
         protected override void OldOnGUI()
         {
             ClearBackground();
@@ -141,6 +187,7 @@ namespace UnityEditor
 
                 try
                 {
+                    HandleSplitView();
                     Invoke("OnGUI");
                 }
                 finally
@@ -250,7 +297,9 @@ namespace UnityEditor
 
         internal void OnSelectionChange()
         {
+            UnityEngine.Profiling.Profiler.BeginSample("HostView.OnSelectionChange." + GetViewName());
             Invoke("OnSelectionChange");
+            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         internal void OnDidOpenScene()

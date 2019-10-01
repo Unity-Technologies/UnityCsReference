@@ -1632,9 +1632,9 @@ namespace UnityEditor
             // in order for localization strings to have sufficient context.
 
             string prefabNoun = assetPaths.Length > 1 ? L10n.Tr("Prefabs") : L10n.Tr("Prefab");
-            bool result = Provider.PromptAndCheckoutIfNeeded(
+            bool result = AssetDatabase.MakeEditable(
                 assetPaths,
-                String.Format(
+                string.Format(
                     saveVerb == SaveVerb.Save ?
                     L10n.Tr("The version control requires you to check out the {0} before saving changes.") :
                     L10n.Tr("The version control requires you to check out the {0} before applying changes."),

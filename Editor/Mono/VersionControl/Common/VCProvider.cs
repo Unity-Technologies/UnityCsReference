@@ -2,8 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Internal;
 
 namespace UnityEditor.VersionControl
 {
@@ -14,6 +15,7 @@ namespace UnityEditor.VersionControl
     public enum ResolveMethod { UseMine = 1, UseTheirs = 2, UseMerged }
 
     [System.Flags]
+    [System.Obsolete("MergeMethod is no longer used.")]
     public enum MergeMethod
     {
         MergeNone = 0,
@@ -279,34 +281,30 @@ namespace UnityEditor.VersionControl
             return CheckCallbackAndCheckout(assetList, mode, changeset);
         }
 
-        //*Undocumented : intention is to make this public
-        static internal bool PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded, ChangeSet changeset = null)
+        internal static bool HandlePreCheckoutCallback(ref string[] paths, ref ChangeSet changeSet)
         {
-            var assetList = new AssetList();
-            foreach (var path in assets)
-            {
-                var asset = GetAssetByPath(path);
-                assetList.Add(asset);
-            }
+            if (preCheckoutCallback == null)
+                return true;
 
-            if (preCheckoutCallback != null)
+            var assetList = new AssetList();
+            assetList.AddRange(paths.Select(GetAssetByPath));
+
+            try
             {
-                var changesetID = changeset == null ? ChangeSet.defaultID : changeset.id;
-                string changesetDescription = null;
-                if (preCheckoutCallback(assetList, ref changesetID, ref changesetDescription) == true)
+                var id = changeSet == null ? ChangeSet.defaultID : changeSet.id;
+                string desc = null;
+                if (preCheckoutCallback(assetList, ref id, ref desc))
                 {
-                    var changesetTask = CheckAndCreateUserSuppliedChangeSet(changesetID, changesetDescription, ref changeset);
-                    if (changesetTask != null)
+                    var task = CheckAndCreateUserSuppliedChangeSet(id, desc, ref changeSet);
+                    if (task != null)
                     {
-                        Debug.LogError("Tried to create/rename remote ChangeSet to match the one specified in user-supplied callback but failed with error code: " + changesetTask.resultCode);
+                        Debug.LogError(
+                            "Tried to create/rename remote ChangeSet to match the one specified in user-supplied callback but failed with error code: " +
+                            task.resultCode);
                         return false;
                     }
-                    var newAssets = new List<string>();
-                    foreach (var asset in assetList)
-                    {
-                        newAssets.Add(asset.path);
-                    }
-                    assets = newAssets.ToArray();
+
+                    paths = assetList.Select(asset => asset.path).ToArray();
                 }
                 else
                 {
@@ -314,8 +312,13 @@ namespace UnityEditor.VersionControl
                     return false;
                 }
             }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("User-created pre-checkout callback has thrown an exception: " + ex.Message);
+                return false;
+            }
 
-            return Internal_PromptAndCheckoutIfNeeded(assets, promptIfCheckoutIsNeeded, changeset);
+            return true;
         }
 
         static public Task Delete(string assetProjectPath)
@@ -442,9 +445,17 @@ namespace UnityEditor.VersionControl
             return Internal_Resolve(assets.ToArray(), resolveMethod);
         }
 
+        static public Task Merge(AssetList assets)
+        {
+            return Internal_Merge(assets.ToArray());
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [ExcludeFromDocs]
+        [System.Obsolete("MergeMethod is no longer used.")]
         static public Task Merge(AssetList assets, MergeMethod method)
         {
-            return Internal_Merge(assets.ToArray(), method);
+            return Internal_Merge(assets.ToArray());
         }
 
         static public bool LockIsValid(AssetList assets)

@@ -10,17 +10,11 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.AssetStore
 {
     [Serializable]
-    internal class AssetStorePackage : IPackage
+    internal class AssetStorePackage : BasePackage
     {
         [SerializeField]
-        private string m_Name;
-        public string name => m_Name;
-
-        [SerializeField]
         private string m_ProductId;
-        public string uniqueId => m_ProductId;
-
-        public string displayName => versions.FirstOrDefault()?.displayName;
+        public override string uniqueId => m_ProductId;
 
         [SerializeField]
         private AssetStoreVersionList m_VersionList;
@@ -28,65 +22,16 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         [SerializeField]
         private UpmVersionList m_UpmVersionList;
 
-        public IVersionList versionList => string.IsNullOrEmpty(name) ? m_VersionList as IVersionList : m_UpmVersionList as IVersionList;
-
-        [SerializeField]
-        private PackageProgress m_Progress;
-        public PackageProgress progress
-        {
-            get { return m_Progress; }
-            set { m_Progress = value; }
-        }
-
-        public PackageState state => PackageExtensions.GetState(this);
-
-        public bool isDiscoverable => true;
-
-        [SerializeField]
-        private List<Error> m_Errors;
-        // Combined errors for this package or any version.
-        // Stop lookup after first error encountered on a version to save time not looking up redundant errors.
-        public IEnumerable<Error> errors => (versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? new List<Error>()).Concat(m_Errors);
-
-        [SerializeField]
-        private PackageType m_Type;
-        public bool Is(PackageType type)
-        {
-            return (m_Type & type) != 0;
-        }
+        public override IVersionList versions => string.IsNullOrEmpty(name) ? m_VersionList as IVersionList : m_UpmVersionList as IVersionList;
 
         [SerializeField]
         private List<PackageImage> m_Images;
         [SerializeField]
         private List<PackageLink> m_Links;
 
-        public IEnumerable<PackageImage> images => m_Images;
+        public override IEnumerable<PackageImage> images => m_Images;
 
-        public IEnumerable<PackageLink> links => m_Links;
-
-        public IEnumerable<IPackageVersion> versions => versionList?.all;
-
-        public IEnumerable<IPackageVersion> keyVersions => versionList?.key;
-
-        public IPackageVersion installedVersion => versionList?.installed;
-
-        public IPackageVersion latestVersion => versionList?.latest;
-
-        public IPackageVersion latestPatch => versionList?.latestPatch;
-
-        public IPackageVersion recommendedVersion => versionList?.recommended;
-
-        public IPackageVersion primaryVersion => versionList?.primary;
-
-        public void AddError(Error error)
-        {
-            m_Errors?.Add(error);
-        }
-
-        public void ClearErrors()
-        {
-            m_Errors?.Clear();
-        }
+        public override IEnumerable<PackageLink> links => m_Links;
 
         public AssetStorePackage(string productId, Error error)
         {
@@ -142,8 +87,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             m_Links = fetchedInfo?.links ?? new List<PackageLink>();
             m_VersionList = new AssetStoreVersionList();
 
-            m_UpmVersionList = package?.versionList as UpmVersionList ?? new UpmVersionList();
-            foreach (var version in m_UpmVersionList.all.Cast<UpmPackageVersion>())
+            m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList();
+            foreach (var version in m_UpmVersionList.Cast<UpmPackageVersion>())
                 version.UpdateFetchedInfo(fetchedInfo);
 
             if (string.IsNullOrEmpty(fetchedInfo?.id) || string.IsNullOrEmpty(fetchedInfo?.versionId))
@@ -152,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 AddError(new Error(NativeErrorCode.Unknown, "Invalid package info."));
         }
 
-        public IPackage Clone()
+        public override IPackage Clone()
         {
             return (IPackage)MemberwiseClone();
         }

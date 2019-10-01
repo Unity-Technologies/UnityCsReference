@@ -2,18 +2,26 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
     public class TemplateContainer : BindableElement
     {
-        public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits>
+        {
+            internal const string k_ElementName = "Instance";
+
+            public override string uxmlName => k_ElementName;
+
+            public override string uxmlQualifiedName => uxmlNamespace + "." + uxmlName;
+        }
 
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Template = new UxmlStringAttributeDescription { name = "template", use = UxmlAttributeDescription.Use.Required };
+            internal const string k_TemplateAttributeName = "template";
+
+            UxmlStringAttributeDescription m_Template = new UxmlStringAttributeDescription { name = k_TemplateAttributeName, use = UxmlAttributeDescription.Use.Required };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -26,10 +34,10 @@ namespace UnityEngine.UIElements
 
                 TemplateContainer templateContainer = ((TemplateContainer)ve);
                 templateContainer.templateId = m_Template.GetValueFromBag(bag, cc);
-                VisualTreeAsset vea = cc.visualTreeAsset.ResolveTemplate(templateContainer.templateId);
+                VisualTreeAsset vea = cc.visualTreeAsset?.ResolveTemplate(templateContainer.templateId);
 
                 if (vea == null)
-                    templateContainer.Add(new Label(string.Format("Unknown Element: '{0}'", templateContainer.templateId)));
+                    templateContainer.Add(new Label(string.Format("Unknown Template: '{0}'", templateContainer.templateId)));
                 else
                 {
                     var bagOverrides = (bag as TemplateAsset)?.attributeOverrides;
@@ -47,7 +55,7 @@ namespace UnityEngine.UIElements
                             attributeOverrides.AddRange(bagOverrides);
                     }
 
-                    vea.CloneTree(templateContainer, cc.slotInsertionPoints, attributeOverrides);
+                    vea.CloneTree(ve, cc.slotInsertionPoints, attributeOverrides);
                 }
 
                 if (vea == null)

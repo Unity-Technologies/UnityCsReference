@@ -15,5 +15,7 @@ namespace UnityEditor.PackageManager.UI
         Texture2D LoadImage(long productId, string url);
 
         void SaveImage(long productId, string url, Texture2D texture);
+
+        void ClearCache();
     }
 }

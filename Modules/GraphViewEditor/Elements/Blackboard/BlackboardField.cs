@@ -49,7 +49,7 @@ namespace UnityEditor.Experimental.GraphView
         public BlackboardField(Texture icon, string text, string typeText)
         {
             var tpl = EditorGUIUtility.Load("UXML/GraphView/BlackboardField.uxml") as VisualTreeAsset;
-            VisualElement mainContainer = tpl.CloneTree();
+            VisualElement mainContainer = tpl.Instantiate();
             AddStyleSheetPath(Blackboard.StyleSheetPath);
             mainContainer.AddToClassList("mainContainer");
             mainContainer.pickingMode = PickingMode.Ignore;

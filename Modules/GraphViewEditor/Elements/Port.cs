@@ -355,7 +355,7 @@ namespace UnityEditor.Experimental.GraphView
 
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Port.uxml") as VisualTreeAsset;
 
-            tpl.CloneTree(this, null);
+            tpl.CloneTree(this);
             m_ConnectorBox = this.Q(name: "connector");
             m_ConnectorText = this.Q<Label>(name: "type");
 

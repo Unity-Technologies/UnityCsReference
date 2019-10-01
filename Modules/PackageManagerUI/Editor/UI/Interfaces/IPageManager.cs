@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IPageManager
     {
-        bool isSetupDone { get; }
+        bool isInitialized { get; }
 
         event Action<IPackageVersion> onSelectionChanged;
 
@@ -37,7 +37,9 @@ namespace UnityEditor.PackageManager.UI
 
         void Setup();
 
-        void Clear();
+        void RegisterEvents();
+
+        void UnregisterEvents();
 
         void Refresh(PackageFilterTab? tab = null);
 

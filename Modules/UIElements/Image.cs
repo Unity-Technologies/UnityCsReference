@@ -216,12 +216,7 @@ namespace UnityEngine.UIElements
 
             if (!m_ScaleModeIsInline && customStyle.TryGetValue(s_ScaleModeProperty, out scaleModeValue))
             {
-                int scaleModeIntValue;
-
-                if (StyleSheetCache.TryParseEnum<ScaleMode>(scaleModeValue, out scaleModeIntValue))
-                {
-                    m_ScaleMode = (ScaleMode)scaleModeIntValue;
-                }
+                m_ScaleMode = (ScaleMode)StylePropertyUtil.GetEnumIntValue(StyleEnumType.ScaleMode, scaleModeValue);
             }
 
             if (!m_TintColorIsInline && customStyle.TryGetValue(s_TintColorProperty, out tintValue))

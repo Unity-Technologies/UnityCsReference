@@ -3,92 +3,43 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class PlaceholderPackageVersion : IPackageVersion
+    internal class PlaceholderPackageVersion : BasePackageVersion
     {
         [SerializeField]
-        private string m_PackageUniqueId;
-        public string packageUniqueId => m_PackageUniqueId;
-
-        [SerializeField]
         private string m_UniqueId;
-        public string uniqueId => m_UniqueId;
-        public string name => string.Empty;
+        public override string uniqueId => m_UniqueId;
 
-        public string displayName => string.Empty;
+        public override string author => string.Empty;
 
-        public string author => string.Empty;
+        public override string authorLink => string.Empty;
 
-        public string authorLink => string.Empty;
+        public override string category => string.Empty;
 
-        public string description => string.Empty;
+        public override bool isInstalled => false;
 
-        public string category => string.Empty;
+        public override bool isFullyFetched => true;
 
-        public IDictionary<string, string> categoryLinks => null;
+        public override bool isAvailableOnDisk => false;
 
-        public IEnumerable<Error> errors => Enumerable.Empty<Error>();
+        public override bool isDirectDependency => true;
 
-        public IEnumerable<Sample> samples => Enumerable.Empty<Sample>();
+        public override string localPath => string.Empty;
 
-        public SemVersion version => new SemVersion(0);
+        public override string versionString => string.Empty;
 
-        public EntitlementsInfo entitlements => null;
+        public override string versionId => string.Empty;
 
-        public DateTime? publishedDate => null;
-
-        public string publisherId => null;
-
-        public DependencyInfo[] dependencies => null;
-
-        public DependencyInfo[] resolvedDependencies => null;
-
-        public PackageInfo packageInfo => null;
-
-        public bool isInstalled => false;
-
-        public bool isFullyFetched => true;
-
-        public bool isAvailableOnDisk => false;
-
-        public bool isVersionLocked => true;
-
-        public bool canBeRemoved => false;
-
-        public bool canBeEmbedded => false;
-
-        public bool isDirectDependency => true;
-
-        public string localPath => string.Empty;
-
-        public string versionString => string.Empty;
-
-        public string versionId => string.Empty;
-
-        public IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
-
-        public IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
-
-        public SemVersion supportedVersion => null;
-
-        [SerializeField]
-        private PackageTag m_Tag;
-        public bool HasTag(PackageTag tag)
-        {
-            return (m_Tag & tag) != 0;
-        }
-
-        public PlaceholderPackageVersion(string packageUniqueId, string uniqueId, PackageTag tag = PackageTag.None, PackageSource source = PackageSource.Unknown)
+        public PlaceholderPackageVersion(string packageUniqueId, string uniqueId, PackageTag tag = PackageTag.None)
         {
             m_PackageUniqueId = packageUniqueId;
             m_UniqueId = uniqueId;
             m_Tag = tag;
+            m_Version = new SemVersion(0);
         }
     }
 }

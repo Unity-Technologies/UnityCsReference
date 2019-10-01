@@ -8,10 +8,24 @@ namespace UnityEditor
 {
     internal class MainView : View, ICleanuppable
     {
-        const float kStatusbarHeight = 20;
+        internal const float kToolbarHeight = 30;
+        internal const float kStatusbarHeight = 20;
 
         private static readonly Vector2 kMinSize = new Vector2(875, 300);
         private static readonly Vector2 kMaxSize = new Vector2(10000, 10000);
+
+        public bool useTopView { get; set; }
+        public float topViewHeight { get; set; }
+
+        public bool useBottomView { get; set; }
+        public float bottomViewHeight { get; set; }
+
+        public MainView()
+        {
+            topViewHeight = kToolbarHeight;
+            bottomViewHeight = kStatusbarHeight;
+            useTopView = useBottomView = true;
+        }
 
         void OnEnable()
         {
@@ -26,16 +40,29 @@ namespace UnityEditor
             if (children.Length > 2)
             {
                 // toolbar - dock area view - status bar
-                Toolbar t = (Toolbar)children[0];
-                children[0].position = new Rect(0, 0, newPos.width, t.CalcHeight());
-                children[1].position = new Rect(0,  t.CalcHeight(), newPos.width, newPos.height - t.CalcHeight() - children[2].position.height);
+                Toolbar t = children[0] as Toolbar;
+                topViewHeight = t != null ? t.CalcHeight() : topViewHeight;
+                children[0].position = new Rect(0, 0, newPos.width, topViewHeight);
+                children[1].position = new Rect(0,  topViewHeight, newPos.width, newPos.height - topViewHeight - children[2].position.height);
                 children[2].position = new Rect(0, newPos.height - children[2].position.height, newPos.width, children[2].position.height);
             }
             else
             {
                 // dock area view - status bar
-                children[0].position = new Rect(0, 0, newPos.width, newPos.height - children[1].position.height);
-                children[1].position = new Rect(0, newPos.height - children[1].position.height, newPos.width, children[1].position.height);
+                if (useBottomView)
+                {
+                    children[0].position = new Rect(0, 0, newPos.width, newPos.height - children[1].position.height);
+                    children[1].position = new Rect(0, newPos.height - children[1].position.height, newPos.width, children[1].position.height);
+                }
+                else if (useTopView)
+                {
+                    Toolbar t = children[0] as Toolbar;
+                    topViewHeight = t != null ? t.CalcHeight() : topViewHeight;
+                    children[0].position = new Rect(0, 0, newPos.width, topViewHeight);
+                    children[1].position = new Rect(0, children[0].position.height, newPos.width, newPos.height - children[0].position.height);
+                }
+                else
+                    children[0].position = new Rect(0, 0, newPos.width, newPos.height);
             }
         }
 
@@ -45,33 +72,16 @@ namespace UnityEditor
             {
                 // toolbar - dock area view - status bar
                 Toolbar t = (Toolbar)children[0];
-                var min = new Vector2(minSize.x, Mathf.Max(minSize.y, t.CalcHeight() + kStatusbarHeight + children[1].minSize.y));
+                var min = new Vector2(minSize.x, Mathf.Max(minSize.y, t.CalcHeight() + bottomViewHeight + children[1].minSize.y));
                 SetMinMaxSizes(min, maxSize);
             }
             else if (children.Length == 2)
             {
                 // dock area view - status bar
-                var min = new Vector2(minSize.x, Mathf.Max(minSize.y, kStatusbarHeight + children[1].minSize.y));
+                var min = new Vector2(minSize.x, Mathf.Max(minSize.y, bottomViewHeight + children[1].minSize.y));
                 SetMinMaxSizes(min, maxSize);
             }
             base.ChildrenMinMaxChanged();
-        }
-
-        public static void MakeMain()
-        {
-            //Set up default window size
-            ContainerWindow cw = ScriptableObject.CreateInstance<ContainerWindow>();
-            var main = ScriptableObject.CreateInstance<MainView>();
-            main.SetMinMaxSizes(kMinSize, kMaxSize);
-            cw.rootView = main;
-
-            Resolution res = Screen.currentResolution;
-            int width = Mathf.Clamp(res.width * 3 / 4, 800, 1400);
-            int height = Mathf.Clamp(res.height * 3 / 4, 600, 950);
-            cw.position = new Rect(60, 20, width, height);
-
-            cw.Show(ShowMode.MainWindow, loadPosition: true, displayImmediately: true, setFocus: true);
-            cw.DisplayAllViews();
         }
 
         public void Cleanup()
@@ -82,8 +92,9 @@ namespace UnityEditor
             if (children.Length == 3 && children[1].children.Length == 0)
             {
                 Rect r = window.position;
-                Toolbar t = (Toolbar)children[0];
-                r.height = t.CalcHeight() + kStatusbarHeight;
+                Toolbar t = children[0] as Toolbar;
+                topViewHeight = t != null ? t.CalcHeight() : topViewHeight;
+                r.height = topViewHeight + bottomViewHeight;
             }
         }
     }

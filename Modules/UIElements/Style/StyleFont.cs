@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -20,18 +21,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal int specificity
-        {
-            get { return m_Specificity; }
-            set { m_Specificity = value; }
-        }
-
-        int IStyleValue<Font>.specificity
-        {
-            get { return specificity; }
-            set { specificity = value; }
-        }
-
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
@@ -46,33 +35,18 @@ namespace UnityEngine.UIElements
             : this(null, keyword)
         {}
 
+        internal StyleFont(GCHandle gcHandle, StyleKeyword keyword)
+            : this(gcHandle.IsAllocated ? gcHandle.Target as Font : null, keyword)
+        {}
+
         internal StyleFont(Font v, StyleKeyword keyword)
         {
-            m_Specificity = StyleValueExtensions.UndefinedSpecificity;
             m_Keyword = keyword;
             m_Value = v;
         }
 
-        internal bool Apply<U>(U other, StylePropertyApplyMode mode) where U : IStyleValue<Font>
-        {
-            if (StyleValueExtensions.CanApply(specificity, other.specificity, mode))
-            {
-                value = other.value;
-                keyword = other.keyword;
-                specificity = other.specificity;
-                return true;
-            }
-            return false;
-        }
-
-        bool IStyleValue<Font>.Apply<U>(U other, StylePropertyApplyMode mode)
-        {
-            return Apply(other, mode);
-        }
-
         private StyleKeyword m_Keyword;
         private Font m_Value;
-        private int m_Specificity;
 
         public static bool operator==(StyleFont lhs, StyleFont rhs)
         {
@@ -115,7 +89,6 @@ namespace UnityEngine.UIElements
             var hashCode = 917506989;
             hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<Font>.Default.GetHashCode(m_Value);
-            hashCode = hashCode * -1521134295 + m_Specificity.GetHashCode();
             return hashCode;
         }
 

@@ -1118,7 +1118,7 @@ namespace UnityEditor
             {
                 menu.AddSeparator("");
 
-                int targetSceneForCreation = selectedGameObjects.Length > 0 ? selectedGameObjects.Last().scene.handle : GetLastSceneInHierarchy().handle;
+                int targetSceneForCreation = selectedGameObjects.Length > 0 ? selectedGameObjects.Last().scene.handle : SceneManager.GetActiveScene().handle;
 
                 // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
                 // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
@@ -1273,11 +1273,6 @@ namespace UnityEditor
                 }
             }
             return selectedSceneHandles;
-        }
-
-        Scene GetLastSceneInHierarchy()
-        {
-            return dataSource.GetLastScene();
         }
 
         void ContextClickOutsideItems()
@@ -1760,6 +1755,19 @@ namespace UnityEditor
             }
 
             return height;
+        }
+
+        public void GetSelectedScenes(List<Scene> scenes)
+        {
+            foreach (var selectedID in treeViewState.selectedIDs)
+            {
+                var scene = EditorSceneManager.GetSceneByHandle(selectedID);
+
+                if (scene.IsValid())
+                {
+                    scenes.Add(scene);
+                }
+            }
         }
 
         static class TransformPath

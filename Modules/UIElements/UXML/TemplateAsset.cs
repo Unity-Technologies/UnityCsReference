@@ -45,8 +45,8 @@ namespace UnityEngine.UIElements
             set { m_SlotUsages = value; }
         }
 
-        public TemplateAsset(string templateAlias)
-            : base(typeof(TemplateContainer).FullName)
+        public TemplateAsset(string templateAlias, string fullTypeName)
+            : base(fullTypeName)
         {
             Assert.IsFalse(string.IsNullOrEmpty(templateAlias), "Template alias must not be null or empty");
             m_TemplateAlias = templateAlias;

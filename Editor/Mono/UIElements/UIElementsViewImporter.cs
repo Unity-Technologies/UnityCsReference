@@ -21,7 +21,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 6, ext: "uxml", importQueueOffset: 1100)]
+    [ScriptedImporter(version: 7, ext: "uxml", importQueueOffset: 1100)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -255,20 +255,20 @@ namespace UnityEditor.UIElements
         }
 
 
-        const string k_GenericPathAttr = "path";
-        const string k_GenericSrcAttr = "src";
+        const string k_GenericPathAttr = UxmlGenericAttributeNames.k_PathAttributeName;
+        const string k_GenericSrcAttr = UxmlGenericAttributeNames.k_SrcAttributeName;
 
         const StringComparison k_Comparison = StringComparison.InvariantCulture;
-        public const string k_RootNode = "UXML";
-        const string k_TemplateNode = "Template";
-        const string k_TemplateNameAttr = "name";
-        const string k_TemplateInstanceNode = "Instance";
-        const string k_TemplateInstanceSourceAttr = "template";
-        const string k_StyleReferenceNode = "Style";
+        public const string k_RootNode = UxmlRootElementFactory.k_ElementName;
+        const string k_TemplateNode = UxmlTemplateFactory.k_ElementName;
+        const string k_TemplateNameAttr = UxmlGenericAttributeNames.k_NameAttributeName;
+        const string k_TemplateInstanceNode = TemplateContainer.UxmlFactory.k_ElementName;
+        const string k_TemplateInstanceSourceAttr = TemplateContainer.UxmlTraits.k_TemplateAttributeName;
+        const string k_StyleReferenceNode = UxmlStyleFactory.k_ElementName;
         const string k_SlotDefinitionAttr = "slot-name";
         const string k_SlotUsageAttr = "slot";
-        const string k_AttributeOverridesNode = "AttributeOverrides";
-        const string k_AttributeOverridesElementNameAttr = "element-name";
+        const string k_AttributeOverridesNode = UxmlAttributeOverridesFactory.k_ElementName;
+        const string k_AttributeOverridesElementNameAttr = UxmlAttributeOverridesTraits.k_ElementNameAttributeName;
 
         internal UXMLImporterImpl()
         {
@@ -291,10 +291,6 @@ namespace UnityEditor.UIElements
 
         void ImportXml(string xmlPath, out VisualTreeAsset vta)
         {
-            vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
-            vta.visualElementAssets = new List<VisualElementAsset>();
-            vta.templateAssets = new List<TemplateAsset>();
-
             var h = new Hash128();
             using (var stream = File.OpenRead(xmlPath))
             {
@@ -312,7 +308,7 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            vta.contentHash = h.GetHashCode();
+            CreateVisualTreeAsset(out vta, h);
 
             XDocument doc;
 
@@ -332,14 +328,11 @@ namespace UnityEditor.UIElements
 
         internal void ImportXmlFromString(string xml, out VisualTreeAsset vta)
         {
-            vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
-            vta.visualElementAssets = new List<VisualElementAsset>();
-            vta.templateAssets = new List<TemplateAsset>();
-
             var h = new Hash128();
             byte[] b = Encoding.UTF8.GetBytes(xml);
             HashUtilities.ComputeHash128(b, ref h);
-            vta.contentHash = h.GetHashCode();
+
+            CreateVisualTreeAsset(out vta, h);
 
             XDocument doc;
 
@@ -385,6 +378,14 @@ namespace UnityEditor.UIElements
             vta.inlineSheet = inlineSheet;
         }
 
+        void CreateVisualTreeAsset(out VisualTreeAsset vta, Hash128 contentHash)
+        {
+            vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
+            vta.visualElementAssets = new List<VisualElementAsset>();
+            vta.templateAssets = new List<TemplateAsset>();
+            vta.contentHash = contentHash.GetHashCode();
+        }
+
         void LoadXmlRoot(XDocument doc, VisualTreeAsset vta)
         {
             XElement elt = doc.Root;
@@ -398,21 +399,7 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            int orderInDocument = -1;
-
-            foreach (var child in elt.Elements())
-            {
-                switch (child.Name.LocalName)
-                {
-                    case k_TemplateNode:
-                        LoadTemplateNode(vta, elt, child);
-                        break;
-                    default:
-                        ++orderInDocument;
-                        LoadXml(child, null, vta, orderInDocument);
-                        continue;
-                }
-            }
+            LoadXml(elt, null, vta, 0);
         }
 
         void LoadTemplateNode(VisualTreeAsset vta, XElement elt, XElement child)
@@ -613,7 +600,9 @@ namespace UnityEditor.UIElements
             {
                 foreach (XElement child in elt.Elements())
                 {
-                    if (child.Name.LocalName == k_StyleReferenceNode)
+                    if (child.Name.LocalName == k_TemplateNode)
+                        LoadTemplateNode(vta, elt, child);
+                    else if (child.Name.LocalName == k_StyleReferenceNode)
                         LoadStyleReferenceNode(vea, child);
                     else if (templateAsset != null && child.Name.LocalName == k_AttributeOverridesNode)
                         LoadAttributeOverridesNode(templateAsset, child);
@@ -697,44 +686,40 @@ namespace UnityEditor.UIElements
 
         VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
         {
-            VisualElementAsset vea = null;
-
             string elementNamespaceName = elt.Name.NamespaceName;
 
-            if (elementNamespaceName.StartsWith("UnityEditor.Experimental.UIElements") || elementNamespaceName.StartsWith("UnityEngine.Experimental.UIElements"))
+            if (elementNamespaceName.StartsWith("UnityEditor.Experimental.UIElements") ||
+                elementNamespaceName.StartsWith("UnityEngine.Experimental.UIElements"))
             {
                 elementNamespaceName = elementNamespaceName.Replace(".Experimental.UIElements", ".UIElements");
             }
 
-            if (elt.Name.LocalName == k_TemplateInstanceNode && elementNamespaceName == "UnityEngine.UIElements")
+            string fullName = String.IsNullOrEmpty(elementNamespaceName)
+                ? elt.Name.LocalName
+                : elementNamespaceName + "." + elt.Name.LocalName;
+
+            if (elt.Name.LocalName == k_TemplateInstanceNode && elementNamespaceName == typeof(TemplateContainer).Namespace)
             {
                 XAttribute sourceAttr = elt.Attribute(k_TemplateInstanceSourceAttr);
                 if (sourceAttr == null || String.IsNullOrEmpty(sourceAttr.Value))
                 {
-                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.TemplateInstanceHasEmptySource, null, Error.Level.Fatal, elt);
+                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.TemplateInstanceHasEmptySource, null,
+                        Error.Level.Fatal, elt);
+                    return null;
                 }
-                else
+
+                string templateName = sourceAttr.Value;
+                if (!visualTreeAsset.TemplateExists(templateName))
                 {
-                    string templateName = sourceAttr.Value;
-                    if (!visualTreeAsset.TemplateExists(templateName))
-                    {
-                        logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownTemplate, templateName, Error.Level.Fatal, elt);
-                    }
-                    else
-                    {
-                        vea = new TemplateAsset(templateName);
-                    }
+                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownTemplate, templateName,
+                        Error.Level.Fatal, elt);
+                    return null;
                 }
-            }
-            else
-            {
-                string fullName = String.IsNullOrEmpty(elementNamespaceName)
-                    ? elt.Name.LocalName
-                    : elementNamespaceName + "." + elt.Name.LocalName;
-                vea = new VisualElementAsset(fullName);
+
+                return new TemplateAsset(templateName, fullName);
             }
 
-            return vea;
+            return new VisualElementAsset(fullName);
         }
 
         bool ParseAttributes(XElement elt, VisualElementAsset res, VisualTreeAsset vta, VisualElementAsset parent)

@@ -37,13 +37,16 @@ namespace UnityEngine.Analytics
         CacheImmediatelyFlag = 1 << 1,
         AllowInStopModeFlag  = 1 << 2,
         SendImmediateFlag    = 1 << 3,
-
+        NoCachingFlag        = 1 << 4,
+        NoRetryFlag          = 1 << 5,
 
         NormalPriorityEvent                = 0,
         NormalPriorityEvent_WithCaching    = CacheImmediatelyFlag,
+        NormalPriorityEvent_NoRetryNoCaching = NoCachingFlag | NoRetryFlag,
         HighPriorityEvent                  = FlushQueueFlag,
         HighPriorityEvent_InStopMode       = FlushQueueFlag | AllowInStopModeFlag,
-        HighestPriorityEvent               = FlushQueueFlag | SendImmediateFlag
+        HighestPriorityEvent               = FlushQueueFlag | SendImmediateFlag,
+        HighestPriorityEvent_NoRetryNoCaching = FlushQueueFlag | NoCachingFlag | NoRetryFlag
     }
 
     public static partial class Analytics

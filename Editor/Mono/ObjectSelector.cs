@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -91,6 +92,9 @@ namespace UnityEditor
 
         static HashSet<Event> s_GridAreaPriorityKeyboardEvents;
 
+        // Delayer for debouncing search inputs
+        private Delayer m_Debounce;
+
         Rect listPosition
         {
             get
@@ -145,6 +149,7 @@ namespace UnityEditor
             return 0;
         }
 
+        [UsedImplicitly]
         void OnEnable()
         {
             hideFlags = HideFlags.DontSave;
@@ -168,8 +173,15 @@ namespace UnityEditor
             AssetPreview.ClearTemporaryAssetPreviews();
 
             SetupPreview();
+
+            m_Debounce = Delayer.Debounce(_ =>
+            {
+                FilterSettingsChanged();
+                Repaint();
+            });
         }
 
+        [UsedImplicitly]
         void OnDisable()
         {
             if (m_ObjectSelectorReceiver != null)
@@ -194,6 +206,8 @@ namespace UnityEditor
                 m_EditorCache.Dispose();
 
             AssetPreview.ClearTemporaryAssetPreviews();
+
+            m_Debounce = null;
         }
 
         public void SetupPreview()
@@ -233,7 +247,7 @@ namespace UnityEditor
             set
             {
                 m_SearchFilter = value;
-                FilterSettingsChanged();
+                m_Debounce?.Execute();
             }
         }
 
@@ -511,8 +525,7 @@ namespace UnityEditor
             if (searchFilter != m_SearchFilter || m_FocusSearchFilter)
             {
                 m_SearchFilter = searchFilter;
-                FilterSettingsChanged();
-                Repaint();
+                m_Debounce.Execute();
             }
 
             if (m_FocusSearchFilter)
@@ -559,7 +572,7 @@ namespace UnityEditor
             GUILayout.EndArea();
 
             if (GUI.changed)
-                FilterSettingsChanged();
+                m_Debounce.Execute();
 
             var size = new Vector2(0, 0);
             if (m_IsShowingAssets)
@@ -590,6 +603,7 @@ namespace UnityEditor
             }
         }
 
+        [UsedImplicitly]
         void OnInspectorUpdate()
         {
             if (m_ListArea != null && AssetPreview.HasAnyNewPreviewTexturesAvailable(m_ListArea.GetAssetPreviewManagerID()))
@@ -802,7 +816,7 @@ namespace UnityEditor
             Undo.RevertAllDownToGroup(m_ModalUndoGroup);
 
             // Clear selection so that object field doesn't grab it
-            m_ListArea.InitSelection(new int[0]);
+            m_ListArea?.InitSelection(new int[0]);
             m_ObjectTreeWithSearch.Clear();
 
             Close();
@@ -810,6 +824,7 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
+        [UsedImplicitly]
         void OnDestroy()
         {
             if (m_ListArea != null)
@@ -818,6 +833,7 @@ namespace UnityEditor
             m_ObjectTreeWithSearch.Clear();
         }
 
+        [UsedImplicitly]
         void OnGUI()
         {
             HandleKeyboard();

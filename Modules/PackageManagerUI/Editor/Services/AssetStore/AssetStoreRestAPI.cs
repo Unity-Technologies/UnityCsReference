@@ -26,11 +26,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private const string kUpdateUri = "/-/api/legacy-package-update-info";
             private const string kDownloadUri = "/-/api/legacy-package-download-info";
 
-            private IASyncHTTPClientFactory m_AsyncHTTPClient;
-
             private AssetStoreRestAPIInternal()
             {
-                m_AsyncHTTPClient = new ASyncHTTPClientFactory();
                 m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
             }
 
@@ -56,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                     limit = limit > 0 ? limit : kDefaultLimit;
                     searchText = string.IsNullOrEmpty(searchText) ? "" : searchText;
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kListUri}?offset={startIndex}&limit={limit}&query={System.Uri.EscapeDataString(searchText)}");
+                    var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{kListUri}?offset={startIndex}&limit={limit}&query={System.Uri.EscapeDataString(searchText)}");
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
                     httpRequest.doneCallback = httpClient =>
                     {
@@ -119,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kDetailUri}/{productID}");
+                    var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{kDetailUri}/{productID}");
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
 
                     var etag = AssetStoreCache.instance.GetLastETag(productID);
@@ -179,7 +176,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kDownloadUri}/{productID}");
+                    var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{kDownloadUri}/{productID}");
                     httpRequest.header["Content-Type"] = "application/json";
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
                     httpRequest.doneCallback = httpClient =>
@@ -254,7 +251,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     var data = Json.Serialize(packageList);
                     var url = $"{m_Host}{kUpdateUri}";
 
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient(url, "POST");
+                    var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient(url, "POST");
                     httpRequest.postData = data;
                     httpRequest.header["Content-Type"] = "application/json";
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;

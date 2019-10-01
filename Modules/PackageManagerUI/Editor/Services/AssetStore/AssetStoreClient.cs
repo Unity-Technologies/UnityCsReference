@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         internal class AssetStoreClientInternal : ScriptableSingleton<AssetStoreClientInternal>, IAssetStoreClient, ISerializationCallbackReceiver
         {
             private static readonly string k_AssetStoreDownloadPrefix = "content__";
+            internal static readonly string s_LocalizedDownloadErrorMessage = L10n.Tr("The download could not be completed.Please try again.See console for more details.");
 
             public event Action<IEnumerable<IPackage>> onPackagesChanged = delegate {};
             public event Action<string, IPackageVersion> onPackageVersionUpdated = delegate {};
@@ -49,8 +50,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             [SerializeField]
             private LocalInfo[] m_SerializedLocalInfos = new LocalInfo[0];
 
-            [SerializeField]
-            private bool m_SetupDone;
+            [NonSerialized]
+            private bool m_EventsRegistered;
 
             public void OnAfterDeserialize()
             {
@@ -255,7 +256,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 {
                     progress.state = result.downloadState;
                     if (result.downloadState == DownloadProgress.State.Error)
-                        progress.message = result.errorMessage;
+                        progress.errorMessage = result.errorMessage;
 
                     onDownloadProgress?.Invoke(progress);
                 });
@@ -271,11 +272,11 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     return;
 
                 var id = long.Parse(productId);
-                AssetStoreDownloadOperation.instance.AbortDownloadPackageAsync(id, result =>
+                AssetStoreDownloadOperation.instance.AbortDownloadPackage(id, result =>
                 {
                     progress.state = DownloadProgress.State.Aborted;
                     progress.current = progress.total;
-                    progress.message = L10n.Tr("Download aborted");
+                    progress.errorMessage = L10n.Tr("Download aborted");
 
                     onDownloadProgress?.Invoke(progress);
 
@@ -291,13 +292,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 {
                     if (productId.StartsWith(k_AssetStoreDownloadPrefix))
                         productId = productId.Substring(k_AssetStoreDownloadPrefix.Length);
-                    progress = new DownloadProgress(productId) { state = DownloadProgress.State.InProgress, message = "downloading" };
+                    progress = new DownloadProgress(productId) { state = DownloadProgress.State.InProgress, errorMessage = string.Empty };
                     m_Downloads[AssetStoreCompatibleKey(productId)] = progress;
                 }
 
                 progress.current = bytes;
                 progress.total = total;
-                progress.message = message;
 
                 if (message == "ok")
                     progress.state = DownloadProgress.State.Completed;
@@ -310,7 +310,11 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 else if (message == "aborted")
                     progress.state = DownloadProgress.State.Aborted;
                 else
+                {
                     progress.state = DownloadProgress.State.Error;
+                    progress.errorMessage = s_LocalizedDownloadErrorMessage;
+                    Debug.LogError(message);
+                }
 
                 onDownloadProgress?.Invoke(progress);
             }
@@ -340,27 +344,18 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 if (fetchedInfo != null)
                 {
                     var assetStorePackage = new AssetStorePackage(fetchedInfo);
-                    var assetStorePackageVersion = assetStorePackage.versionList.primary as AssetStorePackageVersion;
+                    var assetStorePackageVersion = assetStorePackage.versions.primary as AssetStorePackageVersion;
                     assetStorePackageVersion.SetUpmPackageFetchError(error);
                     onPackagesChanged?.Invoke(new[] { assetStorePackage });
                 }
             }
 
-            public void OnEnable()
+            public void RegisterEvents()
             {
-                if (m_SetupDone)
-                {
-                    Clear();
-                    Setup();
-                }
-            }
-
-            public void Setup()
-            {
-                if (m_SetupDone)
+                if (m_EventsRegistered)
                     return;
 
-                m_SetupDone = true;
+                m_EventsRegistered = true;
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
                 if (ApplicationUtil.instance.isUserLoggedIn)
@@ -373,9 +368,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 UpmClient.instance.onProductPackageFetchError += OnProductPackageFetchError;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
-                m_SetupDone = false;
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
 
                 AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
@@ -384,7 +382,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 UpmClient.instance.onProductPackageFetchError -= OnProductPackageFetchError;
             }
 
-            public void Reload()
+            public void ClearCache()
             {
                 m_LocalInfos.Clear();
                 m_FetchedInfos.Clear();
@@ -399,8 +397,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 {
                     AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                     AbortAllDownloads();
-                    Reload();
-                    UpmClient.instance.ResetProductCache();
+                    ClearCache();
+                    UpmClient.instance.ClearProductCache();
                 }
                 else
                 {
@@ -415,7 +413,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_Downloads.Clear();
 
                 foreach (var download in currentDownloads)
-                    AssetStoreDownloadOperation.instance.AbortDownloadPackageAsync(download);
+                    AssetStoreDownloadOperation.instance.AbortDownloadPackage(download);
             }
 
             public void RefreshProductUpdateDetails(IEnumerable<LocalInfo> localInfos = null)

@@ -12,8 +12,6 @@ namespace UnityEngine.UIElements
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
     {
-        private static StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
-
         internal int GetNextChildSerialNumber()
         {
             int n = m_VisualElementAssets?.Count ?? 0;
@@ -117,39 +115,64 @@ namespace UnityEngine.UIElements
             set { m_ContentContainerId = value; }
         }
 
-        public TemplateContainer CloneTree()
+        public TemplateContainer Instantiate()
         {
-            var tc = new TemplateContainer(name);
-            CloneTree(tc);
-            return tc;
-        }
-
-        public TemplateContainer CloneTree(string bindingPath)
-        {
-            var tc = CloneTree();
-            tc.bindingPath = bindingPath;
-            return tc;
-        }
-
-        public void CloneTree(VisualElement target)
-        {
+            TemplateContainer target = new TemplateContainer(name);
             try
             {
-                CloneTree(target, s_TemporarySlotInsertionPoints);
+                CloneTree(target, s_TemporarySlotInsertionPoints, null);
             }
             finally
             {
                 s_TemporarySlotInsertionPoints.Clear();
             }
+
+            return target;
         }
 
-        // Note: This overload is internal to hide the slots feature
-        internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints)
+        public TemplateContainer Instantiate(string bindingPath)
         {
-            CloneTree(target, slotInsertionPoints, null);
+            var tc = Instantiate();
+            tc.bindingPath = bindingPath;
+            return tc;
         }
 
-        internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints, List<TemplateAsset.AttributeOverride> attributeOverrides)
+        /* Will be deprecated. Use Instantiate() instead. */
+        public TemplateContainer CloneTree()
+        {
+            return Instantiate();
+        }
+
+        /* Will be deprecated. Use Instantiate(string bindingPath) instead. */
+        public TemplateContainer CloneTree(string bindingPath)
+        {
+            return Instantiate(bindingPath);
+        }
+
+        public void CloneTree(VisualElement target)
+        {
+            int firstElementIndex;
+            int elementAddedCount;
+
+            CloneTree(target, out firstElementIndex, out elementAddedCount);
+        }
+
+        public void CloneTree(VisualElement target, out int firstElementIndex, out int elementAddedCount)
+        {
+            firstElementIndex = target.childCount;
+            try
+            {
+                CloneTree(target, s_TemporarySlotInsertionPoints, null);
+            }
+            finally
+            {
+                elementAddedCount = target.childCount - firstElementIndex;
+                s_TemporarySlotInsertionPoints.Clear();
+            }
+        }
+
+        internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints,
+            List<TemplateAsset.AttributeOverride> attributeOverrides)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -174,22 +197,38 @@ namespace UnityEngine.UIElements
                 children.Add(asset);
             }
 
-            // all nodes under the tree root have a parentId == 0
             List<VisualElementAsset> rootAssets;
-            if (idToChildren.TryGetValue(0, out rootAssets) && rootAssets != null)
+
+            // Tree root have a parentId == 0
+            idToChildren.TryGetValue(0, out rootAssets);
+            if (rootAssets == null || rootAssets.Count == 0)
             {
-                rootAssets.Sort(CompareForOrder);
+                return;
+            }
 
-                foreach (VisualElementAsset rootElement in rootAssets)
-                {
-                    Assert.IsNotNull(rootElement);
-                    VisualElement rootVe = CloneSetupRecursively(rootElement, idToChildren,
-                        new CreationContext(slotInsertionPoints, attributeOverrides, this, target));
+            Debug.Assert(rootAssets.Count == 1);
 
-                    // if contentContainer == this, the shadow and the logical hierarchy are identical
-                    // otherwise, if there is a CC, we want to insert in the shadow
-                    target.hierarchy.Add(rootVe);
-                }
+            AssignClassListFromAssetToElement(rootAssets[0], target);
+            AssignStyleSheetFromAssetToElement(rootAssets[0], target);
+
+            // Get the first-level elements. These will be instantiated and added to target.
+            idToChildren.TryGetValue(rootAssets[0].id, out rootAssets);
+
+            if (rootAssets == null || rootAssets.Count == 0)
+            {
+                return;
+            }
+
+            rootAssets.Sort(CompareForOrder);
+            foreach (var rootElement in rootAssets)
+            {
+                Assert.IsNotNull(rootElement);
+                VisualElement rootVe = CloneSetupRecursively(rootElement, idToChildren,
+                    new CreationContext(slotInsertionPoints, attributeOverrides, this, target));
+
+                // if contentContainer == this, the shadow and the logical hierarchy are identical
+                // otherwise, if there is a CC, we want to insert in the shadow
+                target.hierarchy.Add(rootVe);
             }
         }
 
@@ -215,14 +254,6 @@ namespace UnityEngine.UIElements
                 context.slotInsertionPoints.Add(slotName, ve);
             }
 
-            if (root.classes != null)
-            {
-                for (int i = 0; i < root.classes.Length; i++)
-                {
-                    ve.AddToClassList(root.classes[i]);
-                }
-            }
-
             if (root.ruleIndex != -1)
             {
                 if (inlineSheet == null)
@@ -230,11 +261,8 @@ namespace UnityEngine.UIElements
                 else
                 {
                     StyleRule r = inlineSheet.rules[root.ruleIndex];
-                    var stylesData = new VisualElementStylesData(false);
-                    ve.SetInlineStyles(stylesData);
-
-                    s_StylePropertyReader.SetInlineContext(inlineSheet, r, root.ruleIndex);
-                    stylesData.ApplyProperties(s_StylePropertyReader, null);
+                    var stylesData = ComputedStyle.Create(false);
+                    ve.SetInlineRule(inlineSheet, r);
                 }
             }
 
@@ -398,6 +426,11 @@ namespace UnityEngine.UIElements
                         return new Label(string.Format("Unknown type: '{0}'", asset.fullTypeName));
                     }
                 }
+                else if (asset.fullTypeName == UxmlRootElementFactory.k_ElementName)
+                {
+                    // Support UXML without namespace for backward compatibility.
+                    VisualElementFactoryRegistry.TryGetValue(typeof(UxmlRootElementFactory).Namespace + "." + asset.fullTypeName, out factoryList);
+                }
                 else
                 {
                     Debug.LogErrorFormat("Element '{0}' has no registered factory method.", asset.fullTypeName);
@@ -421,37 +454,38 @@ namespace UnityEngine.UIElements
                 return new Label(string.Format("Type with no factory: '{0}'", asset.fullTypeName));
             }
 
-            if (factory is UxmlRootElementFactory)
-            {
-                return null;
-            }
-
             VisualElement res = factory.Create(asset, ctx);
-            if (res == null)
+            if (res != null)
             {
-                Debug.LogErrorFormat("The factory of Visual Element Type '{0}' has returned a null object", asset.fullTypeName);
-                return new Label(string.Format("The factory of Visual Element Type '{0}' has returned a null object", asset.fullTypeName));
+                AssignClassListFromAssetToElement(asset, res);
+                AssignStyleSheetFromAssetToElement(asset, res);
             }
 
+            return res;
+        }
+
+        static void AssignClassListFromAssetToElement(VisualElementAsset asset, VisualElement element)
+        {
             if (asset.classes != null)
             {
                 for (int i = 0; i < asset.classes.Length; i++)
-                    res.AddToClassList(asset.classes[i]);
+                    element.AddToClassList(asset.classes[i]);
             }
+        }
 
+        static void AssignStyleSheetFromAssetToElement(VisualElementAsset asset, VisualElement element)
+        {
             if (asset.stylesheetPaths != null)
             {
                 for (int i = 0; i < asset.stylesheetPaths.Count; i++)
-                    res.AddStyleSheetPath(asset.stylesheetPaths[i]);
+                    element.AddStyleSheetPath(asset.stylesheetPaths[i]);
             }
 
             if (asset.stylesheets != null)
             {
                 for (int i = 0; i < asset.stylesheets.Count; ++i)
-                    res.styleSheets.Add(asset.stylesheets[i]);
+                    element.styleSheets.Add(asset.stylesheets[i]);
             }
-
-            return res;
         }
 
         internal int contentHash

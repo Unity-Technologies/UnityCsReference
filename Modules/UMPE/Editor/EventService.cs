@@ -9,11 +9,14 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
+using UnityEngine;
+using System.Text;
 
 namespace Unity.MPE
 {
     internal delegate object OnHandler(string eventType, object[] data);
     internal delegate void PromiseHandler(Exception err, object[] data);
+    internal enum EventDataSerialization { StandardJson, JsonUtility };
 
     internal static class EventService
     {
@@ -26,6 +29,7 @@ namespace Unity.MPE
             public bool isAcknowledged;
             public string data;
             public long timeoutInMs;
+            public object[] dataInfos;
         }
 
         public const string kRequest = "request";
@@ -78,7 +82,7 @@ namespace Unity.MPE
             List<OnHandler> handlers = null;
             if (!s_Events.TryGetValue(eventType, out handlers))
             {
-                handlers = new List<OnHandler> {handler};
+                handlers = new List<OnHandler> { handler};
                 s_Events.Add(eventType, handlers);
             }
             else if (handlers.Contains(handler))
@@ -116,31 +120,42 @@ namespace Unity.MPE
 
         public static bool IsConnected => m_Client != null && m_Client.IsConnected();
 
-        public static void Emit(string eventType, params object[] args)
+        public static void Emit(string eventType, object args = null, int targetId = -1, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
-            Emit(-1, eventType, args);
+            if (args == null)
+                Emit(eventType, null, targetId, eventDataSerialization);
+            else
+                Emit(eventType, new object[] { args }, targetId, eventDataSerialization);
         }
 
-        public static void Emit(int targetId, string eventType, params object[] args)
+        public static void Emit(string eventType, object[] args, int targetId = -1, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
             const bool notifyWildcard = true;
-            var req = CreateRequestMsg(kEvent, eventType, targetId, args);
+            var req = CreateRequest(kEvent, eventType, targetId, -1, args, eventDataSerialization);
 
             // TODO: do we want to ensure that all local listeners received json as payload? This means we could recycle handlers... If so we need to serialize/deserialize... ugly. real ugly...
             var reqStr = Json.Serialize(req);
             var reqJson = Json.Deserialize(reqStr) as Dictionary<string, object>;
 
-            NotifyLocalListeners(eventType, reqJson["data"] as object[], notifyWildcard);
+            object dataInfos = null;
+            reqJson.TryGetValue("dataInfos", out dataInfos);
+            var data = GetDataArray(reqJson["data"], dataInfos);
+
+
+            NotifyLocalListeners(eventType, data, notifyWildcard);
 
             m_Client.Send(reqStr);
         }
 
-        public static void Request(string eventType, PromiseHandler promiseHandler, params object[] args)
+        public static void Request(string eventType, PromiseHandler promiseHandler, object args = null, long timeoutInMs = kRequestDefaultTimeout, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
-            Request(kRequestDefaultTimeout, eventType, promiseHandler, args);
+            if (args == null)
+                Request(eventType, promiseHandler, null, timeoutInMs, eventDataSerialization);
+            else
+                Request(eventType, promiseHandler, new object[] { args }, timeoutInMs, eventDataSerialization);
         }
 
-        public static void Request(long timeoutInMs, string eventType, PromiseHandler promiseHandler, params object[] args)
+        public static void Request(string eventType, PromiseHandler promiseHandler, object[] args, long timeoutInMs = kRequestDefaultTimeout, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
             RequestData request;
             if (s_Requests.TryGetValue(eventType, out request))
@@ -151,10 +166,6 @@ namespace Unity.MPE
 
             request = new RequestData { eventType = eventType, promises = new List<PromiseHandler>(1), timeoutInMs = timeoutInMs };
             request.promises.Add(promiseHandler);
-
-            var req = CreateRequestMsg(kRequest, eventType, -1, args);
-            var requestId = m_Client.NewRequestId();
-            req["requestId"] = requestId;
 
             if (HasHandlers(eventType))
             {
@@ -178,90 +189,114 @@ namespace Unity.MPE
             }
             else
             {
-                request.id = requestId;
                 request.offerStartTime = Stopwatch.GetTimestamp();
+                var requestId = m_Client.NewRequestId();
+                request.id = requestId;
+
+                var msg = CreateRequest(kRequest, eventType, -1, requestId, args, eventDataSerialization);
+                m_Client.Send(Json.Serialize(msg));
+
                 s_Requests.Add(eventType, request);
-                request.data = Json.Serialize(args);
-                var msg = Json.Serialize(req);
-                m_Client.Send(msg);
+                request.data = Json.Serialize(msg["data"]);
+                request.dataInfos = (object[])msg["dataInfos"];
             }
         }
 
         public static void Log(string msg)
         {
-            var req = CreateRequestMsg(kLog, null, -1, msg);
-            var reqStr = Json.Serialize(req);
-            m_Client.Send(reqStr);
+            var req = CreateRequestMsg(kLog, null, -1, -1, msg, null);
+            m_Client.Send(req);
+        }
+
+        internal static bool DeserializeEvent(string eventMsg, out RequestMessage deserializedMessage)
+        {
+            var msg = Json.Deserialize(eventMsg) as Dictionary<string, object>;
+            deserializedMessage = new RequestMessage();
+            if (msg == null)
+            {
+                Debug.LogError("Invalid message: " + eventMsg);
+                return false;
+            }
+
+            if (!msg.ContainsKey("type"))
+            {
+                Debug.LogError("Message doesn't contain type: " + eventMsg);
+                return false;
+            }
+
+            if (!msg.ContainsKey("req"))
+            {
+                Debug.LogError("Message doesn't contain req: " + eventMsg);
+                return false;
+            }
+
+            if (!msg.ContainsKey("senderId"))
+            {
+                Debug.LogError("Message doesn't contain senderId: " + eventMsg);
+                return false;
+            }
+
+
+            deserializedMessage.reqType = msg["req"].ToString();
+            deserializedMessage.eventType = msg["type"].ToString();
+            deserializedMessage.senderId = Convert.ToInt32(msg["senderId"]);
+            object requestId;
+            if (msg.TryGetValue("requestId", out requestId))
+                deserializedMessage.requestId = Convert.ToInt32(requestId);
+
+            if (deserializedMessage.senderId == m_Client.GetChannelClientInfo().connectionId)
+            {
+                return false;
+            }
+
+            object dataObj = null;
+            msg.TryGetValue("data", out dataObj);
+            object dataInfos = null;
+            if (msg.TryGetValue("dataInfos", out dataInfos))
+                deserializedMessage.eventDataSerialization = EventDataSerialization.JsonUtility;
+            deserializedMessage.data = GetDataArray(dataObj, dataInfos);
+            return true;
+        }
+
+        internal class RequestMessage
+        {
+            public string reqType;
+            public string eventType;
+            public int senderId;
+            public int? requestId;
+            public object[] data;
+            public EventDataSerialization eventDataSerialization;
         }
 
         [RequiredByNativeCode]
         private static void IncomingEvent(string eventMsg)
         {
             //Console.WriteLine("[UMPE] " + eventMsg);
-            var msg = Json.Deserialize(eventMsg) as Dictionary<string, object>;
-            if (msg == null)
-            {
-                Debug.LogError("Invalid message: " + eventMsg);
+            RequestMessage msg;
+            if (!DeserializeEvent(eventMsg, out msg))
                 return;
-            }
 
-            if (!msg.ContainsKey("type"))
-            {
-                Debug.LogError("Message doesn't contain type: " + eventMsg);
-                return;
-            }
 
-            if (!msg.ContainsKey("req"))
-            {
-                Debug.LogError("Message doesn't contain req: " + eventMsg);
-                return;
-            }
-
-            if (!msg.ContainsKey("senderId"))
-            {
-                Debug.LogError("Message doesn't contain senderId: " + eventMsg);
-                return;
-            }
-
-            var reqType = msg["req"].ToString();
-            var eventType = msg["type"].ToString();
-            var senderId = Convert.ToInt32(msg["senderId"]);
-
-            if (senderId == m_Client.GetChannelClientInfo().connectionId)
-            {
-                return;
-            }
-
-            object dataObj = null;
-            msg.TryGetValue("data", out dataObj);
-            object[] data = null;
-            if (dataObj != null)
-            {
-                data = dataObj is List<object>? (dataObj as List<object>).ToArray() : new[] { dataObj };
-            }
-
-            switch (reqType)
+            switch (msg.reqType)
             {
                 case kRequest: // Receiver
                     // We are able to answer this request. Acknowledge it to the sender:
-                    if (HasHandlers(eventType))
+                    if (HasHandlers(msg.eventType))
                     {
-                        var response = CreateRequestMsg(kRequestAcknowledge, eventType, senderId, null);
-                        response["requestId"] = msg["requestId"];
-                        m_Client.Send(Json.Serialize(response));
+                        var response = CreateRequestMsg(kRequestAcknowledge, msg.eventType, msg.senderId, msg.requestId, null, null);
+                        m_Client.Send(response);
                     }
                     break;
                 case kRequestAcknowledge: // Request emitter
-                    var pendingRequest = GetPendingRequest(eventType, msg);
+                    var pendingRequest = GetPendingRequest(msg.eventType, msg.requestId.Value);
                     if (pendingRequest != null)
                     {
                         // A client is able to fulfill the request: proceed with request execution:
                         pendingRequest.isAcknowledged = true;
                         pendingRequest.offerStartTime = Stopwatch.GetTimestamp();
-                        var response = CreateRequestMsg(kRequestExecute, eventType, senderId, null);
-                        response["requestId"] = msg["requestId"];
-                        response["data"] = Json.Deserialize(pendingRequest.data);
-                        m_Client.Send(Json.Serialize(response));
+
+                        var message = CreateRequestMsgWithDataString(kRequestExecute, msg.eventType, msg.senderId, msg.requestId, pendingRequest.data, pendingRequest.dataInfos);
+                        m_Client.Send(message);
                     }
                     // else Request might potentially have timed out.
                     break;
@@ -269,26 +304,25 @@ namespace Unity.MPE
                 {
                     // We are fulfilling the request: send the execution results
                     const bool notifyWildcard = false;
-                    var results = NotifyLocalListeners(eventType, data, notifyWildcard);
-                    var response = CreateRequestMsg(kRequestResult, eventType, senderId, results);
-                    response["requestId"] = msg["requestId"];
+                    var results = NotifyLocalListeners(msg.eventType, msg.data, notifyWildcard);
+                    var response = CreateRequest(kRequestResult, msg.eventType, msg.senderId, msg.requestId, results, msg.eventDataSerialization);
                     m_Client.Send(Json.Serialize(response));
                     break;
                 }
                 case kRequestResult: // Request emitter
-                    var pendingRequestAwaitingResult = GetPendingRequest(eventType, msg);
+                    var pendingRequestAwaitingResult = GetPendingRequest(msg.eventType, msg.requestId.Value);
                     if (pendingRequestAwaitingResult != null)
                     {
                         var timeForSuccess = new TimeSpan(Stopwatch.GetTimestamp() - pendingRequestAwaitingResult.offerStartTime).TotalMilliseconds;
-                        Console.WriteLine($"[UMPE] Request {eventType} successful in {timeForSuccess} ms");
-                        Resolve(pendingRequestAwaitingResult, data);
-                        CleanRequest(eventType);
+                        Console.WriteLine($"[UMPE] Request {msg.eventType} successful in {timeForSuccess} ms");
+                        Resolve(pendingRequestAwaitingResult, msg.data);
+                        CleanRequest(msg.eventType);
                     }
                     break;
                 case kEvent:
                 {
                     const bool notifyWildcard = true;
-                    NotifyLocalListeners(eventType, data, notifyWildcard);
+                    NotifyLocalListeners(msg.eventType, msg.data, notifyWildcard);
                     break;
                 }
             }
@@ -324,18 +358,17 @@ namespace Unity.MPE
             }
         }
 
-        private static RequestData GetPendingRequest(string eventType, Dictionary<string, object> msg)
+        private static RequestData GetPendingRequest(string eventType, int requestId)
         {
-            var offerId = Convert.ToInt32(msg["requestId"]);
             RequestData pendingRequest;
             s_Requests.TryGetValue(eventType, out pendingRequest);
-            if (pendingRequest != null && pendingRequest.id != offerId)
+            if (pendingRequest != null && pendingRequest.id != requestId)
             {
                 // Mismatch request: clean it.
                 CleanRequest(eventType);
                 pendingRequest = null;
             }
-            return pendingRequest != null && pendingRequest.id == offerId ? pendingRequest : null;
+            return pendingRequest != null && pendingRequest.id == requestId ? pendingRequest : null;
         }
 
         private static void CleanRequest(string eventType)
@@ -409,9 +442,35 @@ namespace Unity.MPE
             return result;
         }
 
-        private static Dictionary<string, object> CreateRequestMsg(string msgType, string eventType, int targetId, object args)
+        internal static Dictionary<string, object> CreateRequest(string msgType, string eventType, int targetId, int? requestId, object[] args, EventDataSerialization eventDataSerialization)
         {
-            var req = new Dictionary<string, object> {["req"] = msgType};
+            var dataInfos = CreateDataInfosAndFormatDataForSerialization(args, eventDataSerialization);
+
+            return CreateRequest(msgType, eventType, targetId, requestId, args, dataInfos);
+        }
+
+        internal static string CreateRequestMsgWithDataString(string msgType, string eventType, int targetId, int? requestId, string args, object[] dataInfos)
+        {
+            // Create the new request and replace the data field by the original one
+            var dataSearchString = Guid.NewGuid().ToString();
+
+            var message = CreateRequestMsg(msgType, eventType, targetId, requestId, dataSearchString, dataInfos);
+
+            message = message.Replace("\"" + dataSearchString + "\"", args);
+
+            return message;
+        }
+
+        internal static string CreateRequestMsg(string msgType, string eventType, int targetId, int? requestId, object args, object[] dataInfos)
+        {
+            var request = CreateRequest(msgType, eventType, targetId, requestId, args, dataInfos);
+            return Json.Serialize(request);
+        }
+
+        internal static Dictionary<string, object> CreateRequest(string msgType, string eventType, int targetId, int? requestId, object args, object[] dataInfos)
+        {
+            var req = new Dictionary<string, object>();
+            req["req"] = msgType;
             if (targetId != -1)
             {
                 req["targetId"] = targetId;
@@ -419,8 +478,76 @@ namespace Unity.MPE
             if (!string.IsNullOrEmpty(eventType))
                 req["type"] = eventType;
             req["senderId"] = m_Client.GetChannelClientInfo().connectionId;
+            if (requestId.HasValue)
+                req["requestId"] = requestId;
             req["data"] = args;
+            if (dataInfos != null)
+                req["dataInfos"] = dataInfos;
+
             return req;
+        }
+
+        internal static object[] CreateDataInfosAndFormatDataForSerialization(object[] args, EventDataSerialization eventDataSerialization)
+        {
+            if (eventDataSerialization == EventDataSerialization.StandardJson)
+                return null;
+
+            // if the data is null we still send an empty dataInfo to know it uses JsonUtility (useful on a request to keep that info when sending answer)
+            if (args == null)
+                return new object[] {};
+
+
+            List<object> dataInfos = new List<object>();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == null)
+                    continue;
+                var dataString = JsonUtility.ToJson(args[i]);
+                if (!string.IsNullOrEmpty(dataString) && dataString != "{}" && args[i].GetType().IsSerializable)
+                {
+                    // add index and class type in the info
+                    dataInfos.Add(new object[2] { i, args[i].GetType().AssemblyQualifiedName });
+                    // format the object
+                    args[i] = dataString;
+                }
+            }
+            return dataInfos.ToArray();
+        }
+
+        internal static object[] GetDataArray(object dataDeserialized, object dataSerializationInfos)
+        {
+            if (dataDeserialized != null)
+            {
+                object[] arrayDeserialized = dataDeserialized is List<object>? (dataDeserialized as List<object>).ToArray() : new[] { dataDeserialized };
+                object[] arraySerializationInfos = dataSerializationInfos is List<object>? (dataSerializationInfos as List<object>).ToArray() : null;
+                return GetDataArray(arrayDeserialized, arraySerializationInfos);
+            }
+            return null;
+        }
+
+        private static object[] GetDataArray(object[] arrayDeserialized, object[] dataSerializationInfos)
+        {
+            if (dataSerializationInfos == null || dataSerializationInfos.Length == 0)
+                return arrayDeserialized;
+
+            int dataSerializationInfosIndex = 0;
+            object[] resultData = new object[arrayDeserialized.Length];
+            List<object> currentDataInfos = (List<object>)dataSerializationInfos[dataSerializationInfosIndex];
+            for (int i = 0; i < arrayDeserialized.Length; ++i)
+            {
+                // Use JsonUtility
+                if ((long)currentDataInfos[0] == i)
+                {
+                    var typeName = (string)currentDataInfos[1];
+                    resultData[i] = JsonUtility.FromJson((string)arrayDeserialized[i], Type.GetType(typeName));
+                    dataSerializationInfosIndex++;
+                    if (dataSerializationInfosIndex < dataSerializationInfos.Length)
+                        currentDataInfos = (List<object>)dataSerializationInfos[dataSerializationInfosIndex];
+                }
+                else
+                    resultData[i] = arrayDeserialized[i];
+            }
+            return resultData;
         }
     }
 }

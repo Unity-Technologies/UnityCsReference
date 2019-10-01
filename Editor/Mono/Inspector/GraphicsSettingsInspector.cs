@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using TierSettingsEditor            = UnityEditor.GraphicsSettingsWindow.TierSettingsEditor;
 using BuiltinShadersEditor          = UnityEditor.GraphicsSettingsWindow.BuiltinShadersEditor;
+using VideoShadersEditor            = UnityEditor.GraphicsSettingsWindow.VideoShadersEditor;
 using AlwaysIncludedShadersEditor   = UnityEditor.GraphicsSettingsWindow.AlwaysIncludedShadersEditor;
 using ShaderStrippingEditor         = UnityEditor.GraphicsSettingsWindow.ShaderStrippingEditor;
 using ShaderPreloadEditor           = UnityEditor.GraphicsSettingsWindow.ShaderPreloadEditor;
@@ -35,6 +36,7 @@ namespace UnityEditor
 
         Editor m_TierSettingsEditor;
         Editor m_BuiltinShadersEditor;
+        Editor m_VideoShadersEditor;
         Editor m_AlwaysIncludedShadersEditor;
         Editor m_ShaderStrippingEditor;
         Editor m_ShaderPreloadEditor;
@@ -60,6 +62,10 @@ namespace UnityEditor
         Editor builtinShadersEditor
         {
             get { Editor.CreateCachedEditor(graphicsSettings, typeof(BuiltinShadersEditor), ref m_BuiltinShadersEditor); return m_BuiltinShadersEditor; }
+        }
+        Editor videoShadersEditor
+        {
+            get { Editor.CreateCachedEditor(graphicsSettings, typeof(VideoShadersEditor), ref m_VideoShadersEditor); return m_VideoShadersEditor; }
         }
         Editor alwaysIncludedShadersEditor
         {
@@ -165,6 +171,7 @@ namespace UnityEditor
             GUILayout.Label(Styles.builtinSettings, EditorStyles.boldLabel);
             if (!usingSRP)
                 builtinShadersEditor.OnInspectorGUI();
+            videoShadersEditor.OnInspectorGUI();
             alwaysIncludedShadersEditor.OnInspectorGUI();
 
             EditorGUILayout.Space();

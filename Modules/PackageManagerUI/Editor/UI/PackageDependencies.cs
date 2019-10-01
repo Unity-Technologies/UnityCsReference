@@ -34,7 +34,7 @@ namespace UnityEditor.PackageManager.UI
 
         private static string GetStatusText(DependencyInfo dependency)
         {
-            var installedVersion = PackageDatabase.instance.GetPackage(dependency.name)?.installedVersion;
+            var installedVersion = PackageDatabase.instance.GetPackage(dependency.name)?.versions.installed;
             if (installedVersion == null)
                 return string.Empty;
 

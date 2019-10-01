@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
         where TValueType : System.IComparable<TValueType>
     {
         internal VisualElement dragElement { get; private set; }
+        internal VisualElement dragBorderElement { get; private set; }
 
         [SerializeField]
         private TValueType m_LowValue;
@@ -143,6 +144,7 @@ namespace UnityEngine.UIElements
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
         public static readonly string draggerUssClassName = ussClassName + "__dragger";
+        public static readonly string draggerBorderUssClassName = ussClassName + "__dragger-border";
 
         internal BaseSlider(string label, TValueType start, TValueType end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, null)
@@ -161,6 +163,11 @@ namespace UnityEngine.UIElements
             var trackElement = new VisualElement() { name = "unity-tracker" };
             trackElement.AddToClassList(trackerUssClassName);
             visualInput.Add(trackElement);
+
+            dragBorderElement = new VisualElement() { name = "unity-dragger-border" };
+            dragBorderElement.AddToClassList(draggerBorderUssClassName);
+
+            visualInput.Add(dragBorderElement);
 
             dragElement = new VisualElement() { name = "unity-dragger" };
             dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
@@ -224,6 +231,8 @@ namespace UnityEngine.UIElements
 
                     dragElement.style.left = x;
                     dragElement.style.top = y;
+                    dragBorderElement.style.left = x;
+                    dragBorderElement.style.top = y;
                     m_DragElementStartPos = new Rect(x, y, dragElement.resolvedStyle.width, dragElement.resolvedStyle.height);
 
                     // Manipulation becomes a free form drag
@@ -291,6 +300,7 @@ namespace UnityEngine.UIElements
                     inlineStyles.height = Mathf.Round(Mathf.Max(visualInput.layout.height * factor, elemMinHeight));
                 }
             }
+            dragBorderElement.visible = dragElement.visible;
         }
 
         void UpdateDragElementPosition(GeometryChangedEvent evt)
@@ -310,6 +320,11 @@ namespace UnityEngine.UIElements
             UpdateDragElementPosition();
         }
 
+        bool SameValues(float a, float b, float epsilon)
+        {
+            return Mathf.Abs(b - a) < epsilon;
+        }
+
         void UpdateDragElementPosition()
         {
             // UpdateDragElementPosition() might be called at times where we have no panel
@@ -318,6 +333,7 @@ namespace UnityEngine.UIElements
                 return;
 
             float normalizedPosition = SliderNormalizeValue(value, lowValue, highValue);
+            float halfPixel = scaledPixelsPerPoint * 0.5f;
 
             if (direction == SliderDirection.Horizontal)
             {
@@ -329,9 +345,10 @@ namespace UnityEngine.UIElements
                 float newLeft = normalizedPosition * totalWidth;
                 float currentLeft = dragElement.style.left.value.value;
 
-                if (Mathf.Round(currentLeft) != Mathf.Round(newLeft))
+                if (!SameValues(currentLeft, newLeft, halfPixel))
                 {
                     dragElement.style.left = newLeft;
+                    dragBorderElement.style.left = newLeft;
                 }
             }
             else
@@ -340,10 +357,12 @@ namespace UnityEngine.UIElements
 
                 float totalHeight = visualInput.layout.height - dragElementHeight;
                 float newTop = normalizedPosition * totalHeight;
+                float currentTop = dragElement.style.top.value.value;
 
-                if (Mathf.Round(dragElement.resolvedStyle.top) != Mathf.Round(newTop))
+                if (!SameValues(currentTop, newTop, halfPixel))
                 {
                     dragElement.style.top = newTop;
+                    dragBorderElement.style.top = newTop;
                 }
             }
         }

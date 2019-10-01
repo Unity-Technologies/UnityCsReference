@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -143,14 +144,8 @@ namespace UnityEditor.VersionControl
         [FreeFunction("VersionControlBindings::VCProvider::Internal_Checkout")]
         private static extern Task Internal_Checkout(Asset[] assets, CheckoutMode mode, ChangeSet changeset);
 
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_CheckoutStrings")]
-        private static extern Task Internal_CheckoutStrings(string[] assets, CheckoutMode mode);
-
-        [FreeFunction("VersionControlBindings::VCProvider::Internal_PromptAndCheckoutIfNeeded")]
-        private static extern bool Internal_PromptAndCheckoutIfNeeded(string[] assets, string promptIfCheckoutIsNeeded, ChangeSet changeset);
-
         [FreeFunction("VersionControlBindings::VCProvider::MakeEditable")]
-        static internal extern bool MakeEditable(string[] assets, [Out] string[] editableAssets);
+        internal static extern bool MakeEditableImpl(string[] assets, string prompt, ChangeSet changeSet, object outNotEditablePathsList);
 
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_Delete")]
@@ -208,7 +203,7 @@ namespace UnityEditor.VersionControl
 
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_Merge")]
-        private static extern Task Internal_Merge(Asset[] assets, MergeMethod mergeMethod);
+        private static extern Task Internal_Merge(Asset[] assets);
 
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_LockIsValid")]

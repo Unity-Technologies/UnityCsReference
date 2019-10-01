@@ -142,7 +142,7 @@ namespace UnityEditor
             GUILayout.Label(s_MonoLogo);
             GUILayout.Label("Scripting powered by The Mono Project.\n\n(c) 2011 Novell, Inc.", "MiniLabel", GUILayout.Width(200));
             GUILayout.Label(s_AgeiaLogo);
-            GUILayout.Label("Physics powered by PhysX.\n\n(c) 2011 NVIDIA Corporation.", "MiniLabel", GUILayout.Width(200));
+            GUILayout.Label("Physics powered by PhysX.\n\n(c) 2019 NVIDIA Corporation.", "MiniLabel", GUILayout.Width(200));
             GUILayout.EndHorizontal();
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();

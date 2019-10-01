@@ -624,7 +624,9 @@ namespace UnityEditor
         {
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
                 "Project/Quality", "ProjectSettings/QualitySettings.asset",
-                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>().Concat(SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/QualitySettings.asset")));
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>()
+                    .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>())
+                    .Concat(SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/QualitySettings.asset")));
             return provider;
         }
     }

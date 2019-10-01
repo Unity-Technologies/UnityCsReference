@@ -58,6 +58,7 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/ScriptBindings/AssetDatabase.bindings.h")]
     [NativeHeader("Editor/Src/PackageUtility.h")]
+    [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
     [StaticAccessor("AssetDatabaseBindings", StaticAccessorType.DoubleColon)]
     public partial class AssetDatabase
     {

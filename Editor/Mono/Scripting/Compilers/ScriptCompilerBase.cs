@@ -431,11 +431,16 @@ namespace UnityEditor.Scripting.Compilers
                     + "--outfile: " + outputFile
                 );
                 foreach (string line in stdOutput)
+                {
                     Console.WriteLine(line);
+                }
 
-                Console.WriteLine("-----CompilerOutput:-stderr----------");
-                foreach (string line in errorOutput)
-                    Console.WriteLine(line);
+                if (errorOutput != null && errorOutput.Any())
+                {
+                    Console.WriteLine("-----CompilerOutput:-stderr----------");
+                    foreach (string line in errorOutput)
+                        Console.WriteLine(line);
+                }
                 Console.WriteLine("-----EndCompilerOutput---------------");
             }
         }

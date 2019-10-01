@@ -6,10 +6,8 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal interface IVersionList
+    internal interface IVersionList : IEnumerable<IPackageVersion>
     {
-        IEnumerable<IPackageVersion> all { get; }
-
         IEnumerable<IPackageVersion> key { get; }
 
         IPackageVersion installed { get; }

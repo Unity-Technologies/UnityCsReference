@@ -10,7 +10,6 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using ShaderPlatform = UnityEngine.Rendering.GraphicsDeviceType;
-using TextureDimension = UnityEngine.Rendering.TextureDimension;
 using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
@@ -103,15 +102,6 @@ namespace UnityEditor
     [NativeHeader("Runtime/Shaders/GpuPrograms/GpuProgramManager.h")]
     public sealed partial class ShaderUtil
     {
-        public enum ShaderPropertyType
-        {
-            Color,
-            Vector,
-            Float,
-            Range,
-            TexEnv,
-        }
-
         extern internal static int GetAvailableShaderCompilerPlatforms();
 
         extern internal static bool HasSurfaceShaders([NotNull] Shader s);
@@ -123,8 +113,6 @@ namespace UnityEditor
         extern internal static bool DoesIgnoreProjector([NotNull] Shader s);
         extern internal static int  GetRenderQueue([NotNull] Shader s);
         extern internal static bool HasTangentChannel([NotNull] Shader s);
-
-        extern public static int GetPropertyCount([NotNull] Shader s);
 
         extern internal static void FetchCachedMessages([NotNull] Shader s);
         extern public static int GetShaderMessageCount([NotNull] Shader s);
@@ -143,76 +131,6 @@ namespace UnityEditor
         extern public static int GetCallableShaderCount([NotNull] RayTracingShader s);
         extern public static string GetCallableShaderName([NotNull] RayTracingShader s, int shaderIndex);
         extern public static int GetCallableShaderParamSize([NotNull] RayTracingShader s, int shaderIndex);
-
-        private static void CheckPropertyIndex(Shader s, int idx)
-        {
-            if (idx < 0 || idx >= GetPropertyCount(s))
-                throw new ArgumentException("Passed property index is out of range.");
-        }
-
-        [FreeFunction] extern private static int FindShaderPropertyIndex([NotNull] Shader s, string name);
-
-
-        [NativeName("GetPropertyName")] extern private static string GetPropertyNameImpl([NotNull] Shader s, int propertyIdx);
-        public static string GetPropertyName(Shader s, int propertyIdx)
-        {
-            CheckPropertyIndex(s, propertyIdx);
-            return GetPropertyNameImpl(s, propertyIdx);
-        }
-
-        [NativeName("GetPropertyType")] extern private static ShaderPropertyType GetPropertyTypeImpl([NotNull] Shader s, int propertyIdx);
-        public static ShaderPropertyType GetPropertyType(Shader s, int propertyIdx)
-        {
-            CheckPropertyIndex(s, propertyIdx);
-            return GetPropertyTypeImpl(s, propertyIdx);
-        }
-
-        [NativeName("GetPropertyDescription")] extern private static string GetPropertyDescriptionImpl([NotNull] Shader s, int propertyIdx);
-        public static string GetPropertyDescription(Shader s, int propertyIdx)
-        {
-            CheckPropertyIndex(s, propertyIdx);
-            return GetPropertyDescriptionImpl(s, propertyIdx);
-        }
-
-        [NativeName("GetShaderPropertyAttributes")] extern private static string[] GetShaderPropertyAttributesImpl([NotNull] Shader s, int propertyIdx);
-        internal static string[] GetShaderPropertyAttributes(Shader s, string name)
-        {
-            int idx = FindShaderPropertyIndex(s, name);
-            if (idx < 0) return null;
-
-            string[] ret = GetShaderPropertyAttributesImpl(s, idx);
-            return ret.Length > 0 ? ret : null;
-        }
-
-        [NativeName("GetRangeLimits")] extern private static float GetRangeLimitsImpl([NotNull] Shader s, int propertyIdx, int defminmax);
-        public static float GetRangeLimits(Shader s, int propertyIdx, int defminmax)
-        {
-            CheckPropertyIndex(s, propertyIdx);
-            if (defminmax < 0 || defminmax > 2)
-                throw new ArgumentException("defminmax should be one of 0,1,2.");
-            return GetRangeLimitsImpl(s, propertyIdx, defminmax);
-        }
-
-        [NativeName("GetTexDim")] extern private static TextureDimension GetTexDimImpl([NotNull] Shader s, int propertyIdx);
-        public static TextureDimension GetTexDim(Shader s, int propertyIdx)
-        {
-            CheckPropertyIndex(s, propertyIdx);
-            return GetTexDimImpl(s, propertyIdx);
-        }
-
-        [NativeName("IsShaderPropertyHidden")] extern private static bool IsShaderPropertyHiddenImpl([NotNull] Shader s, int propertyIdx);
-        public static bool IsShaderPropertyHidden(Shader s, int propertyIdx)
-        {
-            CheckPropertyIndex(s, propertyIdx);
-            return IsShaderPropertyHiddenImpl(s, propertyIdx);
-        }
-
-        [NativeName("IsShaderPropertyNonModifiableTexureProperty")] extern private static bool IsShaderPropertyNonModifiableTexurePropertyImpl([NotNull] Shader s, int propertyIdx);
-        public static bool IsShaderPropertyNonModifiableTexureProperty(Shader s, int propertyIdx)
-        {
-            CheckPropertyIndex(s, propertyIdx);
-            return IsShaderPropertyNonModifiableTexurePropertyImpl(s, propertyIdx);
-        }
 
         extern static public void ClearCachedData([NotNull] Shader s);
 

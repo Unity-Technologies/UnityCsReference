@@ -332,5 +332,30 @@ namespace UnityEditor
                     return true;
             return false;
         }
+
+        internal static bool MakeWritable(string path)
+        {
+            string absolutePath = FileUtil.PathToAbsolutePath(path);
+
+            if (Directory.Exists(absolutePath))
+            {
+                foreach (var file in GetAllFilesRecursive(absolutePath))
+                {
+                    var fileInfo = new FileInfo(file);
+                    fileInfo.IsReadOnly = false;
+                }
+                return true;
+            }
+
+            if (File.Exists(absolutePath))
+            {
+                var fileInfo = new FileInfo(absolutePath);
+                fileInfo.IsReadOnly = false;
+
+                return true;
+            }
+
+            return false;
+        }
     }
 }

@@ -104,6 +104,8 @@ namespace UnityEditor
 
             var nodesCount = m_TransformPaths.Length;
             var nodeInfos = new List<SerializedNodeInfo>(nodesCount - 1);
+            Stack<string> depth = new Stack<string>(nodesCount);
+            string currentPath = String.Empty;
 
             // skip the first index as it is the empty root of the gameObject
             for (int i = 1; i < nodesCount; i++)
@@ -114,11 +116,25 @@ namespace UnityEditor
                 newNode.getNodeState = GetNodeState;
                 newNode.setNodeState = SetNodeState;
 
-                newNode.depth = newNode.path.Count(f => f == '/') + 1;
+                var newPath = newNode.path;
+                while (!string.IsNullOrEmpty(currentPath) && !newPath.StartsWith(currentPath + "/"))
+                {
+                    // we are in a new node, lets unstack until we reach the correct hierarchy
+                    var oldParent = depth.Pop();
+                    var index = currentPath.LastIndexOf(oldParent);
+                    if (index > 0)
+                        index--;
+                    currentPath = currentPath.Remove(index);
+                }
+                var nodeName = newPath;
+                if (!string.IsNullOrEmpty(currentPath))
+                    nodeName = nodeName.Remove(0, currentPath.Length + 1);
 
-                int lastIndex = newNode.path.LastIndexOf('/');
-                lastIndex = lastIndex == -1 ? 0 : lastIndex + 1;
-                newNode.displayName = newNode.path.Substring(lastIndex);
+                newNode.depth = depth.Count;
+                newNode.displayName = nodeName;
+
+                depth.Push(nodeName);
+                currentPath = newPath;
 
                 nodeInfos.Add(newNode);
             }

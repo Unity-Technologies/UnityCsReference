@@ -19,9 +19,9 @@ namespace UnityEditor.PackageManager.UI
 
         event Action<IPackage, DownloadProgress> onDownloadProgress;
 
-        void Setup();
+        void RegisterEvents();
 
-        void Clear();
+        void UnregisterEvents();
         void Reload();
 
         bool isEmpty { get; }

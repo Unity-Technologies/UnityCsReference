@@ -38,8 +38,8 @@ namespace UnityEditor.PackageManager.UI
             [SerializeField]
             private List<AssetStorePackage> m_SerializedAssetStorePackages = new List<AssetStorePackage>();
 
-            [SerializeField]
-            private bool m_SetupDone;
+            [NonSerialized]
+            private bool m_EventsRegistered;
 
             public bool isEmpty { get { return !m_Packages.Any(); } }
 
@@ -136,7 +136,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (version?.dependencies == null)
                     return null;
-                var installedRoots = allPackages.Select(p => p.installedVersion).Where(p => p?.isDirectDependency ?? false);
+                var installedRoots = allPackages.Select(p => p.versions.installed).Where(p => p?.isDirectDependency ?? false);
                 var dependsOnPackage = installedRoots.Where(p => p.resolvedDependencies?.Any(r => r.name == version.name) ?? false);
                 return dependsOnPackage;
             }
@@ -188,52 +188,46 @@ namespace UnityEditor.PackageManager.UI
                 onPackageProgressUpdate?.Invoke(package);
             }
 
-            public void OnEnable()
+            public void RegisterEvents()
             {
-                if (m_SetupDone)
-                {
-                    Clear();
-                    Setup();
-                }
-            }
-
-            public void Setup()
-            {
-                if (m_SetupDone)
+                if (m_EventsRegistered)
                     return;
 
-                m_SetupDone = true;
+                m_EventsRegistered = true;
 
                 UpmClient.instance.onPackagesChanged += OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
                 UpmClient.instance.onAddOperation += OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation += OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation += OnUpmRemoveOperation;
-                UpmClient.instance.Setup();
+                UpmClient.instance.RegisterEvents();
 
                 AssetStore.AssetStoreClient.instance.onPackagesChanged += OnPackagesChanged;
                 AssetStore.AssetStoreClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
                 AssetStore.AssetStoreClient.instance.onDownloadProgress += OnDownloadProgress;
-                AssetStore.AssetStoreClient.instance.Setup();
+                AssetStore.AssetStoreClient.instance.RegisterEvents();
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
-                m_SetupDone = false;
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
 
                 UpmClient.instance.onPackagesChanged -= OnPackagesChanged;
                 UpmClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
                 UpmClient.instance.onAddOperation -= OnUpmAddOperation;
                 UpmClient.instance.onEmbedOperation -= OnUpmEmbedOperation;
                 UpmClient.instance.onRemoveOperation -= OnUpmRemoveOperation;
-                UpmClient.instance.Clear();
+                UpmClient.instance.UnregisterEvents();
 
                 AssetStore.AssetStoreClient.instance.onPackagesChanged -= OnPackagesChanged;
                 AssetStore.AssetStoreClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
                 AssetStore.AssetStoreClient.instance.onDownloadProgress -= OnDownloadProgress;
-                AssetStore.AssetStoreClient.instance.Clear();
+                AssetStore.AssetStoreClient.instance.UnregisterEvents();
 
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
             }
@@ -242,17 +236,17 @@ namespace UnityEditor.PackageManager.UI
             {
                 onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), m_Packages.Values, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
 
-                Clear();
+                UnregisterEvents();
 
-                AssetStore.AssetStoreClient.instance.Reload();
-                UpmClient.instance.Reload();
+                AssetStore.AssetStoreClient.instance.ClearCache();
+                UpmClient.instance.ClearCache();
 
                 m_Packages.Clear();
                 m_SerializedUpmPackages = new List<UpmPackage>();
                 m_SerializedAssetStorePackages = new List<AssetStorePackage>();
                 m_SpecialInstallations.Clear();
 
-                Setup();
+                RegisterEvents();
             }
 
             private void OnDownloadProgress(DownloadProgress progress)
@@ -263,7 +257,7 @@ namespace UnityEditor.PackageManager.UI
                     var hasError = progress.state == DownloadProgress.State.Error || progress.state == DownloadProgress.State.Aborted;
                     var completed = progress.state == DownloadProgress.State.Completed;
                     if (hasError)
-                        AddPackageError(package, new Error(NativeErrorCode.Unknown, progress.message));
+                        AddPackageError(package, new Error(NativeErrorCode.Unknown, progress.errorMessage));
 
                     if (completed)
                         AssetStore.AssetStoreClient.instance.RefreshLocal();
@@ -322,7 +316,7 @@ namespace UnityEditor.PackageManager.UI
                             packagesAdded.Add(package);
                     }
 
-                    if (m_SpecialInstallations.Any() && package.installedVersion != null && oldPackage?.installedVersion == null)
+                    if (m_SpecialInstallations.Any() && package.versions.installed != null && oldPackage?.versions.installed == null)
                         packagesInstalled.Add(package);
                 }
 
@@ -332,10 +326,10 @@ namespace UnityEditor.PackageManager.UI
                 // special handling to make sure onInstallSuccess events are called correctly when special unique id is used
                 for (var i = m_SpecialInstallations.Count - 1; i >= 0; i--)
                 {
-                    var match = packagesInstalled.FirstOrDefault(p => p.installedVersion.uniqueId.ToLower().Contains(m_SpecialInstallations[i].ToLower()));
+                    var match = packagesInstalled.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(m_SpecialInstallations[i].ToLower()));
                     if (match != null)
                     {
-                        onInstallSuccess(match, match.installedVersion);
+                        onInstallSuccess(match, match.versions.installed);
                         SetPackageProgress(match, PackageProgress.None);
                         m_SpecialInstallations.RemoveAt(i);
                     }
@@ -378,7 +372,7 @@ namespace UnityEditor.PackageManager.UI
                 operation.onOperationSuccess += () =>
                 {
                     var package = GetPackage(operation.packageUniqueId);
-                    onInstallSuccess(package, package?.installedVersion);
+                    onInstallSuccess(package, package?.versions.installed);
                 };
                 operation.onOperationError += error =>
                 {
@@ -405,7 +399,7 @@ namespace UnityEditor.PackageManager.UI
             private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)
             {
                 var package = GetPackage(packageUniqueId);
-                var upmVersions = package?.versionList as UpmVersionList;
+                var upmVersions = package?.versions as UpmVersionList;
                 if (upmVersions != null)
                 {
                     var packagePreUpdate = package.Clone();
@@ -433,21 +427,21 @@ namespace UnityEditor.PackageManager.UI
 
             public void Uninstall(IPackage package)
             {
-                if (package.installedVersion == null)
+                if (package.versions.installed == null)
                     return;
                 UpmClient.instance.RemoveByName(package.name);
             }
 
             public void Embed(IPackageVersion packageVersion)
             {
-                if (packageVersion == null || !packageVersion.canBeEmbedded)
+                if (packageVersion == null || !packageVersion.HasTag(PackageTag.Embeddable))
                     return;
                 UpmClient.instance.EmbedByName(packageVersion.name);
             }
 
             public void RemoveEmbedded(IPackage package)
             {
-                if (package.installedVersion == null)
+                if (package.versions.installed == null)
                     return;
                 UpmClient.instance.RemoveEmbeddedByName(package.name);
             }
@@ -496,7 +490,7 @@ namespace UnityEditor.PackageManager.UI
                 if (!(package is AssetStorePackage))
                     return;
 
-                var path = package.primaryVersion.localPath;
+                var path = package.versions.primary.localPath;
                 if (File.Exists(path))
                 {
                     AssetDatabase.ImportPackage(path, true);

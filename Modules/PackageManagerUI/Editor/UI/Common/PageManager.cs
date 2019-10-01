@@ -62,9 +62,12 @@ namespace UnityEditor.PackageManager.UI
             [SerializeField]
             private Page[] m_SerializedPages = new Page[0];
 
+            [NonSerialized]
+            private bool m_EventsRegistered;
+
             [SerializeField]
-            private bool m_SetupDone;
-            public bool isSetupDone => m_SetupDone;
+            private bool m_Initialized;
+            public bool isInitialized => m_Initialized;
 
             [MenuItem("internal:Packages/Reset Package Database")]
             public static void ResetPackageDatabase()
@@ -145,7 +148,7 @@ namespace UnityEditor.PackageManager.UI
 
             public void SetSelected(IPackage package, IPackageVersion version = null)
             {
-                GetPageFromFilterTab().SetSelected(package?.uniqueId, version?.uniqueId ?? package?.primaryVersion?.uniqueId);
+                GetPageFromFilterTab().SetSelected(package?.uniqueId, version?.uniqueId ?? package?.versions.primary?.uniqueId);
             }
 
             public void SetSeeAllVersions(IPackage package, bool value)
@@ -156,7 +159,7 @@ namespace UnityEditor.PackageManager.UI
             public void SetExpanded(IPackage package, bool value)
             {
                 // prevent an item from being expandable when there are no extra versions
-                if (value && !(package?.versions.Skip(1).Any() ?? false))
+                if (value && package?.versions.Skip(1).Any() != true)
                     return;
                 GetPageFromFilterTab().SetExpanded(package?.uniqueId, value);
             }
@@ -236,6 +239,9 @@ namespace UnityEditor.PackageManager.UI
 
             public void Refresh(RefreshOptions options)
             {
+                // make sure the events are registered before actually calling the actual refresh functions
+                // such that we don't lose any callbacks events
+                RegisterEvents();
                 if ((options & RefreshOptions.UpmSearchOffline) != 0)
                     UpmClient.instance.SearchAll(true);
                 if ((options & RefreshOptions.UpmSearch) != 0)
@@ -276,23 +282,20 @@ namespace UnityEditor.PackageManager.UI
                     Refresh();
             }
 
-            public void OnEnable()
-            {
-                if (m_SetupDone)
-                {
-                    Clear();
-                    Setup();
-                }
-            }
-
             public void Setup()
             {
-                if (m_SetupDone)
+                m_Initialized = true;
+                RegisterEvents();
+            }
+
+            public void RegisterEvents()
+            {
+                if (m_EventsRegistered)
                     return;
 
-                m_SetupDone = true;
+                m_EventsRegistered = true;
 
-                PackageDatabase.instance.Setup();
+                PackageDatabase.instance.RegisterEvents();
 
                 UpmClient.instance.onListOperation += OnRefreshOperation;
                 UpmClient.instance.onSearchAllOperation += OnRefreshOperation;
@@ -314,9 +317,12 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
-                m_SetupDone = false;
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
 
                 UpmClient.instance.onListOperation -= OnRefreshOperation;
                 UpmClient.instance.onSearchAllOperation -= OnRefreshOperation;
@@ -337,13 +343,25 @@ namespace UnityEditor.PackageManager.UI
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
                 ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
-                PackageDatabase.instance.Clear();
+                PackageDatabase.instance.UnregisterEvents();
             }
 
             internal void Reload()
             {
-                Clear();
+                UnregisterEvents();
 
+                ClearPages();
+                m_RefreshTimestamps.Clear();
+                m_RefreshErrors.Clear();
+                m_RefreshOperationsInProgress.Clear();
+
+                PackageDatabase.instance.Reload();
+
+                RegisterEvents();
+            }
+
+            private void ClearPages()
+            {
                 foreach (var page in m_Pages.Values)
                 {
                     page.RebuildList();
@@ -351,13 +369,6 @@ namespace UnityEditor.PackageManager.UI
                     UnegisterPageEvents(page);
                 }
                 m_Pages.Clear();
-                m_RefreshTimestamps.Clear();
-                m_RefreshErrors.Clear();
-                m_RefreshOperationsInProgress.Clear();
-
-                PackageDatabase.instance.Reload();
-
-                Setup();
             }
 
             private void OnRefreshOperation(IOperation operation)

@@ -29,5 +29,7 @@ namespace UnityEditor.PackageManager.UI
         void ShowLogin();
 
         void OpenURL(string url);
+
+        IAsyncHTTPClient GetASyncHTTPClient(string url, string method = null);
     }
 }

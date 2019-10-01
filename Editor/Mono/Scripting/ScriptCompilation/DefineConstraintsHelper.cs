@@ -16,7 +16,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public const string Or = "||";
 
         public static readonly char[] k_ValidWhitespaces = { ' ', '\t' };
-        public static readonly char[] k_Whitespaces = { ' ', '\t', '\r', '\n' };
 
         [RequiredByNativeCode]
         public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
@@ -62,8 +61,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not.ToString()) && x != Or).Select(x => x.Substring(1)));
-            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not.ToString()) && x != Or));
+            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not) && x != Or).Select(x => x.Substring(1)));
+            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not) && x != Or));
 
             if (defines == null)
             {
@@ -77,7 +76,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var define in expectedDefines)
             {
-                if (!IsTokenValid(define))
+                if (!SymbolNameRestrictions.IsValid(define))
                 {
                     return false;
                 }
@@ -85,7 +84,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var define in notExpectedDefines)
             {
-                if (!IsTokenValid(define))
+                if (!SymbolNameRestrictions.IsValid(define))
                 {
                     return false;
                 }
@@ -109,21 +108,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return expectedDefines.Any(defines.Contains) || !notExpectedDefines.Any(defines.Contains);
-        }
-
-        static bool IsTokenValid(string token)
-        {
-            if (string.IsNullOrEmpty(token))
-            {
-                return false;
-            }
-
-            if (k_Whitespaces.Any(token.Contains))
-            {
-                return false;
-            }
-
-            return true;
         }
     }
 }

@@ -450,20 +450,12 @@ namespace UnityEditor
         }
 
         [SerializeField]
-        SceneViewGrid grid;
+        SceneViewGrid m_Grid;
 
         public bool showGrid
         {
-            get { return grid.showGrid; }
-            set
-            {
-                if (grid.showGrid != value)
-                {
-                    grid.showGrid = value;
-                    if (gridVisibilityChanged != null)
-                        gridVisibilityChanged(grid.showGrid);
-                }
-            }
+            get { return sceneViewGrids.showGrid; }
+            set { sceneViewGrids.showGrid = value; }
         }
 
         [SerializeField]
@@ -694,7 +686,7 @@ namespace UnityEditor
 
         internal SceneViewGrid sceneViewGrids
         {
-            get { return grid; }
+            get { return m_Grid; }
         }
 
         public void ResetCameraSettings()
@@ -795,10 +787,9 @@ namespace UnityEditor
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle visibility of all Gizmos in the Scene view");
             public static GUIContent gizmosDropDownContent = EditorGUIUtility.TrTextContent("", "Toggle the visibility of different Gizmos in the Scene view.");
             public static GUIContent mode2DContent = EditorGUIUtility.TrIconContent("SceneView2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
-            public static GUIContent gridXToolbarContent = EditorGUIUtility.TrIconContent("SceneViewGridPopup_X", "Toggle the visibility of the grid");
-            public static GUIContent gridYToolbarContent = EditorGUIUtility.TrIconContent("SceneViewGridPopup_Y", "Toggle the visibility of the grid");
-            public static GUIContent gridZToolbarContent = EditorGUIUtility.TrIconContent("SceneViewGridPopup_Z", "Toggle the visibility of the grid");
-            public static GUIContent snapMoveValue = EditorGUIUtility.TrIconContent("SnapModeGrid", "Toggle snapping on or off.");
+            public static GUIContent gridXToolbarContent = EditorGUIUtility.TrIconContent("GridAxisX", "Toggle the visibility of the grid");
+            public static GUIContent gridYToolbarContent = EditorGUIUtility.TrIconContent("GridAxisY", "Toggle the visibility of the grid");
+            public static GUIContent gridZToolbarContent = EditorGUIUtility.TrIconContent("GridAxisZ", "Toggle the visibility of the grid");
             public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
@@ -956,11 +947,12 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             m_RectSelection = new RectSelection(this);
 
-            if (grid == null)
-                grid = new SceneViewGrid();
-            grid.OnEnable();
-            grid.Register(this);
-            ResetGrid();
+            if (m_Grid == null)
+                m_Grid = new SceneViewGrid();
+
+            sceneViewGrids.OnEnable(this);
+
+            ResetGridPivot();
 
             if (svRot == null)
                 svRot = new SceneViewRotation();
@@ -972,6 +964,7 @@ namespace UnityEditor
             m_Position.valueChanged.AddListener(Repaint);
             m_Size.valueChanged.AddListener(Repaint);
             m_Ortho.valueChanged.AddListener(Repaint);
+            sceneViewGrids.gridVisibilityChanged += GridOnGridVisibilityChanged;
 
             wantsMouseMove = true;
             wantsMouseEnterLeaveWindow = true;
@@ -1010,6 +1003,12 @@ namespace UnityEditor
             }
 
             s_ActiveEditorsDirty = true;
+        }
+
+        void GridOnGridVisibilityChanged(bool visible)
+        {
+            if (gridVisibilityChanged != null)
+                gridVisibilityChanged(visible);
         }
 
         protected virtual bool SupportsStageHandling()
@@ -1095,6 +1094,9 @@ namespace UnityEditor
             Lightmapping.lightingDataUpdated -= RepaintAll;
             ActiveEditorTracker.editorTrackerRebuilt -= OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= OnSelectedObjectWasDestroyed;
+            sceneViewGrids.gridVisibilityChanged -= GridOnGridVisibilityChanged;
+
+            sceneViewGrids.OnDisable(this);
 
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);
@@ -1194,10 +1196,10 @@ namespace UnityEditor
 
         void ToolbarGridDropdownGUI()
         {
-            bool toggled = grid.showGrid;
+            bool toggled = sceneViewGrids.showGrid;
 
             GUIContent gridIcon = GUIContent.none;
-            switch (grid.gridAxis)
+            switch (sceneViewGrids.gridAxis)
             {
                 case SceneViewGrid.GridRenderAxis.X:
                     gridIcon = Styles.gridXToolbarContent;
@@ -1221,34 +1223,7 @@ namespace UnityEditor
             }
 
             if (EditorGUI.EndChangeCheck())
-                grid.showGrid = toggled;
-        }
-
-        void ToolbarSnapSettingsDropdownGUI()
-        {
-            bool toggled = EditorSnapSettings.active;
-
-            GUIContent content = Styles.snapMoveValue;
-
-            content.text = GetSnapMoveValueString("#.##");
-
-            if (EditorGUILayout.DropDownToggle(ref toggled, content, EditorStyles.toolbarDropDownToggle))
-            {
-                Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SnapSettingsWindow());
-                GUIUtility.ExitGUI();
-            }
-
-            if (!EditorSnapSettings.hotkeyActive)
-                EditorSnapSettings.enabled = toggled;
-        }
-
-        string GetSnapMoveValueString(string format)
-        {
-            if (SnapSettingsWindow.IsMoveSnapValueMixed())
-                return EditorGUI.mixedValueContent.text;
-
-            return EditorSnapSettings.move.x.ToString(format, CultureInfo.InvariantCulture);
+                sceneViewGrids.showGrid = toggled;
         }
 
         void ToolbarGizmosDropdownGUI()
@@ -1319,7 +1294,6 @@ namespace UnityEditor
 
                 GUILayout.FlexibleSpace();
 
-                ToolbarSnapSettingsDropdownGUI();
                 ToolbarRenderDocGUI();
                 ToolbarSceneToolsGUI();
                 ToolbarSceneCameraGUI();
@@ -1822,7 +1796,7 @@ namespace UnityEditor
             bool oldAsync = ShaderUtil.allowAsyncCompilation;
             ShaderUtil.allowAsyncCompilation = EditorSettings.asyncShaderCompilation;
 
-            DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target);
+            DrawGridParameters gridParam = sceneViewGrids.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target);
 
             Event evt = Event.current;
             if (UseSceneFiltering())
@@ -1836,9 +1810,7 @@ namespace UnityEditor
 
                 GUI.BeginGroup(windowSpaceCameraRect);
                 if (evt.type == EventType.Repaint)
-                {
                     Graphics.DrawTexture(groupSpaceCameraRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
-                }
                 Handles.SetCamera(groupSpaceCameraRect, m_Camera);
             }
             else
@@ -3560,7 +3532,7 @@ namespace UnityEditor
         {
             foreach (Editor editor in activeEditors)
             {
-                if (!EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
+                if (!drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
                     continue;
 
                 MethodInfo method = editor.GetType().GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
@@ -3809,9 +3781,9 @@ namespace UnityEditor
             }
         }
 
-        internal void ResetGrid()
+        internal void ResetGridPivot()
         {
-            grid.SetAllGridsPivot(Vector3.zero);
+            sceneViewGrids.SetAllGridsPivot(Vector3.zero);
         }
     }
 } // namespace

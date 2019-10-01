@@ -166,7 +166,7 @@ namespace UnityEditor.ShortcutManagement
         void HandleModeChanged(ModeService.ModeChangedArgs args)
         {
             // Install profile specific to the current mode.
-            var shortcutProfiles = ModeService.GetModeDataSection(args.nextIndex, ModeService.k_ShortcutSectionName) as System.Collections.IList;
+            var shortcutProfiles = ModeService.GetModeDataSection(args.nextIndex, ModeDescriptor.ShortcutsKey) as System.Collections.IList;
             if (shortcutProfiles == null || shortcutProfiles.Count == 0)
                 return;
 

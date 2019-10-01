@@ -116,6 +116,7 @@ namespace UnityEditor
                 if (!HasValidScript(obj))
                 {
                     errorString = $"Type cannot be found: {reference.GetType()}. Containing file and class name must match.";
+                    return false;
                 }
             }
             return true;

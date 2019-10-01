@@ -42,6 +42,8 @@ namespace UnityEditor
         SelectionEvent m_SelectionEvent;
         TreeViewNeededEvent m_TreeViewNeededEvent;
         DoubleClickedEvent m_DoubleClickedEvent;
+        Delayer m_Debounce;
+        string m_SearchString;
 
         [Serializable] public class SelectionEvent : UnityEvent<TreeViewItem> {}
         [Serializable] public class TreeViewNeededEvent : UnityEvent<TreeSelectorData> {}
@@ -95,6 +97,12 @@ namespace UnityEditor
                 if (m_OriginalSelectedID == 0)
                     m_TreeView.data.SetExpandedWithChildren(m_TreeView.data.root, true);
             }
+
+            m_Debounce = Delayer.Debounce(context =>
+            {
+                DoSearchFilter();
+                m_Owner.Repaint();
+            });
         }
 
         public void Clear()
@@ -111,6 +119,7 @@ namespace UnityEditor
             m_TreeViewState = null;
             m_ErrorCounter = 0;
             m_FocusSearchFilter = false;
+            m_Debounce = null;
         }
 
         public int[] GetSelection()
@@ -295,7 +304,8 @@ namespace UnityEditor
             {
                 if (evt.type == EventType.ExecuteCommand && m_TreeView.HasSelection())
                 {
-                    m_TreeView.searchString = string.Empty;
+                    m_SearchString = string.Empty;
+                    DoSearchFilter();
                     FrameSelectedTreeViewItem();
                 }
                 evt.Use();
@@ -334,20 +344,20 @@ namespace UnityEditor
             // So we need special handling afterwards.
             bool wasEscape = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape;
             GUI.SetNextControlName(kSearchFieldTag);
-            string newSearchFilter = EditorGUI.SearchField(new Rect(5, 5, toolbarRect.width - 10, 15), m_TreeView.searchString);
+            string newSearchFilter = EditorGUI.SearchField(new Rect(5, 5, toolbarRect.width - 10, 15), m_SearchString);
 
             if (wasEscape && Event.current.type == EventType.Used)
             {
                 // If we hit esc and the string WAS empty, it's an actual cancel event.
-                if (m_TreeView.searchString != string.Empty)
+                if (m_SearchString != string.Empty)
                     // Otherwise the string has been cleared and focus has been lost. We don't have anything else to recieve focus, so we want to refocus the search field.
                     m_FocusSearchFilter = true;
             }
 
-            if (newSearchFilter != m_TreeView.searchString || m_FocusSearchFilter)
+            if (newSearchFilter != m_SearchString || m_FocusSearchFilter)
             {
-                m_TreeView.searchString = newSearchFilter;
-                HandleUtility.Repaint();
+                m_SearchString = newSearchFilter;
+                m_Debounce.Execute();
             }
 
             if (m_FocusSearchFilter)
@@ -361,6 +371,11 @@ namespace UnityEditor
         internal void FocusSearchField()
         {
             m_FocusSearchFilter = true;
+        }
+
+        private void DoSearchFilter()
+        {
+            m_TreeView.searchString = m_SearchString;
         }
     }
 } // namespace

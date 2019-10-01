@@ -14,40 +14,52 @@ using Cursor = UnityEngine.UIElements.Cursor;
 
 namespace UnityEditor.UIElements.Debugger
 {
+    internal struct StylePropertyInfo
+    {
+        public string name;
+        public StylePropertyId id;
+        public Type type;
+        public string[] longhands; // For shorthands property only
+
+        public bool isShorthand => longhands != null;
+    }
+
     internal class StylePropertyDebugger : VisualElement
     {
-        private static readonly PropertyInfo[] k_FieldInfos = typeof(ComputedStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public);
-        private static readonly PropertyInfo[] k_SortedFieldInfos = k_FieldInfos.OrderBy(f => f.Name).ToArray();
+        static readonly List<StylePropertyInfo> s_StylePropertyInfos = new List<StylePropertyInfo>();
 
-        private Dictionary<string, StyleField> m_NameToFieldDictionary = new Dictionary<string, StyleField>();
+        private Dictionary<StylePropertyId, StyleField> m_IdToFieldDictionary = new Dictionary<StylePropertyId, StyleField>();
+        private Dictionary<StylePropertyId, int> m_PropertySpecificityDictionary = new Dictionary<StylePropertyId, int>();
 
         private Toolbar m_Toolbar;
         private VisualElement m_CustomPropertyFieldsContainer;
         private VisualElement m_FieldsContainer;
-        private VisualElement m_SelectedElement;
         private string m_SearchFilter;
         private bool m_ShowAll;
-        private bool m_Sort;
 
-        public VisualElement selectedElement
+        private VisualElement m_SelectedElement;
+
+        static StylePropertyDebugger()
         {
-            get
+            // Retrieve all style property infos
+            var names = StyleDebug.GetStylePropertyNames();
+            foreach (var name in names)
             {
-                return m_SelectedElement;
-            }
-            set
-            {
-                if (m_SelectedElement == value)
-                    return;
+                var id = StyleDebug.GetStylePropertyIdFromName(name);
 
-                m_SelectedElement = value;
-                BuildFields();
+                var info = new StylePropertyInfo();
+                info.name = name;
+                info.id = id;
+                info.type = StyleDebug.GetComputedStyleType(name);
+                info.longhands = StyleDebug.GetLonghandPropertyNames(name);
+
+                s_StylePropertyInfos.Add(info);
             }
         }
 
         public StylePropertyDebugger(VisualElement debuggerSelection)
         {
-            selectedElement = debuggerSelection;
+            m_SelectedElement = debuggerSelection;
 
             m_Toolbar = new Toolbar();
             Add(m_Toolbar);
@@ -71,23 +83,13 @@ namespace UnityEditor.UIElements.Debugger
             });
             m_Toolbar.Add(showAllToggle);
 
-            var sortToggle = new ToolbarToggle();
-            sortToggle.AddToClassList("unity-style-debugger-toggle");
-            sortToggle.text = "Sort";
-            sortToggle.RegisterValueChangedCallback(e =>
-            {
-                m_Sort = e.newValue;
-                BuildFields();
-            });
-            m_Toolbar.Add(sortToggle);
-
             m_CustomPropertyFieldsContainer = new VisualElement();
             Add(m_CustomPropertyFieldsContainer);
 
             m_FieldsContainer = new VisualElement();
             Add(m_FieldsContainer);
 
-            if (selectedElement != null)
+            if (m_SelectedElement != null)
                 BuildFields();
 
             AddToClassList("unity-style-debugger");
@@ -98,10 +100,32 @@ namespace UnityEditor.UIElements.Debugger
             RefreshFields();
         }
 
+        public void SetMatchRecords(VisualElement selectedElement, IEnumerable<SelectorMatchRecord> matchRecords)
+        {
+            m_SelectedElement = selectedElement;
+            m_PropertySpecificityDictionary.Clear();
+
+            if (selectedElement != null)
+                StyleDebug.FindSpecifiedStyles(selectedElement.computedStyle, matchRecords, m_PropertySpecificityDictionary);
+
+            BuildFields();
+        }
+
+        private void FindInlineStyles()
+        {
+            if (m_SelectedElement.inlineStyleAccess == null)
+                return;
+
+            foreach (var sv in m_SelectedElement.inlineStyleAccess.m_Values)
+            {
+                m_PropertySpecificityDictionary[sv.id] = StyleDebug.InlineSpecificity;
+            }
+        }
+
         private void BuildFields()
         {
             m_FieldsContainer.Clear();
-            m_NameToFieldDictionary.Clear();
+            m_IdToFieldDictionary.Clear();
 
             RefreshFields();
         }
@@ -111,14 +135,16 @@ namespace UnityEditor.UIElements.Debugger
             if (m_SelectedElement == null)
                 return;
 
+            FindInlineStyles();
+
             m_CustomPropertyFieldsContainer.Clear();
-            var customProperties = m_SelectedElement.specifiedStyle.m_CustomProperties;
+            var customProperties = m_SelectedElement.computedStyle.m_CustomProperties;
             if (customProperties != null && customProperties.Any())
             {
-                foreach (KeyValuePair<string, CustomPropertyHandle> customProperty in customProperties)
+                foreach (KeyValuePair<string, StylePropertyValue> customProperty in customProperties)
                 {
                     var styleName = customProperty.Key;
-                    var propValue = customProperty.Value.value;
+                    var propValue = customProperty.Value;
                     TextField textField = new TextField(styleName) { isReadOnly = true };
                     textField.AddToClassList("unity-style-field");
                     textField.value = propValue.sheet.ReadAsString(propValue.handle).ToLower();
@@ -126,20 +152,26 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            foreach (PropertyInfo propertyInfo in m_Sort ? k_SortedFieldInfos : k_FieldInfos)
+            foreach (var propertyInfo in s_StylePropertyInfos)
             {
-                var styleName = GetUSSPropertyNameFromComputedStyleName(propertyInfo.Name);
+                if (propertyInfo.isShorthand)
+                    continue;
+
+                var styleName = propertyInfo.name;
                 if (!string.IsNullOrEmpty(m_SearchFilter) &&
                     styleName.IndexOf(m_SearchFilter, StringComparison.InvariantCultureIgnoreCase) == -1)
                     continue;
 
-                object val = propertyInfo.GetValue(selectedElement.computedStyle, null);
-                Type type = val.GetType();
+                var id = propertyInfo.id;
+                object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
+                Type type = propertyInfo.type;
 
-                int specificity = (int)type.GetProperty("specificity", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(val, null);
+                int specificity = 0;
+                m_PropertySpecificityDictionary.TryGetValue(id, out specificity);
+
                 StyleField sf = null;
-                m_NameToFieldDictionary.TryGetValue(styleName, out sf);
-                if (m_ShowAll || specificity != StyleValueExtensions.UndefinedSpecificity)
+                m_IdToFieldDictionary.TryGetValue(id, out sf);
+                if (m_ShowAll || specificity != StyleDebug.UndefinedSpecificity)
                 {
                     if (sf != null)
                     {
@@ -147,16 +179,15 @@ namespace UnityEditor.UIElements.Debugger
                     }
                     else
                     {
-                        var sfPropInfo = new StyleFieldPropertyInfo() { name = styleName, value = val, specificity = specificity, computedPropertyInfo = propertyInfo };
-                        sf = new StyleField(m_SelectedElement, sfPropInfo);
+                        sf = new StyleField(m_SelectedElement, propertyInfo, val, specificity);
                         m_FieldsContainer.Add(sf);
-                        m_NameToFieldDictionary[styleName] = sf;
+                        m_IdToFieldDictionary[id] = sf;
                     }
                 }
                 else if (sf != null)
                 {
                     // Style property is not applied anymore, remove the field
-                    m_NameToFieldDictionary.Remove(styleName);
+                    m_IdToFieldDictionary.Remove(id);
                     m_FieldsContainer.Remove(sf);
                 }
             }
@@ -183,33 +214,25 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
-    internal struct StyleFieldPropertyInfo
-    {
-        public string name;
-        public object value;
-        public int specificity;
-        public PropertyInfo computedPropertyInfo;
-    }
-
     internal class StyleField : VisualElement
     {
         private VisualElement m_SelectedElement;
         private Label m_SpecificityLabel;
-        private PropertyInfo m_PropertyInfo;
+        private StylePropertyInfo m_PropertyInfo;
         private string m_PropertyName;
 
-        public StyleField(VisualElement selectedElement, StyleFieldPropertyInfo propInfo)
+        public StyleField(VisualElement selectedElement, StylePropertyInfo propInfo, object value, int specificity)
         {
             AddToClassList("unity-style-field");
 
             m_SelectedElement = selectedElement;
-            m_PropertyInfo = propInfo.computedPropertyInfo;
+            m_PropertyInfo = propInfo;
             m_PropertyName = propInfo.name;
 
             m_SpecificityLabel = new Label();
             m_SpecificityLabel.AddToClassList("unity-style-field__specifity-label");
 
-            RefreshPropertyValue(propInfo.value, propInfo.specificity);
+            RefreshPropertyValue(value, specificity);
         }
 
         public void RefreshPropertyValue(object val, int specificity)
@@ -272,7 +295,7 @@ namespace UnityEditor.UIElements.Debugger
                     var uiTextureField = new ObjectField(m_PropertyName) { value = style.value.texture };
                     uiTextureField.RegisterValueChangedCallback(e =>
                     {
-                        StyleCursor styleCursor = (StyleCursor)m_PropertyInfo.GetValue(m_SelectedElement.computedStyle, null);
+                        StyleCursor styleCursor = (StyleCursor)StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
                         var currentCursor = styleCursor.value;
                         currentCursor.texture = e.newValue as Texture2D;
                         SetPropertyValue(new StyleCursor(currentCursor));
@@ -282,7 +305,7 @@ namespace UnityEditor.UIElements.Debugger
                     var uiHotspotField = new Vector2Field("hotspot") { value = style.value.hotspot };
                     uiHotspotField.RegisterValueChangedCallback(e =>
                     {
-                        StyleCursor styleCursor = (StyleCursor)m_PropertyInfo.GetValue(m_SelectedElement.computedStyle, null);
+                        StyleCursor styleCursor = (StyleCursor)StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
                         var currentCursor = styleCursor.value;
                         currentCursor.hotspot = e.newValue;
                         SetPropertyValue(new StyleCursor(currentCursor));
@@ -365,13 +388,16 @@ namespace UnityEditor.UIElements.Debugger
             string specificityString = "";
             switch (specificity)
             {
-                case StyleValueExtensions.UnitySpecificity:
+                case StyleDebug.UnitySpecificity:
                     specificityString = "unity stylesheet";
                     break;
-                case StyleValueExtensions.InlineSpecificity:
+                case StyleDebug.InheritedSpecificity:
+                    specificityString = "inherited";
+                    break;
+                case StyleDebug.InlineSpecificity:
                     specificityString = "inline";
                     break;
-                case StyleValueExtensions.UndefinedSpecificity:
+                case StyleDebug.UndefinedSpecificity:
                     break;
                 default:
                     specificityString = specificity.ToString();
@@ -383,8 +409,8 @@ namespace UnityEditor.UIElements.Debugger
 
         private void SetPropertyValue(object newValue)
         {
-            object val = m_PropertyInfo.GetValue(m_SelectedElement.computedStyle, null);
-            Type type = val.GetType();
+            object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
+            Type type = m_PropertyInfo.type;
 
             if (type == newValue.GetType())
             {
@@ -393,7 +419,7 @@ namespace UnityEditor.UIElements.Debugger
             else
             {
                 if (type == typeof(StyleBackground))
-                    newValue = Background.FromTexture2D(newValue as Texture2D);
+                    val = Background.FromTexture2D(newValue as Texture2D);
 
                 var valueInfo = type.GetProperty("value");
                 try
@@ -407,11 +433,8 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            var propertyName = m_PropertyInfo.Name;
-            var inlineStyle = typeof(IStyle).GetProperty(propertyName);
-            inlineStyle.SetValue(m_SelectedElement.style, val, null);
-
-            SetSpecificity(StyleValueExtensions.InlineSpecificity);
+            StyleDebug.SetInlineStyleValue(m_SelectedElement.style, m_PropertyInfo.id, val);
+            SetSpecificity(StyleDebug.InlineSpecificity);
         }
     }
 }

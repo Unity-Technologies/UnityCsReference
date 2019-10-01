@@ -28,7 +28,7 @@ namespace UnityEngine.Yoga
         //private readonly IntPtr _ygNode;
         internal IntPtr _ygNode;
         // END_UNITY
-        private readonly YogaConfig _config;
+        private YogaConfig _config; //@mathieum not readonly anymore
         private WeakReference _parent;
         private List<YogaNode> _children;
         private MeasureFunction _measureFunction;
@@ -69,6 +69,14 @@ namespace UnityEngine.Yoga
             //_ygNode.SetContext(this);
 // END_UNITY
         }
+
+// BEGIN_UNITY @mathieum Needed for dpi awareness
+        public void SetConfig(YogaConfig config)
+        {
+            _config = config == null ? YogaConfig.Default : config;
+            Native.YGNodeSetConfig(_ygNode, _config.Handle);
+        }
+// END_UNITY
 
         public bool IsDirty
         {

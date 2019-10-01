@@ -18,12 +18,6 @@ namespace UnityEditor.Scripting.Compilers
 
         public abstract ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, string tempOutputDirectory);
 
-        public virtual void GetClassAndNamespace(string fileName, out string outClassName, out string outNamespace)
-        {
-            outClassName = string.Empty;
-            outNamespace = string.Empty;
-        }
-
         public virtual bool CompilerRequiresAdditionalReferences()
         {
             return false;

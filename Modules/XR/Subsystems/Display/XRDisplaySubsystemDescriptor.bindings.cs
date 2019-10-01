@@ -43,6 +43,9 @@ namespace UnityEngine.XR
         public extern bool disablesLegacyVr { get; }
 
         [NativeConditional("ENABLE_XR")]
+        public extern bool enableBackBufferMSAA { get; }
+
+        [NativeConditional("ENABLE_XR")]
         [NativeMethod("TryGetAvailableMirrorModeCount")]
         extern public int GetAvailableMirrorBlitModeCount();
 

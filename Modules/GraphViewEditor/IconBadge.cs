@@ -124,7 +124,7 @@ namespace UnityEditor.Experimental.GraphView
 
         private void LoadTemplate(VisualTreeAsset tpl)
         {
-            tpl.CloneTree(this, new Dictionary<string, VisualElement>());
+            tpl.CloneTree(this);
 
             InitBadgeComponent("tip", tipUssClassName, ref m_TipElement);
             InitBadgeComponent("icon", iconUssClassName, ref m_IconElement);
@@ -371,7 +371,11 @@ namespace UnityEditor.Experimental.GraphView
                 arrowLength = m_TipElement.resolvedStyle.height;
             }
 
-            float iconSize = (m_IconElement != null) ? m_IconElement.computedStyle.width.GetSpecifiedValueOrDefault(contentWidth - arrowLength) : 0f;
+            float iconSize = 0f;
+            if (m_IconElement != null)
+            {
+                iconSize = m_IconElement.computedStyle.width == StyleKeyword.Auto ? contentWidth - arrowLength : m_IconElement.computedStyle.width.value.value;
+            }
 
             float arrowOffset = Mathf.Floor((iconSize - arrowWidth) * 0.5f);
 

@@ -71,7 +71,7 @@ namespace UnityEditor.PackageManager.UI
 
         public static VisualElement GetTemplate(string templateFilename)
         {
-            return GetVisualTreeAsset(templateFilename)?.CloneTree();
+            return GetVisualTreeAsset(templateFilename)?.Instantiate();
         }
 
         public static string GetIconPath(string iconName)

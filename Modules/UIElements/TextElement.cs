@@ -135,7 +135,7 @@ namespace UnityEngine.UIElements
 
         private static MeshGenerationContextUtils.TextParams GetTextSettings(VisualElement ve, string text)
         {
-            ComputedStyle style = ve.computedStyle;
+            var style = ve.computedStyle;
             return new MeshGenerationContextUtils.TextParams
             {
                 rect = ve.contentRect,

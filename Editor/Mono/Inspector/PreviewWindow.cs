@@ -40,7 +40,7 @@ namespace UnityEditor
 
             AddInspectorWindow(this);
             var tpl = EditorGUIUtility.Load("UXML/InspectorWindow/PreviewWindow.uxml") as VisualTreeAsset;
-            var container = tpl.CloneTree();
+            var container = tpl.Instantiate();
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
 

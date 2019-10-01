@@ -76,7 +76,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
                 // Register the importer
                 foreach (var ext in handledExts)
-                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key, supportsImportDependencyHinting, attribute.AutoSelect);
+                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key, supportsImportDependencyHinting, attribute.AutoSelect, attribute.AllowCaching);
             }
         }
 
@@ -112,6 +112,8 @@ namespace UnityEditor.Experimental.AssetImporters
         public string[] fileExtensions { get; private set; }
 
         public bool AutoSelect = true;
+
+        public bool AllowCaching = false;
 
         public ScriptedImporterAttribute(int version, string[] exts)
         {

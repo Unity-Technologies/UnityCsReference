@@ -358,7 +358,7 @@ namespace UnityEditor
                         if (rect.Contains(evt.mousePosition))
                         {
                             DragAndDropVisualMode mode = DoDrag(assetReference.instanceID, perform);
-                            if (mode != DragAndDropVisualMode.None)
+                            if (mode != DragAndDropVisualMode.None && mode != DragAndDropVisualMode.Rejected)
                             {
                                 if (perform)
                                     DragAndDrop.AcceptDrag();

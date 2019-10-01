@@ -246,7 +246,7 @@ namespace UnityEditor.UIElements
             if (customInspector != null && customInspector != this)
                 hierarchy.Add(customInspector);
 
-            this.Bind(boundObject);
+            customInspector?.Bind(boundObject);
         }
 
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -483,6 +483,12 @@ namespace UnityEditor.UIElements
                         {
                             EditorGUILayout.BeginVertical(editorWrapper);
                             {
+                                // we have no guarantees regarding what happens in the try/catch block below,
+                                // so we need to save state here and restore it afterwards,
+                                // the natural thing to do would be using SavedGUIState,
+                                // but it implicitly resets keyboards bindings and it breaks functionality.
+                                // We have identified issues with layout so we just save that for the time being.
+                                var layoutCache = new GUILayoutUtility.LayoutCache(GUILayoutUtility.current);
                                 try
                                 {
                                     var rebuildOptimizedGUIBlocks = GetRebuildOptimizedGUIBlocks(editor.target);
@@ -523,6 +529,10 @@ namespace UnityEditor.UIElements
 
                                     if (!m_IgnoreOnInspectorGUIErrors)
                                         Debug.LogException(e);
+                                }
+                                finally
+                                {
+                                    GUILayoutUtility.current = layoutCache;
                                 }
                             }
                             EditorGUILayout.EndVertical();

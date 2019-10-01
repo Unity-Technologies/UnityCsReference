@@ -59,10 +59,6 @@ namespace UnityEditor
     {
         // copies files to the kit
         Push = 0,
-        // run and load files from a connected PC
-        [EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Enum member XboxOneDeployMethod.Pull has been deprecated. Use XboxOneDeployMethod.RunFromPC instead (UnityUpgradable) -> RunFromPC", true)]
-        Pull = 1,
         // PC network share loose files to the kit
         RunFromPC = 2,
         // Build Xbox One Package

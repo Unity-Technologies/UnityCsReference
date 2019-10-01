@@ -55,7 +55,7 @@ namespace UnityEditor.PackageManager.UI
             var windowResource = Resources.GetVisualTreeAsset("PackageManagerWindow.uxml");
             if (windowResource != null)
             {
-                var root = windowResource.CloneTree();
+                var root = windowResource.Instantiate();
                 root.styleSheets.Add(Resources.GetStyleSheet());
                 cache = new VisualElementCache(root);
 
@@ -209,7 +209,7 @@ namespace UnityEditor.PackageManager.UI
                             newFilterTab = PackageFilterTab.BuiltIn;
                         else
                         {
-                            var installedVersion = package.installedVersion;
+                            var installedVersion = package.versions.installed;
                             if (installedVersion != null && installedVersion.isDirectDependency)
                                 newFilterTab = PackageFilterTab.InProject;
                         }
@@ -267,7 +267,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     var package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName)
                         ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
-                    packageId = package?.primaryVersion.uniqueId ?? $"{packageNameOrDisplayName}@primary";
+                    packageId = package?.versions.primary.uniqueId ?? $"{packageNameOrDisplayName}@primary";
                 }
                 PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
             }

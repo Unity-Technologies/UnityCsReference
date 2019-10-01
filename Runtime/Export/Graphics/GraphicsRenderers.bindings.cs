@@ -312,6 +312,7 @@ namespace UnityEngine
         private void DontStripMeshRenderer() {}
 
         extern public Mesh additionalVertexStreams { get; set; }
+        extern public Mesh enlightenVertexStream { get; set; }
         extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
         extern public ReceiveGI receiveGI { get; set; }
     }

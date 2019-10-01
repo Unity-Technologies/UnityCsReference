@@ -769,21 +769,17 @@ namespace UnityEngine.UIElements
             private static void SyncGUIStyle(TextInputBase textInput, GUIStyle style)
             {
                 var computedStyle = textInput.computedStyle;
-                style.alignment = computedStyle.unityTextAlign.GetSpecifiedValueOrDefault(style.alignment);
-                style.wordWrap = computedStyle.whiteSpace.specificity != StyleValueExtensions.UndefinedSpecificity
-                    ? computedStyle.whiteSpace.value == WhiteSpace.Normal
-                    : style.wordWrap;
-                bool overflowVisible = computedStyle.overflow.specificity != StyleValueExtensions.UndefinedSpecificity
-                    ? computedStyle.overflow.value == Overflow.Visible
-                    : style.clipping == TextClipping.Overflow;
+                style.alignment = computedStyle.unityTextAlign.value;
+                style.wordWrap = computedStyle.whiteSpace.value == WhiteSpace.Normal;
+                bool overflowVisible = computedStyle.overflow.value == OverflowInternal.Visible;
                 style.clipping = overflowVisible ? TextClipping.Overflow : TextClipping.Clip;
                 if (computedStyle.unityFont.value != null)
                 {
                     style.font = computedStyle.unityFont.value;
                 }
 
-                style.fontSize = (int)computedStyle.fontSize.GetSpecifiedValueOrDefault((float)style.fontSize);
-                style.fontStyle = computedStyle.unityFontStyleAndWeight.GetSpecifiedValueOrDefault(style.fontStyle);
+                style.fontSize = (int)computedStyle.fontSize.value.value;
+                style.fontStyle = computedStyle.unityFontStyleAndWeight.value;
 
                 int left = computedStyle.unitySliceLeft.value;
                 int top = computedStyle.unitySliceTop.value;

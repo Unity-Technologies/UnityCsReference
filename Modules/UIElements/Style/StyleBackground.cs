@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -17,18 +18,6 @@ namespace UnityEngine.UIElements
                 m_Value = value;
                 m_Keyword = StyleKeyword.Undefined;
             }
-        }
-
-        internal int specificity
-        {
-            get { return m_Specificity; }
-            set { m_Specificity = value; }
-        }
-
-        int IStyleValue<Background>.specificity
-        {
-            get { return specificity; }
-            set { specificity = value; }
         }
 
         public StyleKeyword keyword
@@ -61,33 +50,18 @@ namespace UnityEngine.UIElements
             : this(Background.FromVectorImage(v), keyword)
         {}
 
+        internal StyleBackground(GCHandle gcHandle, StyleKeyword keyword)
+            : this(gcHandle.IsAllocated ? Background.FromObject(gcHandle.Target) : new Background(), keyword)
+        {}
+
         internal StyleBackground(Background v, StyleKeyword keyword)
         {
-            m_Specificity = StyleValueExtensions.UndefinedSpecificity;
             m_Keyword = keyword;
             m_Value = v;
         }
 
-        internal bool Apply<U>(U other, StylePropertyApplyMode mode) where U : IStyleValue<Background>
-        {
-            if (StyleValueExtensions.CanApply(specificity, other.specificity, mode))
-            {
-                value = other.value;
-                keyword = other.keyword;
-                specificity = other.specificity;
-                return true;
-            }
-            return false;
-        }
-
-        bool IStyleValue<Background>.Apply<U>(U other, StylePropertyApplyMode mode)
-        {
-            return Apply(other, mode);
-        }
-
         private StyleKeyword m_Keyword;
         private Background m_Value;
-        private int m_Specificity;
 
         public static bool operator==(StyleBackground lhs, StyleBackground rhs)
         {
@@ -135,7 +109,6 @@ namespace UnityEngine.UIElements
             var hashCode = 917506989;
             hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
             hashCode = hashCode * -1521134295 + m_Value.GetHashCode();
-            hashCode = hashCode * -1521134295 + m_Specificity.GetHashCode();
             return hashCode;
         }
 

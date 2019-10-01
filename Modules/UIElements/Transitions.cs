@@ -13,286 +13,286 @@ namespace UnityEngine.UIElements.Experimental
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PositionTop).value;
+                return Values().GetStyleFloat(StylePropertyId.Top).value;
             }
             set
             {
-                SetValue(StylePropertyID.PositionTop, value);
+                SetValue(StylePropertyId.Top, value);
             }
         }
         public float left
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PositionLeft).value;
+                return Values().GetStyleFloat(StylePropertyId.Left).value;
             }
             set
             {
-                SetValue(StylePropertyID.PositionLeft, value);
+                SetValue(StylePropertyId.Left, value);
             }
         }
         public float width
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.Width).value;
+                return Values().GetStyleFloat(StylePropertyId.Width).value;
             }
             set
             {
-                SetValue(StylePropertyID.Width, value);
+                SetValue(StylePropertyId.Width, value);
             }
         }
         public float height
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.Height).value;
+                return Values().GetStyleFloat(StylePropertyId.Height).value;
             }
             set
             {
-                SetValue(StylePropertyID.Height, value);
+                SetValue(StylePropertyId.Height, value);
             }
         }
         public float right
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PositionRight).value;
+                return Values().GetStyleFloat(StylePropertyId.Right).value;
             }
             set
             {
-                SetValue(StylePropertyID.PositionRight, value);
+                SetValue(StylePropertyId.Right, value);
             }
         }
         public float bottom
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PositionBottom).value;
+                return Values().GetStyleFloat(StylePropertyId.Bottom).value;
             }
             set
             {
-                SetValue(StylePropertyID.PositionBottom, value);
+                SetValue(StylePropertyId.Bottom, value);
             }
         }
         public Color color
         {
             get
             {
-                return Values().GetStyleColor(StylePropertyID.Color).value;
+                return Values().GetStyleColor(StylePropertyId.Color).value;
             }
             set
             {
-                SetValue(StylePropertyID.Color, value);
+                SetValue(StylePropertyId.Color, value);
             }
         }
         public Color backgroundColor
         {
             get
             {
-                return Values().GetStyleColor(StylePropertyID.BackgroundColor).value;
+                return Values().GetStyleColor(StylePropertyId.BackgroundColor).value;
             }
             set
             {
-                SetValue(StylePropertyID.BackgroundColor, value);
+                SetValue(StylePropertyId.BackgroundColor, value);
             }
         }
         public Color unityBackgroundImageTintColor
         {
             get
             {
-                return Values().GetStyleColor(StylePropertyID.BackgroundImageTintColor).value;
+                return Values().GetStyleColor(StylePropertyId.UnityBackgroundImageTintColor).value;
             }
             set
             {
-                SetValue(StylePropertyID.BackgroundImageTintColor, value);
+                SetValue(StylePropertyId.UnityBackgroundImageTintColor, value);
             }
         }
         public Color borderColor
         {
             get
             {
-                return Values().GetStyleColor(StylePropertyID.BorderColor).value;
+                return Values().GetStyleColor(StylePropertyId.BorderColor).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderColor, value);
+                SetValue(StylePropertyId.BorderColor, value);
             }
         }
         public float marginLeft
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.MarginLeft).value;
+                return Values().GetStyleFloat(StylePropertyId.MarginLeft).value;
             }
             set
             {
-                SetValue(StylePropertyID.MarginLeft, value);
+                SetValue(StylePropertyId.MarginLeft, value);
             }
         }
         public float marginTop
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.MarginTop).value;
+                return Values().GetStyleFloat(StylePropertyId.MarginTop).value;
             }
             set
             {
-                SetValue(StylePropertyID.MarginTop, value);
+                SetValue(StylePropertyId.MarginTop, value);
             }
         }
         public float marginRight
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.MarginRight).value;
+                return Values().GetStyleFloat(StylePropertyId.MarginRight).value;
             }
             set
             {
-                SetValue(StylePropertyID.MarginRight, value);
+                SetValue(StylePropertyId.MarginRight, value);
             }
         }
         public float marginBottom
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.MarginBottom).value;
+                return Values().GetStyleFloat(StylePropertyId.MarginBottom).value;
             }
             set
             {
-                SetValue(StylePropertyID.MarginBottom, value);
+                SetValue(StylePropertyId.MarginBottom, value);
             }
         }
         public float paddingLeft
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PaddingLeft).value;
+                return Values().GetStyleFloat(StylePropertyId.PaddingLeft).value;
             }
             set
             {
-                SetValue(StylePropertyID.PaddingLeft, value);
+                SetValue(StylePropertyId.PaddingLeft, value);
             }
         }
         public float paddingTop
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PaddingTop).value;
+                return Values().GetStyleFloat(StylePropertyId.PaddingTop).value;
             }
             set
             {
-                SetValue(StylePropertyID.PaddingTop, value);
+                SetValue(StylePropertyId.PaddingTop, value);
             }
         }
         public float paddingRight
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PaddingRight).value;
+                return Values().GetStyleFloat(StylePropertyId.PaddingRight).value;
             }
             set
             {
-                SetValue(StylePropertyID.PaddingRight, value);
+                SetValue(StylePropertyId.PaddingRight, value);
             }
         }
         public float paddingBottom
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.PaddingBottom).value;
+                return Values().GetStyleFloat(StylePropertyId.PaddingBottom).value;
             }
             set
             {
-                SetValue(StylePropertyID.PaddingBottom, value);
+                SetValue(StylePropertyId.PaddingBottom, value);
             }
         }
         public float borderLeftWidth
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderLeftWidth).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderLeftWidth).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderLeftWidth, value);
+                SetValue(StylePropertyId.BorderLeftWidth, value);
             }
         }
         public float borderRightWidth
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderRightWidth).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderRightWidth).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderRightWidth, value);
+                SetValue(StylePropertyId.BorderRightWidth, value);
             }
         }
         public float borderTopWidth
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderTopWidth).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderTopWidth).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderTopWidth, value);
+                SetValue(StylePropertyId.BorderTopWidth, value);
             }
         }
         public float borderBottomWidth
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderBottomWidth).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderBottomWidth).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderBottomWidth, value);
+                SetValue(StylePropertyId.BorderBottomWidth, value);
             }
         }
         public float borderTopLeftRadius
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderTopLeftRadius).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderTopLeftRadius).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderTopLeftRadius, value);
+                SetValue(StylePropertyId.BorderTopLeftRadius, value);
             }
         }
         public float borderTopRightRadius
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderTopRightRadius).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderTopRightRadius).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderTopRightRadius, value);
+                SetValue(StylePropertyId.BorderTopRightRadius, value);
             }
         }
         public float borderBottomLeftRadius
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderBottomLeftRadius).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderBottomLeftRadius).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderBottomLeftRadius, value);
+                SetValue(StylePropertyId.BorderBottomLeftRadius, value);
             }
         }
         public float borderBottomRightRadius
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.BorderBottomRightRadius).value;
+                return Values().GetStyleFloat(StylePropertyId.BorderBottomRightRadius).value;
             }
             set
             {
-                SetValue(StylePropertyID.BorderBottomRightRadius, value);
+                SetValue(StylePropertyId.BorderBottomRightRadius, value);
             }
         }
 
@@ -300,37 +300,37 @@ namespace UnityEngine.UIElements.Experimental
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.Opacity).value;
+                return Values().GetStyleFloat(StylePropertyId.Opacity).value;
             }
             set
             {
-                SetValue(StylePropertyID.Opacity, value);
+                SetValue(StylePropertyId.Opacity, value);
             }
         }
         public float flexGrow
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.FlexGrow).value;
+                return Values().GetStyleFloat(StylePropertyId.FlexGrow).value;
             }
             set
             {
-                SetValue(StylePropertyID.FlexGrow, value);
+                SetValue(StylePropertyId.FlexGrow, value);
             }
         }
         public float flexShrink
         {
             get
             {
-                return Values().GetStyleFloat(StylePropertyID.FlexShrink).value;
+                return Values().GetStyleFloat(StylePropertyId.FlexShrink).value;
             }
             set
             {
-                SetValue(StylePropertyID.FlexGrow, value);
+                SetValue(StylePropertyId.FlexGrow, value);
             }
         }
 
-        internal void SetValue(StylePropertyID id, float value)
+        internal void SetValue(StylePropertyId id, float value)
         {
             var sv = new StyleValue();
 
@@ -339,7 +339,7 @@ namespace UnityEngine.UIElements.Experimental
             Values().SetStyleValue(sv);
         }
 
-        internal void SetValue(StylePropertyID id, Color value)
+        internal void SetValue(StylePropertyId id, Color value)
         {
             var sv = new StyleValue();
 
@@ -446,81 +446,81 @@ namespace UnityEngine.UIElements.Experimental
 
                 switch (endValue.id)
                 {
-                    case StylePropertyID.MarginLeft:
-                    case StylePropertyID.MarginTop:
-                    case StylePropertyID.MarginRight:
-                    case StylePropertyID.MarginBottom:
-                    case StylePropertyID.PaddingLeft:
-                    case StylePropertyID.PaddingTop:
-                    case StylePropertyID.PaddingRight:
-                    case StylePropertyID.PaddingBottom:
-                    case StylePropertyID.PositionLeft:
-                    case StylePropertyID.PositionTop:
-                    case StylePropertyID.PositionRight:
-                    case StylePropertyID.PositionBottom:
-                    case StylePropertyID.Width:
-                    case StylePropertyID.Height:
-                    case StylePropertyID.MinWidth:
-                    case StylePropertyID.MinHeight:
-                    case StylePropertyID.MaxWidth:
-                    case StylePropertyID.MaxHeight:
-                    case StylePropertyID.FlexBasis:
-                    case StylePropertyID.FlexGrow:
-                    case StylePropertyID.FlexShrink:
-                    case StylePropertyID.BorderLeftWidth:
-                    case StylePropertyID.BorderTopWidth:
-                    case StylePropertyID.BorderRightWidth:
-                    case StylePropertyID.BorderBottomWidth:
-                    case StylePropertyID.BorderTopLeftRadius:
-                    case StylePropertyID.BorderTopRightRadius:
-                    case StylePropertyID.BorderBottomRightRadius:
-                    case StylePropertyID.BorderBottomLeftRadius:
-                    case StylePropertyID.FontSize:
-                    case StylePropertyID.Opacity:
+                    case StylePropertyId.MarginLeft:
+                    case StylePropertyId.MarginTop:
+                    case StylePropertyId.MarginRight:
+                    case StylePropertyId.MarginBottom:
+                    case StylePropertyId.PaddingLeft:
+                    case StylePropertyId.PaddingTop:
+                    case StylePropertyId.PaddingRight:
+                    case StylePropertyId.PaddingBottom:
+                    case StylePropertyId.Left:
+                    case StylePropertyId.Top:
+                    case StylePropertyId.Right:
+                    case StylePropertyId.Bottom:
+                    case StylePropertyId.Width:
+                    case StylePropertyId.Height:
+                    case StylePropertyId.MinWidth:
+                    case StylePropertyId.MinHeight:
+                    case StylePropertyId.MaxWidth:
+                    case StylePropertyId.MaxHeight:
+                    case StylePropertyId.FlexBasis:
+                    case StylePropertyId.FlexGrow:
+                    case StylePropertyId.FlexShrink:
+                    case StylePropertyId.BorderLeftWidth:
+                    case StylePropertyId.BorderTopWidth:
+                    case StylePropertyId.BorderRightWidth:
+                    case StylePropertyId.BorderBottomWidth:
+                    case StylePropertyId.BorderTopLeftRadius:
+                    case StylePropertyId.BorderTopRightRadius:
+                    case StylePropertyId.BorderBottomRightRadius:
+                    case StylePropertyId.BorderBottomLeftRadius:
+                    case StylePropertyId.FontSize:
+                    case StylePropertyId.Opacity:
                         //We've got floats!
                     {
                         result.SetValue(endValue.id, Lerp.Interpolate(startValue.number, endValue.number, ratio));
                     }
                     break;
-                    case StylePropertyID.Color:
-                    case StylePropertyID.BackgroundColor:
-                    case StylePropertyID.BorderColor:
-                    case StylePropertyID.BackgroundImageTintColor:
-                        //We've got floats!
+                    case StylePropertyId.Color:
+                    case StylePropertyId.BackgroundColor:
+                    case StylePropertyId.BorderColor:
+                    case StylePropertyId.UnityBackgroundImageTintColor:
+                        //We've got colors!
                     {
                         result.SetValue(endValue.id, Lerp.Interpolate(startValue.color, endValue.color, ratio));
                     }
 
                     break;
-                    case StylePropertyID.Position:
+                    case StylePropertyId.Position:
 
-                    case StylePropertyID.FlexDirection:
-                    case StylePropertyID.FlexWrap:
-                    case StylePropertyID.JustifyContent:
-                    case StylePropertyID.AlignContent:
-                    case StylePropertyID.AlignSelf:
-                    case StylePropertyID.AlignItems:
-                    case StylePropertyID.UnityTextAlign:
-                    case StylePropertyID.WhiteSpace:
-                    case StylePropertyID.Font:
-                    case StylePropertyID.FontStyleAndWeight:
-                    case StylePropertyID.BackgroundScaleMode:
-                    case StylePropertyID.Visibility:
-                    case StylePropertyID.Overflow:
-                    case StylePropertyID.Display:
-                    case StylePropertyID.BackgroundImage:
-                    case StylePropertyID.Custom:
-                    case StylePropertyID.Unknown:
-                    case StylePropertyID.SliceLeft:
-                    case StylePropertyID.SliceTop:
-                    case StylePropertyID.SliceRight:
-                    case StylePropertyID.SliceBottom:
-                    case StylePropertyID.BorderRadius:
-                    case StylePropertyID.BorderWidth:
-                    case StylePropertyID.Margin:
-                    case StylePropertyID.Padding:
-                    case StylePropertyID.Flex:
-                    case StylePropertyID.Cursor:
+                    case StylePropertyId.FlexDirection:
+                    case StylePropertyId.FlexWrap:
+                    case StylePropertyId.JustifyContent:
+                    case StylePropertyId.AlignContent:
+                    case StylePropertyId.AlignSelf:
+                    case StylePropertyId.AlignItems:
+                    case StylePropertyId.UnityTextAlign:
+                    case StylePropertyId.WhiteSpace:
+                    case StylePropertyId.UnityFont:
+                    case StylePropertyId.UnityFontStyleAndWeight:
+                    case StylePropertyId.UnityBackgroundScaleMode:
+                    case StylePropertyId.Visibility:
+                    case StylePropertyId.Overflow:
+                    case StylePropertyId.Display:
+                    case StylePropertyId.BackgroundImage:
+                    case StylePropertyId.Custom:
+                    case StylePropertyId.Unknown:
+                    case StylePropertyId.UnitySliceLeft:
+                    case StylePropertyId.UnitySliceTop:
+                    case StylePropertyId.UnitySliceRight:
+                    case StylePropertyId.UnitySliceBottom:
+                    case StylePropertyId.BorderRadius:
+                    case StylePropertyId.BorderWidth:
+                    case StylePropertyId.Margin:
+                    case StylePropertyId.Padding:
+                    case StylePropertyId.Flex:
+                    case StylePropertyId.Cursor:
                     default:
                         throw new ArgumentException("Style Value can't be animated");
                 }

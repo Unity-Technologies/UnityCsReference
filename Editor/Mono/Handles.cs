@@ -839,7 +839,7 @@ namespace UnityEditor
         // If snapping is active, return a new value rounded to the nearest increment of snap.
         public static float SnapValue(float value, float snap)
         {
-            if (EditorSnapSettings.active)
+            if (EditorSnapSettings.incrementalSnapActive)
                 return Snapping.Snap(value, snap);
             return value;
         }
@@ -847,7 +847,7 @@ namespace UnityEditor
         // If snapping is active, return a new value rounded to the nearest increment of snap.
         public static Vector2 SnapValue(Vector2 value, Vector2 snap)
         {
-            if (EditorSnapSettings.active)
+            if (EditorSnapSettings.incrementalSnapActive)
                 return Snapping.Snap(value, snap);
             return value;
         }
@@ -855,7 +855,7 @@ namespace UnityEditor
         // If snapping is active, return a new value rounded to the nearest increment of snap.
         public static Vector3 SnapValue(Vector3 value, Vector3 snap)
         {
-            if (EditorSnapSettings.active)
+            if (EditorSnapSettings.incrementalSnapActive)
                 return Snapping.Snap(value, snap);
             return value;
         }
@@ -868,7 +868,7 @@ namespace UnityEditor
                 foreach (var t in transforms)
                 {
                     if (t != null)
-                        t.position = Snapping.Snap(t.position, Vector3.Scale(EditorSnapSettings.move, new SnapAxisFilter(axis)));
+                        t.position = Snapping.Snap(t.position, Vector3.Scale(GridSettings.size, new SnapAxisFilter(axis)));
                 }
             }
         }

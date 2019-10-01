@@ -78,6 +78,20 @@ namespace UnityEditor
         [FreeFunction("GetScreenManager().SetAllowCursorLock")]
         internal static extern void SetAllowCursorLock(bool allow, DisallowCursorLockReasons reasons);
 
+        // Remove in 2021.0
+        [Obsolete("This method has been marked obsolete, use SetOverrideLightingSettings instead (UnityUpgradable) -> SetOverrideLightingSettings(*)", true)]
+        public static bool SetOverrideRenderSettings(Scene scene)
+        {
+            return SetOverrideLightingSettings(scene);
+        }
+
+        // Remove in 2021.0
+        [Obsolete("This method has been marked obsolete, use RestoreOverrideLightingSettings instead (UnityUpgradable) -> RestoreOverrideLightingSettings(*)", true)]
+        public static void RestoreOverrideRenderSettings()
+        {
+            RestoreOverrideLightingSettings();
+        }
+
         public static bool SetOverrideLightingSettings(Scene scene)
         {
             return SetOverrideLightingSettingsInternal(scene.handle);

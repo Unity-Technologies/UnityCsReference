@@ -5,6 +5,8 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
+using TextureDimension = UnityEngine.Rendering.TextureDimension;
 
 namespace UnityEditor
 {
@@ -23,6 +25,87 @@ namespace UnityEditor
             TexDim3D = 3,
             TexDimCUBE = 4,
             TexDimAny = 6,
+        }
+
+        // We can't deprecate them yet (Sept 2019): Some integration tests expect no compile warning/error from built-in packages but TextMeshPro uses
+        // these APIs and emits deprecation warnings. We'll land the new APIs without deprecation first and then see if we can upgrade TextMeshPro afterwards.
+
+        //[Obsolete("Use UnityEngine.ShaderPropertyType instead.", false)]
+        public enum ShaderPropertyType
+        {
+            Color,
+            Vector,
+            Float,
+            Range,
+            TexEnv,
+        }
+
+        //[Obsolete("Use Shader.GetPropertyCount instead.", false)]
+        public static int GetPropertyCount(Shader s)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            return s.GetPropertyCount();
+        }
+
+        //[Obsolete("Use Shader.GetPropertyName instead.", false)]
+        public static string GetPropertyName(Shader s, int propertyIdx)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            return s.GetPropertyName(propertyIdx);
+        }
+
+        //[Obsolete("Use Shader.GetPropertyType instead.", false)]
+        public static ShaderPropertyType GetPropertyType(Shader s, int propertyIdx)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            return (ShaderPropertyType)s.GetPropertyType(propertyIdx);
+        }
+
+        //[Obsolete("Use Shader.GetPropertyDescription instead.", false)]
+        public static string GetPropertyDescription(Shader s, int propertyIdx)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            return s.GetPropertyDescription(propertyIdx);
+        }
+
+        //[Obsolete("Use Shader.GetPropertyRangeLimits and Shader.GetDefaultValue instead.", false)]
+        public static float GetRangeLimits(Shader s, int propertyIdx, int defminmax)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            else if (defminmax < 0 || defminmax > 2)
+                throw new ArgumentException("defminmax should be one of 0,1,2.");
+            return defminmax > 0
+                ? s.GetPropertyRangeLimits(propertyIdx)[defminmax - 1]
+                : s.GetPropertyDefaultFloatValue(propertyIdx);
+        }
+
+        //[Obsolete("Use Shader.GetPropertyTextureDimension instead.", false)]
+        public static TextureDimension GetTexDim(Shader s, int propertyIdx)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            return s.GetPropertyTextureDimension(propertyIdx);
+        }
+
+        //[Obsolete("Use Shader.GetPropertyFlags and test against ShaderPropertyFlags.HideInInspector instead.", false)]
+        public static bool IsShaderPropertyHidden(Shader s, int propertyIdx)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            return (s.GetPropertyFlags(propertyIdx) & ShaderPropertyFlags.HideInInspector) != 0;
+        }
+
+        //[Obsolete("Use Shader.GetPropertyFlags and test against ShaderPropertyFlags.NonModifiableTextureData instead.", false)]
+        public static bool IsShaderPropertyNonModifiableTexureProperty(Shader s, int propertyIdx)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            return (s.GetPropertyFlags(propertyIdx) & ShaderPropertyFlags.NonModifiableTextureData) != 0;
         }
     }
 }

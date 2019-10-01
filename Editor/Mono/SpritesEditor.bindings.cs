@@ -59,7 +59,7 @@ namespace UnityEditorInternal
     public sealed class InternalSpriteUtility
     {
         extern public static Rect[] GenerateAutomaticSpriteRectangles([NotNull] Texture2D texture, int minRectSize, int extrudeSize);
-        extern public static Rect[] GenerateGridSpriteRectangles([NotNull] Texture2D texture, Vector2 offset, Vector2 size, Vector2 padding);
+        extern public static Rect[] GenerateGridSpriteRectangles([NotNull] Texture2D texture, Vector2 offset, Vector2 size, Vector2 padding, bool keepEmptyRects = false);
     }
 
     [StaticAccessor("SpriteUtilityBindings", StaticAccessorType.DoubleColon)]

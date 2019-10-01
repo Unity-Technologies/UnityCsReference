@@ -20,18 +20,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal int specificity
-        {
-            get { return m_Specificity; }
-            set { m_Specificity = value; }
-        }
-
-        int IStyleValue<T>.specificity
-        {
-            get { return specificity; }
-            set { specificity = value; }
-        }
-
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
@@ -48,31 +36,12 @@ namespace UnityEngine.UIElements
 
         internal StyleEnum(T v, StyleKeyword keyword)
         {
-            m_Specificity = StyleValueExtensions.UndefinedSpecificity;
             m_Keyword = keyword;
             m_Value = v;
         }
 
-        internal bool Apply<U>(U other, StylePropertyApplyMode mode) where U : IStyleValue<T>
-        {
-            if (StyleValueExtensions.CanApply(specificity, other.specificity, mode))
-            {
-                value = other.value;
-                keyword = other.keyword;
-                specificity = other.specificity;
-                return true;
-            }
-            return false;
-        }
-
-        bool IStyleValue<T>.Apply<U>(U other, StylePropertyApplyMode mode)
-        {
-            return Apply(other, mode);
-        }
-
         private StyleKeyword m_Keyword;
         private T m_Value;
-        private int m_Specificity;
 
         public static bool operator==(StyleEnum<T> lhs, StyleEnum<T> rhs)
         {
@@ -115,7 +84,6 @@ namespace UnityEngine.UIElements
             var hashCode = 917506989;
             hashCode = hashCode * -1521134295 + m_Keyword.GetHashCode();
             hashCode = hashCode * -1521134295 + m_Value.GetHashCode();
-            hashCode = hashCode * -1521134295 + m_Specificity.GetHashCode();
             return hashCode;
         }
 

@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
 
-        static bool HasPackageInDevelopment => PackageDatabase.instance.allPackages.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false);
+        static bool HasPackageInDevelopment => PackageDatabase.instance.allPackages.Any(p => p.versions.installed?.HasTag(PackageTag.InDevelopment) ?? false);
 
         private long m_SearchTextChangeTimestamp;
 
@@ -66,7 +66,7 @@ namespace UnityEditor.PackageManager.UI
             // If nothing in the change list is related to `in development` packages
             // we can skip the whole database scan to save some time
             var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
-            if (!changed.Any(p => p.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false))
+            if (!changed.Any(p => p.versions.installed?.HasTag(PackageTag.InDevelopment) ?? false))
                 return;
 
             // If we have a filter set and no packages are in this filter, reset the filter to local packages.

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,7 +13,6 @@ namespace UnityEditor.PackageManager.UI
     internal class UpmVersionList : IVersionList
     {
         private List<UpmPackageVersion> m_Versions;
-        public IEnumerable<IPackageVersion> all => m_Versions.Cast<IPackageVersion>();
 
         public IEnumerable<IPackageVersion> key
         {
@@ -106,11 +106,11 @@ namespace UnityEditor.PackageManager.UI
         {
             if (m_InstalledIndex >= 0)
             {
-                m_Versions[m_InstalledIndex].isInstalled = false;
+                m_Versions[m_InstalledIndex].SetInstalled(false);
                 if (m_Versions[m_InstalledIndex].installedFromPath)
                     m_Versions.RemoveAt(m_InstalledIndex);
             }
-            newVersion.isInstalled = true;
+            newVersion.SetInstalled(true);
             m_InstalledIndex = AddToSortedVersions(m_Versions, newVersion);
         }
 
@@ -147,6 +147,16 @@ namespace UnityEditor.PackageManager.UI
             AddToSortedVersions(m_Versions, mainVersion);
 
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
+        }
+
+        public IEnumerator<IPackageVersion> GetEnumerator()
+        {
+            return m_Versions.Cast<IPackageVersion>().GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_Versions.GetEnumerator();
         }
     }
 }

@@ -14,15 +14,29 @@ namespace UnityEditor.EditorTools
     /// <summary>
     /// An Editor instance and EditorTool type.
     /// </summary>
-    struct CustomEditorTool
+    class CustomEditorTool
     {
         public Editor owner;
+        public List<Editor> additionalEditors;
         public Type editorToolType;
 
         public CustomEditorTool(Editor owner, Type tool)
         {
             this.owner = owner;
             this.editorToolType = tool;
+        }
+
+        public UObject[] targets
+        {
+            get
+            {
+                if (additionalEditors == null)
+                    return owner.targets;
+                List<UObject> objects = new List<UObject>(owner.targets);
+                foreach (var editor in additionalEditors)
+                    objects.AddRange(editor.targets);
+                return objects.ToArray();
+            }
         }
     }
 
@@ -40,6 +54,7 @@ namespace UnityEditor.EditorTools
         static CustomEditorToolAssociation[] s_CustomEditorTools;
         static Dictionary<Type, List<Type>> s_CustomEditorToolsTypeAssociations = new Dictionary<Type, List<Type>>();
         static Dictionary<Type, GUIContent> s_EditorToolDefaulToolbarIcons = new Dictionary<Type, GUIContent>();
+        static HashSet<Type> s_TrackerSelectedTypes = new HashSet<Type>();
 
         static CustomEditorToolAssociation[] customEditorTools
         {
@@ -171,7 +186,7 @@ namespace UnityEditor.EditorTools
         internal static void GetEditorToolsForTracker(ActiveEditorTracker tracker, List<CustomEditorTool> tools)
         {
             tools.Clear();
-
+            s_TrackerSelectedTypes.Clear();
             var editors = tracker.activeEditors;
 
             for (int i = 0, c = editors.Length; i < c; i++)
@@ -182,13 +197,31 @@ namespace UnityEditor.EditorTools
                     continue;
 
                 var targetType = editor.target.GetType();
-                var eligibleToolTypes = GetCustomEditorToolsForType(targetType);
 
-                foreach (var type in eligibleToolTypes)
+                // Some components can be added to a GameObject multiple times. Prevent them from creating multiple tools.
+                if (s_TrackerSelectedTypes.Add(targetType))
                 {
-                    tools.Add(new CustomEditorTool(editor, type));
+                    var eligibleToolTypes = GetCustomEditorToolsForType(targetType);
+
+                    foreach (var type in eligibleToolTypes)
+                        tools.Add(new CustomEditorTool(editor, type));
+                }
+                else
+                {
+                    foreach (var tool in tools)
+                    {
+                        if (tool.owner.target.GetType() == targetType)
+                        {
+                            if (tool.additionalEditors == null)
+                                tool.additionalEditors = new List<Editor>() { editor };
+                            else
+                                tool.additionalEditors.Add(editor);
+                        }
+                    }
                 }
             }
+
+            s_TrackerSelectedTypes.Clear();
         }
 
         internal static EditorTool GetEditorToolWithEnum(Tool type)

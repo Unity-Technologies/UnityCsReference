@@ -241,11 +241,35 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        private Focusable m_LastFocusedElement;
+
+        internal void SetFocusToLastFocusedElement()
+        {
+            if (m_LastFocusedElement != null && !(m_LastFocusedElement is IMGUIContainer))
+                m_LastFocusedElement.Focus();
+
+            m_LastFocusedElement = null;
+        }
+
+        internal void BlurLastFocusedElement()
+        {
+            if (m_LastFocusedElement != null && !(m_LastFocusedElement is IMGUIContainer))
+            {
+                // Blur will change the lastFocusedElement to null
+                var tmpLastFocusedElement = m_LastFocusedElement;
+                m_LastFocusedElement.Blur();
+                m_LastFocusedElement = tmpLastFocusedElement;
+            }
+        }
+
         internal void DoFocusChange(Focusable f)
         {
             m_FocusedElements.Clear();
 
             VisualElement ve = f as VisualElement;
+            if (!(f is IMGUIContainer))
+                m_LastFocusedElement = f;
+
             while (ve != null)
             {
                 if (ve.hierarchy.parent == null || ve.isCompositeRoot)

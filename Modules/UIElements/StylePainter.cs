@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
 
         public static CursorPositionStylePainterParameters GetDefault(VisualElement ve, string text)
         {
-            ComputedStyle style = ve.computedStyle;
+            var style = ve.computedStyle;
             var painterParams = new CursorPositionStylePainterParameters() {
                 rect = ve.contentRect,
                 text = text,

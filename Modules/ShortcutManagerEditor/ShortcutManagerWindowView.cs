@@ -428,7 +428,7 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Root = new VisualElement(){name = "ShortcutManagerView"};
             var headerTemplate = EditorResources.Load("UXML/ShortcutManager/ShortcutManagerView.uxml", typeof(UnityEngine.Object)) as VisualTreeAsset;
-            headerTemplate.CloneTree(m_Root, null);
+            headerTemplate.CloneTree(m_Root);
             var header = m_Root.Q("header");
             var keyboardContainer = m_Root.Q("headerAndKeyboardContainer");
             var searchRowContainer = m_Root.Q("searchRowContainer");
@@ -636,7 +636,7 @@ namespace UnityEditor.ShortcutManagement
         void ShortcutTableRightClickDown(MouseDownEvent evt)
         {
             var slider = m_ShortcutsTable.Q<Scroller>(className: Scroller.verticalVariantUssClassName);
-            var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.itemHeight);
+            var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.resolvedItemHeight);
 
             if (evt.button != (int)MouseButton.RightMouse)
                 return;

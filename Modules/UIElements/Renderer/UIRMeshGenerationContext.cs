@@ -237,7 +237,7 @@ namespace UnityEngine.UIElements
 
             internal static TextParams MakeStyleBased(VisualElement ve, string text)
             {
-                ComputedStyle style = ve.computedStyle;
+                var style = ve.computedStyle;
                 return new TextParams
                 {
                     rect = ve.contentRect,

@@ -39,7 +39,7 @@ public class {0} : EditorWindow
 
         // Import UXML
         var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(""{0}/{1}.uxml"");
-        VisualElement labelFromUXML = visualTree.CloneTree();
+        VisualElement labelFromUXML = visualTree.Instantiate();
         root.Add(labelFromUXML);", folder, uxmlName);
             }
 

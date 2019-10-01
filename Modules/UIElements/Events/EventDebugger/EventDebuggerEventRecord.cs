@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
         public ulong eventId { get; private set; }
         private ulong triggerEventId { get; set; }
         private long timestamp { get; set; }
-        public IEventHandler target { get; private set; }
+        public IEventHandler target { get; set; }
         private List<IEventHandler> skipElements { get; set; }
         public bool hasUnderlyingPhysicalEvent { get; private set; }
         private bool isPropagationStopped { get; set; }
@@ -32,6 +32,7 @@ namespace UnityEngine.UIElements
         public Vector2 mousePosition { get; private set; }
         public int clickCount { get; private set; }
         public int button { get; private set; }
+        public int pressedButtons { get; private set; }
 
         // Wheel event specific
         public Vector3 delta { get; private set; }
@@ -78,7 +79,25 @@ namespace UnityEngine.UIElements
                 modifiers = mouseEvent.modifiers;
                 mousePosition = mouseEvent.mousePosition;
                 button = mouseEvent.button;
+                pressedButtons = mouseEvent.pressedButtons;
                 clickCount = mouseEvent.clickCount;
+                // TODO: Scroll Wheel
+                //delta = mouseEvent.delta;
+            }
+
+            IPointerEvent pointerEvent = evt as IPointerEvent;
+            IPointerEventInternal pointerEventInternal = evt as IPointerEventInternal;
+            hasUnderlyingPhysicalEvent = pointerEvent != null &&
+                pointerEventInternal != null &&
+                pointerEventInternal.triggeredByOS;
+
+            if (pointerEvent != null)
+            {
+                modifiers = pointerEvent.modifiers;
+                mousePosition = pointerEvent.position;
+                button = pointerEvent.button;
+                pressedButtons = pointerEvent.pressedButtons;
+                clickCount = pointerEvent.clickCount;
                 // TODO: Scroll Wheel
                 //delta = mouseEvent.delta;
             }

@@ -324,6 +324,7 @@ namespace UnityEditor
         {
             AllowCursorLockAndHide(true);
             SetFocus(true);
+            targetSize = targetRenderSize;
         }
 
         private void OnLostFocus()
@@ -781,7 +782,7 @@ namespace UnityEditor
                     Debug.LogWarningFormat("GameView reduced to a reasonable size for this system ({0}x{1})", targetSize.x, targetSize.y);
                 EditorGUIUtility.SetupWindowSpaceAndVSyncInternal(GUIClip.Unclip(viewInWindow));
 
-                if (m_RenderTexture.IsCreated())
+                if (m_RenderTexture != null && m_RenderTexture.IsCreated())
                 {
                     oldState.ApplyAndForget();
                     GUIUtility.s_EditorScreenPointOffset = oldOffset;

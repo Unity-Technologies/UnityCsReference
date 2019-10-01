@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI
         public State state;
         public ulong current;
         public ulong total;
-        public string message;
+        public string errorMessage;
 
         public DownloadProgress(string productId)
         {
@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI
             state = State.Started;
             current = 0;
             total = 0;
-            message = string.Empty;
+            errorMessage = string.Empty;
         }
     }
 }

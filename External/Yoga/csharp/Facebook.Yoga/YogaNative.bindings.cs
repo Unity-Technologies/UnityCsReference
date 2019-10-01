@@ -51,6 +51,9 @@ namespace UnityEngine.Yoga
         // END_UNITY
 
         [FreeFunction]
+        public static extern void YGNodeSetConfig(IntPtr ygNode, IntPtr config);
+
+        [FreeFunction]
         public static extern IntPtr YGConfigGetDefault();
 
         [FreeFunction]

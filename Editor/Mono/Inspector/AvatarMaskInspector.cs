@@ -581,9 +581,10 @@ namespace UnityEditor
 
             var nodesCount = m_TransformMask.arraySize;
             var nodeInfos = new List<SerializedNodeInfo>(nodesCount);
-            string[] paths = new string[nodesCount];
             SerializedProperty prop = m_TransformMask.GetArrayElementAtIndex(0);
             prop.Next(false);
+            Stack<string> depth = new Stack<string>(nodesCount);
+            string currentPath = String.Empty;
 
             for (int i = 1; i < nodesCount; i++)
             {
@@ -592,8 +593,20 @@ namespace UnityEditor
                 newNode.m_Path = prop.FindPropertyRelative("m_Path");
                 newNode.m_Weight = prop.FindPropertyRelative("m_Weight");
 
-                paths[i] = newNode.m_Path.stringValue;
-                string fullPath = paths[i];
+                var newPath = newNode.m_Path.stringValue;
+                while (!string.IsNullOrEmpty(currentPath) && !newPath.StartsWith(currentPath + "/"))
+                {
+                    // we are in a new node, lets unstack until we reach the correct hierarchy
+                    var oldParent = depth.Pop();
+                    var index = currentPath.LastIndexOf(oldParent);
+                    if (index > 0)
+                        index--;
+                    currentPath = currentPath.Remove(index);
+                }
+                var nodeName = newPath;
+                if (!string.IsNullOrEmpty(currentPath))
+                    nodeName = nodeName.Remove(0, currentPath.Length + 1);
+
                 if (m_CanImport)
                 {
                     // in avatar mask inspector UI,everything is enabled.
@@ -602,9 +615,9 @@ namespace UnityEditor
                 else if (humanTransforms != null)
                 {
                     //  Enable only transforms that are not human. Human transforms in this case are handled by muscle curves and cannot be imported.
-                    if (ArrayUtility.FindIndex(humanTransforms, s => fullPath == s) == -1)
+                    if (ArrayUtility.FindIndex(humanTransforms, s => newPath == s) == -1)
                     {
-                        if (m_TransformPaths != null && ArrayUtility.FindIndex(m_TransformPaths, s => fullPath == s) == -1)
+                        if (m_TransformPaths != null && ArrayUtility.FindIndex(m_TransformPaths, s => newPath == s) == -1)
                             newNode.m_State = SerializedNodeInfo.State.Invalid;
                         else
                             newNode.m_State = SerializedNodeInfo.State.Enabled;
@@ -614,7 +627,7 @@ namespace UnityEditor
                         newNode.m_State = SerializedNodeInfo.State.Disabled;
                     }
                 }
-                else if (m_TransformPaths != null && ArrayUtility.FindIndex(m_TransformPaths, s => fullPath == s) == -1)
+                else if (m_TransformPaths != null && ArrayUtility.FindIndex(m_TransformPaths, s => newPath == s) == -1)
                 {
                     // mask does not map to an existing hierarchy node. It's invalid.
                     newNode.m_State = SerializedNodeInfo.State.Invalid;
@@ -624,12 +637,10 @@ namespace UnityEditor
                     newNode.m_State = SerializedNodeInfo.State.Enabled;
                 }
 
-                newNode.depth = fullPath.Count(f => f == '/');
-
-                int lastIndex = fullPath.LastIndexOf('/');
-                lastIndex = lastIndex == -1 ? 0 : lastIndex + 1;
-                newNode.displayName = fullPath.Substring(lastIndex);
-
+                newNode.depth = depth.Count;
+                newNode.displayName = nodeName;
+                depth.Push(nodeName);
+                currentPath = newPath;
                 nodeInfos.Add(newNode);
                 prop.Next(false);
             }

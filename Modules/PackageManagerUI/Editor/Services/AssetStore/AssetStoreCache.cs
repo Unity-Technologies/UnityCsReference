@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private Dictionary<long, string> m_ProductETags = new Dictionary<long, string>();
 
             [NonSerialized]
-            internal bool m_IsModified;
+            private bool m_IsModified;
 
             [SerializeField]
             private long[] m_SerializedIds = new long[0];
@@ -98,6 +98,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 var hash = Hash128.Compute(url);
                 path = Paths.Combine(path, hash.ToString());
                 File.WriteAllBytes(path, texture.EncodeToJPG());
+            }
+
+            public void ClearCache()
+            {
+                m_ProductETags.Clear();
+                m_IsModified = false;
             }
         }
     }

@@ -17,6 +17,7 @@ using Object = UnityEngine.Object;
 using Event = UnityEngine.Event;
 using UnityEditor.Build;
 using UnityEditor.StyleSheets;
+using UnityEditor.VersionControl;
 using UnityEngine.Internal;
 
 namespace UnityEditor
@@ -364,11 +365,17 @@ namespace UnityEditor
         //   EndChangeCheck() <-- will return true
         public static bool EndChangeCheck()
         {
-            bool changed = GUI.changed;
+            // as we allow external code to clear stacks through ClearStacks(),
+            // we must be resilient to stacks having been unexpectedly emptied,
+            // when that happens, it is reasonable to assume things indeed have changed
             if (s_ChangedStack.Count == 0)
-                Debug.LogError("Change stack is empty, did you call BeginChangeCheck first?");
-            else
-                GUI.changed |= s_ChangedStack.Pop();
+            {
+                GUI.changed = true;
+                return true;
+            }
+
+            bool changed = GUI.changed;
+            GUI.changed |= s_ChangedStack.Pop();
             return changed;
         }
 
@@ -554,27 +561,28 @@ namespace UnityEditor
             }
         }
 
-        private static void ShowTextEditorPopupMenu()
+        static void ShowTextEditorPopupMenu()
         {
             GenericMenu pm = new GenericMenu();
-            if (s_RecycledEditor.hasSelection && !s_RecycledEditor.isPasswordField)
+            var enabled = GUI.enabled;
+
+            // Cut
+            if (RecycledTextEditor.s_AllowContextCutOrPaste)
             {
-                if (RecycledTextEditor.s_AllowContextCutOrPaste)
-                {
+                if (s_RecycledEditor.hasSelection && !s_RecycledEditor.isPasswordField && enabled)
                     pm.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, new PopupMenuEvent(EventCommandNames.Cut, GUIView.current).SendEvent);
-                }
-                pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent(EventCommandNames.Copy, GUIView.current).SendEvent);
-            }
-            else
-            {
-                if (RecycledTextEditor.s_AllowContextCutOrPaste)
-                {
+                else
                     pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
-                }
-                pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
             }
 
-            if (s_RecycledEditor.CanPaste() && RecycledTextEditor.s_AllowContextCutOrPaste)
+            // Copy -- when GUI is disabled, allow Copy even with no selection (will copy everything)
+            if ((s_RecycledEditor.hasSelection || !enabled) && !s_RecycledEditor.isPasswordField)
+                pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent(EventCommandNames.Copy, GUIView.current).SendEvent);
+            else
+                pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
+
+            // Paste
+            if (s_RecycledEditor.CanPaste() && RecycledTextEditor.s_AllowContextCutOrPaste && enabled)
             {
                 pm.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, new PopupMenuEvent(EventCommandNames.Paste, GUIView.current).SendEvent);
             }
@@ -743,6 +751,34 @@ namespace UnityEditor
             }
         }
 
+        static EventType GetEventTypeForControlAllowDisabledContextMenuPaste(Event evt, int id)
+        {
+            // UI is enabled: regular code path
+            var wasEnabled = GUI.enabled;
+            if (wasEnabled)
+                return evt.GetTypeForControl(id);
+
+            // UI is disabled: get type as if it was enabled
+            GUI.enabled = true;
+            var type = evt.GetTypeForControl(id);
+            GUI.enabled = false;
+
+            // these events are always processed, no matter the enabled/disabled state (IMGUI::GetEventType)
+            if (type == EventType.Repaint || type == EventType.Layout || type == EventType.Used)
+                return type;
+
+            // allow context / right click, and "Copy" commands
+            if (type == EventType.ContextClick)
+                return type;
+            if (type == EventType.MouseDown && evt.button == 1)
+                return type;
+            if ((type == EventType.ValidateCommand || type == EventType.ExecuteCommand) && evt.commandName == EventCommandNames.Copy)
+                return type;
+
+            // ignore all other events for disabled controls
+            return EventType.Ignore;
+        }
+
         // Should we select all text from the current field when the mouse goes up?
         // (We need to keep track of this to support both SwipeSelection & initial click selects all)
         internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField)
@@ -807,7 +843,9 @@ namespace UnityEditor
             bool mayHaveChanged = false;
             string textBeforeKey = editor.text;
 
-            switch (evt.GetTypeForControl(id))
+            var wasEnabled = GUI.enabled;
+
+            switch (GetEventTypeForControlAllowDisabledContextMenuPaste(evt, id))
             {
                 case EventType.ValidateCommand:
                     if (GUIUtility.keyboardControl == id)
@@ -854,7 +892,10 @@ namespace UnityEditor
                                 mayHaveChanged = true;
                                 break;
                             case EventCommandNames.Copy:
-                                editor.Copy();
+                                if (wasEnabled)
+                                    editor.Copy();
+                                else if (!passwordField)
+                                    GUIUtility.systemCopyBuffer = text;
                                 evt.Use();
                                 break;
                             case EventCommandNames.Paste:
@@ -1008,8 +1049,11 @@ namespace UnityEditor
                         if (!editor.IsEditingControl(id))
                         { // First click: focus before showing popup
                             GUIUtility.keyboardControl = id;
-                            editor.BeginEditing(id, text, position, style, multiline, passwordField);
-                            editor.MoveCursorToPosition(Event.current.mousePosition);
+                            if (wasEnabled)
+                            {
+                                editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                                editor.MoveCursorToPosition(Event.current.mousePosition);
+                            }
                         }
                         ShowTextEditorPopupMenu();
                         Event.current.Use();
@@ -2506,18 +2550,30 @@ namespace UnityEditor
             if (Event.current.shift)
             {
                 if (pm.GetItemCount() > 0)
-                {
                     pm.AddSeparator("");
-                }
                 pm.AddItem(EditorGUIUtility.TrTextContent("Print Property Path"), false, e => Debug.Log(((SerializedProperty)e).propertyPath), propertyWithPath);
+            }
+
+            // If property is a reference and we're using VCS, add item to check it out
+            if (propertyWithPath.propertyType == SerializedPropertyType.ObjectReference && Provider.isActive)
+            {
+                var obj = propertyWithPath.objectReferenceValue;
+                if (obj != null && !AssetDatabase.IsOpenForEdit(obj))
+                {
+                    if (pm.GetItemCount() > 0)
+                        pm.AddSeparator("");
+                    pm.AddItem(
+                        new GUIContent(L10n.Tr("Check Out") + " '" + obj.name + "'"),
+                        false,
+                        o => AssetDatabase.MakeEditable(AssetDatabase.GetAssetOrScenePath((Object)o)),
+                        obj);
+                }
             }
 
             if (EditorApplication.contextualPropertyMenu != null)
             {
                 if (pm.GetItemCount() > 0)
-                {
                     pm.AddSeparator("");
-                }
                 EditorApplication.contextualPropertyMenu(pm, property);
             }
 
@@ -4379,7 +4435,10 @@ namespace UnityEditor
             bool hovered = position.Contains(evt.mousePosition);
             bool hoveredEyedropper = new Rect(position.x + position.width - kEyedropperSize, position.y, kEyedropperSize, position.height).Contains(evt.mousePosition);
 
-            switch (evt.GetTypeForControl(id))
+            var wasEnabled = GUI.enabled;
+            var eventType = GetEventTypeForControlAllowDisabledContextMenuPaste(evt, id);
+
+            switch (eventType)
             {
                 case EventType.MouseDown:
                     if (showEyedropper)
@@ -4405,7 +4464,7 @@ namespace UnityEditor
                                 GUIUtility.keyboardControl = id;
 
                                 var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
-                                var enabled = new[] {true, ColorClipboard.HasColor()};
+                                var enabled = new[] {true, wasEnabled && ColorClipboard.HasColor()};
                                 var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
@@ -4433,7 +4492,7 @@ namespace UnityEditor
 
                     if (showEyedropper)
                     {
-                        if (hoveredEyedropper)
+                        if (hoveredEyedropper && wasEnabled)
                         {
                             GUIUtility.keyboardControl = id;
                             EyeDropper.Start(GUIView.current);

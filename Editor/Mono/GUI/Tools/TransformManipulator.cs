@@ -149,7 +149,7 @@ namespace UnityEditor
                 }
 
                 //If we are snapping, disable the smart rounding. If not the case, the transform will have the wrong snap value based on distance to screen.
-                applySmartRounding &= !EditorSnapSettings.active;
+                applySmartRounding &= !(EditorSnapSettings.incrementalSnapActive || EditorSnapSettings.gridSnapActive);
 
                 bool zeroXDelta = false;
                 bool zeroYDelta = false;

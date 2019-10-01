@@ -50,7 +50,7 @@ namespace UnityEditor.ShortcutManagement
             // Load elements
             var root = new VisualElement { name = "root-container" };
             var visualTreeAsset = (VisualTreeAsset)EditorResources.Load<UnityEngine.Object>("UXML/ShortcutManager/PromptWindow.uxml");
-            visualTreeAsset.CloneTree(root, null);
+            visualTreeAsset.CloneTree(root);
             rootVisualElement.Add(root);
 
             // Load styles

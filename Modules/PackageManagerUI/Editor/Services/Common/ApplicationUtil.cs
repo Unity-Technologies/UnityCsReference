@@ -139,6 +139,11 @@ namespace UnityEditor.PackageManager.UI
 
                 onFinishCompiling();
             }
+
+            public IAsyncHTTPClient GetASyncHTTPClient(string url, string method = null)
+            {
+                return string.IsNullOrEmpty(method) ? new AsyncHTTPClient(url) : new AsyncHTTPClient(url, method);
+            }
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor.Scripting;
@@ -18,9 +17,7 @@ using UnityEditor.Scripting.Compilers;
 using UnityEngine.Profiling;
 
 using UnityEditor.Compilation;
-using UnityEditor.Modules;
 using UnityEngine;
-using UnityEditor.PackageManager;
 
 namespace UnityEditor.VisualStudioIntegration
 {
@@ -30,33 +27,6 @@ namespace UnityEditor.VisualStudioIntegration
         Boo,
         CSharp,
         UnityScript,
-    }
-
-    interface IAssemblyNameProvider
-    {
-        string GetAssemblyNameFromScriptPath(string path);
-        IEnumerable<MonoIsland> GetAllScriptAssemblies(Func<string, bool> shouldFileBePartOfSolution, string projectDirectory);
-        IEnumerable<string> GetAllAssetPaths();
-    }
-
-    class AssemblyNameProvider : IAssemblyNameProvider
-    {
-        public string GetAssemblyNameFromScriptPath(string path)
-        {
-            return CompilationPipeline.GetAssemblyNameFromScriptPath(path);
-        }
-
-        public IEnumerable<MonoIsland> GetAllScriptAssemblies(Func<string, bool> shouldFileBePartOfSolution, string projectDirectory)
-        {
-            return EditorCompilationInterface.Instance.GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions(), null)
-                .Where(i => 0 < i.Files.Length && i.Files.Any(shouldFileBePartOfSolution))
-                .Select(x => x.ToMonoIsland(EditorScriptCompilationOptions.BuildingForEditor, string.Empty, projectDirectory)).ToList();
-        }
-
-        public IEnumerable<string> GetAllAssetPaths()
-        {
-            return AssetDatabase.GetAllAssetPaths();
-        }
     }
 
     class SolutionSynchronizer
@@ -112,15 +82,20 @@ namespace UnityEditor.VisualStudioIntegration
         readonly IAssemblyNameProvider m_assemblyNameProvider;
         bool m_ShouldGenerateAll;
 
-        public SolutionSynchronizer(string projectDirectory, ISolutionSynchronizationSettings settings, IAssemblyNameProvider assemblyNameProvider)
+        IFileIO m_fileIOProvider;
+        IGUIDGenerator m_GUIDProvider;
+
+        public SolutionSynchronizer(string projectDirectory, ISolutionSynchronizationSettings settings, IAssemblyNameProvider assemblyNameProvider, IFileIO fileIO, IGUIDGenerator guidGenerator)
         {
             _projectDirectory = projectDirectory.ConvertSeparatorsToUnity();
             _settings = settings;
             _projectName = Path.GetFileName(_projectDirectory);
             m_assemblyNameProvider = assemblyNameProvider;
+            m_fileIOProvider = fileIO;
+            m_GUIDProvider = guidGenerator;
         }
 
-        public SolutionSynchronizer(string projectDirectory, ISolutionSynchronizationSettings settings) : this(projectDirectory, settings, new AssemblyNameProvider())
+        public SolutionSynchronizer(string projectDirectory, ISolutionSynchronizationSettings settings) : this(projectDirectory, settings, new AssemblyNameProvider(), new FileIOProvider(), new GUIDProvider())
         {
         }
 
@@ -163,9 +138,9 @@ namespace UnityEditor.VisualStudioIntegration
             return false;
         }
 
-        private static ScriptingLanguage ScriptingLanguageFor(MonoIsland island)
+        private static ScriptingLanguage ScriptingLanguageFor(Compilation.Assembly assembly)
         {
-            return ScriptingLanguageFor(island.GetExtensionOfSourceFiles());
+            return ScriptingLanguageFor(GetExtensionOfSourceFiles(assembly.sourceFiles));
         }
 
         private static ScriptingLanguage ScriptingLanguageFor(string extension)
@@ -177,23 +152,35 @@ namespace UnityEditor.VisualStudioIntegration
             return ScriptingLanguage.None;
         }
 
-        public bool ProjectExists(MonoIsland island)
+        static string GetExtensionOfSourceFiles(string[] files)
         {
-            return File.Exists(ProjectFile(island));
+            return files.Length > 0 ? GetExtensionOfSourceFile(files[0]) : "NA";
+        }
+
+        static string GetExtensionOfSourceFile(string file)
+        {
+            var ext = Path.GetExtension(file).ToLower();
+            ext = ext.Substring(1); //strip dot
+            return ext;
+        }
+
+        public bool ProjectExists(Compilation.Assembly assembly)
+        {
+            return m_fileIOProvider.Exists(ProjectFile(assembly));
         }
 
         public bool SolutionExists()
         {
-            return File.Exists(SolutionFile());
+            return m_fileIOProvider.Exists(SolutionFile());
         }
 
-        private static void DumpIsland(MonoIsland island)
+        private static void DumpAssembly(Compilation.Assembly assembly)
         {
-            Console.WriteLine("{0} ({1})", island._output, island._api_compatibility_level);
+            Console.WriteLine("{0} ({1})", assembly.outputPath, assembly.compilerOptions.ApiCompatibilityLevel);
             Console.WriteLine("Files: ");
-            Console.WriteLine(string.Join("\n", island._files));
+            Console.WriteLine(string.Join("\n", assembly.sourceFiles));
             Console.WriteLine("References: ");
-            Console.WriteLine(string.Join("\n", island._references));
+            Console.WriteLine(string.Join("\n", assembly.allReferences));
             Console.WriteLine("");
         }
 
@@ -262,7 +249,7 @@ namespace UnityEditor.VisualStudioIntegration
             Profiler.BeginSample("SolutionSynchronizer.GetIslands");
             // Only synchronize islands that have associated source files and ones that we actually want in the project.
             // This also filters out DLLs coming from .asmdef files in packages.
-            IEnumerable<MonoIsland> islands = m_assemblyNameProvider.GetAllScriptAssemblies(ShouldFileBePartOfSolution, _projectDirectory);
+            List<Compilation.Assembly> assemblies = m_assemblyNameProvider.GetAssemblies(ShouldFileBePartOfSolution).ToList();
 
             Profiler.EndSample();
 
@@ -270,29 +257,27 @@ namespace UnityEditor.VisualStudioIntegration
             var allAssetProjectParts = GenerateAllAssetProjectParts();
             Profiler.EndSample();
 
-            var monoIslands = islands.ToList();
-
             Profiler.BeginSample("SyncSolution");
-            SyncSolution(monoIslands.ToList());
+            SyncSolution(assemblies);
             Profiler.EndSample();
 
-            var allProjectIslands = RelevantIslandsForMode(monoIslands, ModeForCurrentExternalEditor()).ToList();
+            var allProjectAssemblies = RelevantAssembliesForMode(assemblies, ModeForCurrentExternalEditor()).ToList();
 
-            foreach (MonoIsland island in allProjectIslands)
+            foreach (Compilation.Assembly assembly in allProjectAssemblies)
             {
                 Profiler.BeginSample("SyncProject");
-                SyncProject(island, allAssetProjectParts, ParseResponseFileData(island), allProjectIslands);
+                SyncProject(assembly, allAssetProjectParts, ParseResponseFileData(assembly), allProjectAssemblies);
                 Profiler.EndSample();
             }
 
             Profiler.EndSample();
         }
 
-        IEnumerable<ResponseFileData> ParseResponseFileData(MonoIsland island)
+        IEnumerable<ResponseFileData> ParseResponseFileData(Compilation.Assembly assembly)
         {
-            var systemReferenceDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(island._api_compatibility_level);
+            var systemReferenceDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(assembly.compilerOptions.ApiCompatibilityLevel);
 
-            Dictionary<string, ResponseFileData> responseFilesData = island._responseFiles.ToDictionary(x => x, x => ScriptCompilerBase.ParseResponseFileFromFile(
+            Dictionary<string, ResponseFileData> responseFilesData = assembly.compilerOptions.ResponseFiles.ToDictionary(x => x, x => ScriptCompilerBase.ParseResponseFileFromFile(
                 x,
                 _projectDirectory,
                 systemReferenceDirectories
@@ -370,15 +355,15 @@ namespace UnityEditor.VisualStudioIntegration
             return false;
         }
 
-        void SyncProject(MonoIsland island,
+        void SyncProject(Compilation.Assembly assembly,
             Dictionary<string, string> allAssetsProjectParts,
             IEnumerable<ResponseFileData> responseFilesData,
-            List<MonoIsland> allProjectIslands)
+            List<Compilation.Assembly> allProjectAssemblies)
         {
-            SyncProjectFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), allAssetsProjectParts, responseFilesData, allProjectIslands));
+            SyncProjectFileIfNotChanged(ProjectFile(assembly), ProjectText(assembly, ModeForCurrentExternalEditor(), allAssetsProjectParts, responseFilesData, allProjectAssemblies));
         }
 
-        static void SyncProjectFileIfNotChanged(string path, string newContents)
+        void SyncProjectFileIfNotChanged(string path, string newContents)
         {
             if (Path.GetExtension(path) == ".csproj")
             {
@@ -388,7 +373,7 @@ namespace UnityEditor.VisualStudioIntegration
             SyncFileIfNotChanged(path, newContents);
         }
 
-        static void SyncSolutionFileIfNotChanged(string path, string newContents)
+        void SyncSolutionFileIfNotChanged(string path, string newContents)
         {
             newContents = AssetPostprocessingInternal.CallOnGeneratedSlnSolution(path, newContents);
 
@@ -442,11 +427,11 @@ namespace UnityEditor.VisualStudioIntegration
             while (currentLine != null && newLine != null);
         }
 
-        private static void SyncFileIfNotChanged(string filename, string newContents)
+        private void SyncFileIfNotChanged(string filename, string newContents)
         {
-            if (File.Exists(filename))
+            if (m_fileIOProvider.Exists(filename))
             {
-                var currentContents = File.ReadAllText(filename);
+                var currentContents = m_fileIOProvider.ReadAllText(filename);
 
                 if (currentContents == newContents)
                 {
@@ -464,7 +449,7 @@ namespace UnityEditor.VisualStudioIntegration
                 }
             }
 
-            File.WriteAllText(filename, newContents, Encoding.UTF8);
+            m_fileIOProvider.WriteAllText(filename, newContents);
         }
 
         public static readonly Regex scriptReferenceExpression = new Regex(
@@ -478,19 +463,17 @@ namespace UnityEditor.VisualStudioIntegration
             return false;
         }
 
-        string ProjectText(MonoIsland island,
+        string ProjectText(Compilation.Assembly assembly,
             Mode mode,
             Dictionary<string, string> allAssetsProjectParts,
             IEnumerable<ResponseFileData> responseFilesData,
-            List<MonoIsland> allProjectIslands)
+            List<Compilation.Assembly> allProjectAssemblies)
         {
-            var projectBuilder = new StringBuilder(ProjectHeader(island, responseFilesData));
+            var projectBuilder = new StringBuilder(ProjectHeader(assembly, responseFilesData));
             var references = new List<string>();
             var projectReferences = new List<Match>();
-            Match match;
-            bool isBuildingEditorProject = island._editor;
 
-            foreach (string file in island._files)
+            foreach (string file in assembly.sourceFiles)
             {
                 if (!ShouldFileBePartOfSolution(file))
                     continue;
@@ -509,16 +492,15 @@ namespace UnityEditor.VisualStudioIntegration
             }
 
             string additionalAssetsForProject;
-            var assemblyName = Utility.FileNameWithoutExtension(island._output);
 
             // Append additional non-script files that should be included in project generation.
-            if (allAssetsProjectParts.TryGetValue(assemblyName, out additionalAssetsForProject))
+            if (allAssetsProjectParts.TryGetValue(assembly.name, out additionalAssetsForProject))
                 projectBuilder.Append(additionalAssetsForProject);
 
             var allAdditionalReferenceFilenames = new List<string>();
-            var islandRefs = references.Union(island._references);
+            var assemblyRefs = references.Union(assembly.allReferences);
 
-            foreach (string reference in islandRefs)
+            foreach (string reference in assemblyRefs)
             {
                 if (reference.EndsWith("/UnityEditor.dll", StringComparison.Ordinal)
                     || reference.EndsWith("/UnityEngine.dll", StringComparison.Ordinal)
@@ -526,10 +508,10 @@ namespace UnityEditor.VisualStudioIntegration
                     || reference.EndsWith("\\UnityEngine.dll", StringComparison.Ordinal))
                     continue;
 
-                match = scriptReferenceExpression.Match(reference);
+                var match = scriptReferenceExpression.Match(reference);
                 if (match.Success)
                 {
-                    var language = ScriptCompilers.GetLanguageFromExtension(island.GetExtensionOfSourceFiles());
+                    var language = ScriptCompilers.GetLanguageFromExtension(GetExtensionOfSourceFiles(assembly.sourceFiles));
                     var targetLanguage = (ScriptingLanguage)Enum.Parse(typeof(ScriptingLanguage), language.GetLanguageName(), true);
                     if (mode == Mode.UnityScriptAsUnityProj || ScriptingLanguage.CSharp == targetLanguage)
                     {
@@ -537,7 +519,7 @@ namespace UnityEditor.VisualStudioIntegration
                         // that we are not generating a project for. This will be the case for assemblies
                         // coming from .assembly.json files in non-internalized packages.
                         var dllName = match.Groups["dllname"].Value;
-                        if (allProjectIslands.Any(i => Path.GetFileName(i._output) == dllName))
+                        if (allProjectAssemblies.Any(i => Path.GetFileName(i.outputPath) == dllName))
                         {
                             projectReferences.Add(match);
                             continue;
@@ -546,18 +528,6 @@ namespace UnityEditor.VisualStudioIntegration
                 }
 
                 string fullReference = Path.IsPathRooted(reference) ? reference : Path.Combine(_projectDirectory, reference);
-                if (!AssemblyHelper.IsManagedAssembly(fullReference))
-                    continue;
-                if (AssemblyHelper.IsInternalAssembly(fullReference))
-                {
-                    if (!IsAdditionalInternalAssemblyReference(isBuildingEditorProject, fullReference))
-                        continue;
-                    var referenceName = Path.GetFileName(fullReference);
-                    if (allAdditionalReferenceFilenames.Contains(referenceName))
-                        continue;
-                    allAdditionalReferenceFilenames.Add(referenceName);
-                }
-
                 AppendReference(fullReference, projectBuilder);
             }
 
@@ -586,7 +556,7 @@ namespace UnityEditor.VisualStudioIntegration
                 }
             }
 
-            projectBuilder.Append(ProjectFooter(island));
+            projectBuilder.Append(ProjectFooter(assembly));
             return projectBuilder.ToString();
         }
 
@@ -601,10 +571,10 @@ namespace UnityEditor.VisualStudioIntegration
             projectBuilder.Append(" </Reference>").Append(WindowsNewline);
         }
 
-        public string ProjectFile(MonoIsland island)
+        public string ProjectFile(Compilation.Assembly assembly)
         {
-            ScriptingLanguage language = ScriptingLanguageFor(island);
-            return Path.Combine(_projectDirectory, string.Format("{0}{1}", Utility.FileNameWithoutExtension(island._output), ProjectExtensions[language]));
+            ScriptingLanguage language = ScriptingLanguageFor(assembly);
+            return Path.Combine(_projectDirectory, string.Format("{0}{1}", assembly.name, ProjectExtensions[language]));
         }
 
         internal string SolutionFile()
@@ -612,7 +582,8 @@ namespace UnityEditor.VisualStudioIntegration
             return Path.Combine(_projectDirectory, string.Format("{0}.sln", _projectName));
         }
 
-        private string ProjectHeader(MonoIsland island,
+        private string ProjectHeader(
+            Compilation.Assembly assembly,
             IEnumerable<ResponseFileData> responseFilesData)
         {
             string targetframeworkversion = "v3.5";
@@ -622,9 +593,9 @@ namespace UnityEditor.VisualStudioIntegration
             string baseDirectory = ".";
             string cscToolPath = "$(CscToolPath)";
             string cscToolExe = "$(CscToolExe)";
-            ScriptingLanguage language = ScriptingLanguageFor(island);
+            ScriptingLanguage language = ScriptingLanguageFor(assembly);
 
-            if (PlayerSettingsEditor.IsLatestApiCompatibility(island._api_compatibility_level))
+            if (PlayerSettingsEditor.IsLatestApiCompatibility(assembly.compilerOptions.ApiCompatibilityLevel))
             {
                 targetframeworkversion = "v4.7.1";
                 targetLanguageVersion = "latest";
@@ -645,17 +616,17 @@ namespace UnityEditor.VisualStudioIntegration
 
             var arguments = new object[]
             {
-                toolsversion, productversion, ProjectGuid(island._output),
+                toolsversion, productversion, ProjectGuid(assembly.name),
                 _settings.EngineAssemblyPath,
                 _settings.EditorAssemblyPath,
-                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(island._defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
+                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(assembly.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
-                Utility.FileNameWithoutExtension(island._output),
+                assembly.name,
                 EditorSettings.projectGenerationRootNamespace,
                 targetframeworkversion,
                 targetLanguageVersion,
                 baseDirectory,
-                island._allowUnsafeCode | responseFilesData.Any(x => x.Unsafe),
+                assembly.compilerOptions.AllowUnsafeCode | responseFilesData.Any(x => x.Unsafe),
                 cscToolPath,
                 cscToolExe,
             };
@@ -670,9 +641,9 @@ namespace UnityEditor.VisualStudioIntegration
             }
         }
 
-        private void SyncSolution(IEnumerable<MonoIsland> islands)
+        private void SyncSolution(List<Compilation.Assembly> assemblies)
         {
-            SyncSolutionFileIfNotChanged(SolutionFile(), SolutionText(islands, ModeForCurrentExternalEditor()));
+            SyncSolutionFileIfNotChanged(SolutionFile(), SolutionText(assemblies, ModeForCurrentExternalEditor()));
         }
 
         private static Mode ModeForCurrentExternalEditor()
@@ -687,7 +658,7 @@ namespace UnityEditor.VisualStudioIntegration
             return EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false) ? Mode.UnityScriptAsUnityProj : Mode.UnityScriptAsPrecompiledAssembly;
         }
 
-        private string SolutionText(IEnumerable<MonoIsland> islands, Mode mode)
+        private string SolutionText(List<Compilation.Assembly> assemblies, Mode mode)
         {
             var fileversion = "11.00";
             var vsversion = "2010";
@@ -696,27 +667,29 @@ namespace UnityEditor.VisualStudioIntegration
                 fileversion = "10.00";
                 vsversion = "2008";
             }
-            var relevantIslands = RelevantIslandsForMode(islands, mode);
-            string projectEntries = GetProjectEntries(relevantIslands);
-            string projectConfigurations = string.Join(WindowsNewline, relevantIslands.Select(i => GetProjectActiveConfigurations(ProjectGuid(i._output))).ToArray());
+            var relevantAssemblies = RelevantAssembliesForMode(assemblies, mode);
+            string projectEntries = GetProjectEntries(relevantAssemblies);
+            string projectConfigurations = string.Join(WindowsNewline, relevantAssemblies.Select(i => GetProjectActiveConfigurations(ProjectGuid(i.outputPath))).ToArray());
             return string.Format(_settings.SolutionTemplate, fileversion, vsversion, projectEntries, projectConfigurations);
         }
 
-        private static IEnumerable<MonoIsland> RelevantIslandsForMode(IEnumerable<MonoIsland> islands, Mode mode)
+        private static IEnumerable<Compilation.Assembly> RelevantAssembliesForMode(List<Compilation.Assembly> assemblies, Mode mode)
         {
-            IEnumerable<MonoIsland> relevantIslands = islands.Where(i => (mode == Mode.UnityScriptAsUnityProj || ScriptingLanguage.CSharp == ScriptingLanguageFor(i)));
-            return relevantIslands;
+            return assemblies.Where(i => (mode == Mode.UnityScriptAsUnityProj || ScriptingLanguage.CSharp == ScriptingLanguageFor(i)));
         }
 
         /// <summary>
         /// Get a Project("{guid}") = "MyProject", "MyProject.unityproj", "{projectguid}"
         /// entry for each relevant language
         /// </summary>
-        internal string GetProjectEntries(IEnumerable<MonoIsland> islands)
+        internal string GetProjectEntries(IEnumerable<Compilation.Assembly> assemblies)
         {
-            var projectEntries = islands.Select(i => string.Format(
+            var projectEntries = assemblies.Select(i => string.Format(
                 DefaultSynchronizationSettings.SolutionProjectEntryTemplate,
-                SolutionGuid(i), Utility.FileNameWithoutExtension(i._output), Path.GetFileName(ProjectFile(i)), ProjectGuid(i._output)
+                SolutionGuid(i),
+                i.name,
+                Path.GetFileName(ProjectFile(i)),
+                ProjectGuid(i.outputPath)
             ));
 
             return string.Join(WindowsNewline, projectEntries.ToArray());
@@ -749,17 +722,17 @@ namespace UnityEditor.VisualStudioIntegration
 
         string ProjectGuid(string assembly)
         {
-            return SolutionGuidGenerator.GuidForProject(_projectName + Utility.FileNameWithoutExtension(assembly));
+            return m_GUIDProvider.ProjectGuid(_projectName, assembly);
         }
 
-        string SolutionGuid(MonoIsland island)
+        string SolutionGuid(Assembly assembly)
         {
-            return SolutionGuidGenerator.GuidForSolution(_projectName, island.GetExtensionOfSourceFiles());
+            return m_GUIDProvider.SolutionGuid(_projectName, GetExtensionOfSourceFiles(assembly.sourceFiles));
         }
 
-        string ProjectFooter(MonoIsland island)
+        string ProjectFooter(Assembly assembly)
         {
-            return _settings.GetProjectFooterTemplate(ScriptingLanguageFor(island));
+            return _settings.GetProjectFooterTemplate(ScriptingLanguageFor(assembly));
         }
 
         [Obsolete("Use AssemblyHelper.IsManagedAssembly")]

@@ -87,7 +87,7 @@ namespace UnityEditor.PackageManager.UI
             var package = PackageDatabase.instance.GetPackage(packageName);
             if (package != null)
             {
-                var version = package.installedVersion;
+                var version = package.versions.installed;
                 if (!string.IsNullOrEmpty(packageVersion))
                     version = package.versions.FirstOrDefault(v => v.version == packageVersion);
                 if (version != null)

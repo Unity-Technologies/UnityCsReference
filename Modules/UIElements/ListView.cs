@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] {"itemHeight"}, defaultValue = s_DefaultItemHeight };
+            UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -31,6 +32,8 @@ namespace UnityEngine.UIElements
                 {
                     ((ListView)ve).itemHeight = itemHeight;
                 }
+
+                ((ListView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
             }
         }
 
@@ -129,6 +132,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private float m_PixelAlignedItemHeight;
+        public float resolvedItemHeight => m_PixelAlignedItemHeight;
+
         [SerializeField]
         internal int m_ItemHeight = s_DefaultItemHeight;
 
@@ -142,8 +148,15 @@ namespace UnityEngine.UIElements
             {
                 m_ItemHeightIsInline = true;
                 m_ItemHeight = value;
+                UpdatePixelAlignedHeight();
                 Refresh();
             }
+        }
+
+        public bool showBorder
+        {
+            get { return ClassListContains(borderUssClassName); }
+            set { EnableInClassList(borderUssClassName, value); }
         }
 
         // Persisted.
@@ -194,6 +207,7 @@ namespace UnityEngine.UIElements
         private int m_VisibleItemCount;
 
         public static readonly string ussClassName = "unity-list-view";
+        public static readonly string borderUssClassName = ussClassName + "--with-border";
         public static readonly string itemUssClassName = ussClassName + "__item";
         public static readonly string itemSelectedVariantUssClassName = itemUssClassName + "--selected";
 
@@ -260,10 +274,10 @@ namespace UnityEngine.UIElements
                         onItemChosen.Invoke(m_ItemsSource[selectedIndex]);
                     break;
                 case KeyCode.PageDown:
-                    selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / itemHeight));
+                    selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / resolvedItemHeight));
                     break;
                 case KeyCode.PageUp:
-                    selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / itemHeight));
+                    selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / resolvedItemHeight));
                     break;
                 case KeyCode.A:
                     if (evt.actionKey)
@@ -302,27 +316,27 @@ namespace UnityEngine.UIElements
             if (index == -1)
             {
                 // Scroll to last item
-                int actualCount = (int)(m_LastHeight / itemHeight);
+                int actualCount = (int)(m_LastHeight / resolvedItemHeight);
                 if (itemsSource.Count < actualCount)
                 {
                     m_ScrollView.scrollOffset = new Vector2(0, 0);
                 }
                 else
                 {
-                    m_ScrollView.scrollOffset = new Vector2(0, itemsSource.Count * itemHeight);
+                    m_ScrollView.scrollOffset = new Vector2(0, itemsSource.Count * resolvedItemHeight);
                 }
             }
             else if (m_FirstVisibleIndex > index)
             {
-                m_ScrollView.scrollOffset = Vector2.up * itemHeight * index;
+                m_ScrollView.scrollOffset = Vector2.up * resolvedItemHeight * index;
             }
             else // index >= first
             {
-                int actualCount = (int)(m_LastHeight / itemHeight);
+                int actualCount = (int)(m_LastHeight / resolvedItemHeight);
                 if (index < m_FirstVisibleIndex + actualCount)
                     return;
 
-                bool someItemIsPartiallyVisible = (int)m_LastHeight % itemHeight != 0;
+                bool someItemIsPartiallyVisible = (int)(m_LastHeight - actualCount * resolvedItemHeight) != 0;
                 int d = index - actualCount;
 
                 // we're scrolling down in that case
@@ -332,7 +346,7 @@ namespace UnityEngine.UIElements
                 if (someItemIsPartiallyVisible)
                     d++;
 
-                m_ScrollView.scrollOffset = Vector2.up * itemHeight * d;
+                m_ScrollView.scrollOffset = Vector2.up * resolvedItemHeight * d;
             }
         }
 
@@ -344,7 +358,7 @@ namespace UnityEngine.UIElements
             if (evt.button != (int)MouseButton.LeftMouse)
                 return;
 
-            var clickedIndex = (int)(evt.localMousePosition.y / itemHeight);
+            var clickedIndex = (int)(evt.localMousePosition.y / resolvedItemHeight);
 
             if (clickedIndex > m_ItemsSource.Count - 1)
                 return;
@@ -573,8 +587,8 @@ namespace UnityEngine.UIElements
                 return;
 
             m_ScrollOffset = offset;
-            int fistVisibleItem = (int)(offset / itemHeight);
-            m_ScrollView.contentContainer.style.height = itemsSource.Count * itemHeight;
+            int fistVisibleItem = (int)(offset / resolvedItemHeight);
+            m_ScrollView.contentContainer.style.height = itemsSource.Count * resolvedItemHeight;
 
             if (fistVisibleItem != m_FirstVisibleIndex)
             {
@@ -662,9 +676,17 @@ namespace UnityEngine.UIElements
             ResizeHeight(m_LastHeight);
         }
 
+        private void UpdatePixelAlignedHeight()
+        {
+            var dpiScaling = scaledPixelsPerPoint;
+            m_PixelAlignedItemHeight = Mathf.Round(itemHeight * dpiScaling) / dpiScaling;
+        }
+
         private void ResizeHeight(float height)
         {
-            var contentHeight = itemsSource.Count * itemHeight;
+            UpdatePixelAlignedHeight();
+
+            var contentHeight = itemsSource.Count * m_PixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = contentHeight;
 
             // Restore scroll offset and pre-emptively update the highValue
@@ -675,7 +697,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.verticalScroller.highValue = Mathf.Min(Mathf.Max(m_ScrollOffset, m_ScrollView.verticalScroller.highValue), scrollableHeight);
             m_ScrollView.verticalScroller.value = Mathf.Min(m_ScrollOffset, m_ScrollView.verticalScroller.highValue);
 
-            int itemCount = Math.Min((int)(height / itemHeight) + k_ExtraVisibleItems, itemsSource.Count);
+            int itemCount = Math.Min((int)(height / m_PixelAlignedItemHeight) + k_ExtraVisibleItems, itemsSource.Count);
 
             if (m_VisibleItemCount != itemCount)
             {
@@ -685,11 +707,13 @@ namespace UnityEngine.UIElements
                     int removeCount = m_VisibleItemCount - itemCount;
                     for (int i = 0; i < removeCount; i++)
                     {
-                        m_Pool[m_Pool.Count - 1].DetachElement();
-                        m_Pool.RemoveAt(m_Pool.Count - 1);
+                        int lastIndex = m_Pool.Count - 1;
 
+                        var poolItem = m_Pool[lastIndex];
+                        poolItem.element.RemoveFromHierarchy();
+                        poolItem.DetachElement();
 
-                        RemoveAt(childCount - 1);
+                        m_Pool.RemoveAt(lastIndex);
                     }
                 }
                 else
@@ -709,7 +733,7 @@ namespace UnityEngine.UIElements
                         item.style.position = Position.Absolute;
                         item.style.left = 0f;
                         item.style.right = 0f;
-                        item.style.height = itemHeight;
+                        item.style.height = m_PixelAlignedItemHeight;
                         if (index < itemsSource.Count)
                         {
                             Setup(recycledItem, index);
@@ -754,8 +778,8 @@ namespace UnityEngine.UIElements
             {
                 recycledItem.index = newIndex;
                 recycledItem.id = newId;
-                recycledItem.element.style.top = recycledItem.index * itemHeight;
-                recycledItem.element.style.bottom = (itemsSource.Count - recycledItem.index - 1) * itemHeight;
+                recycledItem.element.style.top = recycledItem.index * m_PixelAlignedItemHeight;
+                recycledItem.element.style.bottom = (itemsSource.Count - recycledItem.index - 1) * m_PixelAlignedItemHeight;
                 bindItem(recycledItem.element, recycledItem.index);
                 recycledItem.SetSelected(m_SelectedIds.Contains(newId));
             }

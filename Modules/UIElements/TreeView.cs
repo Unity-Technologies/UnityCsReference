@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = ListView.s_DefaultItemHeight };
+            UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -34,6 +35,7 @@ namespace UnityEngine.UIElements
             {
                 base.Init(ve, bag, cc);
                 ((TreeView)ve).itemHeight = m_ItemHeight.GetValueFromBag(bag, cc);
+                ((TreeView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
             }
         }
 
@@ -108,10 +110,18 @@ namespace UnityEngine.UIElements
             get { return GetAllItems(m_RootItems); }
         }
 
+        public float resolvedItemHeight => m_ListView.resolvedItemHeight;
+
         public int itemHeight
         {
             get { return m_ListView.itemHeight; }
             set { m_ListView.itemHeight = value; }
+        }
+
+        public bool showBorder
+        {
+            get { return m_ListView.showBorder;}
+            set { m_ListView.showBorder = value; }
         }
 
         public SelectionType selectionType

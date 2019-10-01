@@ -20,14 +20,14 @@ namespace UnityEditor.PackageManager.UI
                 case PackageFilterTab.BuiltIn:
                     return package.Is(PackageType.BuiltIn);
                 case PackageFilterTab.All:
-                    return package.Is(PackageType.Installable) && (package.isDiscoverable || (package.installedVersion?.isDirectDependency ?? false));
+                    return package.Is(PackageType.Installable) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.InProject:
-                    return !package.Is(PackageType.BuiltIn) && package.installedVersion != null
-                        && (PackageManagerPrefs.instance.showPackageDependencies || package.installedVersion.isDirectDependency);
+                    return !package.Is(PackageType.BuiltIn) && package.versions.installed != null
+                        && (PackageManagerPrefs.instance.showPackageDependencies || package.versions.installed.isDirectDependency);
                 case PackageFilterTab.AssetStore:
                     return ApplicationUtil.instance.isUserLoggedIn && package.Is(PackageType.AssetStore);
                 case PackageFilterTab.InDevelopment:
-                    return package.installedVersion?.HasTag(PackageTag.InDevelopment) ?? false;
+                    return package.versions.installed?.HasTag(PackageTag.InDevelopment) ?? false;
                 default:
                     return false;
             }
@@ -117,7 +117,7 @@ namespace UnityEditor.PackageManager.UI
 
                 var trimText = currentSearchText.Trim(' ', '\t');
                 trimText = Regex.Replace(trimText, @"[ ]{2,}", " ");
-                return string.IsNullOrEmpty(trimText) || FilterByText(package, package.primaryVersion, trimText);
+                return string.IsNullOrEmpty(trimText) || FilterByText(package, package.versions.primary, trimText);
             }
 
             public bool FilterByCurrentTab(IPackage package)

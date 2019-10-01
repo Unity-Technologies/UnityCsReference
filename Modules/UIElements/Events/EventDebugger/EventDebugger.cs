@@ -593,6 +593,11 @@ namespace UnityEngine.UIElements
                     {
                         stack.Pop();
                         dbgObject.duration = duration;
+                        // Update the target if it was unknown in AddBeginProcessEvent.
+                        if (dbgObject.eventBase.target == null)
+                        {
+                            dbgObject.eventBase.target = evt.target;
+                        }
                         evtHandled = true;
                     }
                 }

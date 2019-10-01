@@ -5,7 +5,6 @@
 using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
-using UnityEditor.Snap;
 using UnityEditor.Experimental.SceneManagement;
 using System.Collections.Generic;
 
@@ -64,9 +63,7 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(isDisabled))
             {
                 Vector3 handlePosition = Tools.handlePosition;
-
                 ToolGUI(view, handlePosition, isDisabled);
-
                 if (isDisabled)
                     Handles.ShowSceneViewLabel(handlePosition, disabledLabel);
             }
@@ -190,6 +187,9 @@ namespace UnityEditor
 
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
+            if (view.camera.transform.position == handlePosition)
+                return;
+
             var ids = Handles.TransformHandleIds.Default;
             TransformManipulator.BeginManipulationHandling(false);
 
@@ -278,6 +278,9 @@ namespace UnityEditor
 
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
+            if (view.camera.transform.position == handlePosition)
+                return;
+
             TransformManipulator.BeginManipulationHandling(false);
 
             EditorGUI.BeginChangeCheck();

@@ -32,6 +32,7 @@ namespace UnityEditor
             UmpProfilerRequestRecordState,    // Used for regression testing.
         }
 
+        [Serializable]
         struct PlayerConnectionInfo
         {
             public bool recording;
@@ -102,7 +103,7 @@ namespace UnityEditor
                     recording = ProfilerDriver.enabled,
                     profileEditor = ProfilerDriver.profileEditor
                 };
-                EventService.Request(5000L, nameof(EventType.UmpProfilerOpenPlayerConnection), HandlePlayerConnectionOpened, JsonUtility.ToJson(playerConnectionInfo));
+                EventService.Request(nameof(EventType.UmpProfilerOpenPlayerConnection), HandlePlayerConnectionOpened, playerConnectionInfo, 5000L);
             }
 
             static void SetupProfiledConnection(int connId)
@@ -146,7 +147,7 @@ namespace UnityEditor
 
             static void OnProfilerWindowRecordingStateChanged(bool recording)
             {
-                EventService.Emit(nameof(EventType.UmpProfilerRecordingStateChanged), recording, ProfilerDriver.profileEditor);
+                EventService.Emit(nameof(EventType.UmpProfilerRecordingStateChanged), new object[] { recording, ProfilerDriver.profileEditor });
                 EditorApplication.delayCall += EditorApplication.UpdateMainWindowTitle;
             }
 
@@ -173,7 +174,7 @@ namespace UnityEditor
             {
                 if (frame == -1)
                     return;
-                EventService.Emit(nameof(EventType.UmpProfilerCurrentFrameChanged), frame, paused);
+                EventService.Emit(nameof(EventType.UmpProfilerCurrentFrameChanged), new object[] { frame, paused });
             }
 
             // Only used by tests
@@ -247,7 +248,7 @@ namespace UnityEditor
             {
                 if (ProcessService.level == ProcessLevel.UMP_MASTER && ProcessService.IsChannelServiceStarted() && EventService.IsConnected)
                 {
-                    EventService.Request(250, nameof(EventType.UmpProfilerRecordToggle), (err, args) =>
+                    EventService.Request(nameof(EventType.UmpProfilerRecordToggle), (err, args) =>
                     {
                         bool recording = false;
                         if (err == null)
@@ -275,7 +276,7 @@ namespace UnityEditor
                             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Recording has started...");
                         else
                             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Recording has ended.");
-                    });
+                    }, 250);
                 }
                 else
                 {
@@ -321,8 +322,7 @@ namespace UnityEditor
 
             static object OnOpenPlayerConnectionRequested(string eventType, object[] args)
             {
-                var msg = args[0] as string;
-                var info = JsonUtility.FromJson<PlayerConnectionInfo>(msg);
+                var info = (PlayerConnectionInfo)args[0];
                 var connectionId = ProcessService.EnableProfileConnection(Application.dataPath);
                 ProfilerDriver.enabled = info.recording;
                 ProfilerDriver.profileEditor = info.profileEditor;

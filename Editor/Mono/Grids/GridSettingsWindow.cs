@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace UnityEditor.Snap
 {
-    internal sealed class GridSettingsWindow : PopupWindowContent
+    sealed class GridSettingsWindow : PopupWindowContent
     {
         static class Contents
         {
@@ -17,17 +17,37 @@ namespace UnityEditor.Snap
 
             public static readonly GUIContent settingsHeader = EditorGUIUtility.TrTextContent("Grid Settings");
             public static readonly GUIContent opacitySlider = EditorGUIUtility.TrTextContent("Opacity");
+
+            public static readonly GUIContent reset = EditorGUIUtility.TrTextContent("Reset");
+            public static readonly GUIContent editGridAndSnapSettings = EditorGUIUtility.TrTextContent("Edit Grid and Snap Settings...");
         }
 
         static class Styles
         {
+            static bool s_Initialized;
             public static readonly GUIStyle menuItem = "MenuItem";
             public static readonly GUIStyle header = EditorStyles.boldLabel;
             public static readonly GUIStyle separator = "sv_iconselector_sep";
+            public static GUIStyle settingsArea;
+            public static readonly GUIStyle options = "PaneOptions";
+
+            internal static void Init()
+            {
+                if (s_Initialized)
+                    return;
+
+                s_Initialized = true;
+
+                settingsArea = new GUIStyle()
+                {
+                    padding = new RectOffset(k_SettingsAreaBorder, k_SettingsAreaBorder, k_SettingsAreaBorder, k_SettingsAreaBorder)
+                };
+            }
         }
 
-        const float k_WindowWidth = 190;
-        const float k_WindowHeight = 120;
+        const float k_WindowWidth = 210;
+        const int k_SettingsAreaBorder = 4;
+        const float k_WindowHeight = EditorGUI.kSingleLineHeight * 6 + k_SettingsAreaBorder * 2;
         readonly SceneView m_SceneView;
 
         public GridSettingsWindow(SceneView sceneView)
@@ -58,19 +78,34 @@ namespace UnityEditor.Snap
 
         void Draw()
         {
+            Styles.Init();
+            GUILayout.BeginVertical(Styles.settingsArea);
             EditorGUI.BeginChangeCheck();
             DoGridAxes();
             DoSeparator();
             DoGridSettings();
             if (EditorGUI.EndChangeCheck())
-            {
                 SceneView.RepaintAll();
-            }
+            GUILayout.EndVertical();
         }
 
         void DoGridAxes()
         {
+            GUILayout.BeginHorizontal();
             GUILayout.Label(Contents.axisHeader, Styles.header);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(GUIContent.none, Styles.options))
+            {
+                var menu = new GenericMenu();
+                menu.AddItem(Contents.reset, false, Reset);
+                menu.AddSeparator("");
+                menu.AddItem(Contents.editGridAndSnapSettings, false, () =>
+                {
+                    EditorWindow.GetWindow<SnapSettingsWindow>(false, SnapSettingsWindow.k_WindowTitle, true);
+                });
+                menu.ShowAsContext();
+            }
+            GUILayout.EndHorizontal();
 
             var axis = m_SceneView.sceneViewGrids.gridAxis;
 
@@ -104,6 +139,12 @@ namespace UnityEditor.Snap
             EditorGUI.BeginChangeCheck();
             GUILayout.Toggle(selected, content, Styles.menuItem);
             return EditorGUI.EndChangeCheck();
+        }
+
+        void Reset()
+        {
+            m_SceneView.sceneViewGrids.Reset();
+            m_SceneView.sceneViewGrids.ResetPivot(SceneViewGrid.GridRenderAxis.All);
         }
     }
 }

@@ -14,24 +14,7 @@ namespace UnityEditor.PackageManager.UI
 
         string displayName { get; }
 
-        IVersionList versionList { get; }
-
-        IEnumerable<IPackageVersion> versions { get; }
-
-        IEnumerable<IPackageVersion> keyVersions { get; }
-
-        IPackageVersion installedVersion { get; }
-
-        IPackageVersion latestVersion { get; }
-
-        IPackageVersion latestPatch { get; }
-
-        // the recommended version to install or update to
-        IPackageVersion recommendedVersion { get; }
-
-        // the primary version is most important version that we want to show to the user
-        // it will be the default that will be displayed if no versions are selected
-        IPackageVersion primaryVersion { get; }
+        IVersionList versions { get; }
 
         PackageState state { get; }
 

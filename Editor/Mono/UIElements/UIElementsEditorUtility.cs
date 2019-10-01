@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
@@ -54,7 +55,47 @@ namespace UnityEditor.UIElements
 
         internal static int GetCursorId(StyleSheet sheet, StyleValueHandle handle)
         {
-            return StyleSheetCache.GetEnumValue<MouseCursor>(sheet, handle);
+            var value = sheet.ReadEnum(handle);
+            if (string.Equals(value, "arrow", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.Arrow;
+            else if (string.Equals(value, "text", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.Text;
+            else if (string.Equals(value, "resize-vertical", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.ResizeVertical;
+            else if (string.Equals(value, "resize-horizontal", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.ResizeHorizontal;
+            else if (string.Equals(value, "link", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.Link;
+            else if (string.Equals(value, "slide-arrow", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.SlideArrow;
+            else if (string.Equals(value, "resize-up-right", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.ResizeUpRight;
+            else if (string.Equals(value, "resize-up-left", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.ResizeUpLeft;
+            else if (string.Equals(value, "move-arrow", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.MoveArrow;
+            else if (string.Equals(value, "rotate-arrow", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.RotateArrow;
+            else if (string.Equals(value, "scale-arrow", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.ScaleArrow;
+            else if (string.Equals(value, "arrow-plus", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.ArrowPlus;
+            else if (string.Equals(value, "arrow-minus", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.ArrowMinus;
+            else if (string.Equals(value, "pan", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.Pan;
+            else if (string.Equals(value, "orbit", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.Orbit;
+            else if (string.Equals(value, "zoom", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.Zoom;
+            else if (string.Equals(value, "fps", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.FPS;
+            else if (string.Equals(value, "split-resize-up-down", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.SplitResizeUpDown;
+            else if (string.Equals(value, "split-resize-left-right", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.SplitResizeLeftRight;
+
+            return (int)MouseCursor.Arrow;
         }
 
         internal static void AddDefaultEditorStyleSheets(VisualElement ve)

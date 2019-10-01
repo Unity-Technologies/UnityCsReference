@@ -133,7 +133,7 @@ namespace UnityEditorInternal.VersionControl
             {
                 AssetList list = new AssetList();
                 foreach (KeyValuePair<string, ListItem> listItem in selectList)
-                    if ((listItem.Value.Item as Asset) != null)
+                    if (listItem.Value != null && (listItem.Value.Item as Asset) != null)
                         list.Add(listItem.Value.Item as Asset);
 
                 return list;

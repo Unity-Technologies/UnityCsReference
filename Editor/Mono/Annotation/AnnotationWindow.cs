@@ -580,12 +580,8 @@ namespace UnityEditor
 
             // Icon toggle
             Rect iconRect = new Rect(rect.width - iconRightAlign + 2, rect.y + (rect.height - iconSize) * 0.5f, iconSize, iconSize); // +2 because the given rect is shortened by 2px before this method call
-            Texture thumb = null;
             if (ainfo.m_ScriptClass != "")
             {
-                // Icon for scripts
-                thumb = EditorGUIUtility.GetIconForObject(EditorGUIUtility.GetScript(ainfo.m_ScriptClass));
-
                 Rect div = iconRect;
                 div.x += 18;
                 div.y += 1;
@@ -622,14 +618,8 @@ namespace UnityEditor
                     }
                 }
             }
-            else
-            {
-                // Icon for builtin components
-                if (ainfo.HasIcon())
-                    thumb = AssetPreview.GetMiniTypeThumbnailFromClassID(ainfo.m_ClassID);
-            }
 
-            if (thumb != null)
+            if (ainfo.Thumb != null)
             {
                 if (!ainfo.m_IconEnabled)
                 {
@@ -637,7 +627,7 @@ namespace UnityEditor
                     tooltip = "";
                 }
 
-                iconToggleContent.image = thumb;
+                iconToggleContent.image = ainfo.Thumb;
                 if (GUI.Button(iconRect, iconToggleContent, GUIStyle.none))
                 {
                     ainfo.m_IconEnabled = !ainfo.m_IconEnabled;
@@ -711,6 +701,33 @@ namespace UnityEditor
         public string m_ScriptClass;
         public string m_DisplayText;
         public int m_Flags;
+        private Object m_Script;
+        public Object Script
+        {
+            get
+            {
+                if (m_Script == null && m_ScriptClass != "")
+                    m_Script = EditorGUIUtility.GetScript(m_ScriptClass);
+                return m_Script;
+            }
+        }
+        private Texture2D m_Thumb;
+        public Texture2D Thumb
+        {
+            get
+            {
+                if (m_Thumb == null)
+                {
+                    // Icon for scripts
+                    if (Script != null)
+                        m_Thumb = EditorGUIUtility.GetIconForObject(m_Script);
+                    // Icon for builtin components
+                    else if (HasIcon())
+                        m_Thumb = AssetPreview.GetMiniTypeThumbnailFromClassID(m_ClassID);
+                }
+                return m_Thumb;
+            }
+        }
 
         public bool HasGizmo()
         {

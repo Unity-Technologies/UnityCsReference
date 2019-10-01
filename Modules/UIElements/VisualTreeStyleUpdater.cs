@@ -14,28 +14,17 @@ namespace UnityEngine.UIElements
         // hash of a set of rules to a specified style data
         // the same set of rules will give the same specified styles, caching the hash of the matching rules before
         // resolving styles allows to skip the resolve part when an existing style data already exists
-        private static Dictionary<Int64, VisualElementStylesData> s_StyleDataCache = new Dictionary<Int64, VisualElementStylesData>();
-        private static Dictionary<int, InheritedStylesData> s_InheritedStyleDataCache = new Dictionary<int, InheritedStylesData>();
+        private static Dictionary<Int64, ComputedStyle> s_ComputedStyleCache = new Dictionary<Int64, ComputedStyle>();
         private static Dictionary<int, StyleVariableContext> s_StyleVariableContextCache = new Dictionary<int, StyleVariableContext>();
 
-        public static bool TryGetValue(Int64 hash, out VisualElementStylesData data)
+        public static bool TryGetValue(Int64 hash, out ComputedStyle data)
         {
-            return s_StyleDataCache.TryGetValue(hash, out data);
+            return s_ComputedStyleCache.TryGetValue(hash, out data);
         }
 
-        public static void SetValue(Int64 hash, VisualElementStylesData data)
+        public static void SetValue(Int64 hash, ComputedStyle data)
         {
-            s_StyleDataCache[hash] = data;
-        }
-
-        public static bool TryGetValue(int hash, out InheritedStylesData data)
-        {
-            return s_InheritedStyleDataCache.TryGetValue(hash, out data);
-        }
-
-        public static void SetValue(int hash, InheritedStylesData data)
-        {
-            s_InheritedStyleDataCache[hash] = data;
+            s_ComputedStyleCache[hash] = data;
         }
 
         public static bool TryGetValue(int hash, out StyleVariableContext data)
@@ -50,8 +39,7 @@ namespace UnityEngine.UIElements
 
         public static void ClearStyleCache()
         {
-            s_StyleDataCache.Clear();
-            s_InheritedStyleDataCache.Clear();
+            s_ComputedStyleCache.Clear();
             s_StyleVariableContextCache.Clear();
         }
     }
@@ -130,7 +118,6 @@ namespace UnityEngine.UIElements
         public StyleVariableContext variableContext;
         public VisualElement currentElement;
         public Action<VisualElement, MatchResultInfo> processResult;
-        public InheritedStylesData inheritedStyle;
 
         public StyleMatchingContext(Action<VisualElement, MatchResultInfo> processResult)
         {
@@ -143,8 +130,6 @@ namespace UnityEngine.UIElements
 
     internal class VisualTreeStyleUpdaterTraversal : HierarchyTraversal
     {
-        private static readonly InheritedStylesData s_DefaultInheritedStyles = new InheritedStylesData();
-        private InheritedStylesData m_ResolveInheritData = new InheritedStylesData();
         private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();
         private HashSet<VisualElement> m_UpdateList = new HashSet<VisualElement>();
         private HashSet<VisualElement> m_ParentList = new HashSet<VisualElement>();
@@ -159,7 +144,6 @@ namespace UnityEngine.UIElements
         public void PrepareTraversal(float pixelsPerPoint)
         {
             currentPixelsPerPoint = pixelsPerPoint;
-            m_StyleMatchingContext.inheritedStyle = s_DefaultInheritedStyles;
         }
 
         public void AddChangedElement(VisualElement ve)
@@ -240,8 +224,7 @@ namespace UnityEngine.UIElements
             // Store the number of custom style before processing rules in case an element stop
             // to have matching custom styles the event still need to be sent and only looking
             // at the matched custom styles won't suffice.
-            int originalCustomStyleCount = element.specifiedStyle.customPropertiesCount;
-            var currentInheritStyle = m_StyleMatchingContext.inheritedStyle;
+            int originalCustomStyleCount = element.computedStyle.customPropertiesCount;
             if (updateElement)
             {
                 m_StyleMatchingContext.currentElement = element;
@@ -250,20 +233,18 @@ namespace UnityEngine.UIElements
 
                 ProcessMatchedRules(element, m_TempMatchResults);
 
-                ResolveInheritance(element);
-
+                element.inheritedStylesHash = element.computedStyle.inheritedData.GetHashCode();
                 m_StyleMatchingContext.currentElement = null;
                 m_TempMatchResults.Clear();
             }
             else
             {
-                m_StyleMatchingContext.inheritedStyle = element.propagatedStyle;
                 m_StyleMatchingContext.variableContext = element.variableContext;
             }
 
             // Need to send the custom styles event after the inheritance is resolved because an element
             // may want to read standard styles too (TextInputFieldBase callback depends on it).
-            if (updateElement && (originalCustomStyleCount > 0 || element.specifiedStyle.customPropertiesCount > 0))
+            if (updateElement && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0))
             {
                 using (var evt = CustomStyleResolvedEvent.GetPooled())
                 {
@@ -274,7 +255,6 @@ namespace UnityEngine.UIElements
 
             Recurse(element, depth);
 
-            m_StyleMatchingContext.inheritedStyle = currentInheritStyle;
 
             if (m_StyleMatchingContext.styleSheetStack.Count > originalStyleSheetCount)
             {
@@ -317,6 +297,10 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            var parent = element.hierarchy.parent;
+            int inheritedStyleHash = parent != null ? parent.inheritedStylesHash : 0;
+            matchingRulesHash = (matchingRulesHash * 397) ^ inheritedStyleHash;
+
             int variablesHash = customPropertiesCount > 0 ? m_ProcessVarContext.GetVariableHash() : oldVariablesHash;
             matchingRulesHash = (matchingRulesHash * 397) ^ variablesHash;
 
@@ -333,22 +317,23 @@ namespace UnityEngine.UIElements
             }
             element.variableContext = m_StyleMatchingContext.variableContext;
 
-            VisualElementStylesData resolvedStyles;
+            ComputedStyle resolvedStyles;
             if (StyleCache.TryGetValue(matchingRulesHash, out resolvedStyles))
             {
                 element.SetSharedStyles(resolvedStyles);
             }
             else
             {
-                resolvedStyles = new VisualElementStylesData(isShared: true);
+                var parentStyle = parent?.computedStyle;
+                resolvedStyles = ComputedStyle.Create(parentStyle, true);
 
                 foreach (var record in matchingSelectors)
                 {
                     m_StylePropertyReader.SetContext(record.sheet, record.complexSelector, m_StyleMatchingContext.variableContext);
-                    resolvedStyles.ApplyProperties(m_StylePropertyReader, m_StyleMatchingContext.inheritedStyle);
+                    resolvedStyles.ApplyProperties(m_StylePropertyReader, parentStyle);
                 }
 
-                resolvedStyles.ApplyLayoutValues();
+                resolvedStyles.FinalizeApply(parentStyle);
 
                 StyleCache.SetValue(matchingRulesHash, resolvedStyles);
 
@@ -371,70 +356,6 @@ namespace UnityEngine.UIElements
                     m_ProcessVarContext.Add(sv);
                 }
             }
-        }
-
-        private void ResolveInheritance(VisualElement element)
-        {
-            var specifiedStyle = element.specifiedStyle;
-
-            var currentInheritedStyle = m_StyleMatchingContext.inheritedStyle;
-            element.inheritedStyle = currentInheritedStyle;
-
-            m_ResolveInheritData.CopyFrom(currentInheritedStyle);
-
-            if (specifiedStyle.color.specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                m_ResolveInheritData.color = specifiedStyle.color;
-            }
-
-            if (specifiedStyle.unityFont.specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                m_ResolveInheritData.font = specifiedStyle.unityFont;
-            }
-
-            if (specifiedStyle.fontSize.specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                // Only calculated value can be inherited
-                // Thus if it's a percentage the real value needs to be propagated
-                // See: https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
-                m_ResolveInheritData.fontSize = new StyleLength(ComputedStyle.CalculatePixelFontSize(element));
-                m_ResolveInheritData.fontSize.specificity = specifiedStyle.fontSize.specificity;
-            }
-
-            if (specifiedStyle.unityFontStyleAndWeight.specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                m_ResolveInheritData.unityFontStyle = specifiedStyle.unityFontStyleAndWeight;
-            }
-
-            if (specifiedStyle.unityTextAlign.specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                m_ResolveInheritData.unityTextAlign = specifiedStyle.unityTextAlign;
-            }
-
-            if (specifiedStyle.visibility.specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                m_ResolveInheritData.visibility = specifiedStyle.visibility;
-            }
-
-            if (specifiedStyle.whiteSpace.specificity != StyleValueExtensions.UndefinedSpecificity)
-            {
-                m_ResolveInheritData.whiteSpace = specifiedStyle.whiteSpace;
-            }
-
-            if (!m_ResolveInheritData.Equals(currentInheritedStyle))
-            {
-                InheritedStylesData inheritData = null;
-                int hash = m_ResolveInheritData.GetHashCode();
-                if (!StyleCache.TryGetValue(hash, out inheritData))
-                {
-                    inheritData = new InheritedStylesData(m_ResolveInheritData);
-                    StyleCache.SetValue(hash, inheritData);
-                }
-
-                m_StyleMatchingContext.inheritedStyle = inheritData;
-            }
-
-            element.propagatedStyle = m_StyleMatchingContext.inheritedStyle;
         }
     }
 }

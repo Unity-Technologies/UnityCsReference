@@ -50,6 +50,19 @@ namespace UnityEngine.UIElements
             return new Background() { vectorImage = vi };
         }
 
+        internal static Background FromObject(object obj)
+        {
+            var texture = obj as Texture2D;
+            if (texture != null)
+                return Background.FromTexture2D(texture);
+
+            var vectorImage = obj as VectorImage;
+            if (vectorImage != null)
+                return Background.FromVectorImage(vectorImage);
+
+            return default(Background);
+        }
+
         public static bool operator==(Background lhs, Background rhs)
         {
             return EqualityComparer<Texture2D>.Default.Equals(lhs.texture, rhs.texture);

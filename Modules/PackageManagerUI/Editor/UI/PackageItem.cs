@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI
         public IPackage package { get; private set; }
         private VisualState visualState { get; set; }
 
-        public IPackageVersion targetVersion { get { return package?.primaryVersion; } }
+        public IPackageVersion targetVersion { get { return package?.versions.primary; } }
         public VisualElement element { get { return this; } }
 
         private IPackageVersion selectedVersion
@@ -93,7 +93,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal void SetPackage(IPackage package)
         {
-            var displayVersion = package?.primaryVersion;
+            var displayVersion = package?.versions.primary;
             if (displayVersion == null)
                 return;
 
@@ -101,7 +101,7 @@ namespace UnityEditor.PackageManager.UI
             if (this.package != null && this.package.uniqueId != package.uniqueId)
                 return;
 
-            var oldDisplayVersion = this.package?.primaryVersion;
+            var oldDisplayVersion = this.package?.versions.primary;
             this.package = package;
 
             // if the package gets updated while it's selected, we need to do some special handling
@@ -167,8 +167,8 @@ namespace UnityEditor.PackageManager.UI
 
             var seeAllVersions = visualState?.seeAllVersions ?? false;
 
-            var additionalKeyVersions = package.keyVersions.Where(p => p != package.primaryVersion).ToList();
-            var additionalVersions = package.versions.Where(p => p != package.primaryVersion).ToList();
+            var additionalKeyVersions = package.versions.key.Where(p => p != package.versions.primary).ToList();
+            var additionalVersions = package.versions.Where(p => p != package.versions.primary).ToList();
 
             var versions = seeAllVersions ? additionalVersions : additionalKeyVersions;
 

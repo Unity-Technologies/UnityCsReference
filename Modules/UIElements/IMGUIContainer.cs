@@ -260,6 +260,11 @@ namespace UnityEngine.UIElements
                     focusChangeDirection = FocusChangeDirection.unspecified;
                     if (focusController != null)
                     {
+                        if (focusController.imguiKeyboardControl != GUIUtility.keyboardControl)
+                        {
+                            newKeyboardFocusControlID = GUIUtility.keyboardControl;
+                        }
+
                         focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
                     }
                 }

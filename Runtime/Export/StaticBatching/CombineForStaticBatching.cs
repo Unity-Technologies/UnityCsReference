@@ -126,10 +126,18 @@ namespace UnityEngine
                     continue;
 
                 MeshRenderer meshRenderer = renderer as MeshRenderer;
-                if ((meshRenderer != null) && (meshRenderer.additionalVertexStreams != null))
+                if (meshRenderer != null)
                 {
-                    if (vertexCount != meshRenderer.additionalVertexStreams.vertexCount)
-                        continue;
+                    if (meshRenderer.additionalVertexStreams != null)
+                    {
+                        if (vertexCount != meshRenderer.additionalVertexStreams.vertexCount)
+                            continue;
+                    }
+                    if (meshRenderer.enlightenVertexStream != null)
+                    {
+                        if (vertexCount != meshRenderer.enlightenVertexStream.vertexCount)
+                            continue;
+                    }
                 }
 
                 // check if we have enough space inside the current batch
@@ -143,9 +151,13 @@ namespace UnityEngine
                 MeshSubsetCombineUtility.MeshInstance instance = new MeshSubsetCombineUtility.MeshInstance();
                 instance.meshInstanceID = instanceMesh.GetInstanceID();
                 instance.rendererInstanceID = renderer.GetInstanceID();
-                if (meshRenderer != null && meshRenderer.additionalVertexStreams != null)
-                    instance.additionalVertexStreamsMeshInstanceID = meshRenderer.additionalVertexStreams.GetInstanceID();
-
+                if (meshRenderer != null)
+                {
+                    if (meshRenderer.additionalVertexStreams != null)
+                        instance.additionalVertexStreamsMeshInstanceID = meshRenderer.additionalVertexStreams.GetInstanceID();
+                    if (meshRenderer.enlightenVertexStream != null)
+                        instance.enlightenVertexStreamMeshInstanceID = meshRenderer.enlightenVertexStream.GetInstanceID();
+                }
                 instance.transform = staticBatchInverseMatrix * filter.transform.localToWorldMatrix;
                 instance.lightmapScaleOffset = renderer.lightmapScaleOffset;
                 instance.realtimeLightmapScaleOffset = renderer.realtimeLightmapScaleOffset;
@@ -230,11 +242,13 @@ namespace UnityEngine
                 renderer.enabled = false;
                 renderer.enabled = true;
 
-                // Remove the additionalVertexStreamsMesh, all its data has been copied into the combined mesh.
+                // Remove additionalVertexStreams and enlightenVertexStream, all their data has been copied into the combined mesh.
                 MeshRenderer meshRenderer = renderer as MeshRenderer;
                 if (meshRenderer != null)
+                {
                     meshRenderer.additionalVertexStreams = null;
-
+                    meshRenderer.enlightenVertexStream = null;
+                }
                 totalSubMeshCount += subMeshCount;
             }
         }

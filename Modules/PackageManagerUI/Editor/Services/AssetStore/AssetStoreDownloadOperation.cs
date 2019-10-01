@@ -21,24 +21,20 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private static AssetStoreDownloadOperationInternal s_Instance;
             public static AssetStoreDownloadOperationInternal instance => s_Instance ?? (s_Instance = new AssetStoreDownloadOperationInternal());
 
-            private static Texture2D s_MissingTexture;
-
-            private IASyncHTTPClientFactory m_AsyncHTTPClient;
+            private Texture2D m_MissingTexture;
 
             private List<DownloadInformation> m_DownloadInformations;
 
             private AssetStoreDownloadOperationInternal()
             {
-                m_AsyncHTTPClient = new ASyncHTTPClientFactory();
-
                 m_DownloadInformations = new List<DownloadInformation>();
             }
 
             public void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
             {
-                if (s_MissingTexture == null)
+                if (m_MissingTexture == null)
                 {
-                    s_MissingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
+                    m_MissingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
                 }
 
                 var texture = AssetStoreCache.instance.LoadImage(productID, url);
@@ -48,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     return;
                 }
 
-                var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient(url);
+                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient(url);
                 httpRequest.doneCallback = httpClient =>
                 {
                     if (httpClient.IsSuccess() && httpClient.texture != null)
@@ -58,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    doneCallbackAction?.Invoke(productID, s_MissingTexture);
+                    doneCallbackAction?.Invoke(productID, m_MissingTexture);
                 };
                 httpRequest.Begin();
             }
@@ -68,11 +64,16 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_DownloadInformations.RemoveAll(d => d.productId == productID);
             }
 
-            public void AbortDownloadPackageAsync(long productID, Action<DownloadResult> doneCallbackAction = null)
+            public void AbortDownloadPackage(long productID, Action<DownloadResult> doneCallbackAction = null)
+            {
+                AbortDownloadPackageInternal(productID.ToString(), doneCallbackAction);
+            }
+
+            private void AbortDownloadPackageInternal(string productID, Action<DownloadResult> doneCallbackAction = null)
             {
                 var ret = new DownloadResult();
 
-                var downloadInfo = m_DownloadInformations.FirstOrDefault(d => d.productId == productID.ToString());
+                var downloadInfo = m_DownloadInformations.FirstOrDefault(d => d.productId == productID);
                 if (downloadInfo != null)
                 {
                     var res = AssetStoreUtils.instance.AbortDownload($"content__{productID}", downloadInfo.destination);
@@ -158,6 +159,15 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     ret.downloadState = DownloadProgress.State.Started;
                     doneCallbackAction?.Invoke(ret);
                 });
+            }
+
+            public void ClearCache()
+            {
+                m_MissingTexture = null;
+
+                var listProductIds = m_DownloadInformations.Select(info => info.productId).ToList();
+                foreach (var productId in listProductIds)
+                    AbortDownloadPackageInternal(productId);
             }
         }
     }

@@ -111,6 +111,39 @@ namespace UnityEditor
 
 
     //
+    // video shaders
+    //
+
+
+    internal partial class GraphicsSettingsWindow
+    {
+        internal class VideoShadersEditor : Editor
+        {
+            SerializedProperty m_VideoShadersIncludeMode;
+
+            internal class Styles
+            {
+                public static GUIContent modeString = EditorGUIUtility.TrTextContent("Video", "Shaders used by the VideoPlayer decoding and compositing.");
+            }
+
+            public void OnEnable()
+            {
+                m_VideoShadersIncludeMode = serializedObject.FindProperty("m_VideoShadersIncludeMode");
+            }
+
+            public override void OnInspectorGUI()
+            {
+                serializedObject.Update();
+
+                EditorGUILayout.PropertyField(m_VideoShadersIncludeMode, Styles.modeString);
+
+                serializedObject.ApplyModifiedProperties();
+            }
+        }
+    }
+
+
+    //
     // always included shaders
     //
 

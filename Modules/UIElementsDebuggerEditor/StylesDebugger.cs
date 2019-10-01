@@ -41,12 +41,13 @@ namespace UnityEditor.UIElements.Debugger
                 m_SelectedElement = value;
 
                 m_BoxModelView.selectedElement = m_SelectedElement;
-                m_StylePropertyDebugger.selectedElement = m_SelectedElement;
                 m_SelectedElementUxml = null;
                 m_ClassList = null;
 
                 m_IMGUIStylesDebugger.IncrementVersion(VersionChangeType.Layout);
                 GetElementMatchers();
+
+                m_StylePropertyDebugger.SetMatchRecords(m_SelectedElement, m_MatchedRulesExtractor.matchRecords);
             }
         }
 
@@ -231,7 +232,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 EditorGUILayout.LabelField(Styles.selectorsContent, Styles.KInspectorTitle);
                 int i = 0;
-                foreach (MatchedRulesExtractor.MatchedRule rule in m_MatchedRulesExtractor.selectedElementRules)
+                foreach (var rule in m_MatchedRulesExtractor.selectedElementRules)
                 {
                     StringBuilder builder = new StringBuilder();
                     for (int j = 0; j < rule.matchRecord.complexSelector.selectors.Length; j++)
@@ -319,64 +320,67 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
+    internal struct MatchedRule
+    {
+        public readonly SelectorMatchRecord matchRecord;
+        public readonly string displayPath;
+        public readonly int lineNumber;
+        public readonly string fullPath;
+
+        public MatchedRule(SelectorMatchRecord matchRecord)
+            : this()
+        {
+            this.matchRecord = matchRecord;
+            fullPath = AssetDatabase.GetAssetPath(matchRecord.sheet);
+            lineNumber = matchRecord.complexSelector.rule.line;
+            if (string.IsNullOrEmpty(fullPath))
+            {
+                displayPath = matchRecord.sheet.name + ":" + lineNumber;
+            }
+            else
+            {
+                if (fullPath == "Library/unity editor resources")
+                    displayPath = matchRecord.sheet.name + ":" + lineNumber;
+                else
+                    displayPath = Path.GetFileName(fullPath) + ":" + lineNumber;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = matchRecord.GetHashCode();
+                hashCode = (hashCode * 397) ^ (displayPath != null ? displayPath.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ lineNumber;
+                hashCode = (hashCode * 397) ^ (fullPath != null ? fullPath.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
+
+        private sealed class LineNumberFullPathEqualityComparer : IEqualityComparer<MatchedRule>
+        {
+            public bool Equals(MatchedRule x, MatchedRule y)
+            {
+                return x.lineNumber == y.lineNumber && string.Equals(x.fullPath, y.fullPath) && string.Equals(x.displayPath, y.displayPath);
+            }
+
+            public int GetHashCode(MatchedRule obj)
+            {
+                return obj.GetHashCode();
+            }
+        }
+
+        public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
+    }
+
     internal class MatchedRulesExtractor
     {
         internal HashSet<MatchedRule> selectedElementRules = new HashSet<MatchedRule>(MatchedRule.lineNumberFullPathComparer);
         internal HashSet<string> selectedElementStylesheets = new HashSet<string>();
+        internal List<SelectorMatchRecord> matchRecords = new List<SelectorMatchRecord>();
 
-        internal struct MatchedRule
-        {
-            public readonly SelectorMatchRecord matchRecord;
-            public readonly string displayPath;
-            public readonly int lineNumber;
-            public readonly string fullPath;
-
-            public MatchedRule(SelectorMatchRecord matchRecord)
-                : this()
-            {
-                this.matchRecord = matchRecord;
-                fullPath = AssetDatabase.GetAssetPath(matchRecord.sheet);
-                lineNumber = matchRecord.complexSelector.rule.line;
-                if (string.IsNullOrEmpty(fullPath))
-                {
-                    displayPath = matchRecord.sheet.name + ":" + lineNumber;
-                }
-                else
-                {
-                    if (fullPath == "Library/unity editor resources")
-                        displayPath = matchRecord.sheet.name + ":" + lineNumber;
-                    else
-                        displayPath = Path.GetFileName(fullPath) + ":" + lineNumber;
-                }
-            }
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    var hashCode = matchRecord.GetHashCode();
-                    hashCode = (hashCode * 397) ^ (displayPath != null ? displayPath.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ lineNumber;
-                    hashCode = (hashCode * 397) ^ (fullPath != null ? fullPath.GetHashCode() : 0);
-                    return hashCode;
-                }
-            }
-
-            private sealed class LineNumberFullPathEqualityComparer : IEqualityComparer<MatchedRule>
-            {
-                public bool Equals(MatchedRule x, MatchedRule y)
-                {
-                    return x.lineNumber == y.lineNumber && string.Equals(x.fullPath, y.fullPath) && string.Equals(x.displayPath, y.displayPath);
-                }
-
-                public int GetHashCode(MatchedRule obj)
-                {
-                    return obj.GetHashCode();
-                }
-            }
-
-            public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
-        }
+        public IEnumerable<MatchedRule> GetMatchedRules() => selectedElementRules;
 
         private void FindStyleSheets(VisualElement cursor, StyleMatchingContext matchingContext)
         {
@@ -402,12 +406,12 @@ namespace UnityEditor.UIElements.Debugger
             var matchingContext = new StyleMatchingContext((element, info) => {}) { currentElement = target };
             FindStyleSheets(target, matchingContext);
 
-            List<SelectorMatchRecord> matches = new List<SelectorMatchRecord>();
-            StyleSelectorHelper.FindMatches(matchingContext, matches);
+            matchRecords.Clear();
+            StyleSelectorHelper.FindMatches(matchingContext, matchRecords);
 
-            matches.Sort(SelectorMatchRecord.Compare);
+            matchRecords.Sort(SelectorMatchRecord.Compare);
 
-            foreach (var record in matches)
+            foreach (var record in matchRecords)
             {
                 selectedElementRules.Add(new MatchedRule(record));
             }

@@ -1155,13 +1155,13 @@ namespace UnityEditor
 
         bool ShouldFrameAsset(int instanceID)
         {
-            HierarchyProperty h = new HierarchyProperty(HierarchyType.Assets, false);
-            if (h.Find(instanceID, null))
-                return true;
-
             var path = AssetDatabase.GetAssetPath(instanceID);
             if (string.IsNullOrEmpty(path))
                 return false;
+
+            HierarchyProperty h = new HierarchyProperty(HierarchyType.Assets, false);
+            if (h.Find(instanceID, null))
+                return true;
 
             var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
             if (packageInfo != null)
@@ -1371,7 +1371,9 @@ namespace UnityEditor
                     {
                         m_SearchFilter = filter;
                         EnsureValidFolders();
-                        float previewSize = SavedSearchFilters.GetPreviewSize(firstTreeViewInstanceID);
+                        float previewSize = filter.GetState() == SearchFilter.State.FolderBrowsing ?
+                            m_LastFoldersGridSize :
+                            SavedSearchFilters.GetPreviewSize(firstTreeViewInstanceID);
                         if (previewSize > 0f)
                             m_ListArea.gridSize = Mathf.Clamp((int)previewSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
                         SyncFilterGUI();

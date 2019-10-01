@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI
 
         private IPackageVersion displayVersion
         {
-            get { return m_Version ?? m_Package?.primaryVersion; }
+            get { return m_Version ?? m_Package?.versions.primary; }
             set { m_Version = value; }
         }
 
@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI
             get
             {
                 var isInstalledVersion = displayVersion?.isInstalled ?? false;
-                return isInstalledVersion ? package.recommendedVersion : displayVersion;
+                return isInstalledVersion ? package.versions.recommended : displayVersion;
             }
         }
 
@@ -307,7 +307,7 @@ namespace UnityEditor.PackageManager.UI
         private void DescriptionGeometryChangeEvent(GeometryChangedEvent evt)
         {
             // only hide lengthly description when there are images to be displayed
-            if (!(package?.images.Any() ?? false))
+            if (package?.images.Any() != true)
                 return;
 
             var lineHeight = detailDesc.computedStyle.unityFont.value.lineHeight + 2;
@@ -354,7 +354,11 @@ namespace UnityEditor.PackageManager.UI
         {
             // If the package details is not enabled, don't update the date yet as we are fetching new information
             if (enabledSelf)
-                detailDate.text = displayVersion.publishedDate != null ? $"{displayVersion.publishedDate.Value:MMMM dd,  yyyy}" : string.Empty;
+            {
+                var dt = displayVersion.publishedDate ?? DateTime.Now;
+                detailDate.text = displayVersion.publishedDate != null ? dt.ToString("MMMM dd,  yyyy", CultureInfo.CreateSpecificCulture("en-US")) : string.Empty;
+            }
+
             UIUtils.SetElementDisplay(detailDateContainer, !string.IsNullOrEmpty(detailDate.text));
         }
 
@@ -414,7 +418,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 detailUnityVersions.text = $"{supportedVersion} or higher";
                 var tooltip = supportedVersion.ToString();
-                if (displayVersion.supportedVersions != null)
+                if (displayVersion.supportedVersions != null && displayVersion.supportedVersions.Any())
                 {
                     var versions = displayVersion.supportedVersions.Select(version => version.ToString()).ToArray();
                     tooltip = versions.Length == 1 ? versions[0] :
@@ -494,7 +498,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetPackage(IPackage package, IPackageVersion version = null)
         {
-            version = version ?? package?.primaryVersion;
+            version = version ?? package?.versions.primary;
             this.package = package;
 
             SetEnabled(true);
@@ -550,10 +554,10 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshAddButton()
         {
-            var installed = package?.installedVersion;
+            var installed = package?.versions.installed;
             var targetVersion = this.targetVersion;
             var installable = targetVersion?.HasTag(PackageTag.Installable) ?? false;
-            var visibleFlag = !(installed?.HasTag(PackageTag.VersionLocked) ?? false) && displayVersion != null && installable;
+            var visibleFlag = installed?.HasTag(PackageTag.VersionLocked) != true && displayVersion != null && installable;
             if (visibleFlag)
             {
                 var installInProgress = PackageDatabase.instance.IsInstallInProgress(displayVersion);
@@ -565,7 +569,7 @@ namespace UnityEditor.PackageManager.UI
                 if (installed != null)
                 {
                     if (installed == targetVersion)
-                        action = targetVersion == package.recommendedVersion ? PackageAction.UpToDate : PackageAction.Current;
+                        action = targetVersion == package.versions.recommended ? PackageAction.UpToDate : PackageAction.Current;
                     else
                     {
                         action = PackageAction.Update;
@@ -583,7 +587,7 @@ namespace UnityEditor.PackageManager.UI
             var visibleFlag = displayVersion?.HasTag(PackageTag.Removable) ?? false;
             if (visibleFlag)
             {
-                var installed = package?.installedVersion;
+                var installed = package?.versions.installed;
                 var action = displayVersion.HasTag(PackageTag.BuiltIn) ? PackageAction.Disable : PackageAction.Remove;
                 var removeInProgress = PackageDatabase.instance.IsUninstallInProgress(package);
 
@@ -660,7 +664,7 @@ namespace UnityEditor.PackageManager.UI
         private void UpdateClick()
         {
             // dissuade users from updating by showing a warning message
-            if (package.installedVersion != null && !package.installedVersion.isDirectDependency && package.installedVersion != targetVersion)
+            if (package.versions.installed != null && !package.versions.installed.isDirectDependency && package.versions.installed != targetVersion)
             {
                 var message = L10n.Tr("This version of the package is being used by other packages. Upgrading a different version might break your project. Are you sure you want to continue?");
                 if (!EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Yes"), L10n.Tr("No")))
@@ -671,7 +675,7 @@ namespace UnityEditor.PackageManager.UI
             PackageDatabase.instance.Install(targetVersion);
             RefreshPackageActionButtons();
 
-            var eventName = package.installedVersion == null ? "installNew" : "installUpdate";
+            var eventName = package.versions.installed == null ? "installNew" : "installUpdate";
             PackageManagerWindowAnalytics.SendEvent(eventName, displayVersion?.uniqueId);
         }
 
@@ -747,7 +751,7 @@ namespace UnityEditor.PackageManager.UI
                     {
                         var hasOtherInDevelopment = PackageDatabase.instance.allPackages.Any(p =>
                         {
-                            var installed = p.installedVersion;
+                            var installed = p.versions.installed;
                             return installed != null && installed.HasTag(PackageTag.InDevelopment) && p.uniqueId != package.uniqueId;
                         });
                         newFilterTab = hasOtherInDevelopment ? PackageFilterTab.InDevelopment : PackageFilterTab.InProject;

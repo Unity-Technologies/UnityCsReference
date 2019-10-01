@@ -79,7 +79,7 @@ namespace UnityEditor.PackageManager.UI
                 IPackage package;
                 IPackageVersion version;
                 PackageDatabase.instance.GetPackageAndVersion(s.packageUniqueId, s.selectedVersionId, out package, out version);
-                return version ?? package?.primaryVersion;
+                return version ?? package?.versions.primary;
             }).FirstOrDefault();
         }
 
@@ -137,16 +137,16 @@ namespace UnityEditor.PackageManager.UI
             IPackage package;
             IPackageVersion version;
             PackageDatabase.instance.GetPackageAndVersion(selected?.packageUniqueId, selected?.selectedVersionId, out package, out version);
-            if (!(selected?.visible ?? false) || package == null)
+            if (selected?.visible != true || package == null)
             {
                 var firstVisible = packageVisualStates.FirstOrDefault(v => v.visible);
                 package = firstVisible == null ? null : PackageDatabase.instance.GetPackage(firstVisible.packageUniqueId);
-                version = package?.primaryVersion;
+                version = package?.versions.primary;
                 SetSelected(package?.uniqueId, version?.uniqueId);
             }
             else if (version == null)
             {
-                version = package?.primaryVersion;
+                version = package?.versions.primary;
                 SetSelected(package?.uniqueId, version?.uniqueId);
             }
         }
@@ -172,7 +172,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var orderedPackages = PackageDatabase.instance.allPackages
                     .Where(p => PackageFiltering.instance.FilterByCurrentTab(p))
-                    .OrderBy(p => p.primaryVersion?.displayName ?? p.name);
+                    .OrderBy(p => p.versions.primary?.displayName ?? p.name);
                 // the normal way
                 m_OrderedPackageVisualStates = orderedPackages.Select(p => GetVisualState(p.uniqueId) ?? new VisualState(p.uniqueId)).ToList();
                 SetupLookupTable();
@@ -247,7 +247,7 @@ namespace UnityEditor.PackageManager.UI
             }
 
             RebuildList(new[] { package }, Enumerable.Empty<IPackage>());
-            SetSelected(package.uniqueId, version?.uniqueId ?? package.primaryVersion?.uniqueId);
+            SetSelected(package.uniqueId, version?.uniqueId ?? package.versions.primary?.uniqueId);
         }
 
         public void OnProductFetched(long productId)
@@ -263,7 +263,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var package = PackageDatabase.instance.GetPackage(productId.ToString());
                 RebuildList(new[] { package }, Enumerable.Empty<IPackage>());
-                SetSelected(package?.uniqueId, package?.primaryVersion?.uniqueId);
+                SetSelected(package?.uniqueId, package?.versions.primary?.uniqueId);
             }
         }
 

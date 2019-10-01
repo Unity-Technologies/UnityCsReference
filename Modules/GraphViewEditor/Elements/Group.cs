@@ -48,7 +48,7 @@ namespace UnityEditor.Experimental.GraphView
             m_DropArea.name = "dropArea";
 
             var visualTree = EditorGUIUtility.Load("UXML/GraphView/GroupTitle.uxml") as VisualTreeAsset;
-            VisualElement titleContainer = visualTree.CloneTree();
+            VisualElement titleContainer = visualTree.Instantiate();
 
             titleContainer.name = "titleContainer";
 

@@ -17,10 +17,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
     {
         void ClearDownloadInformation(string productID);
 
-        void AbortDownloadPackageAsync(long productID, Action<DownloadResult> doneCallbackAction = null);
+        void AbortDownloadPackage(long productID, Action<DownloadResult> doneCallbackAction = null);
 
         void DownloadUnityPackageAsync(long productID, Action<DownloadResult> doneCallbackAction = null);
 
         void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null);
+
+        void ClearCache();
     }
 }

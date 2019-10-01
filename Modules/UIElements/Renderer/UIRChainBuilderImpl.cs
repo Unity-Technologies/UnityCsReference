@@ -596,6 +596,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return ClipMethod.ShaderDiscard;
             }
 
+            if (ve.hierarchy.parent?.renderChainData.isStencilClipped == true)
+                return ClipMethod.ShaderDiscard; // Prevent nested stenciling for now, even if inaccurate
+
             return ClipMethod.Stencil;
         }
 
@@ -1219,6 +1222,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             if (ve.renderChainData.firstClosingCommand != null)
             {
+                renderChain.OnRenderCommandRemoved(ve.renderChainData.firstClosingCommand, ve.renderChainData.lastClosingCommand);
+
                 var c = ve.renderChainData.firstClosingCommand;
                 while (c != ve.renderChainData.lastClosingCommand)
                 {
@@ -1520,7 +1525,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (textParams.font == null)
                 return;
 
-            textParams.fontColor *= UIElementsUtility.editorPlayModeTintColor;
+            if (currentElement.panel.contextType == ContextType.Editor)
+                textParams.fontColor *= UIElementsUtility.editorPlayModeTintColor;
 
             if (handle.useLegacy)
                 DrawTextNative(textParams, handle, pixelsPerPoint);
@@ -1549,6 +1555,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 totalIndices += m_CurrentEntry.indices.Length;
                 m_CurrentEntry = new Entry();
                 currentElement.renderChainData.usesLegacyText = true;
+                currentElement.renderChainData.disableNudging = true;
             }
         }
 
@@ -1786,6 +1793,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return;
             }
 
+            ValidateMeshWriteData();
+
             m_Entries.Clear(); // Doesn't shrink, good
             m_VertsPool.SessionDone();
             m_IndicesPool.SessionDone();
@@ -1795,12 +1804,37 @@ namespace UnityEngine.UIElements.UIR.Implementation
             totalVertices = totalIndices = 0;
         }
 
+        void ValidateMeshWriteData()
+        {
+            // Loop through the used MeshWriteData and make sure the number of indices/vertices were properly filled.
+            // Otherwise, we may end up with garbage in the buffers which may cause glitches/driver crashes.
+            for (int i = 0; i < m_NextMeshWriteDataPoolItem; ++i)
+            {
+                var mwd = m_MeshWriteDataPool[i];
+                if (mwd.vertexCount > 0 && mwd.currentVertex < mwd.vertexCount)
+                {
+                    Debug.LogError("Not enough vertices written in generateVisualContent callback " +
+                        "(asked for " + mwd.vertexCount + " but only wrote " + mwd.currentVertex + ")");
+                    var v = mwd.m_Vertices[0]; // Duplicate the first vertex
+                    while (mwd.currentVertex < mwd.vertexCount)
+                        mwd.SetNextVertex(v);
+                }
+                if (mwd.indexCount > 0 && mwd.currentIndex < mwd.indexCount)
+                {
+                    Debug.LogError("Not enough indices written in generateVisualContent callback " +
+                        "(asked for " + mwd.indexCount + " but only wrote " + mwd.currentIndex + ")");
+                    while (mwd.currentIndex < mwd.indexCount)
+                        mwd.SetNextIndex(0);
+                }
+            }
+        }
+
         void GenerateStencilClipEntryForRoundedRectBackground()
         {
             if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
                 return;
 
-            ComputedStyle style = currentElement.computedStyle;
+            var style = currentElement.computedStyle;
             Vector2 radTL, radTR, radBL, radBR;
             MeshGenerationContextUtils.GetVisualElementRadii(currentElement, out radTL, out radBL, out radTR, out radBR);
             float widthT = style.borderTopWidth.value;

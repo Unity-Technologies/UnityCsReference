@@ -159,7 +159,12 @@ namespace UnityEditor
             public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
             public static readonly GUIContent vcsUnlock = EditorGUIUtility.TrTextContent("Unlock");
             public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
+            public static readonly GUIContent vcsRevert = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent vcsRevertUnchanged = EditorGUIUtility.TrTextContent("Revert Unchanged");
             public static readonly GUIStyle vcsButtonStyle = EditorStyles.miniButton;
+            public static GUIStyle vcsRevertStyle = new GUIStyle(EditorStyles.dropDownList);
+            public static readonly GUIStyle vcsBarStyleOneRow = EditorStyles.toolbar;
+            public static GUIStyle vcsBarStyleTwoRows = new GUIStyle(EditorStyles.toolbar);
             public static readonly string objectDisabledModuleWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
@@ -169,6 +174,12 @@ namespace UnityEditor
 
             public static SVC<float> lineSeparatorOffset = new SVC<float>("AC-Button", "--separator-line-top-offset");
             public static SVC<Color> lineSeparatorColor = new SVC<Color>("--theme-line-separator-color", Color.red);
+
+            static Styles()
+            {
+                vcsRevertStyle.padding.right = 15;
+                vcsBarStyleTwoRows.fixedHeight *= 2;
+            }
         }
 
 
@@ -238,7 +249,7 @@ namespace UnityEditor
         private void LoadVisualTreeFromUxml()
         {
             var tpl = EditorGUIUtility.Load("UXML/InspectorWindow/InspectorWindow.uxml") as VisualTreeAsset;
-            var container = tpl.CloneTree();
+            var container = tpl.Instantiate();
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
             m_ScrollView = container.Q<ScrollView>();
@@ -1323,11 +1334,23 @@ namespace UnityEditor
             var hasAssetState = !string.IsNullOrEmpty(currentState);
             var hasMetaState = !string.IsNullOrEmpty(currentMetaState);
 
-            GUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar);
-            var rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.toolbar, GUILayout.ExpandWidth(true));
+            var assetList = new AssetList();
+            assetList.AddRange(assetEditor.targets.Select(o => Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o))));
+
+            // Figure out how many VCS action buttons we'll need to show for the selected assets.
+            // Based on that and the current inspector width, we might want to layout the VCS
+            // bar in two rows to better fit status label & buttons.
+            var buttonPresence = VersionControlBarButtonPresence.Calculate(assetEditor, asset, assetList, connected);
+            var approxSpaceForButtons = buttonPresence.GetButtonCount() * 50;
+            var useTwoRows = GUIView.current != null && GUIView.current.position.width * 0.5f < approxSpaceForButtons;
+
+            var lineHeight = Styles.vcsBarStyleOneRow.fixedHeight;
+            var barStyle = useTwoRows ? Styles.vcsBarStyleTwoRows : Styles.vcsBarStyleOneRow;
+            GUILayout.BeginHorizontal(GUIContent.none, barStyle);
+            var barRect = GUILayoutUtility.GetRect(GUIContent.none, barStyle, GUILayout.ExpandWidth(true));
 
             var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
-            var overlayRect = new Rect(rect.x, rect.y + 1, 28, 16);
+            var overlayRect = new Rect(barRect.x, barRect.y + 1, 28, 16);
             var iconRect = overlayRect;
             iconRect.x += 6;
             iconRect.width = 16;
@@ -1345,10 +1368,14 @@ namespace UnityEditor
                     currentState = currentMetaState + " (meta only)";
             }
 
-            var buttonX = VersionControlBarButtons(assetEditor, rect, asset, connected);
-            var textRect = rect;
+            var buttonsRect = barRect;
+            buttonsRect.yMin = buttonsRect.yMax - lineHeight;
+            var buttonX = VersionControlBarButtons(buttonPresence, buttonsRect, assetList, connected);
+            var textRect = barRect;
+            textRect.height = lineHeight;
             textRect.xMin += 26;
-            textRect.xMax = buttonX;
+            if (!useTwoRows)
+                textRect.xMax = buttonX;
 
             var content = GUIContent.Temp(currentState);
             var fullState = Asset.AllStateToString(asset.state);
@@ -1383,7 +1410,54 @@ namespace UnityEditor
             GUILayout.Space(4);
         }
 
-        static float VersionControlBarButtons(Editor assetEditor, Rect rect, Asset asset, bool connected)
+        static void DoRevertUnchanged(object o)
+        {
+            var al = (AssetList)o;
+            Provider.Revert(al, RevertMode.Unchanged);
+        }
+
+        struct VersionControlBarButtonPresence
+        {
+            public bool revert;
+            public bool revertUnchanged;
+            public bool checkout;
+            public bool add;
+            public bool submit;
+            public bool @lock;
+            public bool unlock;
+
+            public int GetButtonCount()
+            {
+                var c = 0;
+                if (revert) ++c; // revertUnchanged is same button in a drop-down
+                if (checkout) ++c;
+                if (add) ++c;
+                if (submit) ++c;
+                if (@lock) ++c;
+                if (unlock) ++c;
+                return c;
+            }
+
+            public static VersionControlBarButtonPresence Calculate(Editor assetEditor, Asset asset, AssetList assetList, bool connected)
+            {
+                var res = new VersionControlBarButtonPresence();
+                if (!connected)
+                    return res;
+
+                var isFolder = asset.isFolder && !Provider.isVersioningFolders;
+
+                res.revert = Provider.RevertIsValid(assetList, RevertMode.Normal);
+                res.revertUnchanged = Provider.RevertIsValid(assetList, RevertMode.Unchanged);
+                res.checkout = !Editor.IsAppropriateFileOpenForEdit(assetEditor.target);
+                res.add = !isFolder && Provider.AddIsValid(assetList);
+                res.submit = Provider.SubmitIsValid(null, assetList);
+                res.@lock = !isFolder && Provider.LockIsValid(assetList);
+                res.unlock = !isFolder && Provider.UnlockIsValid(assetList);
+                return res;
+            }
+        }
+
+        static float VersionControlBarButtons(VersionControlBarButtonPresence presence, Rect rect, AssetList assetList, bool connected)
         {
             var buttonX = rect.xMax - 7;
             if (!connected)
@@ -1394,35 +1468,65 @@ namespace UnityEditor
             buttonRect.y += 1;
             buttonRect.height = buttonStyle.CalcSize(Styles.vcsAdd).y;
 
-            var isFolder = asset.isFolder && !Provider.isVersioningFolders;
-
-            var assetList = new AssetList();
-            foreach (var o in assetEditor.targets)
+            if (presence.revert && !presence.revertUnchanged)
             {
-                assetList.Add(Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o)));
+                // just a simple revert button
+                if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsRevert))
+                {
+                    WindowRevert.Open(assetList);
+                    GUIUtility.ExitGUI();
+                }
+            }
+            else if (presence.revert || presence.revertUnchanged)
+            {
+                // revert + revert unchanged dropdown button
+                var dropdownStyle = Styles.vcsRevertStyle;
+                const float kDropDownButtonWidth = 20f;
+                buttonRect.width = dropdownStyle.CalcSize(Styles.vcsRevert).x + 6;
+                buttonRect.x = buttonX - buttonRect.width;
+                buttonX -= buttonRect.width;
+
+                var dropDownRect = buttonRect;
+                dropDownRect.xMin = dropDownRect.xMax - kDropDownButtonWidth;
+
+                if (Event.current.type == EventType.MouseDown && dropDownRect.Contains(Event.current.mousePosition))
+                {
+                    var menu = new GenericMenu();
+                    menu.AddItem(Styles.vcsRevertUnchanged, false, DoRevertUnchanged, assetList);
+                    menu.DropDown(buttonRect);
+                    Event.current.Use();
+                }
+                else
+                {
+                    if (GUI.Button(buttonRect, Styles.vcsRevert, dropdownStyle) && presence.revert)
+                    {
+                        WindowRevert.Open(assetList);
+                        GUIUtility.ExitGUI();
+                    }
+                }
             }
 
-            if (!Editor.IsAppropriateFileOpenForEdit(assetEditor.target))
+            if (presence.checkout)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsCheckout))
                     Provider.Checkout(assetList, CheckoutMode.Both).Wait(); // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
             }
-            if (!isFolder && Provider.AddIsValid(assetList))
+            if (presence.add)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsAdd))
                     Provider.Add(assetList, false).Wait();
             }
-            if (Provider.SubmitIsValid(null, assetList))
+            if (presence.submit)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsSubmit))
                     WindowChange.Open(assetList, true);
             }
-            if (!isFolder && Provider.LockIsValid(assetList))
+            if (presence.@lock)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsLock))
                     Provider.Lock(assetList, true).Wait();
             }
-            if (!isFolder && Provider.UnlockIsValid(assetList))
+            if (presence.unlock)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsUnlock))
                     Provider.Lock(assetList, false).Wait();

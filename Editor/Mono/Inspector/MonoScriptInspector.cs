@@ -68,6 +68,14 @@ namespace UnityEditor
         protected override bool needsApplyRevert => false;
 
         // Clear default references
+        // ReSharper disable once UnusedMember.Local - registers as menu handler
+        [MenuItem("CONTEXT/MonoImporter/Reset", isValidateFunction: true)]
+        static bool ResetDefaultReferencesValidate(MenuCommand command)
+        {
+            return AssetDatabase.IsOpenForEdit(command.context);
+        }
+
+        // ReSharper disable once UnusedMember.Local - registers as menu handler
         [MenuItem("CONTEXT/MonoImporter/Reset")]
         static void ResetDefaultReferences(MenuCommand command)
         {

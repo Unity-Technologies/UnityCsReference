@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -363,10 +365,37 @@ namespace UnityEditor
             int length = m_DefaultTimeScripts.Count;
             string[] names = new string[length];
             bool[] enabled = new bool[length];
+            var lockedScripts = new HashSet<MonoScript>();
+
+            if (Provider.enabled)
+            {
+                var assetList = new AssetList();
+                var pathToScript = new Dictionary<string, MonoScript>();
+
+                for (int i = 0; i < length; i++)
+                {
+                    var metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(AssetDatabase.GetAssetPath(m_DefaultTimeScripts[i]));
+
+                    if (Provider.GetAssetByPath(metaPath) != null)
+                    {
+                        assetList.Add(Provider.GetAssetByPath(metaPath));
+                        pathToScript.Add(metaPath, m_DefaultTimeScripts[i]);
+                    }
+                }
+
+                Provider.Status(assetList).Wait();
+
+                foreach (Asset i in assetList)
+                {
+                    if (i.IsState(Asset.States.LockedRemote))
+                        lockedScripts.Add(pathToScript[i.metaPath]);
+                }
+            }
+
             for (int c = 0; c < length; c++)
             {
                 names[c] = m_DefaultTimeScripts[c].GetClass().FullName; // TODO: localization with a proper database.
-                enabled[c] = true;
+                enabled[c] = !lockedScripts.Contains(m_DefaultTimeScripts[c]); //List item is disabled when asset is locked
             }
             EditorUtility.DisplayCustomMenu(r, names, enabled, null, MenuSelection, null);
         }
@@ -528,6 +557,13 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            bool GUIEnabledValue = GUI.enabled;
+
+            if (Provider.enabled && !Provider.isActive && !EditorUserSettings.WorkOffline)
+            {
+                GUI.enabled = false;
+            }
+
             if (m_Edited)
             {
                 UpdateOrder(m_Edited);
@@ -584,6 +620,12 @@ namespace UnityEditor
 
                 ApplyRevertGUI();
             } GUILayout.EndVertical();
+
+            GUI.enabled = GUIEnabledValue;
+            if (Provider.enabled && !Provider.isActive && !EditorUserSettings.WorkOffline)
+            {
+                EditorGUILayout.HelpBox("Version control is disconnected", MessageType.Warning);
+            }
 
             GUILayout.FlexibleSpace();
         }

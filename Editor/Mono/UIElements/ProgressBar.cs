@@ -56,7 +56,7 @@ namespace UnityEditor.UIElements
         {
             var tpl = EditorGUIUtility.Load("UXML/ProgressBar.uxml") as VisualTreeAsset;
             AddToClassList(ussClassName);
-            var container = tpl.CloneTree();
+            var container = tpl.Instantiate();
             container.AddToClassList(containerUssClassName);
             hierarchy.Add(container);
 

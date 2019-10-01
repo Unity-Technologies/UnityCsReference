@@ -18,11 +18,14 @@ namespace UnityEditor
         static GUIContent m_FreezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
 
         readonly AnimBool m_ShowInfo = new AnimBool();
+        private bool m_RequiresConstantRepaint;
 
         public void OnEnable()
         {
             m_Constraints = serializedObject.FindProperty("m_Constraints");
             m_ShowInfo.valueChanged.AddListener(Repaint);
+
+            m_RequiresConstantRepaint = false;
         }
 
         public void OnDisable()
@@ -87,6 +90,8 @@ namespace UnityEditor
 
         private void ShowBodyInfoProperties()
         {
+            m_RequiresConstantRepaint = false;
+
             m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
             {
@@ -107,7 +112,7 @@ namespace UnityEditor
 
                     // We need to repaint as some of the above properties can change without causing a repaint.
                     if (EditorApplication.isPlaying)
-                        Repaint();
+                        m_RequiresConstantRepaint = true;
                 }
                 else
                 {
@@ -115,6 +120,11 @@ namespace UnityEditor
                 }
             }
             EditorGUILayout.EndFadeGroup();
+        }
+
+        public override bool RequiresConstantRepaint()
+        {
+            return m_RequiresConstantRepaint;
         }
     }
 }

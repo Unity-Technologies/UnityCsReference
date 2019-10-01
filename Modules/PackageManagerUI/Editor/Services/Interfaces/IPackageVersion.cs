@@ -35,8 +35,6 @@ namespace UnityEditor.PackageManager.UI
 
         DateTime? publishedDate { get; }
 
-        string publisherId { get; }
-
         DependencyInfo[] dependencies { get; }
 
         DependencyInfo[] resolvedDependencies { get; }
@@ -51,12 +49,6 @@ namespace UnityEditor.PackageManager.UI
         bool isFullyFetched { get; }
 
         bool isAvailableOnDisk { get; }
-
-        bool isVersionLocked { get; }
-
-        bool canBeRemoved { get; }
-
-        bool canBeEmbedded { get; }
 
         bool isDirectDependency { get; }
 

@@ -280,6 +280,11 @@ namespace UnityEditor
             m_SceneHierarchy.AddItemsToWindowMenu(menu);
         }
 
+        public void GetSelectedScenes(List<Scene> scenes)
+        {
+            m_SceneHierarchy.GetSelectedScenes(scenes);
+        }
+
         internal static void RebuildStageHeaderInAll()
         {
             var sceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();

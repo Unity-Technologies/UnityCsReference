@@ -1713,6 +1713,14 @@ namespace UnityEngine.Rendering
         UNITY_LIGHTMAP_FULL_HDR,
     }
 
+    // Match VideoShadersMode on C++ side
+    public enum VideoShadersIncludeMode
+    {
+        Never = 0,
+        Referenced = 1,
+        Always = 2
+    }
+
     // Match TextureDimension on C++ side
     public enum TextureDimension
     {

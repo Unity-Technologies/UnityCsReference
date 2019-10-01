@@ -36,6 +36,11 @@ namespace UnityEditor.Build.Reporting
             get { return GetAppendicesByType<PackedAssets>(); }
         }
 
+        public ScenesUsingAssets[] scenesUsingAssets
+        {
+            get { return GetAppendicesByType<ScenesUsingAssets>(); }
+        }
+
         [NativeMethod("RelocateFiles")]
         internal extern void RecordFilesMoved(string originalPathPrefix, string newPathPrefix);
 

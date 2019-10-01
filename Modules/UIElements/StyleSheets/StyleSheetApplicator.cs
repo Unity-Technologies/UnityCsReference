@@ -8,162 +8,8 @@ using UnityEngine;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    internal static class StyleSheetApplicator
+    internal static partial class ShorthandApplicator
     {
-        public static void ApplyAlign(IStylePropertyReader reader, ref StyleInt property)
-        {
-            if (reader.IsKeyword(0, StyleValueKeyword.Auto))
-            {
-                StyleInt auto = new StyleInt((int)Align.Auto) {specificity = reader.specificity};
-                property = auto;
-                return;
-            }
-
-            if (!reader.IsValueType(0, StyleValueType.Enum))
-            {
-                Debug.LogError("Invalid value for align property " + reader.ReadAsString(0));
-                return;
-            }
-
-            property = reader.ReadStyleEnum<Align>(0);
-        }
-
-        public static void ApplyDisplay(IStylePropertyReader reader, ref StyleInt property)
-        {
-            if (reader.IsKeyword(0, StyleValueKeyword.None))
-            {
-                StyleInt none = new StyleInt((int)DisplayStyle.None) {specificity = reader.specificity};
-                property = none;
-                return;
-            }
-
-            if (!reader.IsValueType(0, StyleValueType.Enum))
-            {
-                Debug.LogError("Invalid value for display property " + reader.ReadAsString(0));
-                return;
-            }
-
-            property = reader.ReadStyleEnum<DisplayStyle>(0);
-        }
-    }
-
-    internal static class ShorthandApplicator
-    {
-        public static void ApplyBorderColor(StylePropertyReader reader, VisualElementStylesData styleData)
-        {
-            StyleColor top;
-            StyleColor right;
-            StyleColor bottom;
-            StyleColor left;
-            CompileBoxArea(reader, out top, out right, out bottom, out left);
-
-            // border-color doesn't support any keyword, revert to Color.clear in that case
-            if (top.keyword != StyleKeyword.Undefined)
-                top.value = Color.clear;
-            if (right.keyword != StyleKeyword.Undefined)
-                right.value = Color.clear;
-            if (bottom.keyword != StyleKeyword.Undefined)
-                bottom.value = Color.clear;
-            if (left.keyword != StyleKeyword.Undefined)
-                left.value = Color.clear;
-
-            styleData.borderTopColor.Apply(top, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-            styleData.borderRightColor.Apply(right, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-            styleData.borderBottomColor.Apply(bottom, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-            styleData.borderLeftColor.Apply(left, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-        }
-
-        public static void ApplyBorderRadius(StylePropertyReader reader, VisualElementStylesData styleData)
-        {
-            StyleLength topLeft;
-            StyleLength topRight;
-            StyleLength bottomLeft;
-            StyleLength bottomRight;
-            CompileBoxArea(reader, out topLeft, out topRight, out bottomRight, out bottomLeft);
-
-            // border-radius doesn't support any keyword, revert to 0 in that case
-            if (topLeft.keyword != StyleKeyword.Undefined)
-                topLeft.value = 0f;
-            if (topRight.keyword != StyleKeyword.Undefined)
-                topRight.value = 0f;
-            if (bottomLeft.keyword != StyleKeyword.Undefined)
-                bottomLeft.value = 0f;
-            if (bottomRight.keyword != StyleKeyword.Undefined)
-                bottomRight.value = 0f;
-
-            styleData.borderTopLeftRadius = topLeft;
-            styleData.borderTopRightRadius = topRight;
-            styleData.borderBottomLeftRadius = bottomLeft;
-            styleData.borderBottomRightRadius = bottomRight;
-        }
-
-        public static void ApplyBorderWidth(StylePropertyReader reader, VisualElementStylesData styleData)
-        {
-            StyleLength top;
-            StyleLength right;
-            StyleLength bottom;
-            StyleLength left;
-            CompileBoxArea(reader, out top, out right, out bottom, out left);
-
-            // border-width doesn't support any keyword, revert to 0 in that case
-            if (top.keyword != StyleKeyword.Undefined)
-                top.value = 0f;
-            if (right.keyword != StyleKeyword.Undefined)
-                right.value = 0f;
-            if (bottom.keyword != StyleKeyword.Undefined)
-                bottom.value = 0f;
-            if (left.keyword != StyleKeyword.Undefined)
-                left.value = 0f;
-
-            styleData.borderTopWidth = top.ToStyleFloat();
-            styleData.borderRightWidth = right.ToStyleFloat();
-            styleData.borderBottomWidth = bottom.ToStyleFloat();
-            styleData.borderLeftWidth = left.ToStyleFloat();
-        }
-
-        public static void ApplyFlex(StylePropertyReader reader, VisualElementStylesData styleData)
-        {
-            StyleFloat grow;
-            StyleFloat shrink;
-            StyleLength basis;
-            bool valid = CompileFlexShorthand(reader, out grow, out shrink, out basis);
-
-            if (valid)
-            {
-                styleData.flexGrow = grow;
-                styleData.flexShrink = shrink;
-                styleData.flexBasis = basis;
-            }
-        }
-
-        public static void ApplyMargin(StylePropertyReader reader, VisualElementStylesData styleData)
-        {
-            StyleLength top;
-            StyleLength right;
-            StyleLength bottom;
-            StyleLength left;
-            CompileBoxArea(reader, out top, out right, out bottom, out left);
-
-            styleData.marginTop = top;
-            styleData.marginRight = right;
-            styleData.marginBottom = bottom;
-            styleData.marginLeft = left;
-        }
-
-        public static void ApplyPadding(StylePropertyReader reader, VisualElementStylesData styleData)
-        {
-            StyleLength top;
-            StyleLength right;
-            StyleLength bottom;
-            StyleLength left;
-            CompileBoxArea(reader, out top, out right, out bottom, out left);
-
-            styleData.paddingTop = top;
-            styleData.paddingRight = right;
-            styleData.paddingBottom = bottom;
-            styleData.paddingLeft = left;
-        }
-
         private static bool CompileFlexShorthand(StylePropertyReader reader, out StyleFloat grow, out StyleFloat shrink, out StyleLength basis)
         {
             grow = 0f;
@@ -251,9 +97,6 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
 
-            grow.specificity = reader.specificity;
-            shrink.specificity = reader.specificity;
-            basis.specificity = reader.specificity;
             return valid;
         }
 
@@ -302,7 +145,36 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
-        private static void CompileBoxArea(StylePropertyReader reader, out StyleColor top, out StyleColor right, out StyleColor bottom, out StyleColor left)
+        private static void CompileBoxAreaNoKeyword(StylePropertyReader reader, out StyleLength top, out StyleLength right, out StyleLength bottom, out StyleLength left)
+        {
+            CompileBoxArea(reader, out top, out right, out bottom, out left);
+
+            if (top.keyword != StyleKeyword.Undefined)
+                top.value = 0f;
+            if (right.keyword != StyleKeyword.Undefined)
+                right.value = 0f;
+            if (bottom.keyword != StyleKeyword.Undefined)
+                bottom.value = 0f;
+            if (left.keyword != StyleKeyword.Undefined)
+                left.value = 0f;
+        }
+
+        private static void CompileBoxAreaNoKeyword(StylePropertyReader reader, out StyleFloat top, out StyleFloat right, out StyleFloat bottom, out StyleFloat left)
+        {
+            StyleLength t;
+            StyleLength r;
+            StyleLength b;
+            StyleLength l;
+
+            CompileBoxAreaNoKeyword(reader, out t, out r, out b, out l);
+
+            top = t.ToStyleFloat();
+            right = r.ToStyleFloat();
+            bottom = b.ToStyleFloat();
+            left = l.ToStyleFloat();
+        }
+
+        private static void CompileBoxAreaNoKeyword(StylePropertyReader reader, out StyleColor top, out StyleColor right, out StyleColor bottom, out StyleColor left)
         {
             top = Color.clear;
             right = Color.clear;
@@ -345,6 +217,15 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 }
             }
+
+            if (top.keyword != StyleKeyword.Undefined)
+                top.value = Color.clear;
+            if (right.keyword != StyleKeyword.Undefined)
+                right.value = Color.clear;
+            if (bottom.keyword != StyleKeyword.Undefined)
+                bottom.value = Color.clear;
+            if (left.keyword != StyleKeyword.Undefined)
+                left.value = Color.clear;
         }
     }
 }

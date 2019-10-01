@@ -161,7 +161,7 @@ namespace UnityEditor.Experimental.GraphView
             AddStyleSheetPath("StyleSheets/GraphView/Pill.uss");
 
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Pill.uxml") as VisualTreeAsset;
-            VisualElement mainContainer = tpl.CloneTree();
+            VisualElement mainContainer = tpl.Instantiate();
 
             m_TitleLabel = mainContainer.Q<Label>("title-label");
             m_Icon = mainContainer.Q<Image>("icon");

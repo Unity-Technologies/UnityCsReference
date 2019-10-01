@@ -110,7 +110,10 @@ namespace UnityEditor
         //StripUnityVersion = 1 << 27
 
         // Enable C# code instrumentation for the player.
-        EnableDeepProfilingSupport = 1 << 28
+        EnableDeepProfilingSupport = 1 << 28,
+
+        // The BuildReport object returned by BuildPipeline.BuildPlayer will contain more details (about build times and contents), at the cost of a slightly (typically, a few percents) longer build time
+        DetailedBuildReport = 1 << 29
     }
 
     // Asset Bundle building options.

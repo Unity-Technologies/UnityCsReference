@@ -160,6 +160,9 @@
     <Compile Include="..\..\Editor\Mono\DefaultAsset.bindings.cs">
       <Link>Editor\Mono\DefaultAsset.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Delayer.cs">
+      <Link>Editor\Mono\Delayer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\DisplayUtility.cs">
       <Link>Editor\Mono\DisplayUtility.cs</Link>
     </Compile>
@@ -2341,6 +2344,9 @@
     <Compile Include="..\..\Editor\Mono\MaterialProperty.cs">
       <Link>Editor\Mono\MaterialProperty.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\MaterialProperty.deprecated.cs">
+      <Link>Editor\Mono\MaterialProperty.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Media\Bindings\MediaDecoder.bindings.cs">
       <Link>Editor\Mono\Media\Bindings\MediaDecoder.bindings.cs</Link>
     </Compile>
@@ -2979,9 +2985,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\AutoReferencedPackageAssemblies.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs</Link>
@@ -3640,6 +3643,15 @@
     <Compile Include="..\..\Editor\Mono\View.cs">
       <Link>Editor\Mono\View.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\AssemblyNameProvider.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\AssemblyNameProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\FileIO.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\FileIO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\GUIDGenerator.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\GUIDGenerator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs">
       <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
     </Compile>
@@ -3867,6 +3879,12 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\PackedAssets.bindings.cs">
       <Link>Modules\BuildReportingEditor\Managed\PackedAssets.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ScenesUsingAsset.cs">
+      <Link>Modules\BuildReportingEditor\Managed\ScenesUsingAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ScenesUsingAssets.bindings.cs">
+      <Link>Modules\BuildReportingEditor\Managed\ScenesUsingAssets.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ScopedBuildStep.cs">
       <Link>Modules\BuildReportingEditor\Managed\ScopedBuildStep.cs</Link>
@@ -4105,9 +4123,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\ASyncHTTPClientFactory.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\ASyncHTTPClientFactory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs</Link>
     </Compile>
@@ -4147,11 +4162,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BasePackage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\BasePackage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\DownloadProgress.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\DownloadProgress.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageExtensions.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs</Link>
@@ -4192,9 +4210,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAsyncHTTPClientFactory.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAsyncHTTPClientFactory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadOperation.cs</Link>
     </Compile>
@@ -4212,6 +4227,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmCache.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmCache.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs</Link>
@@ -4263,6 +4281,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmBaseOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmCache.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmCache.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmClient.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmClient.cs</Link>

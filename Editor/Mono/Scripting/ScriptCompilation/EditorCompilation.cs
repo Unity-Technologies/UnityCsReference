@@ -1244,30 +1244,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static bool MoveOrReplaceFile(string sourcePath, string destinationPath)
         {
-            bool fileMoved = true;
-            try
+            bool fileMoved = false;
+
+            // check existence first to avoid a first-chance file-exists exception
+            if (!File.Exists(destinationPath))
             {
-                File.Move(sourcePath, destinationPath);
-            }
-            catch (IOException)
-            {
-                fileMoved = false;
+                try
+                {
+                    File.Move(sourcePath, destinationPath);
+                    fileMoved = true;
+                }
+                catch (IOException) {}
             }
 
             if (!fileMoved)
             {
-                fileMoved = true;
                 var backupFile = destinationPath + ".bak";
                 DeleteFile(backupFile, DeleteFileOptions.NoLogError); // Delete any previous backup files.
 
                 try
                 {
                     File.Replace(sourcePath, destinationPath, backupFile, true);
+                    fileMoved = true;
                 }
-                catch (IOException)
-                {
-                    fileMoved = false;
-                }
+                catch (IOException) {}
 
                 // Try to delete backup file. Does not need to exist
                 // We will eventually delete the file in DeleteUnusedAssemblies.

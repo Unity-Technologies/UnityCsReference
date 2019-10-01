@@ -71,7 +71,7 @@ namespace UnityEngine.UIElements
 
         public class UxmlTraits : UIElements.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = "name" };
+            protected UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_NameAttributeName };
             UxmlStringAttributeDescription m_ViewDataKey = new UxmlStringAttributeDescription { name = "view-data-key" };
             UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "picking-mode", obsoleteNames = new[] { "pickingMode" }};
             UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
@@ -732,53 +732,21 @@ namespace UnityEngine.UIElements
         internal YogaNode yogaNode { get; private set; }
 
         // shared style object, cannot be changed by the user
-        internal VisualElementStylesData m_SharedStyle = VisualElementStylesData.none;
+        internal ComputedStyle m_SharedStyle = InitialStyle.Get();
         // user-defined style object, if not set, is the same reference as m_SharedStyles
-        internal VisualElementStylesData m_Style = VisualElementStylesData.none;
+        internal ComputedStyle m_Style = InitialStyle.Get();
 
-        internal VisualElementStylesData sharedStyle
-        {
-            get
-            {
-                return m_SharedStyle;
-            }
-        }
+        internal ComputedStyle sharedStyle => m_SharedStyle;
 
-        internal VisualElementStylesData specifiedStyle
-        {
-            get
-            {
-                return m_Style;
-            }
-        }
+        internal ComputedStyle computedStyle => m_Style;
 
         // Variables that children inherit
         internal StyleVariableContext variableContext = StyleVariableContext.none;
 
-        // Styles that children inherit
-        internal InheritedStylesData propagatedStyle = InheritedStylesData.none;
+        // Hash of the inherited style data values
+        internal int inheritedStylesHash = 0;
 
-        private InheritedStylesData m_InheritedStylesData = InheritedStylesData.none;
-        // Styles inherited from the parent
-        internal InheritedStylesData inheritedStyle
-        {
-            get { return m_InheritedStylesData; }
-            set
-            {
-                if (!ReferenceEquals(m_InheritedStylesData, value))
-                {
-                    m_InheritedStylesData = value;
-                    IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Styles | VersionChangeType.Layout);
-                }
-            }
-        }
-
-        internal bool hasInlineStyle
-        {
-            get { return m_Style != m_SharedStyle; }
-        }
-
-        internal ComputedStyle computedStyle { get; private set; }
+        internal bool hasInlineStyle => m_Style != m_SharedStyle;
 
         // Opacity is not fully supported so it's hidden from public API for now
         internal float opacity
@@ -797,7 +765,6 @@ namespace UnityEngine.UIElements
             controlid = ++s_NextId;
 
             hierarchy = new Hierarchy(this);
-            computedStyle = new ComputedStyle(this);
 
             m_ClassList = s_EmptyClassList;
             m_FullTypeName = string.Empty;
@@ -916,6 +883,7 @@ namespace UnityEngine.UIElements
 
             if (panel != null)
             {
+                yogaNode.SetConfig(elementPanel.yogaConfig);
                 RegisterRunningAnimations();
                 using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
                 {
@@ -923,6 +891,11 @@ namespace UnityEngine.UIElements
                     elementPanel.SendEvent(e, DispatchMode.Default);
                 }
             }
+            else
+            {
+                yogaNode.SetConfig(YogaConfig.Default);
+            }
+
 
             // styles are dependent on topology
             IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Transform);
@@ -1227,25 +1200,23 @@ namespace UnityEngine.UIElements
         {
             if (hasInlineStyle)
             {
-                specifiedStyle.SyncWithLayout(yogaNode);
+                computedStyle.SyncWithLayout(yogaNode);
             }
             else
             {
-                yogaNode.CopyStyle(specifiedStyle.yogaNode);
+                yogaNode.CopyStyle(computedStyle.yogaNode);
             }
         }
 
-        // for internal use only, used by asset instantiation to push local styles
-        // likely can be replaced by merging VisualContainer and VisualElement
-        // and then storing the inline sheet in the list held by VisualContainer
-        internal void SetInlineStyles(VisualElementStylesData inlineStyleData)
+        internal void SetInlineRule(StyleSheet sheet, StyleRule rule)
         {
-            Debug.Assert(!inlineStyleData.isShared);
-            inlineStyleData.Apply(m_Style, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
-            m_Style = inlineStyleData;
+            if (inlineStyleAccess == null)
+                inlineStyleAccess = new InlineStyleAccess(this);
+
+            inlineStyleAccess.SetInlineRule(sheet, rule);
         }
 
-        internal void SetSharedStyles(VisualElementStylesData sharedStyle)
+        internal void SetSharedStyles(ComputedStyle sharedStyle)
         {
             Debug.Assert(sharedStyle.isShared);
 
@@ -1263,7 +1234,7 @@ namespace UnityEngine.UIElements
 
             if (hasInlineStyle)
             {
-                m_Style.Apply(sharedStyle, StylePropertyApplyMode.CopyIfNotInline);
+                inlineStyleAccess.ApplyInlineStyles(sharedStyle);
             }
             else
             {

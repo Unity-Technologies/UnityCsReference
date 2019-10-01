@@ -8,26 +8,6 @@ using UnityEngine;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    internal interface IStylePropertyReader
-    {
-        StylePropertyID propertyID { get; }
-        int specificity { get; }
-        int valueCount { get; }
-
-        bool IsValueType(int index, StyleValueType type);
-        bool IsKeyword(int index, StyleValueKeyword keyword);
-
-        string ReadAsString(int index);
-        StyleLength ReadStyleLength(int index);
-        StyleFloat ReadStyleFloat(int index);
-        StyleInt ReadStyleInt(int index);
-        StyleColor ReadStyleColor(int index);
-        StyleInt ReadStyleEnum<T>(int index);
-        StyleFont ReadStyleFont(int index);
-        StyleBackground ReadStyleBackground(int index);
-        StyleCursor ReadStyleCursor(int index);
-    }
-
     internal struct StylePropertyValue
     {
         public StyleSheet sheet;
@@ -40,7 +20,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public VectorImage vectorImage;
     }
 
-    internal class StylePropertyReader : IStylePropertyReader
+    internal class StylePropertyReader
     {
         // Strategy to create default cursor must be provided in the context of Editor or Runtime
         internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
@@ -51,43 +31,40 @@ namespace UnityEngine.UIElements.StyleSheets
         private StyleVariableResolver m_Resolver = new StyleVariableResolver();
         private StyleSheet m_Sheet;
         private StyleProperty[] m_Properties;
-        private StylePropertyID[] m_PropertyIDs;
+        private StylePropertyId[] m_PropertyIds;
         private int m_CurrentValueIndex;
         private int m_CurrentPropertyIndex;
 
         public StyleProperty property { get; private set; }
-        public StylePropertyID propertyID { get; private set; }
+        public StylePropertyId propertyId { get; private set; }
         public int valueCount { get; private set; }
-        public int specificity { get; private set; }
 
         public void SetContext(StyleSheet sheet, StyleComplexSelector selector, StyleVariableContext varContext)
         {
             m_Sheet = sheet;
             m_Properties = selector.rule.properties;
-            m_PropertyIDs = StyleSheetCache.GetPropertyIDs(sheet, selector.ruleIndex);
+            m_PropertyIds = StyleSheetCache.GetPropertyIds(sheet, selector.ruleIndex);
             m_Resolver.variableContext = varContext;
 
-            specificity = sheet.isUnityStyleSheet ? StyleValueExtensions.UnitySpecificity : selector.specificity;
             LoadProperties();
         }
 
         // This is for UXML inline sheet
-        public void SetInlineContext(StyleSheet sheet, StyleRule rule, int ruleIndex)
+        public void SetInlineContext(StyleSheet sheet, StyleProperty[] properties, StylePropertyId[] propertyIds)
         {
             m_Sheet = sheet;
-            m_Properties = rule.properties;
-            m_PropertyIDs = StyleSheetCache.GetPropertyIDs(sheet, ruleIndex);
+            m_Properties = properties;
+            m_PropertyIds = propertyIds;
 
-            specificity = StyleValueExtensions.InlineSpecificity;
             LoadProperties();
         }
 
-        public StylePropertyID MoveNextProperty()
+        public StylePropertyId MoveNextProperty()
         {
             ++m_CurrentPropertyIndex;
             m_CurrentValueIndex += valueCount;
             SetCurrentProperty();
-            return propertyID;
+            return propertyId;
         }
 
         public StylePropertyValue GetValue(int index)
@@ -124,25 +101,25 @@ namespace UnityEngine.UIElements.StyleSheets
             if (value.handle.valueType == StyleValueType.Keyword)
             {
                 var keyword = (StyleValueKeyword)value.handle.valueIndex;
-                return new StyleLength(keyword.ToStyleKeyword()) { specificity = specificity };
+                return new StyleLength(keyword.ToStyleKeyword());
             }
             else
             {
                 var dimension = value.sheet.ReadDimension(value.handle);
-                return new StyleLength(dimension.ToLength()) { specificity = specificity };
+                return new StyleLength(dimension.ToLength());
             }
         }
 
         public StyleFloat ReadStyleFloat(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
-            return new StyleFloat(value.sheet.ReadFloat(value.handle)) {specificity = specificity};
+            return new StyleFloat(value.sheet.ReadFloat(value.handle));
         }
 
         public StyleInt ReadStyleInt(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
-            return new StyleInt((int)value.sheet.ReadFloat(value.handle)) {specificity = specificity};
+            return new StyleInt((int)value.sheet.ReadFloat(value.handle));
         }
 
         public StyleColor ReadStyleColor(int index)
@@ -158,13 +135,27 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 c = value.sheet.ReadColor(value.handle);
             }
-            return new StyleColor(c) {specificity = specificity};
+            return new StyleColor(c);
         }
 
-        public StyleInt ReadStyleEnum<T>(int index)
+        public StyleInt ReadStyleEnum(StyleEnumType enumType, int index)
         {
+            string enumString = null;
             var value = m_Values[m_CurrentValueIndex + index];
-            return new StyleInt(StyleSheetCache.GetEnumValue<T>(value.sheet, value.handle)) {specificity = specificity};
+            var handle = value.handle;
+
+            if (handle.valueType == StyleValueType.Keyword)
+            {
+                var keyword = value.sheet.ReadKeyword(handle);
+                enumString = keyword.ToUssString();
+            }
+            else
+            {
+                enumString = value.sheet.ReadEnum(handle);
+            }
+
+            int intValue = StylePropertyUtil.GetEnumIntValue(enumType, enumString);
+            return new StyleInt(intValue);
         }
 
         public StyleFont ReadStyleFont(int index)
@@ -204,7 +195,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
             }
 
-            return new StyleFont(font) {specificity = specificity};
+            return new StyleFont(font);
         }
 
         public StyleBackground ReadStyleBackground(int index)
@@ -230,11 +221,11 @@ namespace UnityEngine.UIElements.StyleSheets
 
             StyleBackground sb;
             if (source.texture != null)
-                sb = new StyleBackground(source.texture) { specificity = specificity };
+                sb = new StyleBackground(source.texture);
             else if (source.vectorImage != null)
-                sb = new StyleBackground(source.vectorImage) { specificity = specificity };
+                sb = new StyleBackground(source.vectorImage);
             else
-                sb = new StyleBackground() {specificity = specificity};
+                sb = new StyleBackground();
             return sb;
         }
 
@@ -289,7 +280,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             var cursor = new Cursor() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
-            return new StyleCursor(cursor) {specificity = specificity};
+            return new StyleCursor(cursor);
         }
 
         private void LoadProperties()
@@ -357,16 +348,16 @@ namespace UnityEngine.UIElements.StyleSheets
 
         private void SetCurrentProperty()
         {
-            if (m_CurrentPropertyIndex < m_PropertyIDs.Length)
+            if (m_CurrentPropertyIndex < m_PropertyIds.Length)
             {
                 property = m_Properties[m_CurrentPropertyIndex];
-                propertyID = m_PropertyIDs[m_CurrentPropertyIndex];
+                propertyId = m_PropertyIds[m_CurrentPropertyIndex];
                 valueCount = m_ValueCount[m_CurrentPropertyIndex];
             }
             else
             {
                 property = null;
-                propertyID = StylePropertyID.Unknown;
+                propertyId = StylePropertyId.Unknown;
                 valueCount = 0;
             }
         }
@@ -414,113 +405,6 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             return true;
-        }
-    }
-
-    internal class StyleValuePropertyReader : IStylePropertyReader
-    {
-        public StylePropertyID propertyID { get; private set; }
-        public int specificity { get; private set; }
-        public int valueCount => 1;
-
-        private StyleValue m_CurrentStyleValue;
-        private StyleCursor m_CurrentCursor;
-
-        public void Set(StylePropertyID id, StyleValue value, int spec)
-        {
-            propertyID = id;
-            m_CurrentStyleValue = value;
-            specificity = spec;
-        }
-
-        public void Set(StyleCursor cursor, int spec)
-        {
-            propertyID = StylePropertyID.Cursor;
-            m_CurrentCursor = cursor;
-            specificity = spec;
-        }
-
-        public bool IsValueType(int index, StyleValueType type)
-        {
-            if (type == StyleValueType.Keyword)
-                return m_CurrentStyleValue.keyword != StyleKeyword.Undefined;
-
-            return m_CurrentStyleValue.keyword == StyleKeyword.Undefined;
-        }
-
-        public bool IsKeyword(int index, StyleValueKeyword keyword)
-        {
-            if (m_CurrentStyleValue.keyword == StyleKeyword.Undefined)
-                return false;
-
-            return m_CurrentStyleValue.keyword == keyword.ToStyleKeyword();
-        }
-
-        public string ReadAsString(int index)
-        {
-            if (m_CurrentStyleValue.keyword != StyleKeyword.Undefined)
-                return m_CurrentStyleValue.keyword.ToString();
-
-            return m_CurrentStyleValue.number.ToString();
-        }
-
-        public StyleLength ReadStyleLength(int index)
-        {
-            return new StyleLength(m_CurrentStyleValue.length, m_CurrentStyleValue.keyword) { specificity = specificity };
-        }
-
-        public StyleFloat ReadStyleFloat(int index)
-        {
-            return new StyleFloat(m_CurrentStyleValue.number, m_CurrentStyleValue.keyword) { specificity = specificity };
-        }
-
-        public StyleInt ReadStyleInt(int index)
-        {
-            return new StyleInt((int)m_CurrentStyleValue.number, m_CurrentStyleValue.keyword) { specificity = specificity };
-        }
-
-        public StyleColor ReadStyleColor(int index)
-        {
-            return new StyleColor(m_CurrentStyleValue.color, m_CurrentStyleValue.keyword) { specificity = specificity };
-        }
-
-        public StyleInt ReadStyleEnum<T>(int index)
-        {
-            return new StyleInt((int)m_CurrentStyleValue.number, m_CurrentStyleValue.keyword) { specificity = specificity };
-        }
-
-        public StyleFont ReadStyleFont(int index)
-        {
-            Font font = null;
-            if (m_CurrentStyleValue.resource.IsAllocated)
-                font = m_CurrentStyleValue.resource.Target as Font;
-
-            return new StyleFont(font, m_CurrentStyleValue.keyword) { specificity = specificity };
-        }
-
-        public StyleBackground ReadStyleBackground(int index)
-        {
-            var styleBackground = new StyleBackground(m_CurrentStyleValue.keyword);
-            if (m_CurrentStyleValue.resource.IsAllocated)
-            {
-                var texture = m_CurrentStyleValue.resource.Target as Texture2D;
-                if (texture != null)
-                    styleBackground = new StyleBackground(texture, m_CurrentStyleValue.keyword);
-                else
-                {
-                    var vectorImage = m_CurrentStyleValue.resource.Target as VectorImage;
-                    if (vectorImage != null)
-                        styleBackground = new StyleBackground(vectorImage, m_CurrentStyleValue.keyword);
-                }
-            }
-
-            styleBackground.specificity = specificity;
-            return styleBackground;
-        }
-
-        public StyleCursor ReadStyleCursor(int index)
-        {
-            return new StyleCursor(m_CurrentCursor.value, m_CurrentCursor.keyword) { specificity = specificity };
         }
     }
 }

@@ -4,6 +4,8 @@
 
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEditor.VersionControl
 {
@@ -15,8 +17,13 @@ namespace UnityEditor.VersionControl
         AssetList assetList = new AssetList();
         bool cancelled = false;
 
+        // This is required to preserve and be able to restore resolve list after assembly reload that
+        // happens after resolving script conflicts
+        List<string> assetPaths = new List<string>();
+
         public void OnEnable()
         {
+            DoOpen(assetList);
             position = new Rect(100, 100, 650, 330);
             minSize = new Vector2(650, 330);
         }
@@ -33,7 +40,7 @@ namespace UnityEditor.VersionControl
             Task task = Provider.ChangeSetStatus(change);
             task.Wait();
             WindowResolve win = GetWindow();
-            win.DoOpen(task.assetList);
+            win.DoOpen(task.assetList, true);
         }
 
         // Resolve a list of files
@@ -42,7 +49,7 @@ namespace UnityEditor.VersionControl
             Task task = Provider.Status(assets);
             task.Wait();
             WindowResolve win = GetWindow();
-            win.DoOpen(task.assetList);
+            win.DoOpen(task.assetList, true);
         }
 
         static private WindowResolve GetWindow()
@@ -50,14 +57,20 @@ namespace UnityEditor.VersionControl
             return EditorWindow.GetWindow<WindowResolve>(true, "Version Control Resolve");
         }
 
-        void DoOpen(AssetList resolve)
+        void DoOpen(AssetList resolve, bool selectAll = false)
         {
+            if (assetList.Count == 0 && assetPaths.Count != 0)
+            {
+                assetPaths.ForEach(assetPath => assetList.Add(Provider.CacheStatus(assetPath)));
+            }
+
             bool includeFolders = true;
             assetList = resolve.Filter(includeFolders, Asset.States.Conflicted);
-            RefreshList();
+            assetPaths = assetList.Select(asset => asset.path).ToList();
+            RefreshList(selectAll);
         }
 
-        void RefreshList()
+        void RefreshList(bool selectAll)
         {
             resolveList.Clear();
 
@@ -65,14 +78,17 @@ namespace UnityEditor.VersionControl
             foreach (Asset it in assetList)
             {
                 ListItem newItem = resolveList.Add(null, it.prettyPath, it);
-                if (first)
+                if (selectAll)
                 {
-                    resolveList.SelectedSet(newItem);
-                    first = false;
-                }
-                else
-                {
-                    resolveList.SelectedAdd(newItem);
+                    if (first)
+                    {
+                        resolveList.SelectedSet(newItem);
+                        first = false;
+                    }
+                    else
+                    {
+                        resolveList.SelectedAdd(newItem);
+                    }
                 }
             }
 
@@ -119,56 +135,60 @@ namespace UnityEditor.VersionControl
             GUI.enabled = assetList.Count > 0;
 
             GUILayout.Label("Resolve selection by:");
-            if (GUILayout.Button("using local version"))
-            {
-                SimpleMerge(ResolveMethod.UseMine);
-            }
 
-            if (GUILayout.Button("using incoming version"))
+            using (new EditorGUI.DisabledScope(resolveList.SelectedAssets.Count == 0))
             {
-                SimpleMerge(ResolveMethod.UseTheirs);
-            }
-
-            MergeMethod mergeMethod = MergeMethod.MergeNone;
-            if (GUILayout.Button("merging"))
-            {
-                mergeMethod = MergeMethod.MergeAll;
-            }
-
-            if (mergeMethod != MergeMethod.MergeNone)
-            {
-                Task t = Provider.Merge(resolveList.SelectedAssets, mergeMethod);
-                t.Wait();
-
-                if (t.success)
+                if (GUILayout.Button("using local version"))
                 {
-                    t = Provider.Resolve(t.assetList, ResolveMethod.UseMerged);
+                    SimpleMerge(ResolveMethod.UseMine);
+                }
+
+                if (GUILayout.Button("using incoming version"))
+                {
+                    SimpleMerge(ResolveMethod.UseTheirs);
+                }
+
+                bool willMergeAll = false;
+                if (GUILayout.Button("merging"))
+                {
+                    willMergeAll = true;
+                }
+
+                if (willMergeAll == true)
+                {
+                    Task t = Provider.Merge(resolveList.SelectedAssets);
                     t.Wait();
+
                     if (t.success)
                     {
-                        // Check that there are not more conflicts for the specified
-                        // asset. This is possible in e.g. perforce where you handle
-                        // one version conflict at a time.
-                        t = Provider.Status(assetList);
+                        t = Provider.Resolve(t.assetList, ResolveMethod.UseMerged);
                         t.Wait();
+                        if (t.success)
+                        {
+                            // Check that there are not more conflicts for the specified
+                            // asset. This is possible in e.g. perforce where you handle
+                            // one version conflict at a time.
+                            t = Provider.Status(assetList);
+                            t.Wait();
 
-                        DoOpen(t.assetList);
+                            DoOpen(t.assetList);
 
-                        if (t.success && assetList.Count == 0)
-                            Close();
+                            if (t.success && assetList.Count == 0)
+                                Close();
 
-                        // The view will be updated with the new conflicts
+                            // The view will be updated with the new conflicts
+                        }
+                        else
+                        {
+                            EditorUtility.DisplayDialog("Error resolving", "Error during resolve of files. Inspect log for details", "Close");
+                            AssetDatabase.Refresh();
+                        }
                     }
                     else
                     {
-                        EditorUtility.DisplayDialog("Error resolving", "Error during resolve of files. Inspect log for details", "Close");
+                        EditorUtility.DisplayDialog("Error merging", "Error during merge of files. Inspect log for details", "Close");
                         AssetDatabase.Refresh();
                     }
-                }
-                else
-                {
-                    EditorUtility.DisplayDialog("Error merging", "Error during merge of files. Inspect log for details", "Close");
-                    AssetDatabase.Refresh();
                 }
             }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
@@ -129,6 +130,11 @@ namespace UnityEngine.UIElements
         public abstract int IMGUIContainersCount { get; set; }
         public abstract FocusController focusController { get; set; }
 
+        protected BaseVisualElementPanel()
+        {
+            yogaConfig = new YogaConfig();
+            yogaConfig.UseWebDefaults = YogaConfig.Default.UseWebDefaults;
+        }
 
         public void Dispose()
         {
@@ -154,6 +160,7 @@ namespace UnityEngine.UIElements
             else
                 DisposeHelper.NotifyMissingDispose(this);
 
+            yogaConfig = null;
             disposed = true;
         }
 
@@ -173,11 +180,19 @@ namespace UnityEngine.UIElements
                 if (!Mathf.Approximately(m_Scale, value))
                 {
                     m_Scale = value;
+
+                    //we need to update the yoga config
+                    visualTree.IncrementVersion(VersionChangeType.Layout);
+                    yogaConfig.PointScaleFactor = scaledPixelsPerPoint;
+
                     // if the surface DPI changes we need to invalidate styles
                     visualTree.IncrementVersion(VersionChangeType.StyleSheet);
                 }
             }
         }
+
+
+        internal YogaConfig yogaConfig;
 
         private float m_PixelsPerPoint = 1;
         internal float pixelsPerPoint
@@ -188,6 +203,11 @@ namespace UnityEngine.UIElements
                 if (!Mathf.Approximately(m_PixelsPerPoint, value))
                 {
                     m_PixelsPerPoint = value;
+
+                    //we need to update the yoga config
+                    visualTree.IncrementVersion(VersionChangeType.Layout);
+                    yogaConfig.PointScaleFactor = scaledPixelsPerPoint;
+
                     // if the surface DPI changes we need to invalidate styles
                     visualTree.IncrementVersion(VersionChangeType.StyleSheet);
                 }
@@ -390,22 +410,14 @@ namespace UnityEngine.UIElements
             return obj;
         }
 
-        private Focusable m_SavedFocusedElement;
-
         internal void Focus()
         {
-            if (m_SavedFocusedElement != null && !(m_SavedFocusedElement is IMGUIContainer))
-                m_SavedFocusedElement.Focus();
-
-            m_SavedFocusedElement = null;
+            focusController?.SetFocusToLastFocusedElement();
         }
 
         internal void Blur()
         {
-            m_SavedFocusedElement = focusController?.GetLeafFocusedElement();
-
-            if (m_SavedFocusedElement != null && !(m_SavedFocusedElement is IMGUIContainer))
-                m_SavedFocusedElement.Blur();
+            focusController?.BlurLastFocusedElement();
         }
 
         internal string name

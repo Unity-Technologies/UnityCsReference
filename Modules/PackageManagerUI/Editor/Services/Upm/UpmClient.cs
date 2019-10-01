@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI
         public static IUpmClient instance { get { return s_Instance ?? UpmClientInternal.instance; } }
 
         [Serializable]
-        internal class UpmClientInternal : ScriptableSingleton<UpmClientInternal>, IUpmClient, ISerializationCallbackReceiver
+        internal class UpmClientInternal : ScriptableSingleton<UpmClientInternal>, IUpmClient
         {
             public event Action<IOperation> onListOperation = delegate {};
             public event Action<IOperation> onSearchAllOperation = delegate {};
@@ -41,48 +41,10 @@ namespace UnityEditor.PackageManager.UI
             private UpmRemoveOperation m_RemoveOperation;
             private UpmEmbedOperation m_EmbedOperation;
 
-            private Dictionary<string, PackageInfo> m_SearchPackageInfos = new Dictionary<string, PackageInfo>();
-            private PackageInfo GetSearchPackageInfo(string packageName)
-            {
-                PackageInfo result = null;
-                return m_SearchPackageInfos.TryGetValue(packageName, out result) ? result : null;
-            }
-
-            private Dictionary<string, PackageInfo> m_InstalledPackageInfos = new Dictionary<string, PackageInfo>();
-            private PackageInfo GetInstalledPackageInfo(string packageName)
-            {
-                PackageInfo result = null;
-                return m_InstalledPackageInfos.TryGetValue(packageName, out result) ? result : null;
-            }
-
-            private Dictionary<string, PackageInfo> m_ProductPackageInfos = new Dictionary<string, PackageInfo>();
-
-            // the mapping between package name (key) to asset store product id (value)
-            private Dictionary<string, string> m_ProductIdMap = new Dictionary<string, string>();
-
             private readonly Dictionary<string, UpmBaseOperation> m_ExtraFetchOperations = new Dictionary<string, UpmBaseOperation>();
-            private Dictionary<string, Dictionary<string, PackageInfo>> m_ExtraPackageInfo = new Dictionary<string, Dictionary<string, PackageInfo>>();
-            private void AddExtraPackageInfo(PackageInfo packageInfo)
-            {
-                Dictionary<string, PackageInfo> dict;
-                if (!m_ExtraPackageInfo.TryGetValue(packageInfo.name, out dict))
-                {
-                    dict = new Dictionary<string, PackageInfo>();
-                    m_ExtraPackageInfo[packageInfo.name] = dict;
-                }
-                dict[packageInfo.version] = packageInfo;
-            }
 
-            // arrays created to help serialize dictionaries
-            private PackageInfo[] m_SerializedInstalledPackageInfos;
-            private PackageInfo[] m_SerializedSearchPackageInfos;
-            private PackageInfo[] m_SerializedProductPackageInfos;
-            private PackageInfo[] m_SerializedExtraPackageInfos;
-            private string[] m_SerializedProductIdMapKeys;
-            private string[] m_SerializedProductIdMapValues;
-
-            [SerializeField]
-            private bool m_SetupDone;
+            [NonSerialized]
+            private bool m_EventsRegistered;
 
             public bool isAddRemoveOrEmbedInProgress
             {
@@ -121,7 +83,7 @@ namespace UnityEditor.PackageManager.UI
                 if (isAddRemoveOrEmbedInProgress)
                     return;
                 var packageName = packageId.Split(new[] { '@' }, 2)[0];
-                m_AddOperation.Add(packageId, m_ProductIdMap.Get(packageName));
+                m_AddOperation.Add(packageId, UpmCache.instance.GetProductId(packageName));
                 SetupAddOperation();
             }
 
@@ -135,18 +97,13 @@ namespace UnityEditor.PackageManager.UI
             private void OnProcessAddResult(Request<PackageInfo> request)
             {
                 var packageInfo = request.Result;
-                var oldPackageInfo = GetInstalledPackageInfo(packageInfo.name);
-                m_InstalledPackageInfos[packageInfo.name] = packageInfo;
-                OnPackageInfosUpdated(new PackageInfo[] { packageInfo });
+                UpmCache.instance.SetInstalledPackageInfo(packageInfo);
 
                 PackageManagerExtensions.ExtensionCallback(() =>
                 {
                     foreach (var extension in PackageManagerExtensions.Extensions)
                         extension.OnPackageAddedOrUpdated(packageInfo);
                 });
-
-                if (IsPreviewInstalled(packageInfo) || IsPreviewInstalled(oldPackageInfo))
-                    OnInstalledPreviewPackagesChanged();
 
                 // do a list offline to refresh all the dependencies
                 List(true);
@@ -207,23 +164,14 @@ namespace UnityEditor.PackageManager.UI
                 if (offlineMode && m_ListOfflineOperation.timestamp < m_ListOperation.lastSuccessTimestamp)
                     return;
 
-                var listResult = request.Result.ToDictionary(p => p.name, p => p);
-
-                var oldListResult = m_InstalledPackageInfos;
-                m_InstalledPackageInfos = listResult;
-
-                var updatedInfos = FindUpdatedPackageInfos(oldListResult, listResult);
-                OnPackageInfosUpdated(updatedInfos);
-
-                if (updatedInfos.Any())
-                    OnInstalledPreviewPackagesChanged();
+                UpmCache.instance.SetInstalledPackageInfos(request.Result);
             }
 
             public void EmbedByName(string packageName)
             {
                 if (isAddRemoveOrEmbedInProgress)
                     return;
-                m_EmbedOperation.Embed(packageName, m_ProductIdMap.Get(packageName));
+                m_EmbedOperation.Embed(packageName, UpmCache.instance.GetProductId(packageName));
                 m_EmbedOperation.onProcessResult += OnProcessAddResult;
                 m_EmbedOperation.onOperationError += error => Debug.LogError($"Error embedding package: {m_EmbedOperation.packageName}.");
                 onEmbedOperation(m_EmbedOperation);
@@ -233,7 +181,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (isAddRemoveOrEmbedInProgress)
                     return;
-                m_RemoveOperation.Remove(packageName, m_ProductIdMap.Get(packageName));
+                m_RemoveOperation.Remove(packageName, UpmCache.instance.GetProductId(packageName));
                 SetupRemoveOperation();
             }
 
@@ -242,7 +190,7 @@ namespace UnityEditor.PackageManager.UI
                 if (isAddRemoveOrEmbedInProgress)
                     return;
 
-                var packageInfo = GetInstalledPackageInfo(packageName);
+                var packageInfo = UpmCache.instance.GetInstalledPackageInfo(packageName);
                 if (packageInfo != null)
                 {
                     Directory.Delete(packageInfo.resolvedPath, true);
@@ -259,11 +207,10 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnProcessRemoveResult(RemoveRequest request)
             {
-                var installedPackage = GetInstalledPackageInfo(request.PackageIdOrName);
+                var installedPackage = UpmCache.instance.GetInstalledPackageInfo(request.PackageIdOrName);
                 if (installedPackage == null)
                     return;
-                m_InstalledPackageInfos.Remove(installedPackage.name);
-                OnPackageInfosUpdated(new PackageInfo[] { installedPackage });
+                UpmCache.instance.RemoveInstalledPackageInfo(installedPackage.name);
 
                 PackageManagerExtensions.ExtensionCallback(() =>
                 {
@@ -271,17 +218,8 @@ namespace UnityEditor.PackageManager.UI
                         extension.OnPackageRemoved(installedPackage);
                 });
 
-                if (IsPreviewInstalled(installedPackage))
-                    OnInstalledPreviewPackagesChanged();
-
                 // do a list offline to refresh all the dependencies
                 List(true);
-            }
-
-            private void OnInstalledPreviewPackagesChanged()
-            {
-                if (!PackageManagerPrefs.instance.hasShowPreviewPackagesKey)
-                    PackageManagerPrefs.instance.showPreviewPackagesFromInstalled = m_InstalledPackageInfos.Values.Any(p => !SemVersion.Parse(p.version).IsRelease());
             }
 
             public void SearchAll(bool offlineMode = false)
@@ -305,12 +243,7 @@ namespace UnityEditor.PackageManager.UI
                 if (offlineMode && m_SearchOfflineOperation.timestamp < m_SearchOperation.lastSuccessTimestamp)
                     return;
 
-                var searchResult = request.Result.ToDictionary(p => p.name, p => p);
-
-                var oldSearchResult = m_SearchPackageInfos;
-                m_SearchPackageInfos = searchResult;
-
-                OnPackageInfosUpdated(FindUpdatedPackageInfos(oldSearchResult, searchResult));
+                UpmCache.instance.SetSearchPackageInfos(request.Result);
             }
 
             public void ExtraFetch(string packageId)
@@ -336,26 +269,23 @@ namespace UnityEditor.PackageManager.UI
 
                 if (!string.IsNullOrEmpty(productId))
                 {
-                    var oldInfo = m_ProductPackageInfos.Get(packageInfo.name);
+                    var oldInfo = UpmCache.instance.GetProductPackageInfo(packageInfo.name);
                     // remove the created package that's created before asset store info was fetched
-                    if (oldInfo == null && m_InstalledPackageInfos.ContainsKey(packageInfo.name))
+                    // such that there won't be two entries of the same package
+                    if (oldInfo == null && UpmCache.instance.IsPackageInstalled(packageInfo.name))
                         onPackagesChanged(new[] { CreateUpmPackage(null, null, packageInfo.name) });
 
-                    if (oldInfo == null || IsDifferent(oldInfo, packageInfo))
-                    {
-                        m_ProductPackageInfos[packageInfo.name] = packageInfo;
-                        OnPackageInfosUpdated(request.Result.Take(1));
-                    }
+                    UpmCache.instance.SetProductPackageInfo(productId, packageInfo);
                 }
                 else
                 {
-                    AddExtraPackageInfo(packageInfo);
+                    UpmCache.instance.AddExtraPackageInfo(packageInfo);
 
                     // only trigger the call when the package is not installed, as installed version always have the most up-to-date package info
-                    var installedPackageInfo = m_InstalledPackageInfos.Get(packageInfo.name);
+                    var installedPackageInfo = UpmCache.instance.GetInstalledPackageInfo(packageInfo.name);
                     if (installedPackageInfo?.packageId != packageInfo.packageId)
                     {
-                        productId = m_ProductIdMap.Get(packageInfo.name);
+                        productId = UpmCache.instance.GetProductId(packageInfo.name);
                         if (string.IsNullOrEmpty(productId))
                             onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false));
                         else
@@ -377,13 +307,12 @@ namespace UnityEditor.PackageManager.UI
 
             public void FetchForProduct(string productId, string packageName)
             {
-                m_ProductIdMap[packageName] = productId;
                 ExtraFetchInternal(packageName, productId);
             }
 
             private void OnPackageInfosUpdated(IEnumerable<PackageInfo> packageInfos)
             {
-                if (!packageInfos.Any())
+                if (packageInfos?.Any() != true)
                     return;
 
                 var upmPackages = new List<UpmPackage>();
@@ -391,60 +320,60 @@ namespace UnityEditor.PackageManager.UI
                 var showPreview = PackageManagerPrefs.instance.showPreviewPackages;
                 foreach (var p in packageInfos)
                 {
-                    var productId = m_ProductIdMap.Get(p.name);
-                    var installedInfo = m_InstalledPackageInfos.Get(p.name);
+                    var productId = UpmCache.instance.GetProductId(p.name);
+                    var installedInfo = UpmCache.instance.GetInstalledPackageInfo(p.name);
                     if (string.IsNullOrEmpty(productId))
-                        upmPackages.Add(CreateUpmPackage(m_SearchPackageInfos.Get(p.name), installedInfo, p.name));
+                        upmPackages.Add(CreateUpmPackage(UpmCache.instance.GetSearchPackageInfo(p.name), installedInfo, p.name));
                     else
-                        productPackages.Add(CreateUpmPackage(m_ProductPackageInfos.Get(p.name), installedInfo, p.name));
+                        productPackages.Add(CreateUpmPackage(UpmCache.instance.GetProductPackageInfo(p.name), installedInfo, p.name));
                 }
 
                 foreach (var package in upmPackages.Concat(productPackages))
                 {
-                    if (!showPreview && ShouldPreviewsBeRemoved(package.versionList))
+                    if (!showPreview && HasHidablePreviewVersions(package))
                         RemovePreviewVersions(package);
-                    UpdateExtraPackageInfos(package.name, package.versionList);
+                    UpdateExtraPackageInfos(package.name, package.versions);
                 }
 
                 if (upmPackages.Any())
                     onPackagesChanged(upmPackages.Cast<IPackage>());
 
                 foreach (var package in productPackages)
-                    onProductPackageChanged?.Invoke(m_ProductIdMap.Get(package.name), package);
+                    onProductPackageChanged?.Invoke(UpmCache.instance.GetProductId(package.name), package);
             }
 
             private void OnShowPreviewPackagesChanged(bool showPreview)
             {
                 var updatedUpmPackages = new List<UpmPackage>();
                 var updatedProductPackages = new List<UpmPackage>();
-                foreach (var installedInfo in m_InstalledPackageInfos.Values)
+                foreach (var installedInfo in UpmCache.instance.installedPackageInfos)
                 {
-                    var productId = m_ProductIdMap.Get(installedInfo.name);
+                    var productId = UpmCache.instance.GetProductId(installedInfo.name);
                     if (string.IsNullOrEmpty(productId))
                     {
-                        var package = CreateUpmPackage(m_SearchPackageInfos.Get(installedInfo.name), installedInfo);
-                        if (ShouldPreviewsBeRemoved(package.versionList))
+                        var package = CreateUpmPackage(UpmCache.instance.GetSearchPackageInfo(installedInfo.name), installedInfo);
+                        if (HasHidablePreviewVersions(package))
                             updatedUpmPackages.Add(package);
                     }
                     else
                     {
-                        var package = CreateUpmPackage(m_ProductPackageInfos.Get(installedInfo.name), installedInfo);
-                        if (ShouldPreviewsBeRemoved(package.versionList))
+                        var package = CreateUpmPackage(UpmCache.instance.GetProductPackageInfo(installedInfo.name), installedInfo);
+                        if (HasHidablePreviewVersions(package))
                             updatedProductPackages.Add(package);
                     }
                 }
 
-                foreach (var searchInfo in m_SearchPackageInfos.Values.Where(p => !m_InstalledPackageInfos.ContainsKey(p.name)))
+                foreach (var searchInfo in UpmCache.instance.searchPackageInfos.Where(p => !UpmCache.instance.IsPackageInstalled(p.name)))
                 {
                     var package = CreateUpmPackage(searchInfo, null);
-                    if (ShouldPreviewsBeRemoved(package.versionList))
+                    if (HasHidablePreviewVersions(package))
                         updatedUpmPackages.Add(package);
                 }
 
-                foreach (var productPackageInfo in m_ProductPackageInfos.Values.Where(p => !m_InstalledPackageInfos.ContainsKey(p.name)))
+                foreach (var productPackageInfo in UpmCache.instance.productPackageInfos.Where(p => !UpmCache.instance.IsPackageInstalled(p.name)))
                 {
                     var package = CreateUpmPackage(productPackageInfo, null);
-                    if (ShouldPreviewsBeRemoved(package.versionList))
+                    if (HasHidablePreviewVersions(package))
                         updatedProductPackages.Add(package);
                 }
 
@@ -452,14 +381,14 @@ namespace UnityEditor.PackageManager.UI
                 {
                     if (!showPreview)
                         RemovePreviewVersions(package);
-                    UpdateExtraPackageInfos(package.name, package.versionList);
+                    UpdateExtraPackageInfos(package.name, package.versions);
                 }
 
                 if (updatedUpmPackages.Any())
                     onPackagesChanged?.Invoke(updatedUpmPackages.Cast<IPackage>());
 
                 foreach (var package in updatedProductPackages)
-                    onProductPackageChanged?.Invoke(m_ProductIdMap.Get(package.name), package);
+                    onProductPackageChanged?.Invoke(UpmCache.instance.GetProductId(package.name), package);
             }
 
             private UpmPackage CreateUpmPackage(PackageInfo searchInfo, PackageInfo installedInfo, string packageName = null)
@@ -481,13 +410,13 @@ namespace UnityEditor.PackageManager.UI
 
             private void UpdateExtraPackageInfos(string packageName, IVersionList versions)
             {
-                if (!versions.all.Any())
+                if (!versions.Any())
                     return;
 
-                Dictionary<string, PackageInfo> extraVersions;
-                if (m_ExtraPackageInfo.TryGetValue(packageName, out extraVersions))
+                var extraVersions = UpmCache.instance.GetExtraPackageInfos(packageName);
+                if (extraVersions?.Any() ?? false)
                 {
-                    foreach (var version in versions.all.Cast<UpmPackageVersion>())
+                    foreach (var version in versions.Cast<UpmPackageVersion>())
                     {
                         if (version.isFullyFetched)
                             continue;
@@ -504,84 +433,20 @@ namespace UnityEditor.PackageManager.UI
                     ExtraFetch(primaryVersion.uniqueId);
             }
 
-            private static bool IsPreviewInstalled(IVersionList versions)
+            // check if this package have preview packages that's `hidable` (will be filtered out if `show preview` is not selected).
+            // if the installed version is preview, then we we always show other preview versions
+            // if no installed version or installed version is not preview, we hide the preview versions according to the `show previews` toggle
+            private static bool HasHidablePreviewVersions(IPackage package)
             {
-                return (!versions.installed?.HasTag(PackageTag.Release)) ?? false;
-            }
-
-            private static bool IsPreviewInstalled(PackageInfo packageInfo)
-            {
-                return packageInfo != null && packageInfo.isDirectDependency &&
-                    packageInfo.source == PackageSource.Registry && !SemVersion.Parse(packageInfo.version).IsRelease();
-            }
-
-            // check if the preview versions be filtered out if the user have `show previews` turned off
-            private static bool ShouldPreviewsBeRemoved(IVersionList versions)
-            {
-                if (IsPreviewInstalled(versions))
+                var previewInstalled = (!package.versions.installed?.HasTag(PackageTag.Release)) ?? false;
+                if (previewInstalled)
                     return false;
-                return versions.all.Any(v => !v.HasTag(PackageTag.Release));
+                return package.versions.Any(v => !v.HasTag(PackageTag.Release));
             }
 
             private static void RemovePreviewVersions(UpmPackage package)
             {
                 package.UpdateVersions(package.versions.Where(v => v.HasTag(PackageTag.Release)).Cast<UpmPackageVersion>());
-            }
-
-            // we want to only compare a subset of PackageInfo attributes
-            // because most attributes never change if their PackageId is the same.
-            private static bool IsDifferent(PackageInfo oldInfo, PackageInfo newInfo)
-            {
-                if (oldInfo.packageId != newInfo.packageId ||
-                    oldInfo.source != newInfo.source ||
-                    oldInfo.resolvedPath != newInfo.resolvedPath ||
-                    oldInfo.isDirectDependency != newInfo.isDirectDependency ||
-                    oldInfo.entitlements.isAllowed != newInfo.entitlements.isAllowed)
-                    return true;
-
-                var oldVersions = oldInfo.versions.compatible;
-                var newVersions = newInfo.versions.compatible;
-                if (oldVersions.Length != newVersions.Length || !oldVersions.SequenceEqual(newVersions))
-                    return true;
-
-                if (oldInfo.errors.Length != newInfo.errors.Length || !oldInfo.errors.SequenceEqual(newInfo.errors))
-                    return true;
-
-                return false;
-            }
-
-            private static List<PackageInfo> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
-            {
-                PackageInfo info;
-                return newInfos.Values.Where(p => { return !oldInfos.TryGetValue(p.name, out info) || IsDifferent(info, p); })
-                    .Concat(oldInfos.Values.Where(p => { return !newInfos.TryGetValue(p.name, out info); })).ToList();
-            }
-
-            public void OnBeforeSerialize()
-            {
-                m_SerializedInstalledPackageInfos = m_InstalledPackageInfos.Values.ToArray();
-                m_SerializedSearchPackageInfos = m_SearchPackageInfos.Values.ToArray();
-                m_SerializedProductPackageInfos = m_ProductPackageInfos.Values.ToArray();
-                m_SerializedExtraPackageInfos = m_ExtraPackageInfo.Values.SelectMany(p => p.Values).ToArray();
-                m_SerializedProductIdMapKeys = m_ProductIdMap.Keys.ToArray();
-                m_SerializedProductIdMapValues = m_ProductIdMap.Values.ToArray();
-            }
-
-            public void OnAfterDeserialize()
-            {
-                foreach (var p in m_SerializedInstalledPackageInfos)
-                    m_InstalledPackageInfos[p.name] = p;
-
-                foreach (var p in m_SerializedSearchPackageInfos)
-                    m_SearchPackageInfos[p.name] = p;
-
-                m_ProductPackageInfos = m_SerializedProductPackageInfos.ToDictionary(p => p.name, p => p);
-
-                foreach (var p in m_SerializedExtraPackageInfos)
-                    AddExtraPackageInfo(p);
-
-                for (var i = 0; i < m_SerializedProductIdMapKeys.Length; i++)
-                    m_ProductIdMap[m_SerializedProductIdMapKeys[i]] = m_SerializedProductIdMapValues[i];
             }
 
             public void OnEnable()
@@ -591,54 +456,40 @@ namespace UnityEditor.PackageManager.UI
 
                 if (m_RemoveOperation.isInProgress)
                     SetupRemoveOperation();
-
-                if (m_SetupDone)
-                {
-                    Clear();
-                    Setup();
-                }
             }
 
-            public void Setup()
+            public void RegisterEvents()
             {
-                if (m_SetupDone)
+                if (m_EventsRegistered)
                     return;
 
-                m_SetupDone = true;
+                m_EventsRegistered = true;
 
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged += OnShowPreviewPackagesChanged;
+                UpmCache.instance.onPackageInfosUpdated += OnPackageInfosUpdated;
             }
 
-            public void Clear()
+            public void UnregisterEvents()
             {
-                m_SetupDone = false;
+                if (!m_EventsRegistered)
+                    return;
+
+                m_EventsRegistered = false;
 
                 PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
+                UpmCache.instance.onPackageInfosUpdated -= OnPackageInfosUpdated;
             }
 
-            public void Reload()
+            public void ClearCache()
             {
-                m_InstalledPackageInfos.Clear();
-                m_SearchPackageInfos.Clear();
-                m_ExtraPackageInfo.Clear();
-                m_ProductIdMap.Clear();
                 m_ExtraFetchOperations.Clear();
 
-                m_SerializedInstalledPackageInfos = new PackageInfo[0];
-                m_SerializedSearchPackageInfos = new PackageInfo[0];
-                m_SerializedExtraPackageInfos = new PackageInfo[0];
-
-                ResetProductCache();
+                UpmCache.instance.ClearCache();
             }
 
-            public void ResetProductCache()
+            public void ClearProductCache()
             {
-                m_ProductPackageInfos.Clear();
-                m_ProductIdMap.Clear();
-
-                m_SerializedProductPackageInfos = new PackageInfo[0];
-                m_SerializedProductIdMapKeys = new string[0];
-                m_SerializedProductIdMapValues = new string[0];
+                UpmCache.instance.ClearProductCache();
             }
         }
     }

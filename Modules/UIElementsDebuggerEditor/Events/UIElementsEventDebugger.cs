@@ -229,7 +229,7 @@ namespace UnityEditor.UIElements.Debugger
         new void OnEnable()
         {
             VisualTreeAsset template = EditorGUIUtility.Load("UXML/UIElementsDebugger/UIElementsEventsDebugger.uxml") as VisualTreeAsset;
-            template.CloneTree(rootVisualElement, new Dictionary<string, VisualElement>());
+            template.CloneTree(rootVisualElement);
 
             rootVisualElement.AddStyleSheetPath("StyleSheets/UIElementsDebugger/UIElementsEventsDebugger.uss");
 
@@ -515,22 +515,32 @@ namespace UnityEditor.UIElements.Debugger
 
             if (eventBase.eventTypeId == MouseMoveEvent.TypeId() ||
                 eventBase.eventTypeId == MouseOverEvent.TypeId() ||
+                eventBase.eventTypeId == MouseOutEvent.TypeId() ||
                 eventBase.eventTypeId == MouseDownEvent.TypeId() ||
                 eventBase.eventTypeId == MouseUpEvent.TypeId() ||
+                eventBase.eventTypeId == MouseEnterEvent.TypeId() ||
+                eventBase.eventTypeId == MouseLeaveEvent.TypeId() ||
+                eventBase.eventTypeId == DragEnterEvent.TypeId() ||
+                eventBase.eventTypeId == DragLeaveEvent.TypeId() ||
                 eventBase.eventTypeId == DragUpdatedEvent.TypeId() ||
                 eventBase.eventTypeId == DragPerformEvent.TypeId() ||
                 eventBase.eventTypeId == DragExitedEvent.TypeId() ||
-                eventBase.eventTypeId == ContextClickEvent.TypeId())
+                eventBase.eventTypeId == ContextClickEvent.TypeId() ||
+                eventBase.eventTypeId == PointerMoveEvent.TypeId() ||
+                eventBase.eventTypeId == PointerOverEvent.TypeId() ||
+                eventBase.eventTypeId == PointerOutEvent.TypeId() ||
+                eventBase.eventTypeId == PointerDownEvent.TypeId() ||
+                eventBase.eventTypeId == PointerUpEvent.TypeId() ||
+                eventBase.eventTypeId == PointerCancelEvent.TypeId() ||
+                eventBase.eventTypeId == PointerStationaryEvent.TypeId() ||
+                eventBase.eventTypeId == PointerEnterEvent.TypeId() ||
+                eventBase.eventTypeId == PointerLeaveEvent.TypeId())
             {
                 m_EventbaseInfo.text += "Mouse position: " + eventBase.mousePosition + "\n";
+                m_EventbaseInfo.text += "Modifiers: " + eventBase.modifiers + "\n";
             }
 
-            if (eventBase.eventTypeId == MouseDownEvent.TypeId() ||
-                eventBase.eventTypeId == MouseUpEvent.TypeId() ||
-                eventBase.eventTypeId == DragUpdatedEvent.TypeId() ||
-                eventBase.eventTypeId == DragPerformEvent.TypeId() ||
-                eventBase.eventTypeId == DragExitedEvent.TypeId() ||
-                eventBase.eventTypeId == KeyDownEvent.TypeId() ||
+            if (eventBase.eventTypeId == KeyDownEvent.TypeId() ||
                 eventBase.eventTypeId == KeyUpEvent.TypeId())
             {
                 m_EventbaseInfo.text += "Modifiers: " + eventBase.modifiers + "\n";
@@ -538,12 +548,41 @@ namespace UnityEditor.UIElements.Debugger
 
             if (eventBase.eventTypeId == MouseDownEvent.TypeId() ||
                 eventBase.eventTypeId == MouseUpEvent.TypeId() ||
+                eventBase.eventTypeId == PointerDownEvent.TypeId() ||
+                eventBase.eventTypeId == PointerUpEvent.TypeId() ||
                 eventBase.eventTypeId == DragUpdatedEvent.TypeId() ||
                 eventBase.eventTypeId == DragPerformEvent.TypeId() ||
                 eventBase.eventTypeId == DragExitedEvent.TypeId())
             {
                 m_EventbaseInfo.text += "Button: " + (eventBase.button == 0 ? "Left" : eventBase.button == 1 ? "Middle" : "Right") + "\n";
                 m_EventbaseInfo.text += "Click count: " + eventBase.clickCount + "\n";
+            }
+
+            if (eventBase.eventTypeId == MouseMoveEvent.TypeId() ||
+                eventBase.eventTypeId == MouseOverEvent.TypeId() ||
+                eventBase.eventTypeId == MouseOutEvent.TypeId() ||
+                eventBase.eventTypeId == MouseDownEvent.TypeId() ||
+                eventBase.eventTypeId == MouseUpEvent.TypeId() ||
+                eventBase.eventTypeId == MouseEnterEvent.TypeId() ||
+                eventBase.eventTypeId == MouseLeaveEvent.TypeId() ||
+                eventBase.eventTypeId == DragEnterEvent.TypeId() ||
+                eventBase.eventTypeId == DragLeaveEvent.TypeId() ||
+                eventBase.eventTypeId == DragUpdatedEvent.TypeId() ||
+                eventBase.eventTypeId == DragPerformEvent.TypeId() ||
+                eventBase.eventTypeId == DragExitedEvent.TypeId() ||
+                eventBase.eventTypeId == ContextClickEvent.TypeId() ||
+                eventBase.eventTypeId == WheelEvent.TypeId() ||
+                eventBase.eventTypeId == PointerMoveEvent.TypeId() ||
+                eventBase.eventTypeId == PointerOverEvent.TypeId() ||
+                eventBase.eventTypeId == PointerOutEvent.TypeId() ||
+                eventBase.eventTypeId == PointerDownEvent.TypeId() ||
+                eventBase.eventTypeId == PointerUpEvent.TypeId() ||
+                eventBase.eventTypeId == PointerCancelEvent.TypeId() ||
+                eventBase.eventTypeId == PointerStationaryEvent.TypeId() ||
+                eventBase.eventTypeId == PointerEnterEvent.TypeId() ||
+                eventBase.eventTypeId == PointerLeaveEvent.TypeId())
+            {
+                m_EventbaseInfo.text += "Pressed buttons: " + eventBase.pressedButtons + "\n";
             }
 
             if (eventBase.eventTypeId == WheelEvent.TypeId())

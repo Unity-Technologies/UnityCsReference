@@ -54,7 +54,7 @@ namespace UnityEditor.Experimental.GraphView
 
             AddStyleSheetPath("StyleSheets/GraphView/Scope.uss");
 
-            m_MainContainer = visualTree.CloneTree();
+            m_MainContainer = visualTree.Instantiate();
             m_MainContainer.AddToClassList("mainContainer");
 
             m_HeaderContainer = m_MainContainer.Q(name: "headerContainer");

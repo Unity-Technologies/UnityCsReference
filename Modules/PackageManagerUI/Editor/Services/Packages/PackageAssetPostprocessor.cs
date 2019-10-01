@@ -10,7 +10,8 @@ namespace UnityEditor.PackageManager.UI
     {
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            if (!PageManager.instance.isSetupDone)
+            // only monitor assets change if page manager has been initialized before
+            if (!PageManager.instance.isInitialized)
                 return;
 
             var allUpdatedAssets = importedAssets.Concat(deletedAssets).Concat(movedAssets).Concat(movedFromAssetPaths);

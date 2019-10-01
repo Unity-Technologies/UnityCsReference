@@ -95,7 +95,7 @@ namespace UnityEditor.UIElements
             m_Root.AddStyleSheetPath(k_UIElementsEditorWindowCreatorStyleSheetPath);
 
             var visualTree = EditorGUIUtility.Load(k_UIElementsEditorWindowCreatorUxmlPath) as VisualTreeAsset;
-            VisualElement uxmlLayout = visualTree.CloneTree();
+            VisualElement uxmlLayout = visualTree.Instantiate();
             m_Root.Add(uxmlLayout);
 
             m_ErrorMessageBox = m_Root.Q("errorMessageBox");

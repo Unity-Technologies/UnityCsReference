@@ -325,7 +325,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             var tpl = EditorGUIUtility.Load(uiFile) as VisualTreeAsset;
 
-            tpl.CloneTree(this, new Dictionary<string, VisualElement>());
+            tpl.CloneTree(this);
 
             VisualElement main = this;
             VisualElement borderContainer = main.Q(name: "node-border");

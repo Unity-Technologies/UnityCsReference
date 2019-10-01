@@ -308,7 +308,8 @@ namespace UnityEditor
                 return;
 
             SceneVisibilityState.ShowScene(scene);
-            SceneVisibilityState.SetGameObjectsHidden(scene.GetRootGameObjects(), true, true);
+            scene.GetRootGameObjects(m_RootBuffer);
+            SceneVisibilityState.SetGameObjectsHidden(m_RootBuffer.ToArray(), true, true);
         }
 
         internal void DisablePickingNoUndo(Scene scene)
@@ -320,7 +321,8 @@ namespace UnityEditor
                 return;
 
             SceneVisibilityState.EnablePicking(scene);
-            SceneVisibilityState.SetGameObjectsPickingDisabled(scene.GetRootGameObjects(), true, true);
+            scene.GetRootGameObjects(m_RootBuffer);
+            SceneVisibilityState.SetGameObjectsPickingDisabled(m_RootBuffer.ToArray(), true, true);
         }
 
         public void Hide(Scene scene)
@@ -355,12 +357,36 @@ namespace UnityEditor
                 return SceneVisibilityState.IsGameObjectHidden(gameObject);
         }
 
+        public bool IsHidden(Scene scene)
+        {
+            scene.GetRootGameObjects(m_RootBuffer);
+            foreach (var rootGameObject in m_RootBuffer)
+            {
+                if (!SceneVisibilityState.IsHierarchyHidden(rootGameObject))
+                    return false;
+            }
+
+            return true;
+        }
+
         public bool IsPickingDisabled(GameObject gameObject, bool includeDescendants = false)
         {
             if (includeDescendants)
                 return SceneVisibilityState.IsHierarchyPickingDisabled(gameObject);
             else
                 return SceneVisibilityState.IsGameObjectPickingDisabled(gameObject);
+        }
+
+        public bool IsPickingDisabled(Scene scene)
+        {
+            scene.GetRootGameObjects(m_RootBuffer);
+            foreach (var rootGameObject in m_RootBuffer)
+            {
+                if (!SceneVisibilityState.IsHierarchyPickingDisabled(rootGameObject))
+                    return false;
+            }
+
+            return true;
         }
 
         static bool IsIgnoredBySceneVisibility(GameObject go)
@@ -558,79 +584,166 @@ namespace UnityEditor
         [Shortcut("Scene Visibility/Toggle Selection Visibility")]
         private static void ToggleSelectionVisibility()
         {
-            if (Selection.gameObjects.Length > 0)
+            bool shouldHide = true;
+            foreach (var gameObject in Selection.gameObjects)
             {
-                bool shouldHide = true;
-                foreach (var gameObject in Selection.gameObjects)
+                if (!instance.IsHidden(gameObject))
                 {
-                    if (!instance.IsHidden(gameObject))
-                    {
+                    break;
+                }
+
+                shouldHide = false;
+            }
+
+            instance.m_SelectedScenes.Clear();
+
+            if (shouldHide)
+            {
+                SceneHierarchyWindow.lastInteractedHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
+
+                foreach (var scene in instance.m_SelectedScenes)
+                {
+                    if (!instance.IsHidden(scene))
                         break;
-                    }
 
                     shouldHide = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Visibility");
-                SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, false);
+            }
+
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Visibility");
+            SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, false);
+
+            foreach (var scene in instance.m_SelectedScenes)
+            {
+                if (shouldHide)
+                    instance.Hide(scene);
+                else
+                    instance.Show(scene);
             }
         }
 
         [Shortcut("Scene Visibility/Toggle Selection And Descendants Visibility", typeof(ShortcutContext), KeyCode.H)]
         private static void ToggleSelectionAndDescendantsVisibility()
         {
-            if (Selection.gameObjects.Length > 0)
+            bool shouldHide = true;
+            foreach (var gameObject in Selection.gameObjects)
             {
-                bool shouldHide = true;
-                foreach (var gameObject in Selection.gameObjects)
+                if (!instance.IsHidden(gameObject))
                 {
-                    if (!instance.IsHidden(gameObject))
-                    {
+                    break;
+                }
+
+                shouldHide = false;
+            }
+
+            instance.m_SelectedScenes.Clear();
+
+            if (shouldHide)
+            {
+                SceneHierarchyWindow.lastInteractedHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
+
+                foreach (var scene in instance.m_SelectedScenes)
+                {
+                    if (!instance.IsHidden(scene))
                         break;
-                    }
 
                     shouldHide = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Visibility");
-                SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, true);
+            }
+
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Visibility");
+            SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, shouldHide, true);
+
+            foreach (var scene in instance.m_SelectedScenes)
+            {
+                if (shouldHide)
+                    instance.Hide(scene);
+                else
+                    instance.Show(scene);
             }
         }
 
         [Shortcut("Scene Picking/Toggle Picking On Selection And Descendants", typeof(ShortcutContext), KeyCode.L)]
         private static void ToggleSelectionAndDescendantsPicking()
         {
-            if (Selection.gameObjects.Length > 0)
+            bool shouldDisablePicking = true;
+            foreach (var gameObject in Selection.gameObjects)
             {
-                bool shouldDisablePicking = true;
-                foreach (var gameObject in Selection.gameObjects)
+                if (!instance.IsPickingDisabled(gameObject))
                 {
-                    if (!instance.IsPickingDisabled(gameObject))
-                    {
+                    break;
+                }
+
+                shouldDisablePicking = false;
+            }
+
+            instance.m_SelectedScenes.Clear();
+
+            if (shouldDisablePicking)
+            {
+                SceneHierarchyWindow.lastInteractedHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
+
+                foreach (var scene in instance.m_SelectedScenes)
+                {
+                    if (!instance.IsPickingDisabled(scene))
                         break;
-                    }
+
                     shouldDisablePicking = false;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Picking");
-                SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldDisablePicking, true);
+            }
+
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Picking");
+            SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldDisablePicking, true);
+
+            foreach (var scene in instance.m_SelectedScenes)
+            {
+                if (shouldDisablePicking)
+                    instance.DisablePicking(scene);
+                else
+                    instance.EnablePicking(scene);
             }
         }
 
         [Shortcut("Scene Picking/Toggle Picking On Selection")]
         internal static void ToggleSelectionPickable()
         {
-            if (Selection.gameObjects.Length > 0)
+            bool shouldDisablePicking = true;
+            foreach (var gameObject in Selection.gameObjects)
             {
-                bool shouldHide = true;
-                foreach (var gameObject in Selection.gameObjects)
+                if (!instance.IsPickingDisabled(gameObject))
                 {
-                    if (!instance.IsPickingDisabled(gameObject))
-                    {
-                        break;
-                    }
-
-                    shouldHide = false;
+                    break;
                 }
-                Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Pickable");
-                SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldHide, false);
+
+                shouldDisablePicking = false;
+            }
+
+
+            instance.m_SelectedScenes.Clear();
+
+            if (shouldDisablePicking)
+            {
+                SceneHierarchyWindow.lastInteractedHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
+
+                foreach (var scene in instance.m_SelectedScenes)
+                {
+                    if (!instance.IsPickingDisabled(scene))
+                        break;
+
+                    shouldDisablePicking = false;
+                }
+            }
+
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Pickable");
+            SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldDisablePicking, false);
+
+
+            foreach (var scene in instance.m_SelectedScenes)
+            {
+                if (shouldDisablePicking)
+                    instance.DisablePicking(scene);
+                else
+                    instance.EnablePicking(scene);
             }
         }
 
@@ -646,6 +759,8 @@ namespace UnityEditor
             instance.ToggleIsolateSelectionAndDescendants();
         }
 
+        List<Scene> m_SelectedScenes = new List<Scene>();
+
         internal void ToggleIsolateSelectionAndDescendants()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Isolation on Selection And Children");
@@ -658,6 +773,13 @@ namespace UnityEditor
                 if (Selection.gameObjects.Length > 0)
                 {
                     SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, true);
+                }
+
+                m_SelectedScenes.Clear();
+                SceneHierarchyWindow.lastInteractedHierarchyWindow.GetSelectedScenes(m_SelectedScenes);
+                foreach (var scene in m_SelectedScenes)
+                {
+                    Show(scene);
                 }
             }
             else
@@ -684,6 +806,13 @@ namespace UnityEditor
                 if (Selection.gameObjects.Length > 0)
                 {
                     SceneVisibilityState.SetGameObjectsHidden(Selection.gameObjects, false, false);
+                }
+
+                m_SelectedScenes.Clear();
+                SceneHierarchyWindow.lastInteractedHierarchyWindow.GetSelectedScenes(m_SelectedScenes);
+                foreach (var scene in m_SelectedScenes)
+                {
+                    Show(scene);
                 }
             }
             else

@@ -12,6 +12,7 @@ using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetIn
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    // https://docs.microsoft.com/en-us/cpp/windows/changing-a-symbol-or-symbol-name-id
     class SymbolNameRestrictions
     {
         private const int k_MaxLength = 247;
@@ -23,18 +24,34 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
             }
 
-            if (name.Length > k_MaxLength ||
-                name.Contains(" "))
+            if (name.Length > k_MaxLength)
             {
                 return false;
             }
 
-            var firstChar = name[0];
-            if (!Char.IsLetter(firstChar) && firstChar != '_')
+            // Invalid if the first character is a number.
+            if (char.IsNumber(name[0]))
             {
                 return false;
             }
 
+            foreach (var chr in name)
+            {
+                // Skip if it's a letter.
+                if (char.IsLetter(chr))
+                    continue;
+
+                // Skip if it's a number.
+                if (char.IsNumber(chr))
+                    continue;
+
+                // Skip if it's an underscore.
+                if (chr == '_')
+                    continue;
+
+                // Invalid for unsupported characters.
+                return false;
+            }
             return true;
         }
     }
@@ -198,9 +215,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             BuildTarget = buildTarget;
         }
 
-        public CustomScriptAssemblyPlatform(string name, BuildTarget buildTarget) : this(name, name, buildTarget)
-        {
-        }
+        public CustomScriptAssemblyPlatform(string name, BuildTarget buildTarget) : this(name, name, buildTarget) {}
     }
 
     [DebuggerDisplay("{Name}")]
@@ -212,8 +227,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string GUID { get; set; }
         public string[] References { get; set; }
         public string[] AdditionalPrefixes { get; set; }
-        public CustomScriptAssemblyPlatform[] IncludePlatforms { get; set;  }
-        public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }
+        public CustomScriptAssemblyPlatform[] IncludePlatforms { get; set; }
+        public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set; }
 
         public AssetPathMetaData AssetPathMetaData { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; } = new ScriptCompilerOptions();
@@ -260,6 +275,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             // When removing a platform from Platforms, please add it to DeprecatedPlatforms.
             DiscoveredTargetInfo[] buildTargetList = BuildTargetDiscovery.GetBuildTargetInfoList();
+
             // Need extra slot for Editor which is not included in the build target list
             Platforms = new CustomScriptAssemblyPlatform[buildTargetList.Length + 1];
             Platforms[0] = new CustomScriptAssemblyPlatform("Editor", BuildTarget.NoTarget);

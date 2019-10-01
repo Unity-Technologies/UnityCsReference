@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
 
         internal bool ShouldClip()
         {
-            return computedStyle.overflow.value != Overflow.Visible;
+            return computedStyle.overflow.value != OverflowInternal.Visible;
         }
 
         // parent in visual tree

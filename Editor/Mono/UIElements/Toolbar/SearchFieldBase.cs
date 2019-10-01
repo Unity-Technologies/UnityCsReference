@@ -81,7 +81,7 @@ namespace UnityEditor.UIElements
 
         public virtual void SetValueWithoutNotify(T newValue)
         {
-            value = newValue;
+            m_TextField.SetValueWithoutNotify(newValue);
         }
 
         protected abstract bool FieldIsEmpty(T fieldValue);

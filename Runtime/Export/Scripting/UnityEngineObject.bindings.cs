@@ -276,9 +276,15 @@ namespace UnityEngine
         }
 
         // Returns a list of all active loaded objects of Type /type/.
+        public static Object[] FindObjectsOfType(Type type)
+        {
+            return FindObjectsOfType(type, false);
+        }
+
+        // Returns a list of all loaded objects of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsOfType")]
-        public extern static Object[] FindObjectsOfType(Type type);
+        public extern static Object[] FindObjectsOfType(Type type, bool includeInactive);
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad")]
@@ -306,8 +312,10 @@ namespace UnityEngine
 
         //*undocumented* DEPRECATED
         [Obsolete("warning use Object.FindObjectsOfType instead.")]
-        [FreeFunction("UnityEngineObjectBindings::FindObjectsOfType")]
-        public extern static Object[] FindSceneObjectsOfType(Type type);
+        public static Object[] FindSceneObjectsOfType(Type type)
+        {
+            return FindObjectsOfType(type);
+        }
 
         //*undocumented*  DEPRECATED
         [Obsolete("use Resources.FindObjectsOfTypeAll instead.")]
@@ -316,12 +324,22 @@ namespace UnityEngine
 
         public static T[] FindObjectsOfType<T>() where T : Object
         {
-            return Resources.ConvertObjects<T>(FindObjectsOfType(typeof(T)));
+            return Resources.ConvertObjects<T>(FindObjectsOfType(typeof(T), false));
+        }
+
+        public static T[] FindObjectsOfType<T>(bool includeInactive) where T : Object
+        {
+            return Resources.ConvertObjects<T>(FindObjectsOfType(typeof(T), includeInactive));
         }
 
         public static T FindObjectOfType<T>() where T : Object
         {
-            return (T)FindObjectOfType(typeof(T));
+            return (T)FindObjectOfType(typeof(T), false);
+        }
+
+        public static T FindObjectOfType<T>(bool includeInactive) where T : Object
+        {
+            return (T)FindObjectOfType(typeof(T), includeInactive);
         }
 
         [System.Obsolete("Please use Resources.FindObjectsOfTypeAll instead")]
@@ -340,7 +358,18 @@ namespace UnityEngine
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
         public static Object FindObjectOfType(System.Type type)
         {
-            Object[] objects = FindObjectsOfType(type);
+            Object[] objects = FindObjectsOfType(type, false);
+            if (objects.Length > 0)
+                return objects[0];
+            else
+                return null;
+        }
+
+        // Returns the first active loaded object of Type /type/.
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        public static Object FindObjectOfType(System.Type type, bool includeInactive)
+        {
+            Object[] objects = FindObjectsOfType(type, includeInactive);
             if (objects.Length > 0)
                 return objects[0];
             else

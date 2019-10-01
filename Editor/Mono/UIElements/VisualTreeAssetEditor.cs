@@ -60,7 +60,7 @@ namespace UnityEditor.UIElements
             if (vta != m_LastTree || !m_LastTree)
             {
                 m_LastTree = vta;
-                m_Tree = (vta as UnityEngine.UIElements.VisualTreeAsset).CloneTree();
+                m_Tree = (vta as UnityEngine.UIElements.VisualTreeAsset).Instantiate();
                 m_Tree.StretchToParentSize();
                 dirty = true;
             }

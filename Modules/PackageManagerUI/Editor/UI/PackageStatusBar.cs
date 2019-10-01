@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -88,7 +89,8 @@ namespace UnityEditor.PackageManager.UI
             }
 
             var timestamp = PageManager.instance.GetRefreshTimestamp(tab);
-            var label = timestamp == 0L ? string.Empty : L10n.Tr($"Last update {new DateTime(timestamp):MMM d, HH:mm}");
+            var dt = new DateTime(timestamp);
+            var label = timestamp == 0L ? string.Empty : L10n.Tr($"Last update {dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"))}");
             SetStatusMessage(StatusType.Normal, label);
         }
 

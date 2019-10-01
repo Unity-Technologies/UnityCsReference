@@ -1068,7 +1068,7 @@ namespace UnityEditor
 
         void PngGammaGUI(TextureInspectorGUIElement guiElements)
         {
-            EditorGUILayout.PropertyField(m_IgnorePngGamma);
+            EditorGUILayout.PropertyField(m_IgnorePngGamma, s_Styles.ignorePngGamma);
         }
 
         void BumpGUI(TextureInspectorGUIElement guiElements)
