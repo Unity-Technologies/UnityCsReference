@@ -28,9 +28,18 @@ internal sealed partial class EditorConnectionInternal : IPlayerEditorConnection
         {
             if (messageId == Guid.Empty)
             {
-                throw new ArgumentException("messageId must not be empty");
+                throw new ArgumentException(nameof(messageId) + " must not be empty");
             }
             SendMessage(messageId.ToString("N"), data, playerId);
+        }
+    
+    bool IPlayerEditorConnectionNative.TrySendMessage(Guid messageId, byte[] data, int playerId)
+        {
+            if (messageId == Guid.Empty)
+            {
+                throw new ArgumentException(nameof(messageId) + " must not be empty");
+            }
+            return TrySendMessage(messageId.ToString("N"), data, playerId);
         }
     
     void IPlayerEditorConnectionNative.Poll()
@@ -79,6 +88,10 @@ internal sealed partial class EditorConnectionInternal : IPlayerEditorConnection
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SendMessage (string messageId, byte[] data, int playerId) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool TrySendMessage (string messageId, byte[] data, int playerId) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
