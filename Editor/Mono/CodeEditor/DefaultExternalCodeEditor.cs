@@ -115,6 +115,11 @@ namespace UnityEditor
             }
 
             string applicationPath = EditorPrefs.GetString("kScriptsDefaultApp");
+            if (string.IsNullOrEmpty(applicationPath.Trim()))
+            {
+                return false;
+            }
+
 
             if (IsOSX)
             {

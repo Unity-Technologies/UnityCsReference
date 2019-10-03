@@ -41,5 +41,17 @@ namespace UnityEditor
         {
             InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.Delete);
         }
+
+        [Shortcut("Edit/CopyInsert", KeyCode.Insert, ShortcutModifiers.Action, displayName = "Copy Insert Selection")]
+        internal static void CopyInsertSelection()
+        {
+            InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.Copy);
+        }
+
+        [Shortcut("Edit/PasteInsert", KeyCode.Insert, ShortcutModifiers.Shift, displayName = "Paste Insert Selection")]
+        internal static void PasteInsertSelection()
+        {
+            InternalEditorUtility.ExecuteCommandOnKeyWindow(EventCommandNames.Paste);
+        }
     }
 }

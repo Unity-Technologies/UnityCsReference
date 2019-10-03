@@ -157,10 +157,6 @@ namespace UnityEditor
                         ToggleFreezeRotation(constraints, m_FreezeRotationLabel, 2);
                         EditorGUI.indentLevel--;
                     }
-
-                    // Provide end-user warning about the equivalence of all constraints on versus no Rigidbody2D component.
-                    if (constraints == RigidbodyConstraints2D.FreezeAll)
-                        EditorGUILayout.HelpBox("Rather than turning on all constraints, you may want to consider removing the Rigidbody2D component which makes any colliders static.  This gives far better performance overall.", MessageType.Info);
                 }
                 EditorGUILayout.EndFadeGroup();
             }

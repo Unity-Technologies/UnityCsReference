@@ -54,7 +54,7 @@ namespace UnityEditorInternal
         private TreeViewItem AddGameObjectToHierarchy(GameObject gameObject, GameObject rootGameObject, AnimationClip animationClip, TreeViewItem parent)
         {
             string path = AnimationUtility.CalculateTransformPath(gameObject.transform, rootGameObject.transform);
-            TreeViewItem node = new AddCurvesPopupGameObjectNode(gameObject, parent, gameObject.name);
+            AddCurvesPopupGameObjectNode node = new AddCurvesPopupGameObjectNode(gameObject, parent, gameObject.name);
             List<TreeViewItem> childNodes = new List<TreeViewItem>();
 
             if (m_RootItem == null)
@@ -110,6 +110,20 @@ namespace UnityEditorInternal
                     }
                 }
             }
+
+            var animator = rootGameObject.GetComponent<Animator>();
+            if (animator != null)
+            {
+                //If the Animator has a human avatar, we need to check if the avatar's hierarchy matches that of the current GameObject. If they do not match, disable the node.
+                if (animator.avatarRoot != null && animator.isHuman)
+                {
+                    if (animator.avatarRoot.Find(path) == null)
+                    {
+                        node.disabled = true;
+                    }
+                }
+            }
+
 
             if (showEntireHierarchy)
             {
@@ -220,6 +234,7 @@ namespace UnityEditorInternal
 
     internal class AddCurvesPopupGameObjectNode : TreeViewItem
     {
+        internal bool disabled = false;
         public AddCurvesPopupGameObjectNode(GameObject gameObject, TreeViewItem parent, string displayName)
             : base(gameObject.GetInstanceID(), parent != null ? parent.depth + 1 : -1, parent, displayName)
         {

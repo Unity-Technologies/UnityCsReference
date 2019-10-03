@@ -61,22 +61,18 @@ namespace UnityEditor
     {
         private static Type ExtractCustomEditorType(string customEditorName)
         {
-            if (string.IsNullOrEmpty(customEditorName)) return null;
+            if (string.IsNullOrEmpty(customEditorName))
+                return null;
 
             // To allow users to implement their own ShaderGUI for the Standard shader we iterate in reverse order
             // because the UnityEditor assembly is assumed first in the assembly list.
             // Users can now place a copy of the StandardShaderGUI script in the project and start modifying that copy to make their own version.
-
-            string unityEditorFullName = "UnityEditor." + customEditorName; // for convenience: adding UnityEditor namespace is not needed in the shader
-
-            var editorAssemblies = EditorAssemblies.loadedAssemblies;
-            for (int i = editorAssemblies.Length - 1; i >= 0; i--)
+            var unityEditorFullName = $"UnityEditor.{customEditorName}"; // for convenience: adding UnityEditor namespace is not needed in the shader
+            foreach (var type in TypeCache.GetTypesDerivedFrom<ShaderGUI>())
             {
-                foreach (var type in AssemblyHelper.GetTypesFromAssembly(editorAssemblies[i]))
-                {
-                    if (type.FullName.Equals(customEditorName, StringComparison.Ordinal) || type.FullName.Equals(unityEditorFullName, StringComparison.Ordinal))
-                        return typeof(ShaderGUI).IsAssignableFrom(type) ? type : null;
-                }
+                if (type.FullName.Equals(customEditorName, StringComparison.Ordinal) ||
+                    type.FullName.Equals(unityEditorFullName, StringComparison.Ordinal))
+                    return typeof(ShaderGUI).IsAssignableFrom(type) ? type : null;
             }
             return null;
         }

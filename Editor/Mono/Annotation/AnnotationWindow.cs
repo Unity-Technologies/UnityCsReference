@@ -75,7 +75,6 @@ namespace UnityEditor
         readonly string textGizmoVisible = L10n.Tr("Show/Hide Gizmo");
         GUIContent iconToggleContent = EditorGUIUtility.TrTextContent("", "Show/Hide Icon");
         GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
-
         GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
         GUIContent showGridContent = EditorGUIUtility.TrTextContent("Show Grid");
         GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
@@ -592,21 +591,24 @@ namespace UnityEditor
                 GUI.DrawTexture(div, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill);
                 GUI.color = Color.white;
 
-                Rect arrowRect = iconRect;
-                arrowRect.x += 18;
-                arrowRect.y += 0;
-                arrowRect.width = 9;
-
-                if (GUI.Button(arrowRect, iconSelectContent, m_Styles.iconDropDown))
+                if (!ainfo.IsDisabled())
                 {
-                    Object script = EditorGUIUtility.GetScript(ainfo.m_ScriptClass);
-                    if (script != null)
+                    Rect arrowRect = iconRect;
+                    arrowRect.x += 18;
+                    arrowRect.y += 0;
+                    arrowRect.width = 9;
+
+                    if (GUI.Button(arrowRect, iconSelectContent, m_Styles.iconDropDown))
                     {
-                        m_LastScriptThatHasShownTheIconSelector = ainfo.m_ScriptClass;
-                        if (IconSelector.ShowAtPosition(script, arrowRect, true))
+                        Object script = EditorGUIUtility.GetScript(ainfo.m_ScriptClass);
+                        if (script != null)
                         {
-                            IconSelector.SetMonoScriptIconChangedCallback(MonoScriptIconChanged);
-                            GUIUtility.ExitGUI();
+                            m_LastScriptThatHasShownTheIconSelector = ainfo.m_ScriptClass;
+                            if (IconSelector.ShowAtPosition(script, arrowRect, true))
+                            {
+                                IconSelector.SetMonoScriptIconChangedCallback(MonoScriptIconChanged);
+                                GUIUtility.ExitGUI();
+                            }
                         }
                     }
                 }
@@ -679,7 +681,7 @@ namespace UnityEditor
     internal class AInfo : System.IComparable, System.IEquatable<AInfo>
     {
         // Similar values as in Annotation (in AnnotationManager.h)
-        public enum Flags { kHasIcon = 1, kHasGizmo = 2 };
+        public enum Flags { kHasIcon = 1, kHasGizmo = 2, kIsDisabled = 4 };
 
         public AInfo(bool gizmoEnabled, bool iconEnabled, int flags, int classID, string scriptClass)
         {
@@ -714,6 +716,11 @@ namespace UnityEditor
         public bool HasIcon()
         {
             return (m_Flags & (int)Flags.kHasIcon) > 0;
+        }
+
+        public bool IsDisabled()
+        {
+            return (m_Flags & (int)Flags.kIsDisabled) > 0;
         }
 
         public int CompareTo(object obj)
