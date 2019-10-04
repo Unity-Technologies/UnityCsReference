@@ -143,7 +143,7 @@ namespace UnityEditor
         float GetTopSectionHeight()
         {
             const int numberOfControls = 3;
-            return EditorGUI.kSingleLineHeight * numberOfControls + EditorGUI.kControlVerticalSpacing * numberOfControls;
+            return EditorGUI.kSingleLineHeight * numberOfControls + EditorGUI.kControlVerticalSpacing * (numberOfControls - 1) + EditorStyles.inspectorBig.padding.bottom;
         }
 
         void OnEnable()
@@ -536,7 +536,7 @@ namespace UnityEditor
 
                 //  Column headers
                 Rect columnRect = rect;
-                columnRect.y -= gizmoTextSize.y - 3;
+                columnRect.y -= gizmoTextSize.y + 3;
                 columnRect.x = rect.width - gizmoTextRightAlign;
                 GUI.Label(columnRect, gizmoText, m_Styles.columnHeaderStyle);
 

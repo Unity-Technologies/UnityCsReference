@@ -86,7 +86,7 @@ namespace UnityEngine.VFX
             }
             set
             {
-                loopState = VFXSpawnerLoopState.Looping;
+                loopState = value ? VFXSpawnerLoopState.Looping : VFXSpawnerLoopState.Finished;
             }
         }
         extern public bool newLoop { get; }

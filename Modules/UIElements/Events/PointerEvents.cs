@@ -192,6 +192,10 @@ namespace UnityEngine.UIElements
                 {
                     localPosition = element.WorldToLocal(position);
                 }
+                else
+                {
+                    localPosition = position;
+                }
             }
         }
 

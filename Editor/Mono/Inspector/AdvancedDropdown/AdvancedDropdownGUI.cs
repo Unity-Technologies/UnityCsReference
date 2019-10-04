@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.StyleSheets;
 using UnityEngine;
 using Event = UnityEngine.Event;
 
@@ -19,6 +20,11 @@ namespace UnityEditor.IMGUI.Controls
             public static GUIStyle lineSeparator = "DefaultLineSeparator";
             public static GUIStyle rightArrow = "ArrowNavigationRight";
             public static GUIStyle leftArrow = "ArrowNavigationLeft";
+            public static GUIStyle searchFieldStyle = new GUIStyle(EditorStyles.toolbarSearchField)
+            {
+                margin = new RectOffset(5, 4, 4, 5)
+            };
+            public static SVC<Color> searchBackgroundColor = new SVC<Color>("--theme-toolbar-background-color", Color.black);
 
             public static GUIContent checkMarkContent = new GUIContent("✔");
         }
@@ -104,9 +110,10 @@ namespace UnityEditor.IMGUI.Controls
         {
             var content = GUIContent.Temp(group.displayName, group.icon);
             m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true));
+            bool hovered = m_HeaderRect.Contains(Event.current.mousePosition);
 
             if (Event.current.type == EventType.Repaint)
-                Styles.header.Draw(m_HeaderRect, content, false, false, false, false);
+                Styles.header.Draw(m_HeaderRect, content, hovered, false, false, false);
 
             // Back button
             if (hasParent)
@@ -119,7 +126,7 @@ namespace UnityEditor.IMGUI.Controls
                     Styles.leftArrow.fixedHeight);
                 if (Event.current.type == EventType.Repaint)
                     Styles.leftArrow.Draw(arrowRect, false, false, false, false);
-                if (Event.current.type == EventType.MouseDown && m_HeaderRect.Contains(Event.current.mousePosition))
+                if (Event.current.type == EventType.MouseDown && hovered)
                 {
                     backButtonPressed();
                     Event.current.Use();
@@ -149,16 +156,18 @@ namespace UnityEditor.IMGUI.Controls
 
         internal virtual string DrawSearchFieldControl(string searchString)
         {
-            var paddingX = 8f;
-            var paddingY = 2f;
-            var rect = GUILayoutUtility.GetRect(0, 0, EditorStyles.toolbarSearchField);
-            rect.x += paddingX;
-            rect.y += paddingY + 1; // Add one for the border
-            rect.height += EditorStyles.toolbarSearchField.fixedHeight + paddingY * 3;
-            rect.width -= paddingX * 2;
-            m_SearchRect = rect;
-            searchString = EditorGUI.ToolbarSearchField(m_SearchRect, searchString, false);
-            return searchString;
+            const float kBorderWidth = 1f;
+            var controlRect = GUILayoutUtility.GetRect(0, 0, Styles.searchFieldStyle);
+
+            controlRect.height = Styles.searchFieldStyle.fixedHeight;
+            controlRect.xMin += kBorderWidth;
+            controlRect.xMax -= kBorderWidth;
+            controlRect.yMin += kBorderWidth;
+            m_SearchRect = Styles.searchFieldStyle.margin.Add(controlRect);
+            EditorGUI.DrawRect(m_SearchRect, Styles.searchBackgroundColor);
+            var newSearch = EditorGUI.ToolbarSearchField(controlRect, searchString, false);
+
+            return newSearch;
         }
 
         internal Rect GetAnimRect(Rect position, float anim)

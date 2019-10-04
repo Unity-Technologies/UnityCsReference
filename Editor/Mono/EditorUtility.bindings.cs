@@ -60,6 +60,8 @@ namespace UnityEditor
         [FreeFunction("EditorUtility::SetDirtyObjectOrScene")]
         public static extern void SetDirty([NotNull] Object target);
 
+        public static extern void ClearDirty([NotNull] Object target);
+
         [FreeFunction("InvokeDiffTool")]
         public static extern string InvokeDiffTool(string leftTitle, string leftFile, string rightTitle, string rightFile, string ancestorTitle, string ancestorFile);
 

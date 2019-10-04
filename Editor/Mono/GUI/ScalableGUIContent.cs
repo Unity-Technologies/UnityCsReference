@@ -28,6 +28,10 @@ namespace UnityEditor
         [SerializeField]
         private GUIContent m_GuiContent;
 
+        public string text => asGUIContent()?.text;
+        public Texture image => asGUIContent()?.image;
+        public string tooltip => asGUIContent()?.tooltip;
+
         public ScalableGUIContent(string resourceName) : this(string.Empty, string.Empty, resourceName)
         {
         }
@@ -45,38 +49,44 @@ namespace UnityEditor
 
         public static implicit operator GUIContent(ScalableGUIContent gc)
         {
-            var dpi = EditorGUIUtility.pixelsPerPoint;
-            var resourcePath = gc.m_CurrentResourcePath;
-            var resourceDpi = 1.0f;
-            var normalResourcePath = gc.m_TextureResources[0].resourcePath;
+            return gc.asGUIContent();
+        }
 
-            for (int i = 0, count = gc.m_TextureResources.Count; i < count; ++i)
+        private GUIContent asGUIContent()
+        {
+            var dpi = EditorGUIUtility.pixelsPerPoint;
+            var resourcePath = m_CurrentResourcePath;
+            var resourceDpi = 1.0f;
+            var normalResourcePath = m_TextureResources[0].resourcePath;
+
+            for (int i = 0, count = m_TextureResources.Count; i < count; ++i)
             {
-                var currentResource = gc.m_TextureResources[i];
+                var currentResource = m_TextureResources[i];
                 resourcePath = currentResource.resourcePath;
                 resourceDpi = currentResource.pixelsPerPoint;
                 if (resourceDpi >= dpi)
                     break;
             }
-            if (resourcePath != gc.m_CurrentResourcePath)
+
+            if (resourcePath != m_CurrentResourcePath)
             {
                 Texture2D loadedResource = EditorGUIUtility.LoadIconRequired(normalResourcePath);
                 loadedResource.pixelsPerPoint = resourceDpi;
 
-                gc.m_GuiContent.image = loadedResource;
-                gc.m_CurrentResourcePath = resourcePath;
+                m_GuiContent.image = loadedResource;
+                m_CurrentResourcePath = resourcePath;
             }
 
             if (resourceDpi != GUIUtility.pixelsPerPoint)
             {
-                Texture2D image = gc.m_GuiContent.image as Texture2D;
+                Texture2D image = m_GuiContent.image as Texture2D;
                 if (image != null)
                 {
                     image.filterMode = FilterMode.Bilinear;
                 }
             }
 
-            return gc.m_GuiContent;
+            return m_GuiContent;
         }
     }
 }

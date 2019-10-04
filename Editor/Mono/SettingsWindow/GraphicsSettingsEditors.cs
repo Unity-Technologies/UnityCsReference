@@ -525,7 +525,7 @@ namespace UnityEditor
                         EditorGUIUtility.labelWidth = 80;
                         EditorGUILayout.LabelField(Styles.tierName[(int)tier], EditorStyles.boldLabel);
                         GUILayout.FlexibleSpace();
-                        EditorGUIUtility.labelWidth = 75;
+                        EditorGUIUtility.labelWidth = 80;
                         autoSettings = EditorGUILayout.Toggle(Styles.autoSettings, autoSettings);
                         GUILayout.EndHorizontal();
                     }

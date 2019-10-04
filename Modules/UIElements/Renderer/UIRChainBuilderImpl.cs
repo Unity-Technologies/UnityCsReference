@@ -1522,7 +1522,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (textParams.font == null)
                 return;
 
-            textParams.fontColor *= UIElementsUtility.editorPlayModeTintColor;
+            if (currentElement.panel.contextType == ContextType.Editor)
+                textParams.fontColor *= UIElementsUtility.editorPlayModeTintColor;
 
             if (handle.useLegacy)
                 DrawTextNative(textParams, handle, pixelsPerPoint);

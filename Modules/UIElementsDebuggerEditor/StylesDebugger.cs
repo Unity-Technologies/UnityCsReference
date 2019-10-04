@@ -272,7 +272,7 @@ namespace UnityEditor.UIElements.Debugger
                     bool expanded = m_CurFoldout.Contains(i);
                     EditorGUILayout.BeginHorizontal();
                     bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
-                    if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(150)) && CanOpenStyleSheet(rule.fullPath))
+                    if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(250)) && CanOpenStyleSheet(rule.fullPath))
                         InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
                     EditorGUILayout.EndHorizontal();
 

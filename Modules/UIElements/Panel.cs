@@ -304,7 +304,7 @@ namespace UnityEngine.UIElements
     }
 
     // Strategy to load assets must be provided in the context of Editor or Runtime
-    internal delegate Object LoadResourceFunction(string pathName, System.Type type);
+    internal delegate Object LoadResourceFunction(string pathName, System.Type type, float dpiScaling);
 
     // Strategy to fetch real time since startup in the context of Editor or Runtime
     internal delegate long TimeMsFunction();
@@ -368,7 +368,7 @@ namespace UnityEngine.UIElements
 
         internal static LoadResourceFunction loadResourceFunc { private get; set; }
 
-        internal static Object LoadResource(string pathName, Type type)
+        internal static Object LoadResource(string pathName, Type type, float dpiScaling)
         {
             // TODO make the LoadResource function non-static.
             // if (panel.contextType = ContextType.Player)
@@ -380,7 +380,7 @@ namespace UnityEngine.UIElements
 
             if (loadResourceFunc != null)
             {
-                obj = loadResourceFunc(pathName, type);
+                obj = loadResourceFunc(pathName, type, dpiScaling);
             }
             else
             {

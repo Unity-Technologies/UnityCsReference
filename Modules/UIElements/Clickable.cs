@@ -144,6 +144,7 @@ namespace UnityEngine.UIElements
             {
                 active = false;
                 target.ReleaseMouse();
+                target.pseudoStates &= ~PseudoStates.Active;
 
                 if (IsRepeatable())
                 {
@@ -161,7 +162,7 @@ namespace UnityEngine.UIElements
                         Invoke(evt);
                     }
                 }
-                target.pseudoStates &= ~PseudoStates.Active;
+
                 evt.StopPropagation();
             }
         }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditorInternal;
@@ -38,9 +39,10 @@ namespace UnityEditor
         static readonly GUIContent m_FreezePositionLabel = EditorGUIUtility.TrTextContent("Freeze Position");
         static readonly GUIContent m_FreezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
 
-        static ContactPoint2D[] m_Contacts = new ContactPoint2D[100];
+        static List<ContactPoint2D> m_Contacts = new List<ContactPoint2D>(64);
 
         private SavedBool m_ShowInfoFoldout;
+        private bool m_RequiresConstantRepaint;
 
         const int k_ToggleOffset = 30;
 
@@ -73,6 +75,8 @@ namespace UnityEditor
             m_ShowInfo.value = m_ShowInfoFoldout.value;
             m_ShowContacts.valueChanged.AddListener(Repaint);
             m_ContactScrollPosition = Vector2.zero;
+
+            m_RequiresConstantRepaint = false;
         }
 
         public void OnDisable()
@@ -168,6 +172,8 @@ namespace UnityEditor
 
         private void ShowBodyInfoProperties()
         {
+            m_RequiresConstantRepaint = false;
+
             m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
             {
@@ -188,7 +194,7 @@ namespace UnityEditor
                     ShowContacts(body);
 
                     // We need to repaint as some of the above properties can change without causing a repaint.
-                    Repaint();
+                    m_RequiresConstantRepaint = true;
                 }
                 else
                 {
@@ -276,6 +282,11 @@ namespace UnityEditor
             r.width = k_ToggleOffset;
             ConstraintToggle(r, "Z", constraints, z);
             GUILayout.EndHorizontal();
+        }
+
+        public override bool RequiresConstantRepaint()
+        {
+            return m_RequiresConstantRepaint;
         }
     }
 }

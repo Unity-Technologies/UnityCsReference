@@ -242,9 +242,11 @@ namespace UnityEngine.UIElements
             // at the matched custom styles won't suffice.
             int originalCustomStyleCount = element.specifiedStyle.customPropertiesCount;
             var currentInheritStyle = m_StyleMatchingContext.inheritedStyle;
+
             if (updateElement)
             {
                 m_StyleMatchingContext.currentElement = element;
+                element.specifiedStyle.dpiScaling = element.scaledPixelsPerPoint;
 
                 StyleSelectorHelper.FindMatches(m_StyleMatchingContext, m_TempMatchResults);
 
@@ -342,9 +344,10 @@ namespace UnityEngine.UIElements
             {
                 resolvedStyles = new VisualElementStylesData(isShared: true);
 
+                float dpiScaling = element.specifiedStyle.dpiScaling;
                 foreach (var record in matchingSelectors)
                 {
-                    m_StylePropertyReader.SetContext(record.sheet, record.complexSelector, m_StyleMatchingContext.variableContext);
+                    m_StylePropertyReader.SetContext(record.sheet, record.complexSelector, m_StyleMatchingContext.variableContext, dpiScaling);
                     resolvedStyles.ApplyProperties(m_StylePropertyReader, m_StyleMatchingContext.inheritedStyle);
                 }
 

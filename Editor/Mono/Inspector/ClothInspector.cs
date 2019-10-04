@@ -106,6 +106,7 @@ namespace UnityEditor
             public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TrTextContent("Paint Collision Particles");
             public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TrTextContent("Select Collision Particles");
             public static readonly GUIContent brushRadiusString = EditorGUIUtility.TrTextContent("Brush Radius");
+            public static readonly GUIContent constraintSizeString = EditorGUIUtility.TrTextContent("Constraint Size");
             public static readonly GUIContent gradientStartString = EditorGUIUtility.TrTextContent("Gradient Start");
             public static readonly GUIContent gradientEndString = EditorGUIUtility.TrTextContent("Gradient End");
             public static readonly GUIContent setMaxDistanceString = EditorGUIUtility.TrTextContent("Max Distance");
@@ -772,6 +773,8 @@ namespace UnityEditor
                 }
                 cloth.coefficients = coefficients;
             }
+
+            EditConstraintSize();
         }
 
         void GradientToolGUI()
@@ -975,6 +978,19 @@ namespace UnityEditor
             }
         }
 
+        void EditConstraintSize()
+        {
+            EditorGUI.BeginChangeCheck();
+            float fieldValue = EditorGUILayout.FloatField(Styles.constraintSizeString, state.ConstraintSize);
+            bool changed = EditorGUI.EndChangeCheck();
+            if (changed)
+            {
+                state.ConstraintSize = fieldValue;
+                if (state.ConstraintSize < 0.0f)
+                    state.ConstraintSize = 0.0f;
+            }
+        }
+
         void EditGradientStart()
         {
             EditorGUI.BeginChangeCheck();
@@ -1022,6 +1038,7 @@ namespace UnityEditor
             }
 
             EditBrushSize();
+            EditConstraintSize();
         }
 
         int GetMouseVertex(Event e)

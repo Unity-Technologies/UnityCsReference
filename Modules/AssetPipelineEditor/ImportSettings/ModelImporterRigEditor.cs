@@ -55,8 +55,6 @@ namespace UnityEditor
         bool m_AvatarCopyIsUpToDate;
         private bool m_CanMultiEditTransformList;
 
-        public int rootIndex { get; set; }
-
         bool m_IsBiped = false;
         List<string> m_BipedMappingReport = null;
 
@@ -134,9 +132,6 @@ namespace UnityEditor
 
             if (m_RootMotionBoneList.Length > 0)
                 m_RootMotionBoneList[0] = EditorGUIUtility.TrTextContent("None");
-
-            rootIndex = ArrayUtility.FindIndex(m_RootMotionBoneList, delegate(GUIContent content) { return FileUtil.GetLastPathNameComponent(content.text) == m_RootMotionBoneName.stringValue; });
-            rootIndex = rootIndex < 1 ? 0 : rootIndex;
 
             m_SrcHasExtraRoot = serializedObject.FindProperty("m_HasExtraRoot");
             m_DstHasExtraRoot = serializedObject.FindProperty("m_HumanDescription.m_HasExtraRoot");
@@ -267,7 +262,6 @@ namespace UnityEditor
                 if (m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CreateFromThisModel)
                 {
                     // Do not allow multi edit of root node if all rigs doesn't match
-                    EditorGUI.BeginChangeCheck();
                     using (new EditorGUI.DisabledScope(!m_CanMultiEditTransformList))
                     {
                         if (assetTarget == null)
@@ -276,20 +270,22 @@ namespace UnityEditor
                                 EditorGUILayout.TextField(Styles.RootNode, m_RootMotionBoneName.stringValue);
                         }
                         else
-                            rootIndex = EditorGUILayout.Popup(Styles.RootNode, rootIndex, m_RootMotionBoneList);
-                    }
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        if (assetTarget != null)
                         {
-                            if (rootIndex > 0 && rootIndex < m_RootMotionBoneList.Length)
+                            EditorGUI.BeginChangeCheck();
+                            var currentIndex = ArrayUtility.FindIndex(m_RootMotionBoneList, content => FileUtil.GetLastPathNameComponent(content.text) == m_RootMotionBoneName.stringValue);
+                            currentIndex = currentIndex < 1 ? 0 : currentIndex;
+                            currentIndex = EditorGUILayout.Popup(Styles.RootNode, currentIndex, m_RootMotionBoneList);
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                m_RootMotionBoneName.stringValue =
-                                    FileUtil.GetLastPathNameComponent(m_RootMotionBoneList[rootIndex].text);
-                            }
-                            else
-                            {
-                                m_RootMotionBoneName.stringValue = "";
+                                if (currentIndex > 0 && currentIndex < m_RootMotionBoneList.Length)
+                                {
+                                    m_RootMotionBoneName.stringValue =
+                                        FileUtil.GetLastPathNameComponent(m_RootMotionBoneList[currentIndex].text);
+                                }
+                                else
+                                {
+                                    m_RootMotionBoneName.stringValue = "";
+                                }
                             }
                         }
                     }

@@ -35,7 +35,7 @@ namespace UnityEditor
         const int kScaleSliderMinWidth = 30;
         const int kScaleSliderMaxWidth = 150;
         const int kScaleSliderSnapThreshold = 4;
-        const int kScaleLabelWidth = 35;
+        const int kScaleLabelWidth = 40;
         readonly Vector2 kWarningSize = new Vector2(400f, 140f);
         readonly Color kClearBlack = new Color(0, 0 , 0, 0);
         const float kMinScale = 1f;
@@ -781,7 +781,7 @@ namespace UnityEditor
                     Debug.LogWarningFormat("GameView reduced to a reasonable size for this system ({0}x{1})", targetSize.x, targetSize.y);
                 EditorGUIUtility.SetupWindowSpaceAndVSyncInternal(GUIClip.Unclip(viewInWindow));
 
-                if (m_RenderTexture.IsCreated())
+                if (m_RenderTexture != null && m_RenderTexture.IsCreated())
                 {
                     oldState.ApplyAndForget();
                     GUIUtility.s_EditorScreenPointOffset = oldOffset;

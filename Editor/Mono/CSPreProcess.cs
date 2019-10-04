@@ -35,7 +35,7 @@ namespace UnityEditor
                     moduleArgs.Append(" ").Append(target);
             }
 
-            return new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
                 WorkingDirectory = Unsupported.GetBaseUnityDeveloperFolder(),
                 RedirectStandardOutput = true,
@@ -44,6 +44,18 @@ namespace UnityEditor
                 Arguments = moduleArgs.ToString(),
                 FileName = "perl",
             };
+
+            var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+            // on macOS the typical mercurial path might not be in our environment variable, so add it for executing jam
+            if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                var localBin = "/usr/local/bin";
+                if (!path.Contains(localBin))
+                    path = $"{path}:{localBin}";
+            }
+            psi.EnvironmentVariables["PATH"] = path;
+
+            return psi;
         }
 
         private static CompilerMessage[] ParseResults(string text)
