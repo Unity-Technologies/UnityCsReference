@@ -349,7 +349,7 @@ namespace UnityEngine.UIElements
                 return m_Usings[index].asset;
 
             string path = m_Usings[index].path;
-            return Panel.LoadResource(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
+            return Panel.LoadResource(path, typeof(VisualTreeAsset), GUIUtility.pixelsPerPoint) as VisualTreeAsset;
         }
 
         internal bool TemplateExists(string templateName)

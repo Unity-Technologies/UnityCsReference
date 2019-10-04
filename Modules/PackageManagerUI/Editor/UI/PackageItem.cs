@@ -260,8 +260,8 @@ namespace UnityEditor.PackageManager.UI
 
         public static string GetVersionText(IPackageVersion version, bool simplified = false)
         {
-            if (version?.version == null)
-                return string.Empty;
+            if (version?.version == null || version?.version?.ToString() == "0.0.0")
+                return version?.versionString;
 
             var label = version.version.StripTag();
             if (!simplified)

@@ -3495,7 +3495,7 @@ namespace UnityEditor
         {
             foreach (Editor editor in activeEditors)
             {
-                if (!EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
+                if (!drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
                     continue;
 
                 MethodInfo method = editor.GetType().GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);

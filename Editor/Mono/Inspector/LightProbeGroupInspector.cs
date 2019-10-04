@@ -542,7 +542,6 @@ namespace UnityEditor
 
             m_Editor.drawTetrahedra = new SavedBool($"{target.GetType()}.drawTetrahedra", true);
 
-            SceneView.duringSceneGui += OnSceneGUIDelegate;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             EditMode.editModeStarted += OnEditModeStarted;
             EditMode.editModeEnded += OnEditModeEnded;
@@ -596,7 +595,6 @@ namespace UnityEditor
         {
             EndEditProbes();
             Undo.undoRedoPerformed -= UndoRedoPerformed;
-            SceneView.duringSceneGui -= OnSceneGUIDelegate;
             EditMode.editModeStarted -= OnEditModeStarted;
             EditMode.editModeEnded -= OnEditModeEnded;
 
@@ -725,11 +723,11 @@ namespace UnityEditor
 
         private void InternalOnSceneView()
         {
-            if (!EditorGUIUtility.IsGizmosAllowedForObject(target))
-                return;
-
             if (SceneView.lastActiveSceneView != null)
             {
+                if (!SceneView.lastActiveSceneView.drawGizmos)
+                    return;
+
                 if (m_ShouldFocus)
                 {
                     m_ShouldFocus = false;
@@ -752,12 +750,6 @@ namespace UnityEditor
         public void OnSceneGUI()
         {
             if (Event.current.type != EventType.Repaint)
-                InternalOnSceneView();
-        }
-
-        public void OnSceneGUIDelegate(SceneView sceneView)
-        {
-            if (Event.current.type == EventType.Repaint)
                 InternalOnSceneView();
         }
 

@@ -128,7 +128,13 @@ namespace UnityEditor
                     EditorGUIUtility.DrawEditorHeaderItems(rect, tagrObjects);
                     var settingsRect = GUILayoutUtility.GetRect(btnWidth, btnHeight);
                     settingsRect.y = rect.y;
-                    if (GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle))
+
+                    // Settings; process event even for disabled UI
+                    var wasEnabled = GUI.enabled;
+                    GUI.enabled = true;
+                    var showMenu = GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle);
+                    GUI.enabled = wasEnabled;
+                    if (showMenu)
                     {
                         EditorUtility.DisplayObjectContextMenu(settingsRect, tagrObjects, 0);
                     }

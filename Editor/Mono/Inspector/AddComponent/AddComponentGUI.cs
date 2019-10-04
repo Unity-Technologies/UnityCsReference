@@ -64,17 +64,5 @@ namespace UnityEditor.AddComponent
 
             EditorGUILayout.Space();
         }
-
-        internal override string DrawSearchFieldControl(string searchString)
-        {
-            float padding = 8f;
-            m_SearchRect = GUILayoutUtility.GetRect(0, 0);
-            m_SearchRect.x += padding;
-            m_SearchRect.y = 7;
-            m_SearchRect.width -= padding * 2;
-            m_SearchRect.height = 30;
-            var newSearch = EditorGUI.SearchField(m_SearchRect, searchString);
-            return newSearch;
-        }
     }
 }

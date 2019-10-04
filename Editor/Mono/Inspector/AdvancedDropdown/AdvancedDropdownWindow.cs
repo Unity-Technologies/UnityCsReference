@@ -15,7 +15,7 @@ namespace UnityEditor.IMGUI.Controls
     {
         private static class Styles
         {
-            public static GUIStyle background = "box";
+            public static GUIStyle background = "DD Background";
             public static GUIStyle previewHeader = new GUIStyle(EditorStyles.label);
             public static GUIStyle previewText = new GUIStyle(EditorStyles.wordWrappedLabel);
 

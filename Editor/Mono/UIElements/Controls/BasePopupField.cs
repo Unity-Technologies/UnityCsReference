@@ -20,6 +20,8 @@ namespace UnityEditor.UIElements
     {
         internal List<TValueChoice> m_Choices;
         TextElement m_TextElement;
+        VisualElement m_ArrowElement;
+
         protected TextElement textElement
         {
             get { return m_TextElement; }
@@ -61,6 +63,7 @@ namespace UnityEditor.UIElements
 
         public new static readonly string ussClassName = "unity-base-popup-field";
         public static readonly string textUssClassName = ussClassName + "__text";
+        public static readonly string arrowUssClassName = ussClassName + "__arrow";
         public new static readonly string labelUssClassName = ussClassName + "__label";
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
@@ -81,6 +84,12 @@ namespace UnityEditor.UIElements
             m_TextElement.AddToClassList(textUssClassName);
             visualInput.AddToClassList(inputUssClassName);
             visualInput.Add(m_TextElement);
+
+            m_ArrowElement = new VisualElement();
+            m_ArrowElement.AddToClassList(arrowUssClassName);
+            m_ArrowElement.pickingMode = PickingMode.Ignore;
+            visualInput.Add(m_ArrowElement);
+
             choices = new List<TValueChoice>();
         }
 

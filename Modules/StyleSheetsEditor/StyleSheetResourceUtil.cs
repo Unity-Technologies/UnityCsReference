@@ -11,15 +11,15 @@ namespace UnityEditor.StyleSheets
     {
         public static Object LoadResource(string pathName, System.Type type)
         {
-            return LoadResource(pathName, type, GUIUtility.pixelsPerPoint > 1.0f);
+            return LoadResource(pathName, type, GUIUtility.pixelsPerPoint);
         }
 
-        public static Object LoadResource(string pathName, System.Type type, bool lookForRetinaAssets)
+        public static Object LoadResource(string pathName, System.Type type, float displayDpiScaling)
         {
             Object resource = null;
             string hiResPath = string.Empty;
 
-            lookForRetinaAssets &= (type == typeof(Texture2D));
+            bool lookForRetinaAssets = (displayDpiScaling > 1.0f) && (type == typeof(Texture2D));
             bool assetIsRetinaTexture = false;
             if (lookForRetinaAssets)
             {
@@ -66,10 +66,19 @@ namespace UnityEditor.StyleSheets
                 resource = AssetDatabase.LoadMainAssetAtPath(pathName);
             }
 
-            if (assetIsRetinaTexture)
+            Texture2D tex = resource as Texture2D;
+
+            if (tex != null)
             {
-                Texture2D tex = (Texture2D)resource;
-                tex.pixelsPerPoint = 2.0f;
+                if (assetIsRetinaTexture)
+                {
+                    tex.pixelsPerPoint = 2.0f;
+                }
+
+                if (!Mathf.Approximately(displayDpiScaling % 1.0f, 0))
+                {
+                    tex.filterMode = FilterMode.Bilinear;
+                }
             }
 
             return resource;

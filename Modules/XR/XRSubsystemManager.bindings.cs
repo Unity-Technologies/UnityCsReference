@@ -337,9 +337,12 @@ namespace UnityEngine
             IntPtr removedPtr = m_Ptr;
             Internal_SubsystemInstances.Internal_RemoveInstanceByPtr(m_Ptr);
             SubsystemManager.DestroyInstance_Internal(removedPtr);
+            m_Ptr = IntPtr.Zero;
         }
 
-        public bool running { get { return Internal_IsRunning(); } }
+        public bool running { get { return valid && Internal_IsRunning(); } }
+
+        internal bool valid { get { return m_Ptr != IntPtr.Zero; } }
 
         [NativeConditional("ENABLE_XR")]
         extern internal bool Internal_IsRunning();

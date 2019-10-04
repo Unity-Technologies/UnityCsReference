@@ -636,8 +636,11 @@ namespace UnityEditor
             maximizedHostView.actualView = win;
             maximizedHostView.position = p; // Must be set after actualView so that value is propagated
 
-            UnityObject.DestroyImmediate(rootSplit, true);
+            var gv = win as GameView;
+            if (gv != null)
+                maximizedHostView.EnableVSync(gv.vSyncEnabled);
 
+            UnityObject.DestroyImmediate(rootSplit, true);
             return true;
         }
 

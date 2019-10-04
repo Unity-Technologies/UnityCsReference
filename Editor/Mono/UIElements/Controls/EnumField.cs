@@ -36,6 +36,7 @@ namespace UnityEditor.UIElements
 
         private Type m_EnumType;
         private TextElement m_TextElement;
+        private VisualElement m_ArrowElement;
         private EnumData m_EnumData;
 
         public string text
@@ -49,6 +50,11 @@ namespace UnityEditor.UIElements
             m_TextElement.AddToClassList(textUssClassName);
             m_TextElement.pickingMode = PickingMode.Ignore;
             visualInput.Add(m_TextElement);
+
+            m_ArrowElement = new VisualElement();
+            m_ArrowElement.AddToClassList(arrowUssClassName);
+            m_ArrowElement.pickingMode = PickingMode.Ignore;
+            visualInput.Add(m_ArrowElement);
             if (defaultValue != null)
             {
                 Init(defaultValue);
@@ -57,6 +63,7 @@ namespace UnityEditor.UIElements
 
         public new static readonly string ussClassName = "unity-enum-field";
         public static readonly string textUssClassName = ussClassName + "__text";
+        public static readonly string arrowUssClassName = ussClassName + "__arrow";
         public new static readonly string labelUssClassName = ussClassName + "__label";
         public new static readonly string inputUssClassName = ussClassName + "__input";
 

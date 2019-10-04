@@ -218,6 +218,10 @@ namespace UnityEngine.UIElements
                     {
                         imguiEvent.mousePosition = element.WorldToLocal(originalMousePosition);
                     }
+                    else
+                    {
+                        imguiEvent.mousePosition = originalMousePosition;
+                    }
                 }
             }
         }

@@ -281,7 +281,7 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!allowCacheServerChanges))
                 {
                     var displayAddress = overrideAddress != null ? overrideAddress : s_CacheServerIPAddress;
-                    s_CacheServerIPAddress = EditorGUILayout.DelayedTextField("IP Address", displayAddress);
+                    s_CacheServerIPAddress = EditorGUILayout.TextField("IP Address", displayAddress);
 
                     if (GUI.changed)
                     {
@@ -411,7 +411,7 @@ namespace UnityEditor
 
             s_CacheServer2Mode = (CacheServer2Mode)EditorGUILayout.EnumPopup(Properties.cacheServerDefaultMode, s_CacheServer2Mode);
 
-            s_CacheServer2IPAddress = EditorGUILayout.DelayedTextField(Properties.cacheServerIPLabel, s_CacheServer2IPAddress);
+            s_CacheServer2IPAddress = EditorGUILayout.TextField(Properties.cacheServerIPLabel, s_CacheServer2IPAddress);
 
             if (GUI.changed != changeStateBeforeControls)
             {

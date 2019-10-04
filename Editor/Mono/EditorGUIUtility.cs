@@ -73,9 +73,9 @@ namespace UnityEditor
         internal static int s_LastControlID = 0;
         private static float s_LabelWidth = 0f;
 
-        private static Texture2D s_InfoIcon;
-        private static Texture2D s_WarningIcon;
-        private static Texture2D s_ErrorIcon;
+        private static ScalableGUIContent s_InfoIcon;
+        private static ScalableGUIContent s_WarningIcon;
+        private static ScalableGUIContent s_ErrorIcon;
 
         private static GUIStyle s_WhiteTextureStyle;
         private static GUIStyle s_BasicTextureStyle;
@@ -844,9 +844,34 @@ namespace UnityEditor
             return Internal_GetIconSize();
         }
 
-        internal static Texture2D infoIcon => s_InfoIcon ?? (s_InfoIcon = LoadIcon("console.infoicon"));
-        internal static Texture2D warningIcon => s_WarningIcon ?? (s_WarningIcon = LoadIcon("console.warnicon"));
-        internal static Texture2D errorIcon => s_ErrorIcon ?? (s_ErrorIcon = LoadIcon("console.erroricon"));
+        internal static Texture2D infoIcon
+        {
+            get
+            {
+                if (s_InfoIcon == null)
+                    s_InfoIcon = new ScalableGUIContent("console.infoicon");
+                return s_InfoIcon.image as Texture2D;
+            }
+        }
+        internal static Texture2D warningIcon
+        {
+            get
+            {
+                if (s_WarningIcon == null)
+                    s_WarningIcon = new ScalableGUIContent("console.warnicon");
+                return s_WarningIcon.image as Texture2D;
+            }
+        }
+
+        internal static Texture2D errorIcon
+        {
+            get
+            {
+                if (s_ErrorIcon == null)
+                    s_ErrorIcon = new ScalableGUIContent("console.erroricon");
+                return s_ErrorIcon.image as Texture2D;
+            }
+        }
 
         internal static Texture2D GetHelpIcon(MessageType type)
         {

@@ -859,11 +859,18 @@ namespace UnityEditor
             float currentOffset = settingsSize.x;
 
             const int kTopMargin = 5;
-            // Settings
+            // Settings; process event even for disabled UI
             Rect settingsRect = new Rect(r.xMax - currentOffset, r.y + kTopMargin, settingsSize.x, settingsSize.y);
-            if (EditorGUI.DropdownButton(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, FocusType.Passive,
-                EditorStyles.iconButton))
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = true;
+            var showMenu = EditorGUI.DropdownButton(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, FocusType.Passive,
+                EditorStyles.iconButton);
+            GUI.enabled = wasEnabled;
+            if (showMenu)
+            {
                 EditorUtility.DisplayObjectContextMenu(settingsRect, targets, 0);
+            }
+
             currentOffset += settingsSize.x;
 
             // Show Editor Header Items.
@@ -937,9 +944,14 @@ namespace UnityEditor
             else
                 GUI.Label(titleRect, header, EditorStyles.largeLabel);
 
-            // Context Menu
+            // Context Menu; process event even for disabled UI
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = true;
             Event evt = Event.current;
-            if (editor != null && evt.type == EventType.MouseDown && evt.button == 1 && r.Contains(evt.mousePosition))
+            var showMenu = editor != null && evt.type == EventType.MouseDown && evt.button == 1 && r.Contains(evt.mousePosition);
+            GUI.enabled = wasEnabled;
+
+            if (showMenu)
             {
                 EditorUtility.DisplayObjectContextMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), editor.targets, 0);
                 evt.Use();

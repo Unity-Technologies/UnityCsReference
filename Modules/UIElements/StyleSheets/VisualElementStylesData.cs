@@ -85,6 +85,7 @@ namespace UnityEngine.UIElements.StyleSheets
         internal StyleInt visibility;
         internal StyleInt display;
 
+        internal float dpiScaling;
         public int customPropertiesCount
         {
             get { return m_CustomProperties != null ? m_CustomProperties.Count : 0; }
@@ -93,6 +94,8 @@ namespace UnityEngine.UIElements.StyleSheets
         public VisualElementStylesData(bool isShared)
         {
             this.isShared = isShared;
+
+            dpiScaling = GUIUtility.pixelsPerPoint;
 
             // Initialize non trivial properties
             left = StyleSheetCache.GetInitialValue(StylePropertyID.PositionLeft).ToStyleLength();
@@ -185,6 +188,8 @@ namespace UnityEngine.UIElements.StyleSheets
             cursor.Apply(other.cursor, mode);
             visibility.Apply(other.visibility, mode);
             display.Apply(other.display, mode);
+
+            dpiScaling = other.dpiScaling;
         }
 
         public void ApplyLayoutValues()
@@ -239,6 +244,8 @@ namespace UnityEngine.UIElements.StyleSheets
 
         internal void ApplyProperties(StylePropertyReader reader, InheritedStylesData inheritedStylesData)
         {
+            dpiScaling = reader.dpiScaling;
+
             for (var propertyID = reader.propertyID; propertyID != StylePropertyID.Unknown; propertyID = reader.MoveNextProperty())
             {
                 var handle = reader.GetValue(0).handle;
@@ -843,7 +850,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 var source = new ImageSource();
                 var propValue = propertyHandle.value;
-                if (StylePropertyReader.TryGetImageSourceFromValue(propValue, out source) && source.texture != null)
+                if (StylePropertyReader.TryGetImageSourceFromValue(propValue, dpiScaling, out source) && source.texture != null)
                 {
                     value = source.texture;
                     return true;
@@ -861,7 +868,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 var source = new ImageSource();
                 var propValue = propertyHandle.value;
-                if (StylePropertyReader.TryGetImageSourceFromValue(propValue, out source) && source.vectorImage != null)
+                if (StylePropertyReader.TryGetImageSourceFromValue(propValue, dpiScaling, out source) && source.vectorImage != null)
                 {
                     value = source.vectorImage;
                     return true;

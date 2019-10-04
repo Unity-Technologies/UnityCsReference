@@ -32,6 +32,7 @@ namespace UnityEditor
         List<string> m_PrefabsWithMissingScript = new List<string>();
         bool m_SavingHasFailed;
         List<Component> m_TempComponentsResults = new List<Component>();
+        List<GameObject> m_DirtyPrefabAssets = new List<GameObject>();
 
         public override bool showImportedObject { get { return !hasMissingScripts; } }
 
@@ -109,6 +110,7 @@ namespace UnityEditor
             if (assetTarget == null)
                 return;
 
+            m_DirtyPrefabAssets.Clear();
             foreach (var asset in assetTargets)
             {
                 // The asset could have been deleted when this method is called from OnDestroy().
@@ -121,18 +123,41 @@ namespace UnityEditor
 
                 var rootGameObject = (GameObject)asset;
                 if (IsDirty(rootGameObject))
-                {
-                    bool savedSuccesfully;
-                    PrefabUtility.SavePrefabAsset(rootGameObject, out savedSuccesfully);
-                    if (!savedSuccesfully)
-                    {
-                        string title = L10n.Tr("Saving Failed");
-                        string message = L10n.Tr("Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nYou can open Prefab Mode to fix any issues on child GameObjects");
-                        EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                    m_DirtyPrefabAssets.Add(rootGameObject);
+            }
 
-                        m_SavingHasFailed = true;
-                        return;
+            if (m_DirtyPrefabAssets.Count > 0)
+            {
+                bool savedPrefab = false;
+                AssetDatabase.StartAssetEditing();
+                try
+                {
+                    foreach (var rootGameObject in m_DirtyPrefabAssets)
+                    {
+                        bool savedSuccesfully;
+                        PrefabUtility.SavePrefabAsset(rootGameObject, out savedSuccesfully);
+                        if (!savedSuccesfully)
+                        {
+                            string title = L10n.Tr("Saving Failed");
+                            string message = L10n.Tr("Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nYou can open Prefab Mode to fix any issues on child GameObjects");
+                            EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+
+                            m_SavingHasFailed = true;
+                            break;
+                        }
+
+                        savedPrefab |= savedSuccesfully;
                     }
+                }
+                finally
+                {
+                    AssetDatabase.StopAssetEditing();
+
+                    // All inspectors needs to be rebuild to ensure property changes are reflected after saving the Prefab shown.
+                    // (Saving clears the m_DirtyIndex of the target which is used for updating inspectors via SerializedObject::UpdateIfRequiredOrScript()
+                    // and thus the cached dirty index in SerializedObject is not updated meaning the source object is not reloaded even though it changed)
+                    if (savedPrefab)
+                        EditorUtility.ForceRebuildInspectors();
                 }
             }
         }

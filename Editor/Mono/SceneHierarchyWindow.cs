@@ -288,13 +288,13 @@ namespace UnityEditor
 
     internal class TransformSorting : HierarchySorting
     {
-        readonly GUIContent m_Content = EditorGUIUtility.TrIconContent("DefaultSorting", "Transform Child Order");
+        readonly ScalableGUIContent m_Content = new ScalableGUIContent(null, "Transform Child Order", "DefaultSorting");
         public override GUIContent content { get { return m_Content; } }
     }
 
     internal class AlphabeticalSorting : HierarchySorting
     {
-        readonly GUIContent m_Content = EditorGUIUtility.TrIconContent("AlphabeticalSorting", "Alphabetical Order");
+        readonly ScalableGUIContent m_Content = new ScalableGUIContent(null, "Alphabetical Order", "AlphabeticalSorting");
         public override GUIContent content { get { return m_Content; } }
     }
 }
