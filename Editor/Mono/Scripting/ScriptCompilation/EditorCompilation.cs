@@ -578,18 +578,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static Exception[] UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
             PackageAssembly[] packageAssemblies)
         {
+            var exceptions = UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, packageAssemblies);
+            return exceptions.ToArray();
+        }
+
+        static Exception[] UpdateCustomTargetAssembliesAssetPathsMetaData(CustomScriptAssembly[] customScriptAssemblies,
+            PackageAssembly[] packageAssemblies, bool forceUpdate = false)
+        {
             var exceptions = new List<Exception>();
 
             foreach (var assembly in customScriptAssemblies)
             {
                 try
                 {
-                    if (packageAssemblies != null && !assembly.PackageAssembly.HasValue)
+                    if (packageAssemblies != null)
                     {
                         var pathPrefix = assembly.PathPrefix.ToLowerInvariant();
 
                         foreach (var packageAssembly in packageAssemblies)
                         {
+                            if (assembly.PackageAssembly.HasValue && !forceUpdate)
+                            {
+                                continue;
+                            }
                             var lower = AssetPath.ReplaceSeparators(packageAssembly.DirectoryPath + AssetPath.Separator).ToLowerInvariant();
                             if (pathPrefix.StartsWith(lower, StringComparison.Ordinal))
                             {
@@ -752,6 +763,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public void SetAllPackageAssemblies(PackageAssembly[] packageAssemblies)
         {
             m_PackageAssemblies = packageAssemblies;
+            UpdateCustomTargetAssembliesAssetPathsMetaData(customScriptAssemblies, packageAssemblies, forceUpdate: true);
         }
 
         private static CustomScriptAssembly CreatePackageCustomScriptAssembly(PackageAssembly packageAssembly)

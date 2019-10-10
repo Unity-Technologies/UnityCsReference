@@ -52,15 +52,18 @@ namespace UnityEditor
 
             serializedObject.Update();
             EditorGUI.BeginChangeCheck();
+            Texture2D origMask = (Texture2D)m_Mask.objectReferenceValue;
             Texture2D mask = (Texture2D)EditorGUILayout.ObjectField(Styles.maskTexture,
-                (Texture2D)m_Mask.objectReferenceValue, typeof(Texture2D), false);
+                origMask, typeof(Texture2D), false);
             if (mask == null)
             {
                 mask = Brush.DefaultMask();
                 m_HasChanged = true;
             }
 
-            m_Mask.objectReferenceValue = mask;
+            if (origMask != mask)
+                m_Mask.objectReferenceValue = mask;
+
             EditorGUILayout.CurveField(m_Falloff, Color.white, new Rect(0, 0, 1, 1));
             EditorGUILayout.PropertyField(m_RadiusScale);
             m_HasChanged |= EditorGUI.EndChangeCheck();

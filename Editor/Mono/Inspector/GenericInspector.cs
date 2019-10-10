@@ -15,7 +15,6 @@ namespace UnityEditor
             NoOptimizedBlock
         }
 
-        private AudioFilterGUI m_AudioFilterGUI;
         private OptimizedGUIBlock m_OptimizedBlock;
 
         private float m_LastHeight;
@@ -116,7 +115,7 @@ namespace UnityEditor
                         childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect);
                 }
                 else
-                    childrenAreExpanded = property.isExpanded;
+                    childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                 contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
             }
@@ -182,18 +181,6 @@ namespace UnityEditor
                 return;
 
             base.OnInspectorGUI();
-
-            var behaviour = target as MonoBehaviour;
-            if (behaviour != null)
-            {
-                // Does this have a AudioRead callback?
-                if (AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
-                {
-                    if (m_AudioFilterGUI == null)
-                        m_AudioFilterGUI = new AudioFilterGUI();
-                    m_AudioFilterGUI.DrawAudioFilterGUI(behaviour);
-                }
-            }
         }
     }
 }

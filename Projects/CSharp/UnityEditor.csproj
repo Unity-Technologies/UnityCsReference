@@ -3195,6 +3195,9 @@
   <Compile Include="..\..\Editor\Mono\Scripting\Serialization\Weaver.cs">
     <Link>Editor\Mono\Scripting\Serialization\Weaver.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\SelectionCommands\SelectionCommands.cs">
+    <Link>Editor\Mono\SelectionCommands\SelectionCommands.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\SerializedProperty\SerializedPropertyFilters.cs">
     <Link>Editor\Mono\SerializedProperty\SerializedPropertyFilters.cs</Link>
   </Compile>

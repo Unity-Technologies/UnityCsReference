@@ -324,6 +324,7 @@ namespace UnityEditor
         int m_ReferenceTargetIndex = 0;
         PropertyHandlerCache m_PropertyHandlerCache = new PropertyHandlerCache();
         IPreviewable m_DummyPreview;
+        AudioFilterGUI m_AudioFilterGUI;
 
         internal SerializedObject m_SerializedObject = null;
         internal SerializedProperty m_EnabledProperty = null;
@@ -641,7 +642,17 @@ namespace UnityEditor
 
         internal bool DoDrawDefaultInspector()
         {
-            return DoDrawDefaultInspector(serializedObject);
+            bool res = DoDrawDefaultInspector(serializedObject);
+
+            var behaviour = target as MonoBehaviour;
+            if (behaviour == null || !AudioUtil.HasAudioCallback(behaviour) || AudioUtil.GetCustomFilterChannelCount(behaviour) <= 0)
+                return res;
+
+            // If we have an OnAudioFilterRead callback, draw vu meter
+            if (m_AudioFilterGUI == null)
+                m_AudioFilterGUI = new AudioFilterGUI();
+            m_AudioFilterGUI.DrawAudioFilterGUI(behaviour);
+            return res;
         }
 
         // Repaint any inspectors that shows this editor.

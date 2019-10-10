@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEditor;
 using UnityEngine.Scripting;
 
 namespace AOT
@@ -82,15 +83,13 @@ namespace UnityEngine
 
         static int GetExecuteMode(Type klass)
         {
-            var customAttributes = klass.GetCustomAttributes(false);
-            foreach (var attribute in customAttributes)
-            {
-                if (attribute is ExecuteAlways)
-                    return 2;
-                if (attribute is ExecuteInEditMode)
-                    return 1;
-            }
+            var executeAlwaysAttributes = klass.GetCustomAttributes(typeof(ExecuteAlways), false);
+            if (executeAlwaysAttributes.Length != 0)
+                return 2;
 
+            var executeInEditModeAttributes = klass.GetCustomAttributes(typeof(ExecuteInEditMode), false);
+            if (executeInEditModeAttributes.Length != 0)
+                return 1;
             return 0;
         }
 
