@@ -15,31 +15,44 @@ namespace UnityEngine.UIElements
         {
             IPointerEvent pointerEvent = evt as IPointerEvent;
 
+            if (pointerEvent == null)
+                return;
+
             BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
 
-            if (basePanel != null && pointerEvent != null)
+            bool shouldRecomputeTopElementUnderPointer = true;
+            if (evt is IPointerEventInternal)
             {
-                bool shouldRecomputeTopElementUnderPointer =
+                shouldRecomputeTopElementUnderPointer =
                     ((IPointerEventInternal)pointerEvent).recomputeTopElementUnderPointer;
+            }
 
-                VisualElement elementUnderPointer = shouldRecomputeTopElementUnderPointer ?
-                    basePanel.Pick(pointerEvent.position) :
-                    basePanel.GetTopElementUnderPointer(pointerEvent.pointerId);
+            VisualElement elementUnderPointer = shouldRecomputeTopElementUnderPointer
+                ? basePanel?.Pick(pointerEvent.position)
+                : basePanel?.GetTopElementUnderPointer(pointerEvent.pointerId);
 
-                if (evt.target == null)
-                {
-                    evt.target = elementUnderPointer;
-                }
+            if (evt.target == null && elementUnderPointer != null)
+            {
+                evt.propagateToIMGUI = false;
+                evt.target = elementUnderPointer;
+            }
+            else if (evt.target == null && elementUnderPointer == null)
+            {
+                // Don't modify evt.propagateToIMGUI.
+                evt.target = panel?.visualTree;
+            }
+            else if (evt.target != null)
+            {
+                evt.propagateToIMGUI = false;
+            }
 
-                if (shouldRecomputeTopElementUnderPointer)
-                {
-                    basePanel.SetElementUnderPointer(elementUnderPointer, evt);
-                }
+            if (basePanel != null && shouldRecomputeTopElementUnderPointer)
+            {
+                basePanel.SetElementUnderPointer(elementUnderPointer, evt);
             }
 
             if (evt.target != null)
             {
-                evt.propagateToIMGUI = false;
                 EventDispatchUtilities.PropagateEvent(evt);
             }
 

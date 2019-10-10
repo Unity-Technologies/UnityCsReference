@@ -1371,9 +1371,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             throw new InvalidOperationException($"Cannot find CustomScriptAssembly with reference '{reference}'");
         }
 
-        public CompileStatus CompileScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
+        public CompileStatus CompileScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
         {
-            var scriptAssemblySettings = CreateScriptAssemblySettings(platformGroup, platform, options);
+            var scriptAssemblySettings = CreateScriptAssemblySettings(platformGroup, platform, options, extraScriptingDefines);
 
             EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies = null;
             string[] notCompiledScripts = null;
@@ -1774,6 +1774,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
+            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, options, new string[] {});
+        }
+
+        ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
+        {
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
 
             if ((options & EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode) == EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode)
@@ -1794,7 +1799,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
                 CompilationExtension = compilationExtension,
-                EditorCodeOptimization = CompilationPipeline.codeOptimization,
+                EditorCodeOptimization = CompilationPipeline.codeOptimization,                ExtraGeneralDefines = extraScriptingDefines
             };
 
             return settings;
@@ -1896,7 +1901,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             compilationTask.Stop();
         }
 
-        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
+        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
         {
             // Return CompileStatus.Compiling if any compile task is still compiling.
             // This ensures that the compile tasks finish compiling before any
@@ -1915,7 +1920,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!IsCompilationTaskCompiling() && IsCompilationPending())
             {
                 Profiler.BeginSample("CompilationPipeline.CompileScripts");
-                CompileStatus compileStatus = CompileScripts(options, platformGroup, platform);
+                CompileStatus compileStatus = CompileScripts(options, platformGroup, platform, extraScriptingDefines);
                 Profiler.EndSample();
                 return compileStatus;
             }

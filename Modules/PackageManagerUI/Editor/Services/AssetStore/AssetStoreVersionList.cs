@@ -7,12 +7,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.PackageManager.UI.AssetStore;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
     internal class AssetStoreVersionList : IVersionList
     {
+        [SerializeField]
         private List<AssetStorePackageVersion> m_Versions;
 
         public IEnumerable<IPackageVersion> key => m_Versions.Cast<IPackageVersion>();

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.AssetStore
 {
@@ -18,6 +19,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         // a timestamp is added to keep track of how `refresh` the result it
         // in the case of an online operation, it is the time when the operation starts
         // in the case of an offline operation, it is set to the timestamp of the last online operation
+        [SerializeField]
         protected long m_Timestamp = 0;
         public long timestamp { get { return m_Timestamp; } }
 
@@ -25,14 +27,15 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
         public bool isOfflineMode => false;
 
+        [SerializeField]
         protected bool m_IsInProgress = false;
         public bool isInProgress => m_IsInProgress;
 
         public RefreshOptions refreshOptions => RefreshOptions.Purchased;
 
-        public event Action<Error> onOperationError;
-        public event Action onOperationSuccess;
-        public event Action onOperationFinalized;
+        public event Action<IOperation, Error> onOperationError;
+        public event Action<IOperation> onOperationSuccess;
+        public event Action<IOperation> onOperationFinalized;
 
         public void Start()
         {
@@ -43,8 +46,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         public void TriggerOperationError(Error error)
         {
             m_IsInProgress = false;
-            onOperationError?.Invoke(error);
-            onOperationFinalized?.Invoke();
+            onOperationError?.Invoke(this, error);
+            onOperationFinalized?.Invoke(this);
 
             onOperationError = delegate {};
             onOperationFinalized = delegate {};
@@ -54,8 +57,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         public void TriggeronOperationSuccess()
         {
             m_IsInProgress = false;
-            onOperationSuccess?.Invoke();
-            onOperationFinalized?.Invoke();
+            onOperationSuccess?.Invoke(this);
+            onOperationFinalized?.Invoke(this);
 
             onOperationError = delegate {};
             onOperationFinalized = delegate {};

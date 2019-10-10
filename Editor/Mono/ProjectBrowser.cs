@@ -2145,6 +2145,7 @@ namespace UnityEditor
         void SetOneColumn()
         {
             SetViewMode(ViewMode.OneColumn);
+            EnsureValidSetup();
         }
 
         void SetTwoColumns()
@@ -2867,14 +2868,11 @@ namespace UnityEditor
                 {
                     ob.m_FolderTree.BeginNameEditing(0f);
                 }
-                else if (ob.m_ViewMode == ViewMode.OneColumn)
+                else if (ob.m_ViewMode == ViewMode.OneColumn && !ob.m_SearchFilter.IsSearching() && ob.m_AssetTree != null)
                 {
-                    if (ob.m_AssetTree != null && ob.m_AssetTree.HasFocus())
-                        ob.m_AssetTree.BeginNameEditing(0f);
-                    else if (ob.m_ListArea != null)
-                        ob.m_ListArea.BeginRename(0f);
+                    ob.m_AssetTree.BeginNameEditing(0f);
                 }
-                else if (ob.m_ViewMode == ViewMode.TwoColumns && ob.m_ListArea != null)
+                else if (ob.m_ListArea != null)
                 {
                     ob.m_ListArea.BeginRename(0f);
                 }

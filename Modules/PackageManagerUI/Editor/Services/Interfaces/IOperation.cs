@@ -8,9 +8,9 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IOperation
     {
-        event Action<Error> onOperationError;
-        event Action onOperationSuccess;
-        event Action onOperationFinalized;
+        event Action<IOperation, Error> onOperationError;
+        event Action<IOperation> onOperationSuccess;
+        event Action<IOperation> onOperationFinalized;
 
         // the special unique id is used when neither package unique id or version unique id applies
         // e.g. git url, tar ball path that does not contain any package name or version

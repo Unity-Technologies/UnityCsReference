@@ -16,7 +16,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [NativeClass("Matrix4x4f")]
-    public partial struct Matrix4x4 : IEquatable<Matrix4x4>
+    public partial struct Matrix4x4 : IEquatable<Matrix4x4>, IFormattable
     {
         // memory layout:
         //
@@ -402,21 +402,23 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("{0:F5}\t{1:F5}\t{2:F5}\t{3:F5}\n{4:F5}\t{5:F5}\t{6:F5}\t{7:F5}\n{8:F5}\t{9:F5}\t{10:F5}\t{11:F5}\n{12:F5}\t{13:F5}\t{14:F5}\t{15:F5}\n", m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("{0}\t{1}\t{2}\t{3}\n{4}\t{5}\t{6}\t{7}\n{8}\t{9}\t{10}\t{11}\n{12}\t{13}\t{14}\t{15}\n",
-                ToInvariantString(format, m00), ToInvariantString(format, m01), ToInvariantString(format, m02), ToInvariantString(format, m03),
-                ToInvariantString(format, m10), ToInvariantString(format, m11), ToInvariantString(format, m12), ToInvariantString(format, m13),
-                ToInvariantString(format, m20), ToInvariantString(format, m21), ToInvariantString(format, m22), ToInvariantString(format, m23),
-                ToInvariantString(format, m30), ToInvariantString(format, m31), ToInvariantString(format, m32), ToInvariantString(format, m33));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
         }
 
-        private string ToInvariantString(string format, float val)
+        public string ToString(string format, IFormatProvider formatProvider)
         {
-            return val.ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+            if (string.IsNullOrEmpty(format))
+                format = "F5";
+            return UnityString.Format("{0}\t{1}\t{2}\t{3}\n{4}\t{5}\t{6}\t{7}\n{8}\t{9}\t{10}\t{11}\n{12}\t{13}\t{14}\t{15}\n",
+                m00.ToString(format, formatProvider), m01.ToString(format, formatProvider), m02.ToString(format, formatProvider), m03.ToString(format, formatProvider),
+                m10.ToString(format, formatProvider), m11.ToString(format, formatProvider), m12.ToString(format, formatProvider), m13.ToString(format, formatProvider),
+                m20.ToString(format, formatProvider), m21.ToString(format, formatProvider), m22.ToString(format, formatProvider), m23.ToString(format, formatProvider),
+                m30.ToString(format, formatProvider), m31.ToString(format, formatProvider), m32.ToString(format, formatProvider), m33.ToString(format, formatProvider));
         }
     }
 } //namespace

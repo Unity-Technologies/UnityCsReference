@@ -101,6 +101,10 @@ namespace UnityEngine.Yoga
             float pixelsInPoint);
 
         [FreeFunction]
+        public static extern float YGConfigGetPointScaleFactor(
+            IntPtr config);
+
+        [FreeFunction]
         public static extern void YGNodeInsertChild(
             IntPtr node,
             IntPtr child,

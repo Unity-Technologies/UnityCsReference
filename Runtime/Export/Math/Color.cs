@@ -16,7 +16,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Math/Color.h")]
     [NativeClass("ColorRGBAf")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
-    public struct Color : IEquatable<Color>
+    public struct Color : IEquatable<Color>, IFormattable
     {
         // Red component of the color.
         public float r;
@@ -44,15 +44,22 @@ namespace UnityEngine
         }
 
         /// *listonly*
-        override public string ToString()
+        public override string ToString()
         {
-            return UnityString.Format("RGBA({0:F3}, {1:F3}, {2:F3}, {3:F3})", r, g, b, a);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         // Returns a nicely formatted string of this color.
         public string ToString(string format)
         {
-            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format, CultureInfo.InvariantCulture.NumberFormat), g.ToString(format, CultureInfo.InvariantCulture.NumberFormat), b.ToString(format, CultureInfo.InvariantCulture.NumberFormat), a.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F3";
+            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format, formatProvider), g.ToString(format, formatProvider), b.ToString(format, formatProvider), a.ToString(format, formatProvider));
         }
 
         // used to allow Colors to be used as keys in hash tables

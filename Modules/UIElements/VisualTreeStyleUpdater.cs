@@ -327,9 +327,10 @@ namespace UnityEngine.UIElements
                 var parentStyle = parent?.computedStyle;
                 resolvedStyles = ComputedStyle.Create(parentStyle, true);
 
+                float dpiScaling = element.scaledPixelsPerPoint;
                 foreach (var record in matchingSelectors)
                 {
-                    m_StylePropertyReader.SetContext(record.sheet, record.complexSelector, m_StyleMatchingContext.variableContext);
+                    m_StylePropertyReader.SetContext(record.sheet, record.complexSelector, m_StyleMatchingContext.variableContext, dpiScaling);
                     resolvedStyles.ApplyProperties(m_StylePropertyReader, parentStyle);
                 }
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
@@ -13,7 +14,7 @@ namespace UnityEngine
     // Representation of RGBA colors in 32 bit format
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Explicit)]
-    public partial struct Color32
+    public partial struct Color32 : IFormattable
     {
         // An rgba int has been unioned with the four r g b a bytes.
         // This ensures the struct is 4 byte aligned for webgl.
@@ -115,12 +116,17 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r, g, b, a);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format), g.ToString(format), b.ToString(format), a.ToString(format));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format, formatProvider), g.ToString(format, formatProvider), b.ToString(format, formatProvider), a.ToString(format, formatProvider));
         }
     }
 } //namespace

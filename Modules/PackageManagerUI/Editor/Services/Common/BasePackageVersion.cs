@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -12,20 +13,25 @@ namespace UnityEditor.PackageManager.UI
     {
         public string name => packageInfo?.name ?? string.Empty;
 
+        [SerializeField]
         protected string m_DisplayName;
         public string displayName => m_DisplayName;
 
+        [SerializeField]
         protected string m_Description;
         public string description => !string.IsNullOrEmpty(m_Description) ? m_Description : (packageInfo?.description ?? string.Empty);
 
+        [SerializeField]
         protected string m_PackageUniqueId;
         public string packageUniqueId => m_PackageUniqueId;
 
         public virtual string authorLink => string.Empty;
 
+        [SerializeField]
         protected SemVersion m_Version;
         public SemVersion version => m_Version;
 
+        [SerializeField]
         protected long m_PublishedDateTicks;
         public DateTime? publishedDate => m_PublishedDateTicks == 0 ? packageInfo?.datePublished : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
 
@@ -33,6 +39,7 @@ namespace UnityEditor.PackageManager.UI
         public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
         public EntitlementsInfo entitlements => packageInfo?.entitlements;
 
+        [SerializeField]
         protected PackageTag m_Tag;
         public bool HasTag(PackageTag tag)
         {

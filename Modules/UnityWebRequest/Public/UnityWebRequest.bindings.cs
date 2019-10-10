@@ -83,6 +83,16 @@ namespace UnityEngine.Networking
             NoInternetConnection
         }
 
+        public enum Result
+        {
+            InProgress = 0,
+            Success = 1,
+            ConnectionError = 2,
+            ProtocolError = 3,
+            DataProcessingError = 4,
+        }
+
+
         public const string kHttpVerbGET = "GET";
         public const string kHttpVerbHEAD = "HEAD";
         public const string kHttpVerbPOST = "POST";
@@ -434,9 +444,10 @@ namespace UnityEngine.Networking
         }
 
         public extern bool isModifiable {[NativeMethod("IsModifiable")] get; }
-        public extern bool isDone {[NativeMethod("IsDone")] get; }
-        public extern bool isNetworkError {[NativeMethod("IsNetworkError")] get; }
-        public extern bool isHttpError {[NativeMethod("IsHttpError")] get; }
+        public bool isDone { get { return result != Result.InProgress; } }
+        public bool isNetworkError { get { return result == Result.ConnectionError; } }
+        public bool isHttpError { get { return result == Result.ProtocolError; } }
+        public extern Result result { [NativeMethod("GetResult")] get; }
 
         private extern float GetDownloadProgress();
 

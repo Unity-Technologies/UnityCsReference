@@ -188,6 +188,7 @@ namespace UnityEditor
         public BuildTargetGroup targetGroup {get; set; }
         public BuildTarget target {get; set; }
         public BuildOptions options {get; set; }
+        public string[] extraScriptingDefines { get; set; }
     }
 
     // Lets you programmatically build players or AssetBundles which can be loaded from the web.
@@ -262,10 +263,10 @@ namespace UnityEditor
 
         public static BuildReport BuildPlayer(BuildPlayerOptions buildPlayerOptions)
         {
-            return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.options);
+            return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.options, buildPlayerOptions.extraScriptingDefines);
         }
 
-        private static BuildReport BuildPlayer(string[] scenes, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
+        private static BuildReport BuildPlayer(string[] scenes, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines)
         {
             if (isBuildingPlayer)
                 throw new InvalidOperationException("Cannot start a new build because there is already a build in progress.");
@@ -279,7 +280,7 @@ namespace UnityEditor
 
             try
             {
-                return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options);
+                return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options, extraScriptingDefines);
             }
             catch (System.Exception exception)
             {
@@ -353,7 +354,7 @@ namespace UnityEditor
             crc = 0;
             try
             {
-                var report = BuildPlayerInternal(levels, locationPath, null, buildTargetGroup, target, options | BuildOptions.BuildAdditionalStreamedScenes | BuildOptions.ComputeCRC);
+                var report = BuildPlayerInternal(levels, locationPath, null, buildTargetGroup, target, options | BuildOptions.BuildAdditionalStreamedScenes | BuildOptions.ComputeCRC, new string[] {});
                 crc = report.summary.crc;
 
                 var summary = report.SummarizeErrors();
@@ -375,19 +376,19 @@ namespace UnityEditor
             return BuildStreamedSceneAssetBundle(levels, locationPath, target, out crc, 0);
         }
 
-        private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
+        private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines)
         {
             if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName))
                 throw new Exception("Invalid Build Path: " + locationPathName);
 
-            return BuildPlayerInternalNoCheck(levels, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options, false);
+            return BuildPlayerInternalNoCheck(levels, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options, extraScriptingDefines, false);
         }
 
         // Is a player currently building?
         public static extern bool isBuildingPlayer {[FreeFunction("IsBuildingPlayer")] get; }
 
         // Just like BuildPlayer, but does not check for Pro license. Used from build player dialog.
-        internal static extern BuildReport BuildPlayerInternalNoCheck(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, bool delayToAfterScriptReload);
+        internal static extern BuildReport BuildPlayerInternalNoCheck(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines, bool delayToAfterScriptReload);
 
 #pragma warning disable 618
 

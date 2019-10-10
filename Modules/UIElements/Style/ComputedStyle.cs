@@ -137,6 +137,8 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        private float dpiScaling = 1.0f;
+
         private bool ApplyGlobalKeyword(StyleValue sv, ComputedStyle parentStyle)
         {
             if (sv.keyword == StyleKeyword.Initial)
@@ -159,6 +161,7 @@ namespace UnityEngine.UIElements
 
         private void ApplyCustomStyleProperty(StylePropertyReader reader)
         {
+            dpiScaling = reader.dpiScaling;
             if (m_CustomProperties == null)
             {
                 m_CustomProperties = new Dictionary<string, StylePropertyValue>();
@@ -237,7 +240,7 @@ namespace UnityEngine.UIElements
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
             {
                 var source = new ImageSource();
-                if (StylePropertyReader.TryGetImageSourceFromValue(customProp, out source) && source.texture != null)
+                if (StylePropertyReader.TryGetImageSourceFromValue(customProp, dpiScaling, out source) && source.texture != null)
                 {
                     value = source.texture;
                     return true;
@@ -254,7 +257,7 @@ namespace UnityEngine.UIElements
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out customProp))
             {
                 var source = new ImageSource();
-                if (StylePropertyReader.TryGetImageSourceFromValue(customProp, out source) && source.vectorImage != null)
+                if (StylePropertyReader.TryGetImageSourceFromValue(customProp, dpiScaling, out source) && source.vectorImage != null)
                 {
                     value = source.vectorImage;
                     return true;

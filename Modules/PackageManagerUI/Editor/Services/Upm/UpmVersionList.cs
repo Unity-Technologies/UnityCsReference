@@ -6,12 +6,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
     internal class UpmVersionList : IVersionList
     {
+        [SerializeField]
         private List<UpmPackageVersion> m_Versions;
 
         public IEnumerable<IPackageVersion> key
@@ -35,6 +37,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        [SerializeField]
         private int m_InstalledIndex;
         public IPackageVersion installed { get { return m_InstalledIndex < 0 ? null : m_Versions[m_InstalledIndex]; } }
 

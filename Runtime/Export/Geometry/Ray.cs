@@ -2,10 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Globalization;
+
 namespace UnityEngine
 {
     // Representation of rays.
-    public partial struct Ray
+    public partial struct Ray : IFormattable
     {
         private Vector3 m_Origin;
         private Vector3 m_Direction;
@@ -39,12 +42,19 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("Origin: {0}, Dir: {1}", m_Origin, m_Direction);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("Origin: {0}, Dir: {1}", m_Origin.ToString(format), m_Direction.ToString(format));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F1";
+            return UnityString.Format("Origin: {0}, Dir: {1}", m_Origin.ToString(format, formatProvider), m_Direction.ToString(format, formatProvider));
         }
     }
 }

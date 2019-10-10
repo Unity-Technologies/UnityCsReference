@@ -32,13 +32,20 @@ namespace UnityEditor.PackageManager.UI
             public event Action<string, IPackageVersion> onProductPackageVersionUpdated = delegate {};
             public event Action<string, Error> onProductPackageFetchError = delegate {};
 
+            [SerializeField]
             private UpmSearchOperation m_SearchOperation;
+            [SerializeField]
             private UpmSearchOperation m_SearchOfflineOperation;
+            [SerializeField]
             private UpmListOperation m_ListOperation;
+            [SerializeField]
             private UpmListOperation m_ListOfflineOperation;
 
+            [SerializeField]
             private UpmAddOperation m_AddOperation;
+            [SerializeField]
             private UpmRemoveOperation m_RemoveOperation;
+            [SerializeField]
             private UpmEmbedOperation m_EmbedOperation;
 
             private readonly Dictionary<string, UpmBaseOperation> m_ExtraFetchOperations = new Dictionary<string, UpmBaseOperation>();
@@ -90,7 +97,7 @@ namespace UnityEditor.PackageManager.UI
             private void SetupAddOperation()
             {
                 m_AddOperation.onProcessResult += OnProcessAddResult;
-                m_AddOperation.onOperationError += error => Debug.LogError($"Error adding package: {m_AddOperation.packageId}.");
+                m_AddOperation.onOperationError += (op, error) => Debug.LogError($"Error adding package: {m_AddOperation.packageId}.");
                 onAddOperation(m_AddOperation);
             }
 
@@ -154,7 +161,7 @@ namespace UnityEditor.PackageManager.UI
                 else
                     operation.List();
                 operation.onProcessResult += request => OnProcessListResult(request, offlineMode);
-                operation.onOperationError += error => Debug.LogError(errorMessage);
+                operation.onOperationError += (op, error) => Debug.LogError(errorMessage);
                 onListOperation(operation);
             }
 
@@ -173,7 +180,7 @@ namespace UnityEditor.PackageManager.UI
                     return;
                 m_EmbedOperation.Embed(packageName, UpmCache.instance.GetProductId(packageName));
                 m_EmbedOperation.onProcessResult += OnProcessAddResult;
-                m_EmbedOperation.onOperationError += error => Debug.LogError($"Error embedding package: {m_EmbedOperation.packageName}.");
+                m_EmbedOperation.onOperationError += (op, error) => Debug.LogError($"Error embedding package: {m_EmbedOperation.packageName}.");
                 onEmbedOperation(m_EmbedOperation);
             }
 
@@ -201,7 +208,7 @@ namespace UnityEditor.PackageManager.UI
             private void SetupRemoveOperation()
             {
                 m_RemoveOperation.onProcessResult += OnProcessRemoveResult;
-                m_RemoveOperation.onOperationError += error => Debug.LogError($"Error removing package: {m_RemoveOperation.packageName}.");
+                m_RemoveOperation.onOperationError += (op, error) => Debug.LogError($"Error removing package: {m_RemoveOperation.packageName}.");
                 onRemoveOperation(m_RemoveOperation);
             }
 
@@ -233,7 +240,7 @@ namespace UnityEditor.PackageManager.UI
                 else
                     operation.SearchAll();
                 operation.onProcessResult += request => OnProcessSearchAllResult(request, offlineMode);
-                operation.onOperationError += error => Debug.LogError(errorMessage);
+                operation.onOperationError += (op, error) => Debug.LogError(errorMessage);
                 onSearchAllOperation(operation);
             }
 
@@ -258,8 +265,8 @@ namespace UnityEditor.PackageManager.UI
                 var operation = new UpmSearchOperation();
                 operation.Search(packageIdOrName, productId);
                 operation.onProcessResult += (requst) => OnProcessExtraFetchResult(requst, productId);
-                operation.onOperationError += (error) => OnProcessExtraFetchError(error, productId);
-                operation.onOperationFinalized += () => OnExtraFetchFinalized(packageIdOrName);
+                operation.onOperationError += (op, error) => OnProcessExtraFetchError(error, productId);
+                operation.onOperationFinalized += (op) => OnExtraFetchFinalized(packageIdOrName);
                 m_ExtraFetchOperations[packageIdOrName] = operation;
             }
 

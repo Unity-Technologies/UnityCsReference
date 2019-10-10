@@ -425,5 +425,6 @@ namespace UnityEditor
         internal extern bool removeMatte { get; set; }
 
         public extern bool ignorePngGamma { get; set; }
+        internal static readonly int MaxTextureSizeAllowedForReadable = 8192; //keep in sync with TextureImporter.h
     }
 }

@@ -11,6 +11,7 @@ using UnityEditor.Scripting.Compilers;
 using sc = UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Compilation
 {
@@ -170,11 +171,6 @@ namespace UnityEditor.Compilation
                         throw new ArgumentException(string.Format("Invalid argument {0} provided.", value.ToString()));
                     }
                 }
-
-                if (codeOptimizationChanged != null)
-                {
-                    codeOptimizationChanged(value);
-                }
             }
         }
 
@@ -331,8 +327,15 @@ namespace UnityEditor.Compilation
 
         internal static string[] GetDefinesFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
         {
-            var assembly = GetAssemblies().FirstOrDefault(x => x.name == assemblyName);
-            return assembly?.defines;
+            try
+            {
+                var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
+                return assembly?.Defines;
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
         }
 
         public static string[] GetPrecompiledAssemblyNames()
@@ -557,6 +560,15 @@ namespace UnityEditor.Compilation
         internal static void RequestScriptCompilation(EditorCompilation editorCompilation)
         {
             editorCompilation.DirtyAllScripts();
+        }
+
+        [RequiredByNativeCode]
+        internal static void OnCodeOptimizationChanged(bool scriptDebugInfoEnabled)
+        {
+            if (codeOptimizationChanged != null)
+            {
+                codeOptimizationChanged(scriptDebugInfoEnabled ? CodeOptimization.Debug : CodeOptimization.Release);
+            }
         }
     }
 }

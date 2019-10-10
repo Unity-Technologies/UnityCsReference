@@ -31,8 +31,6 @@ namespace UnityEngine.Rendering
             set;
         }
 
-        extern internal static bool AllowEnlightenSupportForUpgradedProject();
-
         extern public static bool HasShaderDefine(GraphicsTier tier, BuiltinShaderDefine defineHash);
         public static bool HasShaderDefine(BuiltinShaderDefine defineHash)
         {

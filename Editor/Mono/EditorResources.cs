@@ -8,9 +8,9 @@ using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using UnityEditor.StyleSheets;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Internal;
-using UnityEngine.Scripting;
 
 namespace UnityEditor.Experimental
 {
@@ -229,7 +229,7 @@ namespace UnityEditor.Experimental
 
         internal static void BuildCatalog()
         {
-            using (new PerformanceTracker(nameof(BuildCatalog)))
+            using (new EditorPerformanceTracker(nameof(BuildCatalog)))
             {
                 s_StyleCatalog = new StyleCatalog();
                 s_RefreshGlobalStyleCatalog = false;
@@ -245,7 +245,7 @@ namespace UnityEditor.Experimental
 
         internal static void RefreshSkin()
         {
-            using (new PerformanceTracker(nameof(RefreshSkin)))
+            using (new EditorPerformanceTracker(nameof(RefreshSkin)))
             {
                 if (!CanEnableExtendedStyles())
                     return;

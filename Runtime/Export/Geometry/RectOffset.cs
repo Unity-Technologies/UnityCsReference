@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
@@ -11,7 +12,7 @@ namespace UnityEngine
     // Offsets for rectangles, borders, etc.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    public partial class RectOffset
+    public partial class RectOffset : IFormattable
     {
         // Pointer to the RectOffset INSIDE a GUIStyle.
         [NonSerialized]
@@ -53,7 +54,17 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("RectOffset (l:{0} r:{1} t:{2} b:{3})", left, right, top, bottom);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format)
+        {
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return UnityString.Format("RectOffset (l:{0} r:{1} t:{2} b:{3})", left.ToString(format, formatProvider), right.ToString(format, formatProvider), top.ToString(format, formatProvider), bottom.ToString(format, formatProvider));
         }
 
         private void Destroy()

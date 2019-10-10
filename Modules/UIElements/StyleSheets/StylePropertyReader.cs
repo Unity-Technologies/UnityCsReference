@@ -39,23 +39,27 @@ namespace UnityEngine.UIElements.StyleSheets
         public StylePropertyId propertyId { get; private set; }
         public int valueCount { get; private set; }
 
-        public void SetContext(StyleSheet sheet, StyleComplexSelector selector, StyleVariableContext varContext)
+        public float dpiScaling { get; private set; }
+
+        public void SetContext(StyleSheet sheet, StyleComplexSelector selector, StyleVariableContext varContext, float dpiScaling = 1.0f)
         {
             m_Sheet = sheet;
             m_Properties = selector.rule.properties;
             m_PropertyIds = StyleSheetCache.GetPropertyIds(sheet, selector.ruleIndex);
             m_Resolver.variableContext = varContext;
 
+            this.dpiScaling = dpiScaling;
             LoadProperties();
         }
 
         // This is for UXML inline sheet
-        public void SetInlineContext(StyleSheet sheet, StyleProperty[] properties, StylePropertyId[] propertyIds)
+        public void SetInlineContext(StyleSheet sheet, StyleProperty[] properties, StylePropertyId[] propertyIds, float dpiScaling = 1.0f)
         {
             m_Sheet = sheet;
             m_Properties = properties;
             m_PropertyIds = propertyIds;
 
+            this.dpiScaling = dpiScaling;
             LoadProperties();
         }
 
@@ -169,7 +173,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     string path = value.sheet.ReadResourcePath(value.handle);
                     if (!string.IsNullOrEmpty(path))
                     {
-                        font = Panel.LoadResource(path, typeof(Font)) as Font;
+                        font = Panel.LoadResource(path, typeof(Font), dpiScaling) as Font;
                     }
 
                     if (font == null)
@@ -213,10 +217,10 @@ namespace UnityEngine.UIElements.StyleSheets
                     // it's OK, we let none be assigned to the source
                 }
             }
-            else if (TryGetImageSourceFromValue(value, out source) == false)
+            else if (TryGetImageSourceFromValue(value, dpiScaling, out source) == false)
             {
                 // Load a stand-in picture to make it easier to identify which image element is missing its picture
-                source.texture = Panel.LoadResource("d_console.warnicon", typeof(Texture2D)) as Texture2D;
+                source.texture = Panel.LoadResource("d_console.warnicon", typeof(Texture2D), dpiScaling) as Texture2D;
             }
 
             StyleBackground sb;
@@ -249,7 +253,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     var source = new ImageSource();
                     var value = GetValue(index);
-                    if (TryGetImageSourceFromValue(value, out source))
+                    if (TryGetImageSourceFromValue(value, dpiScaling, out source))
                     {
                         texture = source.texture;
                         if (valueCount >= 3)
@@ -362,7 +366,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
-        internal static bool TryGetImageSourceFromValue(StylePropertyValue propertyValue, out ImageSource source)
+        internal static bool TryGetImageSourceFromValue(StylePropertyValue propertyValue, float dpiScaling, out ImageSource source)
         {
             source = new ImageSource();
 
@@ -373,9 +377,10 @@ namespace UnityEngine.UIElements.StyleSheets
                     string path = propertyValue.sheet.ReadResourcePath(propertyValue.handle);
                     if (!string.IsNullOrEmpty(path))
                     {
-                        source.texture = Panel.LoadResource(path, typeof(Texture2D)) as Texture2D;
+                        //TODO: This will use GUIUtility.pixelsPerPoint as targetDpi, this may not be the best value for the current panel
+                        source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
                         if (source.texture == null)
-                            source.vectorImage = Panel.LoadResource(path, typeof(VectorImage)) as VectorImage;
+                            source.vectorImage = Panel.LoadResource(path, typeof(VectorImage), dpiScaling) as VectorImage;
                     }
 
                     if (source.texture == null && source.vectorImage == null)

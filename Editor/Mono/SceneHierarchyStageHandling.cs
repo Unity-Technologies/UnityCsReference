@@ -21,8 +21,7 @@ namespace UnityEditor
 
             static Styles()
             {
-                stageHeaderBg = new GUIStyle("ProjectBrowserTopBarBg");
-                stageHeaderBg.fixedHeight = 0;
+                stageHeaderBg = new GUIStyle("HeaderButton");
                 stageHeaderBg.border = new RectOffset(3, 3, 3, 3);
             }
         }
@@ -107,23 +106,25 @@ namespace UnityEditor
             m_LastStageUnsavedChangesState = stage.hasUnsavedChanges;
 
             // Background
-            GUI.Label(rect, GUIContent.none, Styles.stageHeaderBg);
+            GUI.Box(rect, GUIContent.none, Styles.stageHeaderBg);
 
-            // Back button
-            if (Event.current.type == EventType.Repaint)
-            {
-                Rect renderRect = new Rect(
-                    rect.x + Styles.leftArrow.margin.left,
-                    rect.y + (rect.height - Styles.leftArrow.fixedHeight) / 2,
-                    Styles.leftArrow.fixedWidth,
-                    Styles.leftArrow.fixedHeight);
-                Styles.leftArrow.Draw(renderRect, GUIContent.none, false, false, false, false);
-            }
             Rect interactionRect = new Rect(
                 rect.x,
                 rect.y,
                 Styles.leftArrow.fixedWidth + Styles.leftArrow.margin.horizontal,
-                rect.height);
+                rect.height - 1); /*bottom borer*/
+
+            // Back button
+            if (Event.current.type == EventType.Repaint)
+            {
+                // Resets the fixed size to stretch the button
+                float oldW = Styles.leftArrow.fixedWidth, oldH = Styles.leftArrow.fixedHeight;
+
+                Styles.leftArrow.fixedWidth = 0; Styles.leftArrow.fixedHeight = 0;
+                Styles.leftArrow.Draw(interactionRect, GUIContent.none, interactionRect.Contains(Event.current.mousePosition), false, false, false);
+                Styles.leftArrow.fixedWidth = oldW; Styles.leftArrow.fixedHeight = oldH;
+            }
+
             if (GUI.Button(interactionRect, GUIContent.none, GUIStyle.none))
             {
                 StageNavigationManager.instance.NavigateBack(StageNavigationManager.Analytics.ChangeType.NavigateBackViaHierarchyHeaderLeftArrow);

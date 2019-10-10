@@ -105,7 +105,7 @@ namespace UnityEditor.UIElements
                 throw new ArgumentNullException(nameof(element));
             }
 
-            RemoveBinding(element);
+            RemoveBinding(element as IBindable);
 
             for (int i = 0; i < element.hierarchy.childCount; ++i)
             {
@@ -141,22 +141,21 @@ namespace UnityEditor.UIElements
             var fieldElement = field as VisualElement;
             if (property == null || fieldElement == null)
             {
-                // Object is null or property was not found, we have to make sure we delete any previous binding
-                RemoveBinding(fieldElement);
+                // Object is null or property was not found, we have nothing to do here
                 return;
             }
+
+            //we first remove any binding that were already present
+            RemoveBinding(field);
 
             // This covers the case where a field is being manually bound to a property
             field.bindingPath = property.propertyPath;
 
-            if (property != null && fieldElement != null)
+            using (var evt = SerializedPropertyBindEvent.GetPooled(property))
             {
-                using (var evt = SerializedPropertyBindEvent.GetPooled(property))
+                if (SendBindingEvent(evt, fieldElement))
                 {
-                    if (SendBindingEvent(evt, fieldElement))
-                    {
-                        return;
-                    }
+                    return;
                 }
             }
 
@@ -214,18 +213,15 @@ namespace UnityEditor.UIElements
             return evt.isPropagationStopped;
         }
 
-        private static void RemoveBinding(VisualElement element)
+        private static void RemoveBinding(IBindable bindable)
         {
-            var bindable = element as IBindable;
-            if (element == null || !bindable.IsBound())
+            if (bindable == null || !bindable.IsBound())
             {
                 return;
             }
-            if (bindable != null)
-            {
-                bindable.binding?.Release();
-                bindable.binding = null;
-            }
+
+            bindable.binding?.Release();
+            bindable.binding = null;
         }
 
         /// Property getters
@@ -1090,6 +1086,7 @@ namespace UnityEditor.UIElements
                 propGetValue = null;
                 propSetValue = null;
                 propCompareValues = null;
+                ResetCachedValues();
                 isReleased = true;
             }
         }
@@ -1133,7 +1130,6 @@ namespace UnityEditor.UIElements
             public override void Release()
             {
                 base.Release();
-                lastFieldValue = default(TValue);
                 s_Pool.Release(this);
             }
 
@@ -1209,6 +1205,7 @@ namespace UnityEditor.UIElements
                 }
 
                 lastEnumValue = enumValueAsInt;
+                c.value = value;
 
                 // Make sure to write this property only after setting a first value into the field
                 // This avoid any null checks in regular update methods
@@ -1258,18 +1255,30 @@ namespace UnityEditor.UIElements
 
             protected override void UpdateLastFieldValue()
             {
+                if (field == null || managedType == null)
+                {
+                    lastEnumValue = 0;
+                    return;
+                }
+
                 var enumData = EnumDataUtility.GetCachedEnumData(managedType);
 
+                Enum fieldValue = field?.value;
+
                 if (enumData.flags)
-                    lastEnumValue = EnumDataUtility.EnumFlagsToInt(enumData, field.value);
+                    lastEnumValue = EnumDataUtility.EnumFlagsToInt(enumData, fieldValue);
                 else
                 {
-                    int valueIndex = Array.IndexOf(enumData.values, field.value);
+                    int valueIndex = Array.IndexOf(enumData.values, fieldValue);
 
                     if (valueIndex != -1)
                         lastEnumValue = enumData.flagValues[valueIndex];
                     else
-                        Debug.LogWarning("Error: invalid enum value " + field.value + " for type " + managedType);
+                    {
+                        lastEnumValue = 0;
+                        if (field != null)
+                            Debug.LogWarning("Error: invalid enum value " + fieldValue + " for type " + managedType);
+                    }
                 }
             }
 
@@ -1303,6 +1312,8 @@ namespace UnityEditor.UIElements
                 field = null;
                 managedType = null;
                 isReleased = true;
+
+                ResetCachedValues();
                 s_Pool.Release(this);
             }
         }
@@ -1364,7 +1375,14 @@ namespace UnityEditor.UIElements
 
             protected override void UpdateLastFieldValue()
             {
-                lastFieldValueIndex = field.index;
+                if (field == null)
+                {
+                    lastFieldValueIndex  = Int32.MinValue;
+                }
+                else
+                {
+                    lastFieldValueIndex = field.index;
+                }
             }
 
             protected override bool SyncFieldValueToProperty()
@@ -1401,11 +1419,14 @@ namespace UnityEditor.UIElements
                     FieldBinding = null;
                 }
 
+
                 boundObject = null;
                 boundProperty = null;
                 field = null;
                 lastFieldValueIndex = -1;
                 isReleased = true;
+
+                ResetCachedValues();
                 s_Pool.Release(this);
             }
         }
@@ -1444,14 +1465,18 @@ namespace UnityEditor.UIElements
                 this.propSetValue = setValue;
                 this.propCompareValues = compareValues;
                 this.field = c;
-                this.lastFieldValue = default(TValue);
-                Update();
+
+                // In this subclass implementation the lastFieldValue is in fact the propertyValue assigned to the field.
+                // this is made to compare TValues instead of strings
+                UpdateLastFieldValue();
+                AssignValueToField(lastFieldValue);
             }
 
             protected override void UpdateLastFieldValue()
             {
                 if (field == null)
                 {
+                    lastFieldValue = default(TValue);
                     return;
                 }
 
@@ -1461,7 +1486,6 @@ namespace UnityEditor.UIElements
             public override void Release()
             {
                 base.Release();
-                lastFieldValue = default(TValue);
                 s_Pool.Release(this);
             }
 

@@ -17,6 +17,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct PlayerUpdateTime {}
         [RequiredByNativeCode]
+        public struct DirectorSampleTime {}
+        [RequiredByNativeCode]
         public struct AsyncUploadTimeSlicedUpdate {}
         [RequiredByNativeCode]
         public struct SynchronizeState {}
@@ -84,8 +86,6 @@ namespace UnityEngine.PlayerLoop
         public struct DeliverIosPlatformEvents {}
         [RequiredByNativeCode]
         public struct DispatchEventQueueEvents {}
-        [RequiredByNativeCode]
-        public struct DirectorSampleTime {}
         [RequiredByNativeCode]
         public struct PhysicsResetInterpolatedTransformPosition {}
         [RequiredByNativeCode]

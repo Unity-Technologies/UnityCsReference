@@ -374,9 +374,9 @@ namespace UnityEditor.PackageManager.UI
             private void OnRefreshOperation(IOperation operation)
             {
                 m_RefreshOperationsInProgress.Add(operation);
-                operation.onOperationSuccess += () => OnRefreshOperationSuccess(operation);
-                operation.onOperationFinalized += () => OnRefreshOperationFinalized(operation);
-                operation.onOperationError += (error) => OnRefreshOperationError(operation, error);
+                operation.onOperationSuccess += OnRefreshOperationSuccess;
+                operation.onOperationFinalized += OnRefreshOperationFinalized;
+                operation.onOperationError += OnRefreshOperationError;
                 if (m_RefreshOperationsInProgress.Count > 1)
                     return;
                 onRefreshOperationStart?.Invoke();

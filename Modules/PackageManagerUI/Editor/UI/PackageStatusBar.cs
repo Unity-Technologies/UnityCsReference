@@ -39,6 +39,7 @@ namespace UnityEditor.PackageManager.UI
                 if (!EditorApplication.isPlaying)
                     PageManager.instance.Refresh();
             };
+            refreshButton.SetEnabled(ApplicationUtil.instance.isInternetReachable);
         }
 
         public void OnDisable()
@@ -53,6 +54,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnInternetReachabilityChange(bool value)
         {
+            refreshButton.SetEnabled(value);
             UpdateStatusMessage();
         }
 

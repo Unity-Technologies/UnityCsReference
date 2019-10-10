@@ -15,7 +15,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [NativeClass("Vector2f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
-    public struct Vector2 : IEquatable<Vector2>
+    public struct Vector2 : IEquatable<Vector2>, IFormattable
     {
         // X component of the vector.
         public float x;
@@ -119,11 +119,22 @@ namespace UnityEngine
         }
 
         /// *listonly*
-        public override string ToString() { return UnityString.Format("({0:F1}, {1:F1})", x, y); }
+        public override string ToString()
+        {
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
         // Returns a nicely formatted string for this vector.
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F1";
+            return UnityString.Format("({0}, {1})", x.ToString(format, formatProvider), y.ToString(format, formatProvider));
         }
 
         // used to allow Vector2s to be used as keys in hash tables

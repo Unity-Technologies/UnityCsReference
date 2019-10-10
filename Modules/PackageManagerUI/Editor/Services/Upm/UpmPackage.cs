@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -13,9 +14,11 @@ namespace UnityEditor.PackageManager.UI
     {
         public override string uniqueId => name;
 
+        [SerializeField]
         private bool m_IsDiscoverable;
         public override bool isDiscoverable => m_IsDiscoverable;
 
+        [SerializeField]
         private UpmVersionList m_VersionList;
 
         public override IVersionList versions => m_VersionList;

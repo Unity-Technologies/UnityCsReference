@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Connect;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.AssetStore
 {
@@ -13,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         static IAssetStoreOAuth s_Instance = null;
         public static IAssetStoreOAuth instance { get { return s_Instance ?? AssetStoreOAuthInternal.instance; } }
 
+        [Serializable]
         public class AssetStoreToken
         {
             private const long k_BufferTime = 15L; // We make sure we still have 15 seconds with the token
@@ -31,7 +33,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 }
             }
 
+            [SerializeField]
             private double m_ExpirationStart;
+            [SerializeField]
             private long m_ExpirationIn;
 
             private static double EpochSeconds => (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -48,6 +52,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             }
         }
 
+        [Serializable]
         public class AccessToken : AssetStoreToken
         {
             public string token_type;
@@ -56,6 +61,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public string display_name;
         }
 
+        [Serializable]
         public class TokenInfo : AssetStoreToken
         {
             public string sub;
@@ -64,12 +70,14 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public string ip_address;
         }
 
+        [Serializable]
         public class UserInfo
         {
             public string id;
             public string username;
             public string defaultOrganization;
 
+            [SerializeField]
             private bool m_IsValid;
             public bool isValid
             {
@@ -89,9 +97,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public string authCode;
         }
 
+        [Serializable]
         private class AssetStoreOAuthInternal : ScriptableSingleton<AssetStoreOAuthInternal>, IAssetStoreOAuth
         {
+            [SerializeField]
             private string m_Host = "";
+            [SerializeField]
             private string m_Secret = "";
             private const string kOAuthUri = "/v1/oauth2/token";
             private const string kTokenInfoUri = "/v1/oauth2/tokeninfo";
@@ -102,6 +113,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private IAsyncHTTPClient m_AccessTokenRequest;
             private IAsyncHTTPClient m_TokenRequest;
 
+            [SerializeField]
             private UserInfo m_UserInfo;
             private List<Action<UserInfo>> m_DoneCallbackList;
 
@@ -170,6 +182,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     currList[i].Invoke(m_UserInfo);
             }
 
+            [SerializeField]
             private bool m_AuthCodeRequested;
 
             private void GetAuthCode()

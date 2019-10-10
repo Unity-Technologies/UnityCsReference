@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnityEditor.Compilation;
-using UnityEditor;
+using UnityEditorInternal;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -52,6 +52,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // Invalid for unsupported characters.
                 return false;
             }
+
             return true;
         }
     }
@@ -324,7 +325,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             if (defines != null && defines.Length == 0)
-                throw new ArgumentException("defines cannot be empty", "defines");
+                throw new ArgumentException("Defines cannot be empty", "defines");
+
+            // Log invalid define constraints
+            if (DefineConstraints != null)
+            {
+                for (var i = 0; i < DefineConstraints.Length; ++i)
+                {
+                    if (!DefineConstraintsHelper.IsDefineConstraintValid(DefineConstraints[i]))
+                    {
+                        throw new AssemblyDefinitionException($"Invalid Define Constraint: \"{DefineConstraints[i]}\" at line {(i+1).ToString()}", FilePath);
+                    }
+                }
+            }
 
             if (!DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, DefineConstraints))
             {
@@ -356,7 +369,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var modifiedDirectory = AssetPath.ReplaceSeparators(directory);
 
             if (modifiedDirectory.Last() != AssetPath.Separator)
-                modifiedDirectory += AssetPath.Separator;
+                modifiedDirectory += AssetPath.Separator.ToString();
 
             customScriptAssembly.Name = name;
             customScriptAssembly.FilePath = modifiedDirectory;

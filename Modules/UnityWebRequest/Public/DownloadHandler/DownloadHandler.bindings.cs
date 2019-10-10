@@ -47,6 +47,10 @@ namespace UnityEngine.Networking
 
         private extern bool IsDone();
 
+        public string error { get { return GetErrorMsg(); } }
+
+        private extern string GetErrorMsg();
+
         public byte[] data
         {
             get { return GetData(); }

@@ -18,8 +18,8 @@ namespace UnityEditor.Modules
     //and put the platform-specific stuff (either new, or down below) into the new subclass.
     internal class DefaultTextureImportSettingsExtension : ITextureImportSettingsExtension
     {
-        static readonly string[] kMaxTextureSizeStrings = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192" };
-        static readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
+        static readonly string[] kMaxTextureSizeStrings = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
+        static readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
         static readonly GUIContent maxSize = EditorGUIUtility.TrTextContent("Max Size", "Textures larger than this will be scaled down.");
 
         static readonly string[] kResizeAlgorithmStrings = { "Mitchell", "Bilinear" };

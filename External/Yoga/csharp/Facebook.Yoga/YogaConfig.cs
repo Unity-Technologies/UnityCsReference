@@ -106,6 +106,10 @@ namespace UnityEngine.Yoga
 
         public float PointScaleFactor
         {
+            get
+            {
+                return Native.YGConfigGetPointScaleFactor(_ygConfig);
+            }
             set
             {
                 Native.YGConfigSetPointScaleFactor(_ygConfig, value);

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements;
+using UnityEditor.Profiling;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
 
@@ -380,7 +381,7 @@ namespace UnityEditor
             try
             {
                 var viewName = actualView != null ? actualView.GetType().Name : GetType().Name;
-                using (new PerformanceTracker(viewName + ".OnGUI." + Event.current.type))
+                using (new EditorPerformanceTracker(viewName + ".OnGUI." + Event.current.type))
                 {
                     Invoke("OnGUI");
                 }

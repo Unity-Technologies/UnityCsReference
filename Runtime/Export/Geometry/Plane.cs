@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 
@@ -11,7 +12,7 @@ namespace UnityEngine
     // Representation of planes. Uses the formula Ax + By + Cz + D = 0.
     [UsedByNativeCode]
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Plane
+    public partial struct Plane : IFormattable
     {
         // sizeof(Plane) is not const in C# and so cannot be used in fixed arrays, so we define it here
         internal const int size = 16;
@@ -120,12 +121,19 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("(normal:({0:F1}, {1:F1}, {2:F1}), distance:{3:F1})", m_Normal.x, m_Normal.y, m_Normal.z, m_Distance);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("(normal:({0}, {1}, {2}), distance:{3})", m_Normal.x.ToString(format), m_Normal.y.ToString(format), m_Normal.z.ToString(format), m_Distance.ToString(format));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F1";
+            return UnityString.Format("(normal:{0}, distance:{1})", m_Normal.ToString(format, formatProvider), m_Distance.ToString(format, formatProvider));
         }
     }
 }

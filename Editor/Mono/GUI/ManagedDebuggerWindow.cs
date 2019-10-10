@@ -38,14 +38,18 @@ namespace UnityEditor
             if (CodeOptimization.Debug == m_CodeOptimization)
             {
                 m_CodeOptimizationTitleContent = EditorGUIUtility.TrTextContent("Mode: Debug");
-                m_CodeOptimizationTextContent = EditorGUIUtility.TrTextContentWithIcon("Release mode disables C# debugging but improves C# performance.\nSwitching to release mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
                 m_CodeOptimizationButtonContent = EditorGUIUtility.TrTextContent("Switch to release mode");
+                m_CodeOptimizationTextContent = (!EditorUtility.scriptCompilationFailed) ?
+                    EditorGUIUtility.TrTextContentWithIcon("Release mode disables C# debugging but improves C# performance.\nSwitching to release mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info)) :
+                    EditorGUIUtility.TrTextContentWithIcon("All compiler errors must be fixed before switching to release mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error));
             }
             else
             {
                 m_CodeOptimizationTitleContent = EditorGUIUtility.TrTextContent("Mode: Release");
-                m_CodeOptimizationTextContent = EditorGUIUtility.TrTextContentWithIcon("Debug mode enables C# debugging but reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
                 m_CodeOptimizationButtonContent = EditorGUIUtility.TrTextContent("Switch to debug mode");
+                m_CodeOptimizationTextContent = (!EditorUtility.scriptCompilationFailed) ?
+                    EditorGUIUtility.TrTextContentWithIcon("Debug mode enables C# debugging but reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info)) :
+                    EditorGUIUtility.TrTextContentWithIcon("All compiler errors must be fixed before switching to debug mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error));
             }
 
             m_TextRectHeight = EditorStyles.helpBox.CalcHeight(m_CodeOptimizationTextContent, k_WindowWidth);
@@ -66,13 +70,16 @@ namespace UnityEditor
             EditorGUILayout.LabelField(GUIContent.none, m_CodeOptimizationTextContent, EditorStyles.helpBox);
             GUILayout.EndHorizontal();
 
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(m_CodeOptimizationButtonContent))
+            using (new EditorGUI.DisabledScope(EditorUtility.scriptCompilationFailed))
             {
-                ToggleDebugState(m_CodeOptimization);
-                exit = true;
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button(m_CodeOptimizationButtonContent))
+                {
+                    ToggleDebugState(m_CodeOptimization);
+                    exit = true;
+                }
+                GUILayout.EndHorizontal();
             }
-            GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
 
@@ -92,19 +99,33 @@ namespace UnityEditor
 
         private static void OnDebuggerAttached(bool debuggerAttached)
         {
-            if (debuggerAttached && (CodeOptimization.Release == CompilationPipeline.codeOptimization))
+            if (debuggerAttached)
             {
-                if (EditorUtility.DisplayDialog(
-                    "C# Debugger Attached",
-                    "Do you want to switch to debug mode to enable C# debugging?\nDebug mode reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.",
-                    "Switch to debug mode",
-                    "Cancel"))
+                if (CodeOptimization.Release == CompilationPipeline.codeOptimization)
                 {
-                    ToggleDebugState(CompilationPipeline.codeOptimization);
-                }
-                else
-                {
-                    ManagedDebugger.Disconnect();
+                    if (EditorUtility.scriptCompilationFailed)
+                    {
+                        EditorUtility.DisplayDialog(
+                            "C# Debugger Attached",
+                            "All compiler errors must be fixed before switching to debug mode.",
+                            "Ok");
+                        ManagedDebugger.Disconnect();
+                    }
+                    else
+                    {
+                        if (EditorUtility.DisplayDialog(
+                            "C# Debugger Attached",
+                            "Do you want to switch to debug mode to enable C# debugging?\nDebug mode reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.",
+                            "Switch to debug mode",
+                            "Cancel"))
+                        {
+                            ToggleDebugState(CompilationPipeline.codeOptimization);
+                        }
+                        else
+                        {
+                            ManagedDebugger.Disconnect();
+                        }
+                    }
                 }
             }
 

@@ -21,6 +21,6 @@ namespace UnityEditor
         public Type TargetType;
 
         [RequiredSignature]
-        static extern bool SignatureBool(Rect rectangle, UnityEngine.Object[] targetObjets);
+        static bool SignatureBool(Rect rectangle, UnityEngine.Object[] targetObjets) { throw new InvalidOperationException(); }
     }
 }

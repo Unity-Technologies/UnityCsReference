@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI
     {
         static readonly string k_UnityPrefix = "com.unity.";
 
+        [SerializeField]
         private PackageInfo m_PackageInfo;
         public override PackageInfo packageInfo => m_PackageInfo;
 
@@ -26,16 +27,21 @@ namespace UnityEditor.PackageManager.UI
         public override IEnumerable<Error> errors => m_PackageInfo.errors.Concat(entitlementsError != null ? new List<Error> { entitlementsError } : new List<Error>());
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
 
+        [SerializeField]
         private string m_PackageId;
         public override string uniqueId => m_PackageId;
 
+        [SerializeField]
         private string m_Author;
         public override string author => m_Author;
 
+        [SerializeField]
         private bool m_IsFullyFetched;
         public override bool isFullyFetched => m_IsFullyFetched;
 
+        [SerializeField]
         private bool m_SamplesParsed;
+        [SerializeField]
         private List<Sample> m_Samples;
         public override IEnumerable<Sample> samples
         {
@@ -90,6 +96,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        [SerializeField]
         private bool m_IsInstalled;
         public override bool isInstalled
         {

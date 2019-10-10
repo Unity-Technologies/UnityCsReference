@@ -357,6 +357,7 @@ namespace UnityEditor
             public readonly string psdRemoveMatteURL = "https://docs.unity3d.com/Manual/HOWTO-alphamaps.html";
 
             public readonly GUIContent ignorePngGamma = EditorGUIUtility.TrTextContent("Ignore PNG file gamma", "Ignore the Gamma value attribute in PNG files, this setting has no effect on other file formats.");
+            public readonly GUIContent readWriteWarning = EditorGUIUtility.TrTextContent("Textures larger than 8192 can not be Read/Write enabled. Value will be ignored.");
 
             public Styles()
             {
@@ -860,7 +861,15 @@ namespace UnityEditor
 
         void ReadableGUI(TextureInspectorGUIElement guiElements)
         {
-            ToggleFromInt(m_IsReadable, s_Styles.readWrite);
+            bool enabled = CanReadWrite();
+            using (new EditorGUI.DisabledScope(!enabled))
+            {
+                ToggleFromInt(m_IsReadable, s_Styles.readWrite);
+                if (!enabled && m_IsReadable.intValue > 0)
+                {
+                    EditorGUILayout.HelpBox(s_Styles.readWriteWarning.text, MessageType.Warning, true);
+                }
+            }
         }
 
         void StreamingMipmapsGUI(TextureInspectorGUIElement guiElements)
@@ -1442,6 +1451,16 @@ namespace UnityEditor
         private static bool IsPowerOfTwo(int f)
         {
             return ((f & (f - 1)) == 0);
+        }
+
+        bool CanReadWrite()
+        {
+            foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
+            {
+                if (ps.maxTextureSize > TextureImporter.MaxTextureSizeAllowedForReadable)
+                    return false;
+            }
+            return true;
         }
 
         public static BuildPlatform[] GetBuildPlayerValidPlatforms()

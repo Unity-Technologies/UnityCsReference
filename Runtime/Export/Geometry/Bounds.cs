@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using scm = System.ComponentModel;
@@ -16,7 +17,7 @@ namespace UnityEngine
     [NativeClass("AABB")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Bounds : IEquatable<Bounds>
+    public partial struct Bounds : IEquatable<Bounds>, IFormattable
     {
         private Vector3 m_Center;
         [NativeName("m_Extent")]
@@ -125,13 +126,20 @@ namespace UnityEngine
         /// *listonly*
         override public string ToString()
         {
-            return UnityString.Format("Center: {0}, Extents: {1}", m_Center, m_Extents);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         // Returns a nicely formatted string for the bounds.
         public string ToString(string format)
         {
-            return UnityString.Format("Center: {0}, Extents: {1}", m_Center.ToString(format), m_Extents.ToString(format));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F1";
+            return UnityString.Format("Center: {0}, Extents: {1}", m_Center.ToString(format, formatProvider), m_Extents.ToString(format, formatProvider));
         }
     }
 } //namespace

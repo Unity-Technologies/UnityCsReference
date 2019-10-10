@@ -26,19 +26,8 @@ namespace UnityEditor
 
             public static readonly float tabDragWidth = EditorResources.GetStyle("tab-drag").GetFloat(StyleCatalogKeyword.width, 100.0f);
 
-            private static StyleBlock tabScrollButton = EditorResources.GetStyle("tab-scroll-button");
-            private static StyleBlock tabScrollButtonHover = EditorResources.GetStyle("tab-scroll-button", StyleState.focus);
-            public static readonly Color tabScrollButtonBackgroundColor = tabScrollButton.GetColor(StyleCatalogKeyword.backgroundColor);
-            public static readonly Color tabScrollButtonBlendColor = tabScrollButton.GetColor(StyleCatalogKeyword.color, Color.white);
-            public static readonly Color tabScrollButtonHoverBlendColor = tabScrollButtonHover.GetColor(StyleCatalogKeyword.color, Color.white);
-            public static readonly Texture2D tabScrollPrevButtonImg = EditorGUIUtility.LoadIconRequired("tab_prev");
-            public static readonly Texture2D tabScrollNextButtonImg = EditorGUIUtility.LoadIconRequired("tab_next");
-
-            public static SVC<Color> tabConnectionLineColor = new SVC<Color>("--theme-tab-background-color", Color.red);
-            public static SVC<float> tabConnectionLineHeight = new SVC<float>("--tab-connection-line-height");
-            public static SVC<float> tabConnectionLineHeightFloating = new SVC<float>("--tab-connection-line-height-floating");
-            public static SVC<float> tabConnectionLineBottomOffset = new SVC<float>("--tab-connection-line-bottom-offset");
-            public static SVC<float> tabConnectionLineBottomOffsetFloating = new SVC<float>("--tab-connection-line-bottom-offset-floating");
+            public static readonly GUIStyle tabScrollerPrevButton = new GUIStyle("dragtab scroller prev");
+            public static readonly GUIStyle tabScrollerNextButton = new GUIStyle("dragtab scroller next");
 
             public static SVC<float> genericMenuLeftOffset = new SVC<float>("--window-generic-menu-left-offset", 20f);
             public static SVC<float> genericMenuTopOffset = new SVC<float>("--window-generic-menu-top-offset", 20f);
@@ -86,6 +75,7 @@ namespace UnityEditor
         private float m_ScrollOffset;
         private float m_HoldScrollOffset;
         private double m_HoldScrollTimestamp;
+        private Rect m_TabAreaRect = Rect.zero;
 
         public int selected
         {
@@ -340,10 +330,11 @@ namespace UnityEditor
 
             var viewRect = UpdateViewRect(dockAreaRect);
             var titleBarRect = new Rect(viewRect.x, dockAreaRect.y, viewRect.width, borderSize.top);
-            var tabAreaRect = new Rect(titleBarRect.x, viewRect.y - kTabHeight, titleBarRect.width - GetExtraButtonsWidth(), kTabHeight);
+            m_TabAreaRect = new Rect(titleBarRect.x, viewRect.y - kTabHeight, titleBarRect.width - GetExtraButtonsWidth(), kTabHeight);
 
             DrawDockTitleBarBackground(titleBarRect);
-            HandleTabScrolling(tabAreaRect);
+            HandleTabScrolling(m_TabAreaRect);
+
 
             float genericMenuLeftOffset = Styles.genericMenuLeftOffset;
             float genericMenuTopOffset = Styles.genericMenuTopOffset;
@@ -352,13 +343,13 @@ namespace UnityEditor
                 genericMenuLeftOffset = ContainerWindow.buttonStackWidth + Styles.genericMenuFloatingLeftOffset;
                 genericMenuTopOffset = Styles.genericMenuFloatingTopOffset;
             }
-            ShowGenericMenu(position.width - genericMenuLeftOffset, tabAreaRect.y + genericMenuTopOffset);
+            ShowGenericMenu(position.width - genericMenuLeftOffset, m_TabAreaRect.y + genericMenuTopOffset);
 
-            DrawTabs(tabAreaRect);
+            DrawTabs(m_TabAreaRect);
             HandleSplitView(); //fogbugz 1169963: in order to easily use the splitter in the gameView, it must be prioritized over DrawView(). Side effect for touch is that splitter picking zones might overlap other controls but the tabs still have higher priority so the user can undock the window in that case
             DrawView(viewRect, dockAreaRect);
 
-            DrawTabScrollers(tabAreaRect);
+            DrawTabScrollers(m_TabAreaRect);
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);
@@ -376,6 +367,10 @@ namespace UnityEditor
 
             if (floatingWindow && isTop)
                 clipRect.yMin = 0;
+
+            // If the left scroll button is visible then clip the tabs a bit more because of the top left border radius of the scroll left button
+            if (m_ScrollOffset > 0f)
+                clipRect.xMin += 3;
 
             using (new GUI.ClipScope(clipRect, new Vector2(-m_ScrollOffset - 1f, 0)))
             {
@@ -449,7 +444,7 @@ namespace UnityEditor
                 else if (m_ScrollRightRect.Contains(Event.current.mousePosition))
                 {
                     SetupHoldScrollerUpdate(2f);
-                    m_ScrollOffset = Mathf.Min(m_ScrollOffset + scrollOffsetShift, m_TotalTabWidth - tabAreaRect.xMax);
+                    m_ScrollOffset = Mathf.Min(m_ScrollOffset + scrollOffsetShift, m_TotalTabWidth - tabAreaRect.width);
                     Event.current.Use();
                 }
             }
@@ -460,20 +455,14 @@ namespace UnityEditor
             }
         }
 
-        private void DrawTabScroller(Rect scrollRect, Texture2D tabScrollButtonImg)
+        private void DrawTabScroller(Rect scrollRect, GUIStyle tabScroller)
         {
-            using (new GUI.ColorScope(Styles.tabScrollButtonBackgroundColor))
-                GUI.DrawTexture(scrollRect, EditorGUIUtility.whiteTexture);
-            bool hoverRightScroller = scrollRect.Contains(Event.current.mousePosition);
-            Color hoverBlendColor = hoverRightScroller ? Styles.tabScrollButtonHoverBlendColor : Styles.tabScrollButtonBlendColor;
-            using (new GUI.ColorScope(hoverBlendColor))
-                GUI.DrawTexture(scrollRect, tabScrollButtonImg, ScaleMode.ScaleToFit);
-            MarkHotRegion(scrollRect);
+            tabScroller.Draw(scrollRect, scrollRect.Contains(Event.current.mousePosition), false, false, false);
         }
 
         private float GetExtraButtonsWidth()
         {
-            return (HasExtraDockAreaButton() ? 44f : 26f) + (floatingWindow && isTopRightPane ? ContainerWindow.buttonStackWidth : 0f);
+            return (HasExtraDockAreaButton() ? 42f : 20f) + (floatingWindow && isTopRightPane ? ContainerWindow.buttonStackWidth : 0f);
         }
 
         private void DrawTabScrollers(Rect tabAreaRect)
@@ -484,19 +473,19 @@ namespace UnityEditor
             if (m_TotalTabWidth <= tabAreaRect.xMax)
                 m_ScrollOffset = 0;
 
-            float scrollerButtonHeight = tabAreaRect.height - (floatingWindow ? 2 : 3);
+            float scrollerButtonHeight = tabAreaRect.height;
             if (m_ScrollOffset > 0f)
             {
-                m_ScrollLeftRect = new Rect(tabAreaRect.xMin, tabAreaRect.yMin, 16f, scrollerButtonHeight);
-                DrawTabScroller(m_ScrollLeftRect, Styles.tabScrollPrevButtonImg);
+                m_ScrollLeftRect = new Rect(tabAreaRect.xMin, tabAreaRect.yMin , 16f, scrollerButtonHeight);
+                DrawTabScroller(m_ScrollLeftRect, Styles.tabScrollerPrevButton);
             }
             else
                 m_ScrollLeftRect.width = 0;
 
-            if (m_TotalTabWidth > tabAreaRect.xMax && m_ScrollOffset < (m_TotalTabWidth - tabAreaRect.xMax))
+            if (m_TotalTabWidth > tabAreaRect.width && m_ScrollOffset < (m_TotalTabWidth - tabAreaRect.width))
             {
-                m_ScrollRightRect = new Rect(tabAreaRect.xMax - 11f, tabAreaRect.yMin, 16f, scrollerButtonHeight);
-                DrawTabScroller(m_ScrollRightRect, Styles.tabScrollNextButtonImg);
+                m_ScrollRightRect = new Rect(tabAreaRect.xMax - 16f, tabAreaRect.yMin, 16f, scrollerButtonHeight);
+                DrawTabScroller(m_ScrollRightRect, Styles.tabScrollerNextButton);
             }
             else
                 m_ScrollRightRect.width = 0;
@@ -563,7 +552,7 @@ namespace UnityEditor
 
             double timeSinceStartup = EditorApplication.timeSinceStartup;
             float dt = (float)(timeSinceStartup - m_HoldScrollTimestamp);
-            float maxScrollOffset = m_TotalTabWidth - position.width + GetExtraButtonsWidth();
+            float maxScrollOffset = m_TotalTabWidth - m_TabAreaRect.width;
             m_HoldScrollTimestamp = timeSinceStartup;
             m_ScrollOffset = Mathf.Max(0f, Mathf.Min(m_ScrollOffset + m_HoldScrollOffset * dt * 250.0f, maxScrollOffset));
             Repaint();

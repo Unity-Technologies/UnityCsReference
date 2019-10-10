@@ -4,11 +4,13 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
     internal abstract class BasePackage : IPackage
     {
+        [SerializeField]
         protected string m_Name;
         public string name => m_Name;
 
@@ -43,6 +45,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        [SerializeField]
         protected PackageProgress m_Progress;
         public PackageProgress progress
         {
@@ -51,6 +54,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         // errors on the package level (not just about a particular version)
+        [SerializeField]
         protected List<Error> m_Errors;
 
         // Combined errors for this package or any version.
@@ -74,6 +78,7 @@ namespace UnityEditor.PackageManager.UI
             m_Errors.Clear();
         }
 
+        [SerializeField]
         protected PackageType m_Type;
         public bool Is(PackageType type)
         {

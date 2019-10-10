@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 
@@ -11,7 +12,7 @@ namespace UnityEngine
     // Representation of 2D vectors and points.
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector2Int : IEquatable<Vector2Int>
+    public struct Vector2Int : IEquatable<Vector2Int>, IFormattable
     {
         public int x { get { return m_X; } set { m_X = value; } }
         public int y { get { return m_Y; } set { m_Y = value; } }
@@ -194,7 +195,17 @@ namespace UnityEngine
         /// *listonly*
         public override string ToString()
         {
-            return UnityString.Format("({0}, {1})", x, y);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format)
+        {
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return UnityString.Format("({0}, {1})", x.ToString(format, formatProvider), y.ToString(format, formatProvider));
         }
 
         public static Vector2Int zero { get { return s_Zero; } }

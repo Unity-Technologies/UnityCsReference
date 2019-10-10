@@ -11,6 +11,8 @@ using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
+using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -1765,7 +1767,24 @@ namespace UnityEditor
             DoubleSidedGIField();
         }
 
+        internal static void BeginNoApplyMaterialPropertyDrawers()
+        {
+            EditorMaterialUtility.disableApplyMaterialPropertyDrawers = true;
+        }
+
+        internal static void EndNoApplyMaterialPropertyDrawers()
+        {
+            EditorMaterialUtility.disableApplyMaterialPropertyDrawers = false;
+        }
+
         public static void ApplyMaterialPropertyDrawers(Material material)
+        {
+            var objs = new Object[] { material };
+            ApplyMaterialPropertyDrawers(objs);
+        }
+
+        [RequiredByNativeCode]
+        internal static void ApplyMaterialPropertyDrawersFromNative(Material material)
         {
             var objs = new Object[] { material };
             ApplyMaterialPropertyDrawers(objs);
@@ -1773,19 +1792,22 @@ namespace UnityEditor
 
         public static void ApplyMaterialPropertyDrawers(Object[] targets)
         {
-            if (targets == null || targets.Length == 0)
-                return;
-            var target = targets[0] as Material;
-            if (target == null)
-                return;
-
-            var shader = target.shader;
-            var props = GetMaterialProperties(targets);
-            for (var i = 0; i < props.Length; i++)
+            if (!EditorMaterialUtility.disableApplyMaterialPropertyDrawers)
             {
-                MaterialPropertyHandler handler = MaterialPropertyHandler.GetHandler(shader, props[i].name);
-                if (handler != null && handler.propertyDrawer != null)
-                    handler.propertyDrawer.Apply(props[i]);
+                if (targets == null || targets.Length == 0)
+                    return;
+                var target = targets[0] as Material;
+                if (target == null)
+                    return;
+
+                var shader = target.shader;
+                var props = GetMaterialProperties(targets);
+                for (var i = 0; i < props.Length; i++)
+                {
+                    MaterialPropertyHandler handler = MaterialPropertyHandler.GetHandler(shader, props[i].name);
+                    if (handler != null && handler.propertyDrawer != null)
+                        handler.propertyDrawer.Apply(props[i]);
+                }
             }
         }
 

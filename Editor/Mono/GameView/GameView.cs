@@ -35,7 +35,7 @@ namespace UnityEditor
         const int kScaleSliderMinWidth = 30;
         const int kScaleSliderMaxWidth = 150;
         const int kScaleSliderSnapThreshold = 4;
-        const int kScaleLabelWidth = 35;
+        const int kScaleLabelWidth = 40;
         readonly Vector2 kWarningSize = new Vector2(400f, 140f);
         readonly Color kClearBlack = new Color(0, 0 , 0, 0);
         const float kMinScale = 1f;
@@ -738,6 +738,10 @@ namespace UnityEditor
             var originalEventType = Event.current.type;
 
             m_ZoomArea.BeginViewGUI();
+
+            // Window size might change on Layout event
+            if (type == EventType.Layout)
+                targetSize = targetRenderSize;
 
             // Setup game view dimensions, so that player loop can use it for input
             var gameViewTarget = GUIClip.UnclipToWindow(m_ZoomArea.drawRect);

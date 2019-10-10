@@ -29,7 +29,9 @@ namespace UnityEditor.PackageManager.UI
             public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged = delegate {};
 
             private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
+
             // a list of unique ids (could be specialUniqueId or packageId)
+            [SerializeField]
             private List<string> m_SpecialInstallations = new List<string>();
 
             [SerializeField]
@@ -343,57 +345,54 @@ namespace UnityEditor.PackageManager.UI
                 if (string.IsNullOrEmpty(operation.packageUniqueId))
                 {
                     m_SpecialInstallations.Add(operation.specialUniqueId);
-                    operation.onOperationError += error =>
+                    operation.onOperationError += (op, error) =>
                     {
                         m_SpecialInstallations.Remove(operation.specialUniqueId);
                     };
                     return;
                 }
                 SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
-                operation.onOperationSuccess += () =>
+                operation.onOperationSuccess += (op) =>
                 {
                     IPackage package;
                     IPackageVersion version;
                     GetPackageAndVersion(operation.packageUniqueId, operation.versionUniqueId, out package, out version);
                     onInstallSuccess(package, version);
                 };
-                operation.onOperationError += error =>
-                {
-                    var package = GetPackage(operation.packageUniqueId);
-                    if (package != null)
-                        AddPackageError(package, error);
-                };
-                operation.onOperationFinalized += () => SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
+                operation.onOperationError += OnUpmOperationError;
+                operation.onOperationFinalized += OnUpmOperationFinalized;
             }
 
             private void OnUpmEmbedOperation(IOperation operation)
             {
                 SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
-                operation.onOperationSuccess += () =>
+                operation.onOperationSuccess += (op) =>
                 {
                     var package = GetPackage(operation.packageUniqueId);
                     onInstallSuccess(package, package?.versions.installed);
                 };
-                operation.onOperationError += error =>
-                {
-                    var package = GetPackage(operation.packageUniqueId);
-                    if (package != null)
-                        AddPackageError(package, error);
-                };
-                operation.onOperationFinalized += () => SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
+                operation.onOperationError += OnUpmOperationError;
+                operation.onOperationFinalized += OnUpmOperationFinalized;
             }
 
             private void OnUpmRemoveOperation(IOperation operation)
             {
                 SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Removing);
-                operation.onOperationSuccess += () => onUninstallSuccess(GetPackage(operation.packageUniqueId));
-                operation.onOperationError += error =>
-                {
-                    var package = GetPackage(operation.packageUniqueId);
-                    if (package != null)
-                        AddPackageError(package, error);
-                };
-                operation.onOperationFinalized += () => SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
+                operation.onOperationSuccess += (op) => onUninstallSuccess(GetPackage(operation.packageUniqueId));
+                operation.onOperationError += OnUpmOperationError;
+                operation.onOperationFinalized += OnUpmOperationFinalized;
+            }
+
+            private void OnUpmOperationError(IOperation operation, Error error)
+            {
+                var package = GetPackage(operation.packageUniqueId);
+                if (package != null)
+                    AddPackageError(package, error);
+            }
+
+            private void OnUpmOperationFinalized(IOperation operation)
+            {
+                SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
             }
 
             private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)

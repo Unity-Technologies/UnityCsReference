@@ -171,8 +171,8 @@ namespace UnityEngine.Rendering
 
             *isSupported = ((active.lightmapBakeTypes & bakeType) == bakeType);
 
-            // if we are using realtime GI on a new project and Enlighten has been deprecated, don't allow realtime GI
-            if (bakeType == LightmapBakeType.Realtime && !active.enlighten && !GraphicsSettings.AllowEnlightenSupportForUpgradedProject())
+            // if we are using realtime GI and Enlighten has been deprecated, don't allow realtime GI
+            if (bakeType == LightmapBakeType.Realtime && !active.enlighten)
                 *isSupported = false;
         }
 
@@ -203,8 +203,8 @@ namespace UnityEngine.Rendering
             var isSupported = (bool*)isSupportedPtr;
 
             // 0 = Enlighten
-            // if the lightmapper is Enlighten but Enlighten is deprecated and the project isn't upgraded, it's not supported
-            *isSupported = ((lightmapper == 0) && !active.enlighten && !GraphicsSettings.AllowEnlightenSupportForUpgradedProject()) ? false : true;
+            // if the lightmapper is Enlighten but Enlighten is deprecated, it's not supported
+            *isSupported = ((lightmapper == 0) && !active.enlighten) ? false : true;
         }
 
         internal static unsafe int FallbackLightmapper()

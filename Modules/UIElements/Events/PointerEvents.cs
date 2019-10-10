@@ -409,7 +409,7 @@ namespace UnityEngine.UIElements
             }
 
             // If ShouldSendCompatibilityMouseEvents == true, mouse event will take care of this.
-            if (!panel.ShouldSendCompatibilityMouseEvents(this))
+            if (!panel.ShouldSendCompatibilityMouseEvents(this) && ((IPointerEventInternal)this).triggeredByOS)
             {
                 (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
             }
@@ -496,14 +496,6 @@ namespace UnityEngine.UIElements
                 else if (imguiEvent != null && imguiEvent.rawType == EventType.MouseUp)
                 {
                     using (var evt = MouseUpEvent.GetPooled(this))
-                    {
-                        evt.target = target;
-                        evt.target.SendEvent(evt);
-                    }
-                }
-                else if (imguiEvent != null && imguiEvent.rawType == EventType.DragUpdated)
-                {
-                    using (var evt = DragUpdatedEvent.GetPooled(this))
                     {
                         evt.target = target;
                         evt.target.SendEvent(evt);

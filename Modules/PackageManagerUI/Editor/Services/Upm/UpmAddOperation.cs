@@ -4,12 +4,14 @@
 
 using System;
 using UnityEditor.PackageManager.Requests;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
     internal class UpmAddOperation : UpmBaseOperation<AddRequest>
     {
+        [SerializeField]
         private string m_SpecialUniqueId = string.Empty;
 
         public override string specialUniqueId { get { return m_SpecialUniqueId; } }

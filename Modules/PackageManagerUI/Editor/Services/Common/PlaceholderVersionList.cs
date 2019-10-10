@@ -6,12 +6,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
     internal class PlaceholderVersionList : IVersionList
     {
+        [SerializeField]
         private PlaceholderPackageVersion[] m_Versions;
 
         public IEnumerable<IPackageVersion> key => m_Versions;

@@ -121,8 +121,6 @@ namespace UnityEngine.UIElements
                     if ((m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == MouseMoveEvent.TypeId() ||
                         (m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == MouseDownEvent.TypeId() ||
                         (m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == MouseUpEvent.TypeId() ||
-                        (m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == MouseEnterWindowEvent.TypeId() ||
-                        (m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
                         (m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == WheelEvent.TypeId())
                     {
                         using (new EventDispatcherGate(dispatcher))
@@ -135,11 +133,42 @@ namespace UnityEngine.UIElements
                                 m_TriggerMouseEvent[i], m_TriggerMouseEvent[i].mousePosition);
                         }
                     }
+                    else if ((m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == MouseEnterWindowEvent.TypeId() ||
+                             (m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == MouseLeaveWindowEvent.TypeId()
+                    )
+                    {
+                        using (new EventDispatcherGate(dispatcher))
+                        {
+                            PointerEventsHelper.SendOverOut(m_TopElementUnderPointer[i],
+                                m_PendingTopElementUnderPointer[i], null,
+                                m_TriggerMouseEvent[i].mousePosition, i);
+                            PointerEventsHelper.SendEnterLeave<PointerLeaveEvent, PointerEnterEvent>(
+                                m_TopElementUnderPointer[i], m_PendingTopElementUnderPointer[i], null,
+                                m_TriggerMouseEvent[i].mousePosition, i);
+
+                            if (i == PointerId.mousePointerId)
+                            {
+                                MouseEventsHelper.SendMouseOverMouseOut(m_TopElementUnderPointer[i],
+                                    m_PendingTopElementUnderPointer[i],
+                                    m_TriggerMouseEvent[i], m_TriggerMouseEvent[i].mousePosition);
+                                MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(
+                                    m_TopElementUnderPointer[i], m_PendingTopElementUnderPointer[i],
+                                    m_TriggerMouseEvent[i], m_TriggerMouseEvent[i].mousePosition);
+                            }
+                        }
+                    }
                     else if ((m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == DragUpdatedEvent.TypeId() ||
                              (m_TriggerMouseEvent[i] as EventBase)?.eventTypeId == DragExitedEvent.TypeId())
                     {
                         using (new EventDispatcherGate(dispatcher))
                         {
+                            PointerEventsHelper.SendOverOut(m_TopElementUnderPointer[i],
+                                m_PendingTopElementUnderPointer[i], null,
+                                m_TriggerMouseEvent[i].mousePosition, i);
+                            PointerEventsHelper.SendEnterLeave<PointerLeaveEvent, PointerEnterEvent>(
+                                m_TopElementUnderPointer[i], m_PendingTopElementUnderPointer[i], null,
+                                m_TriggerMouseEvent[i].mousePosition, i);
+
                             MouseEventsHelper.SendMouseOverMouseOut(m_TopElementUnderPointer[i],
                                 m_PendingTopElementUnderPointer[i],
                                 m_TriggerMouseEvent[i], m_TriggerMouseEvent[i].mousePosition);

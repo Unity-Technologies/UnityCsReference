@@ -49,6 +49,14 @@ namespace UnityEditor.Build.Player
 
         [NativeName("resultTypeDB")]
         internal TypeDB m_ResultTypeDB;
+
+        [NativeName("extraScriptingDefines")]
+        internal string[] m_ExtraScriptingDefines;
+        public string[] extraScriptingDefines
+        {
+            get { return m_ExtraScriptingDefines; }
+            set { m_ExtraScriptingDefines = value; }
+        }
     }
 
     [Serializable]

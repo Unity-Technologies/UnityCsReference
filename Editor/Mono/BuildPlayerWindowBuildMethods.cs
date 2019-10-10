@@ -171,7 +171,7 @@ namespace UnityEditor
                 bool locationPathExistedBeforeBuild = System.IO.Directory.Exists(options.locationPathName);
                 // Trigger build.
                 // Note: report will be null, if delayToAfterScriptReload = true
-                var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, null, options.targetGroup, options.target, options.options, delayToAfterScriptReload);
+                var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, null, options.targetGroup, options.target, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
 
 
                 if (report != null)

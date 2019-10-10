@@ -17,7 +17,7 @@ namespace UnityEngine
     [NativeClass("Vector3f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Vector3 : IEquatable<Vector3>
+    public partial struct Vector3 : IEquatable<Vector3>, IFormattable
     {
         // *Undocumented*
         public const float kEpsilon = 0.00001F;
@@ -432,12 +432,19 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("({0:F1}, {1:F1}, {2:F1})", x, y, z);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1}, {2})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat), z.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F1";
+            return UnityString.Format("({0}, {1}, {2})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider));
         }
 
         [System.Obsolete("Use Vector3.forward instead.")]

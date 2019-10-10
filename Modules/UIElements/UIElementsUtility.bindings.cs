@@ -22,18 +22,51 @@ namespace UnityEngine.UIElements
             return UIElementsUtility.CreateEvent(systemEvent, systemEvent.rawType);
         }
 
+        // To be made obsolete once runtime package stop using it.
         public static IPanel CreateRuntimePanel(ScriptableObject ownerObject)
         {
-            var panel = new RuntimePanel(ownerObject, s_RuntimeDispatcher)
+            return FindOrCreateRuntimePanel(ownerObject);
+        }
+
+        public static IPanel FindOrCreateRuntimePanel(ScriptableObject ownerObject)
+        {
+            Panel panel;
+            if (!UIElementsUtility.TryGetPanel(ownerObject.GetInstanceID(), out panel))
             {
-                IMGUIEventInterests = new EventInterests { wantsMouseMove = true, wantsMouseEnterLeaveWindow = true }
-            };
+                panel = new RuntimePanel(ownerObject, s_RuntimeDispatcher)
+                {
+                    IMGUIEventInterests = new EventInterests { wantsMouseMove = true, wantsMouseEnterLeaveWindow = true }
+                };
+
+                RegisterCachedPanelInternal(ownerObject.GetInstanceID(), panel);
+            }
+            else
+            {
+                Debug.Assert(ContextType.Player == panel.contextType, "Panel is not a runtime panel.");
+            }
+
             return panel;
+        }
+
+        public static void DisposeRuntimePanel(ScriptableObject ownerObject)
+        {
+            Panel panel;
+            if (UIElementsUtility.TryGetPanel(ownerObject.GetInstanceID(), out panel))
+            {
+                panel.Dispose();
+                RemoveCachedPanelInternal(ownerObject.GetInstanceID());
+            }
         }
 
         private static bool s_RegisteredPlayerloopCallback = false;
 
+        // To be made obsolete once runtime package stop using it.
         public static void RegisterCachedPanel(int instanceID, IPanel panel)
+        {
+            RegisterCachedPanelInternal(instanceID, panel);
+        }
+
+        private static void RegisterCachedPanelInternal(int instanceID, IPanel panel)
         {
             UIElementsUtility.RegisterCachedPanel(instanceID, panel as Panel);
             if (!s_RegisteredPlayerloopCallback)
@@ -43,11 +76,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // To be made obsolete once runtime package stop using it.
         public static void RemoveCachedPanel(int instanceID)
+        {
+            RemoveCachedPanelInternal(instanceID);
+        }
+
+        private static void RemoveCachedPanelInternal(int instanceID)
         {
             UIElementsUtility.RemoveCachedPanel(instanceID);
             // un-register the playerloop callback as the last panel gets un-registered
-            UIElementsUtility.GetAllPanels(panelsIteration);
+            UIElementsUtility.GetAllPanels(panelsIteration, ContextType.Player);
             if (panelsIteration.Count == 0)
             {
                 s_RegisteredPlayerloopCallback = false;
@@ -62,12 +101,12 @@ namespace UnityEngine.UIElements
         [RequiredByNativeCode]
         public static void RepaintOverlayPanels()
         {
-            UIElementsUtility.GetAllPanels(panelsIteration);
+            UIElementsUtility.GetAllPanels(panelsIteration, ContextType.Player);
             foreach (var panel in panelsIteration)
             {
                 // at the moment, all runtime panels who do not use a rendertexure are rendered as overlays.
                 // later on, they'll be filtered based on render mode
-                if (panel.contextType == ContextType.Player && (panel as RuntimePanel).targetTexture == null)
+                if ((panel as RuntimePanel).targetTexture == null)
                 {
                     using (s_RepaintProfilerMarker.Auto())
                         panel.Repaint(Event.current);
@@ -146,11 +185,14 @@ namespace UnityEngine.UIElements
             Panel panel;
             if (nativeEventPtr != IntPtr.Zero && s_UIElementsCache.TryGetValue(instanceID, out panel))
             {
-                // Instead of allocating a new Event object every time
-                // we reuse this instance and copy event data into it
-                s_EventInstance.CopyFromPtr(nativeEventPtr);
+                if (panel.contextType == ContextType.Editor)
+                {
+                    // Instead of allocating a new Event object every time
+                    // we reuse this instance and copy event data into it
+                    s_EventInstance.CopyFromPtr(nativeEventPtr);
 
-                return DoDispatch(panel);
+                    return DoDispatch(panel);
+                }
             }
 
             return false;
@@ -164,6 +206,11 @@ namespace UnityEngine.UIElements
         public static void RemoveCachedPanel(int instanceID)
         {
             s_UIElementsCache.Remove(instanceID);
+        }
+
+        public static bool TryGetPanel(int instanceID, out Panel panel)
+        {
+            return s_UIElementsCache.TryGetValue(instanceID, out panel);
         }
 
         private static void CleanupRoots()
@@ -305,7 +352,7 @@ namespace UnityEngine.UIElements
                 case EventType.KeyUp:
                     return KeyUpEvent.GetPooled(systemEvent);
                 case EventType.DragUpdated:
-                    return PointerMoveEvent.GetPooled(systemEvent);
+                    return DragUpdatedEvent.GetPooled(systemEvent);
                 case EventType.DragPerform:
                     return DragPerformEvent.GetPooled(systemEvent);
                 case EventType.DragExited:
@@ -367,13 +414,16 @@ namespace UnityEngine.UIElements
             return usesEvent;
         }
 
-        internal static void GetAllPanels(List<Panel> panels)
+        internal static void GetAllPanels(List<Panel> panels, ContextType contextType)
         {
             panels.Clear();
             var iterator = GetPanelsIterator();
             while (iterator.MoveNext())
             {
-                panels.Add(iterator.Current.Value);
+                if (iterator.Current.Value.contextType == contextType)
+                {
+                    panels.Add(iterator.Current.Value);
+                }
             }
         }
 

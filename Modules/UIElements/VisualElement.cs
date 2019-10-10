@@ -883,7 +883,7 @@ namespace UnityEngine.UIElements
 
             if (panel != null)
             {
-                yogaNode.SetConfig(elementPanel.yogaConfig);
+                yogaNode.Config = elementPanel.yogaConfig;
                 RegisterRunningAnimations();
                 using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
                 {
@@ -893,7 +893,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                yogaNode.SetConfig(YogaConfig.Default);
+                yogaNode.Config = YogaConfig.Default;
             }
 
 

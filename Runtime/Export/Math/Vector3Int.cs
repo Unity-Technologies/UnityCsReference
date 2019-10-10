@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 
@@ -10,7 +11,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector3Int : IEquatable<Vector3Int>
+    public struct Vector3Int : IEquatable<Vector3Int>, IFormattable
     {
         public int x { get { return m_X; } set { m_X = value; } }
         public int y { get { return m_Y; } set { m_Y = value; } }
@@ -199,12 +200,17 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("({0}, {1}, {2})", x, y, z);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1}, {2})", x.ToString(format), y.ToString(format), z.ToString(format));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return UnityString.Format("({0}, {1}, {2})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider));
         }
 
         public static Vector3Int zero { get { return s_Zero; } }

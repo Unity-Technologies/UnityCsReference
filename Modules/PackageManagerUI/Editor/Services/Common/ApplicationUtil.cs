@@ -18,20 +18,25 @@ namespace UnityEditor.PackageManager.UI
         static IApplicationUtil s_Instance = null;
         public static IApplicationUtil instance => s_Instance ?? ApplicationUtilInternal.instance;
 
+        [Serializable]
         private class ApplicationUtilInternal : IApplicationUtil
         {
             private static ApplicationUtilInternal s_Instance;
             public static ApplicationUtilInternal instance => s_Instance ?? (s_Instance = new ApplicationUtilInternal());
 
             public event Action onFinishCompiling = delegate {};
+            [SerializeField]
             private bool m_CheckingCompilation = false;
 
             public event Action<bool> onUserLoginStateChange = delegate {};
             public event Action<bool> onInternetReachabilityChange = delegate {};
 
+            [SerializeField]
             private ConnectInfo m_ConnectInfo;
 
+            [SerializeField]
             private bool m_IsInternetReachable;
+            [SerializeField]
             private double m_LastInternetCheck;
 
             public string userAppDataPath => InternalEditorUtility.userAppDataFolder;

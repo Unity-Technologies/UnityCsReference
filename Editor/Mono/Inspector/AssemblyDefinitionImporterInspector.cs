@@ -2,15 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditorInternal;
-using UnityEditor.Scripting.ScriptCompilation;
-using UnityEditor.Experimental.AssetImporters;
-using UnityEditor.Compilation;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using UnityEditor.Compilation;
+using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditorInternal;
+using UnityEngine;
 using AssemblyFlags = UnityEditor.Scripting.ScriptCompilation.AssemblyFlags;
 using Object = UnityEngine.Object;
 
@@ -41,8 +41,41 @@ namespace UnityEditor
             public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
             public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Expression outcome", "Shows the mathematical equation that your Expression represents.");
             public static readonly GUIContent noEngineReferences = EditorGUIUtility.TrTextContent("No Engine References", "When enabled, references to UnityEngine/UnityEditor will not be added when compiling this assembly.");
-            public static readonly GUIContent validDefineConstraint = new GUIContent(EditorGUIUtility.FindTexture("TestPassed"), L10n.Tr("Define constraint is valid."));
-            public static readonly GUIContent invalidDefineConstraint = new GUIContent(EditorGUIUtility.FindTexture("TestFailed"), L10n.Tr("Define constraint is invalid."));
+
+            public const int kValidityIconHeight = 16;
+            public const int kValidityIconWidth = 16;
+            static readonly Texture2D kValidDefineConstraint = EditorGUIUtility.FindTexture("Valid");
+            static readonly Texture2D kValidDefineConstraintHighDpi = EditorGUIUtility.FindTexture("Valid@2x");
+            static readonly Texture2D kInvalidDefineConstraint = EditorGUIUtility.FindTexture("Invalid");
+            static readonly Texture2D kInvalidDefineConstraintHighDpi = EditorGUIUtility.FindTexture("Invalid@2x");
+
+            public static Texture2D validDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kValidDefineConstraintHighDpi : kValidDefineConstraint;
+            public static Texture2D invalidDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kInvalidDefineConstraintHighDpi : kInvalidDefineConstraint;
+
+            static string kCompatibleTextTitle = L10n.Tr("Define constraints are compatible.");
+            static string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or incompatible.");
+
+            public static string GetTitleTooltipFromDefineConstraintCompatibility(bool compatible)
+            {
+                return compatible ? kCompatibleTextTitle : kIncompatibleTextTitle;
+            }
+
+            static string kCompatibleTextIndividual = L10n.Tr("Define constraint is compatible.");
+            static string kIncompatibleTextIndividual = L10n.Tr("Define constraint is incompatible.");
+            static string kInvalidTextIndividual = L10n.Tr("Define constraint is invalid.");
+
+            public static string GetIndividualTooltipFromDefineConstraintStatus(DefineConstraintsHelper.DefineConstraintStatus status)
+            {
+                switch (status)
+                {
+                    case DefineConstraintsHelper.DefineConstraintStatus.Compatible:
+                        return Styles.kCompatibleTextIndividual;
+                    case DefineConstraintsHelper.DefineConstraintStatus.Incompatible:
+                        return Styles.kIncompatibleTextIndividual;
+                    default:
+                        return Styles.kInvalidTextIndividual;
+                }
+            }
         }
 
         GUIStyle m_TextStyle;
@@ -119,7 +152,6 @@ namespace UnityEditor
         SerializedProperty m_PlatformCompatibility;
         SerializedProperty m_NoEngineReferences;
 
-        string[] m_Defines;
         Exception initializeException;
 
         public override bool showImportedObject => false;
@@ -128,8 +160,6 @@ namespace UnityEditor
         {
             base.OnEnable();
             m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
-            m_Defines = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue);
-
             InitializeReorderableLists();
             m_SemVersionRanges = new SemVersionRangesFactory();
             m_AllowUnsafeCode = extraDataSerializedObject.FindProperty("allowUnsafeCode");
@@ -139,6 +169,7 @@ namespace UnityEditor
             m_CompatibleWithAnyPlatform = extraDataSerializedObject.FindProperty("compatibleWithAnyPlatform");
             m_PlatformCompatibility = extraDataSerializedObject.FindProperty("platformCompatibility");
             m_NoEngineReferences = extraDataSerializedObject.FindProperty("noEngineReferences");
+
             AssemblyReloadEvents.afterAssemblyReload += AfterAssemblyReload;
         }
 
@@ -192,33 +223,41 @@ namespace UnityEditor
                 EditorGUILayout.EndVertical();
                 GUILayout.Space(10f);
 
+                EditorGUILayout.BeginHorizontal();
                 GUILayout.Label(Styles.defineConstraints, EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
                 if (m_DefineConstraints.serializedProperty.arraySize > 0)
                 {
-                    var defineConstraintsValid = true;
-                    for (var i = 0; i < m_DefineConstraints.serializedProperty.arraySize && defineConstraintsValid; ++i)
+                    var defineConstraintsCompatible = true;
+
+                    var defines = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue);
+
+                    if (defines != null)
                     {
-                        var defineConstraint = m_DefineConstraints.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue;
-                        if (!DefineConstraintsHelper.IsDefineConstraintValid(m_Defines, defineConstraint))
+                        for (var i = 0; i < m_DefineConstraints.serializedProperty.arraySize && defineConstraintsCompatible; ++i)
                         {
-                            defineConstraintsValid = false;
+                            var defineConstraint = m_DefineConstraints.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue;
+
+                            if (DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
+                            {
+                                defineConstraintsCompatible = false;
+                            }
                         }
-                    }
-                    var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
-                    constraintValidityRect.x += constraintValidityRect.width - 23;
-                    if (defineConstraintsValid)
-                    {
-                        constraintValidityRect.width = Styles.validDefineConstraint.image.width;
-                        constraintValidityRect.height = Styles.validDefineConstraint.image.height;
-                        EditorGUI.LabelField(constraintValidityRect, Styles.validDefineConstraint);
-                    }
-                    else
-                    {
-                        constraintValidityRect.width = Styles.invalidDefineConstraint.image.width;
-                        constraintValidityRect.height = Styles.invalidDefineConstraint.image.height;
-                        EditorGUI.LabelField(constraintValidityRect, Styles.invalidDefineConstraint);
+
+                        var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
+                        constraintValidityRect.x += constraintValidityRect.width - 23;
+                        var image = defineConstraintsCompatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
+                        var tooltip = Styles.GetTitleTooltipFromDefineConstraintCompatibility(defineConstraintsCompatible);
+                        var content = new GUIContent(image, tooltip);
+
+                        constraintValidityRect.width = Styles.kValidityIconWidth;
+                        constraintValidityRect.height = Styles.kValidityIconHeight;
+                        EditorGUI.LabelField(constraintValidityRect, content);
                     }
                 }
+
                 m_DefineConstraints.DoLayoutList();
 
                 GUILayout.Label(Styles.references, EditorStyles.boldLabel);
@@ -247,7 +286,6 @@ namespace UnityEditor
                     }
                 }
 
-
                 GUILayout.Label(Styles.platforms, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
 
@@ -265,6 +303,7 @@ namespace UnityEditor
                         {
                             InversePlatformCompatibility(state);
                         }
+
                         extraDataSerializedObject.Update();
                     }
                 }
@@ -286,6 +325,7 @@ namespace UnityEditor
                         {
                             property = m_PlatformCompatibility.GetArrayElementAtIndex(i);
                         }
+
                         EditorGUILayout.PropertyField(property, new GUIContent(platforms[i].DisplayName));
                     }
 
@@ -336,6 +376,7 @@ namespace UnityEditor
         protected override void Apply()
         {
             base.Apply();
+
             // Do not write back to the asset if no asset can be found.
             if (assetTarget != null)
                 SaveAndUpdateAssemblyDefinitionStates(extraDataTargets.Cast<AssemblyDefinitionState>().ToArray());
@@ -412,8 +453,6 @@ namespace UnityEditor
 
             var textFieldRect = new Rect(rect.x, rect.y + 1, rect.width - ReorderableList.Defaults.dragHandleWidth + 1, rect.height);
 
-            var constraintValidityRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + ReorderableList.Defaults.dragHandleWidth / 2f - Styles.invalidDefineConstraint.image.width / 2f, rect.y , ReorderableList.Defaults.dragHandleWidth, rect.height);
-
             string noValue = L10n.Tr("(Missing)");
 
             var label = string.IsNullOrEmpty(defineConstraint.stringValue) ? noValue : defineConstraint.stringValue;
@@ -422,20 +461,17 @@ namespace UnityEditor
             var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
             EditorGUI.showMixedValue = false;
 
-            if (m_Defines != null)
+            var defines = CompilationPipeline.GetDefinesFromAssemblyName(m_AssemblyName.stringValue);
+
+            if (defines != null)
             {
-                if (DefineConstraintsHelper.IsDefineConstraintValid(m_Defines, defineConstraint.stringValue))
-                {
-                    constraintValidityRect.width = Styles.validDefineConstraint.image.width;
-                    constraintValidityRect.height = Styles.validDefineConstraint.image.height;
-                    EditorGUI.LabelField(constraintValidityRect, Styles.validDefineConstraint);
-                }
-                else
-                {
-                    constraintValidityRect.width = Styles.invalidDefineConstraint.image.width;
-                    constraintValidityRect.height = Styles.invalidDefineConstraint.image.height;
-                    EditorGUI.LabelField(constraintValidityRect, Styles.invalidDefineConstraint);
-                }
+                var status = DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint.stringValue);
+                var image = status == DefineConstraintsHelper.DefineConstraintStatus.Compatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
+
+                var content = new GUIContent(image, Styles.GetIndividualTooltipFromDefineConstraintStatus(status));
+
+                var constraintValidityRect = new Rect(rect.width + ReorderableList.Defaults.dragHandleWidth + ReorderableList.Defaults.dragHandleWidth / 2f - Styles.kValidityIconWidth / 2f + 1, rect.y, Styles.kValidityIconWidth, Styles.kValidityIconHeight);
+                EditorGUI.LabelField(constraintValidityRect, content);
             }
 
             if (!string.IsNullOrEmpty(textFieldValue) && textFieldValue != noValue)
@@ -633,19 +669,10 @@ namespace UnityEditor
             {
                 foreach (var defineConstraint in data.defineConstraints)
                 {
-                    var symbolName = defineConstraint.StartsWith(DefineConstraintsHelper.Not) ? defineConstraint.Substring(1) : defineConstraint;
-                    if (!SymbolNameRestrictions.IsValid(symbolName))
+                    state.defineConstraints.Add(new DefineConstraint
                     {
-                        var exception = new AssemblyDefinitionException($"Invalid define constraint {symbolName}", path);
-                        Debug.LogException(exception, asset);
-                    }
-                    else
-                    {
-                        state.defineConstraints.Add(new DefineConstraint
-                        {
-                            name = defineConstraint,
-                        });
-                    }
+                        name = defineConstraint,
+                    });
                 }
             }
 
@@ -697,6 +724,7 @@ namespace UnityEditor
                         precompiledReference.path = assembly.Path;
                         precompiledReference.fileName = AssetPath.GetFileName(assembly.Path);
                     }
+
                     state.precompiledReferences.Add(precompiledReference);
                 }
                 catch (AssemblyDefinitionException e)

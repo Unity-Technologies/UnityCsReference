@@ -72,11 +72,24 @@ namespace UnityEngine
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
         [FreeFunction(Name = "GameObjectBindings::GetComponentInParent", HasExplicitThis = true, ThrowsException = true)]
-        public extern Component GetComponentInParent(Type type);
+        public extern Component GetComponentInParent(Type type, bool includeInactive);
 
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        public Component GetComponentInParent(Type type)
+        {
+            return GetComponentInParent(type, false);
+        }
+
+        [uei.ExcludeFromDocs]
         public T GetComponentInParent<T>()
         {
-            return (T)(object)GetComponentInParent(typeof(T));
+            bool includeInactive = false;
+            return GetComponentInParent<T>(includeInactive);
+        }
+
+        public T GetComponentInParent<T>([uei.DefaultValue("false")] bool includeInactive)
+        {
+            return (T)(object)GetComponentInParent(typeof(T), includeInactive);
         }
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentsInternal", HasExplicitThis = true, ThrowsException = true)]

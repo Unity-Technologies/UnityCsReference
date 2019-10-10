@@ -3,34 +3,24 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 
-namespace UnityEditor
+[assembly: InternalsVisibleTo("Unity.PerformanceTracking.Editor")]
+
+namespace UnityEditor.Profiling
 {
     [NativeHeader("Editor/Src/Utility/Performance.h"),
      StaticAccessor("Performance::Bindings", StaticAccessorType.DoubleColon)]
-    internal static class Performance
-    {
-        public static extern bool IsTrackerExists(string name);
-        public static extern int GetTrackerSampleCount(string name);
-        public static extern double GetTrackerPeakTime(string name);
-        public static extern double GetTrackerAverageTime(string name);
-        public static extern double GetTrackerTotalTime(string name);
-        public static extern double GetTrackerTotalUsage(string name);
-
-        internal static extern int StartTracker(string name);
-        internal static extern void StopTracker(int trackerToken);
-    }
-
-    internal struct PerformanceTracker : IDisposable
+    internal struct EditorPerformanceTracker : IDisposable
     {
         private bool m_Disposed;
         private readonly int m_WatchHandle;
 
-        public PerformanceTracker(string name)
+        public EditorPerformanceTracker(string name)
         {
             m_Disposed = false;
-            m_WatchHandle = Performance.StartTracker(name);
+            m_WatchHandle = StartTracker(name);
         }
 
         public void Dispose()
@@ -38,7 +28,22 @@ namespace UnityEditor
             if (m_Disposed)
                 return;
             m_Disposed = true;
-            Performance.StopTracker(m_WatchHandle);
+            StopTracker(m_WatchHandle);
         }
+
+        public static extern string[] GetAvailableTrackers();
+        public static extern bool Exists(string trackerName);
+        public static extern void Reset(string trackerName);
+        public static extern int GetSampleCount(string trackerName);
+        public static extern double GetLastTime(string trackerName);
+        public static extern double GetPeakTime(string trackerName);
+        public static extern double GetAverageTime(string trackerName);
+        public static extern double GetTotalTime(string trackerName);
+        public static extern double GetTotalUsage(string trackerName);
+        public static extern double GetTimestamp(string trackerName);
+        public static extern void SetCallstackRecording(string trackerName, bool on);
+
+        internal static extern int StartTracker(string trackerName);
+        internal static extern void StopTracker(int trackerToken);
     }
 }

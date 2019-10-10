@@ -15,7 +15,7 @@ namespace UnityEngine
     [NativeClass("Rectf", "template<typename T> class RectT; typedef RectT<float> Rectf;")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Rect : IEquatable<Rect>
+    public partial struct Rect : IEquatable<Rect>, IFormattable
     {
         [NativeName("x")]
         private float m_XMin;
@@ -206,12 +206,19 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("(x:{0:F2}, y:{1:F2}, width:{2:F2}, height:{3:F2})", x, y, width, height);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat), width.ToString(format, CultureInfo.InvariantCulture.NumberFormat), height.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F2";
+            return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), width.ToString(format, formatProvider), height.ToString(format, formatProvider));
         }
 
         [System.Obsolete("use xMin")]

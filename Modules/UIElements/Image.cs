@@ -140,6 +140,20 @@ namespace UnityEngine.UIElements
             generateVisualContent += OnGenerateVisualContent;
         }
 
+        private Vector2 GetTextureDisplaySize(Texture texture)
+        {
+            var result = Vector2.zero;
+            if (texture != null)
+            {
+                result = new Vector2(texture.width, texture.height);
+                var t2d = texture as Texture2D;
+                if (t2d != null)
+                    result = result / t2d.pixelsPerPoint;
+            }
+
+            return result;
+        }
+
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             float measuredWidth = float.NaN;
@@ -149,8 +163,9 @@ namespace UnityEngine.UIElements
                 return new Vector2(measuredWidth, measuredHeight);
 
             var sourceSize = Vector2.zero;
+
             if (image != null)
-                sourceSize = new Vector2(image.width, image.height);
+                sourceSize = GetTextureDisplaySize(image);
             else
                 sourceSize = vectorImage.size;
 
@@ -231,7 +246,7 @@ namespace UnityEngine.UIElements
 
             Texture texture = image;
             if (texture != null)
-                size = new Vector2(texture.width, texture.height);
+                size = GetTextureDisplaySize(texture);
 
             var vi = vectorImage;
             if (vi != null)
@@ -254,7 +269,7 @@ namespace UnityEngine.UIElements
 
             var texture = image;
             if (texture != null)
-                size = new Vector2(texture.width, texture.height);
+                size = GetTextureDisplaySize(texture);
 
             var vi = vectorImage;
             if (vi != null)

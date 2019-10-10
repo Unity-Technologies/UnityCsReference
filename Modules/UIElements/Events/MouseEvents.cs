@@ -506,11 +506,20 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Cancellable;
+            ((IMouseEventInternal)this).recomputeTopElementUnderMouse = false;
         }
 
         public MouseLeaveWindowEvent()
         {
             LocalInit();
+        }
+
+        public new static MouseLeaveWindowEvent GetPooled(Event systemEvent)
+        {
+            if (systemEvent != null)
+                PointerDeviceState.ReleaseAllButtons(PointerId.mousePointerId);
+
+            return MouseEventBase<MouseLeaveWindowEvent>.GetPooled(systemEvent);
         }
 
         protected internal override void PostDispatch(IPanel panel)

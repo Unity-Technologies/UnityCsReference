@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.PackageManager.Requests;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -12,6 +13,7 @@ namespace UnityEditor.PackageManager.UI
     {
         public override RefreshOptions refreshOptions => isOfflineMode ? RefreshOptions.UpmSearchOffline : RefreshOptions.UpmSearch;
 
+        [SerializeField]
         private string m_PackageNameOrId;
         private void SetPackageNameOrId(string packageNameOrId)
         {

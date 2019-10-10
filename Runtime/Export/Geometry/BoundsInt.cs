@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 
@@ -12,7 +13,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct BoundsInt : IEquatable<BoundsInt>
+    public struct BoundsInt : IEquatable<BoundsInt>, IFormattable
     {
         private Vector3Int m_Position;
         private Vector3Int m_Size;
@@ -79,7 +80,17 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("Position: {0}, Size: {1}", m_Position, m_Size);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format)
+        {
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return UnityString.Format("Position: {0}, Size: {1}", m_Position.ToString(format, formatProvider), m_Size.ToString(format, formatProvider));
         }
 
         public static bool operator==(BoundsInt lhs, BoundsInt rhs)

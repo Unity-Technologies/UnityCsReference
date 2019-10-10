@@ -11,7 +11,7 @@ using uei = UnityEngine.Internal;
 namespace UnityEngine
 {
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Quaternion : IEquatable<Quaternion>
+    public partial struct Quaternion : IEquatable<Quaternion>, IFormattable
     {
         // X component of the Quaternion. Don't modify this directly unless you know quaternions inside out.
         public float x;
@@ -239,12 +239,19 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("({0:F1}, {1:F1}, {2:F1}, {3:F1})", x, y, z, w);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format, CultureInfo.InvariantCulture.NumberFormat), y.ToString(format, CultureInfo.InvariantCulture.NumberFormat), z.ToString(format, CultureInfo.InvariantCulture.NumberFormat), w.ToString(format, CultureInfo.InvariantCulture.NumberFormat));
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "F1";
+            return UnityString.Format("({0}, {1}, {2}, {3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider), w.ToString(format, formatProvider));
         }
 
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]

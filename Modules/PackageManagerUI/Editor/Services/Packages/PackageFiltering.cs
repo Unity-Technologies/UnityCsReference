@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -77,6 +78,7 @@ namespace UnityEditor.PackageManager.UI
             public event Action<PackageFilterTab> onFilterTabChanged = delegate {};
             public event Action<string> onSearchTextChanged = delegate {};
 
+            [SerializeField]
             private PackageFilterTab m_CurrentFilterTab;
             public PackageFilterTab currentFilterTab
             {
@@ -92,6 +94,7 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
+            [SerializeField]
             private string m_CurrentSearchText;
             public string currentSearchText
             {

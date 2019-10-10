@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI
         }
     }
 
+    [EditorWindowTitle(title = "Package Manager", icon = "Package Manager")]
     internal class PackageManagerWindow : EditorWindow
     {
         [NonSerialized]
@@ -51,6 +52,8 @@ namespace UnityEditor.PackageManager.UI
             if (s_Window == null) s_Window = this;
             if (s_Window != this)
                 return;
+
+            s_Window.titleContent = GetLocalizedTitleContent();
 
             var windowResource = Resources.GetVisualTreeAsset("PackageManagerWindow.uxml");
             if (windowResource != null)
@@ -278,7 +281,6 @@ namespace UnityEditor.PackageManager.UI
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
             s_Window = GetWindow<PackageManagerWindow>();
-            s_Window.titleContent = new GUIContent("Package Manager");
             s_Window.minSize = new Vector2(700, 250);
             if (!string.IsNullOrEmpty(packageIdOrDisplayName))
             {

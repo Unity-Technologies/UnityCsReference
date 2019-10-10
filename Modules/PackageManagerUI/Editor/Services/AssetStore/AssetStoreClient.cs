@@ -39,6 +39,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             private Dictionary<string, LocalInfo> m_LocalInfos = new Dictionary<string, LocalInfo>();
 
+            [SerializeField]
             private AssetStoreListOperation m_ListOperation = new AssetStoreListOperation();
 
             [SerializeField]

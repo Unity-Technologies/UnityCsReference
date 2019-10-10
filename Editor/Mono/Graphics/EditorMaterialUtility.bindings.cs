@@ -9,10 +9,14 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    [NativeHeader("Runtime/Shaders/Material.h"), StaticAccessor("Material", StaticAccessorType.DoubleColon)]
     [NativeHeader("Editor/Mono/Graphics/EditorMaterialUtility.bindings.h")]
     [NativeHeader("Runtime/Shaders/MaterialIsBackground.h")]
     public sealed partial class EditorMaterialUtility
     {
+        [NativeProperty("disableApplyMaterialPropertyDrawers", false, TargetType.Field)]
+        extern internal static bool disableApplyMaterialPropertyDrawers { get; set; }
+
         [FreeFunction("EditorMaterialUtilityBindings::ResetDefaultTextures")]
         extern public static void ResetDefaultTextures([NotNull] Material material, bool overrideSetTextures);
 

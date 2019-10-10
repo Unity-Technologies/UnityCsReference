@@ -23,6 +23,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             private Texture2D m_MissingTexture;
 
+            [SerializeField]
             private List<DownloadInformation> m_DownloadInformations;
 
             private AssetStoreDownloadOperationInternal()

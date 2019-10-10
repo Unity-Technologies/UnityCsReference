@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 
@@ -12,7 +13,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct RectInt : IEquatable<RectInt>
+    public struct RectInt : IEquatable<RectInt>, IFormattable
     {
         private int m_XMin, m_YMin, m_Width, m_Height;
 
@@ -97,7 +98,17 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x, y, width, height);
+            return ToString(null, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format)
+        {
+            return ToString(format, CultureInfo.InvariantCulture.NumberFormat);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), width.ToString(format, formatProvider), height.ToString(format, formatProvider));
         }
 
         public bool Equals(RectInt other)

@@ -71,10 +71,15 @@ namespace UnityEngine.Yoga
         }
 
 // BEGIN_UNITY @mathieum Needed for dpi awareness
-        public void SetConfig(YogaConfig config)
+        internal YogaConfig Config
         {
-            _config = config == null ? YogaConfig.Default : config;
-            Native.YGNodeSetConfig(_ygNode, _config.Handle);
+            get { return _config; }
+            set
+            {
+                _config = value ?? YogaConfig.Default;
+                Native.YGNodeSetConfig(_ygNode, _config.Handle);
+                
+            }
         }
 // END_UNITY
 
