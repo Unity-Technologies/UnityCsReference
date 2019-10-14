@@ -448,12 +448,12 @@ namespace UnityEditor
     {
         readonly Editor m_Editor;
         readonly GUIContent m_ObjectName;
-        const float kToolbarHeight = 17f;
+        const float kToolbarHeight = 22f;
 
         internal class Styles
         {
             public readonly GUIStyle toolbar = "preToolbar";
-            public readonly GUIStyle toolbarText = "preToolbar2";
+            public readonly GUIStyle toolbarText = "ToolbarBoldLabel";
             public GUIStyle background = "preBackground";
         }
         Styles s_Styles;
@@ -486,7 +486,6 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-
             // Toolbar
             GUILayout.BeginArea(new Rect(rect.x, rect.y, rect.width, kToolbarHeight), s_Styles.toolbar);
             EditorGUILayout.BeginHorizontal();
@@ -495,7 +494,7 @@ namespace UnityEditor
             EditorGUILayout.EndHorizontal();
             GUILayout.EndArea();
 
-            const float kMaxSettingsWidth = 140f;
+            const float kMaxSettingsWidth = 240f;
             GUI.Label(new Rect(rect.x + 5f, rect.y, rect.width - kMaxSettingsWidth, kToolbarHeight), m_ObjectName, s_Styles.toolbarText);
 
             // Object preview
@@ -505,7 +504,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            return new Vector2(300f, 300f + kToolbarHeight);
+            return new Vector2(400f, 300f + kToolbarHeight);
         }
     }
 }

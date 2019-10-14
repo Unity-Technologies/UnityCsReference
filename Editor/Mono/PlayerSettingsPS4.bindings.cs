@@ -218,6 +218,7 @@ namespace UnityEditor
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool enableApplicationExit { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool resetTempFolder { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static int playerPrefsMaxSize { get; set; }
+            [NativeProperty("ps4attribVROutputEnabled", false, TargetType.Field)] extern public static bool attribVROutputEnabled { get; set; }
         }
     }
 }

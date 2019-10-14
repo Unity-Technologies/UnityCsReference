@@ -15,47 +15,60 @@ namespace UnityEngine.UIElements
         {
             IMouseEvent mouseEvent = evt as IMouseEvent;
 
-            // FIXME: we should not change hover state when capture is true.
-            // However, when doing drag and drop, drop target should be highlighted.
-
-            // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
-            // this is a problem in itself but it could leave some elements as "hover"
+            if (mouseEvent == null)
+                return;
 
             BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
 
-            if (basePanel != null && (evt.eventTypeId == MouseLeaveWindowEvent.TypeId() || evt.eventTypeId == DragExitedEvent.TypeId()))
+            // update element under mouse and fire necessary events
+
+            bool shouldRecomputeTopElementUnderMouse = true;
+            if ((IMouseEventInternal)mouseEvent != null)
             {
-                basePanel.SetElementUnderPointer(null, evt);
+                shouldRecomputeTopElementUnderMouse =
+                    ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
             }
-            else
+
+            VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse
+                ? basePanel?.Pick(mouseEvent.mousePosition)
+                : basePanel?.GetTopElementUnderPointer(PointerId.mousePointerId);
+
+            if (evt.target == null && elementUnderMouse != null)
             {
-                // update element under mouse and fire necessary events
-                if (basePanel != null)
+                evt.propagateToIMGUI = false;
+                evt.target = elementUnderMouse;
+            }
+            else if (evt.target == null && elementUnderMouse == null)
+            {
+                // Don't modify evt.propagateToIMGUI.
+                evt.target = panel?.visualTree;
+            }
+            else if (evt.target != null)
+            {
+                evt.propagateToIMGUI = false;
+            }
+
+            if (basePanel != null)
+            {
+                // If mouse leaves the window, make sure element under mouse is null.
+                // However, if pressed button != 0, we are getting a MouseLeaveWindowEvent as part of
+                // of a drag and drop operation, at the very beginning of the drag. Since
+                // we are not really exiting the window, we do not want to set the element
+                // under mouse to null in this case.
+                if (evt.eventTypeId == MouseLeaveWindowEvent.TypeId() &&
+                    (evt as MouseLeaveWindowEvent).pressedButtons == 0)
                 {
-                    bool shouldRecomputeTopElementUnderMouse = true;
-                    if ((IMouseEventInternal)mouseEvent != null)
-                    {
-                        shouldRecomputeTopElementUnderMouse =
-                            ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
-                    }
-
-                    VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse
-                        ? basePanel.Pick(mouseEvent.mousePosition)
-                        : basePanel.GetTopElementUnderPointer(PointerId.mousePointerId);
-
-                    if (evt.target == null)
-                    {
-                        evt.target = elementUnderMouse;
-                    }
-
+                    basePanel.SetElementUnderPointer(null, evt);
+                }
+                else if (shouldRecomputeTopElementUnderMouse)
+                {
                     basePanel.SetElementUnderPointer(elementUnderMouse, evt);
                 }
+            }
 
-                if (evt.target != null)
-                {
-                    evt.propagateToIMGUI = false;
-                    EventDispatchUtilities.PropagateEvent(evt);
-                }
+            if (evt.target != null)
+            {
+                EventDispatchUtilities.PropagateEvent(evt);
             }
 
             if (!evt.isPropagationStopped && panel != null)

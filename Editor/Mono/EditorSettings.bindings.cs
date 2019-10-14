@@ -40,6 +40,19 @@ namespace UnityEditor
         Windows = 2
     }
 
+    public enum AssetPipelineMode
+    {
+        Version1 = 0,
+        Version2 = 1
+    }
+
+    public enum CacheServerMode
+    {
+        AsPreferences = 0,
+        Enabled = 1,
+        Disabled = 2
+    }
+
     [Flags]
     public enum EnterPlayModeOptions
     {
@@ -237,5 +250,23 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern EnterPlayModeOptions enterPlayModeOptions { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern AssetPipelineMode assetPipelineMode { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern CacheServerMode cacheServerMode { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern string cacheServerEndpoint { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern string cacheServerNamespacePrefix { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool cacheServerEnableDownload { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool cacheServerEnableUpload { get; set; }
     }
 }

@@ -284,8 +284,15 @@ namespace UnityEditor.Compilation
 
         internal static string[] GetDefinesFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
         {
-            var assembly = GetAssemblies().FirstOrDefault(x => x.name == assemblyName);
-            return assembly?.defines;
+            try
+            {
+                var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
+                return assembly?.Defines;
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
         }
 
         public static string[] GetPrecompiledAssemblyNames()

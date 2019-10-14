@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditorInternal;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -15,7 +17,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public const string Or = "||";
 
         public static readonly char[] k_ValidWhitespaces = { ' ', '\t' };
-        public static readonly char[] k_Whitespaces = { ' ', '\t', '\r', '\n' };
+
+        public enum DefineConstraintStatus
+        {
+            Compatible,
+            Incompatible,
+            Invalid,
+        }
 
         [RequiredByNativeCode]
         public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
@@ -26,22 +34,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             bool[] defineConstraintsValidity;
-            GetDefineConstraintsValidity(defines, defineConstraints, out defineConstraintsValidity);
+            GetDefineConstraintsCompatibility(defines, defineConstraints, out defineConstraintsValidity);
 
             return defineConstraintsValidity.All(c => c);
         }
 
-        static void GetDefineConstraintsValidity(string[] defines, string[] defineConstraints, out bool[] defineConstraintsValidity)
+        static void GetDefineConstraintsCompatibility(string[] defines, string[] defineConstraints, out bool[] defineConstraintsValidity)
         {
             defineConstraintsValidity = new bool[defineConstraints.Length];
 
             for (int i = 0; i < defineConstraints.Length; ++i)
             {
-                defineConstraintsValidity[i] = IsDefineConstraintValid(defines, defineConstraints[i]);
+                defineConstraintsValidity[i] = GetDefineConstraintCompatibility(defines, defineConstraints[i]) == DefineConstraintStatus.Compatible;
             }
         }
 
-        internal static bool IsDefineConstraintValid(string[] defines, string defineConstraints)
+        internal static DefineConstraintStatus GetDefineConstraintCompatibility(string[] defines, string defineConstraints)
         {
             // Split by "||" (OR) and keep it in the resulting array
             var splitDefines = Regex.Split(defineConstraints, "(\\|\\|)");
@@ -52,41 +60,41 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 splitDefines[i] = splitDefines[i].Trim(k_ValidWhitespaces);
             }
 
-            // Check for consecutive Or
+            // Check for consecutive OR
             for (var i = 0; i < splitDefines.Length; ++i)
             {
                 if (splitDefines[i] == Or && (i < splitDefines.Length - 1 && splitDefines[i + 1] == Or))
                 {
-                    return false;
+                    return DefineConstraintStatus.Invalid;
                 }
             }
 
-            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not.ToString()) && x != Or).Select(x => x.Substring(1)));
-            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not.ToString()) && x != Or));
+            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not) && x != Or).Select(x => x.Substring(1)));
+            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not) && x != Or));
 
             if (defines == null)
             {
                 if (expectedDefines.Count > 0)
                 {
-                    return false;
+                    return DefineConstraintStatus.Incompatible;
                 }
 
-                return true;
+                return DefineConstraintStatus.Compatible;
             }
 
             foreach (var define in expectedDefines)
             {
-                if (!IsTokenValid(define))
+                if (!SymbolNameRestrictions.IsValid(define))
                 {
-                    return false;
+                    return DefineConstraintStatus.Invalid;
                 }
             }
 
             foreach (var define in notExpectedDefines)
             {
-                if (!IsTokenValid(define))
+                if (!SymbolNameRestrictions.IsValid(define))
                 {
-                    return false;
+                    return DefineConstraintStatus.Invalid;
                 }
             }
 
@@ -97,29 +105,42 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 notExpectedDefines.ExceptWith(complement);
             }
 
-            if (notExpectedDefines.Count > 0 && expectedDefines.Count == 0)
-            {
-                return !notExpectedDefines.Any(defines.Contains);
-            }
-
+            var expectedDefinesResult = expectedDefines.Any(defines.Contains) ? DefineConstraintStatus.Compatible : DefineConstraintStatus.Incompatible;
             if (expectedDefines.Count > 0 && notExpectedDefines.Count == 0)
             {
-                return expectedDefines.Any(defines.Contains);
+                return expectedDefinesResult;
             }
 
-            return expectedDefines.Any(defines.Contains) || !notExpectedDefines.Any(defines.Contains);
+            var notExpectedDefinesResult = notExpectedDefines.Any(defines.Contains) ? DefineConstraintStatus.Incompatible : DefineConstraintStatus.Compatible;
+            if (notExpectedDefines.Count > 0 && expectedDefines.Count == 0)
+            {
+                return notExpectedDefinesResult;
+            }
+
+            if (expectedDefinesResult == DefineConstraintStatus.Compatible || notExpectedDefinesResult == DefineConstraintStatus.Compatible)
+            {
+                return DefineConstraintStatus.Compatible;
+            }
+
+            return DefineConstraintStatus.Incompatible;
         }
 
-        static bool IsTokenValid(string token)
+        internal static bool IsDefineConstraintValid(string define)
         {
-            if (string.IsNullOrEmpty(token))
+            if (define == null)
             {
                 return false;
             }
 
-            if (k_Whitespaces.Any(token.Contains))
+            // Split define by OR symbol
+            var splitDefines = define.Split(new[] { Or }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var d in splitDefines)
             {
-                return false;
+                var finalDefine = (d.StartsWith(Not) ? d.Substring(1) : d).Trim();
+                if (!SymbolNameRestrictions.IsValid(finalDefine))
+                {
+                    return false;
+                }
             }
 
             return true;

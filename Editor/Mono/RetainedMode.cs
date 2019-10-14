@@ -57,13 +57,9 @@ namespace UnityEditor
         {
             DataWatchService.sharedInstance.PollNativeData();
 
-            UIElementsUtility.GetAllPanels(panelsIteration);
+            UIElementsUtility.GetAllPanels(panelsIteration, ContextType.Editor);
             foreach (var panel in panelsIteration)
             {
-                // Game panels' scheduler are ticked by the engine
-                if (panel.contextType != ContextType.Editor)
-                    continue;
-
                 // Dispatch all timer update messages to each scheduled item
                 panel.timerEventScheduler.UpdateScheduledEvents();
                 panel.UpdateAnimations();

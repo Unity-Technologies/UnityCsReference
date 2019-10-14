@@ -9,6 +9,7 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System;
 using System.IO;
+using UnityEditor.Experimental;
 
 namespace UnityEditor
 {
@@ -139,6 +140,8 @@ namespace UnityEditor
             EditorPrefs.SetBool(LocalCacheServer.CustomPathKey, s_EnableCustomPath);
             LocalCacheServer.Setup();
 
+            AssetDatabaseExperimental.RefreshConnectionToCacheServer();
+
             if (changedDir)
             {
                 //Call ExitGUI after bringing up a dialog to avoid an exception
@@ -160,7 +163,7 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateSettingsProvider()
         {
-            return new SettingsProvider("Preferences/Cache Server", SettingsScope.User)
+            return new SettingsProvider("Preferences/Cache Server (global)", SettingsScope.User)
             {
                 guiHandler = searchContext =>
                 {
@@ -424,8 +427,17 @@ namespace UnityEditor
             {
                 if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
                 {
-                    if (InternalEditorUtility.CanConnectToCacheServer())
-                        s_ConnectionState = ConnectionState.Success;
+                    var address = s_CacheServer2IPAddress.Split(':');
+                    if (address.Length == 2) // Expected format is '0.0.0.0:0'
+                    {
+                        var ip = address[0];
+                        var port = Convert.ToUInt16(address[1]);
+
+                        if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
+                            s_ConnectionState = ConnectionState.Success;
+                        else
+                            s_ConnectionState = ConnectionState.Failure;
+                    }
                     else
                         s_ConnectionState = ConnectionState.Failure;
                 }
@@ -458,7 +470,17 @@ namespace UnityEditor
 
             if (shouldTryConnect)
             {
-                if (InternalEditorUtility.CanConnectToCacheServer())
+                var canConnect = false;
+                if (AssetDatabase.IsV1Enabled())
+                {
+                    canConnect = InternalEditorUtility.CanConnectToCacheServer();
+                }
+                else
+                {
+                    canConnect = AssetDatabaseExperimental.IsConnectedToCacheServer();
+                }
+
+                if (canConnect)
                     s_ConnectionState = ConnectionState.Success;
                 else
                     s_ConnectionState = ConnectionState.Failure;

@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
 
         // Drag
         bool m_Dragged;
-        bool m_DragToPosition = true;
+        bool m_DragToPosition;
         bool m_PostponeMove;
         bool m_SelectAllOnMouseUp = true;
 
@@ -29,7 +29,11 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if (evt.eventTypeId == MouseDownEvent.TypeId())
+            if (evt.eventTypeId == FocusEvent.TypeId())
+            {
+                OnFocus(evt as FocusEvent);
+            }
+            else if (evt.eventTypeId == MouseDownEvent.TypeId())
             {
                 OnMouseDown(evt as MouseDownEvent);
             }
@@ -53,6 +57,11 @@ namespace UnityEngine.UIElements
             {
                 OnExecuteCommandEvent(evt as ExecuteCommandEvent);
             }
+        }
+
+        void OnFocus(FocusEvent _)
+        {
+            m_DragToPosition = false;
         }
 
         void OnMouseDown(MouseDownEvent evt)

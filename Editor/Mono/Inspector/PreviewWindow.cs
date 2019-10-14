@@ -102,15 +102,17 @@ namespace UnityEditor
             // Toolbar
             Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar, GUILayout.Height(kBottomToolbarHeight));
             {
-                GUILayout.FlexibleSpace();
-                var labelRect = GUILayoutUtility.GetLastRect();
                 // Label
                 string label = string.Empty;
                 if ((editor != null))
                 {
                     label = editor.GetPreviewTitle().text;
                 }
-                GUI.Label(labelRect, label, Styles.preToolbarLabel);
+
+                GUILayout.Label(label, Styles.preToolbarLabel);
+
+                GUILayout.FlexibleSpace();
+
                 if (hasPreview)
                     editor.OnPreviewSettings();
             } EditorGUILayout.EndHorizontal();
