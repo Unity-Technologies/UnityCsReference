@@ -29,6 +29,30 @@ namespace UnityEngine.UIElements
         {
             LocalInit();
         }
+
+        public new static DragExitedEvent GetPooled(Event systemEvent)
+        {
+            // We get DragExitedEvent if the drag operation ends or if the mouse exits the window during the drag.
+            // If drag operation ends, mouse was released, so notify PointerDeviceState about this.
+            // If mouse exited window, we will eventually get a DragUpdatedEvent that will restore the pressed state.
+            if (systemEvent != null)
+            {
+                PointerDeviceState.ReleaseButton(PointerId.mousePointerId, systemEvent.button);
+            }
+
+            return DragAndDropEventBase<DragExitedEvent>.GetPooled(systemEvent);
+        }
+
+        protected internal override void PostDispatch(IPanel panel)
+        {
+            EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
+            if (pointerEvent == null)
+            {
+                // If pointerEvent != null, base.PostDispatch() will take care of this.
+                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
+            }
+            base.PostDispatch(panel);
+        }
     }
 
     public class DragEnterEvent : DragAndDropEventBase<DragEnterEvent>
@@ -73,6 +97,14 @@ namespace UnityEngine.UIElements
     {
         public new static DragUpdatedEvent GetPooled(Event systemEvent)
         {
+            // During a drag operation, if mouse exits window, we get a DragExitedEvent, which releases the mouse button.
+            // If the mouse comes back in the window, we get DragUpdatedEvents. We thus make sure the button is
+            // flagged as pressed.
+            if (systemEvent != null)
+            {
+                PointerDeviceState.PressButton(PointerId.mousePointerId, systemEvent.button);
+            }
+
             // We adopt the same convention as for MouseMoveEvents.
             // We thus reset e.button.
             DragUpdatedEvent e = DragAndDropEventBase<DragUpdatedEvent>.GetPooled(systemEvent);
@@ -83,6 +115,17 @@ namespace UnityEngine.UIElements
         internal static DragUpdatedEvent GetPooled(PointerMoveEvent pointerEvent)
         {
             return DragAndDropEventBase<DragUpdatedEvent>.GetPooled(pointerEvent);
+        }
+
+        protected internal override void PostDispatch(IPanel panel)
+        {
+            EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
+            if (pointerEvent == null)
+            {
+                // If pointerEvent != null, base.PostDispatch() will take care of this.
+                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
+            }
+            base.PostDispatch(panel);
         }
     }
 

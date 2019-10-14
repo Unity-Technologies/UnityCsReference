@@ -17,7 +17,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingForIl2Cpp = 1 << 3,
         BuildingWithAsserts = 1 << 4,
         BuildingIncludingTestAssemblies = 1 << 5,
-        BuildingPredefinedAssembliesAllowUnsafeCode = (1 << 6),
-        BuildingForHeadlessPlayer = 1 << 7
-    };
+        BuildingPredefinedAssembliesAllowUnsafeCode = 1 << 6,
+        BuildingForHeadlessPlayer = 1 << 7,
+    }
 }

@@ -86,7 +86,8 @@ namespace UnityEngine.UIElements
                         basePanel.Pick(mouseEvent.mousePosition) :
                         basePanel.GetTopElementUnderPointer(PointerId.mousePointerId);
 
-                    basePanel.SetElementUnderPointer(elementUnderMouse, evt);
+                    if (shouldRecomputeTopElementUnderMouse)
+                        basePanel.SetElementUnderPointer(elementUnderMouse, evt);
                 }
 
                 evt.dispatch = true;

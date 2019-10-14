@@ -41,6 +41,11 @@ namespace UnityEngine.UIElements
             m_PressedButtons[pointerId] &= ~(1 << buttonId);
         }
 
+        public static void ReleaseAllButtons(int pointerId)
+        {
+            m_PressedButtons[pointerId] = 0;
+        }
+
         public static Vector2 GetPointerPosition(int pointerId)
         {
             return m_Positions[pointerId];

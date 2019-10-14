@@ -105,15 +105,16 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_MergeCoplanarFaces, Styles.mergeCoplanarFaces);
 
             EditorGUILayout.BeginHorizontal();
-
-            GUILayout.Label(Styles.fileUnitLabel, GUILayout.MinWidth(EditorGUIUtility.labelWidth));
+            EditorGUILayout.PrefixLabel(Styles.fileUnitLabel);
+            var oldIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
             GUILayout.Label("1");
             EditorGUILayout.Popup(m_FileUnit, Styles.measurementOptions, GUIContent.Temp(""), GUILayout.MaxWidth(100));
             lengthToUnit = ConvertGlobalScaleToUnit((EFileUnit)m_FileUnit.intValue, m_GlobalScale.floatValue);
             GUILayout.Label("=");
             lengthToUnit = EditorGUILayout.FloatField(lengthToUnit);
             m_GlobalScale.floatValue = CovertUnitToGlobalScale((EFileUnit)m_FileUnit.intValue, lengthToUnit);
-
+            EditorGUI.indentLevel = oldIndent;
             EditorGUILayout.EndHorizontal();
 
             using (new EditorGUI.DisabledScope(true))

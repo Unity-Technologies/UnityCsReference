@@ -1654,6 +1654,13 @@ namespace UnityEditor
             return text;
         }
 
+        internal static string TextFieldInternal(int id, Rect position, GUIContent label, string text, GUIStyle style)
+        {
+            bool dummy;
+            text = DoTextField(s_RecycledEditor, id, PrefixLabel(position, id, label), text, style, null, out dummy, false, false, false);
+            return text;
+        }
+
         internal static string ToolbarSearchField(Rect position, string text, bool showWithPopupArrow)
         {
             int id = GUIUtility.GetControlID(s_SearchFieldHash, FocusType.Keyboard, position);

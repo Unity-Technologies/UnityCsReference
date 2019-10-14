@@ -367,8 +367,10 @@ namespace UnityEngine
 
         public void Destroy()
         {
-            Internal_SubsystemInstances.s_StandaloneSubsystemInstances.Remove(this);
-            OnDestroy();
+            if (Internal_SubsystemInstances.s_StandaloneSubsystemInstances.Remove(this))
+            {
+                OnDestroy();
+            }
         }
 
         abstract public bool running { get; }

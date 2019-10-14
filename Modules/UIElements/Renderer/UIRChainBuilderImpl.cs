@@ -596,6 +596,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return ClipMethod.ShaderDiscard;
             }
 
+            if (ve.hierarchy.parent?.renderChainData.isStencilClipped == true)
+                return ClipMethod.ShaderDiscard; // Prevent nested stenciling for now, even if inaccurate
+
             return ClipMethod.Stencil;
         }
 

@@ -119,7 +119,7 @@ namespace UnityEditor.UIElements
 
             m_Header.onGUIHandler = HeaderOnGUI;
             m_Footer.onGUIHandler = FooterOnGUI;
-            m_InspectorElement.editor = editor;
+            m_InspectorElement.AssignExistingEditor(editor);
 
             name = editorTitle;
             m_InspectorElement.name = editorTitle + "Inspector";

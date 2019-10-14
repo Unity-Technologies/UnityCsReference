@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
@@ -11,6 +12,7 @@ using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditor.Collaboration;
 using UnityEditor.Web;
+using UnityEditor.Experimental;
 
 namespace UnityEditor
 {
@@ -39,7 +41,11 @@ namespace UnityEditor
             public static GUIContent overlayIcons = EditorGUIUtility.TrTextContent("Overlay Icons", "Should version control status icons be shown in project view.");
 
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline");
-            public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server");
+            public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server (project specific)");
+            public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
+            public static GUIContent cacheServerNamespacePrefixLabel = EditorGUIUtility.TrTextContent("Namespace prefix");
+            public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download");
+            public static GUIContent cacheServerEnableUploadLabel = EditorGUIUtility.TrTextContent("Upload");
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
@@ -185,7 +191,7 @@ namespace UnityEditor
 
         private PopupElement[] cacheServerModePopupList =
         {
-            new PopupElement("As preferences"),
+            new PopupElement("Use global settings (stored in preferences)"),
             new PopupElement("Enabled"),
             new PopupElement("Disabled"),
         };
@@ -223,30 +229,9 @@ namespace UnityEditor
 
         SerializedProperty m_AsyncShaderCompilation;
 
-
-        private enum AssetPipelineMode
-        {
-            Version1,
-            Version2,
-        }
-
-        private enum CacheServerMode
-        {
-            AsPreferences,
-            Enabled,
-            Disabled,
-        }
-
-        ReorderableList m_CacheServerList;
-        enum CacheServerConnectionState { Unknown, Success, Failure };
+        enum CacheServerConnectionState { Unknown, Success, Failure }
         private CacheServerConnectionState m_CacheServerConnectionState;
         private static string s_ForcedAssetPipelineWarning;
-
-        const string kEditorUserSettingsPath = "Library/EditorUserSettings.asset";
-        SerializedObject m_EditorUserSettings;
-        SerializedProperty m_AssetPipelineMode;
-        SerializedProperty m_CacheServerMode;
-        SerializedProperty m_CacheServers;
 
         public void OnEnable()
         {
@@ -269,40 +254,24 @@ namespace UnityEditor
 
             m_AsyncShaderCompilation = serializedObject.FindProperty("m_AsyncShaderCompilation");
 
-            LoadEditorUserSettings();
+            m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
+            s_ForcedAssetPipelineWarning = null;
         }
 
         public void OnDisable()
         {
             DevDeviceList.Changed -= OnDeviceListChanged;
-            if (m_EditorUserSettings.targetObject != null && EditorUtility.IsDirty(m_EditorUserSettings.targetObject))
-                InternalEditorUtility.SaveToSerializedFileAndForget(new[] { m_EditorUserSettings.targetObject }, kEditorUserSettingsPath, true);
+            if (EditorSettings.assetPipelineMode == AssetPipelineMode.Version2)
+            {
+                AssetDatabaseExperimental.RefreshCacheServerNamespacePrefix();
+                AssetDatabaseExperimental.RefreshConnectionToCacheServer();
+            }
         }
 
         void OnDeviceListChanged()
         {
             BuildRemoteDeviceList();
         }
-
-        private void DrawCacheServerListElement(Rect rect, int index, bool selected, bool focused)
-        {
-            rect.height -= 2; // nicer looking with selected list row and a text field in it
-
-            // De-indent by the drag handle width, so the text field lines up with others in the inspector.
-            // Will have space in front of label for more space between it and the drag handle.
-            rect.xMin -= ReorderableList.Defaults.dragHandleWidth;
-
-            string oldName = m_CacheServers.GetArrayElementAtIndex(index).stringValue;
-            if (string.IsNullOrEmpty(oldName))
-                oldName = "";
-            string newName = EditorGUI.TextField(rect, " Server " + index, oldName);
-
-            if (newName != oldName)
-            {
-                m_CacheServers.GetArrayElementAtIndex(index).stringValue = newName;
-            }
-        }
-
 
         void BuildRemoteDeviceList()
         {
@@ -334,11 +303,6 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (m_EditorUserSettings != null && !m_EditorUserSettings.targetObject)
-            {
-                LoadEditorUserSettings();
-            }
-
             serializedObject.Update();
 
             // GUI.enabled hack because we don't want some controls to be disabled if the EditorSettings.asset is locked
@@ -520,7 +484,7 @@ namespace UnityEditor
 
                 DoAssetPipelineSettings();
 
-                if (m_AssetPipelineMode.intValue == (int)AssetPipelineMode.Version2)
+                if (EditorSettings.assetPipelineMode == AssetPipelineMode.Version2)
                     DoCacheServerSettings();
 
                 GUI.enabled = wasEnabled;
@@ -591,38 +555,6 @@ namespace UnityEditor
             DoEnterPlayModeSettings();
 
             serializedObject.ApplyModifiedProperties();
-            m_EditorUserSettings.ApplyModifiedProperties();
-        }
-
-        private void LoadEditorUserSettings()
-        {
-            var editorUserSettingsObjects = InternalEditorUtility.LoadSerializedFileAndForget(kEditorUserSettingsPath);
-            foreach (var o in editorUserSettingsObjects)
-            {
-                if (o.GetType() == typeof(EditorUserSettings))
-                {
-                    m_EditorUserSettings = new SerializedObject(o);
-                }
-            }
-
-            m_AssetPipelineMode = m_EditorUserSettings.FindProperty("m_AssetPipelineMode2");
-            m_CacheServerMode = m_EditorUserSettings.FindProperty("m_CacheServerMode");
-            m_CacheServers = m_EditorUserSettings.FindProperty("m_CacheServers");
-
-            m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
-            s_ForcedAssetPipelineWarning = null;
-
-            if (m_CacheServerList == null)
-            {
-                m_CacheServerList = new ReorderableList(serializedObject, m_CacheServers, true, false, true, true);
-                m_CacheServerList.onReorderCallback = (ReorderableList list) => { serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onAddCallback = (ReorderableList list) => { m_CacheServers.arraySize += 1; serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onRemoveCallback = (ReorderableList list) => { ReorderableList.defaultBehaviours.DoRemoveButton(list); serializedObject.ApplyModifiedProperties(); };
-                m_CacheServerList.onCanRemoveCallback = (ReorderableList list) => { return list.index < m_CacheServers.arraySize && list.index >= 0; };
-                m_CacheServerList.drawElementCallback = DrawCacheServerListElement;
-                m_CacheServerList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
-                m_CacheServerList.headerHeight = 3;
-            }
         }
 
         private void DoProjectGenerationSettings()
@@ -677,7 +609,7 @@ namespace UnityEditor
                 else if (CacheServerPreferences.GetMagicFileAssetPipelineOverride())
                     s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via via magic adb2.txt file in project root. The above setting is not in effect before restarting without the magic file.";
                 else
-                    s_ForcedAssetPipelineWarning = "";
+                    s_ForcedAssetPipelineWarning = string.Empty;
             }
             return s_ForcedAssetPipelineWarning;
         }
@@ -689,12 +621,12 @@ namespace UnityEditor
 
             var assetPipelineWarning = GetForcedAssetPipelineWarning();
 
-            int index = Mathf.Clamp((int)m_AssetPipelineMode.intValue, 0, assetPipelineModePopupList.Length - 1);
+            int index = Mathf.Clamp((int)EditorSettings.assetPipelineMode, 0, assetPipelineModePopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, assetPipelineModePopupList, index, SetAssetPipelineMode);
 
             EditorGUILayout.LabelField(Content.activeAssetPipelineVersionLabel, Content.activeAssetPipelineVersion);
 
-            bool isAssetPipelineVersion1 = m_AssetPipelineMode.intValue == (int)AssetPipelineMode.Version1;
+            bool isAssetPipelineVersion1 = EditorSettings.assetPipelineMode == AssetPipelineMode.Version1;
 
             if (!string.IsNullOrEmpty(assetPipelineWarning))
                 EditorGUILayout.HelpBox(assetPipelineWarning, MessageType.Info, true);
@@ -720,7 +652,7 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("Cache Server remote address forced via command line argument. To use the cache server address specified here please restart Unity without the -CacheServerIPAddress command line argument.", MessageType.Info, true);
             }
 
-            int index = Mathf.Clamp((int)m_CacheServerMode.intValue, 0, cacheServerModePopupList.Length - 1);
+            int index = Mathf.Clamp((int)EditorSettings.cacheServerMode, 0, cacheServerModePopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, cacheServerModePopupList, index, SetCacheServerMode);
 
             if (index != (int)CacheServerMode.Disabled)
@@ -744,16 +676,39 @@ namespace UnityEditor
 
                 if (isCacheServerEnabled)
                 {
-                    m_CacheServerList.DoLayoutList();
+                    var oldEndpoint = EditorSettings.cacheServerEndpoint;
+                    var newEndpoint = EditorGUILayout.TextField(Content.cacheServerIPLabel, oldEndpoint);
+                    if (newEndpoint != oldEndpoint)
+                    {
+                        EditorSettings.cacheServerEndpoint = newEndpoint;
+                    }
 
                     EditorGUILayout.BeginHorizontal();
 
                     if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
                     {
-                        if (InternalEditorUtility.CanConnectToCacheServer())
-                            m_CacheServerConnectionState = CacheServerConnectionState.Success;
+                        if (AssetDatabase.IsV2Enabled())
+                        {
+                            if (EditorSettings.cacheServerEndpoint.Length > 0)
+                            {
+                                var address = EditorSettings.cacheServerEndpoint.Split(':');
+                                var ip = address[0];
+                                var port = Convert.ToUInt16(address[1]);
+                                if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
+                                    m_CacheServerConnectionState = CacheServerConnectionState.Success;
+                                else
+                                    m_CacheServerConnectionState = CacheServerConnectionState.Failure;
+                            }
+                            else
+                                m_CacheServerConnectionState = CacheServerConnectionState.Failure;
+                        }
                         else
-                            m_CacheServerConnectionState = CacheServerConnectionState.Failure;
+                        {
+                            if (InternalEditorUtility.CanConnectToCacheServer())
+                                m_CacheServerConnectionState = CacheServerConnectionState.Success;
+                            else
+                                m_CacheServerConnectionState = CacheServerConnectionState.Failure;
+                        }
                     }
 
                     GUILayout.Space(25);
@@ -774,6 +729,25 @@ namespace UnityEditor
                     }
 
                     EditorGUILayout.EndHorizontal();
+
+                    var old = EditorSettings.cacheServerNamespacePrefix;
+                    var newvalue = EditorGUILayout.TextField(Content.cacheServerNamespacePrefixLabel, old);
+                    if (newvalue != old)
+                    {
+                        EditorSettings.cacheServerNamespacePrefix = newvalue;
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    bool enableDownload = EditorSettings.cacheServerEnableDownload;
+                    enableDownload = EditorGUILayout.Toggle(Content.cacheServerEnableDownloadLabel, enableDownload);
+                    if (EditorGUI.EndChangeCheck())
+                        EditorSettings.cacheServerEnableDownload = enableDownload;
+
+                    EditorGUI.BeginChangeCheck();
+                    bool enableUpload = EditorSettings.cacheServerEnableUpload;
+                    enableUpload = EditorGUILayout.Toggle(Content.cacheServerEnableUploadLabel, enableUpload);
+                    if (EditorGUI.EndChangeCheck())
+                        EditorSettings.cacheServerEnableUpload = enableUpload;
                 }
             }
         }
@@ -1048,29 +1022,12 @@ namespace UnityEditor
 
         private void SetAssetPipelineMode(object data)
         {
-            int newValue = (int)data;
-
-            int oldValue = m_AssetPipelineMode.intValue;
-            if (oldValue == newValue)
-                return;
-
-            m_AssetPipelineMode.intValue = newValue;
-            m_EditorUserSettings.ApplyModifiedProperties();
-            m_EditorUserSettings.Update();
-            EditorUtility.SetDirty(m_EditorUserSettings.targetObject);
+            EditorSettings.assetPipelineMode = (AssetPipelineMode)data;
         }
 
         private void SetCacheServerMode(object data)
         {
-            int newValue = (int)data;
-
-            if (m_CacheServerMode.intValue == newValue)
-                return;
-
-            m_CacheServerMode.intValue = newValue;
-            m_EditorUserSettings.ApplyModifiedProperties();
-            m_EditorUserSettings.Update();
-            EditorUtility.SetDirty(m_EditorUserSettings.targetObject);
+            EditorSettings.cacheServerMode = (CacheServerMode)data;
         }
 
 

@@ -148,7 +148,7 @@ namespace UnityEditor
 
         protected void MeshesGUI()
         {
-            GUILayout.Label(Styles.Meshes, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(Styles.Meshes, EditorStyles.boldLabel);
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
                 using (var prop = new EditorGUI.PropertyScope(horizontal.rect, Styles.MeshCompressionLabel, m_MeshCompression))
