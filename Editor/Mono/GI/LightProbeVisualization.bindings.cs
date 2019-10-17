@@ -30,6 +30,9 @@ namespace UnityEditor
         public extern static bool showOcclusions { get; set; }
 
         [StaticAccessor("GetLightProbeVisualizationSettings()")]
+        public extern static bool highlightInvalidCells { get; set; }
+
+        [StaticAccessor("GetLightProbeVisualizationSettings()")]
         public extern static bool dynamicUpdateLightProbes { get; set; }
 
         [StaticAccessor("GetLightProbeVisualizationSettings()")]

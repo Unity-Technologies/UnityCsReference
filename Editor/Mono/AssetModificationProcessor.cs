@@ -127,6 +127,12 @@ namespace UnityEditor
             if (!Provider.enabled)
                 return;
 
+            // if we happen to be disconnected or work offline, there's not much we can do;
+            // just ignore the file mode and hope that VCS client/project is setup to handle
+            // appropriate file types correctly
+            if (!Provider.isActive)
+                return;
+
             // we'll want to re-serialize these assets in different (text vs binary) mode;
             // make sure they are editable first
             AssetDatabase.MakeEditable(assets);

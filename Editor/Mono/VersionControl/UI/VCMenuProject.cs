@@ -15,27 +15,32 @@ namespace UnityEditorInternal.VersionControl
         static bool GetLatestTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.GetLatestIsValid(selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Get Latest" menu handler
         static void GetLatest(MenuCommand cmd)
         {
-            AssetList list = Provider.GetAssetListFromSelection();
-            Provider.GetLatest(list).SetCompletionAction(CompletionAction.UpdatePendingWindow);
+            AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
+            Provider.GetLatest(selected).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Submit..." menu handler
         static bool SubmitTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.SubmitIsValid(null, selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Submit..." menu handler
         static void Submit(MenuCommand cmd)
         {
+            InspectorWindow.ApplyChanges();
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             WindowChange.Open(selected, true);
         }
 
@@ -56,9 +61,8 @@ namespace UnityEditorInternal.VersionControl
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Check Out" menu handler
         static void CheckOut(MenuCommand cmd)
         {
-            // TODO: Retrieve CheckoutMode from settings (depends on asset type; native vs. imported)
-            AssetList list = Provider.GetAssetListFromSelection();
-            Provider.Checkout(list, CheckoutMode.Both);
+            AssetList selected = Provider.GetAssetListFromSelection();
+            Provider.Checkout(selected, CheckoutMode.Both);
         }
 
         [Shortcut("Version Control/Check Out")]
@@ -99,14 +103,16 @@ namespace UnityEditorInternal.VersionControl
         static bool MarkAddTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.AddIsValid(selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Mark Add" menu handler
         static void MarkAdd(MenuCommand cmd)
         {
-            AssetList list = Provider.GetAssetListFromSelection();
-            Provider.Add(list, true).SetCompletionAction(CompletionAction.UpdatePendingWindow);
+            AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
+            Provider.Add(selected, true).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
         [Shortcut("Version Control/Mark Add")]
@@ -119,13 +125,16 @@ namespace UnityEditorInternal.VersionControl
         static bool RevertTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.RevertIsValid(selected, RevertMode.Normal);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Revert..." menu handler
         static void Revert(MenuCommand cmd)
         {
+            InspectorWindow.ApplyChanges();
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             WindowRevert.Open(selected);
         }
 
@@ -139,21 +148,25 @@ namespace UnityEditorInternal.VersionControl
         static bool RevertUnchangedTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.RevertIsValid(selected, RevertMode.Unchanged);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Revert Unchanged" menu handler
         static void RevertUnchanged(MenuCommand cmd)
         {
-            AssetList list = Provider.GetAssetListFromSelection();
-            Provider.Revert(list, RevertMode.Unchanged).SetCompletionAction(CompletionAction.UpdatePendingWindow);
-            Provider.Status(list);
+            InspectorWindow.ApplyChanges();
+            AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
+            Provider.Revert(selected, RevertMode.Unchanged).SetCompletionAction(CompletionAction.UpdatePendingWindow);
+            Provider.Status(selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Diff Against Head..." menu handler
         static bool ResolveTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.ResolveIsValid(selected);
         }
 
@@ -161,6 +174,7 @@ namespace UnityEditorInternal.VersionControl
         static void Resolve(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             WindowResolve.Open(selected);
         }
 
@@ -168,14 +182,16 @@ namespace UnityEditorInternal.VersionControl
         static bool LockTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.LockIsValid(selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Lock" menu handler
         static void Lock(MenuCommand cmd)
         {
-            AssetList list = Provider.GetAssetListFromSelection();
-            Provider.Lock(list, true).SetCompletionAction(CompletionAction.UpdatePendingWindow);
+            AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
+            Provider.Lock(selected, true).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
         [Shortcut("Version Control/Lock")]
@@ -188,14 +204,16 @@ namespace UnityEditorInternal.VersionControl
         static bool UnlockTest(MenuCommand cmd)
         {
             AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
             return Provider.enabled && Provider.UnlockIsValid(selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Unlock" menu handler
         static void Unlock(MenuCommand cmd)
         {
-            AssetList list = Provider.GetAssetListFromSelection();
-            Provider.Lock(list, false).SetCompletionAction(CompletionAction.UpdatePendingWindow);
+            AssetList selected = Provider.GetAssetListFromSelection();
+            selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
+            Provider.Lock(selected, false).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
         [Shortcut("Version Control/Unlock")]

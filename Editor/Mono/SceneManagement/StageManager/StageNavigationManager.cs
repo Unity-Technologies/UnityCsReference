@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Experimental.SceneManagement;
@@ -86,14 +85,14 @@ namespace UnityEditor.SceneManagement
             // Ensure we destroy the prefab stages so all hidden editor objects (environment objects are hidden)
             // are removed before closing down. Currently editor objects should be cleaned up if they have interest
             // in transform changes before shutting down.
-            GoToMainStage(false, Analytics.ChangeType.GoToMainViaQuitApplication);
+            GoToMainStage(Analytics.ChangeType.GoToMainViaQuitApplication);
         }
 
         void OnSceneOpened(Scene scene, OpenSceneMode mode)
         {
             if (!(currentStage is MainStage))
             {
-                GoToMainStage(false, Analytics.ChangeType.GoToMainViaSceneOpened); // Do not set previous selection as this would e.g remove the selection from the Project Browser when double clicking a scene asset
+                GoToMainStage(Analytics.ChangeType.GoToMainViaSceneOpened); // Do not set previous selection as this would e.g remove the selection from the Project Browser when double clicking a scene asset
             }
         }
 
@@ -101,7 +100,7 @@ namespace UnityEditor.SceneManagement
         {
             if (!(currentStage is MainStage))
             {
-                GoToMainStage(false, Analytics.ChangeType.GoToMainViaNewSceneCreated);
+                GoToMainStage(Analytics.ChangeType.GoToMainViaNewSceneCreated);
             }
         }
 
@@ -115,23 +114,31 @@ namespace UnityEditor.SceneManagement
             }
         }
 
+        bool IsValidStage(Stage stage, bool showDialogIfInvalid)
+        {
+            if (!stage.isValid)
+            {
+                var errorMsg = stage.GetErrorMessage();
+                Assert.IsNotNull(errorMsg);
+                if (showDialogIfInvalid)
+                    EditorUtility.DisplayDialog("Stage Error", errorMsg, "OK");
+
+                NavigateBack(Analytics.ChangeType.EnterViaUnknown);
+                return false;
+            }
+            return true;
+        }
+
         // internal for testing
         internal void ValidateAndTickStages(bool showDialogIfInvalid)
         {
             var stageHistory = m_NavigationHistory.GetHistory();
+
+            if (!IsValidStage(stageHistory.Last(), showDialogIfInvalid))
+                return;
+
             foreach (var stage in stageHistory)
             {
-                if (stage == stageHistory.Last() && !stage.isValid)
-                {
-                    var errorMsg = stage.GetErrorMessage();
-                    Assert.IsNotNull(errorMsg);
-                    if (showDialogIfInvalid)
-                        EditorUtility.DisplayDialog("Stage Error", errorMsg, "OK");
-
-                    NavigateBack(Analytics.ChangeType.EnterViaUnknown); // removes invalid
-                    return;
-                }
-
                 stage.Tick();
             }
         }
@@ -141,16 +148,16 @@ namespace UnityEditor.SceneManagement
             if (m_NavigationHistory.CanGoBackward())
             {
                 var previousStage = m_NavigationHistory.GetPrevious();
-                SwitchToStage(previousStage, false, true, stageChangeAnalytics);
+                SwitchToStage(previousStage, false, stageChangeAnalytics);
             }
         }
 
-        internal void GoToMainStage(bool setPreviousSelection, Analytics.ChangeType stageChangeAnalytics)
+        internal void GoToMainStage(Analytics.ChangeType stageChangeAnalytics)
         {
             if (currentStage is MainStage)
                 return;
 
-            SwitchToStage(m_NavigationHistory.GetMainStage(), false, setPreviousSelection, stageChangeAnalytics);
+            SwitchToStage(m_NavigationHistory.GetMainStage(), false, stageChangeAnalytics);
         }
 
         static void StopAnimationPlaybackAndPreviewing()
@@ -163,7 +170,7 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        internal bool SwitchToStage(Stage stage, bool setAsFirstItemAfterMainStage, bool setPreviousSelection, Analytics.ChangeType changeTypeAnalytics)
+        internal bool SwitchToStage(Stage stage, bool setAsFirstItemAfterMainStage, Analytics.ChangeType changeTypeAnalytics)
         {
             if (stage == null)
             {
@@ -177,6 +184,8 @@ namespace UnityEditor.SceneManagement
                 DestroyImmediate(stage);
                 return false;
             }
+
+            bool setPreviousSelection = stage.opened;
 
             StopAnimationPlaybackAndPreviewing();
 
@@ -226,13 +235,20 @@ namespace UnityEditor.SceneManagement
             bool success;
             try
             {
-                success = stage.ActivateStage(previousStage);
+                if (!stage.opened)
+                {
+                    stage.opened = true;
+                    success = stage.OpenStage();
+                }
+                else
+                {
+                    success = stage.isValid;
+                }
+
                 if (success)
                 {
                     if (m_DebugLogging)
                         Debug.Log("Deactivate previous stage");
-
-                    previousStage.DeactivateStage(stage);
 
                     // Here the Hierarchy and SceneView sync's up to the new stage
                     stage.setSelectionAndScrollWhenBecomingCurrentStage = setPreviousSelection;
@@ -279,7 +295,15 @@ namespace UnityEditor.SceneManagement
             {
                 var removeStage = stagesToDelete[i];
                 if (removeStage != null)
+                {
+                    Type stageType = removeStage.GetType();
+                    int numPreviewScenesBefore = EditorSceneManager.previewSceneCount;
+
                     DestroyImmediate(removeStage);
+
+                    if (stageType.IsSubclassOf(typeof(PreviewSceneStage)) && EditorSceneManager.previewSceneCount == numPreviewScenesBefore)
+                        Debug.LogError($"Stage type '{stageType}' did not clean up properly: A PreviewScene was leaked. Ensure to call 'base.CloseStage()' from your implementation of CloseStage().");
+                }
             }
         }
 

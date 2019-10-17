@@ -5,7 +5,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     internal class DownloadResult
     {

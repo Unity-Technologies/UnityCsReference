@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,35 +20,29 @@ namespace UnityEditor.SceneManagement
             return SceneManager.GetSceneAt(index);
         }
 
-        internal override string GetStageID(int maxCharacters)
-        {
-            var id = "mainStage";
-            if (id.Length > maxCharacters)
-                id = id.Substring(0, maxCharacters);
-            return id;
-        }
-
-        internal override bool ActivateStage(Stage previousStage)
+        protected internal override bool OpenStage()
         {
             // do nothing as the main stage is always in memory
             return true;
         }
 
-        internal override BreadcrumbBar.Item CreateBreadCrumbItem()
+        protected override void CloseStage()
         {
-            var history = StageNavigationManager.instance.stageHistory;
-            bool isLastCrumb = this == history.Last();
-            var label = "Scenes";
-            var icon = EditorGUIUtility.FindTexture("UnityEditor/SceneAsset Icon");
-            var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
-            var tooltip = "";
-            return new BreadcrumbBar.Item
-            {
-                content = new GUIContent(label, icon, tooltip),
-                guistyle = style,
-                userdata = this,
-                separatorstyle = BreadcrumbBar.SeparatorStyle.None
-            };
+            // do nothing as the main stage is always in memory
+        }
+
+        protected internal override GUIContent CreateHeaderContent()
+        {
+            return new GUIContent(
+                "Scenes",
+                EditorGUIUtility.IconContent("SceneAsset Icon").image);
+        }
+
+        internal override BreadcrumbBar.Item CreateBreadcrumbItem()
+        {
+            BreadcrumbBar.Item item = base.CreateBreadcrumbItem();
+            item.separatorstyle = BreadcrumbBar.SeparatorStyle.None;
+            return item;
         }
 
         internal override ulong GetSceneCullingMask(SceneView sceneView)
@@ -61,8 +54,11 @@ namespace UnityEditor.SceneManagement
         {
             sceneView.customScene = new Scene();
             sceneView.customParentForDraggedObjects = null;
-            ulong mask = GetSceneCullingMask(sceneView);
-            sceneView.overrideSceneCullingMask = mask == EditorSceneManager.DefaultSceneCullingMask ? 0 : mask;
+
+            // NOTE: We always set overrideSceneCullingMask to ensure the gizmo handling in the Entities package works (in dots search for 'gizmo hack').
+            // This ensures normal picking works with the livelink since the SceneCullingMasks.MainStageSceneViewObjects is part of the mask while the gizmo bit is also set.
+            // When the gizmo hack is removed in dots we can set 'sceneView.overrideSceneCullingMask = 0'.
+            sceneView.overrideSceneCullingMask = GetSceneCullingMask(sceneView);
         }
 
         internal override void SyncSceneHierarchyToStage(SceneHierarchyWindow sceneHierarchyWindow)
@@ -87,7 +83,7 @@ namespace UnityEditor.SceneManagement
             if (!isValid)
                 return;
 
-            string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
+            Hash128 key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
             var state = s_StateCache.GetState(key);
             if (state == null)
                 state = new MainStageHierarchyState();
@@ -97,7 +93,7 @@ namespace UnityEditor.SceneManagement
 
         MainStageHierarchyState GetStoredHierarchyState(SceneHierarchyWindow hierarchyWindow)
         {
-            string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
+            Hash128 key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
             return s_StateCache.GetState(key);
         }
 

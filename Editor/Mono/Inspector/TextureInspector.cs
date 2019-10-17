@@ -352,9 +352,9 @@ namespace UnityEditor
         // showPerAxisWrapModes is state of whether "Per-Axis" mode should be active in the main dropdown.
         // It is set automatically if wrap modes in UVW are different, or if user explicitly picks "Per-Axis" option -- when that one is picked,
         // then it should stay true even if UVW wrap modes will initially be the same.
-        //
+        // enforcePerAxis is used to always show all axis option. In some cases (Preset), we want to show each property separately to make sure users can act on one or another with the context menu.
         // Note: W wrapping mode is only shown when isVolumeTexture is true.
-        internal static void WrapModePopup(SerializedProperty wrapU, SerializedProperty wrapV, SerializedProperty wrapW, bool isVolumeTexture, ref bool showPerAxisWrapModes)
+        internal static void WrapModePopup(SerializedProperty wrapU, SerializedProperty wrapV, SerializedProperty wrapW, bool isVolumeTexture, ref bool showPerAxisWrapModes, bool enforcePerAxis)
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -389,19 +389,27 @@ namespace UnityEditor
                 }
             }
 
-            int value = showPerAxisWrapModes ? -1 : (int)wu;
+            int value = showPerAxisWrapModes || enforcePerAxis ? -1 : (int)wu;
 
             // main wrap mode popup
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = !showPerAxisWrapModes && (wrapU.hasMultipleDifferentValues || wrapV.hasMultipleDifferentValues || (isVolumeTexture && wrapW.hasMultipleDifferentValues));
-            value = EditorGUILayout.IntPopup(s_Styles.wrapModeLabel, value, s_Styles.wrapModeContents, s_Styles.wrapModeValues);
-            if (EditorGUI.EndChangeCheck() && value != -1)
+            if (enforcePerAxis)
             {
-                // assign the same wrap mode to all axes, and hide per-axis popups
-                wrapU.intValue = value;
-                wrapV.intValue = value;
-                wrapW.intValue = value;
-                showPerAxisWrapModes = false;
+                EditorGUILayout.LabelField(s_Styles.wrapModeLabel);
+            }
+            else
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = !showPerAxisWrapModes && (wrapU.hasMultipleDifferentValues || wrapV.hasMultipleDifferentValues || (isVolumeTexture && wrapW.hasMultipleDifferentValues));
+                value = EditorGUILayout.IntPopup(s_Styles.wrapModeLabel, value, s_Styles.wrapModeContents, s_Styles.wrapModeValues);
+                if (EditorGUI.EndChangeCheck() && value != -1)
+                {
+                    // assign the same wrap mode to all axes, and hide per-axis popups
+                    wrapU.intValue = value;
+                    wrapV.intValue = value;
+                    wrapW.intValue = value;
+                    showPerAxisWrapModes = false;
+                }
+                EditorGUI.showMixedValue = false;
             }
 
             // show per-axis popups if needed
@@ -417,13 +425,12 @@ namespace UnityEditor
                 }
                 EditorGUI.indentLevel--;
             }
-            EditorGUI.showMixedValue = false;
         }
 
         bool m_ShowPerAxisWrapModes = false;
         protected void DoWrapModePopup()
         {
-            WrapModePopup(m_WrapU, m_WrapV, m_WrapW, IsVolume(), ref m_ShowPerAxisWrapModes);
+            WrapModePopup(m_WrapU, m_WrapV, m_WrapW, IsVolume(), ref m_ShowPerAxisWrapModes, false);
         }
 
         protected void DoFilterModePopup()

@@ -4,10 +4,12 @@
 
 using System;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreOAuth
     {
-        void FetchUserInfo(Action<AssetStoreOAuth.UserInfo> doneCallbackInfo);
+        void FetchUserInfo(Action<AssetStoreOAuth.UserInfo> doneCallback, Action<Error> errorCallback);
+
+        void ClearCache();
     }
 }

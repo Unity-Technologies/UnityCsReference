@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 
-
 namespace UnityEditorInternal
 {
     //TODO: better handling for serializedObjects with mixed values
@@ -159,7 +158,7 @@ namespace UnityEditorInternal
                 else
                 {
                     // this is ugly but there are a lot of cases like null types and default constructors
-                    Type elementType = list.list.GetType().GetElementType();
+                    var elementType = list.list.GetType().GetElementType();
                     if (elementType == typeof(string))
                         list.index = list.list.Add("");
                     else if (elementType != null && elementType.GetConstructor(Type.EmptyTypes) == null)
@@ -461,7 +460,7 @@ namespace UnityEditorInternal
         private void DoListElements(Rect listRect)
         {
             // How many elements? If none, make space for showing default line that shows no elements are present
-            int arraySize = count;
+            var arraySize = count;
 
             // draw the background in repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
@@ -477,22 +476,22 @@ namespace UnityEditorInternal
             }
 
             // create the rect for individual elements in the list
-            Rect elementRect = listRect;
+            var elementRect = listRect;
             elementRect.height = elementHeight;
 
             // the content rect is what we will actually draw into -- it doesn't include the drag handle or padding
-            Rect elementContentRect = elementRect;
+            var elementContentRect = elementRect;
 
-
-            if (((m_Elements != null && m_Elements.isArray == true) || m_ElementList != null) && arraySize > 0)
+            if ((m_Elements != null && m_Elements.isArray || m_ElementList != null) && arraySize > 0)
             {
                 // If there are elements, we need to draw them -- we will do this differently depending on if we are dragging or not
                 if (IsDragging() && Event.current.type == EventType.Repaint)
                 {
                     // we are dragging, so we need to build the new list of target indices
-                    int targetIndex = CalculateRowIndex();
+                    var targetIndex = CalculateRowIndex();
+
                     m_NonDragTargetIndices.Clear();
-                    for (int i = 0; i < arraySize; i++)
+                    for (var i = 0; i < arraySize; i++)
                     {
                         if (i != m_ActiveElement)
                             m_NonDragTargetIndices.Add(i);
@@ -500,32 +499,34 @@ namespace UnityEditorInternal
                     m_NonDragTargetIndices.Insert(targetIndex, -1);
 
                     // now draw each element in the list (excluding the active element)
-                    bool targetSeen = false;
-                    for (int i = 0; i < m_NonDragTargetIndices.Count; i++)
+                    var targetSeen = false;
+                    for (var i = 0; i < m_NonDragTargetIndices.Count; i++)
                     {
-                        if (m_NonDragTargetIndices[i] != -1)
+                        var nonDragTargetIndex = m_NonDragTargetIndices[i];
+                        if (nonDragTargetIndex != -1)
                         {
-                            elementRect.height = GetElementHeight(i);
+                            elementRect.height = GetElementHeight(nonDragTargetIndex);
                             // update the position of the rect (based on element position and accounting for sliding)
                             if (elementHeightCallback == null)
                             {
+                                // if elementHeightCallback is not set, we can use a simpler path to calculate YOffset.
                                 elementRect.y = listRect.y + GetElementYOffset(i, m_ActiveElement);
                             }
                             else
                             {
-                                elementRect.y = listRect.y + GetElementYOffset(m_NonDragTargetIndices[i], m_ActiveElement);
+                                elementRect.y = listRect.y + GetElementYOffset(nonDragTargetIndex, m_ActiveElement);
                                 if (targetSeen)
                                 {
                                     elementRect.y += elementHeightCallback(m_ActiveElement);
                                 }
                             }
-                            elementRect = m_SlideGroup.GetRect(m_NonDragTargetIndices[i], elementRect);
+                            elementRect = m_SlideGroup.GetRect(nonDragTargetIndex, elementRect);
 
                             // actually draw the element
                             if (drawElementBackgroundCallback == null)
-                                s_Defaults.DrawElementBackground(elementRect, i, false, false, m_Draggable);
+                                s_Defaults.DrawElementBackground(elementRect, nonDragTargetIndex, false, false, m_Draggable);
                             else
-                                drawElementBackgroundCallback(elementRect, i, false, false);
+                                drawElementBackgroundCallback(elementRect, nonDragTargetIndex, false, false);
 
                             s_Defaults.DrawElementDraggingHandle(elementRect, i, false, false, m_Draggable);
 
@@ -533,13 +534,13 @@ namespace UnityEditorInternal
                             if (drawElementCallback == null)
                             {
                                 if (m_Elements != null)
-                                    s_Defaults.DrawElement(elementContentRect, m_Elements.GetArrayElementAtIndex(m_NonDragTargetIndices[i]), null, false, false, m_Draggable);
+                                    s_Defaults.DrawElement(elementContentRect, m_Elements.GetArrayElementAtIndex(nonDragTargetIndex), null, false, false, m_Draggable);
                                 else
-                                    s_Defaults.DrawElement(elementContentRect, null, m_ElementList[m_NonDragTargetIndices[i]], false, false, m_Draggable);
+                                    s_Defaults.DrawElement(elementContentRect, null, m_ElementList[nonDragTargetIndex], false, false, m_Draggable);
                             }
                             else
                             {
-                                drawElementCallback(elementContentRect, m_NonDragTargetIndices[i], false, false);
+                                drawElementCallback(elementContentRect, nonDragTargetIndex, false, false);
                             }
                         }
                         else
@@ -550,6 +551,7 @@ namespace UnityEditorInternal
 
                     // finally get the position of the active element
                     elementRect.y = m_DraggedY - m_DragOffset + listRect.y;
+                    elementRect.height = GetElementHeight(m_ActiveElement);
 
                     // actually draw the element
                     if (drawElementBackgroundCallback == null)
@@ -593,7 +595,6 @@ namespace UnityEditorInternal
                         else
                             drawElementBackgroundCallback(elementRect, i, activeElement, focusedElement);
                         s_Defaults.DrawElementDraggingHandle(elementRect, i, activeElement, focusedElement, m_Draggable);
-
 
                         elementContentRect = GetContentRect(elementRect);
 
@@ -832,7 +833,20 @@ namespace UnityEditorInternal
 
         private int CalculateRowIndex()
         {
-            return GetRowIndex(m_DraggedY);
+            var rowIndex = GetRowIndex(m_DraggedY);
+            var yTop = m_DraggedY - m_DragOffset;
+
+            if (rowIndex != 0)
+                if (GetElementYOffset(rowIndex - 1) >= yTop)
+                    return rowIndex - 1;
+
+            var nextElement = rowIndex + 1;
+            var yBottom = m_DraggedY - m_DragOffset + GetElementHeight(m_ActiveElement);
+            if (rowIndex != count - 1)
+                if (GetElementYOffset(nextElement) + GetElementHeight(nextElement) <= yBottom)
+                    return rowIndex + 1;
+
+            return rowIndex;
         }
 
         private int GetRowIndex(float localY)
@@ -841,7 +855,7 @@ namespace UnityEditorInternal
                 return Mathf.Clamp(Mathf.FloorToInt(localY / elementHeight), 0, count - 1);
 
             float rowYOffset = 0;
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 float rowYHeight = elementHeightCallback(i);
                 float rowYEnd = rowYOffset + rowYHeight;

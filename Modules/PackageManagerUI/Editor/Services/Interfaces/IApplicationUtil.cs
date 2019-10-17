@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Connect;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -31,5 +32,7 @@ namespace UnityEditor.PackageManager.UI
         void OpenURL(string url);
 
         IAsyncHTTPClient GetASyncHTTPClient(string url, string method = null);
+
+        void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback);
     }
 }

@@ -926,7 +926,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var runtimeFirstPass = new TargetAssembly("Assembly-" + languageName + "-firstpass" + ".dll",
                     language,
-                    AssemblyFlags.FirstPass,
+                    AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -936,7 +936,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var runtime = new TargetAssembly("Assembly-" + languageName + ".dll",
                     language,
-                    AssemblyFlags.None,
+                    AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -946,7 +946,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
                     language,
-                    AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass,
+                    AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass | AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,
@@ -956,7 +956,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll",
                     language,
-                    AssemblyFlags.EditorOnly,
+                    AssemblyFlags.EditorOnly | AssemblyFlags.UserAssembly,
                     TargetAssemblyType.Predefined,
                     null,
                     null,

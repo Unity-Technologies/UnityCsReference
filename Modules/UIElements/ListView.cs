@@ -6,18 +6,26 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    public enum AlternatingRowBackground
+    {
+        None,
+        ContentOnly,
+        All
+    }
+
     public class ListView : BindableElement
     {
         public new class UxmlFactory : UxmlFactory<ListView, UxmlTraits> {}
 
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
-            UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] {"itemHeight"}, defaultValue = s_DefaultItemHeight };
-            UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
+            private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] {"itemHeight"}, defaultValue = s_DefaultItemHeight };
+            private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
+            private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
+            private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -34,6 +42,8 @@ namespace UnityEngine.UIElements
                 }
 
                 ((ListView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
+                ((ListView)ve).selectionType = m_SelectionType.GetValueFromBag(bag, cc);
+                ((ListView)ve).showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
             }
         }
 
@@ -192,6 +202,21 @@ namespace UnityEngine.UIElements
 
         public SelectionType selectionType { get; set; }
 
+        [SerializeField] private AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
+
+        public AlternatingRowBackground showAlternatingRowBackgrounds
+        {
+            get { return m_ShowAlternatingRowBackgrounds; }
+            set
+            {
+                if (m_ShowAlternatingRowBackgrounds == value)
+                    return;
+
+                m_ShowAlternatingRowBackgrounds = value;
+                Refresh();
+            }
+        }
+
         internal static readonly int s_DefaultItemHeight = 30;
         internal static CustomStyleProperty<int> s_ItemHeightProperty = new CustomStyleProperty<int>("--unity-item-height");
 
@@ -199,6 +224,9 @@ namespace UnityEngine.UIElements
         private float m_LastHeight;
         private List<RecycledItem> m_Pool = new List<RecycledItem>();
         private ScrollView m_ScrollView;
+
+        private readonly VisualElement m_EmptyRows;
+        private int m_LastItemIndex;
 
         // we keep this list in order to minimize temporary gc allocs
         List<RecycledItem> m_ScrollInsertionList = new List<RecycledItem>();
@@ -210,6 +238,9 @@ namespace UnityEngine.UIElements
         public static readonly string borderUssClassName = ussClassName + "--with-border";
         public static readonly string itemUssClassName = ussClassName + "__item";
         public static readonly string itemSelectedVariantUssClassName = itemUssClassName + "--selected";
+        public static readonly string itemAlternativeBackgroundUssClassName = itemUssClassName + "--alternative-background";
+
+        internal static readonly string s_BackgroundFillUssClassName  = ussClassName + "__background";
 
         public ListView()
         {
@@ -231,6 +262,9 @@ namespace UnityEngine.UIElements
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
             m_ScrollView.contentContainer.focusable = true;
             m_ScrollView.contentContainer.usageHints &= ~UsageHints.GroupTransform; // Scroll views with virtualized content shouldn't have the "view transform" optimization
+
+            m_EmptyRows = new VisualElement();
+            m_EmptyRows.AddToClassList(s_BackgroundFillUssClassName);
 
             focusable = true;
             isCompositeRoot = true;
@@ -767,21 +801,61 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+
+            UpdateBackground();
         }
 
         private void Setup(RecycledItem recycledItem, int newIndex)
         {
             var newId = GetIdFromIndex(newIndex);
-
             recycledItem.element.style.visibility = Visibility.Visible;
-            if (recycledItem.index != newIndex)
+            if (recycledItem.index == newIndex) return;
+
+            m_LastItemIndex = newIndex;
+            if (showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1)
+                recycledItem.element.AddToClassList(itemAlternativeBackgroundUssClassName);
+            else
+                recycledItem.element.RemoveFromClassList(itemAlternativeBackgroundUssClassName);
+
+            recycledItem.index = newIndex;
+            recycledItem.id = newId;
+            recycledItem.element.style.top = recycledItem.index * m_PixelAlignedItemHeight;
+            recycledItem.element.style.bottom = (itemsSource.Count - recycledItem.index - 1) * m_PixelAlignedItemHeight;
+            bindItem(recycledItem.element, recycledItem.index);
+            recycledItem.SetSelected(m_SelectedIds.Contains(newId));
+        }
+
+        private void UpdateBackground()
+        {
+            var backgroundFillHeight = m_ScrollView.contentViewport.layout.size.y - m_ScrollView.contentContainer.layout.size.y;
+            if (showAlternatingRowBackgrounds != AlternatingRowBackground.All || backgroundFillHeight <= 0)
             {
-                recycledItem.index = newIndex;
-                recycledItem.id = newId;
-                recycledItem.element.style.top = recycledItem.index * m_PixelAlignedItemHeight;
-                recycledItem.element.style.bottom = (itemsSource.Count - recycledItem.index - 1) * m_PixelAlignedItemHeight;
-                bindItem(recycledItem.element, recycledItem.index);
-                recycledItem.SetSelected(m_SelectedIds.Contains(newId));
+                m_EmptyRows.RemoveFromHierarchy();
+                return;
+            }
+
+            if (m_EmptyRows.parent == null)
+                m_ScrollView.contentViewport.Add(m_EmptyRows);
+
+            var itemsCount = Mathf.FloorToInt(backgroundFillHeight / resolvedItemHeight) + 1;
+            if (itemsCount > m_EmptyRows.childCount)
+            {
+                var itemsToAdd = itemsCount - m_EmptyRows.childCount;
+                for (var i = 0; i < itemsToAdd; i++)
+                {
+                    var row  = new VisualElement();
+                    //Inline style is used to prevent a user from changing an item flexShrink property.
+                    row.style.flexShrink = 0;
+                    m_EmptyRows.Add(row);
+                }
+            }
+
+            var index = m_LastItemIndex;
+            foreach (var child in m_EmptyRows.hierarchy.Children())
+            {
+                index++;
+                child.style.height = itemHeight;
+                child.EnableInClassList(itemAlternativeBackgroundUssClassName, index % 2 == 1);
             }
         }
 

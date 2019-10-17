@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Connect;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     internal sealed class AssetStoreRestAPI
     {
@@ -44,17 +44,10 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                 AssetStoreOAuth.instance.FetchUserInfo(userInfo =>
                 {
-                    if (!userInfo.isValid)
-                    {
-                        returnList.errorMessage = userInfo.errorMessage;
-                        doneCallbackAction?.Invoke(returnList);
-                        return;
-                    }
-
                     limit = limit > 0 ? limit : kDefaultLimit;
                     searchText = string.IsNullOrEmpty(searchText) ? "" : searchText;
                     var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{kListUri}?offset={startIndex}&limit={limit}&query={System.Uri.EscapeDataString(searchText)}");
-                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
+                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken;
                     httpRequest.doneCallback = httpClient =>
                     {
                         var errorMessage = "Failed to parse JSON.";
@@ -101,7 +94,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         doneCallbackAction?.Invoke(returnList);
                     };
                     httpRequest.Begin();
-                });
+                },
+                    error =>
+                    {
+                        returnList.errorMessage = error.message;
+                        doneCallbackAction?.Invoke(returnList);
+                    });
             }
 
             public void GetProductDetail(long productID, Action<Dictionary<string, object>> doneCallbackAction)
@@ -110,14 +108,11 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 {
                     if (!userInfo.isValid)
                     {
-                        var ret = new Dictionary<string, object>();
-                        ret["errorMessage"] = userInfo.errorMessage;
-                        doneCallbackAction?.Invoke(ret);
                         return;
                     }
 
                     var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{kDetailUri}/{productID}");
-                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
+                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken;
 
                     var etag = AssetStoreCache.instance.GetLastETag(productID);
                     httpRequest.header["If-None-Match"] = etag.Replace("\"", "\\\"");
@@ -157,7 +152,13 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         doneCallbackAction?.Invoke(ret);
                     };
                     httpRequest.Begin();
-                });
+                },
+                    error =>
+                    {
+                        var ret = new Dictionary<string, object>();
+                        ret["errorMessage"] = error.message;
+                        doneCallbackAction?.Invoke(ret);
+                    });
             }
 
             public void GetDownloadDetail(long productID, Action<DownloadInformation> doneCallbackAction)
@@ -169,16 +170,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                 AssetStoreOAuth.instance.FetchUserInfo(userInfo =>
                 {
-                    if (!userInfo.isValid)
-                    {
-                        downloadInfo.errorMessage = userInfo.errorMessage;
-                        doneCallbackAction?.Invoke(downloadInfo);
-                        return;
-                    }
-
                     var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{kDownloadUri}/{productID}");
                     httpRequest.header["Content-Type"] = "application/json";
-                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
+                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken;
                     httpRequest.doneCallback = httpClient =>
                     {
                         var errorMessage = "Failed to parse JSON.";
@@ -214,21 +208,18 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         doneCallbackAction?.Invoke(downloadInfo);
                     };
                     httpRequest.Begin();
-                });
+                },
+                    error =>
+                    {
+                        downloadInfo.errorMessage = error.message;
+                        doneCallbackAction?.Invoke(downloadInfo);
+                    });
             }
 
-            public void GetProductUpdateDetail(IEnumerable<LocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction)
+            public void GetProductUpdateDetail(IEnumerable<AssetStoreLocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction)
             {
                 AssetStoreOAuth.instance.FetchUserInfo(userInfo =>
                 {
-                    if (!userInfo.isValid)
-                    {
-                        var ret = new Dictionary<string, object>();
-                        ret["errorMessage"] = userInfo.errorMessage;
-                        doneCallbackAction?.Invoke(ret);
-                        return;
-                    }
-
                     if (localInfos == null || !localInfos.Any())
                     {
                         doneCallbackAction?.Invoke(new Dictionary<string, object>());
@@ -254,7 +245,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient(url, "POST");
                     httpRequest.postData = data;
                     httpRequest.header["Content-Type"] = "application/json";
-                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
+                    httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken;
                     httpRequest.doneCallback = httpClient =>
                     {
                         var errorMessage = "Failed to parse JSON.";
@@ -284,7 +275,13 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         doneCallbackAction?.Invoke(ret);
                     };
                     httpRequest.Begin();
-                });
+                },
+                    error =>
+                    {
+                        var ret = new Dictionary<string, object>();
+                        ret["errorMessage"] = error.message;
+                        doneCallbackAction?.Invoke(ret);
+                    });
             }
         }
     }

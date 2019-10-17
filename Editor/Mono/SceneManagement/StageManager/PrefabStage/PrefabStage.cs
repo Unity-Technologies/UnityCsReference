@@ -24,12 +24,11 @@ namespace UnityEditor.Experimental.SceneManagement
     // we're not confident that the API is right, hence it's experimental for now.
 
     [Serializable]
-    public partial class PrefabStage : Stage
+    public sealed partial class PrefabStage : PreviewSceneStage
     {
         static class Styles
         {
             public static GUIContent autoSaveGUIContent = EditorGUIUtility.TrTextContent("Auto Save", "When Auto Save is enabled, every change you make is automatically saved to the Prefab Asset. Disable Auto Save if you experience long import times.");
-            public static GUIContent contextGreyedOutContent = EditorGUIUtility.TrTextContent("Context Greyed Out");
             public static GUIContent saveButtonContent = EditorGUIUtility.TrTextContent("Save");
             public static GUIContent checkoutButtonContent = EditorGUIUtility.TrTextContent("Check Out");
             public static GUIContent autoSavingBadgeContent = EditorGUIUtility.TrTextContent("Auto Saving...");
@@ -40,7 +39,7 @@ namespace UnityEditor.Experimental.SceneManagement
             public static GUIStyle exposablePopup = "ExposablePopupMenu";
             public static GUIStyle exposablePopupItem = "ExposablePopupItem";
             public static GUIContent contextLabel = EditorGUIUtility.TrTextContent("Context:");
-            public static GUIContent[] contextRenderModeTexts = new[] { EditorGUIUtility.TrTextContent("Normal"), EditorGUIUtility.TrTextContent("Grey"), EditorGUIUtility.TrTextContent("Hidden") };
+            public static GUIContent[] contextRenderModeTexts = new[] { EditorGUIUtility.TrTextContent("Normal"), EditorGUIUtility.TrTextContent("Gray"), EditorGUIUtility.TrTextContent("Hidden") };
             public static StageUtility.ContextRenderMode[] contextRenderModeOptions = new[] { StageUtility.ContextRenderMode.Normal, StageUtility.ContextRenderMode.GreyedOut, StageUtility.ContextRenderMode.Hidden };
 
             static Styles()
@@ -71,7 +70,6 @@ namespace UnityEditor.Experimental.SceneManagement
         static StateCache<PrefabStageHierarchyState> s_StateCache = new StateCache<PrefabStageHierarchyState>("Library/StateCache/PrefabStageHierarchy/");
 
         GameObject m_PrefabContentsRoot; // Prefab asset being edited
-        Scene m_PreviewScene;
         string m_PrefabAssetPath;
         GameObject m_OpenedFromInstanceRoot;
         GameObject m_OpenedFromInstanceObject;
@@ -173,31 +171,6 @@ namespace UnityEditor.Experimental.SceneManagement
             m_AllPrefabStages.Remove(this);
         }
 
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-            CloseStage();
-        }
-
-        internal override string GetStageID(int maxCharacters)
-        {
-            return AssetDatabase.AssetPathToGUID(m_PrefabAssetPath).Substring(0, maxCharacters);
-        }
-
-        public Scene scene
-        {
-            get { return m_PreviewScene; }
-        }
-
-        internal override int sceneCount { get { return 1; } }
-
-        internal override Scene GetSceneAt(int index)
-        {
-            if (index != 0)
-                throw new System.IndexOutOfRangeException();
-            return m_PreviewScene;
-        }
-
         public GameObject prefabContentsRoot
         {
             get
@@ -221,16 +194,6 @@ namespace UnityEditor.Experimental.SceneManagement
         public Mode mode
         {
             get { return m_Mode; }
-        }
-
-        public override StageHandle stageHandle
-        {
-            get { return StageHandle.GetStageHandle(scene); }
-        }
-
-        internal override ulong GetSceneCullingMask(SceneView sceneView)
-        {
-            return EditorSceneManager.GetSceneCullingMask(scene);
         }
 
         internal override ulong GetCombinedSceneCullingMaskForSceneViewCamera(SceneView sceneView)
@@ -308,7 +271,7 @@ namespace UnityEditor.Experimental.SceneManagement
         public override string assetPath { get { return m_PrefabAssetPath; } }
 
         internal override bool SupportsSaving() { return true; }
-        internal override bool hasUnsavedChanges { get { return m_PreviewScene.dirtyID != m_InitialSceneDirtyID; } }
+        internal override bool hasUnsavedChanges { get { return scene.dirtyID != m_InitialSceneDirtyID; } }
 
         internal bool showingSavingLabel
         {
@@ -339,7 +302,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal override bool isValid
         {
-            get { return m_PrefabContentsRoot != null && m_PrefabContentsRoot.scene == m_PreviewScene; }
+            get { return m_PrefabContentsRoot != null && m_PrefabContentsRoot.scene == scene; }
         }
 
         internal override bool isAssetMissing
@@ -395,7 +358,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
             Init(prefabPath, openedFromInstanceObject, prefabStageMode, contextStage);
 
-            // Ensure m_PreviewScene is set before calling LoadPrefabIntoPreviewScene() so the user can request the current
+            // Ensure scene is set before calling LoadPrefabIntoPreviewScene() so the user can request the current
             // the PrefabStage in their OnEnable and other callbacks (if they use ExecuteInEditMode or ExecuteAlways)
             bool isUIPrefab = PrefabStageUtility.IsUIPrefab(m_PrefabAssetPath);
 
@@ -403,24 +366,24 @@ namespace UnityEditor.Experimental.SceneManagement
             switch (m_Mode)
             {
                 case Mode.InIsolation:
-                    m_PreviewScene = PrefabStageUtility.GetEnvironmentSceneOrEmptyScene(isUIPrefab);
+                    scene = PrefabStageUtility.GetEnvironmentSceneOrEmptyScene(isUIPrefab);
                     break;
                 case Mode.InContext:
-                    m_PreviewScene = EditorSceneManager.NewPreviewScene();
+                    scene = EditorSceneManager.NewPreviewScene();
                     break;
                 default:
                     Debug.LogError("Unhandled enum");
                     break;
             }
 
-            m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(prefabPath, m_PreviewScene);
+            m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(prefabPath, scene);
             if (m_PrefabContentsRoot != null)
             {
                 if (isUIPrefab && m_Mode == Mode.InIsolation)
                     PrefabStageUtility.HandleReparentingIfNeeded(m_PrefabContentsRoot, true);
                 m_PrefabFileIcon = DeterminePrefabFileIconFromInstanceRootGameObject();
                 m_LastRootTransform = m_PrefabContentsRoot.transform;
-                m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
+                m_InitialSceneDirtyID = scene.dirtyID;
                 m_StageDirtiedFired = false;
                 UpdateEnvironmentHideFlags();
 
@@ -469,23 +432,8 @@ namespace UnityEditor.Experimental.SceneManagement
             return isValid;
         }
 
-        internal override bool ActivateStage(Stage previousStage)
-        {
-            if (isValid)
-                return true; // already open
-            if (OpenStage())
-            {
-                var sceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
-                foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
-                    sceneHierarchyWindow.FrameObject(prefabContentsRoot.GetInstanceID(), false);
-
-                return true;
-            }
-            return false;
-        }
-
         // Returns true if opened successfully
-        bool OpenStage()
+        protected internal override bool OpenStage()
         {
             if (LoadStage())
             {
@@ -501,9 +449,22 @@ namespace UnityEditor.Experimental.SceneManagement
                 // Note: The user can have reparented and created new GameObjects in the environment scene during this callback.
                 EnsureParentOfPrefabRootIsUnpacked();
                 UpdateEnvironmentHideFlags();
+
+                var sceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
+                foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
+                    sceneHierarchyWindow.FrameObject(prefabContentsRoot.GetInstanceID(), false);
+
                 return true;
             }
             return false;
+        }
+
+        protected override void CloseStage()
+        {
+            if (isValid)
+                prefabStageClosing?.Invoke(this);
+
+            Cleanup();
         }
 
         bool HasPatchedPropertyModificationsFor(UnityEngine.Object obj, string partialPropertyName)
@@ -735,14 +696,6 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        internal void CloseStage()
-        {
-            if (isValid)
-                prefabStageClosing?.Invoke(this);
-
-            Cleanup();
-        }
-
         void Cleanup()
         {
             if (m_Mode == Mode.InContext)
@@ -750,13 +703,13 @@ namespace UnityEditor.Experimental.SceneManagement
                 SetPrefabInstanceHiddenForInContextEditing(false);
             }
 
-            if (m_PrefabContentsRoot != null && m_PrefabContentsRoot.scene != m_PreviewScene)
+            if (m_PrefabContentsRoot != null && m_PrefabContentsRoot.scene != scene)
             {
                 UnityEngine.Object.DestroyImmediate(m_PrefabContentsRoot);
             }
 
-            if (m_PreviewScene.IsValid())
-                PrefabStageUtility.DestroyPreviewScene(m_PreviewScene); // Automatically deletes all GameObjects in scene
+            if (scene.IsValid())
+                PrefabStageUtility.DestroyPreviewScene(scene); // Automatically deletes all GameObjects in scene
 
             m_PrefabContentsRoot = null;
             m_OpenedFromInstanceRoot = null;
@@ -827,7 +780,7 @@ namespace UnityEditor.Experimental.SceneManagement
             sceneHierarchy.SetCustomDragHandler(PrefabModeDraggingHandler);
         }
 
-        internal override void OnFirstTimeOpenStageInSceneView(SceneView sceneView)
+        protected internal override void OnFirstTimeOpenStageInSceneView(SceneView sceneView)
         {
             // Default to scene view lighting if scene itself does not have any lights
             if (!HasAnyActiveLights(scene))
@@ -933,30 +886,36 @@ namespace UnityEditor.Experimental.SceneManagement
             if (m_PrefabContentsRoot == null)
                 return L10n.Tr("Error: The Prefab contents root has been deleted.\n\nPrefab: ") + m_PrefabAssetPath;
 
-            if (m_PrefabContentsRoot.scene != m_PreviewScene)
+            if (m_PrefabContentsRoot.scene != scene)
                 return L10n.Tr("Error: The root GameObject of the opened Prefab has been moved out of the Prefab Stage scene by a script.\n\nPrefab: ") + m_PrefabAssetPath;
 
             return null;
         }
 
-        internal override BreadcrumbBar.Item CreateBreadCrumbItem()
+        protected internal override GUIContent CreateHeaderContent()
         {
-            var history = StageNavigationManager.instance.stageHistory;
-            bool isLastCrumb = this == history.Last();
             var label = Path.GetFileNameWithoutExtension(m_PrefabAssetPath);
             var icon = AssetDatabase.GetCachedIcon(m_PrefabAssetPath);
+            return new GUIContent(label, icon);
+        }
+
+        internal override BreadcrumbBar.Item CreateBreadcrumbItem()
+        {
+            GUIContent content = CreateHeaderContent();
+
+            var history = StageNavigationManager.instance.stageHistory;
+            bool isLastCrumb = this == history.Last();
             var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
             var separatorstyle = mode == Mode.InIsolation ? BreadcrumbBar.SeparatorStyle.Line : BreadcrumbBar.SeparatorStyle.Arrow;
-            var tooltip = "";
             if (isAssetMissing)
             {
                 style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBoldMissing : BreadcrumbBar.DefaultStyles.labelMissing;
-                tooltip = L10n.Tr("Prefab Asset has been deleted.");
+                content.tooltip = L10n.Tr("Prefab Asset has been deleted.");
             }
 
             return new BreadcrumbBar.Item
             {
-                content = new GUIContent(label, icon, tooltip),
+                content = content,
                 guistyle = style,
                 userdata = this,
                 separatorstyle = separatorstyle
@@ -1016,22 +975,22 @@ namespace UnityEditor.Experimental.SceneManagement
 
         void DetectSceneDirtinessChange()
         {
-            if (m_PreviewScene.dirtyID != m_LastSceneDirtyID)
+            if (scene.dirtyID != m_LastSceneDirtyID)
                 SceneView.RepaintAll();
-            m_LastSceneDirtyID = m_PreviewScene.dirtyID;
+            m_LastSceneDirtyID = scene.dirtyID;
         }
 
         void UpdateEnvironmentHideFlagsIfNeeded()
         {
             if (m_HideFlagUtility == null)
-                m_HideFlagUtility = new HideFlagUtility(m_PreviewScene, m_PrefabContentsRoot);
+                m_HideFlagUtility = new HideFlagUtility(scene, m_PrefabContentsRoot);
             m_HideFlagUtility.UpdateEnvironmentHideFlagsIfNeeded();
         }
 
         void UpdateEnvironmentHideFlags()
         {
             if (m_HideFlagUtility == null)
-                m_HideFlagUtility = new HideFlagUtility(m_PreviewScene, m_PrefabContentsRoot);
+                m_HideFlagUtility = new HideFlagUtility(scene, m_PrefabContentsRoot);
             m_HideFlagUtility.UpdateEnvironmentHideFlags();
         }
 
@@ -1092,8 +1051,8 @@ namespace UnityEditor.Experimental.SceneManagement
 
         public void ClearDirtiness()
         {
-            EditorSceneManager.ClearSceneDirtiness(m_PreviewScene);
-            m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
+            EditorSceneManager.ClearSceneDirtiness(scene);
+            m_InitialSceneDirtyID = scene.dirtyID;
             m_StageDirtiedFired = false;
         }
 
@@ -1518,7 +1477,7 @@ namespace UnityEditor.Experimental.SceneManagement
             if (!isValid)
                 return;
 
-            string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
+            Hash128 key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
             var state = s_StateCache.GetState(key);
             if (state == null)
                 state = new PrefabStageHierarchyState();
@@ -1528,7 +1487,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         PrefabStageHierarchyState GetStoredHierarchyState(SceneHierarchyWindow hierarchyWindow)
         {
-            string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
+            Hash128 key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, this);
             return s_StateCache.GetState(key);
         }
 
@@ -1798,7 +1757,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 bool blockPrefabModeInPlaymode = PrefabStageUtility.CheckIfAnyComponentShouldBlockPrefabModeInPlayMode(assetPath);
                 if (blockPrefabModeInPlaymode)
                 {
-                    StageNavigationManager.instance.GoToMainStage(true, StageNavigationManager.Analytics.ChangeType.GoToMainViaPlayModeBlocking);
+                    StageNavigationManager.instance.GoToMainStage(StageNavigationManager.Analytics.ChangeType.GoToMainViaPlayModeBlocking);
                 }
             }
 

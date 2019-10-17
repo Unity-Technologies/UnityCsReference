@@ -28,10 +28,24 @@ namespace UnityEngine.XR
                 displayFocusChanged.Invoke(focus);
         }
 
+        [System.Obsolete("singlePassRenderingDisabled{get;set;} is deprecated. Use textureLayout and supportedTextureLayouts instead.", false)]
         extern public bool singlePassRenderingDisabled { get; set; }
+
         extern public bool displayOpaque { get; }
         extern public bool contentProtectionEnabled { get; set; }
 
+        [Flags]
+        public enum TextureLayout
+        {
+            // *MUST* be in sync with the kUnityXRTextureLayoutFlagsTexture2DArray
+            Texture2DArray = 1 << 0,
+            // *MUST* be in sync with the kUnityXRTextureLayoutFlagsSingleTexture2D
+            SingleTexture2D = 1 << 1,
+            // *MUST* be in sync with the kUnityXRTextureLayoutFlagsSeparateTexture2Ds
+            SeparateTexture2Ds = 1 << 2
+        }
+        extern public TextureLayout textureLayout { set; }
+        extern public TextureLayout supportedTextureLayouts { get; }
 
         public enum ReprojectionMode
         {

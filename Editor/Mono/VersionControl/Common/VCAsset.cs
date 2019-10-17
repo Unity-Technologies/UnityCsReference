@@ -59,6 +59,9 @@ namespace UnityEditor.VersionControl
             if (IsState(state, States.AddedRemote))
                 return "Added Remote";
 
+            if (IsState(state, States.DeletedRemote))
+                return "Deleted Remote";
+
             if (IsState(state, States.CheckedOutLocal) && !IsState(state, States.LockedLocal))
                 return "Checked Out Local";
 
@@ -70,9 +73,6 @@ namespace UnityEditor.VersionControl
 
             if (IsState(state, States.DeletedLocal))
                 return "Deleted Local";
-
-            if (IsState(state, States.DeletedRemote))
-                return "Deleted Remote";
 
             if (IsState(state, States.Local) && !(IsState(state, States.OutOfSync) || IsState(state, States.Synced)))
                 return "Local";

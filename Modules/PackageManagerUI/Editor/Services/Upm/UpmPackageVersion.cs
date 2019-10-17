@@ -165,7 +165,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        internal void UpdateFetchedInfo(AssetStore.FetchedInfo fetchedInfo)
+        internal void UpdateFetchedInfo(AssetStoreFetchedInfo fetchedInfo)
         {
             m_PackageUniqueId = fetchedInfo.id;
 

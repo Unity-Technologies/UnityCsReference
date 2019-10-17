@@ -251,7 +251,14 @@ namespace UnityEditor.ShortcutManagement
         {
             var searchControlContainer = root.Q("searchControlContainer");
 
+            searchControlContainer.style.flexGrow = 1;
+            searchControlContainer.style.flexDirection = FlexDirection.RowReverse;
+
             m_SearchTextField = new ToolbarPopupSearchField();
+
+            m_SearchTextField.style.flexBasis = 150f;
+            m_SearchTextField.style.flexGrow = 0;
+            m_SearchTextField.Q("unity-text-input").style.paddingRight = 0;
 
             m_SearchTextField.menu.AppendAction(EditorGUIUtility.TrTextContent("Command").text,
                 a => SearchOptionSelected(SearchOption.Name),
@@ -262,6 +269,10 @@ namespace UnityEditor.ShortcutManagement
                 a => m_ViewController.searchMode == SearchOption.Binding ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             m_KeyBindingSearchField = new ShortcutPopupSearchField();
+
+            m_KeyBindingSearchField.style.flexBasis = 150f;
+            m_KeyBindingSearchField.style.flexGrow = 0;
+            m_KeyBindingSearchField.Q("unity-text-input").style.paddingRight = 0;
 
             m_KeyBindingSearchField.menu.AppendAction(EditorGUIUtility.TrTextContent("Command").text,
                 a => SearchOptionSelected(SearchOption.Name),
@@ -852,7 +863,7 @@ namespace UnityEditor.ShortcutManagement
                     new KeyDef(KeyCode.P),
                     new KeyDef(KeyCode.LeftBracket, "["),
                     new KeyDef(KeyCode.RightBracket, "]"),
-                    new KeyDef(KeyCode.Slash, "\\")
+                    new KeyDef(KeyCode.Backslash, "\\")
                 },
                 new[]
                 {
@@ -882,7 +893,7 @@ namespace UnityEditor.ShortcutManagement
                     new KeyDef(KeyCode.M),
                     new KeyDef(KeyCode.Comma, ","),
                     new KeyDef(KeyCode.Period, "."),
-                    new KeyDef(KeyCode.Backslash, "/"),
+                    new KeyDef(KeyCode.Slash, "/"),
                     new KeyDef(KeyCode.RightShift, "Shift"),
                 },
                 bottomRow,

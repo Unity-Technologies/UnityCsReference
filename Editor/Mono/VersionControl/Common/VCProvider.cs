@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Internal;
 
@@ -596,6 +597,35 @@ namespace UnityEditor.VersionControl
             }
 
             return list;
+        }
+
+        static internal bool NeedToCheckOutBoth(Object asset)
+        {
+            return AssetDatabase.IsNativeAsset(asset)
+                || asset is SceneAsset
+                || asset is AssemblyDefinitionAsset
+                || asset is GameObject;
+        }
+
+        static internal AssetList GetInspectorAssets(Object[] assets)
+        {
+            AssetList inspectorAssets = new AssetList();
+
+            foreach (var asset in assets)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(asset);
+
+                if (NeedToCheckOutBoth(asset))
+                {
+                    Asset actualAsset = CacheStatus(assetPath);
+                    if (actualAsset != null) inspectorAssets.Add(actualAsset);
+                }
+
+                Asset metaAsset = CacheStatus(AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath));
+                if (metaAsset != null) inspectorAssets.Add(metaAsset);
+            }
+
+            return inspectorAssets;
         }
 
         public delegate bool PreSubmitCallback(AssetList list, ref string changesetID, ref string changesetDescription);

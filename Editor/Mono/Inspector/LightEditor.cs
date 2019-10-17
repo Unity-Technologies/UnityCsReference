@@ -288,9 +288,16 @@ namespace UnityEditor
                 }
             }
 
-            public void DrawRange(bool showAreaOptions = false)
+            public void DrawRange()
             {
                 EditorGUILayout.PropertyField(range, Styles.Range);
+            }
+
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+            [Obsolete("showAreaOptions argument for DrawRange(showAreaOptions) has been removed. Use DrawRange() instead (UnityUpgradable).")]
+            public void DrawRange(bool showAreaOptions)
+            {
+                DrawRange();
             }
 
             public void DrawSpotAngle()

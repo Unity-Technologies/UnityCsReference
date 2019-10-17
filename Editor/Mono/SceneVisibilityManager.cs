@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -68,7 +67,7 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += EditorApplicationPlayModeStateChanged;
             StageNavigationManager.instance.afterSuccessfullySwitchedToStage += StageNavigationManagerAfterSuccessfullySwitchedToStage;
             SceneVisibilityState.internalStructureChanged += InternalStructureChanged;
-            PrefabStage stage = StageNavigationManager.instance.currentStage as PrefabStage;
+            PreviewSceneStage stage = StageNavigationManager.instance.currentStage as PreviewSceneStage;
             SceneVisibilityState.ForceDataUpdate();
 
             s_ShortcutContext = new ShortcutContext();
@@ -175,11 +174,11 @@ namespace UnityEditor
 
         private void DisableAllPickingNoUndo()
         {
-            PrefabStage prefabStage = StageNavigationManager.instance.currentStage as PrefabStage;
-            if (prefabStage != null)
+            PreviewSceneStage previewSceneStage = StageNavigationManager.instance.currentStage as PreviewSceneStage;
+            if (previewSceneStage != null)
             {
-                var scene = prefabStage.scene;
-                SceneVisibilityState.EnablePicking(prefabStage.scene);
+                var scene = previewSceneStage.scene;
+                SceneVisibilityState.EnablePicking(previewSceneStage.scene);
                 SceneVisibilityState.DisablePicking(scene);
             }
             else
@@ -234,10 +233,10 @@ namespace UnityEditor
         public void EnableAllPicking()
         {
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Enable All Picking");
-            PrefabStage prefabStage = StageNavigationManager.instance.currentStage as PrefabStage;
-            if (prefabStage != null)
+            PreviewSceneStage previewSceneStage = StageNavigationManager.instance.currentStage as PreviewSceneStage;
+            if (previewSceneStage != null)
             {
-                SceneVisibilityState.EnablePicking(prefabStage.scene);
+                SceneVisibilityState.EnablePicking(previewSceneStage.scene);
             }
             else
             {

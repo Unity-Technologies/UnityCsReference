@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
 using System.Linq;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -23,8 +22,10 @@ namespace UnityEngine.UIElements
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = ListView.s_DefaultItemHeight };
-            UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
+            private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = ListView.s_DefaultItemHeight };
+            private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
+            private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
+            private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -34,8 +35,14 @@ namespace UnityEngine.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((TreeView)ve).itemHeight = m_ItemHeight.GetValueFromBag(bag, cc);
+                int itemHeight = 0;
+                if (m_ItemHeight.TryGetValueFromBag(bag, cc, ref itemHeight))
+                {
+                    ((TreeView)ve).itemHeight = itemHeight;
+                }
                 ((TreeView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
+                ((TreeView)ve).selectionType = m_SelectionType.GetValueFromBag(bag, cc);
+                ((TreeView)ve).showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
             }
         }
 
@@ -128,6 +135,12 @@ namespace UnityEngine.UIElements
         {
             get { return m_ListView.selectionType; }
             set { m_ListView.selectionType = value; }
+        }
+
+        public AlternatingRowBackground showAlternatingRowBackgrounds
+        {
+            get { return m_ListView.showAlternatingRowBackgrounds; }
+            set { m_ListView.showAlternatingRowBackgrounds = value; }
         }
 
         private struct TreeViewItemWrapper

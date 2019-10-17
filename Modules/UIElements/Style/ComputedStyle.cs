@@ -169,12 +169,8 @@ namespace UnityEngine.UIElements
 
             var styleProperty = reader.property;
 
-            StylePropertyValue customProp = default(StylePropertyValue);
-            if (!m_CustomProperties.TryGetValue(styleProperty.name, out customProp))
-            {
-                // Custom property only support one value
-                customProp = reader.GetValue(0);
-            }
+            // Custom property only support one value
+            StylePropertyValue customProp = reader.GetValue(0);
             m_CustomProperties[styleProperty.name] = customProp;
         }
 

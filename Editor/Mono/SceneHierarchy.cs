@@ -812,10 +812,6 @@ namespace UnityEditor
                 UnityEngine.Object[] tempContext = context;
                 if (!includeCreateEmptyChild && path.ToLower() == "GameObject/Create Empty Child".ToLower())
                     continue;
-                // Don't include context for Wizards (item ends with ...), since reparenting doesn't work here anyway, but a multiselection
-                // would cause multiple wizards to be opened simultaneously
-                if (path.EndsWith("..."))
-                    tempContext = null;
                 // The first item after the GameObject creation menu items
                 if (path.ToLower() == "GameObject/Center On Children".ToLower())
                     return;

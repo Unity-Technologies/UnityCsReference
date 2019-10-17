@@ -134,9 +134,9 @@ namespace UnityEditor.UIElements.Debugger
             RegisterCallback<MouseOutEvent>(OnMouseOut);
         }
 
-        public void Refresh()
+        public void Refresh(MeshGenerationContext mgc)
         {
-            m_OverlayPainter.Draw();
+            m_OverlayPainter.Draw(mgc);
 
             m_MarginBox.SyncValues();
             m_BorderBox.SyncValues();

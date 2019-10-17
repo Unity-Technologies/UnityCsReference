@@ -7,10 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class FetchedInfo
+    internal class AssetStoreFetchedInfo
     {
         public string id;
         public string packageName;
@@ -29,14 +29,14 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         public List<PackageLink> links;
         public List<PackageSizeInfo> sizeInfos;
 
-        public static FetchedInfo ParseFetchedInfo(string productId, IDictionary<string, object> productDetail)
+        public static AssetStoreFetchedInfo ParseFetchedInfo(string productId, IDictionary<string, object> productDetail)
         {
             if (string.IsNullOrEmpty(productId) || productDetail == null || !productDetail.Any())
                 return null;
-            return new FetchedInfo(productId, productDetail);
+            return new AssetStoreFetchedInfo(productId, productDetail);
         }
 
-        private FetchedInfo(string productId, IDictionary<string, object> productDetail)
+        private AssetStoreFetchedInfo(string productId, IDictionary<string, object> productDetail)
         {
             id = productId;
             description = CleanUpHtml(productDetail.GetString("description")) ?? string.Empty;

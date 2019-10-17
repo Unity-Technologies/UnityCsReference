@@ -201,13 +201,19 @@ namespace UnityEditor
         {
             HierarchyProperty property = new HierarchyProperty(k_HierarchyType);
             property.alphaSorted = IsUsingAlphaSort();
-            property.showSceneHeaders = PrefabStageUtility.GetCurrentPrefabStage() == null;
+            property.showSceneHeaders = ShouldShowSceneHeaders();
             if (SceneHierarchyHooks.provideSubScenes != null)
                 property.SetSubScenes(SceneHierarchyHooks.provideSubScenes());
 
             if (AreScenesValid(scenes))
                 property.SetCustomScenes(scenes);
             return property;
+        }
+
+        bool ShouldShowSceneHeaders()
+        {
+            // Don't show headers if there's a single scene and it's a preview scene.
+            return (scenes == null || scenes.Length != 1 || !EditorSceneManager.IsPreviewScene(scenes[0]));
         }
 
         void CreateRootItem(HierarchyProperty property)

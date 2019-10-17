@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class AnimationModeDriver : ScriptableObject
+    public class AnimationModeDriver : ScriptableObject
     {
         internal delegate bool IsKeyCallback(Object target, string propertyPath);
 
@@ -65,11 +65,14 @@ namespace UnityEditor
         // Stops animation mode, as used by the animation editor.
         public static void StopAnimationMode()
         {
-            StopAnimationMode(DummyDriver());
+            Internal_StopAnimationMode(DummyDriver());
         }
 
         // Stops animation mode, as used by the animation editor.
-        extern internal static void StopAnimationMode(Object driver);
+        public static void StopAnimationMode(AnimationModeDriver driver)
+        {
+            Internal_StopAnimationMode(driver);
+        }
 
         // Returns true if the editor is currently in animation mode.
         public static bool InAnimationMode()
@@ -78,7 +81,7 @@ namespace UnityEditor
         }
 
         // Returns true if the editor is currently in animation mode.
-        internal static bool InAnimationMode(Object driver)
+        public static bool InAnimationMode(AnimationModeDriver driver)
         {
             return Internal_InAnimationMode(driver);
         }
@@ -86,11 +89,14 @@ namespace UnityEditor
         // Starts animation mode, as used by the animation editor.
         public static void StartAnimationMode()
         {
-            StartAnimationMode(DummyDriver());
+            Internal_StartAnimationMode(DummyDriver());
         }
 
         // Starts animation mode, as used by the animation editor.
-        extern internal static void StartAnimationMode(Object driver);
+        public static void StartAnimationMode(AnimationModeDriver driver)
+        {
+            Internal_StartAnimationMode(driver);
+        }
 
         // Stops animation playback mode, as used by the animation editor.
         internal static void StopAnimationPlaybackMode()
@@ -129,8 +135,10 @@ namespace UnityEditor
             onAnimationRecordingStart?.Invoke();
         }
 
-        [NativeThrows]
-        extern internal static void StartCandidateRecording(Object driver);
+        internal static void StartCandidateRecording(AnimationModeDriver driver)
+        {
+            Internal_StartCandidateRecording(driver);
+        }
 
         [NativeThrows]
         extern internal static void AddCandidate(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
@@ -155,7 +163,7 @@ namespace UnityEditor
         extern internal static void SampleCandidateClip([NotNull] GameObject gameObject, [NotNull] AnimationClip clip, float time);
 
         [NativeThrows]
-        extern internal static void SamplePlayableGraph([NotNull] GameObject gameObject, PlayableGraph graph, int index, float time);
+        extern public static void SamplePlayableGraph(PlayableGraph graph, int index, float time);
 
         [NativeThrows]
         extern public static void AddPropertyModification(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
@@ -190,8 +198,15 @@ namespace UnityEditor
         // Return editor curve bindings for animator hierarhcy that need to be snapshot for animation mode.
         extern internal static EditorCurveBinding[] GetAnimatorBindings([NotNull] GameObject root);
 
+        extern private static void Internal_StartAnimationMode(Object driver);
+
+        extern private static void Internal_StopAnimationMode(Object driver);
+
         extern private static bool Internal_InAnimationMode(Object driver);
 
         extern private static bool Internal_InAnimationModeNoDriver();
+
+        [NativeThrows]
+        extern private static void Internal_StartCandidateRecording(Object driver);
     }
 }

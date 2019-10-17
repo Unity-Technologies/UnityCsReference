@@ -3,12 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
@@ -103,7 +100,7 @@ namespace UnityEditor
             if (contextStage == null)
                 return;
 
-            string key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, contextStage);
+            Hash128 key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, contextStage);
             var state = m_StateCache.GetState(key);
             if (state == null)
                 state = new SceneViewCameraState();
@@ -113,7 +110,7 @@ namespace UnityEditor
 
         SceneViewCameraState GetStoredCameraState(SceneView sceneView, Stage stage)
         {
-            string key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, stage);
+            Hash128 key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, stage);
             return m_StateCache.GetState(key);
         }
 
@@ -160,7 +157,7 @@ namespace UnityEditor
             var crumbs = new List<BreadcrumbBar.Item>();
             foreach (var stage in history)
             {
-                var breadcrumbItem = stage.CreateBreadCrumbItem();
+                var breadcrumbItem = stage.CreateBreadcrumbItem();
                 if (breadcrumbItem != null)
                 {
                     breadcrumbItem.userdata = stage;
@@ -180,7 +177,7 @@ namespace UnityEditor
             m_StageClickedFromBreadcrumb = null;
 
             if (stageClicked != null && stageClicked.isValid)
-                StageNavigationManager.instance.SwitchToStage(stageClicked, false, true, StageNavigationManager.Analytics.ChangeType.NavigateViaBreadcrumb);
+                StageNavigationManager.instance.SwitchToStage(stageClicked, false, StageNavigationManager.Analytics.ChangeType.NavigateViaBreadcrumb);
         }
 
         void BreadCrumbItemClicked(BreadcrumbBar.Item item)

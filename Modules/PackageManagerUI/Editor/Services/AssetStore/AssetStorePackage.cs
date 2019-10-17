@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
     internal class AssetStorePackage : BasePackage
@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             m_UpmVersionList = new UpmVersionList();
         }
 
-        public AssetStorePackage(FetchedInfo fetchedInfo, LocalInfo localInfo = null)
+        public AssetStorePackage(AssetStoreFetchedInfo fetchedInfo, AssetStoreLocalInfo localInfo = null)
         {
             m_Errors = new List<Error>();
             m_Progress = PackageProgress.None;
@@ -75,7 +75,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             }
         }
 
-        public AssetStorePackage(FetchedInfo fetchedInfo, UpmPackage package)
+        public AssetStorePackage(AssetStoreFetchedInfo fetchedInfo, UpmPackage package)
         {
             m_Errors = new List<Error>();
             m_Progress = PackageProgress.None;

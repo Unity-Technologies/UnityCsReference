@@ -60,6 +60,7 @@ namespace UnityEditor.PackageManager.UI
 
             PageManager.instance.onRefreshOperationStart += OnRefreshOperationStart;
             PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
+            PageManager.instance.onRefreshOperationError += OnRefreshOperationError;
 
             PageManager.instance.onVisualStateChange += OnVisualStateChange;
             PageManager.instance.onPageRebuild += OnPageRebuild;
@@ -80,6 +81,7 @@ namespace UnityEditor.PackageManager.UI
 
             PageManager.instance.onRefreshOperationStart -= OnRefreshOperationStart;
             PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
+            PageManager.instance.onRefreshOperationError -= OnRefreshOperationError;
 
             PageManager.instance.onVisualStateChange -= OnVisualStateChange;
             PageManager.instance.onPageRebuild -= OnPageRebuild;
@@ -192,6 +194,12 @@ namespace UnityEditor.PackageManager.UI
         {
             m_RefreshInProgress = true;
             UpdateNoPackagesLabel();
+        }
+
+        private void OnRefreshOperationError(Error error)
+        {
+            // if Load More operation fails, check if the Load More label should be displayed again
+            UIUtils.SetElementDisplay(loadMoreContainer, PageManager.instance.GetCurrentPage().morePackagesToFetch);
         }
 
         private void OnRefreshOperationFinish()

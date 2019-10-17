@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     internal sealed class AssetStoreClient
     {
@@ -35,9 +35,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             private Dictionary<string, DownloadProgress> m_Downloads = new Dictionary<string, DownloadProgress>();
 
-            private Dictionary<string, FetchedInfo> m_FetchedInfos = new Dictionary<string, FetchedInfo>();
+            private Dictionary<string, AssetStoreFetchedInfo> m_FetchedInfos = new Dictionary<string, AssetStoreFetchedInfo>();
 
-            private Dictionary<string, LocalInfo> m_LocalInfos = new Dictionary<string, LocalInfo>();
+            private Dictionary<string, AssetStoreLocalInfo> m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
 
             [SerializeField]
             private AssetStoreListOperation m_ListOperation = new AssetStoreListOperation();
@@ -46,10 +46,10 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private DownloadProgress[] m_SerializedDownloads = new DownloadProgress[0];
 
             [SerializeField]
-            private FetchedInfo[] m_SerializedFetchedInfos = new FetchedInfo[0];
+            private AssetStoreFetchedInfo[] m_SerializedFetchedInfos = new AssetStoreFetchedInfo[0];
 
             [SerializeField]
-            private LocalInfo[] m_SerializedLocalInfos = new LocalInfo[0];
+            private AssetStoreLocalInfo[] m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
 
             [NonSerialized]
             private bool m_EventsRegistered;
@@ -164,7 +164,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         var error = productDetail.GetString("errorMessage");
                         if (string.IsNullOrEmpty(error))
                         {
-                            var fetchedInfo = FetchedInfo.ParseFetchedInfo(id.ToString(), productDetail);
+                            var fetchedInfo = AssetStoreFetchedInfo.ParseFetchedInfo(id.ToString(), productDetail);
                             if (fetchedInfo == null)
                                 package = new AssetStorePackage(id.ToString(), new Error(NativeErrorCode.Unknown, "Error parsing product details."));
                             else
@@ -388,8 +388,8 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 m_LocalInfos.Clear();
                 m_FetchedInfos.Clear();
 
-                m_SerializedLocalInfos = new LocalInfo[0];
-                m_SerializedFetchedInfos = new FetchedInfo[0];
+                m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
+                m_SerializedFetchedInfos = new AssetStoreFetchedInfo[0];
             }
 
             private void OnUserLoginStateChange(bool loggedIn)
@@ -417,7 +417,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     AssetStoreDownloadOperation.instance.AbortDownloadPackage(download);
             }
 
-            public void RefreshProductUpdateDetails(IEnumerable<LocalInfo> localInfos = null)
+            public void RefreshProductUpdateDetails(IEnumerable<AssetStoreLocalInfo> localInfos = null)
             {
                 localInfos = localInfos ?? m_LocalInfos.Values.Where(info => !info.updateInfoFetched);
                 if (!localInfos.Any())
@@ -454,10 +454,10 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             {
                 var infos = AssetStoreUtils.instance.GetLocalPackageList();
                 var oldLocalInfos = m_LocalInfos;
-                m_LocalInfos = new Dictionary<string, LocalInfo>();
+                m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
                 foreach (var info in infos)
                 {
-                    var parsedInfo = LocalInfo.ParseLocalInfo(info);
+                    var parsedInfo = AssetStoreLocalInfo.ParseLocalInfo(info);
                     var id = parsedInfo?.id;
                     if (string.IsNullOrEmpty(id))
                         continue;
@@ -484,7 +484,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     OnLocalInfoRemoved(info);
             }
 
-            private void OnLocalInfoChanged(LocalInfo localInfo)
+            private void OnLocalInfoChanged(AssetStoreLocalInfo localInfo)
             {
                 var fetchedInfo = m_FetchedInfos.Get(localInfo.id);
                 if (fetchedInfo == null)
@@ -493,12 +493,12 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 onPackagesChanged?.Invoke(new[] { package });
             }
 
-            private void OnLocalInfoRemoved(LocalInfo localInfo)
+            private void OnLocalInfoRemoved(AssetStoreLocalInfo localInfo)
             {
                 var fetchedInfo = m_FetchedInfos.Get(localInfo.id);
                 if (fetchedInfo == null)
                     return;
-                var package = new AssetStorePackage(fetchedInfo, (LocalInfo)null);
+                var package = new AssetStorePackage(fetchedInfo, (AssetStoreLocalInfo)null);
                 onPackagesChanged?.Invoke(new[] { package });
             }
         }

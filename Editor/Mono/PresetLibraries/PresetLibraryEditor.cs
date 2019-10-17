@@ -310,10 +310,10 @@ namespace UnityEditor
             GUI.BeginGroup(rect);
             {
                 if (showHeader)
-                    GUI.Label(new Rect(10, 2, rect.width - 20, rect.height), s_Styles.header);
+                    GUI.Label(new Rect(10, 0, rect.width - 20, rect.height), s_Styles.header);
 
                 const float optionsButtonWidth = 16f;
-                const float optionsButtonHeight = 6f;
+                const float optionsButtonHeight = 16f;
                 Rect buttonRect = new Rect(rect.width - optionsButtonWidth - settingsMenuRightMargin, (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
                 if (Event.current.type == EventType.Repaint)
                     s_Styles.optionsButton.Draw(buttonRect, false, false, false, false);

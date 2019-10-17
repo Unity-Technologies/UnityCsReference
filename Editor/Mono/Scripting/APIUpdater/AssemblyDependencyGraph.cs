@@ -42,20 +42,20 @@ namespace UnityEditor.Scripting.APIUpdater
 
         private DependencyEntry InternalAddDependencies(string root, params string[] dependencies)
         {
-            var existsingDependency = FindAssembly(root);
-            if (existsingDependency == null)
+            var existingDependency = FindAssembly(root);
+            if (existingDependency == null)
             {
-                existsingDependency =  FindInDependents(root) ?? new DependencyEntry(root);
-                m_Graph.Add(existsingDependency);
+                existingDependency =  FindInDependents(root) ?? new DependencyEntry(root);
+                m_Graph.Add(existingDependency);
             }
 
             foreach (var dependency in dependencies)
             {
                 var dep = FindAssembly(dependency) ?? InternalAddDependencies(dependency);
-                existsingDependency.m_Dependencies.Add(dep);
+                existingDependency.m_Dependencies.Add(dep);
             }
 
-            return existsingDependency;
+            return existingDependency;
         }
 
         private DependencyEntry FindInDependents(string root)
@@ -117,11 +117,11 @@ namespace UnityEditor.Scripting.APIUpdater
             {
                 foreach (var entry in m_Graph)
                 {
-                    var danglingRereference = entry.m_Dependencies.Find(e => e == toBeRemoved);
-                    if (danglingRereference == null)
+                    var danglingReference = entry.m_Dependencies.Find(e => e == toBeRemoved);
+                    if (danglingReference == null)
                         continue;
 
-                    entry.m_Dependencies.Remove(danglingRereference);
+                    entry.m_Dependencies.Remove(danglingReference);
                 }
             }
         }
@@ -132,6 +132,8 @@ namespace UnityEditor.Scripting.APIUpdater
                 return new string[0];
 
             var array = m_Graph.ToArray();
+
+            CheckForCycles(array);
 
             bool exchangeElementsInLastPass;
             do
@@ -174,14 +176,14 @@ namespace UnityEditor.Scripting.APIUpdater
 
         private static bool HasDirectOrIndirectDependency(DependencyEntry lhs, DependencyEntry rhs)
         {
-            var lhsDependendsOnRhs = lhs.m_Dependencies.Contains(rhs);
-            if (lhsDependendsOnRhs)
+            var lhsDependsOnRhs = lhs.m_Dependencies.Contains(rhs);
+            if (lhsDependsOnRhs)
                 return true;
 
             return HasDirectOrIndirectDependencyRecursive(rhs, lhs.m_Dependencies);
         }
 
-        private static bool HasDirectOrIndirectDependencyRecursive(DependencyEntry toBeLookedUp, IEnumerable<DependencyEntry> dependencies)
+        private static bool HasDirectOrIndirectDependencyRecursive(DependencyEntry toBeLookedUp, IList<DependencyEntry> dependencies)
         {
             foreach (var entry in dependencies)
             {
@@ -195,12 +197,37 @@ namespace UnityEditor.Scripting.APIUpdater
             return false;
         }
 
+        static void CheckForCycles(IEnumerable<DependencyEntry> entries)
+        {
+            CheckForCycles(entries, new HashSet<string>());
+        }
+
+        static void CheckForCycles(IEnumerable<DependencyEntry> entries, HashSet<string> seen)
+        {
+            foreach (var entry in entries)
+            {
+                if ((entry.Status & AssemblyStatus.NoCyclesDetected) == AssemblyStatus.NoCyclesDetected)
+                    continue;
+
+                if (seen.Contains(entry.Name))
+                {
+                    throw new InvalidOperationException($"[APIUpdater] Cycle detected in assembly references: {string.Join("->", seen.Reverse().ToArray())}->{entry.Name}");
+                }
+
+                seen.Add(entry.Name);
+                CheckForCycles(entry.Dependencies, seen);
+                entry.Status |= AssemblyStatus.NoCyclesDetected;
+
+                seen.Remove(entry.Name);
+            }
+        }
+
         /// <summary>
         /// Serialized format:
         ///
-        /// +--------------+------------------+-----------------------------+
-        /// |   Hash Lengh | Hash of Payload  | Payload (serialized data)   |
-        /// +--------------+------------------+-----------------------------+
+        /// +---------------+------------------+-----------------------------+
+        /// |   Hash Length | Hash of Payload  | Payload (serialized data)   |
+        /// +---------------+------------------+-----------------------------+
         /// </summary>
         public void SaveTo(Stream stream)
         {
@@ -213,8 +240,8 @@ namespace UnityEditor.Scripting.APIUpdater
             stream.Write(h, 0, h.Length); // Write the hash length
             stream.Write(hash, 0, hash.Length); // and reserve space of the "payload" hash.
 
-            var formater = new BinaryFormatter();
-            formater.Serialize(stream, this);
+            var formatter = new BinaryFormatter();
+            formatter.Serialize(stream, this);
 
             var endOfStream = stream.Position;
 
@@ -307,6 +334,7 @@ namespace UnityEditor.Scripting.APIUpdater
     internal enum AssemblyStatus
     {
         None = 0x0,
-        PublishesUpdaterConfigurations = 0x02
+        PublishesUpdaterConfigurations = 0x02,
+        NoCyclesDetected = 0x04
     }
 }

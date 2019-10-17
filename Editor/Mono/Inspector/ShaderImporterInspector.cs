@@ -7,6 +7,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.Experimental.AssetImporters;
 using System.Linq;
+using UnityEditor.VersionControl;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
@@ -40,12 +41,7 @@ namespace UnityEditor
         internal override void OnHeaderControlsGUI()
         {
             GUILayout.FlexibleSpace();
-
-            if (GUILayout.Button("Open...", EditorStyles.miniButton))
-            {
-                AssetDatabase.OpenAsset(assetTarget);
-                GUIUtility.ExitGUI();
-            }
+            ShowOpenButton(new[] { assetTarget });
         }
 
         protected override Type extraDataType => typeof(ShaderProperties);

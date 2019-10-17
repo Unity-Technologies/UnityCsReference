@@ -4,9 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Experimental.SceneManagement;
+using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
@@ -19,6 +20,8 @@ namespace UnityEditor
         List<int> m_ExpandedSceneGameObjectInstanceIDs = new List<int>();
         [SerializeField]
         int m_LastClickedInstanceID;
+        [SerializeField]
+        string[] m_OpenSceneGUIDs = null;
 
         public void SaveStateFromHierarchy(SceneHierarchyWindow hierarchy, Stage stage)
         {
@@ -27,6 +30,8 @@ namespace UnityEditor
             m_ExpandedSceneGameObjectInstanceIDs = hierarchy.sceneHierarchy.treeViewState.expandedIDs;
 
             m_ScrollY = hierarchy.sceneHierarchy.treeViewState.scrollPos.y;
+
+            m_OpenSceneGUIDs = GetCurrentSceneGUIDs();
 
             if (SceneHierarchy.s_DebugPersistingExpandedState)
                 DebugLog("Saving", stage);
@@ -41,7 +46,28 @@ namespace UnityEditor
             if (stage.setSelectionAndScrollWhenBecomingCurrentStage)
             {
                 Selection.activeInstanceID = m_LastClickedInstanceID;
-                hierarchy.sceneHierarchy.treeViewState.scrollPos.y = m_ScrollY;
+
+                // We only want to set scroll position if none of the scene that were open
+                // when the scroll was recorded have been closed in the mean time.
+                // (Why do we apply selection and expanded state regardless then?
+                // Because for those it still make sense to apply it even if only
+                // some of the scenes that were open originally are still open, and
+                // for the rest it will have no effect anyway.)
+                bool anyOfScenesWereClosed = false;
+                if (m_OpenSceneGUIDs != null)
+                {
+                    var currentSceneGUIDs = GetCurrentSceneGUIDs();
+                    for (int i = 0; i < m_OpenSceneGUIDs.Length; i++)
+                    {
+                        if (!currentSceneGUIDs.Contains(m_OpenSceneGUIDs[i]))
+                        {
+                            anyOfScenesWereClosed = true;
+                            break;
+                        }
+                    }
+                }
+                if (!anyOfScenesWereClosed)
+                    hierarchy.sceneHierarchy.treeViewState.scrollPos.y = m_ScrollY;
             }
 
             if (SceneHierarchy.s_DebugPersistingExpandedState)
@@ -55,6 +81,15 @@ namespace UnityEditor
                 m_ScrollY,
                 m_LastClickedInstanceID,
                 stage.setSelectionAndScrollWhenBecomingCurrentStage));
+        }
+
+        string[] GetCurrentSceneGUIDs()
+        {
+            int count = SceneManager.sceneCount;
+            string[] sceneGUIDs = new string[count];
+            for (int i = 0; i < count; i++)
+                sceneGUIDs[i] = SceneManager.GetSceneAt(i).guid;
+            return sceneGUIDs;
         }
     }
 }

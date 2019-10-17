@@ -261,7 +261,6 @@ namespace UnityEngine.UIElements
                 else
                 {
                     StyleRule r = inlineSheet.rules[root.ruleIndex];
-                    var stylesData = ComputedStyle.Create(false);
                     ve.SetInlineRule(inlineSheet, r);
                 }
             }

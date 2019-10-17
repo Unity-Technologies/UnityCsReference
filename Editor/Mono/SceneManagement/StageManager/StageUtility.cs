@@ -75,7 +75,7 @@ namespace UnityEditor.SceneManagement
 
         public static void GoToMainStage()
         {
-            StageNavigationManager.instance.GoToMainStage(false, StageNavigationManager.Analytics.ChangeType.GoToMainViaUnknown);
+            StageNavigationManager.instance.GoToMainStage(StageNavigationManager.Analytics.ChangeType.GoToMainViaUnknown);
         }
 
         public static void GoBackToPreviousStage()
@@ -83,17 +83,24 @@ namespace UnityEditor.SceneManagement
             StageNavigationManager.instance.NavigateBack(StageNavigationManager.Analytics.ChangeType.NavigateBackViaUnknown);
         }
 
+        public static void GoToStage(Stage stage, bool setAsFirstItemAfterMainStage)
+        {
+            StageNavigationManager.instance.SwitchToStage(stage, setAsFirstItemAfterMainStage, StageNavigationManager.Analytics.ChangeType.Unknown);
+        }
+
         public static void PlaceGameObjectInCurrentStage(GameObject gameObject)
         {
             StageNavigationManager.instance.PlaceGameObjectInCurrentStage(gameObject);
         }
 
-        internal static string CreateWindowAndStageIdentifier(string windowGUID, Stage stage)
+        internal static Hash128 CreateWindowAndStageIdentifier(string windowGUID, Stage stage)
         {
-            // Limit guids to prevent long file names on Windows
-            string windowID = windowGUID.Substring(0, 6);
-            string stageID = stage.GetStageID(18);
-            return windowID + "-" + stageID;
+            Hash128 hash = stage.GetHashForStateStorage();
+            Hash128 windowHash = Hash128.Compute(windowGUID);
+            Hash128 stageTypeHash = Hash128.Compute(stage.GetType().FullName);
+            HashUtilities.AppendHash(ref windowHash, ref hash);
+            HashUtilities.AppendHash(ref stageTypeHash, ref hash);
+            return hash;
         }
 
         internal static void SetPrefabInstanceHiddenForInContextEditing(GameObject gameObject, bool hide)

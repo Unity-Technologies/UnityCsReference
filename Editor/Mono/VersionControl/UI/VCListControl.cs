@@ -620,7 +620,7 @@ namespace UnityEditorInternal.VersionControl
                 bool isSelected = readOnly ? false : IsSelected(it);
 
                 if (it.Parent != null && it.Parent.Parent != null && it.Parent.Parent.Parent == null)
-                    x -= 16;
+                    x += 5;
 
                 DrawItem(it, area, x, y, focus, isSelected);
                 y += c_lineHeight;
@@ -650,6 +650,13 @@ namespace UnityEditorInternal.VersionControl
             // Nothing selected?
             if (selectList.Count == 0)
                 return;
+
+            // Selected list items values can be null if using during list update
+            foreach (KeyValuePair<string, ListItem> item in selectList)
+            {
+                if (item.Value == null)
+                    return;
+            }
 
             //  Arrow key up
             if (e.keyCode == KeyCode.UpArrow || e.keyCode == KeyCode.DownArrow)

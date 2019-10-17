@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -94,7 +95,7 @@ namespace UnityEditor
                     var Key = new TextureTypeAndBuildTarget(textureType, target);
 
                     var validFormats = Array.ConvertAll(TextureImporter.RecommendedFormatsFromTextureTypeAndPlatform(textureType, target), value => (int)value);
-
+                    Array.Sort(validFormats, SortTextureFormats);
                     s_ValidTextureFormats.Add(Key, new Value(validFormats, BuildTextureStrings(validFormats)));
 
                     defaultFormats = defaultFormats?.Intersect(validFormats).ToList() ?? validFormats.ToList();
@@ -105,6 +106,47 @@ namespace UnityEditor
                 var defaultFormatsArray = defaultFormats.ToArray();
                 s_ValidDefaultTextureFormats[textureType] = new Value(defaultFormatsArray, BuildTextureStrings(defaultFormatsArray));
             }
+        }
+
+        // formats with higher sorting code appear first on the dropdown lists
+        static uint GetSortCodeForFormat(TextureFormat fmt)
+        {
+            var f = GraphicsFormatUtility.GetGraphicsFormat(fmt, false);
+
+            // first by: normalized, floating point, integer
+            uint type;
+            if (GraphicsFormatUtility.IsNormFormat(f))
+                type = 3;
+            else if (GraphicsFormatUtility.IsHalfFormat(f) || GraphicsFormatUtility.IsFloatFormat(f))
+                type = 2;
+            else if (GraphicsFormatUtility.IsIntegerFormat(f))
+                type = 1;
+            else
+                type = 0;
+
+            // then by component count: RGBA, RGB, RG, R/A
+            var components = GraphicsFormatUtility.GetComponentCount(f);
+
+            // then compression: first compressed regular, then compressed Crunch, then uncompressed
+            uint compression = 0;
+            if (GraphicsFormatUtility.IsCompressedFormat(f))
+            {
+                compression++;
+                if (!GraphicsFormatUtility.IsCrunchFormat(fmt))
+                    compression++;
+            }
+
+            return (type << 24) | (components << 16) | (compression << 8);
+        }
+
+        static int SortTextureFormats(int fmta, int fmtb)
+        {
+            var sortA = GetSortCodeForFormat((TextureFormat)fmta);
+            var sortB = GetSortCodeForFormat((TextureFormat)fmtb);
+            if (sortA != sortB)
+                return sortB.CompareTo(sortA);
+
+            return fmtb.CompareTo(fmta);
         }
 
         public static void GetPlatformTextureFormatValuesAndStrings(TextureImporterType textureType, BuildTarget target, out int[] formatValues, out string[] formatStrings)

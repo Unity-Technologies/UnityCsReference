@@ -1108,7 +1108,7 @@ namespace UnityEditor
             // Wrap mode
             // NOTE: once we get ability to have 3D/Volume texture shapes, should pass true for isVolume based on m_TextureShape
             bool isVolume = false;
-            TextureInspector.WrapModePopup(m_WrapU, m_WrapV, m_WrapW, isVolume, ref m_ShowPerAxisWrapModes);
+            TextureInspector.WrapModePopup(m_WrapU, m_WrapV, m_WrapW, isVolume, ref m_ShowPerAxisWrapModes, assetTarget == null);
 
 
             // Display warning about repeat wrap mode on restricted npot emulation

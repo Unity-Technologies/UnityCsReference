@@ -71,9 +71,9 @@ namespace UnityEditor.UIElements.Debugger
             Add(m_SearchBar);
         }
 
-        public void DrawOverlay()
+        public void DrawOverlay(MeshGenerationContext mgc)
         {
-            m_TreeViewHoverOverlay.Draw();
+            m_TreeViewHoverOverlay.Draw(mgc);
         }
 
         private void ActivateSearchBar(ExecuteCommandEvent evt)

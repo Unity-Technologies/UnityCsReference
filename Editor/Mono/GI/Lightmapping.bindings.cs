@@ -183,6 +183,9 @@ namespace UnityEditor
         internal static extern ulong GetVisibleTexelCount(int lightmapIndex);
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern int atlasCount { [NativeName("GetAtlasCount")] get; }
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightmapConvergence GetLightmapConvergence(int lightmapIndex);
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]

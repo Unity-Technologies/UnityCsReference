@@ -1079,5 +1079,11 @@ namespace UnityEditor
             get;
             set;
         }
+
+        public extern bool autoGenerateAvatarMappingIfUnspecified
+        {
+            get;
+            set;
+        }
     }
 }

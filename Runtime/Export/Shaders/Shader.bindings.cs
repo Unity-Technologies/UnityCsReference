@@ -391,12 +391,26 @@ namespace UnityEngine
         [FreeFunction(Name = "ComputeShaderScripting::SetBuffer", HasExplicitThis = true)]
         extern public void SetBuffer(int kernelIndex, int nameID, [NotNull] ComputeBuffer buffer);
 
+        [FreeFunction(Name = "ComputeShaderScripting::SetConstantBuffer", HasExplicitThis = true)]
+        extern public void SetConstantBuffer(int nameID, [NotNull] ComputeBuffer buffer, int offset, int size);
+
         [NativeMethod(Name = "ComputeShaderScripting::GetKernelThreadGroupSizes", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void GetKernelThreadGroupSizes(int kernelIndex, out uint x, out uint y, out uint z);
 
         [NativeName("DispatchComputeShader")] extern public void Dispatch(int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ);
         [FreeFunction(Name = "ComputeShaderScripting::DispatchIndirect", HasExplicitThis = true)]
         extern private void Internal_DispatchIndirect(int kernelIndex, [NotNull] ComputeBuffer argsBuffer, uint argsOffset);
+
+        [FreeFunction("ComputeShaderScripting::EnableKeyword", HasExplicitThis = true)]
+        extern public void EnableKeyword(string keyword);
+        [FreeFunction("ComputeShaderScripting::DisableKeyword", HasExplicitThis = true)]
+        extern public void DisableKeyword(string keyword);
+        [FreeFunction("ComputeShaderScripting::IsKeywordEnabled", HasExplicitThis = true)]
+        extern public bool IsKeywordEnabled(string keyword);
+
+        [FreeFunction("ComputeShaderScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
+        [FreeFunction("ComputeShaderScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);
+        public string[] shaderKeywords { get { return GetShaderKeywords(); } set { SetShaderKeywords(value); } }
     }
 }
 

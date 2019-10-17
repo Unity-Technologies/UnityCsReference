@@ -1734,10 +1734,13 @@ namespace UnityEditor
             {
                 using (new DisabledScope(true))
                 {
-                    var placeHolderTextRect = position;
+                    var placeHolderTextRect = EditorStyles.toolbarSearchFieldPopup.padding.Remove(new Rect(position.x, position.y, position.width
+                        , EditorStyles.toolbarSearchFieldPopup.fixedHeight > 0 ? EditorStyles.toolbarSearchFieldPopup.fixedHeight : position.height));
+                    var oldFontSize = EditorStyles.label.fontSize;
 
-                    placeHolderTextRect.xMin += EditorStyles.toolbarSearchFieldPopup.padding.right;
+                    EditorStyles.label.fontSize = EditorStyles.toolbarSearchFieldPopup.fontSize;
                     EditorStyles.label.Draw(placeHolderTextRect, EditorGUIUtility.TempContent(searchModes[searchMode]), false, false, false, false);
+                    EditorStyles.label.fontSize = oldFontSize;
                 }
             }
 
@@ -5302,6 +5305,12 @@ namespace UnityEditor
             bool hasHelp = Help.HasHelpForObject(obj, monoBehaviourFallback);
             if (hasHelp || isDevBuild)
             {
+                // Help button should not be disabled at any time. For example VCS system disables
+                // inspectors and it wouldn't make sense to prevent users from getting help because
+                // he didn't check out the file yet.
+                bool wasEditorDisabled = GUI.enabled;
+                GUI.enabled = true;
+
                 Color oldColor = GUI.color;
                 GUIContent content = new GUIContent(GUIContents.helpIcon);
                 string helpTopic = Help.GetNiceHelpNameForObject(obj, monoBehaviourFallback);
@@ -5328,6 +5337,8 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 }
 
                 GUI.color = oldColor;
+                GUI.enabled = wasEditorDisabled;
+
                 return true;
             }
             return false;

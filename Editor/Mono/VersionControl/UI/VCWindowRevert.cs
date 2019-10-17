@@ -26,6 +26,8 @@ namespace UnityEditor.VersionControl
         // Revert all files within a change list
         static public void Open(ChangeSet change)
         {
+            InspectorWindow.ApplyChanges();
+
             Task task = Provider.ChangeSetStatus(change);
             task.Wait();
 
@@ -35,6 +37,8 @@ namespace UnityEditor.VersionControl
         // Revert a list of files
         static public void Open(AssetList assets)
         {
+            InspectorWindow.ApplyChanges();
+
             Task task = Provider.Status(assets);
             task.Wait();
 
@@ -128,6 +132,7 @@ namespace UnityEditor.VersionControl
                 Provider.Revert(assetList, RevertMode.Normal).Wait();
                 WindowPending.UpdateAllWindows();
                 AssetDatabase.Refresh();
+                InspectorWindow.RefreshInspectors();
                 Close();
             }
 

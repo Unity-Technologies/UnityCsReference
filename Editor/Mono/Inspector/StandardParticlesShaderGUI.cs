@@ -484,7 +484,7 @@ namespace UnityEditor
             bool useGPUInstancing = ShaderUtil.HasProceduralInstancing(material.shader);
             if (useGPUInstancing && m_RenderersUsingThisMaterial.Count > 0)
             {
-                if (!m_RenderersUsingThisMaterial[0].enableGPUInstancing)
+                if (!m_RenderersUsingThisMaterial[0].enableGPUInstancing || m_RenderersUsingThisMaterial[0].renderMode != ParticleSystemRenderMode.Mesh)
                     useGPUInstancing = false;
             }
 
@@ -790,9 +790,13 @@ namespace UnityEditor
         {
             m_RenderersUsingThisMaterial.Clear();
 
-            ParticleSystemRenderer[] renderers = UnityEngine.Object.FindObjectsOfType(typeof(ParticleSystemRenderer)) as ParticleSystemRenderer[];
+            ParticleSystemRenderer[] renderers = Resources.FindObjectsOfTypeAll(typeof(ParticleSystemRenderer)) as ParticleSystemRenderer[];
             foreach (ParticleSystemRenderer renderer in renderers)
             {
+                var go = renderer.gameObject;
+                if (go.hideFlags == HideFlags.NotEditable || go.hideFlags == HideFlags.HideAndDontSave)
+                    continue;
+
                 if (renderer.sharedMaterial == material)
                     m_RenderersUsingThisMaterial.Add(renderer);
             }

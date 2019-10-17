@@ -194,7 +194,7 @@ namespace UnityEditor.U2D
             m_VariantScale = serializedObject.FindProperty("m_EditorData.variantMultiplier");
 
             m_Packables = serializedObject.FindProperty("m_EditorData.packables");
-            m_PackableList = new ReorderableList(serializedObject, m_Packables, true, true, true, true);
+            m_PackableList = new ReorderableList(serializedObject, m_Packables, true, false, true, true);
             m_PackableList.onAddCallback = AddPackable;
             m_PackableList.onRemoveCallback = RemovePackable;
             m_PackableList.drawElementCallback = DrawPackableElement;

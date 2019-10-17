@@ -78,6 +78,7 @@ namespace UnityEditor
 
         private SerializedProperty m_HumanBoneArray;
         private SerializedProperty m_Skeleton;
+        private SerializedProperty m_AutoGenerateAvatarMappingIfUnspecified;
 
         protected bool[]        m_BodyPartToggle;
         protected bool[]        m_BodyPartFoldout;
@@ -163,6 +164,7 @@ namespace UnityEditor
 
             m_HumanBoneArray = serializedObject.FindProperty("m_HumanDescription.m_Human");
             m_Skeleton = serializedObject.FindProperty("m_HumanDescription.m_Skeleton");
+            m_AutoGenerateAvatarMappingIfUnspecified = serializedObject.FindProperty("m_AutoGenerateAvatarMappingIfUnspecified");
 
             m_IsBiped = AvatarBipedMapper.IsBiped(gameObject.transform, null);
 
@@ -456,6 +458,7 @@ namespace UnityEditor
                 bone.bone = kvp.Value;
                 bone.Serialize(m_HumanBoneArray);
             }
+            m_AutoGenerateAvatarMappingIfUnspecified.boolValue = false;
         }
 
         protected void BipedMapping()
@@ -467,6 +470,7 @@ namespace UnityEditor
                 bone.bone = kvp.Value;
                 bone.Serialize(m_HumanBoneArray);
             }
+            m_AutoGenerateAvatarMappingIfUnspecified.boolValue = false;
         }
 
         protected void ClearMapping()
@@ -477,6 +481,7 @@ namespace UnityEditor
                 AvatarSetupTool.ClearHumanBoneArray(m_HumanBoneArray);
                 ResetBones();
                 ValidateMapping();
+                m_AutoGenerateAvatarMappingIfUnspecified.boolValue = false;
                 SceneView.RepaintAll();
             }
         }

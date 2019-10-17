@@ -22,11 +22,6 @@ namespace UnityEditor
 
         internal class DesktopSingleCPUProperty : Property
         {
-            public DesktopSingleCPUProperty(GUIContent name, string platformName)
-                : this(name, platformName, DesktopPluginCPUArchitecture.AnyCPU)
-            {
-            }
-
             public DesktopSingleCPUProperty(GUIContent name, string platformName, DesktopPluginCPUArchitecture architecture)
                 : base(name, "CPU", architecture, platformName)
             {
@@ -49,7 +44,7 @@ namespace UnityEditor
                 // This toggle controls two things:
                 // * Is platform enabled/disabled?
                 // * Platform CPU value
-                bool isTargetEnabled = EditorGUILayout.Toggle(name, IsTargetEnabled(inspector) && value.ToString() == defaultValue.ToString());
+                bool isTargetEnabled = EditorGUILayout.Toggle(name, IsTargetEnabled(inspector));
                 if (EditorGUI.EndChangeCheck())
                 {
                     value = isTargetEnabled ? defaultValue : DesktopPluginCPUArchitecture.None;
@@ -76,12 +71,12 @@ namespace UnityEditor
         private Property[] GetProperties()
         {
             List<Property> properties = new List<Property>();
-            m_WindowsX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows));
-            m_WindowsX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows64));
+            m_WindowsX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows), DesktopPluginCPUArchitecture.x86);
+            m_WindowsX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows64), DesktopPluginCPUArchitecture.x86_64);
 
             m_LinuxX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), DesktopPluginCPUArchitecture.x86_64);
 
-            m_OSX_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX));
+            m_OSX_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX), DesktopPluginCPUArchitecture.x86_64);
 
             properties.Add(m_WindowsX86);
             properties.Add(m_WindowsX86_X64);
@@ -172,10 +167,11 @@ namespace UnityEditor
 
             foreach (var target in singleCPUTargets)
             {
-                string value = target.IsTargetEnabled(inspector) ? target.defaultValue.ToString() : DesktopPluginCPUArchitecture.None.ToString();
+                target.value = target.IsTargetEnabled(inspector) ? target.defaultValue : DesktopPluginCPUArchitecture.None;
+
                 foreach (var importer in inspector.importers)
                 {
-                    importer.SetPlatformData(target.platformName, "CPU", value);
+                    importer.SetPlatformData(target.platformName, "CPU", target.value.ToString());
                 }
             }
 

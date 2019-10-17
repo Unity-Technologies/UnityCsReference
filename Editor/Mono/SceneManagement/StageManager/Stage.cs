@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,6 +17,17 @@ namespace UnityEditor.SceneManagement
         internal static ReadOnlyCollection<Stage> allStages {  get { return s_AllStages.AsReadOnly(); } }
 
         // Stage interface
+
+        // Called when the user have accepted to switch away from previous stage. This method should load stage contents.
+        // Should return 'true' if the stage was opened succesfully otherwise 'false'.
+        protected internal abstract bool OpenStage();
+
+        // Called when the stage is destroyed (when OnDestroy() is called). Should unload the contents of the stage.
+        // Only called if OpenStage was called.
+        protected abstract void CloseStage();
+
+        internal bool opened { get; set; }
+
         internal virtual bool isValid { get { return true; } }
 
         internal virtual bool isAssetMissing { get { return false; } }
@@ -51,9 +61,21 @@ namespace UnityEditor.SceneManagement
             return null;
         }
 
-        internal virtual BreadcrumbBar.Item CreateBreadCrumbItem()
+        protected internal abstract GUIContent CreateHeaderContent();
+
+        internal virtual BreadcrumbBar.Item CreateBreadcrumbItem()
         {
-            return null;
+            var history = StageNavigationManager.instance.stageHistory;
+            bool isLastCrumb = this == history.Last();
+            var style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBold : BreadcrumbBar.DefaultStyles.label;
+
+            return new BreadcrumbBar.Item
+            {
+                content = CreateHeaderContent(),
+                guistyle = style,
+                userdata = this,
+                separatorstyle = BreadcrumbBar.SeparatorStyle.Line
+            };
         }
 
         internal virtual ulong GetSceneCullingMask(SceneView sceneView) { return EditorSceneManager.DefaultSceneCullingMask; }
@@ -81,20 +103,12 @@ namespace UnityEditor.SceneManagement
         internal virtual void LoadHierarchyState(SceneHierarchyWindow hierarchyWindow) {}
 
         // Called after respective sync methods first time this stage is opened in this window.
-        internal virtual void OnFirstTimeOpenStageInSceneView(SceneView sceneView) {}
+        protected internal virtual void OnFirstTimeOpenStageInSceneView(SceneView sceneView) {}
         internal virtual void OnFirstTimeOpenStageInSceneHierachyWindow(SceneHierarchyWindow sceneHierarchyWindow) {}
 
         internal virtual void OnControlsGUI(SceneView sceneView) {}
 
         internal virtual void Tick()
-        {
-        }
-
-        // Called when stage is accepted (should load itself) if false is returned then did not succeed and should fall back to previous stage
-        internal abstract bool ActivateStage(Stage previousStage);
-
-        // Only called if Activate was called (can unload but maybe not)
-        internal virtual void DeactivateStage(Stage newStage)
         {
         }
 
@@ -108,21 +122,30 @@ namespace UnityEditor.SceneManagement
         internal abstract void PlaceGameObjectInStage(GameObject rootGameObject);
 
         // Used for writing state files to HDD
-        // Should typically be a persistent unique id per content shown.
-        // As an example, for Prefabs the ID is a subset of the asset GUID.
-        internal virtual string GetStageID(int maxCharacters)
+        // Should typically be a persistent unique hash per content shown.
+        // For stages that use the assetPath property, the hash is by default based on the asset GUID.
+        protected internal virtual Hash128 GetHashForStateStorage()
         {
-            Debug.LogError("Needs to be overridden by inheriting class " + this);
-            return string.Empty;
+            if (!string.IsNullOrEmpty(assetPath))
+                return Hash128.Compute(AssetDatabase.AssetPathToGUID(assetPath));
+
+            // If no assetPath is specified, the default behavior is that
+            // every stage of the same type will reuse the same state files.
+            return new Hash128();
         }
 
         // Lifetime callbacks from ScriptableObject
-        protected virtual void Awake()
+        private void Awake()
         {
         }
 
-        protected virtual void OnDestroy()
+        private void OnDestroy()
         {
+            if (opened)
+            {
+                CloseStage();
+                opened = false;
+            }
         }
 
         protected virtual void OnEnable()

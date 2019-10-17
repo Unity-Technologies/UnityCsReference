@@ -13,7 +13,9 @@ namespace UnityEditor
     class StateCache<T>
     {
         string m_CacheFolder;
-        Dictionary<string, T> m_Cache = new Dictionary<string, T>();
+        Dictionary<Hash128, T> m_Cache = new Dictionary<Hash128, T>();
+
+        public string cacheFolderPath { get { return m_CacheFolder; } }
 
         public StateCache(string cacheFolder)
         {
@@ -40,12 +42,9 @@ namespace UnityEditor
             m_CacheFolder = cacheFolder;
         }
 
-        public string cacheFolderPath { get { return m_CacheFolder; } }
-
-        public void SetState(string key, T obj)
+        public void SetState(Hash128 key, T obj)
         {
-            if (string.IsNullOrEmpty(key))
-                throw new ArgumentException("key cannot be null or empty string", key);
+            ThrowIfInvalid(key);
 
             if (obj == null)
                 throw new ArgumentNullException("obj");
@@ -66,10 +65,9 @@ namespace UnityEditor
             m_Cache[key] = obj;
         }
 
-        public T GetState(string key)
+        public T GetState(Hash128 key)
         {
-            if (string.IsNullOrEmpty(key))
-                throw new ArgumentException("key cannot be null or empty string", key);
+            ThrowIfInvalid(key);
 
             T obj;
             if (m_Cache.TryGetValue(key, out obj))
@@ -107,10 +105,9 @@ namespace UnityEditor
             return default(T);
         }
 
-        public void RemoveState(string key)
+        public void RemoveState(Hash128 key)
         {
-            if (string.IsNullOrEmpty(key))
-                throw new ArgumentException("key cannot be null or empty string", key);
+            ThrowIfInvalid(key);
 
             m_Cache.Remove(key);
 
@@ -119,9 +116,19 @@ namespace UnityEditor
                 System.IO.File.Delete(filePath);
         }
 
-        public string GetFilePathForKey(string key)
+        void ThrowIfInvalid(Hash128 key)
         {
-            return m_CacheFolder + key + ".json";
+            if (!key.isValid)
+                throw new ArgumentException("Hash128 key is invalid: " + key.ToString());
+        }
+
+        public string GetFilePathForKey(Hash128 key)
+        {
+            // Hashed folder structure to ensure we scale with large amounts of state files.
+            // See: https://medium.com/eonian-technologies/file-name-hashing-creating-a-hashed-directory-structure-eabb03aa4091
+            string hexKey = key.ToString();
+            string hexFolder = hexKey.Substring(0, 2) + "/";
+            return m_CacheFolder + hexFolder + hexKey + ".json";
         }
     }
 }

@@ -110,6 +110,7 @@ namespace UnityEngine.UIElements
                 {
                     using (s_RepaintProfilerMarker.Auto())
                         panel.Repaint(Event.current);
+                    (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(Event.current);
                 }
             }
         }
@@ -380,6 +381,7 @@ namespace UnityEngine.UIElements
                 using (s_RepaintProfilerMarker.Auto())
                     panel.Repaint(s_EventInstance);
 
+                (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(s_EventInstance);
                 // TODO get rid of this when we wrap every GUIView inside IMGUIContainers
                 // here we pretend to use the repaint event
                 // in order to suspend to suspend OnGUI() processing on the native side

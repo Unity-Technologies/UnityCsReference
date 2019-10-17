@@ -149,6 +149,11 @@ namespace UnityEditor.PackageManager.UI
             {
                 return string.IsNullOrEmpty(method) ? new AsyncHTTPClient(url) : new AsyncHTTPClient(url, method);
             }
+
+            public void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)
+            {
+                UnityOAuth.GetAuthorizationCodeAsync(clientId, callback);
+            }
         }
     }
 }

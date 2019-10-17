@@ -110,6 +110,8 @@ namespace UnityEditor
         VisualElement m_VersionControlElement;
         VisualElement versionControlElement => m_VersionControlElement ?? (m_VersionControlElement = FindVisualElementInTreeByClassName(s_HeaderInfoClassName));
 
+        static Dictionary<Editor, VersionControlBarState> m_VersionControlBarState = new Dictionary<Editor, VersionControlBarState>();
+
         VisualElement m_MultiEditLabel;
 
         ScrollView m_ScrollView;
@@ -154,13 +156,17 @@ namespace UnityEditor
             public static readonly GUIContent vcsCheckoutHint = EditorGUIUtility.TrTextContent("Under Version Control\nCheck out this asset in order to make changes.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
             public static readonly GUIContent vcsNotConnected = EditorGUIUtility.TrTextContent("VCS ({0}) is not connected");
             public static readonly GUIContent vcsOffline = EditorGUIUtility.TrTextContent("Work Offline option is active");
+            public static readonly GUIContent vcsSettings = EditorGUIUtility.TrTextContent("Settings");
             public static readonly GUIContent vcsCheckout = EditorGUIUtility.TrTextContent("Check Out");
+            public static readonly GUIContent vcsCheckoutMeta = EditorGUIUtility.TrTextContent("Check Out Meta");
             public static readonly GUIContent vcsAdd = EditorGUIUtility.TrTextContent("Add");
             public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
             public static readonly GUIContent vcsUnlock = EditorGUIUtility.TrTextContent("Unlock");
             public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
             public static readonly GUIContent vcsRevert = EditorGUIUtility.TrTextContent("Revert");
             public static readonly GUIContent vcsRevertUnchanged = EditorGUIUtility.TrTextContent("Revert Unchanged");
+            public static readonly GUIContent[] vcsRevertMenuNames = {vcsRevertUnchanged};
+            public static readonly GenericMenu.MenuFunction2[] vcsRevertMenuActions = {DoRevertUnchanged};
             public static readonly GUIStyle vcsButtonStyle = EditorStyles.miniButton;
             public static GUIStyle vcsRevertStyle = new GUIStyle(EditorStyles.dropDownList);
             public static readonly GUIStyle vcsBarStyleOneRow = EditorStyles.toolbar;
@@ -216,6 +222,19 @@ namespace UnityEditor
             }
         }
 
+        void OnFocusChanged(bool focus)
+        {
+            // focusing away from the editor flushes VCS state cache and might get
+            // updated states from external clients; make sure to recalculate which VCS
+            // buttons should be visible
+            ClearVersionControlBarState();
+        }
+
+        internal static void ClearVersionControlBarState()
+        {
+            m_VersionControlBarState.Clear();
+        }
+
         protected virtual void OnEnable()
         {
             RefreshTitle();
@@ -242,6 +261,7 @@ namespace UnityEditor
 
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
+            EditorApplication.focusChanged += OnFocusChanged;
 
             m_FirstInitialize = true;
         }
@@ -312,6 +332,7 @@ namespace UnityEditor
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
+            EditorApplication.focusChanged -= OnFocusChanged;
         }
 
         void OnLostFocus()
@@ -534,6 +555,9 @@ namespace UnityEditor
         void OnTrackerRebuilt()
         {
             ExtractPrefabComponents();
+            // tracker gets rebuilt when selection or objects change; make sure to recalc which VCS
+            // buttons are shown
+            ClearVersionControlBarState();
         }
 
         void ExtractPrefabComponents()
@@ -962,6 +986,8 @@ namespace UnityEditor
                 }
             }
 
+            if (m_Previews == null) return new IPreviewable[] {};
+
             foreach (var previewable in m_Previews)
             {
                 if (previewable.HasPreviewGUI())
@@ -1334,14 +1360,17 @@ namespace UnityEditor
             var hasAssetState = !string.IsNullOrEmpty(currentState);
             var hasMetaState = !string.IsNullOrEmpty(currentMetaState);
 
-            var assetList = new AssetList();
-            assetList.AddRange(assetEditor.targets.Select(o => Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o))));
-
-            // Figure out how many VCS action buttons we'll need to show for the selected assets.
+            // Cache AssetList for current selection and
+            // figure out which buttons we'll need to show for them.
+            VersionControlBarState state;
+            if (!m_VersionControlBarState.TryGetValue(assetEditor, out state))
+            {
+                state = VersionControlBarState.Calculate(assetEditor, asset, connected);
+                m_VersionControlBarState.Add(assetEditor, state);
+            }
             // Based on that and the current inspector width, we might want to layout the VCS
             // bar in two rows to better fit status label & buttons.
-            var buttonPresence = VersionControlBarButtonPresence.Calculate(assetEditor, asset, assetList, connected);
-            var approxSpaceForButtons = buttonPresence.GetButtonCount() * 50;
+            var approxSpaceForButtons = state.GetButtonCount() * 50;
             var useTwoRows = GUIView.current != null && GUIView.current.position.width * 0.5f < approxSpaceForButtons;
 
             var lineHeight = Styles.vcsBarStyleOneRow.fixedHeight;
@@ -1370,7 +1399,7 @@ namespace UnityEditor
 
             var buttonsRect = barRect;
             buttonsRect.yMin = buttonsRect.yMax - lineHeight;
-            var buttonX = VersionControlBarButtons(buttonPresence, buttonsRect, assetList, connected);
+            var buttonX = VersionControlBarButtons(state, buttonsRect, connected);
             var textRect = barRect;
             textRect.height = lineHeight;
             textRect.xMin += 26;
@@ -1410,14 +1439,21 @@ namespace UnityEditor
             GUILayout.Space(4);
         }
 
+        internal static void CheckoutForInspector(Object[] assets)
+        {
+            var inspectorAssets = Provider.GetInspectorAssets(assets);
+            Provider.Checkout(inspectorAssets, CheckoutMode.Exact);
+        }
+
         static void DoRevertUnchanged(object o)
         {
             var al = (AssetList)o;
             Provider.Revert(al, RevertMode.Unchanged);
         }
 
-        struct VersionControlBarButtonPresence
+        class VersionControlBarState
         {
+            public bool settings;
             public bool revert;
             public bool revertUnchanged;
             public bool checkout;
@@ -1425,10 +1461,13 @@ namespace UnityEditor
             public bool submit;
             public bool @lock;
             public bool unlock;
+            public Editor editor;
+            public AssetList assets = new AssetList();
 
             public int GetButtonCount()
             {
                 var c = 0;
+                if (settings) ++c;
                 if (revert) ++c; // revertUnchanged is same button in a drop-down
                 if (checkout) ++c;
                 if (add) ++c;
@@ -1438,69 +1477,69 @@ namespace UnityEditor
                 return c;
             }
 
-            public static VersionControlBarButtonPresence Calculate(Editor assetEditor, Asset asset, AssetList assetList, bool connected)
+            public static VersionControlBarState Calculate(Editor assetEditor, Asset asset, bool connected)
             {
-                var res = new VersionControlBarButtonPresence();
+                var res = new VersionControlBarState();
                 if (!connected)
+                {
+                    res.settings = true;
                     return res;
+                }
 
                 var isFolder = asset.isFolder && !Provider.isVersioningFolders;
 
-                res.revert = Provider.RevertIsValid(assetList, RevertMode.Normal);
-                res.revertUnchanged = Provider.RevertIsValid(assetList, RevertMode.Unchanged);
-                res.checkout = !Editor.IsAppropriateFileOpenForEdit(assetEditor.target);
-                res.add = !isFolder && Provider.AddIsValid(assetList);
-                res.submit = Provider.SubmitIsValid(null, assetList);
-                res.@lock = !isFolder && Provider.LockIsValid(assetList);
-                res.unlock = !isFolder && Provider.UnlockIsValid(assetList);
+                res.assets.AddRange(assetEditor.targets.Select(o => Provider.GetAssetByPath(AssetDatabase.GetAssetPath(o))));
+                res.assets = Provider.ConsolidateAssetList(res.assets, CheckoutMode.Both);
+                res.editor = assetEditor;
+
+                res.revert = Provider.RevertIsValid(res.assets, RevertMode.Normal);
+                res.revertUnchanged = Provider.RevertIsValid(res.assets, RevertMode.Unchanged);
+                res.checkout = isFolder || Provider.CheckoutIsValid(res.assets, Provider.NeedToCheckOutBoth(assetEditor.target) ? CheckoutMode.Both : CheckoutMode.Meta);
+                res.add = Provider.AddIsValid(res.assets);
+                res.submit = Provider.SubmitIsValid(null, res.assets);
+                res.@lock = !isFolder && Provider.LockIsValid(res.assets);
+                res.unlock = !isFolder && Provider.UnlockIsValid(res.assets);
                 return res;
             }
         }
 
-        static float VersionControlBarButtons(VersionControlBarButtonPresence presence, Rect rect, AssetList assetList, bool connected)
+        static float VersionControlBarButtons(VersionControlBarState presence, Rect rect, bool connected)
         {
             var buttonX = rect.xMax - 7;
-            if (!connected)
-                return buttonX;
 
             var buttonRect = rect;
             var buttonStyle = Styles.vcsButtonStyle;
             buttonRect.y += 1;
             buttonRect.height = buttonStyle.CalcSize(Styles.vcsAdd).y;
 
+            if (!connected)
+            {
+                if (presence.settings)
+                {
+                    if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsSettings))
+                        SettingsService.OpenProjectSettings("Project/Editor");
+                }
+                return buttonX;
+            }
+
             if (presence.revert && !presence.revertUnchanged)
             {
                 // just a simple revert button
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsRevert))
                 {
-                    WindowRevert.Open(assetList);
+                    WindowRevert.Open(presence.assets);
                     GUIUtility.ExitGUI();
                 }
             }
             else if (presence.revert || presence.revertUnchanged)
             {
                 // revert + revert unchanged dropdown button
-                var dropdownStyle = Styles.vcsRevertStyle;
-                const float kDropDownButtonWidth = 20f;
-                buttonRect.width = dropdownStyle.CalcSize(Styles.vcsRevert).x + 6;
-                buttonRect.x = buttonX - buttonRect.width;
-                buttonX -= buttonRect.width;
-
-                var dropDownRect = buttonRect;
-                dropDownRect.xMin = dropDownRect.xMax - kDropDownButtonWidth;
-
-                if (Event.current.type == EventType.MouseDown && dropDownRect.Contains(Event.current.mousePosition))
+                if (VersionControlActionDropdownButton(buttonRect, ref buttonX, Styles.vcsRevert,
+                    Styles.vcsRevertMenuNames, Styles.vcsRevertMenuActions, presence.assets))
                 {
-                    var menu = new GenericMenu();
-                    menu.AddItem(Styles.vcsRevertUnchanged, false, DoRevertUnchanged, assetList);
-                    menu.DropDown(buttonRect);
-                    Event.current.Use();
-                }
-                else
-                {
-                    if (GUI.Button(buttonRect, Styles.vcsRevert, dropdownStyle) && presence.revert)
+                    if (presence.revert)
                     {
-                        WindowRevert.Open(assetList);
+                        WindowRevert.Open(presence.assets);
                         GUIUtility.ExitGUI();
                     }
                 }
@@ -1508,31 +1547,57 @@ namespace UnityEditor
 
             if (presence.checkout)
             {
-                if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsCheckout))
-                    Provider.Checkout(assetList, CheckoutMode.Both).Wait(); // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
+                if (VersionControlActionButton(buttonRect, ref buttonX, Provider.NeedToCheckOutBoth(presence.editor.target) ? Styles.vcsCheckout : Styles.vcsCheckoutMeta))
+                    CheckoutForInspector(presence.editor.targets);
             }
             if (presence.add)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsAdd))
-                    Provider.Add(assetList, false).Wait();
+                    Provider.Add(presence.assets, true).Wait();
             }
             if (presence.submit)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsSubmit))
-                    WindowChange.Open(assetList, true);
+                    WindowChange.Open(presence.assets, true);
             }
             if (presence.@lock)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsLock))
-                    Provider.Lock(assetList, true).Wait();
+                    Provider.Lock(presence.assets, true).Wait();
             }
             if (presence.unlock)
             {
                 if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsUnlock))
-                    Provider.Lock(assetList, false).Wait();
+                    Provider.Lock(presence.assets, false).Wait();
             }
 
             return buttonX;
+        }
+
+        static bool VersionControlActionDropdownButton(Rect buttonRect, ref float buttonX, GUIContent content, GUIContent[] menuNames, GenericMenu.MenuFunction2[] menuActions, object context)
+        {
+            var dropdownStyle = Styles.vcsRevertStyle;
+            const float kDropDownButtonWidth = 20f;
+            buttonRect.width = dropdownStyle.CalcSize(content).x + 6;
+            buttonRect.x = buttonX - buttonRect.width;
+            buttonX -= buttonRect.width;
+
+            var dropDownRect = buttonRect;
+            dropDownRect.xMin = dropDownRect.xMax - kDropDownButtonWidth;
+
+            if (Event.current.type == EventType.MouseDown && dropDownRect.Contains(Event.current.mousePosition))
+            {
+                var menu = new GenericMenu();
+                for (var i = 0; i < menuNames.Length; ++i)
+                    menu.AddItem(menuNames[i], false, menuActions[i], context);
+                menu.DropDown(buttonRect);
+                Event.current.Use();
+            }
+            else
+            {
+                return GUI.Button(buttonRect, content, dropdownStyle);
+            }
+            return false;
         }
 
         static bool VersionControlActionButton(Rect buttonRect, ref float buttonX, GUIContent content)
@@ -2106,6 +2171,30 @@ namespace UnityEditor
             }
 
             return editorToElementMap;
+        }
+
+        internal static void ApplyChanges()
+        {
+            foreach (var inspector in m_AllInspectors)
+            {
+                foreach (var editor in inspector.tracker.activeEditors)
+                {
+                    AssetImporterEditor assetImporterEditor = editor as AssetImporterEditor;
+
+                    if (assetImporterEditor != null && assetImporterEditor.HasModified())
+                    {
+                        assetImporterEditor.ApplyAndImport();
+                    }
+                }
+            }
+        }
+
+        internal static void RefreshInspectors()
+        {
+            foreach (var inspector in m_AllInspectors)
+            {
+                inspector.tracker.ForceRebuild();
+            }
         }
     }
 }

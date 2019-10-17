@@ -676,7 +676,7 @@ namespace UnityEditorInternal
 
                     m_ClipPlayable.SetSampleRate(playing ? -1 : state.activeAnimationClip.frameRate);
 
-                    AnimationMode.SamplePlayableGraph(state.activeRootGameObject, m_Graph, 0, time.time);
+                    AnimationMode.SamplePlayableGraph(m_Graph, 0, time.time);
 
                     // This will cover euler/quaternion matching in basic playable graphs only (animation clip + candidate clip).
                     AnimationUtility.SampleEulerHint(state.activeRootGameObject, state.activeAnimationClip, time.time, WrapMode.Clamp);

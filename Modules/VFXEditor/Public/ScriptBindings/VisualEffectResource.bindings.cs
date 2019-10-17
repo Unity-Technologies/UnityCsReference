@@ -384,6 +384,11 @@ namespace UnityEditor.VFX
 
         public extern VFXShaderSourceDesc[] shaderSources { get; set; }
 
+        public extern int GetShaderSourceCount();
+
+        [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSourceName", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSourceName(int index);
+        [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSource", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSource(int index);
+
         public extern bool compileInitialVariants { get; set; }
 
         public void SetRuntimeData(VFXExpressionSheet sheet,

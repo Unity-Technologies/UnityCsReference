@@ -805,18 +805,29 @@ namespace UnityEditor
 
             if (showOpenButton && !ShouldHideOpenButton())
             {
-                using (new EditorGUI.DisabledScope(importerEditor != null && importerEditor.assetTarget == null))
+                var assets = importerEditor != null ? importerEditor.assetTargets : targets;
+                var disabled = importerEditor != null && importerEditor.assetTarget == null;
+                ShowOpenButton(assets, !disabled);
+            }
+        }
+
+        internal void ShowOpenButton(UnityObject[] assets, bool enableCondition = true)
+        {
+            bool previousGUIState = GUI.enabled;
+            GUI.enabled = enableCondition;
+
+            if (GUILayout.Button(BaseStyles.open, EditorStyles.miniButton))
+            {
+                if (AssetDatabase.MakeEditable(
+                    assets.Select(AssetDatabase.GetAssetPath).ToArray(),
+                    "Do you want to check out this file or files?"))
                 {
-                    if (GUILayout.Button(BaseStyles.open, EditorStyles.miniButton))
-                    {
-                        if (importerEditor != null)
-                            AssetDatabase.OpenAsset(importerEditor.assetTargets);
-                        else
-                            AssetDatabase.OpenAsset(targets);
-                        GUIUtility.ExitGUI();
-                    }
+                    AssetDatabase.OpenAsset(assets);
+                    GUIUtility.ExitGUI();
                 }
             }
+
+            GUI.enabled = previousGUIState;
         }
 
         protected virtual bool ShouldHideOpenButton()
@@ -1102,14 +1113,6 @@ namespace UnityEditor
 
         static internal bool IsAppropriateFileOpenForEdit(UnityObject assetObject)
         {
-            string message;
-            return IsAppropriateFileOpenForEdit(assetObject, out message);
-        }
-
-        static internal bool IsAppropriateFileOpenForEdit(UnityObject assetObject, out string message)
-        {
-            message = string.Empty;
-
             // The native object for a ScriptableObject with an invalid script will be considered not alive.
             // In order to allow editing of the m_Script property of a ScriptableObject with an invalid script
             // we use the instance ID instead of the UnityEngine.Object reference to check if the asset is open for edit.
@@ -1125,12 +1128,12 @@ namespace UnityEditor
             if (AssetDatabase.IsNativeAsset(instanceID))
             {
                 var assetPath = AssetDatabase.GetAssetPath(instanceID);
-                if (!AssetDatabase.IsOpenForEdit(assetPath, out message, opts))
+                if (!AssetDatabase.IsOpenForEdit(assetPath, opts))
                     return false;
             }
             else if (AssetDatabase.IsForeignAsset(instanceID))
             {
-                if (!AssetDatabase.IsMetaFileOpenForEdit(assetObject, out message, opts))
+                if (!AssetDatabase.IsMetaFileOpenForEdit(assetObject, opts))
                     return false;
             }
 
@@ -1156,14 +1159,6 @@ namespace UnityEditor
 
         internal bool IsOpenForEdit()
         {
-            string message;
-            return IsOpenForEdit(out message);
-        }
-
-        internal bool IsOpenForEdit(out string message)
-        {
-            message = "";
-
             foreach (UnityObject target in targets)
             {
                 if (EditorUtility.IsPersistent(target) && !IsAppropriateFileOpenForEdit(target))

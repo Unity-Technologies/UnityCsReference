@@ -21,13 +21,11 @@ namespace UnityEditor
     [Flags]
     public enum AppleMobileArchitecture : uint
     {
-        // ARMv7
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("ARMv7 is no longer supported", true)]
         ARMv7 = 0,
 
-        // ARM64
         ARM64 = 1 << 0,
-
-        // Universal
         Universal = 1 << 1
     }
 

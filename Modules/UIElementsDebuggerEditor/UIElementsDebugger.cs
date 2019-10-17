@@ -154,6 +154,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 m_ShowLayoutBound = e.newValue;
                 panelDebug?.MarkDirtyRepaint();
+                panelDebug?.MarkDebugContainerDirtyRepaint();
             });
 
             m_Toolbar.Add(m_ShowLayoutToggle);
@@ -210,63 +211,55 @@ namespace UnityEditor.UIElements.Debugger
                 DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
         }
 
-        public override void Refresh()
+        void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             if (m_PickElement)
-                m_PickOverlay.Draw();
-
-            if (panel != null)
-            {
-                var rootElement = panel.GetRootVisualElement();
-                var clipRect = rootElement != null ? rootElement.worldBound : GUIClip.topmostRect;
-
-                if (m_ShowLayoutBound)
-                    DrawLayoutBounds(clipRect);
-
-                if (!m_PickElement && m_ShowRepaintOverlay)
-                {
-                    m_RepaintOverlay.Draw(clipRect);
-                    if (m_RepaintOverlay.overlayCount > 0)
-                    {
-                        panelDebug.MarkDirtyRepaint();
-                    }
-                }
-            }
+                m_PickOverlay.Draw(mgc);
 
             if (!m_PickElement)
             {
                 var selectedElement = m_DebuggerSelection.element;
                 m_TreeViewContainer.RebuildTree(panelDebug);
-                m_TreeViewContainer.DrawOverlay();
+                m_TreeViewContainer.DrawOverlay(mgc);
 
                 //we should not lose the selection when the tree has changed.
                 if (selectedElement != m_DebuggerSelection.element)
                 {
                     if (m_DebuggerSelection.element == null && selectedElement.panel == panelDebug.panel)
-                    {
                         SelectElement(selectedElement);
-                    }
                 }
 
-                m_StylesDebuggerContainer.Refresh();
+                m_StylesDebuggerContainer.Refresh(mgc);
 
                 Repaint();
             }
+
+            if (m_ShowLayoutBound)
+                DrawLayoutBounds(mgc);
+
+            if (!m_PickElement && m_ShowRepaintOverlay)
+                m_RepaintOverlay.Draw(mgc);
         }
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag)
         {
+            if (ve == panelDebug?.debugContainer)
+                return;
             if ((changeTypeFlag & VersionChangeType.Repaint) == VersionChangeType.Repaint && m_ShowRepaintOverlay)
             {
                 var visible = ve.resolvedStyle.visibility == Visibility.Visible &&
                     ve.resolvedStyle.opacity > Mathf.Epsilon;
                 if (panel != null && ve != panel.visualTree && visible)
-                    m_RepaintOverlay.AddOverlay(ve);
+                    m_RepaintOverlay.AddOverlay(ve, panelDebug?.debugContainer);
             }
 
             if ((changeTypeFlag & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
-            {
                 m_TreeViewContainer.hierarchyHasChanged = true;
+
+            if (panelDebug?.debuggerOverlayPanel != null)
+            {
+                panelDebug.debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
+                panelDebug.MarkDebugContainerDirtyRepaint();
             }
         }
 
@@ -275,9 +268,13 @@ namespace UnityEditor.UIElements.Debugger
             m_RepaintOverlay.ClearOverlay();
 
             m_TreeViewContainer.hierarchyHasChanged = true;
+            if (m_DebuggerSelection.panelDebug?.debugContainer != null)
+                m_DebuggerSelection.panelDebug.debugContainer.generateVisualContent -= OnGenerateVisualContent;
+
             m_DebuggerSelection.panelDebug = pdbg;
 
-            Refresh();
+            if (panelDebug?.debugContainer != null)
+                panelDebug.debugContainer.generateVisualContent += OnGenerateVisualContent;
         }
 
         protected override void OnRestorePanelSelection()
@@ -419,8 +416,9 @@ namespace UnityEditor.UIElements.Debugger
 
             if (panelDebug != null)
             {
-                panelDebug.MarkDirtyRepaint();
+                panelDebug?.MarkDirtyRepaint();
                 this.rootVisualElement.MarkDirtyRepaint();
+                panelDebug?.MarkDebugContainerDirtyRepaint();
 
                 m_TreeViewContainer.RebuildTree(panelDebug);
                 SelectElement(ve);
@@ -433,7 +431,9 @@ namespace UnityEditor.UIElements.Debugger
             m_PickToggle.SetValueWithoutNotify(false);
             m_PickOverlay.ClearOverlay();
 
+            panelDebug?.MarkDebugContainerDirtyRepaint();
             panelDebug?.MarkDirtyRepaint();
+
             Focus();
         }
 
@@ -449,13 +449,13 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private void DrawLayoutBounds(Rect clipRect)
+        private void DrawLayoutBounds(MeshGenerationContext mgc)
         {
             m_LayoutOverlay.ClearOverlay();
             m_LayoutOverlay.selectedElement = m_DebuggerSelection.element;
             AddLayoutBoundOverlayRecursive(visualTree);
 
-            m_LayoutOverlay.Draw(clipRect);
+            m_LayoutOverlay.Draw(mgc);
         }
 
         private void AddLayoutBoundOverlayRecursive(VisualElement ve)

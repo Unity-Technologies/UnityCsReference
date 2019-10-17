@@ -336,7 +336,7 @@ namespace UnityEditor
 
             if (goItem.isSceneHeader)
             {
-                useBoldFont = (goItem.scene == SceneManager.GetActiveScene()) || IsPrefabStageHeader(goItem);
+                useBoldFont = (goItem.scene == SceneManager.GetActiveScene());
             }
 
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
@@ -410,18 +410,6 @@ namespace UnityEditor
             return availableRectLeft;
         }
 
-        static bool IsPrefabStageHeader(GameObjectTreeViewItem item)
-        {
-            if (!item.isSceneHeader)
-                return false;
-
-            Scene scene = EditorSceneManager.GetSceneByHandle(item.id);
-            if (!scene.IsValid())
-                return false;
-
-            return EditorSceneManager.IsPreviewScene(scene);
-        }
-
         void EnsureLazyInitialization(GameObjectTreeViewItem item)
         {
             if (!item.lazyInitializationDone)
@@ -440,15 +428,7 @@ namespace UnityEditor
             var go = item.objectPPTR as GameObject;
             if (go == null)
             {
-                if (IsPrefabStageHeader(item))
-                {
-                    string assetPath = PrefabStageUtility.GetCurrentPrefabStage().assetPath;
-                    item.icon = (Texture2D)AssetDatabase.GetCachedIcon(assetPath);
-                }
-                else
-                {
-                    item.icon = GameObjectStyles.sceneAssetIcon;
-                }
+                item.icon = GameObjectStyles.sceneAssetIcon;
             }
             else
             {

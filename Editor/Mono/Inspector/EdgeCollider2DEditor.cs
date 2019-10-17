@@ -91,12 +91,14 @@ namespace UnityEditor
         {
             EditorTools.EditorTools.activeToolChanged += OnActiveToolChanged;
             EditorTools.EditorTools.activeToolChanging += OnActiveToolChanging;
+            Selection.selectionChanged += OnSelectionChanged;
         }
 
         public void OnDisable()
         {
             EditorTools.EditorTools.activeToolChanged -= OnActiveToolChanged;
             EditorTools.EditorTools.activeToolChanging -= OnActiveToolChanging;
+            Selection.selectionChanged -= OnSelectionChanged;
         }
 
         public override void OnToolGUI(EditorWindow window)
@@ -105,22 +107,40 @@ namespace UnityEditor
             m_AdjacentEdgeUtility.OnSceneGUI();
         }
 
-        void OnActiveToolChanged()
+        void TryBeginEditing()
         {
-            if (EditorTools.EditorTools.IsActiveTool(this))
+            var collider = target as EdgeCollider2D;
+
+            if (EditorTools.EditorTools.IsActiveTool(this) && IsAvailable() && collider)
             {
                 m_PolyUtility.StartEditing(target as Collider2D);
                 m_AdjacentEdgeUtility.StartEditing(target as EdgeCollider2D);
             }
         }
 
-        void OnActiveToolChanging()
+        void TryEndEditing()
         {
             if (EditorTools.EditorTools.IsActiveTool(this))
             {
                 m_PolyUtility.StopEditing();
                 m_AdjacentEdgeUtility.StopEditing();
             }
+        }
+
+        void OnActiveToolChanged()
+        {
+            TryBeginEditing();
+        }
+
+        void OnActiveToolChanging()
+        {
+            TryEndEditing();
+        }
+
+        void OnSelectionChanged()
+        {
+            TryEndEditing();
+            TryBeginEditing();
         }
     }
 

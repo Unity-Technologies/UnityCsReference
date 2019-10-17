@@ -619,9 +619,8 @@ namespace UnityEditor.UIElements
 
             if (Event.current.type == EventType.Repaint)
             {
-                string msg;
                 if (inspectedObject != null
-                    && m_IsOpenForEdit != Editor.IsAppropriateFileOpenForEdit(inspectedObject, out msg))
+                    && m_IsOpenForEdit != Editor.IsAppropriateFileOpenForEdit(inspectedObject))
                 {
                     m_IsOpenForEdit = !m_IsOpenForEdit;
                     rebuildOptimizedGUIBlocks = true;

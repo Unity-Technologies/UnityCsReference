@@ -59,6 +59,7 @@ namespace UnityEditor.VersionControl
         // Perform the actual window open
         static public void Open(ChangeSet change, AssetList assets, bool submit)
         {
+            InspectorWindow.ApplyChanges();
             WindowChange win = EditorWindow.GetWindow<WindowChange>(true, "Version Control Changeset");
             win.allowSubmit = submit;
             win.DoOpen(change, assets);

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.PackageManager.UI.AssetStore;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -184,9 +183,11 @@ namespace UnityEditor.PackageManager.UI
 
             public void SetPackageProgress(IPackage package, PackageProgress progress)
             {
-                if (package.progress == progress)
+                if (package == null || package.progress == progress)
                     return;
+
                 package.progress = progress;
+
                 onPackageProgressUpdate?.Invoke(package);
             }
 
@@ -204,10 +205,10 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onRemoveOperation += OnUpmRemoveOperation;
                 UpmClient.instance.RegisterEvents();
 
-                AssetStore.AssetStoreClient.instance.onPackagesChanged += OnPackagesChanged;
-                AssetStore.AssetStoreClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
-                AssetStore.AssetStoreClient.instance.onDownloadProgress += OnDownloadProgress;
-                AssetStore.AssetStoreClient.instance.RegisterEvents();
+                AssetStoreClient.instance.onPackagesChanged += OnPackagesChanged;
+                AssetStoreClient.instance.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
+                AssetStoreClient.instance.onDownloadProgress += OnDownloadProgress;
+                AssetStoreClient.instance.RegisterEvents();
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
             }
@@ -226,10 +227,10 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onRemoveOperation -= OnUpmRemoveOperation;
                 UpmClient.instance.UnregisterEvents();
 
-                AssetStore.AssetStoreClient.instance.onPackagesChanged -= OnPackagesChanged;
-                AssetStore.AssetStoreClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
-                AssetStore.AssetStoreClient.instance.onDownloadProgress -= OnDownloadProgress;
-                AssetStore.AssetStoreClient.instance.UnregisterEvents();
+                AssetStoreClient.instance.onPackagesChanged -= OnPackagesChanged;
+                AssetStoreClient.instance.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
+                AssetStoreClient.instance.onDownloadProgress -= OnDownloadProgress;
+                AssetStoreClient.instance.UnregisterEvents();
 
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
             }
@@ -240,7 +241,7 @@ namespace UnityEditor.PackageManager.UI
 
                 UnregisterEvents();
 
-                AssetStore.AssetStoreClient.instance.ClearCache();
+                AssetStoreClient.instance.ClearCache();
                 UpmClient.instance.ClearCache();
 
                 m_Packages.Clear();
@@ -262,7 +263,7 @@ namespace UnityEditor.PackageManager.UI
                         AddPackageError(package, new Error(NativeErrorCode.Unknown, progress.errorMessage));
 
                     if (completed)
-                        AssetStore.AssetStoreClient.instance.RefreshLocal();
+                        AssetStoreClient.instance.RefreshLocal();
 
                     SetPackageProgress(package, hasError || completed ? PackageProgress.None : PackageProgress.Downloading);
                     onDownloadProgress?.Invoke(package, progress);
@@ -455,13 +456,13 @@ namespace UnityEditor.PackageManager.UI
             public DownloadProgress GetDownloadProgress(IPackageVersion version)
             {
                 DownloadProgress progress;
-                AssetStore.AssetStoreClient.instance.GetDownloadProgress(version.packageUniqueId, out progress);
+                AssetStoreClient.instance.GetDownloadProgress(version.packageUniqueId, out progress);
                 return progress;
             }
 
             public bool IsDownloadInProgress(IPackageVersion version)
             {
-                return AssetStore.AssetStoreClient.instance.IsDownloadInProgress(version.packageUniqueId);
+                return AssetStoreClient.instance.IsDownloadInProgress(version.packageUniqueId);
             }
 
             public void Download(IPackage package)
@@ -473,7 +474,7 @@ namespace UnityEditor.PackageManager.UI
                     return;
 
                 SetPackageProgress(package, PackageProgress.Downloading);
-                AssetStore.AssetStoreClient.instance.Download(package.uniqueId);
+                AssetStoreClient.instance.Download(package.uniqueId);
             }
 
             public void AbortDownload(IPackage package)
@@ -481,7 +482,7 @@ namespace UnityEditor.PackageManager.UI
                 if (!(package is AssetStorePackage))
                     return;
                 SetPackageProgress(package, PackageProgress.None);
-                AssetStore.AssetStoreClient.instance.AbortDownload(package.uniqueId);
+                AssetStoreClient.instance.AbortDownload(package.uniqueId);
             }
 
             public void Import(IPackage package)

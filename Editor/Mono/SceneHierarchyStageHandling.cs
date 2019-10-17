@@ -3,10 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using System.Collections.Generic;
-using System;
-using System.Linq;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 
@@ -81,7 +77,7 @@ namespace UnityEditor
             if (stage == null || !stage.isValid)
                 return;
 
-            m_StageHeaderContent = stage.CreateBreadCrumbItem().content;
+            m_StageHeaderContent = stage.CreateHeaderContent();
 
             // Make room for version control overlay icons.
             // GUIStyles don't allow controlling the space between icon and text.

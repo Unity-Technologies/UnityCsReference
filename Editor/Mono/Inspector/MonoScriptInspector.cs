@@ -25,14 +25,10 @@ namespace UnityEditor
 
             GUILayout.FlexibleSpace();
 
+            ShowOpenButton(new[] { textAsset }, textAsset != null);
+
             using (new EditorGUI.DisabledScope(textAsset == null))
             {
-                if (GUILayout.Button("Open...", EditorStyles.miniButton))
-                {
-                    AssetDatabase.OpenAsset(textAsset);
-                    GUIUtility.ExitGUI();
-                }
-
                 if (textAsset as MonoScript)
                 {
                     if (GUILayout.Button("Execution Order...", EditorStyles.miniButton))//GUILayout.Width(150)))

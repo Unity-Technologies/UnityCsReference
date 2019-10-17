@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.PackageManager.UI.AssetStore;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI

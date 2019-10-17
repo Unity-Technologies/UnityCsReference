@@ -226,7 +226,7 @@ namespace UnityEditor.PackageManager.UI
             var isSearchMode = !string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText);
             var productList = isSearchMode ? m_FilteredList.searchList : m_FilteredList.baseList;
             if (productList.list.Count < productList.total)
-                AssetStore.AssetStoreClient.instance.List(productList.list.Count, PageManager.k_DefaultPageSize, PackageFiltering.instance.currentSearchText, false);
+                AssetStoreClient.instance.List(productList.list.Count, PageManager.k_DefaultPageSize, PackageFiltering.instance.currentSearchText, false);
         }
 
         public void Load(IPackage package, IPackageVersion version = null)
@@ -277,7 +277,7 @@ namespace UnityEditor.PackageManager.UI
             if (productList.startIndex > 0 && (targetList.total != productList.total || (targetList.searchText ?? "") != (productList.searchText ?? "")))
             {
                 // if a new page has arrived but the total has changed or the searchText has changed, do a re-fetch
-                AssetStore.AssetStoreClient.instance.List(0, productList.startIndex + productList.list.Count, PackageFiltering.instance.currentSearchText, true);
+                AssetStoreClient.instance.List(0, productList.startIndex + productList.list.Count, PackageFiltering.instance.currentSearchText, true);
                 return;
             }
 
@@ -322,7 +322,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_FilteredList.enabled = true;
             if (!fetchDetailsCalled && productList.list.Any())
-                AssetStore.AssetStoreClient.instance.FetchDetails(productList.list);
+                AssetStoreClient.instance.FetchDetails(productList.list);
 
             if (rebuildList)
             {

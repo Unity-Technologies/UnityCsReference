@@ -17,6 +17,14 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     internal partial class GUIView : View
     {
+        // Case 1183719 - The delegate getEditorShader is being reset upon domain reload and InitializeOnLoad is not rerun
+        // Hence a static constructor to Initialize the Delegate. EditorShaderLoader is still needed for Batch mode where GUIView may not be created
+        static GUIView()
+        {
+            // TODO: Remove this once case 1148851 has been fixed.
+            UnityEngine.UIElements.UIR.UIRenderDevice.getEditorShader = () => EditorShader;
+        }
+
         [InitializeOnLoad]
         static class EditorShaderLoader
         {

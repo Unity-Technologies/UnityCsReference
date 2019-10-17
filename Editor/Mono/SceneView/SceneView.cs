@@ -21,7 +21,6 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.EditorTools;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.Snap;
 
 namespace UnityEditor
@@ -793,7 +792,7 @@ namespace UnityEditor
             public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
-            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("scenevis_hidden", "Number of hidden objects, click to toggle scene visibility");
+            public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
             public static GUIContent exposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the precomputed and baked lighting debug views.");
@@ -3420,12 +3419,7 @@ namespace UnityEditor
             if (gameObject == null)
                 return false;
 
-            var gameObjectSceneCullingMask = EditorSceneManager.GetSceneCullingMask(gameObject.scene);
-            var sceneViewCullingMask = overrideSceneCullingMask != 0 ? overrideSceneCullingMask : EditorSceneManager.GetSceneCullingMask(customScene);
-            if (sceneViewCullingMask == 0)
-                sceneViewCullingMask = EditorSceneManager.DefaultSceneCullingMask; // Use main stage culling mask if customScene was not set
-
-            return (gameObjectSceneCullingMask & sceneViewCullingMask) != 0;
+            return StageUtility.IsGameObjectRenderedByCamera(gameObject, camera);
         }
 
         public bool FrameSelected()

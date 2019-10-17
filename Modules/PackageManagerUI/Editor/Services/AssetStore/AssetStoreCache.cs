@@ -9,7 +9,7 @@ using System.Linq;
 using UnityEditor.Utils;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     internal sealed class AssetStoreCache
     {

@@ -481,7 +481,7 @@ namespace UnityEditor
             // Ensure we show the main stage before starting editing the Avatar since it will be edited on the Main stage (we are using a main scene for it)
             if (StageNavigationManager.instance.currentStage is PrefabStage)
             {
-                StageNavigationManager.instance.GoToMainStage(false, StageNavigationManager.Analytics.ChangeType.GoToMainViaAvatarSetup);
+                StageNavigationManager.instance.GoToMainStage(StageNavigationManager.Analytics.ChangeType.GoToMainViaAvatarSetup);
             }
 
             m_EditMode = EditMode.Starting;

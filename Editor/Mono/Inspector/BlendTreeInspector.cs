@@ -224,7 +224,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             Rect textFieldRect = titleRect;
-            textFieldRect.height = 16f;
+            textFieldRect.height = EditorGUI.kSingleLineHeight;
 
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = m_Name.hasMultipleDifferentValues;
@@ -1359,7 +1359,7 @@ namespace UnityEditor
             SerializedProperty motion = child.FindPropertyRelative("m_Motion");
 
             r.y++;
-            r.height = 16;
+            r.height = EditorGUI.kSingleLineHeight;
             Rect[] rects = GetRowRects(r, m_BlendType.intValue);
             int col = 0;
 

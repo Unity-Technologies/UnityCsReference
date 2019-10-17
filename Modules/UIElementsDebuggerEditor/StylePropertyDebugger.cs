@@ -412,24 +412,28 @@ namespace UnityEditor.UIElements.Debugger
             object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
             Type type = m_PropertyInfo.type;
 
-            if (type == newValue.GetType())
+            if (newValue == null || type == newValue.GetType())
             {
                 val = newValue;
             }
             else
             {
                 if (type == typeof(StyleBackground))
-                    val = Background.FromTexture2D(newValue as Texture2D);
-
-                var valueInfo = type.GetProperty("value");
-                try
                 {
-                    valueInfo.SetValue(val, newValue, null);
+                    val = new StyleBackground(newValue as Texture2D);
                 }
-                catch (Exception)
+                else
                 {
-                    Debug.LogError($"Invalid value for property '{m_PropertyName}'");
-                    return;
+                    var valueInfo = type.GetProperty("value");
+                    try
+                    {
+                        valueInfo.SetValue(val, newValue, null);
+                    }
+                    catch (Exception)
+                    {
+                        Debug.LogError($"Invalid value for property '{m_PropertyName}'");
+                        return;
+                    }
                 }
             }
 

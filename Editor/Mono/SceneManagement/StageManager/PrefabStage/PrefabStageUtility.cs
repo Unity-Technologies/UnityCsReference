@@ -138,7 +138,7 @@ namespace UnityEditor.Experimental.SceneManagement
             var prefabStage = GetExistingPrefabStage(prefabAssetPath, openedFromInstance, prefabStageMode);
             if (prefabStage == null)
                 prefabStage = PrefabStage.CreatePrefabStage(prefabAssetPath, openedFromInstance, prefabStageMode, contextStage);
-            if (StageNavigationManager.instance.SwitchToStage(prefabStage, setAsFirstItemAfterMainStage, false, changeTypeAnalytics))
+            if (StageNavigationManager.instance.SwitchToStage(prefabStage, setAsFirstItemAfterMainStage, changeTypeAnalytics))
             {
                 // If selection did not change by switching stage (by us or user) then handle automatic selection in new prefab mode
                 if (Selection.activeGameObject == previousSelection)
@@ -230,12 +230,13 @@ namespace UnityEditor.Experimental.SceneManagement
 
             if (warnList.Count > 0)
             {
-                foreach (var m in warnList)
-                {
-                    var monoScript = MonoScript.FromMonoBehaviour(m);
-                    Debug.LogWarningFormat(monoScript, "Prefab Mode in Play Mode was blocked by the script '{0}' to prevent the script accidentally affecting Play Mode. See the documentation for [ExecuteInEditMode] and [ExecuteAlways] for info on how to make scripts compatible with Prefab Mode during Play Mode.", monoScript.name);
-                }
-                return true;
+                string blockingNames = string.Join(", ", warnList.Select(e => MonoScript.FromMonoBehaviour(e).name).ToArray());
+                return EditorUtility.DisplayDialog(
+                    L10n.Tr("Risk of unwanted modifications"),
+                    string.Format(
+                        L10n.Tr("The following scripts on the Prefab open in Prefab Mode use the [ExecuteInEditMode] attribute which means they may accidentally affect or be affected by Play Mode:\n\n{0}\n\nSee the documentation for [ExecuteInEditMode] and [ExecuteAlways] for info on how to make scripts compatible with Prefab Mode during Play Mode."),
+                        blockingNames),
+                    L10n.Tr("Exit Prefab Mode"), L10n.Tr("Ignore"));
             }
             return false;
         }

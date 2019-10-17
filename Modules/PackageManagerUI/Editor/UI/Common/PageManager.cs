@@ -181,7 +181,7 @@ namespace UnityEditor.PackageManager.UI
                 if (!string.IsNullOrEmpty(searchText))
                 {
                     if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
-                        AssetStore.AssetStoreClient.instance.List(0, k_DefaultPageSize, searchText, false);
+                        AssetStoreClient.instance.List(0, k_DefaultPageSize, searchText, false);
                 }
                 GetPageFromFilterTab().FilterBySearchText(searchText);
             }
@@ -251,9 +251,9 @@ namespace UnityEditor.PackageManager.UI
                 if ((options & RefreshOptions.UpmList) != 0)
                     UpmClient.instance.List();
                 if ((options & RefreshOptions.Purchased) != 0)
-                    AssetStore.AssetStoreClient.instance.List(0, k_DefaultPageSize, string.Empty);
+                    AssetStoreClient.instance.List(0, k_DefaultPageSize, string.Empty);
                 if ((options & RefreshOptions.PurchasedOffline) != 0)
-                    AssetStore.AssetStoreClient.instance.RefreshLocal();
+                    AssetStoreClient.instance.RefreshLocal();
             }
 
             public void Fetch(string uniqueId)
@@ -261,7 +261,7 @@ namespace UnityEditor.PackageManager.UI
                 long productId;
                 if (ApplicationUtil.instance.isUserLoggedIn && long.TryParse(uniqueId, out productId))
                 {
-                    AssetStore.AssetStoreClient.instance.Fetch(productId);
+                    AssetStoreClient.instance.Fetch(productId);
                 }
             }
 
@@ -285,6 +285,7 @@ namespace UnityEditor.PackageManager.UI
             public void Setup()
             {
                 m_Initialized = true;
+                InitializeRefreshTimestamps();
                 RegisterEvents();
             }
 
@@ -300,9 +301,9 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onListOperation += OnRefreshOperation;
                 UpmClient.instance.onSearchAllOperation += OnRefreshOperation;
 
-                AssetStore.AssetStoreClient.instance.onListOperation += OnRefreshOperation;
-                AssetStore.AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
-                AssetStore.AssetStoreClient.instance.onProductFetched += OnProductFetched;
+                AssetStoreClient.instance.onListOperation += OnRefreshOperation;
+                AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
+                AssetStoreClient.instance.onProductFetched += OnProductFetched;
 
                 PackageDatabase.instance.onInstallSuccess += OnInstalledOrUninstalled;
                 PackageDatabase.instance.onUninstallSuccess += OnUninstalled;
@@ -327,9 +328,9 @@ namespace UnityEditor.PackageManager.UI
                 UpmClient.instance.onListOperation -= OnRefreshOperation;
                 UpmClient.instance.onSearchAllOperation -= OnRefreshOperation;
 
-                AssetStore.AssetStoreClient.instance.onListOperation -= OnRefreshOperation;
-                AssetStore.AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
-                AssetStore.AssetStoreClient.instance.onProductFetched -= OnProductFetched;
+                AssetStoreClient.instance.onListOperation -= OnRefreshOperation;
+                AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
+                AssetStoreClient.instance.onProductFetched -= OnProductFetched;
 
                 PackageDatabase.instance.onInstallSuccess -= OnInstalledOrUninstalled;
                 PackageDatabase.instance.onUninstallSuccess -= OnUninstalled;
@@ -346,18 +347,26 @@ namespace UnityEditor.PackageManager.UI
                 PackageDatabase.instance.UnregisterEvents();
             }
 
-            internal void Reload()
+            public void Reload()
             {
                 UnregisterEvents();
 
                 ClearPages();
-                m_RefreshTimestamps.Clear();
+                InitializeRefreshTimestamps();
                 m_RefreshErrors.Clear();
                 m_RefreshOperationsInProgress.Clear();
 
                 PackageDatabase.instance.Reload();
 
                 RegisterEvents();
+            }
+
+            private void InitializeRefreshTimestamps()
+            {
+                foreach (RefreshOptions filter in Enum.GetValues(typeof(RefreshOptions)))
+                {
+                    m_RefreshTimestamps[filter] = 0;
+                }
             }
 
             private void ClearPages()

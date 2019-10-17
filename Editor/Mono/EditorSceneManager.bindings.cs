@@ -197,13 +197,14 @@ namespace UnityEditor.SceneManagement
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
         extern public static ulong CalculateAvailableSceneCullingMask();
 
-        // Ensure in sync with kDefaultSceneCullingMask in C++ (it needs to match DefaultSceneCullingMask bits)
-        public const ulong DefaultSceneCullingMask = SceneCullingMasks.GameViewObjects | SceneCullingMasks.MainStageSceneViewObjects;
+        // Use SceneCullingMasks.DefaultSceneCullingMask
+        public const ulong DefaultSceneCullingMask = SceneCullingMasks.DefaultSceneCullingMask;
     }
 
     public static class SceneCullingMasks
     {
-        // If updating the bits here ensure kDefaultSceneCullingMask (in C++) is in sync with EditorSceneManager.DefaultSceneCullingMask
+        // If updating the bits here ensure kDefaultSceneCullingMask (in C++) is in sync. Also ensure EditorSceneManager.DefaultSceneCullingMask is in sync.
+        public const ulong DefaultSceneCullingMask = GameViewObjects | MainStageSceneViewObjects;
         public const ulong GameViewObjects = 1UL << 63;
         public const ulong MainStageSceneViewObjects = MainStagePrefabInstanceObjectsOpenInPrefabMode | MainStageExcludingPrefabInstanceObjectsOpenInPrefabMode;
 

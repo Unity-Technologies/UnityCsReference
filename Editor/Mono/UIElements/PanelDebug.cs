@@ -9,12 +9,54 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    class PanelOwner : ScriptableObject {}
+
     internal class PanelDebug : IPanelDebug
     {
         private HashSet<IPanelDebugger> m_Debuggers = new HashSet<IPanelDebugger>();
 
         public IPanel panel { get; }
+        public IPanel debuggerOverlayPanel { get; private set; }
         public VisualElement visualTree { get { return panel?.visualTree; }}
+
+        private VisualElement m_DebugContainer;
+        public VisualElement debugContainer
+        {
+            get { return m_DebugContainer; }
+            private set { m_DebugContainer = value; }
+        }
+
+        private PanelOwner ownerObject;
+
+        private void InitializeDebuggerOverlayPanel()
+        {
+            if (debuggerOverlayPanel == null)
+            {
+                ownerObject = ScriptableObject.CreateInstance<PanelOwner>();
+                debuggerOverlayPanel = new Panel(ownerObject, panel.contextType, new EventDispatcher());
+                debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
+                debugContainer = new VisualElement()
+                {
+                    style =
+                    {
+                        position = Position.Absolute,
+                        top = 0, left = 0, right = 0, bottom = 0,
+                        backgroundColor = Color.clear
+                    }
+                };
+                debuggerOverlayPanel.visualTree.Add(debugContainer);
+            }
+        }
+
+        private void RemoveDebuggerOverlayPanel()
+        {
+            if (debuggerOverlayPanel != null && m_Debuggers.Count == 0)
+            {
+                debuggerOverlayPanel.Dispose();
+                debuggerOverlayPanel = null;
+                debugContainer = null;
+            }
+        }
 
         public PanelDebug(IPanel panel)
         {
@@ -27,6 +69,7 @@ namespace UnityEditor.UIElements
             {
                 debugger.panelDebug = this;
                 MarkDirtyRepaint();
+                InitializeDebuggerOverlayPanel();
             }
         }
 
@@ -37,6 +80,7 @@ namespace UnityEditor.UIElements
                 debugger.panelDebug = null;
                 m_Debuggers.Remove(debugger);
                 MarkDirtyRepaint();
+                RemoveDebuggerOverlayPanel();
             }
         }
 
@@ -49,6 +93,7 @@ namespace UnityEditor.UIElements
             }
             m_Debuggers.Clear();
             MarkDirtyRepaint();
+            RemoveDebuggerOverlayPanel();
         }
 
         public IEnumerable<IPanelDebugger> GetAttachedDebuggers()
@@ -59,6 +104,12 @@ namespace UnityEditor.UIElements
         public void MarkDirtyRepaint()
         {
             panel.visualTree.MarkDirtyRepaint();
+        }
+
+        public void MarkDebugContainerDirtyRepaint()
+        {
+            if (debuggerOverlayPanel != null)
+                debugContainer?.MarkDirtyRepaint();
         }
 
         public void Refresh()

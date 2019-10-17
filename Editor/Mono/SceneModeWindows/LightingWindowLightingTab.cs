@@ -28,9 +28,11 @@ namespace UnityEditor
             public static readonly GUIContent OtherSettings = EditorGUIUtility.TrTextContent("Other Settings");
             public static readonly GUIContent DebugSettings = EditorGUIUtility.TrTextContent("Debug Settings");
             public static readonly GUIContent LightProbeVisualization = EditorGUIUtility.TrTextContent("Light Probe Visualization");
+            public static readonly GUIContent DisplayWeights = EditorGUIUtility.TrTextContent("Display Weights");
+            public static readonly GUIContent DisplayOcclusion = EditorGUIUtility.TrTextContent("Display Occlusion");
+            public static readonly GUIContent HighlightInvalidCells = EditorGUIUtility.TrTextContent("Highlight Invalid Cells", "Highlight the invalid cells that cannot be used for probe interpolation.");
 
             public static readonly GUIStyle LabelStyle = EditorStyles.wordWrappedMiniLabel;
-
             public static readonly GUIContent ContinuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");
             public static readonly GUIContent BuildLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current master scene.  This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
 
@@ -216,8 +218,9 @@ namespace UnityEditor
 
                     EditorGUI.indentLevel++;
                     LightProbeVisualization.lightProbeVisualizationMode = (LightProbeVisualization.LightProbeVisualizationMode)EditorGUILayout.EnumPopup(LightProbeVisualization.lightProbeVisualizationMode);
-                    LightProbeVisualization.showInterpolationWeights = EditorGUILayout.Toggle("Display Weights", LightProbeVisualization.showInterpolationWeights);
-                    LightProbeVisualization.showOcclusions = EditorGUILayout.Toggle("Display Occlusion", LightProbeVisualization.showOcclusions);
+                    LightProbeVisualization.showInterpolationWeights = EditorGUILayout.Toggle(Styles.DisplayWeights, LightProbeVisualization.showInterpolationWeights);
+                    LightProbeVisualization.showOcclusions = EditorGUILayout.Toggle(Styles.DisplayOcclusion, LightProbeVisualization.showOcclusions);
+                    LightProbeVisualization.highlightInvalidCells = EditorGUILayout.Toggle(Styles.HighlightInvalidCells, LightProbeVisualization.highlightInvalidCells);
                     EditorGUI.indentLevel--;
 
                     if (EditorGUI.EndChangeCheck())
@@ -498,6 +501,11 @@ namespace UnityEditor
                             else
                                 numNotConvergedLightmapsNotInView++;
                         }
+                    }
+                    if (Lightmapping.atlasCount > 0)
+                    {
+                        int convergedMaps = numConvergedLightmapsInView + numConvergedLightmapsNotInView;
+                        GUILayout.Label("Lightmap convergence: (" + convergedMaps + "/" + Lightmapping.atlasCount + ")", Styles.LabelStyle);
                     }
                     EditorGUILayout.LabelField("Lightmaps in view: " + numLightmapsInView, Styles.LabelStyle);
                     EditorGUI.indentLevel += 1;

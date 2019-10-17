@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -27,14 +28,31 @@ namespace UnityEditor.UIElements.Debugger
             this.element = ve;
             this.alpha = alpha;
             this.defaultAlpha = alpha;
-            this.fadeOutRate = 0;
         }
 
         public VisualElement element;
         public float alpha;
         public float defaultAlpha;
-        public float fadeOutRate;
         public OverlayContent content;
+        private ValueAnimation<float> m_animation;
+
+        public void StartFadeOutAnimation(VisualElement container, int duration)
+        {
+            if (m_animation != null)
+            {
+                m_animation.Stop();
+                m_animation.durationMs = duration;
+                m_animation.Start();
+            }
+            else
+            {
+                m_animation = container.experimental.animation.Start(defaultAlpha, 0, duration, (ve, value) =>
+                {
+                    alpha = value;
+                    ve.MarkDirtyRepaint();
+                }).Ease(Easing.OutCubic).KeepAlive();
+            }
+        }
     }
 
     internal abstract class BaseOverlayPainter
@@ -42,14 +60,9 @@ namespace UnityEditor.UIElements.Debugger
         protected Dictionary<VisualElement, OverlayData> m_OverlayData = new Dictionary<VisualElement, OverlayData>();
         protected List<VisualElement> m_CleanUpOverlay = new List<VisualElement>();
 
-        public void Draw()
+        public virtual void Draw(MeshGenerationContext mgc)
         {
-            Draw(GUIClip.topmostRect);
-        }
-
-        public virtual void Draw(Rect clipRect)
-        {
-            PaintAllOverlay(clipRect);
+            PaintAllOverlay(mgc);
 
             foreach (var ve in m_CleanUpOverlay)
             {
@@ -58,26 +71,17 @@ namespace UnityEditor.UIElements.Debugger
             m_CleanUpOverlay.Clear();
         }
 
-        private void PaintAllOverlay(Rect clipRect)
+        private void PaintAllOverlay(MeshGenerationContext mgc)
         {
-            using (new GUIClip.ParentClipScope(Matrix4x4.identity, clipRect))
+            foreach (var kvp in m_OverlayData)
             {
-                HandleUtility.ApplyWireMaterial();
-                GL.PushMatrix();
+                var overlayData = kvp.Value;
 
-                foreach (var kvp in m_OverlayData)
+                DrawOverlayData(mgc, overlayData);
+                if (overlayData.alpha < Mathf.Epsilon)
                 {
-                    var overlayData = kvp.Value;
-                    overlayData.alpha -= overlayData.fadeOutRate;
-
-                    DrawOverlayData(overlayData);
-                    if (overlayData.alpha < Mathf.Epsilon)
-                    {
-                        m_CleanUpOverlay.Add(kvp.Key);
-                    }
+                    m_CleanUpOverlay.Add(kvp.Key);
                 }
-
-                GL.PopMatrix();
             }
         }
 
@@ -91,52 +95,48 @@ namespace UnityEditor.UIElements.Debugger
             m_OverlayData.Clear();
         }
 
-        protected abstract void DrawOverlayData(OverlayData overlayData);
+        protected abstract void DrawOverlayData(MeshGenerationContext mgc, OverlayData overlayData);
 
-        protected void DrawRect(Rect rect, Color color, float alpha)
+        protected void DrawRect(MeshGenerationContext mgc, Rect rect, Color color, float alpha)
         {
-            float x0 = rect.x;
-            float x3 = rect.xMax;
-            float y0 = rect.yMax;
-            float y3 = rect.y;
+            if (mgc == null)
+                throw new NullReferenceException("The MeshGenerationContext is null");
 
             color.a = alpha;
 
-            GL.Begin(GL.TRIANGLES);
-            GL.Color(color);
-            GL.Vertex3(x0, y0, 0);
-            GL.Vertex3(x3, y0, 0);
-            GL.Vertex3(x0, y3, 0);
-
-            GL.Vertex3(x3, y0, 0);
-            GL.Vertex3(x3, y3, 0);
-            GL.Vertex3(x0, y3, 0);
-            GL.End();
+            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(rect, color, mgc.visualElement.panel.contextType);
+            mgc.Rectangle(rectParams);
         }
 
-        protected void DrawBorder(Rect rect, Color color, float alpha)
+        protected void DrawBorder(MeshGenerationContext mgc, Rect rect, Color color, float alpha)
         {
+            if (mgc == null)
+                throw new NullReferenceException("The MeshGenerationContext is null");
+
+            color.a = alpha;
             rect.xMin++;
             rect.xMax--;
             rect.yMin++;
             rect.yMax--;
+            var width = rect.xMax - rect.xMin;
+            var height = rect.yMax - rect.yMin;
 
-            color.a = alpha;
+            var topRect = new Rect(rect.xMin, rect.yMin, width, 1);
+            var bottomRect = new Rect(rect.xMin, rect.yMax, width, 1);
+            var rightRect = new Rect(rect.xMax, rect.yMin, 1, height);
+            var lefRect = new Rect(rect.xMin, rect.yMin, 1, height);
 
-            GL.Begin(GL.LINES);
-            GL.Color(color);
-            GL.Vertex3(rect.xMin, rect.yMin, 0);
-            GL.Vertex3(rect.xMax, rect.yMin, 0);
+            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(topRect, color, mgc.visualElement.panel.contextType);
+            mgc.Rectangle(rectParams);
 
-            GL.Vertex3(rect.xMax, rect.yMin, 0);
-            GL.Vertex3(rect.xMax, rect.yMax, 0);
+            rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(bottomRect, color, mgc.visualElement.panel.contextType);
+            mgc.Rectangle(rectParams);
 
-            GL.Vertex3(rect.xMax, rect.yMax, 0);
-            GL.Vertex3(rect.xMin, rect.yMax, 0);
+            rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(rightRect, color, mgc.visualElement.panel.contextType);
+            mgc.Rectangle(rectParams);
 
-            GL.Vertex3(rect.xMin, rect.yMax, 0);
-            GL.Vertex3(rect.xMin, rect.yMin, 0);
-            GL.End();
+            rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(lefRect, color, mgc.visualElement.panel.contextType);
+            mgc.Rectangle(rectParams);
         }
     }
 
@@ -164,12 +164,12 @@ namespace UnityEditor.UIElements.Debugger
             overlayData.content = content;
         }
 
-        protected override void DrawOverlayData(OverlayData od)
+        protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
-            DrawHighlights(od);
+            DrawHighlights(mgc, od);
         }
 
-        private void DrawHighlights(OverlayData od)
+        private void DrawHighlights(MeshGenerationContext mgc, OverlayData od)
         {
             var ve = od.element;
             Rect contentRect = ve.LocalToWorld(ve.contentRect);
@@ -179,14 +179,14 @@ namespace UnityEditor.UIElements.Debugger
             var contentFlag = od.content;
             if ((contentFlag & OverlayContent.Content) == OverlayContent.Content)
             {
-                DrawRect(contentRect, kHighlightContentColor, od.alpha);
+                DrawRect(mgc, contentRect, kHighlightContentColor, od.alpha);
             }
 
             if ((contentFlag & OverlayContent.Padding) == OverlayContent.Padding)
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(m_PaddingRects[i], kHighlightPaddingColor, od.alpha);
+                    DrawRect(mgc, m_PaddingRects[i], kHighlightPaddingColor, od.alpha);
                 }
             }
 
@@ -194,7 +194,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(m_BorderRects[i], kHighlightBorderColor, od.alpha);
+                    DrawRect(mgc, m_BorderRects[i], kHighlightBorderColor, od.alpha);
                 }
             }
 
@@ -202,7 +202,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(m_MarginRects[i], kHighlightMarginColor, od.alpha);
+                    DrawRect(mgc, m_MarginRects[i], kHighlightMarginColor, od.alpha);
                 }
             }
         }
@@ -301,28 +301,29 @@ namespace UnityEditor.UIElements.Debugger
     internal class RepaintOverlayPainter : BaseOverlayPainter
     {
         private static readonly Color kRepaintColor = Color.green;
-        private static readonly float kOverlayFadeOut = 0.01f;
-        private static readonly float kDefaultRepaintAlpha = 0.2f;
+        private static readonly float kDefaultAlpha = 1.0f;
+        private static readonly int kOverlayFadeOutDuration = 500;
 
-        public void AddOverlay(VisualElement ve)
+        public void AddOverlay(VisualElement ve, VisualElement debugContainer)
         {
+            if (debugContainer == null)
+                throw new ArgumentNullException("debugContainer");
+            if (ve == null)
+                throw new ArgumentNullException("ve");
+
             OverlayData overlayData = null;
             if (!m_OverlayData.TryGetValue(ve, out overlayData))
             {
-                overlayData = new OverlayData(ve, kDefaultRepaintAlpha) { fadeOutRate = kOverlayFadeOut };
+                overlayData = new OverlayData(ve, kDefaultAlpha);
                 m_OverlayData[ve] = overlayData;
             }
-            else
-            {
-                // Reset alpha
-                overlayData.alpha = overlayData.defaultAlpha;
-            }
+            overlayData.StartFadeOutAnimation(debugContainer, kOverlayFadeOutDuration);
         }
 
-        protected override void DrawOverlayData(OverlayData od)
+        protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
-            DrawRect(od.element.worldBound, kRepaintColor, od.alpha);
-            DrawBorder(od.element.worldBound, kRepaintColor, od.alpha * 4);
+            DrawRect(mgc, od.element.worldBound, kRepaintColor, od.alpha);
+            DrawBorder(mgc, od.element.worldBound, kRepaintColor, od.alpha * 4);
         }
     }
 
@@ -336,6 +337,9 @@ namespace UnityEditor.UIElements.Debugger
 
         public void AddOverlay(VisualElement ve)
         {
+            if (ve == null)
+                throw new ArgumentNullException("ve");
+
             OverlayData overlayData = null;
             if (!m_OverlayData.TryGetValue(ve, out overlayData))
             {
@@ -344,17 +348,17 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        public override void Draw(Rect clipRect)
+        public override void Draw(MeshGenerationContext mgc)
         {
-            base.Draw(clipRect);
+            base.Draw(mgc);
 
             if (selectedElement != null)
-                DrawBorder(selectedElement.worldBound, kSelectedBoundColor, kDefaultAlpha);
+                DrawBorder(mgc, selectedElement.worldBound, kSelectedBoundColor, kDefaultAlpha);
         }
 
-        protected override void DrawOverlayData(OverlayData od)
+        protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
-            DrawBorder(od.element.worldBound, kBoundColor, od.alpha);
+            DrawBorder(mgc, od.element.worldBound, kBoundColor, od.alpha);
         }
     }
 }

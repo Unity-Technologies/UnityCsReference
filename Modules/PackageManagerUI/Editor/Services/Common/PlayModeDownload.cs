@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (state == PlayModeStateChange.ExitingEditMode)
             {
-                if (AssetStore.AssetStoreClient.instance.IsAnyDownloadInProgress())
+                if (AssetStoreClient.instance.IsAnyDownloadInProgress())
                 {
                     var accept = EditorUtility.DisplayDialog(L10n.Tr("Package download in progress"),
                         L10n.Tr("Please note that entering Play Mode while Unity is downloading a package may impact performance"),

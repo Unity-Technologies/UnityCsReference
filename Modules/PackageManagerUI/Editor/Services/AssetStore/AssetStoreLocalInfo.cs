@@ -5,10 +5,10 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class LocalInfo
+    internal class AssetStoreLocalInfo
     {
         public string id;
         public string versionString;
@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         public bool updateInfoFetched;
         public bool canUpdate;
 
-        public static LocalInfo ParseLocalInfo(UnityEditor.PackageInfo localInfo)
+        public static AssetStoreLocalInfo ParseLocalInfo(UnityEditor.PackageInfo localInfo)
         {
             if (string.IsNullOrEmpty(localInfo.jsonInfo))
                 return null;
@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                 if (string.IsNullOrEmpty(id))
                     return null;
 
-                return new LocalInfo
+                return new AssetStoreLocalInfo
                 {
                     id = id,
                     packagePath = localInfo.packagePath ?? string.Empty,

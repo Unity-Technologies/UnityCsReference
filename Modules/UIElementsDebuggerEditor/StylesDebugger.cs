@@ -94,9 +94,9 @@ namespace UnityEditor.UIElements.Debugger
             DrawSelection();
         }
 
-        public void Refresh()
+        public void Refresh(MeshGenerationContext mgc)
         {
-            m_BoxModelView.Refresh();
+            m_BoxModelView.Refresh(mgc);
             m_StylePropertyDebugger.Refresh();
         }
 

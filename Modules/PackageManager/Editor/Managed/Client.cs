@@ -95,5 +95,10 @@ namespace UnityEditor.PackageManager
             var status = NativeClient.Pack(out operationId, packageFolder, targetFolder);
             return new PackRequest(operationId, status);
         }
+
+        internal static void Resolve()
+        {
+            NativeClient.Resolve();
+        }
     }
 }

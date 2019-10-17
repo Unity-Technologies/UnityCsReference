@@ -7,7 +7,7 @@ using UnityEditor.SceneManagement;
 
 namespace UnityEditor.Experimental.SceneManagement
 {
-    public partial class PrefabStage : Stage
+    public sealed partial class PrefabStage : PreviewSceneStage
     {
         // Not using API Updater for now since it doesn't support updating to a virtual property,
         // and this caused API Updader tests to fail.

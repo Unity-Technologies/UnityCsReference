@@ -90,8 +90,10 @@ namespace UnityEngine.UIElements
     internal interface IPanelDebug
     {
         IPanel panel { get; }
+        IPanel debuggerOverlayPanel { get; }
 
         VisualElement visualTree { get; }
+        VisualElement debugContainer { get; }
 
         void AttachDebugger(IPanelDebugger debugger);
         void DetachDebugger(IPanelDebugger debugger);
@@ -99,7 +101,7 @@ namespace UnityEngine.UIElements
         IEnumerable<IPanelDebugger> GetAttachedDebuggers();
 
         void MarkDirtyRepaint();
-
+        void MarkDebugContainerDirtyRepaint();
         void Refresh();
         void OnVersionChanged(VisualElement ele, VersionChangeType changeTypeFlag);
 
@@ -223,7 +225,10 @@ namespace UnityEngine.UIElements
 
         internal bool isDirty
         {
-            get { return version != repaintVersion; }
+            get
+            {
+                return (version != repaintVersion) || (((Panel)panelDebug?.debuggerOverlayPanel)?.isDirty ?? false);
+            }
         }
 
         internal abstract uint version { get; }

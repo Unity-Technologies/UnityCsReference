@@ -289,8 +289,7 @@ namespace UnityEditor.UIElements
             // so the large header is always shown even when the editor can't be.
             if (largeHeader)
             {
-                String message = String.Empty;
-                bool IsOpenForEdit = editor.IsOpenForEdit(out message);
+                bool IsOpenForEdit = editor.IsOpenForEdit();
                 wasVisible = true;
 
                 if (inspectorWindow.editorsWithImportedObjectLabel.Contains(m_EditorIndex))

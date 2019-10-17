@@ -45,6 +45,8 @@ namespace UnityEditor.PackageManager.UI
 
         void Refresh(RefreshOptions options);
 
+        void Reload();
+
         void Fetch(string uniqueId);
 
         IPage GetCurrentPage();

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
     internal class AssetStorePackageVersion : BasePackageVersion
@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && File.Exists(m_LocalPath);
         }
 
-        public AssetStorePackageVersion(FetchedInfo fetchedInfo, LocalInfo localInfo = null)
+        public AssetStorePackageVersion(AssetStoreFetchedInfo fetchedInfo, AssetStoreLocalInfo localInfo = null)
         {
             if (fetchedInfo == null)
                 throw new ArgumentNullException(nameof(fetchedInfo));

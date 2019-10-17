@@ -303,16 +303,199 @@ namespace UnityEngine
     // iPhone
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("iPhone class is deprecated. Please use iOS.Device instead (UnityUpgradable) -> UnityEngine.iOS.Device", true)]
+    public sealed class iPhone
+    {
+        public static iPhoneGeneration generation { get { return default(iPhoneGeneration); } }
+        public static string vendorIdentifier { get { return default(string); } }
+        public static string advertisingIdentifier { get { return default(string); } }
+        public static bool advertisingTrackingEnabled { get { return default(bool); } }
+        public static void SetNoBackupFlag(string path) {}
+        public static void ResetNoBackupFlag(string path) {}
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("iOSActivityIndicatorStyle enumeration is deprecated. Please use iOS.ActivityIndicatorStyle instead (UnityUpgradable) -> UnityEngine.iOS.ActivityIndicatorStyle", true)]
+    public enum iOSActivityIndicatorStyle
+    {
+        DontShow,
+        WhiteLarge,
+        White,
+        Gray
+    }
 
     //
     // LocalNotification/RemoteNotification/NotificationServices
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("CalendarIdentifier is deprecated. Please use iOS.CalendarIdentifier instead (UnityUpgradable) -> UnityEngine.iOS.CalendarIdentifier", true)]
+    public enum CalendarIdentifier
+    {
+        GregorianCalendar,
+        BuddhistCalendar,
+        ChineseCalendar,
+        HebrewCalendar,
+        IslamicCalendar,
+        IslamicCivilCalendar,
+        JapaneseCalendar,
+        RepublicOfChinaCalendar,
+        PersianCalendar,
+        IndianCalendar,
+        ISO8601Calendar
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("CalendarUnit is deprecated. Please use iOS.CalendarUnit instead (UnityUpgradable) -> UnityEngine.iOS.CalendarUnit", true)]
+    public enum CalendarUnit
+    {
+        Era,
+        Year,
+        Month,
+        Day,
+        Hour,
+        Minute,
+        Second,
+        Week,
+        Weekday,
+        WeekdayOrdinal,
+        Quarter
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("LocalNotification is deprecated. Please use iOS.LocalNotification instead (UnityUpgradable) -> UnityEngine.iOS.LocalNotification", true)]
+    public sealed class LocalNotification
+    {
+        public DateTime fireDate { get { return default(DateTime); } set {} }
+        public string timeZone { get { return default(string); } set {} }
+        public CalendarUnit repeatInterval { get { return default(CalendarUnit); } set {} }
+        public CalendarIdentifier repeatCalendar { get { return default(CalendarIdentifier); } set {} }
+        public string alertBody { get { return default(string); } set {} }
+        public string alertAction { get { return default(string); } set {} }
+        public bool hasAction { get { return default(bool); } set {} }
+        public string alertLaunchImage { get { return default(string); } set {} }
+        public int applicationIconBadgeNumber { get { return default(int); } set {} }
+        public string soundName { get { return default(string); } set {} }
+        public static string defaultSoundName { get { return default(string); } }
+        public IDictionary userInfo { get { return default(IDictionary); } set {} }
+
+        public LocalNotification() {}
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("RemoteNotification is deprecated. Please use iOS.RemoteNotification instead (UnityUpgradable) -> UnityEngine.iOS.RemoteNotification", true)]
+    public sealed class RemoteNotification
+    {
+        public string alertBody { get { return default(string); } }
+        public bool hasAction { get { return default(bool); } }
+        public int applicationIconBadgeNumber { get { return default(int); } }
+        public string soundName { get { return default(string); } }
+        public IDictionary userInfo { get { return default(IDictionary); } }
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("RemoteNotificationType is deprecated. Please use iOS.NotificationType instead (UnityUpgradable) -> UnityEngine.iOS.NotificationType", true)]
+    public enum RemoteNotificationType
+    {
+        None,
+        Badge,
+        Sound,
+        Alert
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("NotificationServices is deprecated. Please use iOS.NotificationServices instead (UnityUpgradable) -> UnityEngine.iOS.NotificationServices", true)]
+    public sealed class NotificationServices
+    {
+        public NotificationServices()
+        {
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("RegisterForRemoteNotificationTypes is deprecated. Please use RegisterForNotifications instead (UnityUpgradable) -> UnityEngine.iOS.NotificationServices.RegisterForNotifications(*)", true)]
+        public static void RegisterForRemoteNotificationTypes(RemoteNotificationType notificationTypes) {}
+    }
 
     //
     // iAD
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("ADBannerView class is obsolete, Apple iAD service discontinued", true)]
+    public sealed class ADBannerView
+    {
+        public enum Layout
+        {
+            Top,
+            Bottom,
+            TopLeft = 0,
+            TopRight = 4,
+            TopCenter = 8,
+            BottomLeft = 1,
+            BottomRight = 5,
+            BottomCenter = 9,
+            CenterLeft = 2,
+            CenterRight = 6,
+            Center = 10,
+            Manual = -1
+        }
+
+        public enum Type
+        {
+            Banner,
+            MediumRect
+        }
+
+        public delegate void BannerWasClickedDelegate();
+        public delegate void BannerWasLoadedDelegate();
+
+        public static event ADBannerView.BannerWasClickedDelegate onBannerWasClicked
+        {
+            add {}
+            remove {}
+        }
+
+        public static event ADBannerView.BannerWasLoadedDelegate onBannerWasLoaded
+        {
+            add {}
+            remove {}
+        }
+
+        public bool loaded { get { return false; } }
+        public bool visible  { get { return false; } set {} }
+        public ADBannerView.Layout layout  { get { return default(ADBannerView.Layout); } set {} }
+        public Vector2 position { get { return default(Vector2); } set {} }
+        public Vector2 size  { get { return default(Vector2); } }
+        public ADBannerView(ADBannerView.Type type, ADBannerView.Layout layout) {}
+        public static bool IsAvailable(ADBannerView.Type type) { return false; }
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("ADInterstitialAd class is obsolete, Apple iAD service discontinued", true)]
+    public sealed class ADInterstitialAd
+    {
+        public delegate void InterstitialWasLoadedDelegate();
+
+        public static event ADInterstitialAd.InterstitialWasLoadedDelegate onInterstitialWasLoaded
+        {
+            add {}
+            remove {}
+        }
+
+        public static bool isAvailable { get { return false; } }
+
+        public bool loaded  { get { return false; } }
+
+        public ADInterstitialAd(bool autoReload) {}
+        public ADInterstitialAd() {}
+
+        ~ADInterstitialAd() {}
+
+        public void Show() {}
+
+        public void ReloadAd() {}
+    }
 }
 
 namespace UnityEngine.iOS
@@ -321,4 +504,97 @@ namespace UnityEngine.iOS
     // iAD
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("iOS.ADBannerView class is obsolete, Apple iAD service discontinued", true)]
+    public sealed partial class ADBannerView
+    {
+        public enum
+        Layout
+        {
+            // banner
+            Top         = 0,
+            Bottom      = 1,
+
+            // rect
+            TopLeft     = 0,
+            TopRight    = 4,
+            TopCenter   = 8,
+            BottomLeft  = 1,
+            BottomRight = 5,
+            BottomCenter = 9,
+            CenterLeft  = 2,
+            CenterRight = 6,
+            Center      = 10,
+
+            Manual = -1
+        };
+
+        public enum
+        Type
+        {
+            Banner = 0,
+            MediumRect = 1
+        };
+
+        public static bool IsAvailable(Type type) { return false; }
+
+        public ADBannerView(Type type, Layout layout) {}
+
+        public bool loaded { get { return false; } }
+        public bool visible  { get { return false; } set {} }
+
+        public Layout layout  { get { return default(Layout); } set {} }
+        public Vector2 position { get { return default(Vector2); } set {} }
+        public Vector2 size  { get { return default(Vector2); } }
+
+        public delegate void BannerWasClickedDelegate();
+        public static event BannerWasClickedDelegate onBannerWasClicked
+        {
+            add {}
+            remove {}
+        }
+
+        public delegate void BannerWasLoadedDelegate();
+        public static event BannerWasLoadedDelegate onBannerWasLoaded
+        {
+            add {}
+            remove {}
+        }
+
+        public delegate void BannerFailedToLoadDelegate();
+        public static event BannerFailedToLoadDelegate onBannerFailedToLoad
+        {
+            add {}
+            remove {}
+        }
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("iOS.ADInterstitialAd class is obsolete, Apple iAD service discontinued", true)]
+    public sealed partial class ADInterstitialAd
+    {
+        public static bool isAvailable { get { return false; } }
+
+        public ADInterstitialAd(bool autoReload) {}
+        public ADInterstitialAd() {}
+
+        public void Show() {}
+        public void ReloadAd() {}
+
+        public bool loaded  { get { return false; } }
+
+        public delegate void InterstitialWasLoadedDelegate();
+        public static event InterstitialWasLoadedDelegate onInterstitialWasLoaded
+        {
+            add {}
+            remove {}
+        }
+
+        public delegate void InterstitialWasViewedDelegate();
+        public static event InterstitialWasViewedDelegate onInterstitialWasViewed
+        {
+            add {}
+            remove {}
+        }
+    }
 }

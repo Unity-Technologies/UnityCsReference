@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace UnityEditor.PackageManager.UI.AssetStore
+namespace UnityEditor.PackageManager.UI
 {
     internal sealed class AssetStoreDownloadOperation
     {

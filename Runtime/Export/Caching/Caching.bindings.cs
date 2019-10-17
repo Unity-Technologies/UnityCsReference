@@ -141,6 +141,34 @@ namespace UnityEngine
 
         extern internal static bool MarkAsUsed(string url, string assetBundleName, Hash128 hash);
 
+        [Obsolete("Please use SetNoBackupFlag with Hash128 instead.")]
+        public static void SetNoBackupFlag(string url, int version)
+        {
+        }
+
+        public static void SetNoBackupFlag(string url, Hash128 hash)
+        {
+        }
+
+        public static void SetNoBackupFlag(CachedAssetBundle cachedBundle)
+        {
+        }
+
+        [Obsolete("Please use ResetNoBackupFlag with Hash128 instead.")]
+        public static void ResetNoBackupFlag(string url, int version)
+        {
+        }
+
+        public static void ResetNoBackupFlag(string url, Hash128 hash)
+        {
+        }
+
+        public static void ResetNoBackupFlag(CachedAssetBundle cachedBundle)
+        {
+        }
+
+        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        extern internal static void SetNoBackupFlag(string url, string assetBundleName, Hash128 hash, bool enabled);
 
         [Obsolete("This function is obsolete and will always return -1. Use IsVersionCached instead.")]
         public static int GetVersionFromCache(string url) { return -1; }
