@@ -83,14 +83,14 @@ namespace UnityEngine.XR
         Eyes, /// XREyes
 
         kUnityXRInputFeatureTypeInvalid = UInt32.MaxValue
-    };
+    }
 
     internal enum ConnectionChangeType : UInt32
     {
         Connected,
         Disconnected,
         ConfigChange,
-    };
+    }
 
     public enum InputDeviceRole : UInt32
     {
@@ -102,7 +102,7 @@ namespace UnityEngine.XR
         TrackingReference,
         HardwareTracker,
         LegacyController
-    };
+    }
 
     [Flags]
     public enum InputDeviceCharacteristics : UInt32
@@ -119,7 +119,7 @@ namespace UnityEngine.XR
         Left = 1 << 8,
         Right = 1 << 9,
         Simulated6DOF = 1 << 10
-    };
+    }
 
     [Flags]
     public enum InputTrackingState : UInt32
@@ -133,7 +133,7 @@ namespace UnityEngine.XR
         AngularAcceleration = 1 << 5,
 
         All = (1 << 6) - 1 // Keep this as the last entry, if you add an entry, bump this shift up by 1 as well
-    };
+    }
 
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -348,7 +348,7 @@ namespace UnityEngine.XR
         public static InputFeatureUsage<float> indexTouch = new InputFeatureUsage<float>("IndexTouch");
         [Obsolete("CommonUsages.thumbTouch is Oculus only, and is being moved to their package.  Please use OculusUsages.thumbTouch. These will still function until removed.")]
         public static InputFeatureUsage<float> thumbTouch = new InputFeatureUsage<float>("ThumbTouch");
-    };
+    }
 
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -659,7 +659,7 @@ namespace UnityEngine.XR
         Middle,
         Ring,
         Pinky
-    };
+    }
 
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -726,7 +726,7 @@ namespace UnityEngine.XR
     {
         Left,
         Right
-    };
+    }
 
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -949,6 +949,7 @@ namespace UnityEngine.XR
         public static event Action<InputDevice> deviceDisconnected;
         public static event Action<InputDevice> deviceConfigChanged;
 
+        [RequiredByNativeCode]
         private static void InvokeConnectionEvent(UInt64 deviceId, ConnectionChangeType change)
         {
             switch (change)

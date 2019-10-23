@@ -857,7 +857,7 @@ namespace UnityEditor
             sliderControlRect.xMin = sliderControlRect.xMax - kSliderWidth + kSpacing;
 
             timeControl.DoTimeControl(timeControlRect);
-            Rect labelRect = new Rect(new Vector2(rect.x, rect.y), EditorStyles.toolbarLabel.CalcSize(EditorGUIUtility.TrTempContent("xxxxx")));;
+            Rect labelRect = new Rect(new Vector2(rect.x, rect.y), EditorStyles.toolbarLabel.CalcSize(EditorGUIUtility.TrTempContent("xxxxxx")));;
             labelRect.x = rect.xMax - labelRect.width;
             labelRect.yMin = rect.yMin;
             labelRect.yMax = rect.yMax;

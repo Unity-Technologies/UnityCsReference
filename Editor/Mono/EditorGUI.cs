@@ -1727,10 +1727,13 @@ namespace UnityEditor
             {
                 using (new DisabledScope(true))
                 {
-                    var placeHolderTextRect = position;
+                    var placeHolderTextRect = EditorStyles.toolbarSearchFieldPopup.padding.Remove(new Rect(position.x, position.y, position.width
+                        , EditorStyles.toolbarSearchFieldPopup.fixedHeight > 0 ? EditorStyles.toolbarSearchFieldPopup.fixedHeight : position.height));
+                    var oldFontSize = EditorStyles.label.fontSize;
 
-                    placeHolderTextRect.xMin += EditorStyles.toolbarSearchFieldPopup.padding.right;
+                    EditorStyles.label.fontSize = EditorStyles.toolbarSearchFieldPopup.fontSize;
                     EditorStyles.label.Draw(placeHolderTextRect, EditorGUIUtility.TempContent(searchModes[searchMode]), false, false, false, false);
+                    EditorStyles.label.fontSize = oldFontSize;
                 }
             }
 

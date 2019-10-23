@@ -575,7 +575,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
             {
-                GUILayout.Label(AnimationWindowStyles.samples, EditorStyles.miniLabel);
+                GUILayout.Label(AnimationWindowStyles.samples, EditorStyles.toolbarLabel);
 
                 EditorGUI.BeginChangeCheck();
                 int clipFrameRate = EditorGUILayout.DelayedIntField((int)m_State.clipFrameRate, EditorStyles.toolbarTextField, GUILayout.Width(kIntFieldWidth));

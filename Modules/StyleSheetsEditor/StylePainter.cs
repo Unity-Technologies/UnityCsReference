@@ -193,10 +193,6 @@ namespace UnityEditor.StyleSheets
                 {
                     GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, backgroundColor * bgColorTint, Vector4.zero, border.radius, smoothCorners);
                 }
-                else if (guiBgColor != Color.clear && guiBgColor != Color.white)
-                {
-                    GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, guiBgColor, Vector4.zero, border.radius, smoothCorners);
-                }
             }
 
             // Draw background image

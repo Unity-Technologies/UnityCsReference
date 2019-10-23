@@ -272,33 +272,36 @@ namespace UnityEditor
 
         internal void UpdateGridsVisibility(Quaternion rotation, bool orthoMode)
         {
-            bool _xGrid = false, _yGrid = false, _zGrid = false;
+            bool showX = false, showY = false, showZ = false;
 
             if (showGrid)
             {
                 if (orthoMode)
                 {
                     Vector3 fwd = rotation * Vector3.forward;
-                    // Show horizontal grid as long as angle is not too small
-                    if (Mathf.Abs(fwd.y) > 0.2f)
-                        _yGrid = true;
-                    // Show xy and zy planes only when straight on
+
+                    // Show xy, zy and xz planes only when straight on
+                    if (fwd == Vector3.up || fwd == Vector3.down)
+                        showY = true;
                     else if (fwd == Vector3.left || fwd == Vector3.right)
-                        _xGrid = true;
+                        showX = true;
                     else if (fwd == Vector3.forward || fwd == Vector3.back)
-                        _zGrid = true;
+                        showZ = true;
                 }
-                else
+
+                // Main path for perspective mode.
+                // In ortho, fallback on this path if camera is not aligned with X, Y or Z axis.
+                if (!showX && !showY && !showZ)
                 {
-                    _xGrid = (gridAxis == GridRenderAxis.X || gridAxis == GridRenderAxis.All);
-                    _yGrid = (gridAxis == GridRenderAxis.Y || gridAxis == GridRenderAxis.All);
-                    _zGrid = (gridAxis == GridRenderAxis.Z || gridAxis == GridRenderAxis.All);
+                    showX = (gridAxis == GridRenderAxis.X || gridAxis == GridRenderAxis.All);
+                    showY = (gridAxis == GridRenderAxis.Y || gridAxis == GridRenderAxis.All);
+                    showZ = (gridAxis == GridRenderAxis.Z || gridAxis == GridRenderAxis.All);
                 }
             }
 
-            xGrid.fade.target = _xGrid;
-            yGrid.fade.target = _yGrid;
-            zGrid.fade.target = _zGrid;
+            xGrid.fade.target = showX;
+            yGrid.fade.target = showY;
+            zGrid.fade.target = showZ;
         }
 
         void ApplySnapConstraintsInPerspectiveMode()
@@ -393,11 +396,11 @@ namespace UnityEditor
             // but if it's orbited rapidly, it can end up at this angle faster than the fading has kicked in.
             // For these cases hiding it abruptly looks better.
             // The popping isn't noticable because the user is orbiting rapidly to begin with.
-            if (Mathf.Abs(direction.x) >= k_AngleThresholdForOrthographicGrid)
+            if (xGrid.fade.target && Mathf.Abs(direction.x) >= k_AngleThresholdForOrthographicGrid)
                 parameters = xGrid.PrepareGridRender(0, gridOpacity);
-            else if (Mathf.Abs(direction.y) >= k_AngleThresholdForOrthographicGrid)
+            else if (yGrid.fade.target && Mathf.Abs(direction.y) >= k_AngleThresholdForOrthographicGrid)
                 parameters = yGrid.PrepareGridRender(1, gridOpacity);
-            else if (Mathf.Abs(direction.z) >= k_AngleThresholdForOrthographicGrid)
+            else if (zGrid.fade.target && Mathf.Abs(direction.z) >= k_AngleThresholdForOrthographicGrid)
                 parameters = zGrid.PrepareGridRender(2, gridOpacity);
 
             return parameters;

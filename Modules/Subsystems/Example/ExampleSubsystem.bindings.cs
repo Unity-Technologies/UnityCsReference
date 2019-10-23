@@ -8,15 +8,13 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.XR
+namespace UnityEngine.Subsystems
 {
-    [NativeType(Header = "Modules/XR/Subsystems/Example/XRExampleSubsystem.h")]
+    [NativeType(Header = "Modules/Subsystems/Example/ExampleSubsystem.h")]
     [UsedByNativeCode]
-    public class XRExampleSubsystem : IntegratedSubsystem<XRExampleSubsystemDescriptor>
+    public class ExampleSubsystem : IntegratedSubsystem<ExampleSubsystemDescriptor>
     {
-        [NativeConditional("ENABLE_XR")]
         public extern void PrintExample();
-        [NativeConditional("ENABLE_XR")]
         public extern bool GetBool();
     }
 }

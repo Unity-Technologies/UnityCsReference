@@ -1021,6 +1021,12 @@ namespace UnityEditor
             m_Parent.SetInternalGameViewDimensions(m_GameViewRect, m_GameViewClippedRect, m_GameViewTargetSize);
         }
 
+        internal void SetMainPlayModeViewSize(Vector2 targetSize)
+        {
+            if (m_Parent != null)
+                m_Parent.SetMainPlayModeViewSize(targetSize);
+        }
+
         internal void SetPlayModeView(bool value)
         {
             m_IsPlayModeView = value;

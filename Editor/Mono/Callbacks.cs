@@ -36,7 +36,7 @@ namespace UnityEditor
             public RegisterPluginsAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
 
             [RequiredSignature]
-            extern static IEnumerable<PluginDesc> Signature(BuildTarget target);
+            static IEnumerable<PluginDesc> Signature(BuildTarget target) { throw new InvalidOperationException(); }
         }
 
         [RequiredByNativeCode]
@@ -46,7 +46,7 @@ namespace UnityEditor
             public PostProcessBuildAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
 
             [RequiredSignature]
-            extern static void Signature(BuildTarget target, string pathToBuiltProject);
+            static void Signature(BuildTarget target, string pathToBuiltProject) { throw new InvalidOperationException(); }
         }
 
         [RequiredByNativeCode]
@@ -62,7 +62,7 @@ namespace UnityEditor
             public PostProcessSceneAttribute(int callbackOrder, int version) { m_CallbackOrder = callbackOrder; m_version = version; }
 
             [RequiredSignature]
-            extern static void Signature();
+            static void Signature() { throw new InvalidOperationException(); }
         }
 
         [RequiredByNativeCode]
@@ -73,7 +73,7 @@ namespace UnityEditor
             public DidReloadScripts(int callbackOrder) { m_CallbackOrder = callbackOrder; }
 
             [RequiredSignature]
-            extern static void Signature();
+            static void Signature() { throw new InvalidOperationException(); }
         }
 
         // Add this attribute to a static method to get a callback for opening an asset inside Unity before trying to open it with an external tool
@@ -84,10 +84,10 @@ namespace UnityEditor
             public OnOpenAssetAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
 
             [RequiredSignature]
-            extern static bool SignatureLine(int instanceID, int line);
+            static bool SignatureLine(int instanceID, int line) { throw new InvalidOperationException(); }
 
             [RequiredSignature]
-            extern static bool SignatureLineColumn(int instanceID, int line, int column);
+            static bool SignatureLineColumn(int instanceID, int line, int column) { throw new InvalidOperationException(); }
         }
     }
 }

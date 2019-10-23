@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
         internal VisualElement dragElement { get; private set; }
         internal VisualElement dragBorderElement { get; private set; }
 
+        [SerializeField]
         private TValueType m_LowValue;
         public TValueType lowValue
         {
@@ -30,10 +31,12 @@ namespace UnityEngine.UIElements
                     m_LowValue = value;
                     ClampValue();
                     UpdateDragElementPosition();
+                    SaveViewData();
                 }
             }
         }
 
+        [SerializeField]
         private TValueType m_HighValue;
         public TValueType highValue
         {
@@ -45,6 +48,7 @@ namespace UnityEngine.UIElements
                     m_HighValue = value;
                     ClampValue();
                     UpdateDragElementPosition();
+                    SaveViewData();
                 }
             }
         }

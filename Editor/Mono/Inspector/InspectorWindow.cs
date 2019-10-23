@@ -154,6 +154,7 @@ namespace UnityEditor
             public static readonly GUIContent vcsCheckoutHint = EditorGUIUtility.TrTextContent("Under Version Control\nCheck out this asset in order to make changes.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
             public static readonly GUIContent vcsNotConnected = EditorGUIUtility.TrTextContent("VCS ({0}) is not connected");
             public static readonly GUIContent vcsOffline = EditorGUIUtility.TrTextContent("Work Offline option is active");
+            public static readonly GUIContent vcsSettings = EditorGUIUtility.TrTextContent("Settings");
             public static readonly GUIContent vcsCheckout = EditorGUIUtility.TrTextContent("Check Out");
             public static readonly GUIContent vcsAdd = EditorGUIUtility.TrTextContent("Add");
             public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
@@ -1418,6 +1419,7 @@ namespace UnityEditor
 
         struct VersionControlBarButtonPresence
         {
+            public bool settings;
             public bool revert;
             public bool revertUnchanged;
             public bool checkout;
@@ -1429,6 +1431,7 @@ namespace UnityEditor
             public int GetButtonCount()
             {
                 var c = 0;
+                if (settings) ++c;
                 if (revert) ++c; // revertUnchanged is same button in a drop-down
                 if (checkout) ++c;
                 if (add) ++c;
@@ -1442,7 +1445,10 @@ namespace UnityEditor
             {
                 var res = new VersionControlBarButtonPresence();
                 if (!connected)
+                {
+                    res.settings = true;
                     return res;
+                }
 
                 var isFolder = asset.isFolder && !Provider.isVersioningFolders;
 
@@ -1460,13 +1466,22 @@ namespace UnityEditor
         static float VersionControlBarButtons(VersionControlBarButtonPresence presence, Rect rect, AssetList assetList, bool connected)
         {
             var buttonX = rect.xMax - 7;
-            if (!connected)
-                return buttonX;
 
             var buttonRect = rect;
             var buttonStyle = Styles.vcsButtonStyle;
             buttonRect.y += 1;
             buttonRect.height = buttonStyle.CalcSize(Styles.vcsAdd).y;
+
+            if (!connected)
+            {
+                if (presence.settings)
+                {
+                    if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsSettings))
+                        SettingsService.OpenProjectSettings("Project/Editor");
+                }
+                return buttonX;
+            }
+
 
             if (presence.revert && !presence.revertUnchanged)
             {

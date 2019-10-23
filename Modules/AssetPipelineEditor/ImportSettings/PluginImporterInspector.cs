@@ -423,6 +423,8 @@ namespace UnityEditor
 
             serializedObject.Update();
             base.Apply();
+
+            m_HasModified = false;
         }
 
         protected override void Awake()

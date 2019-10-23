@@ -70,7 +70,12 @@ namespace UnityEditor
         protected Vector2 targetSize
         {
             get { return m_TargetSize; }
-            set { m_TargetSize = value; }
+            set
+            {
+                if (this == GetMainPlayModeView())
+                    SetMainPlayModeViewSize(value);
+                m_TargetSize = value;
+            }
         }
 
         protected FilterMode textureFilterMode
@@ -313,6 +318,7 @@ namespace UnityEditor
             {
                 InternalEditorUtility.OnGameViewFocus(true);
                 m_Parent.SetAsLastPlayModeView();
+                m_Parent.SetMainPlayModeViewSize(targetSize);
                 s_LastFocused = this;
                 Repaint();
             }
@@ -330,12 +336,6 @@ namespace UnityEditor
 
             foreach (PlayModeView playModeView in s_PlayModeViews)
                 playModeView.Repaint();
-        }
-
-        [RequiredByNativeCode]
-        private static void GetMainPlayModeViewargetSizeNoBox(out Vector2 result)
-        {
-            result = GetMainPlayModeViewTargetSize();
         }
     }
 }

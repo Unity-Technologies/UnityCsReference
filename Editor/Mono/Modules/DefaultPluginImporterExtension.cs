@@ -106,6 +106,8 @@ namespace UnityEditor.Modules
             {
                 p.Apply(inspector);
             }
+
+            hasModified = false;
         }
 
         public virtual void OnEnable(PluginImporterInspector inspector)

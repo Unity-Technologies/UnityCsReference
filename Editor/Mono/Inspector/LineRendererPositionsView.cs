@@ -29,7 +29,7 @@ namespace UnityEditor
             showBorder = true;
             showAlternatingRowBackgrounds = true;
             useScrollView = false;
-            rowHeight = EditorStyles.numberField.lineHeight;
+            rowHeight = 15.0f;
 
             MultiColumnHeaderState.Column[] columns = new MultiColumnHeaderState.Column[4];
             for (int i = 0; i < columns.Length; ++i)

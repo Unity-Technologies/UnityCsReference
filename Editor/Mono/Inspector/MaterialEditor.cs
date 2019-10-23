@@ -1609,7 +1609,7 @@ namespace UnityEditor
         public void SetDefaultGUIWidths()
         {
             EditorGUIUtility.fieldWidth = EditorGUI.kObjectFieldThumbnailHeight;
-            EditorGUIUtility.labelWidth = GUIClip.visibleRect.width - EditorGUIUtility.fieldWidth - 17;
+            EditorGUIUtility.labelWidth = GUIClip.visibleRect.width - EditorGUIUtility.fieldWidth - 25;
         }
 
         private bool IsMaterialEditor(string customEditorName)

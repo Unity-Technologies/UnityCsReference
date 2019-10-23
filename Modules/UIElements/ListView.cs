@@ -129,8 +129,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField]
         internal int m_ItemHeight = s_DefaultItemHeight;
+
+        [SerializeField]
         internal bool m_ItemHeightIsInline;
+
         public int itemHeight
         {
             get { return m_ItemHeight; }
