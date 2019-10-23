@@ -124,6 +124,7 @@ namespace UnityEditor
         }
 
         static Vector3 s_DoScaleHandle_AxisHandlesOctant = Vector3.one;
+        static Vector3 s_InitialScale;
 
         public static Vector3 DoScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size)
         {
@@ -154,6 +155,13 @@ namespace UnityEditor
             }
 
             var isCenterIsHot = ids.xyz == GUIUtility.hotControl;
+
+            switch (Event.current.type)
+            {
+                case EventType.MouseDown:
+                    s_InitialScale = scale;
+                    break;
+            }
 
             for (var i = 0; i < 3; ++i)
             {
@@ -216,12 +224,9 @@ namespace UnityEditor
                 color = ToActiveColorSpace(centerColor);
                 EditorGUI.BeginChangeCheck();
                 var s = ScaleValueHandle(ids.xyz, scale.x, position, rotation, handleSize * param.xyzSize, CubeHandleCap, SnapSettings.scale);
-                if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(scale.x, 0))
+                if (EditorGUI.EndChangeCheck())
                 {
-                    var dif = s / scale.x;
-                    scale.x *= dif;
-                    scale.y *= dif;
-                    scale.z *= dif;
+                    scale = s_InitialScale * s;
                 }
             }
 

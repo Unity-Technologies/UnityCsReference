@@ -889,7 +889,7 @@ namespace UnityEditor.ShortcutManagement
                     new KeyDef(KeyCode.P),
                     new KeyDef(KeyCode.LeftBracket, "["),
                     new KeyDef(KeyCode.RightBracket, "]"),
-                    new KeyDef(KeyCode.Slash, "\\")
+                    new KeyDef(KeyCode.Backslash, "\\")
                 },
                 new[]
                 {
@@ -919,7 +919,7 @@ namespace UnityEditor.ShortcutManagement
                     new KeyDef(KeyCode.M),
                     new KeyDef(KeyCode.Comma, ","),
                     new KeyDef(KeyCode.Period, "."),
-                    new KeyDef(KeyCode.Backslash, "/"),
+                    new KeyDef(KeyCode.Slash, "/"),
                     new KeyDef(KeyCode.RightShift, "Shift"),
                 },
                 bottomRow,
