@@ -117,12 +117,14 @@ namespace UnityEditor
         {
             EditorTools.EditorTools.activeToolChanged += OnActiveToolChanged;
             EditorTools.EditorTools.activeToolChanging += OnActiveToolChanging;
+            Selection.selectionChanged += OnSelectionChanged;
         }
 
         public void OnDisable()
         {
             EditorTools.EditorTools.activeToolChanged -= OnActiveToolChanged;
             EditorTools.EditorTools.activeToolChanging -= OnActiveToolChanging;
+            Selection.selectionChanged -= OnSelectionChanged;
         }
 
         public override void OnToolGUI(EditorWindow window)
@@ -132,9 +134,18 @@ namespace UnityEditor
 
         void OnActiveToolChanged()
         {
-            // We don't support multi-selection editing
-            if (EditorTools.EditorTools.IsActiveTool(this) && target != null)
-                polyUtility.StartEditing(target as Collider2D);
+            var collider = target as Collider2D;
+            if (EditorTools.EditorTools.IsActiveTool(this) && IsAvailable() && collider)
+                polyUtility.StartEditing(collider);
+        }
+
+        void OnSelectionChanged()
+        {
+            if (EditorTools.EditorTools.IsActiveTool(this))
+                polyUtility.StopEditing();
+            var collider = target as Collider2D;
+            if (EditorTools.EditorTools.IsActiveTool(this) && IsAvailable() && collider != null)
+                polyUtility.StartEditing(collider);
         }
 
         void OnActiveToolChanging()
@@ -145,6 +156,7 @@ namespace UnityEditor
 
         public override bool IsAvailable()
         {
+            // We don't support multi-selection editing
             return targets.Count() == 1 && !targets.FirstOrDefault((x) =>
             {
                 var sr = (x as Component).GetComponent<SpriteRenderer>();

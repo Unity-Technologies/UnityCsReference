@@ -28,7 +28,7 @@ namespace UnityEditor.Experimental.AssetImporters
         public uint version { get { return m_Version; } }
 
         [RequiredSignature]
-        static extern string[] CollectImportedDependenciesSignature(string assetPath);
+        static string[] CollectImportedDependenciesSignature(string assetPath) { throw new InvalidOperationException(); }
     }
 
     static class ImportedDependenciesApi

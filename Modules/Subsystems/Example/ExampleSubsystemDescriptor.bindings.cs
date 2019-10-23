@@ -8,11 +8,11 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.XR
+namespace UnityEngine.Subsystems
 {
-    [NativeType(Header = "Modules/XR/Subsystems/Example/XRExampleSubsystemDescriptor.h")]
+    [NativeType(Header = "Modules/Subsystems/Example/ExampleSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRExampleSubsystemDescriptor : IntegratedSubsystemDescriptor<XRExampleSubsystem>
+    public class ExampleSubsystemDescriptor : IntegratedSubsystemDescriptor<ExampleSubsystem>
     {
         public extern bool supportsEditorMode { get; }
         public extern bool disableBackbufferMSAA { get; }

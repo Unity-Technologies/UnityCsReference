@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
 
         void PollTouchScreenKeyboard()
         {
-            if (TouchScreenKeyboard.isSupported)
+            if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
             {
                 if (m_TouchKeyboardPoller == null)
                 {
@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
 
         void DoPollTouchScreenKeyboard()
         {
-            if (TouchScreenKeyboard.isSupported)
+            if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
             {
                 if (textInputField.editorEngine.keyboardOnScreen != null)
                 {

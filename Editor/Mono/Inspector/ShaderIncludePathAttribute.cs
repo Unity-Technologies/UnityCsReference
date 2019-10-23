@@ -11,6 +11,6 @@ namespace UnityEditor
     public class ShaderIncludePathAttribute : Attribute
     {
         [RequiredSignature]
-        static extern string[] GetIncludePaths();
+        static string[] GetIncludePaths() { throw new InvalidOperationException(); }
     }
 }

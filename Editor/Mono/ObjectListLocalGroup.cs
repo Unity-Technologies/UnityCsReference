@@ -1406,7 +1406,13 @@ namespace UnityEditor
                 iconRect.width = k_IconWidth;
                 iconRect.x += vcPadding * 0.5f;
 
-                icon = (selected && focus) ? EditorUtility.GetIconInActiveState(icon) as Texture2D : icon;
+                if (selected && focus)
+                {
+                    var activeIcon = EditorUtility.GetIconInActiveState(icon) as Texture2D;
+
+                    if (activeIcon)
+                        icon = activeIcon;
+                }
 
                 if (icon != null)
                     GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);

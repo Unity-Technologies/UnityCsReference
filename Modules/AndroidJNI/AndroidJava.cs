@@ -832,13 +832,28 @@ namespace UnityEngine
             }
         }
 
+        private static IntPtr GetMethodID(string clazz, string methodName, string signature)
+        {
+            IntPtr jclass = AndroidJNISafe.FindClass(clazz);
+            try
+            {
+                return AndroidJNISafe.GetMethodID(jclass, methodName, signature);
+            }
+            finally
+            {
+                AndroidJNISafe.DeleteLocalRef(jclass);
+            }
+        }
+
         private const string RELECTION_HELPER_CLASS_NAME = "com/unity3d/player/ReflectionHelper";
         private static readonly GlobalJavaObjectRef s_ReflectionHelperClass  = new GlobalJavaObjectRef(AndroidJNISafe.FindClass(RELECTION_HELPER_CLASS_NAME));
         private static readonly IntPtr s_ReflectionHelperGetConstructorID    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getConstructorID", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/reflect/Constructor;");
         private static readonly IntPtr s_ReflectionHelperGetMethodID         = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getMethodID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Method;");
         private static readonly IntPtr s_ReflectionHelperGetFieldID          = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Field;");
+        private static readonly IntPtr s_ReflectionHelperGetFieldSignature   = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldSignature", "(Ljava/lang/reflect/Field;)Ljava/lang/String;");
         private static readonly IntPtr s_ReflectionHelperNewProxyInstance    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(JLjava/lang/Class;)Ljava/lang/Object;");
         private static readonly IntPtr s_ReflectionHelperSetNativeExceptionOnProxy = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "setNativeExceptionOnProxy", "(Ljava/lang/Object;JZ)V");
+        private static readonly IntPtr s_FieldGetDeclaringClass              = GetMethodID("java/lang/reflect/Field", "getDeclaringClass", "()Ljava/lang/Class;");
 
         public static IntPtr GetConstructorMember(IntPtr jclass, string signature)
         {
@@ -889,6 +904,18 @@ namespace UnityEngine
                 AndroidJNISafe.DeleteLocalRef(jniArgs[1].l);
                 AndroidJNISafe.DeleteLocalRef(jniArgs[2].l);
             }
+        }
+
+        public static IntPtr GetFieldClass(IntPtr field)
+        {
+            return AndroidJNISafe.CallObjectMethod(field, s_FieldGetDeclaringClass, null);
+        }
+
+        public static string GetFieldSignature(IntPtr field)
+        {
+            jvalue[] jniArgs = new jvalue[1];
+            jniArgs[0].l = field;
+            return AndroidJNISafe.CallStaticStringMethod(s_ReflectionHelperClass, s_ReflectionHelperGetFieldSignature, jniArgs);
         }
 
         public static IntPtr NewProxyInstance(IntPtr delegateHandle, IntPtr interfaze)
@@ -1396,24 +1423,37 @@ namespace UnityEngine
 
         public static IntPtr GetFieldID(IntPtr jclass, string fieldName, string signature, bool isStatic)
         {
-            IntPtr field = IntPtr.Zero;
+            IntPtr memberID = IntPtr.Zero;
+            Exception reflectEx = null;
+            AndroidJNI.PushLocalFrame(10);
             try
             {
-                field = AndroidReflection.GetFieldMember(jclass, fieldName, signature, isStatic);
-                return AndroidJNISafe.FromReflectedField(field);
+                IntPtr field = AndroidReflection.GetFieldMember(jclass, fieldName, signature, isStatic);
+                if (!isStatic)
+                    jclass = AndroidReflection.GetFieldClass(field);
+                signature = AndroidReflection.GetFieldSignature(field);
             }
             catch (Exception e)
             {
-                IntPtr memberID = isStatic
+                reflectEx = e;
+            }
+
+            try
+            {
+                memberID = isStatic
                     ? AndroidJNISafe.GetStaticFieldID(jclass, fieldName, signature)
                     : AndroidJNISafe.GetFieldID(jclass, fieldName, signature);
-                if (memberID != IntPtr.Zero)
-                    return memberID;
-                throw e;
+                if (memberID == IntPtr.Zero)
+                {
+                    if (reflectEx != null)
+                        throw reflectEx;
+                    throw new Exception(string.Format("Field {0} or type signature {1} not found", fieldName, signature));
+                }
+                return memberID;
             }
             finally
             {
-                AndroidJNISafe.DeleteLocalRef(field);
+                AndroidJNI.PopLocalFrame(IntPtr.Zero);
             }
         }
 

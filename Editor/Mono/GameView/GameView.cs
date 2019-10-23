@@ -739,6 +739,10 @@ namespace UnityEditor
 
             m_ZoomArea.BeginViewGUI();
 
+            // Window size might change on Layout event
+            if (type == EventType.Layout)
+                targetSize = targetRenderSize;
+
             // Setup game view dimensions, so that player loop can use it for input
             var gameViewTarget = GUIClip.UnclipToWindow(m_ZoomArea.drawRect);
             if (m_Parent)

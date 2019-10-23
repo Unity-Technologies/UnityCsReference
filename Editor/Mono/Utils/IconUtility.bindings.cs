@@ -11,7 +11,7 @@ namespace UnityEditor.Utils
     static class IconUtility
     {
         [FreeFunction]
-        extern public static void AddIconToWindowsExecutable(string path);
+        extern public static bool AddIconToWindowsExecutable(string path);
 
         [FreeFunction]
         extern public static bool SaveIcoForPlatform(string path, BuildTargetGroup buildTargetGroup, Vector2Int[] iconSizes);

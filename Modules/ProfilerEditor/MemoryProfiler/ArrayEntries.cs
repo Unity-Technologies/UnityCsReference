@@ -7,6 +7,7 @@ using System.IO;
 using UnityEngine;
 using UnityEditorInternal.Profiling.Memory.Experimental;
 using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor.Profiling.Memory.Experimental
 {
@@ -481,9 +482,18 @@ namespace UnityEditor.Profiling.Memory.Experimental
 
         public static string ToString(byte[] data, uint startIndex, uint numBytes)
         {
-            char[] result = new char[numBytes];
-            Array.Copy(data, startIndex, result, 0, numBytes);
-            return new string(result);
+            var result = new string('\0', (int)numBytes);
+            unsafe
+            {
+                fixed(char* resultPtr = result)
+                {
+                    fixed(byte* dataPtr = data)
+                    {
+                        UnsafeUtility.MemCpyStride(resultPtr, UnsafeUtility.SizeOf<char>(), dataPtr + startIndex, UnsafeUtility.SizeOf<byte>(), UnsafeUtility.SizeOf<byte>(), (int)numBytes);
+                    }
+                }
+            }
+            return result;
         }
     }
 }

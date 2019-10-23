@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
@@ -38,12 +39,16 @@ namespace UnityEditor.VersionControl
         bool m_ShowIncoming = false;
         const float k_ResizerHeight =  17f;
         const float k_MinIncomingAreaHeight = 50f;
-        const float k_BottomBarHeight = 17f;
+        const float k_BottomBarHeight = 21f;
         float s_ToolbarButtonsWidth = 0f;
         float s_SettingsButtonWidth = 0f;
         float s_DeleteChangesetsButtonWidth = 0f;
 
         static GUIContent[] sStatusWheel;
+
+        DateTime lastRefresh = new DateTime(0);
+        private int refreshInterval = 1000; // this is in MS
+        private bool scheduleRefresh = false;
 
         // Workaround to reload vcs info upon domain reload. TODO: Fix VersionControl.ListControl to get rid of this
         static bool s_DidReload = false; // defaults to false after domain reload
@@ -174,14 +179,21 @@ namespace UnityEditor.VersionControl
                 return;
             }
 
-            if (Provider.onlineState == OnlineState.Online)
+            if (TimeElapsed() > refreshInterval)
             {
-                Task changesTask = Provider.ChangeSets();
-                changesTask.SetCompletionAction(CompletionAction.OnChangeSetsPendingWindow);
+                if (Provider.onlineState == OnlineState.Online)
+                {
+                    Task changesTask = Provider.ChangeSets();
+                    changesTask.SetCompletionAction(CompletionAction.OnChangeSetsPendingWindow);
 
-                Task incomingTask = Provider.Incoming();
-                incomingTask.SetCompletionAction(CompletionAction.OnIncomingPendingWindow);
+                    Task incomingTask = Provider.Incoming();
+                    incomingTask.SetCompletionAction(CompletionAction.OnIncomingPendingWindow);
+                }
+
+                lastRefresh = DateTime.Now;
             }
+            else
+                scheduleRefresh = true;
         }
 
         void OnGotLatest(Task t)
@@ -456,7 +468,9 @@ namespace UnityEditor.VersionControl
             }
 
             bool refreshButtonClicked = GUILayout.Button(refreshIcon, EditorStyles.toolbarButton);
-            refresh = refresh || refreshButtonClicked;
+            refresh = refresh || refreshButtonClicked || scheduleRefresh;
+
+            bool repaint = false;
 
             if (refresh)
             {
@@ -465,14 +479,15 @@ namespace UnityEditor.VersionControl
                     Provider.InvalidateCache();
                     Provider.UpdateSettings();
                 }
+
+                repaint = true;
+                scheduleRefresh = false;
                 UpdateWindow();
             }
 
             GUILayout.EndArea();
 
             Rect rect = new Rect(0, toolBarHeight, position.width, position.height - toolBarHeight - k_BottomBarHeight);
-
-            bool repaint = false;
 
             GUILayout.EndHorizontal();
 
@@ -676,6 +691,12 @@ namespace UnityEditor.VersionControl
                 changeIcon.hideFlags = HideFlags.HideAndDontSave;
                 changeIcon.name = "ChangeIcon";
             }
+        }
+
+        double TimeElapsed()
+        {
+            var elapsed = DateTime.Now - lastRefresh;
+            return elapsed.TotalMilliseconds;
         }
     }
 }

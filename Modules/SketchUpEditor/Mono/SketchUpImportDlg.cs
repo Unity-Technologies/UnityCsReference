@@ -192,7 +192,7 @@ namespace UnityEditor
         private WeakReference m_ModelEditor;
 
         const float kHeaderHeight = 25f;
-        const float kBottomHeight = 30f;
+        const float kBottomHeight = 28f;
         readonly Vector2 m_WindowMinSize = new Vector2(350, 350);
 
         TreeViewState m_TreeViewState;
@@ -202,7 +202,7 @@ namespace UnityEditor
             public readonly float buttonWidth;
             public readonly GUIStyle headerStyle;
             public readonly GUIStyle toggleStyle;
-            public readonly GUIStyle boxBackground = "OL Box";
+            public readonly GUIStyle footerStyle;
             public readonly GUIContent okButton = EditorGUIUtility.TrTextContent("OK");
             public readonly GUIContent cancelButton = EditorGUIUtility.TrTextContent("Cancel");
             public readonly GUIContent nodesLabel = EditorGUIUtility.TrTextContent("Select the SketchUp nodes to import", "Nodes in the file hierarchy");
@@ -211,12 +211,16 @@ namespace UnityEditor
             public Styles()
             {
                 buttonWidth = 32f;
-                headerStyle = new GUIStyle(EditorStyles.toolbarButton);
+                headerStyle = new GUIStyle(EditorStyles.toolbar);
+                headerStyle.fixedHeight = kHeaderHeight;
                 headerStyle.padding.left = 4;
                 headerStyle.alignment = TextAnchor.MiddleLeft;
                 toggleStyle = new GUIStyle(EditorStyles.toggle);
                 toggleStyle.padding.left = 8;
                 toggleStyle.alignment = TextAnchor.MiddleCenter;
+                footerStyle = new GUIStyle("toolbarBottom");
+                footerStyle.padding.top = 4;
+                footerStyle.fixedHeight = kBottomHeight;
             }
 
             static Styles s_Styles = null;
@@ -310,9 +314,7 @@ namespace UnityEditor
 
             // Footer
             GUILayout.BeginArea(bottomRect);
-            GUILayout.Box("", Styles.styles.boxBackground, GUILayout.ExpandWidth(true), GUILayout.Height(1));
-            GUILayout.Space(2);
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(Styles.styles.footerStyle);
             GUILayout.FlexibleSpace();
             bool closeWindow = false;
             if (isModal)
@@ -344,8 +346,8 @@ namespace UnityEditor
             GUILayout.EndArea();
 
             // TreeView
-            rect.y = kHeaderHeight - 7;
-            rect.height -= headerRect.height + bottomRect.height - 7;
+            rect.y = kHeaderHeight;
+            rect.height -= headerRect.height + bottomRect.height;
             m_TreeView.OnEvent();
             m_TreeView.OnGUI(rect, keyboardControl);
 

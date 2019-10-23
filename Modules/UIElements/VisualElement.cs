@@ -443,15 +443,23 @@ namespace UnityEngine.UIElements
 
         internal void UpdateBoundingBox()
         {
-            m_BoundingBox = rect;
-            for (int i = 0; i < hierarchy.childCount; i++)
+            if (float.IsNaN(rect.x) || float.IsNaN(rect.y) || float.IsNaN(rect.width) || float.IsNaN(rect.height))
             {
-                var childBB = m_Children[i].boundingBox;
-                childBB = m_Children[i].ChangeCoordinatesTo(this, childBB);
-                m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
-                m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
-                m_BoundingBox.yMin = Math.Min(m_BoundingBox.yMin, childBB.yMin);
-                m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
+                // Ignored unlayouted VisualElements.
+                m_BoundingBox = Rect.zero;
+            }
+            else
+            {
+                m_BoundingBox = rect;
+                for (int i = 0; i < hierarchy.childCount; i++)
+                {
+                    var childBB = m_Children[i].boundingBox;
+                    childBB = m_Children[i].ChangeCoordinatesTo(this, childBB);
+                    m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
+                    m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
+                    m_BoundingBox.yMin = Math.Min(m_BoundingBox.yMin, childBB.yMin);
+                    m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
+                }
             }
         }
 

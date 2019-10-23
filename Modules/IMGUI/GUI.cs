@@ -532,7 +532,7 @@ namespace UnityEngine
             bool oldGUIChanged = GUI.changed;
             GUI.changed = false;
 
-            if (TouchScreenKeyboard.isSupported)
+            if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
                 DoTextField(position, GUIUtility.GetControlID(FocusType.Keyboard), t, false, maxLength, style, password, maskChar);
             else
                 DoTextField(position, GUIUtility.GetControlID(FocusType.Keyboard, position), t, false, maxLength, style);
@@ -607,7 +607,7 @@ namespace UnityEngine
             editor.controlID = id;
             editor.DetectFocusChange();
 
-            if (TouchScreenKeyboard.isSupported)
+            if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
             {
                 HandleTextFieldEventForTouchscreen(position, id, content, multiline, maxLength, style, secureText, maskChar, editor);
             }

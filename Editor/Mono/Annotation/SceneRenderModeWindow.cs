@@ -167,7 +167,7 @@ namespace UnityEditor
                     modes = Styles.sBuiltinCameraModes.Length + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
                 }
 
-                int separators = headers - 2;
+                int separators = headers - 1;
                 return ((headers + modes) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators) + kShowLightmapResolutionHeight;
             }
         }

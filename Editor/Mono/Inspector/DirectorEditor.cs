@@ -154,7 +154,7 @@ namespace UnityEditor
             if (!m_BindingPropertiesCache.Any())
                 return;
 
-            m_SceneBindings.isExpanded = EditorGUILayout.Foldout(m_SceneBindings.isExpanded, Styles.BindingsTitleContent);
+            m_SceneBindings.isExpanded = EditorGUILayout.Foldout(m_SceneBindings.isExpanded, Styles.BindingsTitleContent, true);
             if (m_SceneBindings.isExpanded)
             {
                 EditorGUI.indentLevel++;

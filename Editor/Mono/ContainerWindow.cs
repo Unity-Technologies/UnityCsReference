@@ -198,7 +198,7 @@ namespace UnityEditor
             return ( // hallelujah
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
-                (m_ShowMode == (int)ShowMode.MainWindow && (rootView is HostView || rootView is MainView)) ||
+                (m_ShowMode == (int)ShowMode.MainWindow && rootView is HostView) ||
                 (rootView is SplitView &&
                     rootView.children.Length == 1 &&
                     rootView.children[0] is DockArea &&

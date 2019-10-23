@@ -51,9 +51,9 @@ namespace UnityEditor.ShortcutManagement
         }
 
         [RequiredSignature]
-        static extern void ShortcutMethodWithArgs(ShortcutArguments args);
+        static void ShortcutMethodWithArgs(ShortcutArguments args) { throw new InvalidOperationException(); }
         [RequiredSignature]
-        static extern void ShortcutMethodNoArgs();
+        static void ShortcutMethodNoArgs() { throw new InvalidOperationException(); }
 
         void NoArgumentShortcutMethodProxy(ShortcutArguments arguments)
         {
@@ -102,6 +102,6 @@ namespace UnityEditor.ShortcutManagement
         }
 
         [RequiredSignature]
-        static extern void ShortcutClutchMethod(ShortcutArguments args);
+        static void ShortcutClutchMethod(ShortcutArguments args) { throw new InvalidOperationException(); }
     }
 }

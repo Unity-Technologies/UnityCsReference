@@ -22,14 +22,14 @@ namespace UnityEditor
     {
         public override void OnGUI(Rect position)
         {
-            position.y += 8;
+            position.yMin += EditorGUIUtility.singleLineHeight * 0.5f;
             position = EditorGUI.IndentedRect(position);
             GUI.Label(position, (attribute as HeaderAttribute).header, EditorStyles.boldLabel);
         }
 
         public override float GetHeight()
         {
-            return 24;
+            return EditorGUIUtility.singleLineHeight * 1.5f;
         }
     }
 }

@@ -279,7 +279,7 @@ namespace UnityEngine.UIElements
 
             bool touchScreenTextField
             {
-                get { return TouchScreenKeyboard.isSupported; }
+                get { return TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed; }
             }
 
 
