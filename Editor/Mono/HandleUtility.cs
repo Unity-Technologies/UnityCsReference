@@ -132,6 +132,11 @@ namespace UnityEditor
 
             Vector2 point = Event.current.mousePosition;
 
+            return DistanceToLineInternal(point, p1, p2);
+        }
+
+        internal static float DistanceToLineInternal(Vector3 point, Vector3 p1, Vector3 p2)
+        {
             float retval = DistancePointLine(point, p1, p2);
             if (retval < 0)
                 retval = 0.0f;
@@ -323,33 +328,81 @@ namespace UnityEditor
             return ClosestPointToArc(center, normal, tangent, 360, radius);
         }
 
+        static Vector3[] m_ArcPointsBuffer = new Vector3[60];
+
         // Pixel distance from mouse pointer to a 3D section of a disc.
         public static float DistanceToArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius)
         {
-            Vector3[] points = new Vector3[60];
-            Handles.SetDiscSectionPoints(points, center, normal, from, angle, radius);
-            return DistanceToPolyLine(points);
+            Handles.SetDiscSectionPoints(m_ArcPointsBuffer, center, normal, from, angle, radius);
+            return DistanceToPolyLineOnPlane(m_ArcPointsBuffer, center, normal);
         }
 
         // Get the nearest 3D point.
         public static Vector3 ClosestPointToArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius)
         {
-            Vector3[] points = new Vector3[60];
-            Handles.SetDiscSectionPoints(points, center, normal, from, angle, radius);
-            return ClosestPointToPolyLine(points);
+            Handles.SetDiscSectionPoints(m_ArcPointsBuffer, center, normal, from, angle, radius);
+            return ClosestPointToPolyLine(m_ArcPointsBuffer);
         }
 
         // Pixel distance from mouse pointer to a polyline.
         public static float DistanceToPolyLine(params Vector3[] points)
         {
-            float dist = DistanceToLine(points[0], points[1]);
+            Camera cam = Camera.current;
+            Matrix4x4 handlesMatrix = Handles.matrix;
+            float screenHeight = Screen.height;
+
+            Vector2 point = Event.current.mousePosition;
+            Vector3 p1 = WorldToGUIPointWithDepth(points[0], cam, handlesMatrix, screenHeight);
+            Vector3 p2 = WorldToGUIPointWithDepth(points[1], cam, handlesMatrix, screenHeight);
+            float dist = DistanceToLineInternal(point, p1, p2);
+
             for (int i = 2; i < points.Length; i++)
             {
-                float d = DistanceToLine(points[i - 1], points[i]);
+                p1 = p2;
+                p2 = WorldToGUIPointWithDepth(points[i], cam, handlesMatrix, screenHeight);
+
+                float d = DistanceToLineInternal(point, p1, p2);
                 if (d < dist)
                     dist = d;
             }
             return dist;
+        }
+
+        // Pixel distance from mouse pointer to a polyline on a 2D plane.
+        internal static float DistanceToPolyLineOnPlane(Vector3[] points, Vector3 center, Vector3 normal)
+        {
+            Plane p = new Plane(normal, center);
+
+            Vector2 point = Event.current.mousePosition;
+            Ray r = GUIPointToWorldRay(point);
+
+            float enter;
+            if (!p.Raycast(r, out enter))
+                return DistanceToPolyLine(points);
+
+            Vector3 intersect = r.GetPoint(enter);
+
+            Vector3 p1 = points[0];
+            Vector3 p2 = points[1];
+            float dist = DistanceToLineInternal(intersect, p1, p2);
+
+            Vector3 s1 = Vector3.zero, s2 = Vector3.zero;
+
+            for (int i = 2; i < points.Length; i++)
+            {
+                p1 = p2;
+                p2 = points[i];
+
+                float d = DistanceToLineInternal(intersect, p1, p2);
+                if (d < dist)
+                {
+                    dist = d;
+                    s1 = p1;
+                    s2 = p2;
+                }
+            }
+
+            return DistanceToLineInternal(point, WorldToGUIPoint(s1), WorldToGUIPoint(s2));
         }
 
         // Get the nearest 3D point.
@@ -469,12 +522,19 @@ namespace UnityEditor
         // Convert world space point to a 2D GUI position.
         public static Vector3 WorldToGUIPointWithDepth(Vector3 world)
         {
-            world = Handles.matrix.MultiplyPoint(world);
-            Camera cam = Camera.current;
-            if (cam)
+            return WorldToGUIPointWithDepth(world, Camera.current, Handles.matrix, Screen.height);
+        }
+
+        // Convert world space point to a 2D GUI position.
+        // Use this version in critical loops.
+        internal static Vector3 WorldToGUIPointWithDepth(Vector3 world, Camera camera, Matrix4x4 matrixHandles, float screenHeight)
+        {
+            world = matrixHandles.MultiplyPoint(world);
+
+            if (camera)
             {
-                Vector3 pos = cam.WorldToScreenPoint(world);
-                pos.y = Screen.height - pos.y;
+                Vector3 pos = camera.WorldToScreenPoint(world);
+                pos.y = screenHeight - pos.y;
                 Vector2 points = EditorGUIUtility.PixelsToPoints(pos);
                 points = GUIClip.Clip(points);
                 return new Vector3(points.x, points.y, pos.z);

@@ -243,12 +243,15 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(Styles.ObjectFieldControlID, FocusType.Keyboard, rect);
             rect = EditorGUI.PrefixLabel(rect, id, label);
             var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, objType, null, null, allowSceneObjects, EditorStyles.objectField);
+
+            bool retValue = false;
             if (EditorGUI.EndChangeCheck())
             {
                 property.objectReferenceValue = result;
-                return true;
+                retValue = true;
             }
-            return false;
+            EditorGUI.EndProperty();
+            return retValue;
         }
 
         // Does not use Properties because time is not a serialized property

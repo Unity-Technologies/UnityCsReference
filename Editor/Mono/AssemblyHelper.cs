@@ -263,6 +263,12 @@ namespace UnityEditor
             foreach (var asm in precompiledAssemblies)
                 searchPaths.Add(Path.GetDirectoryName(asm.Path));
 
+            // Add Unity compiled assembly output directory.
+            // Required for MonoBehaviour derived types like UIBehaviour that
+            // were previous in a precompiled UnityEngine.UI.dll, but are now
+            // compiled in a package.
+            searchPaths.Add("Library/ScriptAssemblies");
+
             return searchPaths.ToArray();
         }
 

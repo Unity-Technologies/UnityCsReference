@@ -298,7 +298,13 @@ namespace UnityEditor.UIElements
                     var importedObjectBarRect = GUILayoutUtility.GetRect(16, 16);
                     importedObjectBarRect.height = 17;
 
-                    var headerText = m_Editors[0] is PrefabImporterEditor ? "Root in Prefab Asset" : "Imported Object";
+                    var headerText = "Imported Object";
+                    if (m_Editors.Length > 1)
+                    {
+                        if (m_Editors[0] is PrefabImporterEditor && m_Editors[1] is GameObjectInspector)
+                            headerText = "Root in Prefab Asset";
+                    }
+
                     GUILayout.Label(headerText, Styles.importedObjectsHeaderStyle, GUILayout.ExpandWidth(true));
                     GUILayout.Space(-7f); // Ensures no spacing between this header and the next header
                 }
