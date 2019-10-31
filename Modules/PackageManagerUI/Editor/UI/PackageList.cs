@@ -54,8 +54,6 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnEnable()
         {
-            PageManager.instance.onSelectionChanged += OnSelectionChanged;
-
             PackageDatabase.instance.onPackageProgressUpdate += OnPackageProgressUpdate;
 
             PageManager.instance.onRefreshOperationStart += OnRefreshOperationStart;
@@ -70,13 +68,10 @@ namespace UnityEditor.PackageManager.UI
 
             // manually build the items on initialization to refresh the UI
             OnPageRebuild(PageManager.instance.GetCurrentPage());
-            OnSelectionChanged(PageManager.instance.GetSelectedVersion());
         }
 
         public void OnDisable()
         {
-            PageManager.instance.onSelectionChanged -= OnSelectionChanged;
-
             PackageDatabase.instance.onPackageProgressUpdate -= OnPackageProgressUpdate;
 
             PageManager.instance.onRefreshOperationStart -= OnRefreshOperationStart;
@@ -106,10 +101,11 @@ namespace UnityEditor.PackageManager.UI
             var packageItem = GetPackageItem(selectedVersion?.packageUniqueId);
             if (packageItem == null)
                 return null;
+
             if (packageItem.targetVersion == selectedVersion)
                 return packageItem;
-            else
-                return packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
+
+            return packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
         }
 
         public void LoadMoreItemsClicked()
@@ -187,7 +183,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnPackageProgressUpdate(IPackage package)
         {
-            GetPackageItem(package)?.UpdateProgressSpinner();
+            GetPackageItem(package)?.UpdateStatusIcon();
         }
 
         private void OnRefreshOperationStart()
@@ -208,6 +204,11 @@ namespace UnityEditor.PackageManager.UI
             UpdateNoPackagesLabel();
         }
 
+        internal void OnFocus()
+        {
+            ScrollIfNeeded();
+        }
+
         private void ScrollIfNeeded(ScrollView container = null, VisualElement target = null)
         {
             container = container ?? scrollView;
@@ -221,7 +222,20 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
-            UIUtils.ScrollIfNeeded(container, target);
+            IPackage package;
+            IPackageVersion version;
+            PageManager.instance.GetSelectedPackageAndVersion(out package, out version);
+
+            var packageSelectionObject = PageManager.instance.CreatePackageSelectionObject(package, version);
+            if (packageSelectionObject != null && Selection.activeObject != packageSelectionObject)
+                Selection.activeObject = packageSelectionObject;
+
+            var scrollViews = UIUtils.GetParentsOfType<ScrollView>(target);
+            foreach (var sv in scrollViews)
+            {
+                UIUtils.ScrollIfNeeded(sv, target);
+                target = sv;
+            }
         }
 
         private void SetSelectedItemExpanded(bool value)
@@ -347,11 +361,6 @@ namespace UnityEditor.PackageManager.UI
             ShowResults();
         }
 
-        internal void OnSelectionChanged(IPackageVersion newSelection)
-        {
-            ScrollIfNeeded();
-        }
-
         public List<ISelectableItem> GetSelectableItems()
         {
             return packageItems.SelectMany(item => item.GetSelectableItems()).ToList();
@@ -404,9 +413,6 @@ namespace UnityEditor.PackageManager.UI
             var visiblePackageItems = packageItems.Where(UIUtils.IsElementVisible);
             var showEmptyResults = !visiblePackageItems.Any();
             ShowEmptyResults(showEmptyResults);
-
-            if (!showEmptyResults)
-                ScrollIfNeeded();
         }
 
         private VisualElementCache cache { get; set; }

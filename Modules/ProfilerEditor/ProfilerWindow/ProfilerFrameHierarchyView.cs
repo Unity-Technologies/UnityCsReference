@@ -400,7 +400,7 @@ namespace UnityEditorInternal.Profiling
         {
             EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
 
-            if (frameDataView != null)
+            if (frameDataView.valid)
                 DrawViewTypePopup((frameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) != 0 ? ProfilerViewType.Hierarchy : ProfilerViewType.RawHierarchy);
 
             using (new EditorGUI.DisabledScope(!frameDataView.valid))
@@ -411,7 +411,7 @@ namespace UnityEditorInternal.Profiling
 
             GUILayout.FlexibleSpace();
 
-            if (frameDataView != null)
+            if (frameDataView.valid)
                 DrawCPUGPUTime(frameDataView.frameTimeMs, frameDataView.frameGpuTimeMs);
 
             GUILayout.FlexibleSpace();

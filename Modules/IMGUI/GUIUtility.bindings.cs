@@ -95,6 +95,14 @@ namespace UnityEngine
 
         // Need to reverse the dependency here when moving native legacy Input code out of Core module.
         [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]
+        internal extern static IMECompositionMode imeCompositionMode
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")] get;
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")] set;
+        }
+
+        // Need to reverse the dependency here when moving native legacy Input code out of Core module.
+        [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]
         internal extern static Vector2 compositionCursorPos
         {
             [VisibleToOtherModules("UnityEngine.UIElementsModule")] get;

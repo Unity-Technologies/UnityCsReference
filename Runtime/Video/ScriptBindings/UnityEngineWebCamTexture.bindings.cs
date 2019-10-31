@@ -25,6 +25,8 @@ namespace UnityEngine
         Telephoto = 2,
         // Camera which supports synchronized color and depth data (Dual or TrueDepth)
         ColorAndDepth = 3,
+        // Ultra WideAngle camera
+        UltraWideAngle = 4,
     }
 
     // A structure describing the webcam device.

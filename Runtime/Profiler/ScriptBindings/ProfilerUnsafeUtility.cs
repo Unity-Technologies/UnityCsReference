@@ -39,6 +39,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public const ushort CategoryLightning = 13;
         public const ushort CategoryNetwork = 14;
         public const ushort CategoryLoading = 15;
+        public const ushort CategoryOther = 16;
         public const ushort CategoryVr = 22;
         public const ushort CategoryAllocation = 23;
         public const ushort CategoryInput = 30;

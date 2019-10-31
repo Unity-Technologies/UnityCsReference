@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -34,10 +35,11 @@ namespace UnityEditor.PackageManager.UI
 
         public override string versionId => string.Empty;
 
-        public PlaceholderPackageVersion(string packageUniqueId, string uniqueId, PackageTag tag = PackageTag.None)
+        public PlaceholderPackageVersion(string packageUniqueId, string uniqueId, string displayName, PackageTag tag = PackageTag.None)
         {
             m_PackageUniqueId = packageUniqueId;
             m_UniqueId = uniqueId;
+            m_DisplayName = displayName;
             m_Tag = tag;
             m_Version = new SemVersion(0);
         }

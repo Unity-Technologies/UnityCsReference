@@ -148,7 +148,7 @@ namespace UnityEngine.UIElements
             if (evt.eventTypeId == IMGUIEvent.TypeId())
             {
                 Event e = evt.imguiEvent;
-                if (e.type == EventType.Repaint)
+                if (e.rawType == EventType.Repaint)
                 {
                     return;
                 }
@@ -264,7 +264,7 @@ namespace UnityEngine.UIElements
         {
             Event e = evt.imguiEvent;
             // Sometimes (in tests only?) we receive Used events. Protect our verification from this case.
-            bool imguiEventIsInitiallyUsed = e != null && e.type == EventType.Used;
+            bool imguiEventIsInitiallyUsed = e != null && e.rawType == EventType.Used;
 
             using (new EventDispatcherGate(this))
             {
@@ -276,8 +276,8 @@ namespace UnityEngine.UIElements
                     {
                         strategy.DispatchEvent(evt, panel);
 
-                        Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.type != EventType.Used,
-                            "Unexpected condition: !evt.isPropagationStopped && evt.imguiEvent.type == EventType.Used.");
+                        Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used,
+                            "Unexpected condition: !evt.isPropagationStopped && evt.imguiEvent.rawType == EventType.Used.");
 
                         if (evt.stopDispatch || evt.isPropagationStopped)
                             break;
@@ -304,7 +304,7 @@ namespace UnityEngine.UIElements
 
                 evt.PostDispatch(panel);
 
-                Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.type != EventType.Used, "Event is used but not stopped.");
+                Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used, "Event is used but not stopped.");
             }
         }
     }

@@ -101,7 +101,7 @@ namespace UnityEditor.Compilation
 
             compilationTask = new CompilationTask(new ScriptAssembly[] { scriptAssembly }, scriptAssembly.OutputDirectory, this,
                 EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1,
-                editorCompilation.ILPostProcessing.PostProcess);
+                editorCompilation.ILPostProcessing);
 
             compilationTask.OnCompilationTaskStarted += (context) =>
             {

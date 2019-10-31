@@ -16,8 +16,8 @@ namespace UnityEditor.PackageManager.UI
         public class FilteredList
         {
             public bool enabled;
-            public ProductList baseList = new ProductList();
-            public ProductList searchList = new ProductList();
+            public AssetStorePurchases baseList = new AssetStorePurchases();
+            public AssetStorePurchases searchList = new AssetStorePurchases();
         }
 
         public event Action<IPackageVersion> onSelectionChanged = delegate {};
@@ -83,21 +83,37 @@ namespace UnityEditor.PackageManager.UI
             }).FirstOrDefault();
         }
 
+        public void GetSelectedPackageAndVersion(out IPackage package, out IPackageVersion version)
+        {
+            var selected = GetVisualState(m_SelectedStates.FirstOrDefault()?.packageUniqueId);
+            PackageDatabase.instance.GetPackageAndVersion(selected?.packageUniqueId, selected?.selectedVersionId, out package, out version);
+            if (selected?.visible != true || package == null)
+            {
+                var firstVisible = packageVisualStates.FirstOrDefault(v => v.visible);
+                package = firstVisible == null ? null : PackageDatabase.instance.GetPackage(firstVisible.packageUniqueId);
+                version = package?.versions.primary;
+            }
+            else if (version == null)
+            {
+                version = package?.versions.primary;
+            }
+        }
+
         public void FilterBySearchText(string updatedSearchText = null)
         {
             if (updatedSearchText != null && m_FilteredList.enabled && m_FilteredList.searchList.searchText != updatedSearchText)
             {
                 if (m_FilteredList.searchList.list.Count > 0)
                 {
-                    var extraSearchItems = new HashSet<long>(m_FilteredList.searchList.list);
-                    foreach (var id in m_FilteredList.baseList.list)
+                    var extraSearchItems = new HashSet<long>(m_FilteredList.searchList.productIds);
+                    foreach (var id in m_FilteredList.baseList.productIds)
                     {
                         if (extraSearchItems.Contains(id))
                             extraSearchItems.Remove(id);
                     }
 
                     // reset the search list if search text have changed, and remove the items from the list
-                    m_FilteredList.searchList = new ProductList();
+                    m_FilteredList.searchList = new AssetStorePurchases();
                     m_MoreSearchPackagesToFetch = false;
 
                     var removeList = extraSearchItems.Select(id => PackageDatabase.instance.GetPackage(id.ToString())).Where(p => p != null);
@@ -107,7 +123,7 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 // Refresh the `load more` status.
-                m_FilteredList.searchList = new ProductList();
+                m_FilteredList.searchList = new AssetStorePurchases();
                 m_MoreSearchPackagesToFetch = false;
                 onPageUpdate?.Invoke(new IPackage[0] {}, new IPackage[0] {});
             }
@@ -186,7 +202,7 @@ namespace UnityEditor.PackageManager.UI
                 var newOrderedStates = new List<VisualState>();
                 var newLookupTable = new Dictionary<string, int>();
 
-                foreach (var id in m_FilteredList.baseList.list)
+                foreach (var id in m_FilteredList.baseList.productIds)
                 {
                     var package = PackageDatabase.instance.GetPackage(id.ToString());
                     if (package != null)
@@ -198,7 +214,7 @@ namespace UnityEditor.PackageManager.UI
 
                 if (isSearchMode && m_FilteredList.searchList.searchText == PackageFiltering.instance.currentSearchText)
                 {
-                    foreach (var id in m_FilteredList.searchList.list)
+                    foreach (var id in m_FilteredList.searchList.productIds)
                     {
                         if (newLookupTable.ContainsKey(id.ToString()))
                             continue;
@@ -226,7 +242,15 @@ namespace UnityEditor.PackageManager.UI
             var isSearchMode = !string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText);
             var productList = isSearchMode ? m_FilteredList.searchList : m_FilteredList.baseList;
             if (productList.list.Count < productList.total)
-                AssetStoreClient.instance.List(productList.list.Count, PageManager.k_DefaultPageSize, PackageFiltering.instance.currentSearchText, false);
+            {
+                var queryArgs = new PurchasesQueryArgs
+                {
+                    startIndex = productList.list.Count,
+                    limit = PageManager.k_DefaultPageSize,
+                    searchText = PackageFiltering.instance.currentSearchText
+                };
+                AssetStoreClient.instance.ListPurchases(queryArgs, false);
+            }
         }
 
         public void Load(IPackage package, IPackageVersion version = null)
@@ -239,10 +263,10 @@ namespace UnityEditor.PackageManager.UI
                     return;
 
                 var targetList = m_FilteredList.baseList;
-                if (!m_FilteredList.enabled || targetList.list.Contains(productId))
+                if (!m_FilteredList.enabled || targetList.list.Any(info => info.productId == productId))
                     return;
 
-                targetList.list.Add(productId);
+                targetList.list.Add(new AssetStorePurchaseInfo { productId = productId });
                 m_MorePackagesToFetch = targetList.total > targetList.list.Count;
             }
 
@@ -253,10 +277,10 @@ namespace UnityEditor.PackageManager.UI
         public void OnProductFetched(long productId)
         {
             var targetList = m_FilteredList.baseList;
-            if (!m_FilteredList.enabled || targetList.list.Contains(productId))
+            if (!m_FilteredList.enabled || targetList.list.Any(info => info.productId == productId))
                 return;
 
-            targetList.list.Add(productId);
+            targetList.list.Add(new AssetStorePurchaseInfo { productId = productId });
             m_MorePackagesToFetch = targetList.total > targetList.list.Count;
 
             if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
@@ -267,7 +291,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public void OnProductListFetched(ProductList productList, bool fetchDetailsCalled)
+        public void OnProductListFetched(AssetStorePurchases productList, bool fetchDetailsCalled)
         {
             var isSearchResult = !string.IsNullOrEmpty(productList.searchText);
             if (isSearchResult && productList.searchText != PackageFiltering.instance.currentSearchText)
@@ -277,7 +301,13 @@ namespace UnityEditor.PackageManager.UI
             if (productList.startIndex > 0 && (targetList.total != productList.total || (targetList.searchText ?? "") != (productList.searchText ?? "")))
             {
                 // if a new page has arrived but the total has changed or the searchText has changed, do a re-fetch
-                AssetStoreClient.instance.List(0, productList.startIndex + productList.list.Count, PackageFiltering.instance.currentSearchText, true);
+                var queryArgs = new PurchasesQueryArgs
+                {
+                    startIndex = 0,
+                    limit = productList.startIndex + productList.list.Count,
+                    searchText = PackageFiltering.instance.currentSearchText
+                };
+                AssetStoreClient.instance.ListPurchases(queryArgs, true);
                 return;
             }
 
@@ -289,9 +319,9 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (rebuildList)
                 {
-                    removed = new HashSet<long>(targetList.list);
+                    removed = new HashSet<long>(targetList.productIds);
                     added = new List<long>();
-                    foreach (var id in productList.list)
+                    foreach (var id in productList.productIds)
                     {
                         if (removed.Contains(id))
                             removed.Remove(id);
@@ -302,14 +332,14 @@ namespace UnityEditor.PackageManager.UI
                 // override the result if the new list starts from index 0 (meaning it's a refresh)
                 targetList.list = productList.list;
                 targetList.total = productList.total;
-                targetList.searchText = productList.searchText;
+                targetList.queryArgs.searchText = productList.searchText;
             }
             else if (productList.startIndex == targetList.list.Count && (targetList.searchText ?? "") == (productList.searchText ?? ""))
             {
                 // append the result if it is the next page
                 targetList.list.AddRange(productList.list);
                 if (rebuildList)
-                    added = productList.list;
+                    added = productList.productIds.ToList();
             }
             else
             {
@@ -322,7 +352,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_FilteredList.enabled = true;
             if (!fetchDetailsCalled && productList.list.Any())
-                AssetStoreClient.instance.FetchDetails(productList.list);
+                AssetStoreClient.instance.FetchDetails(productList.productIds);
 
             if (rebuildList)
             {
@@ -330,6 +360,11 @@ namespace UnityEditor.PackageManager.UI
                 var removedPackages = removed?.Select(id => PackageDatabase.instance.GetPackage(id.ToString()));
                 RebuildList(addedPackages, removedPackages);
             }
+        }
+
+        public void SetSelected(IPackage package, IPackageVersion version = null)
+        {
+            SetSelected(package?.uniqueId, version?.uniqueId ?? package?.versions.primary?.uniqueId);
         }
 
         public void SetSelected(string packageUniqueId, string versionUniqueId)
@@ -371,6 +406,11 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        public void SetSeeAllVersions(IPackage package, bool value)
+        {
+            SetSeeAllVersions(package?.uniqueId, value);
+        }
+
         public void SetSeeAllVersions(string packageUniqueId, bool value)
         {
             var state = GetVisualState(packageUniqueId);
@@ -379,6 +419,16 @@ namespace UnityEditor.PackageManager.UI
                 state.seeAllVersions = value;
                 onVisualStateChange?.Invoke(new[] { state });
             }
+        }
+
+        public bool Contain(IPackage package)
+        {
+            return Contain(package?.uniqueId);
+        }
+
+        public bool Contain(string packageUniqueId)
+        {
+            return GetVisualState(packageUniqueId) != null;
         }
 
         private void SetupLookupTable()

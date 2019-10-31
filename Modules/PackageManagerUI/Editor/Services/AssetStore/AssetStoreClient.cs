@@ -17,14 +17,10 @@ namespace UnityEditor.PackageManager.UI
         [Serializable]
         internal class AssetStoreClientInternal : ScriptableSingleton<AssetStoreClientInternal>, IAssetStoreClient, ISerializationCallbackReceiver
         {
-            private static readonly string k_AssetStoreDownloadPrefix = "content__";
-            internal static readonly string s_LocalizedDownloadErrorMessage = L10n.Tr("The download could not be completed.Please try again.See console for more details.");
-
             public event Action<IEnumerable<IPackage>> onPackagesChanged = delegate {};
             public event Action<string, IPackageVersion> onPackageVersionUpdated = delegate {};
-            public event Action<DownloadProgress> onDownloadProgress = delegate {};
 
-            public event Action<ProductList, bool> onProductListFetched = delegate {};
+            public event Action<AssetStorePurchases, bool> onProductListFetched = delegate {};
             public event Action<long> onProductFetched = delegate {};
 
             public event Action onFetchDetailsStart = delegate {};
@@ -33,17 +29,12 @@ namespace UnityEditor.PackageManager.UI
 
             public event Action<IOperation> onListOperation = delegate {};
 
-            private Dictionary<string, DownloadProgress> m_Downloads = new Dictionary<string, DownloadProgress>();
-
             private Dictionary<string, AssetStoreFetchedInfo> m_FetchedInfos = new Dictionary<string, AssetStoreFetchedInfo>();
 
             private Dictionary<string, AssetStoreLocalInfo> m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
 
             [SerializeField]
             private AssetStoreListOperation m_ListOperation = new AssetStoreListOperation();
-
-            [SerializeField]
-            private DownloadProgress[] m_SerializedDownloads = new DownloadProgress[0];
 
             [SerializeField]
             private AssetStoreFetchedInfo[] m_SerializedFetchedInfos = new AssetStoreFetchedInfo[0];
@@ -56,14 +47,12 @@ namespace UnityEditor.PackageManager.UI
 
             public void OnAfterDeserialize()
             {
-                m_Downloads = m_SerializedDownloads.ToDictionary(d => d.productId, d => d);
                 m_FetchedInfos = m_SerializedFetchedInfos.ToDictionary(info => info.id, info => info);
                 m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.id, info => info);
             }
 
             public void OnBeforeSerialize()
             {
-                m_SerializedDownloads = m_Downloads.Values.ToArray();
                 m_SerializedFetchedInfos = m_FetchedInfos.Values.ToArray();
                 m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
             }
@@ -85,67 +74,42 @@ namespace UnityEditor.PackageManager.UI
 
                 // create a placeholder before fetching data from the cloud for the first time
                 if (!m_FetchedInfos.ContainsKey(productId.ToString()))
-                    onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(productId.ToString(), PackageType.AssetStore) });
+                    onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(productId.ToString(), string.Empty, PackageType.AssetStore) });
 
                 FetchDetails(new[] { productId });
                 onProductFetched?.Invoke(productId);
             }
 
-            public void List(int offset, int limit, string searchText = "", bool fetchDetails = true)
+            public void ListPurchases(PurchasesQueryArgs queryArgs, bool fetchDetails = true)
             {
-                m_ListOperation.Start();
-                onListOperation?.Invoke(m_ListOperation);
-
-                if (!ApplicationUtil.instance.isUserLoggedIn)
-                {
-                    m_ListOperation.TriggerOperationError(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
-                    return;
-                }
-
                 RefreshLocalInfos();
-
-                if (offset == 0)
+                if (queryArgs.startIndex == 0)
                     RefreshProductUpdateDetails();
 
-                AssetStoreRestAPI.instance.GetProductIDList(offset, limit, searchText, productList =>
+                m_ListOperation.onOperationSuccess += op =>
                 {
-                    if (!productList.isValid)
+                    var result = m_ListOperation.result;
+                    if (result.list.Count > 0)
                     {
-                        m_ListOperation.TriggerOperationError(new Error(NativeErrorCode.Unknown, productList.errorMessage));
-                        return;
+                        var placeholderPackages = new List<IPackage>();
+                        foreach (var item in result.list)
+                        {
+                            // create a placeholder before fetching data from the cloud for the first time
+                            if (!m_FetchedInfos.ContainsKey(item.productId.ToString()))
+                                placeholderPackages.Add(new PlaceholderPackage(item.productId.ToString(), item.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
+                        }
+
+                        if (placeholderPackages.Any())
+                            onPackagesChanged?.Invoke(placeholderPackages);
+
+                        if (fetchDetails)
+                            FetchDetails(result.productIds);
                     }
+                    onProductListFetched?.Invoke(result, fetchDetails);
+                };
 
-                    if (!ApplicationUtil.instance.isUserLoggedIn)
-                    {
-                        m_ListOperation.TriggerOperationError(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
-                        return;
-                    }
-
-                    onProductListFetched?.Invoke(productList, fetchDetails);
-
-                    if (productList.list.Count == 0)
-                    {
-                        m_ListOperation.TriggeronOperationSuccess();
-                        return;
-                    }
-
-                    var placeholderPackages = new List<IPackage>();
-
-                    foreach (var productId in productList.list)
-                    {
-                        // create a placeholder before fetching data from the cloud for the first time
-                        if (!m_FetchedInfos.ContainsKey(productId.ToString()))
-                            placeholderPackages.Add(new PlaceholderPackage(productId.ToString(), PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
-                    }
-
-                    if (placeholderPackages.Any())
-                        onPackagesChanged?.Invoke(placeholderPackages);
-
-                    m_ListOperation.TriggeronOperationSuccess();
-
-                    if (fetchDetails)
-                        FetchDetails(productList.list);
-                });
+                onListOperation?.Invoke(m_ListOperation);
+                m_ListOperation.Start(queryArgs);
             }
 
             public void FetchDetails(IEnumerable<long> productIds)
@@ -201,125 +165,6 @@ namespace UnityEditor.PackageManager.UI
                 RefreshLocalInfos();
             }
 
-            public bool IsAnyDownloadInProgress()
-            {
-                return m_Downloads.Values.Any(progress => progress.state == DownloadProgress.State.InProgress || progress.state == DownloadProgress.State.Started);
-            }
-
-            private static string AssetStoreCompatibleKey(string productId)
-            {
-                if (productId.StartsWith(k_AssetStoreDownloadPrefix))
-                    return productId;
-
-                return k_AssetStoreDownloadPrefix + productId;
-            }
-
-            public bool IsDownloadInProgress(string productId)
-            {
-                DownloadProgress progress;
-                if (!GetDownloadProgress(productId, out progress))
-                    return false;
-
-                return progress.state == DownloadProgress.State.InProgress || progress.state == DownloadProgress.State.Started;
-            }
-
-            public bool GetDownloadProgress(string productId, out DownloadProgress progress)
-            {
-                progress = null;
-                return m_Downloads.TryGetValue(AssetStoreCompatibleKey(productId), out progress);
-            }
-
-            public void Download(string productId)
-            {
-                DownloadProgress progress;
-                if (GetDownloadProgress(productId, out progress))
-                {
-                    if (progress.state != DownloadProgress.State.Started &&
-                        progress.state != DownloadProgress.State.InProgress &&
-                        progress.state != DownloadProgress.State.Decrypting)
-                    {
-                        m_Downloads.Remove(AssetStoreCompatibleKey(productId));
-                        AssetStoreDownloadOperation.instance.ClearDownloadInformation(productId);
-                    }
-                    else
-                    {
-                        onDownloadProgress?.Invoke(progress);
-                        return;
-                    }
-                }
-
-                progress = new DownloadProgress(productId);
-                m_Downloads[AssetStoreCompatibleKey(productId)] = progress;
-                onDownloadProgress?.Invoke(progress);
-
-                var id = long.Parse(productId);
-                AssetStoreDownloadOperation.instance.DownloadUnityPackageAsync(id, result =>
-                {
-                    progress.state = result.downloadState;
-                    if (result.downloadState == DownloadProgress.State.Error)
-                        progress.errorMessage = result.errorMessage;
-
-                    onDownloadProgress?.Invoke(progress);
-                });
-            }
-
-            public void AbortDownload(string productId)
-            {
-                DownloadProgress progress;
-                if (!GetDownloadProgress(productId, out progress))
-                    return;
-
-                if (progress.state == DownloadProgress.State.Aborted || progress.state == DownloadProgress.State.Completed || progress.state == DownloadProgress.State.Error)
-                    return;
-
-                var id = long.Parse(productId);
-                AssetStoreDownloadOperation.instance.AbortDownloadPackage(id, result =>
-                {
-                    progress.state = DownloadProgress.State.Aborted;
-                    progress.current = progress.total;
-                    progress.errorMessage = L10n.Tr("Download aborted");
-
-                    onDownloadProgress?.Invoke(progress);
-
-                    m_Downloads.Remove(AssetStoreCompatibleKey(productId));
-                });
-            }
-
-            // Used by AssetStoreUtils
-            public void OnDownloadProgress(string productId, string message, ulong bytes, ulong total)
-            {
-                DownloadProgress progress;
-                if (!GetDownloadProgress(productId, out progress))
-                {
-                    if (productId.StartsWith(k_AssetStoreDownloadPrefix))
-                        productId = productId.Substring(k_AssetStoreDownloadPrefix.Length);
-                    progress = new DownloadProgress(productId) { state = DownloadProgress.State.InProgress, errorMessage = string.Empty };
-                    m_Downloads[AssetStoreCompatibleKey(productId)] = progress;
-                }
-
-                progress.current = bytes;
-                progress.total = total;
-
-                if (message == "ok")
-                    progress.state = DownloadProgress.State.Completed;
-                else if (message == "connecting")
-                    progress.state = DownloadProgress.State.Started;
-                else if (message == "downloading")
-                    progress.state = DownloadProgress.State.InProgress;
-                else if (message == "decrypt")
-                    progress.state = DownloadProgress.State.Decrypting;
-                else if (message == "aborted")
-                    progress.state = DownloadProgress.State.Aborted;
-                else
-                {
-                    progress.state = DownloadProgress.State.Error;
-                    progress.errorMessage = s_LocalizedDownloadErrorMessage;
-                    Debug.LogError(message);
-                }
-
-                onDownloadProgress?.Invoke(progress);
-            }
-
             private void OnProductPackageChanged(string productId, IPackage package)
             {
                 var fetchedInfo = m_FetchedInfos.Get(productId);
@@ -359,14 +204,11 @@ namespace UnityEditor.PackageManager.UI
                 m_EventsRegistered = true;
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
-                if (ApplicationUtil.instance.isUserLoggedIn)
-                {
-                    AssetStoreUtils.instance.RegisterDownloadDelegate(this);
-                }
-
                 UpmClient.instance.onProductPackageChanged += OnProductPackageChanged;
                 UpmClient.instance.onProductPackageVersionUpdated += OnProductPackageVersionUpdated;
                 UpmClient.instance.onProductPackageFetchError += OnProductPackageFetchError;
+
+                AssetStoreDownloadManager.instance.RegisterEvents();
             }
 
             public void UnregisterEvents()
@@ -376,11 +218,12 @@ namespace UnityEditor.PackageManager.UI
 
                 m_EventsRegistered = false;
 
-                AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
                 UpmClient.instance.onProductPackageChanged -= OnProductPackageChanged;
                 UpmClient.instance.onProductPackageVersionUpdated -= OnProductPackageVersionUpdated;
                 UpmClient.instance.onProductPackageFetchError -= OnProductPackageFetchError;
+
+                AssetStoreDownloadManager.instance.UnregisterEvents();
             }
 
             public void ClearCache()
@@ -396,25 +239,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (!loggedIn)
                 {
-                    AssetStoreUtils.instance.UnRegisterDownloadDelegate(this);
-                    AbortAllDownloads();
-                    ClearCache();
                     UpmClient.instance.ClearProductCache();
                 }
-                else
-                {
-                    AssetStoreUtils.instance.RegisterDownloadDelegate(this);
-                }
-            }
-
-            public void AbortAllDownloads()
-            {
-                var currentDownloads = m_Downloads.Values.Where(v => v.state == DownloadProgress.State.Started || v.state == DownloadProgress.State.InProgress)
-                    .Select(v => long.Parse(v.productId)).ToArray();
-                m_Downloads.Clear();
-
-                foreach (var download in currentDownloads)
-                    AssetStoreDownloadOperation.instance.AbortDownloadPackage(download);
             }
 
             public void RefreshProductUpdateDetails(IEnumerable<AssetStoreLocalInfo> localInfos = null)

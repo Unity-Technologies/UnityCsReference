@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI
 
         public string versionUniqueId => string.Empty;
 
-        // a timestamp is added to keep track of how `refresh` the result it
+        // a timestamp is added to keep track of how `fresh` the result is
         // in the case of an online operation, it is the time when the operation starts
         // in the case of an offline operation, it is set to the timestamp of the last online operation
         [SerializeField]
@@ -33,36 +33,65 @@ namespace UnityEditor.PackageManager.UI
 
         public RefreshOptions refreshOptions => RefreshOptions.Purchased;
 
-        public event Action<IOperation, Error> onOperationError;
-        public event Action<IOperation> onOperationSuccess;
-        public event Action<IOperation> onOperationFinalized;
+        public bool isProgressTrackable => false;
 
-        public void Start()
+        public float progressPercentage => 0;
+
+        public event Action<IOperation, Error> onOperationError = delegate {};
+        public event Action<IOperation> onOperationSuccess = delegate {};
+        public event Action<IOperation> onOperationFinalized = delegate {};
+        public event Action<IOperation> onOperationProgress = delegate {};
+
+        [SerializeField]
+        private PurchasesQueryArgs m_QueryArgs;
+        public PurchasesQueryArgs queryArgs => m_QueryArgs;
+
+        [SerializeField]
+        private AssetStorePurchases m_Result;
+        public AssetStorePurchases result => m_Result;
+
+        public void Start(PurchasesQueryArgs queryArgs = null)
         {
+            m_QueryArgs = queryArgs;
             m_IsInProgress = true;
             m_Timestamp = DateTime.Now.Ticks;
+
+            if (!ApplicationUtil.instance.isUserLoggedIn)
+            {
+                OnOperationError(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
+                return;
+            }
+
+            AssetStoreRestAPI.instance.GetPurchases(queryArgs.ToString(), result =>
+            {
+                if (!ApplicationUtil.instance.isUserLoggedIn)
+                {
+                    OnOperationError(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
+                    return;
+                }
+
+                m_Result = new AssetStorePurchases(this.queryArgs);
+                m_Result.ParsePurchases(result);
+                onOperationSuccess?.Invoke(this);
+
+                FinalizedOperation();
+            }, error => OnOperationError(error));
         }
 
-        public void TriggerOperationError(Error error)
+        private void OnOperationError(Error error)
         {
-            m_IsInProgress = false;
             onOperationError?.Invoke(this, error);
-            onOperationFinalized?.Invoke(this);
-
-            onOperationError = delegate {};
-            onOperationFinalized = delegate {};
-            onOperationSuccess = delegate {};
+            FinalizedOperation();
         }
 
-        public void TriggeronOperationSuccess()
+        private void FinalizedOperation()
         {
             m_IsInProgress = false;
-            onOperationSuccess?.Invoke(this);
             onOperationFinalized?.Invoke(this);
 
-            onOperationError = delegate {};
-            onOperationFinalized = delegate {};
-            onOperationSuccess = delegate {};
+            onOperationError = null;
+            onOperationFinalized = null;
+            onOperationSuccess = null;
         }
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -49,7 +50,7 @@ namespace UnityEditor.PackageManager.UI
                 return true;
 
             var prerelease = text.StartsWith("-") ? text.Substring(1) : text;
-            if (version.version != null && version.version.Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
+            if (version.version != null && ((SemVersion)version.version).Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
             if (version.HasTag(PackageTag.Preview) && PackageTag.Preview.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
@@ -58,7 +59,7 @@ namespace UnityEditor.PackageManager.UI
             if (version.HasTag(PackageTag.Verified) && PackageTag.Verified.ToString().IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
-            if (version.version.StripTag().StartsWith(text, StringComparison.CurrentCultureIgnoreCase))
+            if (version.version?.StripTag().StartsWith(text, StringComparison.CurrentCultureIgnoreCase) == true)
                 return true;
 
             if (!string.IsNullOrEmpty(version.category))

@@ -42,6 +42,7 @@ namespace UnityEditor
         // Represents the Profiler (slave) Out-Of-Process is launched by the MainEditorProcess and connects to its EventServer at startup.
         static class ProfilerProcess
         {
+            static bool s_ProfilerDriverSetup = false;
             static ProfilerWindow s_SlaveProfilerWindow;
             static string userPrefProfilerLayoutPath = Path.Combine(WindowLayout.layoutsDefaultModePreferencesPath, "Profiler.dwlt");
             static string systemProfilerLayoutPath = Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts/Profiler.dwlt");
@@ -59,27 +60,38 @@ namespace UnityEditor
                 }
                 WindowLayout.LoadWindowLayout(userPrefProfilerLayoutPath, false);
 
-                s_SlaveProfilerWindow = EditorWindow.GetWindowDontShow<ProfilerWindow>();
-                SetupProfilerWindow(s_SlaveProfilerWindow);
-                EditorApplication.delayCall += SetupProfilerDriver;
+                SessionState.SetBool("OOPP.Initialized", true);
+                EditorApplication.update -= InitializeProfilerSlaveProcessDomain;
+                EditorApplication.update += InitializeProfilerSlaveProcessDomain;
             }
 
             [UsedImplicitly, RoleProvider(k_RoleName, ProcessEvent.UMP_EVENT_AFTER_DOMAIN_RELOAD)]
             static void InitializeProfilerSlaveProcessDomain()
             {
-                if (s_SlaveProfilerWindow == null && EditorWindow.HasOpenInstances<ProfilerWindow>())
-                {
-                    s_SlaveProfilerWindow = EditorWindow.GetWindow<ProfilerWindow>();
-                    SetupProfilerWindow(s_SlaveProfilerWindow);
-                }
+                EditorApplication.update -= InitializeProfilerSlaveProcessDomain;
+
+                if (!SessionState.GetBool("OOPP.Initialized", false))
+                    return;
+
+                s_SlaveProfilerWindow = EditorWindow.GetWindow<ProfilerWindow>();
+                SetupProfilerWindow(s_SlaveProfilerWindow);
 
                 EventService.On(nameof(EventType.UmpProfilerRecordToggle), HandleToggleRecording);
                 EventService.On(nameof(EventType.UmpProfilerRequestRecordState), HandleRequestRecordState);
                 EventService.On(nameof(EventType.UmpProfilerPing), HandlePingEvent);
                 EventService.On(nameof(EventType.UmpProfilerExit), HandleExitEvent);
 
+                EditorApplication.delayCall -= SetupProfilerDriver;
+                EditorApplication.delayCall += SetupProfilerDriver;
+                EditorApplication.updateMainWindowTitle -= SetProfilerWindowTitle;
                 EditorApplication.updateMainWindowTitle += SetProfilerWindowTitle;
-                EditorApplication.quitting += () => WindowLayout.SaveWindowLayout(userPrefProfilerLayoutPath);
+                EditorApplication.quitting -= SaveWindowLayout;
+                EditorApplication.quitting += SaveWindowLayout;
+            }
+
+            static void SaveWindowLayout()
+            {
+                WindowLayout.SaveWindowLayout(userPrefProfilerLayoutPath);
             }
 
             static void SetupProfilerWindow(ProfilerWindow profilerWindow)
@@ -97,23 +109,27 @@ namespace UnityEditor
 
             static void SetupProfilerDriver()
             {
-                ProfilerDriver.profileEditor = ProfilerUserSettings.defaultTargetMode == Profiling.ProfilerEditorTargetMode.Editmode;
+                if (s_ProfilerDriverSetup)
+                    return;
+
+                ProfilerDriver.profileEditor = ProfilerUserSettings.defaultTargetMode == ProfilerEditorTargetMode.Editmode;
                 var playerConnectionInfo = new PlayerConnectionInfo
                 {
                     recording = ProfilerDriver.enabled,
                     profileEditor = ProfilerDriver.profileEditor
                 };
                 EventService.Request(nameof(EventType.UmpProfilerOpenPlayerConnection), HandlePlayerConnectionOpened, playerConnectionInfo, 5000L);
+                s_ProfilerDriverSetup = true;
             }
 
             static void SetupProfiledConnection(int connId)
             {
                 ProfilerDriver.connectedProfiler = ProfilerDriver.GetAvailableProfilers().FirstOrDefault(id => id == connId);
-                s_SlaveProfilerWindow.Repaint();
-
+                ModeService.RefreshMenus();
                 Menu.SetChecked("Edit/Record", s_SlaveProfilerWindow.IsRecording());
                 Menu.SetChecked("Edit/Deep Profiling", ProfilerDriver.deepProfiling);
                 EditorApplication.UpdateMainWindowTitle();
+                s_SlaveProfilerWindow.Repaint();
             }
 
             static void HandlePlayerConnectionOpened(Exception err, object[] args)

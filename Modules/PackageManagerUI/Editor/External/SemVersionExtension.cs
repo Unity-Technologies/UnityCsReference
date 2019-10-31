@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEditor.Scripting.ScriptCompilation;
+
 namespace UnityEditor.PackageManager.UI
 {
     internal static class SemVersionExtension
@@ -16,9 +19,9 @@ namespace UnityEditor.PackageManager.UI
             return $"{version.Major}.{version.Minor}";
         }
 
-        public static bool IsPatchOf(this SemVersion version, SemVersion olderVersion)
+        public static bool IsPatchOf(this SemVersion version, SemVersion? olderVersion)
         {
-            return version.Major == olderVersion.Major && version.Minor == olderVersion.Minor && version > olderVersion;
+            return version.Major == olderVersion?.Major && version.Minor == olderVersion?.Minor && version > olderVersion;
         }
 
         public static bool IsRelease(this SemVersion version)

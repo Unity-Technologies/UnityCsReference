@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (shader == null)
                 shader = Shader.Find(UIRUtility.k_DefaultShaderName);
             Debug.Assert(shader != null, "Failed to load the shader UIRDefault shader");
+            shader.hideFlags |= HideFlags.DontSaveInEditor;
             return shader;
         }
 

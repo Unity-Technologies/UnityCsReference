@@ -198,5 +198,11 @@ namespace UnityEditor.Experimental
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
         public extern static bool IsAssetImportWorkerProcess();
+
+        [FreeFunction("AssetDatabaseExperimental::RemoveArtifacts_Internal")]
+        internal extern static long RemoveArtifacts(string[] assets);
+
+        [FreeFunction("AssetDatabaseExperimental::ReimportAssets_Internal")]
+        internal extern static void ReimportAssets(string[] assets);
     }
 }

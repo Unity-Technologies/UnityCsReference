@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI
         public abstract event Action<IOperation, Error> onOperationError;
         public abstract event Action<IOperation> onOperationSuccess;
         public abstract event Action<IOperation> onOperationFinalized;
+        public abstract event Action<IOperation> onOperationProgress;
 
         [SerializeField]
         protected string m_PackageName = string.Empty;
@@ -39,7 +40,7 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual string specialUniqueId { get { return string.Empty; } }
 
-        // a timestamp is added to keep track of how `refresh` the result it
+        // a timestamp is added to keep track of how `fresh` the result is
         // in the case of an online operation, it is the time when the operation starts
         // in the case of an offline operation, it is set to the timestamp of the last online operation
         [SerializeField]
@@ -56,6 +57,10 @@ namespace UnityEditor.PackageManager.UI
 
         public abstract bool isInProgress { get; }
 
+        public bool isProgressTrackable => false;
+
+        public float progressPercentage => 0;
+
         public Error error { get; protected set; }        // Keep last error
 
         public abstract RefreshOptions refreshOptions { get; }
@@ -66,6 +71,7 @@ namespace UnityEditor.PackageManager.UI
         public override event Action<IOperation, Error> onOperationError = delegate {};
         public override event Action<IOperation> onOperationFinalized = delegate {};
         public override event Action<IOperation> onOperationSuccess = delegate {};
+        public override event Action<IOperation> onOperationProgress = delegate {};
         public Action<T> onProcessResult = delegate {};
 
         [SerializeField]

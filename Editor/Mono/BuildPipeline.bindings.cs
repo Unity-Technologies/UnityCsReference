@@ -10,6 +10,7 @@ using UnityEngine.Bindings;
 using UnityEditor.Build.Reporting;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -188,6 +189,15 @@ namespace UnityEditor
         public BuildTargetGroup targetGroup {get; set; }
         public BuildTarget target {get; set; }
         public BuildOptions options {get; set; }
+        public string[] extraScriptingDefines { get; set; }
+    }
+
+    internal struct BuildPlayerDataOptions
+    {
+        public string[] scenes { get; set; }
+        public BuildTargetGroup targetGroup { get; set; }
+        public BuildTarget target { get; set; }
+        public BuildOptions options { get; set; }
         public string[] extraScriptingDefines { get; set; }
     }
 
@@ -385,11 +395,26 @@ namespace UnityEditor
         }
 
         // Is a player currently building?
-        public static extern bool isBuildingPlayer {[FreeFunction("IsBuildingPlayer")] get; }
+        public static extern bool isBuildingPlayer { [FreeFunction("IsBuildingPlayer")] get; }
 
         // Just like BuildPlayer, but does not check for Pro license. Used from build player dialog.
         internal static extern BuildReport BuildPlayerInternalNoCheck(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines, bool delayToAfterScriptReload);
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BuildPlayerDataResult
+        {
+            internal BuildReport report;
+            internal RuntimeClassRegistry usedClasses;
+        }
+
+        internal static BuildReport BuildPlayerData(BuildPlayerDataOptions buildPlayerDataOptions, out RuntimeClassRegistry usedClasses)
+        {
+            var result = BuildPlayerData(buildPlayerDataOptions);
+            usedClasses = result.usedClasses;
+            return result.report;
+        }
+
+        private static extern BuildPlayerDataResult BuildPlayerData(BuildPlayerDataOptions buildPlayerDataOptions);
 #pragma warning disable 618
 
         // Builds an AssetBundle.

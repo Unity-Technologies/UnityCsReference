@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -19,7 +18,7 @@ namespace UnityEditor.PackageManager.UI
 
         void UnRegisterDownloadDelegate(ScriptableObject d);
 
-        List<UnityEditor.PackageInfo> GetLocalPackageList();
+        UnityEditor.PackageInfo[] GetLocalPackageList();
 
         string assetStoreUrl { get; }
     }

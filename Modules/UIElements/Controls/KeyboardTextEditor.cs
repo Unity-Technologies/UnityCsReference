@@ -33,6 +33,10 @@ namespace UnityEngine.UIElements
             {
                 OnFocus(evt as FocusEvent);
             }
+            else if (evt.eventTypeId == BlurEvent.TypeId())
+            {
+                OnBlur(evt as BlurEvent);
+            }
             else if (evt.eventTypeId == MouseDownEvent.TypeId())
             {
                 OnMouseDown(evt as MouseDownEvent);
@@ -61,7 +65,13 @@ namespace UnityEngine.UIElements
 
         void OnFocus(FocusEvent _)
         {
+            GUIUtility.imeCompositionMode = IMECompositionMode.On;
             m_DragToPosition = false;
+        }
+
+        void OnBlur(BlurEvent _)
+        {
+            GUIUtility.imeCompositionMode = IMECompositionMode.Auto;
         }
 
         void OnMouseDown(MouseDownEvent evt)

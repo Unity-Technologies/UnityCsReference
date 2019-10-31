@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -186,14 +187,21 @@ namespace UnityEditor.PackageManager.UI
 
             private static bool IsPreviewInstalled(PackageInfo packageInfo)
             {
+                SemVersion? packageInfoVersion;
+                bool isPackageInfoVersionParsed = SemVersionParser.TryParse(packageInfo?.version, out packageInfoVersion);
+
                 return packageInfo?.isDirectDependency == true &&
-                    packageInfo.source == PackageSource.Registry && !SemVersion.Parse(packageInfo.version).IsRelease();
+                    packageInfo.source == PackageSource.Registry && isPackageInfoVersionParsed && !((SemVersion)packageInfoVersion).IsRelease();
             }
 
             private void OnInstalledPreviewPackagesChanged()
             {
                 if (!PackageManagerPrefs.instance.hasShowPreviewPackagesKey)
-                    PackageManagerPrefs.instance.showPreviewPackagesFromInstalled = UpmCache.instance.installedPackageInfos.Any(p => !SemVersion.Parse(p.version).IsRelease());
+                    PackageManagerPrefs.instance.showPreviewPackagesFromInstalled = UpmCache.instance.installedPackageInfos.Any(p => {
+                        SemVersion? version;
+                        bool isVersionParsed = SemVersionParser.TryParse(p.version, out version);
+                        return isVersionParsed && !((SemVersion)version).IsRelease();
+                    });
             }
 
             public void ClearCache()

@@ -201,6 +201,11 @@ namespace UnityEditorInternal
             return new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
 
+        static public RawFrameDataView GetRawFrameDataView(int frameIndex, int threadIndex)
+        {
+            return new RawFrameDataView(frameIndex, threadIndex);
+        }
+
         public static event Action<int, int> NewProfilerFrameRecorded;
 
         [RequiredByNativeCode]

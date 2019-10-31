@@ -24,6 +24,7 @@ namespace UnityEditor
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [NativeAsStruct]
+    [NativeType(CodegenOptions.Custom, "TextureImporterSettings")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.bindings.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterTypes.h")]
     public sealed partial class TextureImporterSettings
@@ -96,9 +97,6 @@ namespace UnityEditor
         int m_AlphaIsTransparency;
 
         [SerializeField]
-        bool m_IgnorePngGamma;
-
-        [SerializeField]
         float m_SpriteTessellationDetail;
 
         [SerializeField]
@@ -108,6 +106,9 @@ namespace UnityEditor
 
         [SerializeField]
         int m_SingleChannelComponent;
+
+        [SerializeField]
+        int m_IgnorePngGamma;
 
         // memory layout of these is in TextureSettings.h
         [SerializeField]
@@ -339,8 +340,8 @@ namespace UnityEditor
 
         public bool ignorePngGamma
         {
-            get { return m_IgnorePngGamma; }
-            set { m_IgnorePngGamma = value; }
+            get { return m_IgnorePngGamma != 0; }
+            set { m_IgnorePngGamma = value ? 1 : 0; }
         }
 
         public int spriteMode

@@ -58,6 +58,9 @@ namespace UnityEngine.iOS
         iPad6Gen        = 45,
         iPadAir3Gen     = 46,
         iPadMini5Gen    = 47,
+        iPhone11        = 48,
+        iPhone11Pro     = 49,
+        iPhone11ProMax  = 50,
 
         iPhoneUnknown       = 10001,
         iPadUnknown         = 10002,

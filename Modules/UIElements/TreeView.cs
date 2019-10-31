@@ -49,10 +49,7 @@ namespace UnityEngine.UIElements
         Func<VisualElement> m_MakeItem;
         public Func<VisualElement> makeItem
         {
-            get
-            {
-                return m_MakeItem;
-            }
+            get { return m_MakeItem; }
             set
             {
                 if (m_MakeItem == value)
@@ -62,38 +59,37 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public event Action<ITreeViewItem> onItemChosen;
+        public event Action<IEnumerable<ITreeViewItem>> onItemsChosen;
+        public event Action<IEnumerable<ITreeViewItem>> onSelectionChange;
 
-        private List<ITreeViewItem> m_CurrentSelection;
-        public IEnumerable<ITreeViewItem> currentSelection
+        private List<ITreeViewItem> m_SelectedItems;
+        public ITreeViewItem selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
+
+        public IEnumerable<ITreeViewItem> selectedItems
         {
             get
             {
-                if (m_CurrentSelection != null)
-                    return m_CurrentSelection;
+                if (m_SelectedItems != null)
+                    return m_SelectedItems;
 
-                m_CurrentSelection = new List<ITreeViewItem>();
+                m_SelectedItems = new List<ITreeViewItem>();
                 foreach (var treeItem in items)
                 {
                     foreach (var itemId in m_ListView.currentSelectionIds)
                     {
                         if (treeItem.id == itemId)
-                            m_CurrentSelection.Add(treeItem);
+                            m_SelectedItems.Add(treeItem);
                     }
                 }
 
-                return m_CurrentSelection;
+                return m_SelectedItems;
             }
         }
-        public event Action<List<ITreeViewItem>> onSelectionChanged;
 
         private Action<VisualElement, ITreeViewItem> m_BindItem;
         public Action<VisualElement, ITreeViewItem> bindItem
         {
-            get
-            {
-                return m_BindItem;
-            }
+            get { return m_BindItem; }
             set
             {
                 m_BindItem = value;
@@ -112,10 +108,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public IEnumerable<ITreeViewItem> items
-        {
-            get { return GetAllItems(m_RootItems); }
-        }
+        public IEnumerable<ITreeViewItem> items => GetAllItems(m_RootItems);
 
         public float resolvedItemHeight => m_ListView.resolvedItemHeight;
 
@@ -158,12 +151,12 @@ namespace UnityEngine.UIElements
 
         private List<TreeViewItemWrapper> m_ItemWrappers;
 
-        private ListView m_ListView;
-        private ScrollView m_ScrollView;
+        private readonly ListView m_ListView;
+        private readonly ScrollView m_ScrollView;
 
         public TreeView()
         {
-            m_CurrentSelection = null;
+            m_SelectedItems = null;
             m_ExpandedItemIds = new List<int>();
             m_ItemWrappers = new List<TreeViewItemWrapper>();
 
@@ -177,10 +170,10 @@ namespace UnityEngine.UIElements
             m_ListView.makeItem = MakeTreeItem;
             m_ListView.bindItem = BindTreeItem;
             m_ListView.getItemId = GetItemId;
-            m_ListView.onItemChosen += OnItemChosen;
-            m_ListView.onSelectionChanged += OnSelectionChanged;
+            m_ListView.onItemsChosen += OnItemsChosen;
+            m_ListView.onSelectionChange += OnSelectionChange;
 
-            m_ScrollView = m_ListView.Q<ScrollView>();
+            m_ScrollView = m_ListView.m_ScrollView;
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
@@ -196,7 +189,6 @@ namespace UnityEngine.UIElements
             m_ListView.itemHeight = itemHeight;
             m_MakeItem = makeItem;
             m_BindItem = bindItem;
-
             m_RootItems = items;
 
             Refresh();
@@ -219,13 +211,13 @@ namespace UnityEngine.UIElements
             Refresh();
         }
 
-        static public IEnumerable<ITreeViewItem> GetAllItems(IEnumerable<ITreeViewItem> rootItems)
+        public static IEnumerable<ITreeViewItem> GetAllItems(IEnumerable<ITreeViewItem> rootItems)
         {
             if (rootItems == null)
                 yield break;
 
             var iteratorStack = new Stack<IEnumerator<ITreeViewItem>>();
-            IEnumerator<ITreeViewItem> currentIterator = rootItems.GetEnumerator();
+            var currentIterator = rootItems.GetEnumerator();
 
             while (true)
             {
@@ -237,11 +229,9 @@ namespace UnityEngine.UIElements
                         currentIterator = iteratorStack.Pop();
                         continue;
                     }
-                    else
-                    {
-                        // We're at the end of the root items list.
-                        break;
-                    }
+
+                    // We're at the end of the root items list.
+                    break;
                 }
 
                 var currentItem = currentIterator.Current;
@@ -280,36 +270,92 @@ namespace UnityEngine.UIElements
                 evt.StopPropagation();
         }
 
-        public void SelectItem(int id)
+        public void SetSelection(int id)
+        {
+            SetSelection(new[] {id});
+        }
+
+        public void SetSelection(IEnumerable<int> ids)
+        {
+            SetSelectionInternal(ids, true);
+        }
+
+        public void SetSelectionWithoutNotify(IEnumerable<int> ids)
+        {
+            SetSelectionInternal(ids, false);
+        }
+
+        internal void SetSelectionInternal(IEnumerable<int> ids, bool sendNotification)
+        {
+            if (ids == null)
+                return;
+
+            var selectedIndexes = ids.Select(id => GetItemIndex(id, true)).ToList();
+            ListViewRefresh();
+            m_ListView.SetSelectionInternal(selectedIndexes, sendNotification);
+        }
+
+        public void AddToSelection(int id)
+        {
+            var index = GetItemIndex(id, true);
+            ListViewRefresh();
+            m_ListView.AddToSelection(index);
+        }
+
+        public void RemoveFromSelection(int id)
+        {
+            var index = GetItemIndex(id);
+            m_ListView.RemoveFromSelection(index);
+        }
+
+        private int GetItemIndex(int id, bool expand = false)
         {
             var item = FindItem(id);
             if (item == null)
-                throw new InvalidOperationException("id");
+                throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(TreeView)}: Item id not found.");
 
-            // Expand all parents.
-            var parent = item.parent;
-            while (parent != null)
+            if (expand)
             {
-                if (!m_ExpandedItemIds.Contains(parent.id))
-                    m_ExpandedItemIds.Add(parent.id);
+                bool regenerateWrappers = false;
+                var itemParent = item.parent;
+                while (itemParent != null)
+                {
+                    if (!m_ExpandedItemIds.Contains(itemParent.id))
+                    {
+                        m_ExpandedItemIds.Add(itemParent.id);
+                        regenerateWrappers = true;
+                    }
+                    itemParent = itemParent.parent;
+                }
 
-                parent = parent.parent;
+                if (regenerateWrappers)
+                    RegenerateWrappers();
             }
 
-            Refresh();
 
-            int index = 0;
+            var index = 0;
             for (; index < m_ItemWrappers.Count; ++index)
                 if (m_ItemWrappers[index].id == id)
                     break;
 
-            m_ListView.selectedIndex = index;
-            m_ListView.ScrollToItem(m_ListView.selectedIndex);
+            return index;
         }
 
         public void ClearSelection()
         {
-            m_ListView.selectedIndex = -1;
+            m_ListView.ClearSelection();
+        }
+
+        public void ScrollTo(VisualElement visualElement)
+        {
+            m_ListView.ScrollTo(visualElement);
+        }
+
+        public void ScrollToItem(int id)
+        {
+            var index = GetItemIndex(id, true);
+            Refresh();
+            m_ListView.ScrollToItem(index);
         }
 
         public bool IsExpanded(int id)
@@ -319,6 +365,10 @@ namespace UnityEngine.UIElements
 
         public void CollapseItem(int id)
         {
+            // Make sure the item is valid.
+            if (FindItem(id) == null)
+                throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(TreeView)}: Item id not found.");
+
             // Try to find it in the currently visible list.
             for (int i = 0; i < m_ItemWrappers.Count; ++i)
                 if (m_ItemWrappers[i].item.id == id)
@@ -337,6 +387,10 @@ namespace UnityEngine.UIElements
 
         public void ExpandItem(int id)
         {
+            // Make sure the item is valid.
+            if (FindItem(id) == null)
+                throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(TreeView)}: Item id not found.");
+
             // Try to find it in the currently visible list.
             for (int i = 0; i < m_ItemWrappers.Count; ++i)
                 if (m_ItemWrappers[i].item.id == id)
@@ -345,10 +399,6 @@ namespace UnityEngine.UIElements
                         ExpandItemByIndex(i);
                         return;
                     }
-
-            // Make sure the item is valid.
-            if (FindItem(id) == null)
-                throw new InvalidOperationException("TreeView: Item id not found.");
 
             if (m_ExpandedItemIds.Contains(id))
                 return;
@@ -371,26 +421,31 @@ namespace UnityEngine.UIElements
             m_ListView.Refresh();
         }
 
-        private void OnItemChosen(object item)
+        private void OnItemsChosen(IEnumerable<object> chosenItems)
         {
-            if (onItemChosen != null)
+            if (onItemsChosen == null)
+                return;
+
+            var itemsList = new List<ITreeViewItem>();
+            foreach (var item in chosenItems)
             {
                 var wrapper = (TreeViewItemWrapper)item;
-                onItemChosen.Invoke(wrapper.item);
+                itemsList.Add(wrapper.item);
             }
+
+            onItemsChosen.Invoke(itemsList);
         }
 
-        private void OnSelectionChanged(List<object> items)
+        private void OnSelectionChange(IEnumerable<object> selectedListItems)
         {
-            if (m_CurrentSelection == null)
-                m_CurrentSelection = new List<ITreeViewItem>();
+            if (m_SelectedItems == null)
+                m_SelectedItems = new List<ITreeViewItem>();
 
-            m_CurrentSelection.Clear();
-            foreach (var item in items)
-                m_CurrentSelection.Add(((TreeViewItemWrapper)item).item);
+            m_SelectedItems.Clear();
+            foreach (var item in selectedListItems)
+                m_SelectedItems.Add(((TreeViewItemWrapper)item).item);
 
-            if (onSelectionChanged != null)
-                onSelectionChanged.Invoke(m_CurrentSelection);
+            onSelectionChange?.Invoke(m_SelectedItems);
         }
 
         private void OnTreeViewMouseUp(MouseUpEvent evt)
@@ -581,9 +636,9 @@ namespace UnityEngine.UIElements
             m_ScrollView.contentContainer.Focus();
         }
 
-        private void CreateWrappers(IEnumerable<ITreeViewItem> items, int depth, ref List<TreeViewItemWrapper> wrappers)
+        private void CreateWrappers(IEnumerable<ITreeViewItem> treeViewItems, int depth, ref List<TreeViewItemWrapper> wrappers)
         {
-            foreach (var item in items)
+            foreach (var item in treeViewItems)
             {
                 var wrapper = new TreeViewItemWrapper()
                 {
@@ -610,8 +665,8 @@ namespace UnityEngine.UIElements
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
+            int height;
             var oldHeight = m_ListView.itemHeight;
-            int height = 0;
             if (!m_ListView.m_ItemHeightIsInline && e.customStyle.TryGetValue(ListView.s_ItemHeightProperty, out height))
                 m_ListView.m_ItemHeight = height;
 

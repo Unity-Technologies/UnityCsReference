@@ -45,13 +45,20 @@ namespace UnityEditor.StyleSheets
 
         internal static StyleBlock FindBlock(int name, DrawStates drawStates)
         {
-            bool isEnabled = GUI.enabled;
             StyleState stateFlags = 0;
-            if (isEnabled && drawStates.hasKeyboardFocus && GUIView.current.hasFocus) stateFlags |= StyleState.focus;
-            if (isEnabled && (drawStates.isActive || GUI.HasMouseControl(drawStates.controlId))) stateFlags |= StyleState.active;
-            if (isEnabled && drawStates.isHover) stateFlags |= StyleState.hover;
-            if (drawStates.on) stateFlags |= StyleState.@checked;
-            if (!isEnabled) stateFlags |= StyleState.disabled;
+            if (GUI.enabled)
+            {
+                if (drawStates.hasKeyboardFocus && GUIView.current.hasFocus) stateFlags |= StyleState.focus;
+                if (drawStates.isActive || GUI.HasMouseControl(drawStates.controlId)) stateFlags |= StyleState.active;
+                if (drawStates.isHover && GUIUtility.hotControl == 0) stateFlags |= StyleState.hover;
+            }
+            else
+            {
+                stateFlags |= StyleState.disabled;
+            }
+
+            if (drawStates.on)
+                stateFlags |= StyleState.@checked;
 
             StyleState[] states;
             if (!s_StatesCache.TryGetValue(stateFlags, out states))

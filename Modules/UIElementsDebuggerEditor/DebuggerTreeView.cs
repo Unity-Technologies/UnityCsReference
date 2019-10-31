@@ -183,12 +183,12 @@ namespace UnityEditor.UIElements.Debugger
 
             m_TreeView = new TreeView(m_TreeRootItems, 20, makeItem, FillItem);
             m_TreeView.style.flexGrow = 1;
-            m_TreeView.onSelectionChanged += (items) =>
+            m_TreeView.onSelectionChange += items =>
             {
                 if (m_SelectElementCallback == null)
                     return;
 
-                if (items.Count == 0)
+                if (!items.Any())
                 {
                     m_SelectElementCallback(null);
                     return;
@@ -247,7 +247,7 @@ namespace UnityEditor.UIElements.Debugger
             if (item == null)
                 return;
 
-            m_TreeView.SelectItem(item.id);
+            m_TreeView.SetSelection(item.id);
 
             if (string.IsNullOrEmpty(query))
                 return;

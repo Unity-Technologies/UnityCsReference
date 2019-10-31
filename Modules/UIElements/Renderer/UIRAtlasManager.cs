@@ -292,18 +292,18 @@ namespace UnityEngine.UIElements
                 case TextureFormat.ETC2_RGB:            // Source is 8 bits per component
                 case TextureFormat.ETC2_RGBA1:          // Source is 8 bits per component
                 case TextureFormat.ETC2_RGBA8:          // Source is 8 bits per component
-                case TextureFormat.ASTC_RGB_4x4:        // Source is 8 bits per component
-                case TextureFormat.ASTC_RGB_5x5:        // Source is 8 bits per component
-                case TextureFormat.ASTC_RGB_6x6:        // Source is 8 bits per component
-                case TextureFormat.ASTC_RGB_8x8:        // Source is 8 bits per component
-                case TextureFormat.ASTC_RGB_10x10:      // Source is 8 bits per component
-                case TextureFormat.ASTC_RGB_12x12:      // Source is 8 bits per component
-                case TextureFormat.ASTC_RGBA_4x4:       // Source is 8 bits per component
-                case TextureFormat.ASTC_RGBA_5x5:       // Source is 8 bits per component
-                case TextureFormat.ASTC_RGBA_6x6:       // Source is 8 bits per component
-                case TextureFormat.ASTC_RGBA_8x8:       // Source is 8 bits per component
-                case TextureFormat.ASTC_RGBA_10x10:     // Source is 8 bits per component
-                case TextureFormat.ASTC_RGBA_12x12:     // Source is 8 bits per component
+                case TextureFormat.ASTC_4x4:            // Source is 8 bits per component
+                case TextureFormat.ASTC_5x5:            // Source is 8 bits per component
+                case TextureFormat.ASTC_6x6:            // Source is 8 bits per component
+                case TextureFormat.ASTC_8x8:            // Source is 8 bits per component
+                case TextureFormat.ASTC_10x10:          // Source is 8 bits per component
+                case TextureFormat.ASTC_12x12:          // Source is 8 bits per component
+#pragma warning disable 618
+                // obsolete enums that are still warning (and not error)
+                // please note that we reuse ASTC_RGB_NxN values for new enums so these are handled "automatically"
+                case TextureFormat.ASTC_RGBA_4x4: case TextureFormat.ASTC_RGBA_5x5: case TextureFormat.ASTC_RGBA_6x6:
+                case TextureFormat.ASTC_RGBA_8x8: case TextureFormat.ASTC_RGBA_10x10: case TextureFormat.ASTC_RGBA_12x12:
+#pragma warning restore 618
                 case TextureFormat.RG16:                // Source is 8 bits per component
                 case TextureFormat.R8:                  // Source is 8 bits per component
                 case TextureFormat.ETC_RGB4Crunched:    // See ETC

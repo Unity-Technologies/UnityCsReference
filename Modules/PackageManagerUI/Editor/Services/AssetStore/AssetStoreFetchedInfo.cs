@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -191,8 +192,11 @@ namespace UnityEditor.PackageManager.UI
                 foreach (var key in uploads.Keys)
                 {
                     var simpleVersion = Regex.Replace(key, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
-                    SemVersion version;
-                    if (SemVersion.TryParse(simpleVersion.Trim(), out version))
+
+                    SemVersion? version;
+                    bool isVersionParsed = SemVersionParser.TryParse(simpleVersion.Trim(), out version);
+
+                    if (isVersionParsed)
                     {
                         var info = uploads.GetDictionary(key);
                         var assetCount = info.GetString("assetCount") ?? string.Empty;
@@ -200,7 +204,7 @@ namespace UnityEditor.PackageManager.UI
 
                         result.Add(new PackageSizeInfo
                         {
-                            supportedUnityVersion = version,
+                            supportedUnityVersion = (SemVersion)version,
                             assetCount = string.IsNullOrEmpty(assetCount) ? 0 : ulong.Parse(assetCount),
                             downloadSize = string.IsNullOrEmpty(downloadSize) ? 0 : ulong.Parse(downloadSize)
                         });

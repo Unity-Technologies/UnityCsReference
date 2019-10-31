@@ -272,7 +272,6 @@ namespace UnityEditor
             prevSizeGroupType = (int)currentSizeGroupType;
             titleContent = GetLocalizedTitleContent();
             UpdateZoomAreaAndParent();
-            dontClearBackground = true;
             showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
 
             ModeService.modeChanged += OnEditorModeChanged;
@@ -410,7 +409,6 @@ namespace UnityEditor
             if (indexClicked != selectedSizeIndex)
             {
                 selectedSizeIndex = indexClicked;
-                dontClearBackground = true; // will cause re-clear
                 UpdateZoomAreaAndParent();
                 targetSize = targetRenderSize;
                 SceneView.RepaintAll();

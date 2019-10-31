@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -38,10 +37,10 @@ namespace UnityEditor.UIElements.Samples
             listView.selectionType = SelectionType.Multiple;
 
             // Callback invoked when the user double clicks an item
-            listView.onItemChosen += obj => Debug.Log(obj);
+            listView.onItemsChosen += Debug.Log;
 
             // Callback invoked when the user changes the selection inside the ListView
-            listView.onSelectionChanged += objects => Debug.Log(objects);
+            listView.onSelectionChange += Debug.Log;
             /// </sample>
         }
     }

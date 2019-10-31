@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using JetBrains.Annotations;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Experimental.Rendering
@@ -19,23 +19,26 @@ namespace UnityEditor.Experimental.Rendering
         }
         static IScriptableBakedReflectionSystem Internal_ScriptableBakedReflectionSystemSettings_system
         {
-            [RequiredByNativeCode]
-            get { return s_Instance != null ? s_Instance.implementation : null; }
-            [RequiredByNativeCode]
-            set
+            [RequiredByNativeCode] get { return s_Instance?.implementation; }
+            [RequiredByNativeCode] set
             {
-                Assert.IsNotNull(s_Instance, "Instance must be initialized from CPP before IntializeOnLoad");
+                if (s_Instance == null)
+                {
+                    Console.WriteLine("[WARNING] ScriptableBakedReflectionSystemWrapper instance must be initialized from CPP before InitializeOnLoad");
+                    return;
+                }
 
                 if (value == null || value.Equals(null))
                 {
                     Debug.LogError("'null' cannot be assigned to ScriptableBakedReflectionSystemSettings.system");
                     return;
                 }
+
                 // We always allow the BuiltinBakedReflectionSystem, it is set by Unity on domain reload
                 // However, we issue a warning when multiple different IScriptableBakedReflectionSystem have been assigned.
-                else if (!(system is BuiltinBakedReflectionSystem)
-                         && !(value is BuiltinBakedReflectionSystem)
-                         && system != value)
+                if (!(system is BuiltinBakedReflectionSystem)
+                    && !(value is BuiltinBakedReflectionSystem)
+                    && system != value)
                     Debug.LogWarningFormat("ScriptableBakedReflectionSystemSettings.system is assigned more than once. Only a the last instance will be used. (Last instance {0}, New instance {1})", system, value);
 
                 if (s_Instance.implementation != value)
@@ -49,7 +52,7 @@ namespace UnityEditor.Experimental.Rendering
 
         static ScriptableBakedReflectionSystemWrapper s_Instance = null;
 
-        [RequiredByNativeCode]
+        [UsedImplicitly, RequiredByNativeCode]
         static ScriptableBakedReflectionSystemWrapper Internal_ScriptableBakedReflectionSystemSettings_InitializeWrapper(IntPtr ptr)
         {
             s_Instance = new ScriptableBakedReflectionSystemWrapper(ptr);

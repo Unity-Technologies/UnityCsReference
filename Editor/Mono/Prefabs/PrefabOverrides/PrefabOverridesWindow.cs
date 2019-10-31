@@ -97,6 +97,23 @@ namespace UnityEditor
             RefreshStatus();
         }
 
+        public override void OnOpen()
+        {
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            base.OnOpen();
+        }
+
+        public override void OnClose()
+        {
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            base.OnClose();
+        }
+
+        void OnUndoRedoPerformed()
+        {
+            RefreshStatus();
+        }
+
         internal void RefreshStatus()
         {
             if (m_TreeView != null)

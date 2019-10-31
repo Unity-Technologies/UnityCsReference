@@ -23,7 +23,6 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
-
         public event Action<UIRenderDevice> BeforeDrawChain
         {
             add { if (renderChain != null) renderChain.BeforeDrawChain += value; }
@@ -69,7 +68,7 @@ namespace UnityEngine.UIElements
         {
             using (s_MarkerDrawChain.Auto())
             {
-                renderChain.Render(viewport, projection);
+                renderChain.Render(viewport, projection, panel.clearFlags);
             }
         }
 

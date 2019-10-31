@@ -265,7 +265,7 @@ namespace UnityEditor
         public void OnDisable()
         {
             DevDeviceList.Changed -= OnDeviceListChanged;
-            if (EditorSettings.assetPipelineMode == AssetPipelineMode.Version2)
+            if (AssetDatabase.IsV2Enabled())
             {
                 AssetDatabaseExperimental.RefreshCacheServerNamespacePrefix();
                 AssetDatabaseExperimental.RefreshConnectionToCacheServer();
@@ -761,16 +761,14 @@ namespace UnityEditor
                     {
                         if (AssetDatabase.IsV2Enabled())
                         {
-                            if (EditorSettings.cacheServerEndpoint.Length > 0)
-                            {
-                                var address = EditorSettings.cacheServerEndpoint.Split(':');
-                                var ip = address[0];
-                                var port = Convert.ToUInt16(address[1]);
-                                if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
-                                    m_CacheServerConnectionState = CacheServerConnectionState.Success;
-                                else
-                                    m_CacheServerConnectionState = CacheServerConnectionState.Failure;
-                            }
+                            var address = EditorSettings.cacheServerEndpoint.Split(':');
+                            var ip = address[0];
+                            UInt16 port = 0; // If 0, will use the default set port
+                            if (address.Length == 2)
+                                port = Convert.ToUInt16(address[1]);
+
+                            if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
+                                m_CacheServerConnectionState = CacheServerConnectionState.Success;
                             else
                                 m_CacheServerConnectionState = CacheServerConnectionState.Failure;
                         }

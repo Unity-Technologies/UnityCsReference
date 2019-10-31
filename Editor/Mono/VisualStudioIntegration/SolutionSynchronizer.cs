@@ -18,6 +18,7 @@ using UnityEngine.Profiling;
 
 using UnityEditor.Compilation;
 using UnityEngine;
+using UnityEditor.PackageManager;
 
 namespace UnityEditor.VisualStudioIntegration
 {
@@ -108,12 +109,12 @@ namespace UnityEditor.VisualStudioIntegration
             ProjectSupportedExtensions = EditorSettings.projectGenerationUserExtensions;
         }
 
-        public bool ShouldFileBePartOfSolution(string file)
+        bool ShouldFileBePartOfSolution(string file)
         {
             string extension = Path.GetExtension(file);
 
             // Exclude files coming from packages except if they are internalized.
-            if (!m_ShouldGenerateAll && IsNonInternalizedPackagePath(file))
+            if (!m_ShouldGenerateAll && IsInternalizedPackagePath(file))
             {
                 return false;
             }
@@ -154,6 +155,7 @@ namespace UnityEditor.VisualStudioIntegration
 
         static string GetExtensionOfSourceFiles(string[] files)
         {
+            // Files are sorted by the compilation pipeline, ensuring cs files are the first in the list.
             return files.Length > 0 ? GetExtensionOfSourceFile(files[0]) : "NA";
         }
 
@@ -277,7 +279,7 @@ namespace UnityEditor.VisualStudioIntegration
         {
             var systemReferenceDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(assembly.compilerOptions.ApiCompatibilityLevel);
 
-            Dictionary<string, ResponseFileData> responseFilesData = assembly.compilerOptions.ResponseFiles.ToDictionary(x => x, x => ScriptCompilerBase.ParseResponseFileFromFile(
+            Dictionary<string, ResponseFileData> responseFilesData = assembly.compilerOptions.ResponseFiles.ToDictionary(x => x, x => m_assemblyNameProvider.ParseResponseFile(
                 x,
                 _projectDirectory,
                 systemReferenceDirectories
@@ -305,7 +307,7 @@ namespace UnityEditor.VisualStudioIntegration
             foreach (string asset in m_assemblyNameProvider.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (!m_ShouldGenerateAll && IsNonInternalizedPackagePath(asset))
+                if (!m_ShouldGenerateAll && IsInternalizedPackagePath(asset))
                 {
                     continue;
                 }
@@ -344,15 +346,21 @@ namespace UnityEditor.VisualStudioIntegration
             return result;
         }
 
-        bool IsNonInternalizedPackagePath(string file)
+        bool IsInternalizedPackagePath(string file)
         {
-            if (UnityEditor.PackageManager.Folders.IsPackagedAssetPath(file))
+            if (string.IsNullOrEmpty(file.Trim()))
             {
-                bool rootFolder, readOnly;
-                bool validPath = AssetDatabase.GetAssetFolderInfo(file, out rootFolder, out readOnly);
-                return (!validPath || readOnly);
+                return false;
             }
-            return false;
+
+            var packageInfo = m_assemblyNameProvider.FindForAssetPath(file);
+            if (packageInfo == null)
+            {
+                return false;
+            }
+
+            var packageSource = packageInfo.source;
+            return packageSource != PackageSource.Embedded && packageSource != PackageSource.Local;
         }
 
         void SyncProject(Compilation.Assembly assembly,
@@ -616,7 +624,9 @@ namespace UnityEditor.VisualStudioIntegration
 
             var arguments = new object[]
             {
-                toolsversion, productversion, ProjectGuid(assembly.name),
+                toolsversion,
+                productversion,
+                ProjectGuid(assembly.name),
                 _settings.EngineAssemblyPath,
                 _settings.EditorAssemblyPath,
                 string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(assembly.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
@@ -669,13 +679,13 @@ namespace UnityEditor.VisualStudioIntegration
             }
             var relevantAssemblies = RelevantAssembliesForMode(assemblies, mode);
             string projectEntries = GetProjectEntries(relevantAssemblies);
-            string projectConfigurations = string.Join(WindowsNewline, relevantAssemblies.Select(i => GetProjectActiveConfigurations(ProjectGuid(i.outputPath))).ToArray());
+            string projectConfigurations = string.Join(WindowsNewline, relevantAssemblies.Select(i => GetProjectActiveConfigurations(ProjectGuid(i.name))).ToArray());
             return string.Format(_settings.SolutionTemplate, fileversion, vsversion, projectEntries, projectConfigurations);
         }
 
         private static IEnumerable<Compilation.Assembly> RelevantAssembliesForMode(List<Compilation.Assembly> assemblies, Mode mode)
         {
-            return assemblies.Where(i => (mode == Mode.UnityScriptAsUnityProj || ScriptingLanguage.CSharp == ScriptingLanguageFor(i)));
+            return assemblies.Where(i => ScriptingLanguage.CSharp == ScriptingLanguageFor(i));
         }
 
         /// <summary>
@@ -689,7 +699,7 @@ namespace UnityEditor.VisualStudioIntegration
                 SolutionGuid(i),
                 i.name,
                 Path.GetFileName(ProjectFile(i)),
-                ProjectGuid(i.outputPath)
+                ProjectGuid(i.name)
             ));
 
             return string.Join(WindowsNewline, projectEntries.ToArray());
@@ -705,19 +715,36 @@ namespace UnityEditor.VisualStudioIntegration
                 projectGuid);
         }
 
-        private string EscapedRelativePathFor(string file)
+        string EscapedRelativePathFor(string file)
         {
             var projectDir = _projectDirectory.ConvertSeparatorsToWindows();
             file = file.ConvertSeparatorsToWindows();
-            var path = Paths.SkipPathPrefix(file, projectDir);
-            if (PackageManager.Folders.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
+            var path = SkipPathPrefix(file, projectDir);
+
+            var packageInfo = m_assemblyNameProvider.FindForAssetPath(path.ConvertSeparatorsToUnity());
+            if (packageInfo != null)
             {
                 // We have to normalize the path, because the PackageManagerRemapper assumes
                 // dir seperators will be os specific.
-                var absolutePath = Path.GetFullPath(path.NormalizePath()).ConvertSeparatorsToWindows();
-                path = Paths.SkipPathPrefix(absolutePath, projectDir);
+                var absolutePath = Path.GetFullPath(NormalizePath(path)).ConvertSeparatorsToWindows();
+                path = SkipPathPrefix(absolutePath, projectDir);
             }
+
             return SecurityElement.Escape(path);
+        }
+
+        static string SkipPathPrefix(string path, string prefix)
+        {
+            if (path.StartsWith($@"{prefix}\"))
+                return path.Substring(prefix.Length + 1);
+            return path;
+        }
+
+        static string NormalizePath(string path)
+        {
+            if (Path.DirectorySeparatorChar == '\\')
+                return path.Replace('/', Path.DirectorySeparatorChar);
+            return path.Replace('\\', Path.DirectorySeparatorChar);
         }
 
         string ProjectGuid(string assembly)

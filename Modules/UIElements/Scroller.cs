@@ -65,6 +65,7 @@ namespace UnityEngine.UIElements
             get { return resolvedStyle.flexDirection == FlexDirection.Row ? SliderDirection.Horizontal : SliderDirection.Vertical; }
             set
             {
+                slider.direction = value;
                 if (value == SliderDirection.Horizontal)
                 {
                     style.flexDirection = FlexDirection.Row;
@@ -96,9 +97,6 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
 
-            this.direction = direction;
-            this.valueChanged = valueChanged;
-
             // Add children in correct order
             slider = new Slider(lowValue, highValue, direction, kDefaultPageSize) {name = "unity-slider", viewDataKey = "Slider"};
             slider.AddToClassList(sliderUssClassName);
@@ -111,6 +109,9 @@ namespace UnityEngine.UIElements
             highButton.AddToClassList(highButtonUssClassName);
             Add(highButton);
             Add(slider);
+
+            this.direction = direction;
+            this.valueChanged = valueChanged;
         }
 
         public void Adjust(float factor)

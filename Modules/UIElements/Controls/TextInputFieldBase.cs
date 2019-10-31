@@ -491,8 +491,9 @@ namespace UnityEngine.UIElements
                     scrollOffset = Vector2.zero;
                 }
 
-                GUIUtility.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
-                    new Vector2(localPosition.x, localPosition.y + lineHeight);
+                Vector2 pos = editorEngine.graphicalCursorPos - scrollOffset;
+                pos.y += lineHeight;
+                GUIUtility.compositionCursorPos = this.LocalToWorld(pos);
 
                 Color drawCursorColor = cursorColor;
 

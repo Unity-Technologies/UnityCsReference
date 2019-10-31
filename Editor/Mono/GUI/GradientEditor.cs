@@ -294,6 +294,7 @@ namespace UnityEditor
                             {
                                 found = true;
                                 m_SelectedSwatch = s;
+                                EditorGUI.EndEditingActiveTextField();
                                 break;
                             }
                         }

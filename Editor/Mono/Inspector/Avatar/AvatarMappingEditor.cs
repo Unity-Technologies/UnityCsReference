@@ -295,7 +295,7 @@ namespace UnityEditor
                 }
                 GUILayout.EndVertical();
 
-                m_FoldoutScroll = GUILayout.BeginScrollView(m_FoldoutScroll, styles.box, GUILayout.MinHeight(80), GUILayout.MaxHeight(500), GUILayout.ExpandHeight(true));
+                m_FoldoutScroll = GUILayout.BeginScrollView(m_FoldoutScroll, styles.box, GUILayout.MinHeight(80), GUILayout.MaxHeight(510), GUILayout.ExpandHeight(true));
                 {
                     DisplayFoldout();
                     GUILayout.FlexibleSpace();

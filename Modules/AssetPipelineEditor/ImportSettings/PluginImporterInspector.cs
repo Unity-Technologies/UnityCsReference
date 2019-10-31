@@ -451,8 +451,10 @@ namespace UnityEditor
             if (!IsEditingPlatformSettingsSupported())
                 return;
 
+
             foreach (var extension in additionalExtensions)
             {
+                if (!this.importer) continue;
                 extension.OnEnable(this);
             }
 
@@ -466,27 +468,30 @@ namespace UnityEditor
                 }
             }
 
-            m_PluginInformation = new Dictionary<string, string>();
-            m_PluginInformation["Path"] = importer.assetPath;
-            m_PluginInformation["Type"] = importer.isNativePlugin ? "Native" : "Managed";
-            if (!importer.isNativePlugin)
+            if (this.importer)
             {
-                string info;
-                switch (importer.dllType)
+                m_PluginInformation = new Dictionary<string, string>();
+                m_PluginInformation["Path"] = importer.assetPath;
+                m_PluginInformation["Type"] = importer.isNativePlugin ? "Native" : "Managed";
+                if (!importer.isNativePlugin)
                 {
-                    case DllType.ManagedNET35: info = "Targets .NET 3.5"; break;
-                    case DllType.ManagedNET40: info = "Targets .NET 4.x"; break;
-                    case DllType.UnknownManaged: info = "Targets Unknown .NET"; break;
-                    case DllType.WinMDNET40: info = "Managed WinMD"; break;
-                    case DllType.WinMDNative: info = "Native WinMD"; break;
-                    default:
-                        throw new Exception("Unknown managed dll type: " + importer.dllType);
+                    string info;
+                    switch (importer.dllType)
+                    {
+                        case DllType.ManagedNET35: info = "Targets .NET 3.5"; break;
+                        case DllType.ManagedNET40: info = "Targets .NET 4.x"; break;
+                        case DllType.UnknownManaged: info = "Targets Unknown .NET"; break;
+                        case DllType.WinMDNET40: info = "Managed WinMD"; break;
+                        case DllType.WinMDNative: info = "Native WinMD"; break;
+                        default:
+                            throw new Exception("Unknown managed dll type: " + importer.dllType);
+                    }
+
+                    m_PluginInformation["Assembly Info"] = info;
                 }
 
-                m_PluginInformation["Assembly Info"] = info;
+                ResetCompatability(ref m_Preload, (imp => imp.isPreloaded));
             }
-
-            ResetCompatability(ref m_Preload, (imp => imp.isPreloaded));
         }
 
         private void RemoveDefineConstraintListElement(ReorderableList list)

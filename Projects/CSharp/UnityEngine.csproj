@@ -643,6 +643,15 @@
     <Compile Include="..\..\Modules\Substance\SubstanceUtility.cs">
       <Link>Modules\Substance\SubstanceUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Subsystems\Example\ExampleSubsystem.bindings.cs">
+      <Link>Modules\Subsystems\Example\ExampleSubsystem.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\Example\ExampleSubsystemDescriptor.bindings.cs">
+      <Link>Modules\Subsystems\Example\ExampleSubsystemDescriptor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemManager.bindings.cs">
+      <Link>Modules\Subsystems\SubsystemManager.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TerrainPhysics\TerrainPhysics.bindings.cs">
       <Link>Modules\TerrainPhysics\TerrainPhysics.bindings.cs</Link>
     </Compile>
@@ -1059,6 +1068,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\PopupWindow.cs">
       <Link>Modules\UIElements\PopupWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\ProjectionUtils.cs">
+      <Link>Modules\UIElements\ProjectionUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRAtlasAllocator.cs">
       <Link>Modules\UIElements\Renderer\UIRAtlasAllocator.cs</Link>
@@ -1675,12 +1687,6 @@
     <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystemDescriptor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleSubsystem.bindings.cs">
-      <Link>Modules\XR\Subsystems\Example\XRExampleSubsystem.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs">
-      <Link>Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs">
       <Link>Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs</Link>
     </Compile>
@@ -1692,9 +1698,6 @@
     </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Meshing\XRMeshSubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Meshing\XRMeshSubsystemDescriptor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\XR\XRSubsystemManager.bindings.cs">
-      <Link>Modules\XR\XRSubsystemManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs">
       <Link>Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs</Link>

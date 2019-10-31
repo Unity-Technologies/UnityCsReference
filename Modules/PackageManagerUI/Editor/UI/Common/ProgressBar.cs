@@ -27,20 +27,23 @@ namespace UnityEditor.PackageManager.UI
             currentProgressBar.style.width = Length.Percent(0);
         }
 
-        public void SetDisplay(bool value)
+        private void SetDisplay(bool value)
         {
             UIUtils.SetElementDisplay(this, value);
         }
 
-        public void SetProgress(float percentage)
+        public void UpdateProgress(IOperation operation)
         {
-            percentage = Mathf.Clamp01(percentage);
+            var showProgressBar = operation != null && operation.isProgressTrackable && operation.isInProgress;
+            SetDisplay(showProgressBar);
+            if (showProgressBar)
+            {
+                var percentage = Mathf.Clamp01(operation.progressPercentage);
 
-            currentProgressText.text = percentage.ToString("P1", CultureInfo.InvariantCulture);
-            currentProgressBar.style.width = Length.Percent(percentage * 100.0f);
-            currentProgressBar.MarkDirtyRepaint();
-
-            SetDisplay(true);
+                currentProgressText.text = percentage.ToString("P1", CultureInfo.InvariantCulture);
+                currentProgressBar.style.width = Length.Percent(percentage * 100.0f);
+                currentProgressBar.MarkDirtyRepaint();
+            }
         }
 
         private VisualElementCache cache { get; }

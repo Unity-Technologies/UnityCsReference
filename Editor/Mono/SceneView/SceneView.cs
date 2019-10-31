@@ -163,6 +163,12 @@ namespace UnityEditor
             }
         }
 
+        bool m_SkipFadingPending;
+        internal void SkipFading()
+        {
+            m_SkipFadingPending = true;
+        }
+
         [SerializeField]
         string m_WindowGUID;
         internal string windowGUID { get { return m_WindowGUID; } }
@@ -930,13 +936,6 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
-            // don't bleed our scene view rendering into game view
-            var playModeView = PlayModeView.GetMainPlayModeView();
-            if (playModeView && playModeView.m_Parent != null && m_Parent != null && playModeView.m_Parent == m_Parent)
-            {
-                playModeView.m_Parent.backgroundValid = false;
-            }
-
             if (s_LastActiveSceneView == this)
                 SceneViewMotion.ResetMotion();
         }
@@ -967,7 +966,6 @@ namespace UnityEditor
 
             wantsMouseMove = true;
             wantsMouseEnterLeaveWindow = true;
-            dontClearBackground = true;
             s_SceneViews.Add(this);
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
@@ -1796,6 +1794,8 @@ namespace UnityEditor
             ShaderUtil.allowAsyncCompilation = EditorSettings.asyncShaderCompilation;
 
             DrawGridParameters gridParam = sceneViewGrids.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target);
+            if (m_SkipFadingPending)
+                sceneViewGrids.SkipFading(); // Called AFTER fade target values have been updated.
 
             Event evt = Event.current;
             if (UseSceneFiltering())
@@ -2347,6 +2347,8 @@ namespace UnityEditor
             if (Event.current.type != EventType.Repaint)
             {
                 svRot.OnGUI(this);
+                if (m_SkipFadingPending)
+                    svRot.SkipFading(); // Called AFTER fade target values have been updated.
             }
         }
 
@@ -2360,7 +2362,6 @@ namespace UnityEditor
             {
                 s_MouseRects.Clear();
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
-                Profiler.BeginSample("SceneView.Repaint");
             }
 
             Color origColor = GUI.color;
@@ -2540,15 +2541,11 @@ namespace UnityEditor
 
             GUI.EndGroup();
             GUI.color = origColor;
+            m_SkipFadingPending = false;
 
             m_SceneViewOverlay.End();
 
             HandleMouseCursor();
-
-            if (evt.type == EventType.Repaint)
-            {
-                Profiler.EndSample();
-            }
 
             s_CurrentDrawingSceneView = null;
             m_Camera.rect = origCameraRect;

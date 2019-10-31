@@ -44,6 +44,7 @@ namespace UnityEditor
             view.rotation = rotation;
             view.size = size;
             view.orthographic = orthographic;
+            view.SkipFading();
         }
     }
 }

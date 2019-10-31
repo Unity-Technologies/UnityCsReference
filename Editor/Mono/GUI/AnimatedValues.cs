@@ -8,7 +8,7 @@ using UnityEngine.Events;
 
 namespace UnityEditor.AnimatedValues
 {
-    public abstract class BaseAnimValue<T>
+    public abstract class BaseAnimValue<T> : ISerializationCallbackReceiver
     {
         T m_Start;
 
@@ -24,6 +24,10 @@ namespace UnityEditor.AnimatedValues
         [NonSerialized]
         public UnityEvent valueChanged;
 
+        // Don't have m_Animating survive script reloads, as it could cause the AnimValue to get stuck.
+        // If m_Animating was true after reload but the Update callback registration had been lost,
+        // The value would never change and also never re-register to the Update callback.
+        [NonSerialized]
         bool m_Animating;
 
         protected BaseAnimValue(T value)
@@ -150,7 +154,27 @@ namespace UnityEditor.AnimatedValues
             set { StopAnim(value); }
         }
 
+        internal void SkipFading()
+        {
+            StopAnim(target);
+        }
+
         protected abstract T GetValue();
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize() {}
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            // Ensure we resume animating after script reload if value differs from target.
+            if (!GetValue().Equals(target) && !m_Animating)
+            {
+                // Shouldn't be necessary to remove first since we use m_Animating
+                // to keep track of it, but it doesn't hurt.
+                EditorApplication.update -= Update;
+                EditorApplication.update += Update;
+                m_Animating = true;
+            }
+        }
     }
 
     [Serializable]

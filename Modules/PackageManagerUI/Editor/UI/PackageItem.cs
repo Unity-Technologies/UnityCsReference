@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -30,6 +31,7 @@ namespace UnityEditor.PackageManager.UI
                 return package.versions.FirstOrDefault(v => v.uniqueId == visualState.selectedVersionId);
             }
         }
+
         internal IEnumerable<PackageVersionItem> versionItems { get { return versionList.Children().Cast<PackageVersionItem>(); } }
 
         // the item is only expandable when there are more than one versions
@@ -79,6 +81,15 @@ namespace UnityEditor.PackageManager.UI
 
             if (UIUtils.IsElementVisible(this) != visualState.visible)
                 UIUtils.SetElementDisplay(this, visualState.visible);
+
+            if (selectedVersion != null && visualState != null && selectedVersion != targetVersion)
+            {
+                var keyVersions = package.versions.key.Where(p => p != package.versions.primary);
+                var allVersions = package.versions.Where(p => p != package.versions.primary);
+
+                visualState.expanded = visualState.expanded || allVersions.Contains(selectedVersion);
+                visualState.seeAllVersions = visualState.seeAllVersions || !keyVersions.Contains(selectedVersion);
+            }
 
             var expansionChanged = expander.expanded != visualState.expanded;
             if (expansionChanged)
@@ -132,25 +143,23 @@ namespace UnityEditor.PackageManager.UI
             RefreshSelection();
         }
 
-        private void UpdateStatusIcon()
+        public void UpdateStatusIcon()
         {
             var state = package?.state ?? PackageState.None;
-            var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
-            if (!string.IsNullOrEmpty(m_CurrentStateClass))
-                stateLabel.RemoveFromClassList(m_CurrentStateClass);
-            if (!string.IsNullOrEmpty(stateClass))
-                stateLabel.AddToClassList(stateClass);
-            m_CurrentStateClass = stateClass;
-
-            stateLabel.tooltip = GetTooltipByState(state);
-
-            UpdateProgressSpinner();
-        }
-
-        public void UpdateProgressSpinner()
-        {
-            if (package?.state != PackageState.InProgress || package?.progress == PackageProgress.None)
+            var progress = package?.progress ?? PackageProgress.None;
+            if (state != PackageState.InProgress || progress == PackageProgress.None)
+            {
                 StopSpinner();
+
+                var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
+                if (!string.IsNullOrEmpty(m_CurrentStateClass))
+                    stateLabel.RemoveFromClassList(m_CurrentStateClass);
+                if (!string.IsNullOrEmpty(stateClass))
+                    stateLabel.AddToClassList(stateClass);
+                m_CurrentStateClass = stateClass;
+
+                stateLabel.tooltip = GetTooltipByState(state);
+            }
             else
             {
                 StartSpinner();
@@ -300,10 +309,10 @@ namespace UnityEditor.PackageManager.UI
 
         public static string GetVersionText(IPackageVersion version, bool simplified = false)
         {
-            if (version?.version == null || version?.version?.ToString() == "0.0.0")
+            if (version == null || version.version == null)
                 return version?.versionString;
 
-            var label = version.version.StripTag();
+            var label = version.version?.StripTag();
             if (!simplified)
             {
                 if (version.HasTag(PackageTag.Local))
@@ -317,7 +326,7 @@ namespace UnityEditor.PackageManager.UI
             }
             if (version.HasTag(PackageTag.Preview))
             {
-                var previewLabel = string.IsNullOrEmpty(version.version.Prerelease) ? "preview" : version.version.Prerelease;
+                var previewLabel = string.IsNullOrEmpty(version.version?.Prerelease) ? "preview" : version.version?.Prerelease;
                 label = $"{previewLabel} - {label}";
             }
             return label;

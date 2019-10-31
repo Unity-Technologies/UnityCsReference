@@ -660,7 +660,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 AddScriptAssemblyReferences(ref scriptAssembly, entry.Key, settings,
                     assemblies, targetToScriptAssembly);
 
-                if (UnityCodeGenHelpers.IsCodeGen(entry.Key.Filename))
+                if (UnityCodeGenHelpers.IsCodeGen(entry.Key.Filename) ||
+                    UnityCodeGenHelpers.IsCodeGenTest(entry.Key.Filename))
                 {
                     UnityCodeGenHelpers.UpdateCodeGenScriptAssembly(ref scriptAssembly);
                 }

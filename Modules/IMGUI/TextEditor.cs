@@ -1117,7 +1117,7 @@ namespace UnityEngine
 
             // Debug.Log ("ScrollOffset : " + scrollOffset);
 
-            GUIUtility.compositionCursorPos = graphicalCursorPos + new Vector2(position.x, position.y + style.lineHeight) - scrollOffset;
+            GUIUtility.compositionCursorPos = GUIClip.UnclipToWindow(graphicalCursorPos + new Vector2(position.x, position.y + style.lineHeight) - scrollOffset);
 
             if (GUIUtility.compositionString.Length > 0)
                 style.DrawWithTextSelection(position, m_Content, controlID, cursorIndex, cursorIndex + GUIUtility.compositionString.Length, true);

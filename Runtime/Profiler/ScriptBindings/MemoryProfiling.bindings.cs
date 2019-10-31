@@ -27,9 +27,6 @@ namespace UnityEngine.Profiling.Memory.Experimental
         public string    content;
         [NonSerialized]
         public string    platform;
-
-        [Obsolete("Starting with version 9 of the snapshot format screenshots are no longer part of the snapshot, but separate files. Use the appropriate TakeSnapshot overload to also capture screenshots.", false)]
-        public Texture2D screenshot { get; internal set;} //keep screenshot here short term to maintain backwards compatibility
     }
 
     [NativeHeader("Modules/Profiler/Runtime/MemorySnapshotManager.h")]
@@ -124,11 +121,6 @@ namespace UnityEngine.Profiling.Memory.Experimental
 
             offset = WriteIntToByteArray(metaDataBytes, offset, data.platform.Length);
             offset = WriteStringToByteArray(metaDataBytes, offset, data.platform);
-
-            //keep this byte here to enable backwards compatibility with prev versions snapshots
-            offset = WriteIntToByteArray(metaDataBytes, offset, 0);
-
-            Assertions.Assert.AreEqual(metaDataBytes.Length, offset);
 
             return metaDataBytes;
         }

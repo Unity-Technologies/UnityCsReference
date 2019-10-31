@@ -141,9 +141,9 @@ namespace UnityEditor.UIElements.Samples
                 element.userData = item;
             };
 
-            Action<List<ITreeViewItem>> onSelectionChanged = (selectedItems) =>
+            Action<IEnumerable<ITreeViewItem>> onSelectionChanged = (selectedItems) =>
             {
-                if (selectedItems.Count == 0)
+                if (selectedItems.Any())
                     return;
 
                 var item = selectedItems.First() as SampleTreeItem;
@@ -170,22 +170,22 @@ namespace UnityEditor.UIElements.Samples
             treeView.rootItems = items;
             treeView.makeItem = makeItem;
             treeView.bindItem = bindItem;
-            treeView.onSelectionChanged += onSelectionChanged;
+            treeView.onSelectionChange += onSelectionChanged;
             treeView.Refresh();
 
             // Force TreeView to call onSelectionChanged when it restores its own selection from view data.
             treeView.schedule.Execute(() =>
             {
-                onSelectionChanged(treeView.currentSelection.ToList());
+                onSelectionChanged(treeView.selectedItems);
             }).StartingIn(k_TreeViewSelectionRestoreDelay);
 
             // Force TreeView to select something if nothing is selected.
             treeView.schedule.Execute(() =>
             {
-                if (treeView.currentSelection != null && treeView.currentSelection.Count() > 0)
+                if (treeView.selectedItems.Count() > 0)
                     return;
 
-                treeView.SelectItem(0);
+                treeView.SetSelection(0);
 
                 // Auto-expand all items on load.
                 foreach (var item in treeView.rootItems)

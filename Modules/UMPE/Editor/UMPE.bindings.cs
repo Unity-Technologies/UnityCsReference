@@ -29,6 +29,14 @@ namespace Unity.MPE
         UMP_SLAVE
     }
 
+    internal enum ProcessState // Keep in sync with ProcessService.h
+    {
+        UMP_UNKNOWN_PROCESS,
+        UMP_FINISHED_SUCCESSFULLY,
+        UMP_FINISHED_WITH_ERROR,
+        UMP_RUNNING
+    }
+
     [Flags]
     internal enum RoleCapability
     {
@@ -171,13 +179,24 @@ namespace Unity.MPE
         public static extern string roleName { get; }
         public static extern bool IsChannelServiceStarted();
         public static extern string ReadParameter(string paramName);
-        public static extern void LaunchSlave(string roleName, params string[] keyValuePairs);
+        public static extern int LaunchSlave(string roleName, params string[] keyValuePairs);
+        public static extern void TerminateSlave(int pid);
+        public static extern ProcessState GetSlaveProcessState(int pid);
         public static extern bool HasCapability(string capName);
         public static extern void ApplyPropertyModifications(PropertyModification[] modifications);
         public static extern byte[] SerializeObject(int instanceId);
         public static extern UnityEngine.Object DeserializeObject(byte[] bytes);
         public static extern int EnableProfileConnection(string dataPath);
         public static extern void DisableProfileConnection();
+
+        public delegate void SlaveProcessExitedHandler(int pid, ProcessState newState);
+        public static event SlaveProcessExitedHandler SlaveProcessExitedEvent;
+
+        [RequiredByNativeCode]
+        private static void OnSlaveProcessExited(int pid, ProcessState newState)
+        {
+            SlaveProcessExitedEvent?.Invoke(pid, newState);
+        }
     }
 
     [NativeHeader("Modules/UMPE/TestClient.h"),

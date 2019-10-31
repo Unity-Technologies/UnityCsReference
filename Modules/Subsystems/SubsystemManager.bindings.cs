@@ -26,7 +26,7 @@ namespace UnityEngine
         IntPtr ptr { get; set; }
     }
 
-    [UsedByNativeCode("XRSubsystemDescriptorBase")]
+    [UsedByNativeCode("SubsystemDescriptorBase")]
     [StructLayout(LayoutKind.Sequential)]
     public abstract class IntegratedSubsystemDescriptor : ISubsystemDescriptorImpl
     {
@@ -61,8 +61,8 @@ namespace UnityEngine
         internal abstract ISubsystem CreateImpl();
     }
 
-    [NativeType(Header = "Modules/XR/XRSubsystemDescriptor.h")]
-    [UsedByNativeCode("XRSubsystemDescriptor")]
+    [NativeType(Header = "Modules/Subsystems/SubsystemDescriptor.h")]
+    [UsedByNativeCode("SubsystemDescriptor")]
     [StructLayout(LayoutKind.Sequential)]
     public class IntegratedSubsystemDescriptor<TSubsystem> : IntegratedSubsystemDescriptor
         where TSubsystem : IntegratedSubsystem
@@ -177,7 +177,6 @@ namespace UnityEngine
     }
 
     // Handle subsystem descriptor lifetime (on managed side)
-    [NativeHeader("Modules/XR/XRPrefix.h")]
     internal static class Internal_SubsystemDescriptors
     {
         internal static List<ISubsystemDescriptorImpl> s_IntegratedSubsystemDescriptors = new List<ISubsystemDescriptorImpl>();
@@ -214,15 +213,12 @@ namespace UnityEngine
         }
 
         // These are here instead of on SubsystemDescriptor because generic types are not supported by .bindings.cs
-        [NativeConditional("ENABLE_XR")]
         public static extern IntPtr Create(IntPtr descriptorPtr);
 
-        [NativeConditional("ENABLE_XR")]
         public static extern string GetId(IntPtr descriptorPtr);
     }
 
-    [NativeHeader("Modules/XR/XRPrefix.h")]
-    [NativeType(Header = "Modules/XR/XRSubsystemManager.h")]
+    [NativeType(Header = "Modules/Subsystems/SubsystemManager.h")]
     public static class SubsystemManager
     {
         static SubsystemManager()
@@ -244,7 +240,6 @@ namespace UnityEngine
             }
         }
 
-        [NativeConditional("ENABLE_XR")]
         internal static extern void ReportSingleSubsystemAnalytics(string id);
 
         public static void GetSubsystemDescriptors<T>(List<T> descriptors)
@@ -281,10 +276,8 @@ namespace UnityEngine
             }
         }
 
-        [NativeConditional("ENABLE_XR")]
         extern internal static void DestroyInstance_Internal(IntPtr instancePtr);
 
-        [NativeConditional("ENABLE_XR")]
         extern internal static void StaticConstructScriptingClassMap();
 
         public static event Action reloadSubsytemsStarted;
@@ -321,7 +314,7 @@ namespace UnityEngine
         bool running { get; }
     }
 
-    [NativeType(Header = "Modules/XR/XRSubsystem.h")]
+    [NativeType(Header = "Modules/Subsystems/Subsystem.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     public class IntegratedSubsystem : ISubsystem
@@ -344,11 +337,10 @@ namespace UnityEngine
 
         internal bool valid { get { return m_Ptr != IntPtr.Zero; } }
 
-        [NativeConditional("ENABLE_XR")]
         extern internal bool Internal_IsRunning();
     }
 
-    [UsedByNativeCode("XRSubsystem_TXRSubsystemDescriptor")]
+    [UsedByNativeCode("Subsystem_TSubsystemDescriptor")]
     public class IntegratedSubsystem<TSubsystemDescriptor> : IntegratedSubsystem where TSubsystemDescriptor : ISubsystemDescriptor
     {
         public TSubsystemDescriptor SubsystemDescriptor

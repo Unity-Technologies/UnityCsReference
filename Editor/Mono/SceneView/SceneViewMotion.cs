@@ -579,6 +579,18 @@ namespace UnityEditor
             }
         }
 
+        internal void SkipFading()
+        {
+            for (int i = dirVisible.Length - 1; i >= 0; i--)
+                dirVisible[i].SkipFading();
+
+            for (int i = dirNameVisible.Length - 1; i >= 0; i--)
+                dirNameVisible[i].SkipFading();
+
+            m_RotationLocked.SkipFading();
+            m_Visible.SkipFading();
+        }
+
         public void Register(SceneView view)
         {
             // Register fade animators for cones

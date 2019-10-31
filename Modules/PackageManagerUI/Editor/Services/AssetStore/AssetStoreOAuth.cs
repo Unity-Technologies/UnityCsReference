@@ -280,7 +280,7 @@ namespace UnityEditor.PackageManager.UI
                         m_AccessTokenRequest = null;
                         m_AccessToken = null;
 
-                        var response = ParseResponse(httpClient);
+                        var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient, OnGetAccessTokenError);
                         if (response != null)
                         {
                             var accessToken = new AccessToken(response);
@@ -292,7 +292,7 @@ namespace UnityEditor.PackageManager.UI
                                 return;
                             }
                             else
-                                OnOperationError("Access token invalid");
+                                OnGetAccessTokenError("Access token invalid");
                         }
                     };
                     m_AccessTokenRequest.Begin();
@@ -320,7 +320,7 @@ namespace UnityEditor.PackageManager.UI
                         m_TokenRequest = null;
                         m_TokenInfo = null;
 
-                        var response = ParseResponse(httpClient);
+                        var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient, OnOperationError);
                         if (response != null)
                         {
                             var tokenInfo = new TokenInfo(response);
@@ -361,7 +361,7 @@ namespace UnityEditor.PackageManager.UI
                         m_UserInfoRequest = null;
                         m_UserInfo = null;
 
-                        var response = ParseResponse(httpClient);
+                        var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient, OnOperationError);
                         if (response != null)
                         {
                             var userInfo = new UserInfo(response, tokenInfo);
@@ -382,30 +382,12 @@ namespace UnityEditor.PackageManager.UI
                 });
             }
 
-            private Dictionary<string, object> ParseResponse(IAsyncHTTPClient request)
+            private void OnGetAccessTokenError(string errorMessage)
             {
-                string errorMessage;
-                if (request.IsSuccess())
-                {
-                    try
-                    {
-                        var response = Json.Deserialize(request.text) as Dictionary<string, object>;
-                        if (response != null)
-                            return response;
-
-                        errorMessage = "Failed to parse JSON.";
-                    }
-                    catch (Exception e)
-                    {
-                        errorMessage = $"Failed to parse JSON: {e.Message}";;
-                    }
-                }
-                else
-                {
-                    errorMessage = request.text;
-                }
+                // when we have trouble getting access token, it's most likely because the auth code is no longer valid.
+                // therefore we want to clear the auth code in the case of error, such that new auth code will be fetched in the next refresh
+                m_AuthCode = string.Empty;
                 OnOperationError(errorMessage);
-                return null;
             }
 
             private void OnOperationError(string errorMessage)

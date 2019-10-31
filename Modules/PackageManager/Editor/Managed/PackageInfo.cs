@@ -117,6 +117,10 @@ namespace UnityEditor.PackageManager
         [NativeName("git")]
         private GitInfo m_Git = new GitInfo();
 
+        [SerializeField]
+        [NativeName("isAssetStorePackage")]
+        private bool m_IsAssetStorePackage = false;
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -139,6 +143,7 @@ namespace UnityEditor.PackageManager
         public AuthorInfo author { get { return m_Author;  } }
         internal bool hideInEditor { get { return m_HideInEditor;  } }
         internal EntitlementsInfo entitlements { get { return m_Entitlements; } }
+        internal bool isAssetStorePackage { get { return m_IsAssetStorePackage;  } }
 
         public RegistryInfo registry
         {

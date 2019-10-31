@@ -14,9 +14,68 @@ using UnityEngine.Profiling;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    internal class ILPostProcessing
+    internal struct ILPostProcessorData
+    {
+        public ILPostProcessor postProcessor;
+        public ScriptAssembly scriptAssembly;
+    }
+
+    internal interface IILPostProcessing
+    {
+        List<CompilerMessage> PostProcess(ScriptAssembly assembly, List<CompilerMessage> messages, string outputTempPath);
+        bool IsAnyRunningPostProcessorUsingAssembly(ScriptAssembly assembly);
+    }
+
+    class ConcurrentPostProcessors
+    {
+        object lockObject = new object();
+        HashSet<ILPostProcessorData> postProcessors = new HashSet<ILPostProcessorData>();
+
+        public int Count
+        {
+            get
+            {
+                lock (lockObject)
+                {
+                    return postProcessors.Count;
+                }
+            }
+        }
+
+        public void Add(ILPostProcessorData postProcessor)
+        {
+            lock (lockObject)
+            {
+                postProcessors.Add(postProcessor);
+            }
+        }
+
+        public void Remove(ILPostProcessorData postProcessor)
+        {
+            lock (lockObject)
+            {
+                postProcessors.Remove(postProcessor);
+            }
+        }
+
+        public ILPostProcessorData[] ToArray()
+        {
+            lock (lockObject)
+            {
+                return postProcessors.ToArray();
+            }
+        }
+    }
+
+    internal class ILPostProcessing : IILPostProcessing
     {
         public ILPostProcessor[] ILPostProcessors { get; set; }
+        public ConcurrentPostProcessors RunningPostProcessors { get;   }
+
+        public ILPostProcessing()
+        {
+            RunningPostProcessors = new ConcurrentPostProcessors();
+        }
 
         public bool HasPostProcessors
         {
@@ -50,7 +109,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                     messages.Add(new CompilerMessage
                     {
-                        assemblyName = message.File,
+                        file = message.File,
                         column = message.Column,
                         line = message.Line,
                         message = message.MessageData,
@@ -69,6 +128,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return messages;
+        }
+
+        public bool IsAnyRunningPostProcessorUsingAssembly(ScriptAssembly assembly)
+        {
+            if (RunningPostProcessors == null ||
+                RunningPostProcessors.Count == 0)
+                return false;
+
+            var runningPostProcessorsArray = RunningPostProcessors.ToArray();
+
+            foreach (var postProcessor in runningPostProcessorsArray)
+            {
+                var postProcessorAssembly = postProcessor.scriptAssembly;
+
+                if (postProcessorAssembly.ScriptAssemblyReferences.Contains(assembly))
+                    return true;
+
+                if (postProcessorAssembly.References.Any(r => AssetPath.GetFileName(r) == assembly.Filename))
+                    return true;
+            }
+
+            return false;
         }
 
         public static ILPostProcessor[] FindAllPostProcessors()
@@ -115,12 +196,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var ilPostProcessor in ILPostProcessors)
             {
                 Profiler.BeginSample($"{ilPostProcessor.GetType().FullName}.Process({assembly.Filename})");
+
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
+
                 Console.WriteLine($"  - Starting ILPostProcessor '{ilPostProcessor.GetType().FullName}' on {assembly.Filename}");
+
                 var ilPostProcessorInstance = ilPostProcessor.GetInstance();
-                var ilPostProcessResult = ilPostProcessorInstance.Process(ilPostProcessCompiledAssembly);
+
+                var ilPostProcessorData = new ILPostProcessorData { postProcessor = ilPostProcessorInstance, scriptAssembly = assembly };
+                RunningPostProcessors.Add(ilPostProcessorData);
+
+                ILPostProcessResult ilPostProcessResult;
+                try
+                {
+                    ilPostProcessResult = ilPostProcessorInstance.Process(ilPostProcessCompiledAssembly);
+                }
+                finally
+                {
+                    RunningPostProcessors.Remove(ilPostProcessorData);
+                }
+
                 stopwatch.Stop();
+
                 Profiler.EndSample();
 
                 var elapsed = stopwatch.Elapsed;

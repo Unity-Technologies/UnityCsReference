@@ -304,6 +304,13 @@ namespace UnityEditor
             zGrid.fade.target = showZ;
         }
 
+        internal void SkipFading()
+        {
+            xGrid.fade.SkipFading();
+            yGrid.fade.SkipFading();
+            zGrid.fade.SkipFading();
+        }
+
         void ApplySnapConstraintsInPerspectiveMode()
         {
             switch (gridAxis)

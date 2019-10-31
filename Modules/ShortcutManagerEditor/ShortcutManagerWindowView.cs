@@ -235,16 +235,16 @@ namespace UnityEditor.ShortcutManagement
                 elementTemplate.AddToClassList("first-row-of-section");
         }
 
-        void CategorySelectionChanged(List<object> selection)
+        void CategorySelectionChanged(IEnumerable<object> selection)
         {
-            Assert.AreEqual(1, selection.Count);
+            Assert.AreEqual(1, selection.Count());
 
             m_ShortcutsTable.selectedIndex = -1;
 
-            if (selection.Count == 0)
+            if (!selection.Any())
                 m_ViewController.SetCategorySelected(null);
             else
-                m_ViewController.SetCategorySelected((string)selection[0]);
+                m_ViewController.SetCategorySelected((string)selection.First());
         }
 
         void BuildSearchField(VisualElement root)
@@ -461,11 +461,11 @@ namespace UnityEditor.ShortcutManagement
             m_ShortcutsTable = new ListView((IList)m_ViewController.GetShortcutList(), k_ListItemHeight,  MakeItemForShortcutTable, BindShortcutEntryItem) {name = "shortcutsTable"};
 
             m_CategoryTreeView.selectedIndex = m_ViewController.selectedCategoryIndex;
-            m_CategoryTreeView.onSelectionChanged += CategorySelectionChanged;
+            m_CategoryTreeView.onSelectionChange += CategorySelectionChanged;
 
             m_ShortcutsTable.Q<ScrollView>().showVertical = true;
-            m_ShortcutsTable.onSelectionChanged += ShortcutSelectionChanged;
-            m_ShortcutsTable.onItemChosen += ShortcutTableEntryChosen;
+            m_ShortcutsTable.onSelectionChange += ShortcutSelectionChanged;
+            m_ShortcutsTable.onItemsChosen += ShortcutTableEntryChosen;
             m_ShortcutsTable.RegisterCallback<MouseDownEvent>(ShortcutTableRightClickDown);
             m_ShortcutsTable.RegisterCallback<MouseUpEvent>(ShortcutTableRightClickUp);
             m_ShortcutsTable.RegisterCallback<GeometryChangedEvent>(ShortcutTableGeometryChanged);
@@ -548,9 +548,9 @@ namespace UnityEditor.ShortcutManagement
             return builder.ToString();
         }
 
-        void ShortcutTableEntryChosen(object obj)
+        void ShortcutTableEntryChosen(IEnumerable<object> objects)
         {
-            var entry = (ShortcutEntry)obj;
+            var entry = (ShortcutEntry)objects.First();
             var row = m_ShortcutsTable.Query<VisualElement>().Checked().First();
             StartRebind(entry, row);
         }
@@ -631,11 +631,11 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        void ShortcutSelectionChanged(List<object> selection)
+        void ShortcutSelectionChanged(IEnumerable<object> selection)
         {
-            if (selection.Count > 0)
+            if (selection.Any())
             {
-                var newSelection = (ShortcutEntry)selection[0];
+                var newSelection = (ShortcutEntry)selection.First();
                 if (newSelection != m_ViewController.selectedEntry)
                 {
                     m_ViewController.ShortcutEntrySelected(newSelection);

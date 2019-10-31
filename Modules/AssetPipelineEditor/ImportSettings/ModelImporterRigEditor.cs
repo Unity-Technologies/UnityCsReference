@@ -383,11 +383,8 @@ namespace UnityEditor
                 {
                     if (!isLocked)
                     {
-                        if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                        {
-                            Selection.activeObject = m_Avatar;
-                            AvatarEditor.s_EditImmediatelyOnNextOpen = true;
-                        }
+                        Selection.activeObject = m_Avatar;
+                        AvatarEditor.s_EditImmediatelyOnNextOpen = true;
                         GUIUtility.ExitGUI();
                     }
                     else
@@ -402,7 +399,7 @@ namespace UnityEditor
             {
                 if (sourceAvatar.isHuman && (animationType != ModelImporterAnimationType.Human))
                 {
-                    if (EditorUtility.DisplayDialog("Asigning an Humanoid Avatar on a Generic Rig",
+                    if (EditorUtility.DisplayDialog("Assigning a Humanoid Avatar on a Generic Rig",
                         "Do you want to change Animation Type to Humanoid ?", "Yes", "No"))
                     {
                         animationType = ModelImporterAnimationType.Human;
@@ -414,7 +411,7 @@ namespace UnityEditor
                 }
                 else if (!sourceAvatar.isHuman && (animationType != ModelImporterAnimationType.Generic))
                 {
-                    if (EditorUtility.DisplayDialog("Asigning an Generic Avatar on a Humanoid Rig",
+                    if (EditorUtility.DisplayDialog("Assigning a Generic Avatar on a Humanoid Rig",
                         "Do you want to change Animation Type to Generic ?", "Yes", "No"))
                     {
                         animationType = ModelImporterAnimationType.Generic;

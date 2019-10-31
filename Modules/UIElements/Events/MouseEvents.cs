@@ -276,31 +276,6 @@ namespace UnityEngine.UIElements
 
     public class MouseDownEvent : MouseEventBase<MouseDownEvent>
     {
-        protected internal override void PostDispatch(IPanel panel)
-        {
-            base.PostDispatch(panel);
-            if (!isPropagationStopped && !doNotSendToRootIMGUIContainer)
-            {
-                // The top IMGUIContainer is not in the path between the evt.target and unity-panel-container
-                // We propagate the event to the top IMGUIContainer
-                // this is an issue for window splitters that can't be clicked on the inner side of the window
-                foreach (var element in panel.visualTree.Children())
-                {
-                    IMGUIContainer container = element as IMGUIContainer;
-                    // We must check that it is not the target or the event could be handled twice
-                    if (container != null && element != target)
-                    {
-                        if (container.HandleIMGUIEvent(this.imguiEvent, true))
-                        {
-                            StopPropagation();
-                            PreventDefault();
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
         public new static MouseDownEvent GetPooled(Event systemEvent)
         {
             if (systemEvent != null)

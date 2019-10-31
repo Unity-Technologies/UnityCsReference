@@ -19,12 +19,12 @@ namespace UnityEditor.PackageManager.UI
 
         public override IVersionList versions => m_VersionList;
 
-        public PlaceholderPackage(string uniqueId, PackageType type = PackageType.None, PackageTag tag = PackageTag.None, PackageProgress progress = PackageProgress.None)
+        public PlaceholderPackage(string uniqueId, string displayName, PackageType type = PackageType.None, PackageTag tag = PackageTag.None, PackageProgress progress = PackageProgress.None)
         {
             m_Type = type;
             m_UniqueId = uniqueId;
             m_Progress = progress;
-            m_VersionList = new PlaceholderVersionList(new PlaceholderPackageVersion(uniqueId, uniqueId, tag));
+            m_VersionList = new PlaceholderVersionList(new PlaceholderPackageVersion(uniqueId, uniqueId, displayName, tag));
         }
 
         public override IPackage Clone()

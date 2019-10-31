@@ -49,5 +49,16 @@ namespace UnityEditor.PackageManager.UI
                 return null;
             }
         }
+
+        public Dictionary<string, string> ToDictionary()
+        {
+            return new Dictionary<string, string>
+            {
+                ["local_path"] = packagePath ?? string.Empty,
+                ["id"] = id ?? string.Empty,
+                ["version"] = versionString ?? string.Empty,
+                ["version_id"] = versionId ?? string.Empty
+            };
+        }
     }
 }

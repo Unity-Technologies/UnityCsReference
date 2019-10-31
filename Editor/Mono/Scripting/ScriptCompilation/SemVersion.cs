@@ -213,11 +213,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 length++;
             }
 
-            if (length == value.Length)
-            {
-                return null;
-            }
-
             int newIndex = cursor;
             cursor += length;
             return value.Substring(newIndex, length);
@@ -268,6 +263,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
 
             return new SemVersion(major, minor, patch, prerelease, build);
+        }
+
+        public static bool TryParse(string versionString, out SemVersion? result)
+        {
+            try
+            {
+                result = SemVersionParser.Parse(versionString);
+                return true;
+            }
+            catch (Exception)
+            {
+                result = null;
+                return false;
+            }
         }
     }
 }

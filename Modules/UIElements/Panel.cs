@@ -59,6 +59,14 @@ namespace UnityEngine.UIElements
         ClipWithScissors = 1 << 2 // If clipping is requested on this element, prefer scissoring
     }
 
+    enum PanelClearFlags
+    {
+        None = 0,
+        Color = 1 << 0,
+        Depth = 1 << 1,
+        All = Color | Depth
+    }
+
     internal class RepaintData
     {
         public Matrix4x4 currentOffset { get; set; } = Matrix4x4.identity;
@@ -221,6 +229,8 @@ namespace UnityEngine.UIElements
             get { return m_PixelsPerPoint * m_Scale; }
         }
 
+        internal PanelClearFlags clearFlags { get; set; } = PanelClearFlags.All;
+
         internal bool duringLayoutPhase {get; set;}
 
         internal bool isDirty
@@ -246,7 +256,7 @@ namespace UnityEngine.UIElements
         internal Matrix4x4 GetProjection()
         {
             var rect = visualTree.layout;
-            return Matrix4x4.Ortho(rect.xMin, rect.xMax, rect.yMax, rect.yMin, -1, 1);
+            return ProjectionUtils.Ortho(rect.xMin, rect.xMax, rect.yMax, rect.yMin, -1, 1);
         }
 
         internal Rect GetViewport() { return visualTree.layout; }
@@ -733,13 +743,14 @@ namespace UnityEngine.UIElements
             // if the renderTarget is not set, we simply render on whatever target is currently set
             if (targetTexture == null)
             {
+                clearFlags = PanelClearFlags.Depth;
                 base.Repaint(e);
                 return;
             }
 
             var toBeRestoredTarget = RenderTexture.active;
             RenderTexture.active = targetTexture;
-            GL.Clear(true, true, Color.clear);
+            clearFlags = PanelClearFlags.All;
             base.Repaint(e);
             RenderTexture.active = toBeRestoredTarget;
         }

@@ -22,7 +22,7 @@ namespace UnityEngine
                 if (!wait)
                 {
                     // Reset so it can be reused.
-                    m_WaitUntilTime = -1;
+                    Reset();
                 }
                 return wait;
             }
@@ -31,6 +31,11 @@ namespace UnityEngine
         public WaitForSecondsRealtime(float time)
         {
             waitTime = time;
+        }
+
+        public override void Reset()
+        {
+            m_WaitUntilTime = -1;
         }
     }
 }

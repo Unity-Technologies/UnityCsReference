@@ -21,6 +21,8 @@ namespace UnityEditor.PackageManager.UI
             var root = Resources.GetTemplate("PackageStatusBar.uxml");
             Add(root);
             cache = new VisualElementCache(root);
+
+            statusLabel.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
         }
 
         public void OnEnable()
@@ -50,6 +52,21 @@ namespace UnityEditor.PackageManager.UI
 
             PackageFiltering.instance.onFilterTabChanged -= OnFilterTabChanged;
             ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
+        }
+
+        private void OnSizeChange(GeometryChangedEvent evt)
+        {
+            if (evt.newRect.width == evt.oldRect.width)
+                return;
+
+            var target = evt.target as TextElement;
+            if (target == null)
+                return;
+
+            var size = target.MeasureTextSize(target.text, float.MaxValue, MeasureMode.AtMost, evt.newRect.height, MeasureMode.Undefined);
+            var width = evt.newRect.width + (target.resolvedStyle.paddingRight / 2);
+
+            target.tooltip = width < size.x ? target.text : string.Empty;
         }
 
         private void OnInternetReachabilityChange(bool value)

@@ -169,8 +169,6 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            ClearBackground();
-
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
             DoWindowDecorationStart();
@@ -701,17 +699,6 @@ namespace UnityEditor
                 var child = ve.hierarchy[i];
                 PropagateDirtyRepaint(child);
             }
-        }
-
-        protected void ClearBackground()
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            EditorWindow view = actualView;
-            GL.Clear(true, true, EditorApplication.isPlayingOrWillChangePlaymode && !view.dontClearBackground ?
-                EditorGUIUtility.kViewBackgroundColor * kPlayModeDarken.Color :
-                EditorGUIUtility.kViewBackgroundColor);
-            backgroundValid = true;
         }
 
         protected void AddUIElementsDebuggerToMenu(GenericMenu menu)

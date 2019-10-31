@@ -24,6 +24,7 @@ namespace UnityEditor.PackageManager.UI
         event Action<Error> onRefreshOperationError;
 
         IPackageVersion GetSelectedVersion();
+        void GetSelectedPackageAndVersion(out IPackage package, out IPackageVersion version);
 
         void ClearSelection();
 
@@ -51,10 +52,16 @@ namespace UnityEditor.PackageManager.UI
 
         IPage GetCurrentPage();
 
+        IPage GetPage(PackageFilterTab tab);
+
+        PackageFilterTab FindTab(string packageIdOrDisplayName);
+
         long GetRefreshTimestamp(PackageFilterTab? tab = null);
         Error GetRefreshError(PackageFilterTab? tab = null);
         bool IsRefreshInProgress(PackageFilterTab? tab = null);
 
         void LoadMore();
+
+        PackageSelectionObject CreatePackageSelectionObject(IPackage package, IPackageVersion version = null);
     }
 }

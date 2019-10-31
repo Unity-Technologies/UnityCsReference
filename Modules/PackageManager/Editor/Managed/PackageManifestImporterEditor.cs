@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -174,8 +175,7 @@ namespace UnityEditor.PackageManager
             GUI.enabled = packageState != null && packageState.isValidFile && targets.Length == 1;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                if (!EditorApplication.ExecuteMenuItemWithTemporaryContext("Window/Package Manager", new[] { packageState }))
-                    Debug.LogWarning(s_LocalizedPackageManagerUINotInstalledWarning);
+                PackageManagerWindow.SelectPackageAndFilter(packageState.info.packageName);
             }
             GUI.enabled = previousEnabled;
         }
@@ -423,6 +423,11 @@ namespace UnityEditor.PackageManager
                 EditorGUILayout.Space();
                 EditorGUILayout.HelpBox(string.Join("\n", warningMessages.ToArray()), MessageType.Warning);
             }
+        }
+
+        internal override Rect DrawHeaderHelpAndSettingsGUI(Rect r)
+        {
+            return new Rect(r.width, 0, 0, 0);
         }
 
         private static void ReadPackageManifest(Object target, PackageManifestState packageState)

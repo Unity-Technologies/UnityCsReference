@@ -57,12 +57,12 @@ namespace UnityEngine.UIElements
             {
                 this.element = element;
                 index = id = -1;
-                element.AddToClassList(ListView.itemUssClassName);
+                element.AddToClassList(itemUssClassName);
             }
 
             public void DetachElement()
             {
-                element.RemoveFromClassList(ListView.itemUssClassName);
+                element.RemoveFromClassList(itemUssClassName);
                 element = null;
             }
 
@@ -72,20 +72,26 @@ namespace UnityEngine.UIElements
                 {
                     if (selected)
                     {
-                        element.AddToClassList(ListView.itemSelectedVariantUssClassName);
+                        element.AddToClassList(itemSelectedVariantUssClassName);
                         element.pseudoStates |= PseudoStates.Checked;
                     }
                     else
                     {
-                        element.RemoveFromClassList(ListView.itemSelectedVariantUssClassName);
+                        element.RemoveFromClassList(itemSelectedVariantUssClassName);
                         element.pseudoStates &= ~PseudoStates.Checked;
                     }
                 }
             }
         }
 
+        [Obsolete("onItemChosen is obsolete, use onItemsChosen instead")]
         public event Action<object> onItemChosen;
+        public event Action<IEnumerable<object>> onItemsChosen;
+
+        [Obsolete("onSelectionChanged is obsolete, use onSelectionChange instead")]
         public event Action<List<object>> onSelectionChanged;
+        public event Action<IEnumerable<object>> onSelectionChange;
+
 
         private IList m_ItemsSource;
         public IList itemsSource
@@ -101,10 +107,7 @@ namespace UnityEngine.UIElements
         Func<VisualElement> m_MakeItem;
         public Func<VisualElement> makeItem
         {
-            get
-            {
-                return m_MakeItem;
-            }
+            get { return m_MakeItem; }
             set
             {
                 if (m_MakeItem == value)
@@ -117,10 +120,7 @@ namespace UnityEngine.UIElements
         private Action<VisualElement, int> m_BindItem;
         public Action<VisualElement, int> bindItem
         {
-            get
-            {
-                return m_BindItem;
-            }
+            get { return m_BindItem; }
             set
             {
                 m_BindItem = value;
@@ -131,10 +131,7 @@ namespace UnityEngine.UIElements
         private Func<int, int> m_GetItemId;
         internal Func<int, int> getItemId
         {
-            get
-            {
-                return m_GetItemId;
-            }
+            get { return m_GetItemId; }
             set
             {
                 m_GetItemId = value;
@@ -157,9 +154,12 @@ namespace UnityEngine.UIElements
             set
             {
                 m_ItemHeightIsInline = true;
-                m_ItemHeight = value;
-                UpdatePixelAlignedHeight();
-                Refresh();
+                if (m_ItemHeight != value)
+                {
+                    m_ItemHeight = value;
+                    UpdatePixelAlignedHeight();
+                    Refresh();
+                }
             }
         }
 
@@ -175,18 +175,15 @@ namespace UnityEngine.UIElements
 
         // Persisted. It's why this can't be a HashSet(). :(
         [SerializeField]
-        private List<int> m_SelectedIds = new List<int>();
+        private readonly List<int> m_SelectedIds = new List<int>();
 
-        internal List<int> currentSelectionIds
-        {
-            get { return m_SelectedIds; }
-        }
+        internal List<int> currentSelectionIds => m_SelectedIds;
 
         // Not persisted! Just used for fast lookups of selected indices and object references.
-        // This is to avoid also having a mapping from index/objectref to index for the entire
+        // This is to avoid also having a mapping from index/object ref to index for the entire
         // items source.
-        private List<int> m_SelectedIndices = new List<int>();
-        private List<object> m_SelectedItems = new List<object>();
+        private readonly List<int> m_SelectedIndices = new List<int>();
+        private readonly List<object> m_SelectedItems = new List<object>();
 
         private int m_RangeSelectionOrigin = -1;
 
@@ -196,11 +193,26 @@ namespace UnityEngine.UIElements
             set { SetSelection(value); }
         }
 
-        public object selectedItem { get { return m_SelectedItems.Count == 0 ? null : m_SelectedItems.First(); } }
+        public IEnumerable<int> selectedIndices => m_SelectedIndices;
 
-        public override VisualElement contentContainer { get { return m_ScrollView.contentContainer; } }
+        public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
+        public IEnumerable<object> selectedItems => m_SelectedItems;
 
-        public SelectionType selectionType { get; set; }
+        public override VisualElement contentContainer => m_ScrollView.contentContainer;
+
+        private SelectionType m_SelectionType;
+        public SelectionType selectionType
+        {
+            get { return m_SelectionType; }
+            set
+            {
+                m_SelectionType = value;
+                if (m_SelectionType == SelectionType.None)
+                {
+                    ClearSelection();
+                }
+            }
+        }
 
         [SerializeField] private AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
 
@@ -223,13 +235,13 @@ namespace UnityEngine.UIElements
         private int m_FirstVisibleIndex;
         private float m_LastHeight;
         private List<RecycledItem> m_Pool = new List<RecycledItem>();
-        private ScrollView m_ScrollView;
+        internal readonly ScrollView m_ScrollView;
 
         private readonly VisualElement m_EmptyRows;
         private int m_LastItemIndex;
 
         // we keep this list in order to minimize temporary gc allocs
-        List<RecycledItem> m_ScrollInsertionList = new List<RecycledItem>();
+        private List<RecycledItem> m_ScrollInsertionList = new List<RecycledItem>();
 
         private const int k_ExtraVisibleItems = 2;
         private int m_VisibleItemCount;
@@ -275,6 +287,7 @@ namespace UnityEngine.UIElements
         {
             m_ItemsSource = itemsSource;
             m_ItemHeight = itemHeight;
+            m_ItemHeightIsInline = true;
             m_MakeItem = makeItem;
             m_BindItem = bindItem;
         }
@@ -284,8 +297,8 @@ namespace UnityEngine.UIElements
             if (evt == null || !HasValidDataAndBindings())
                 return;
 
-            bool shouldStopPropagation = true;
-            bool shouldScroll = true;
+            var shouldStopPropagation = true;
+            var shouldScroll = true;
 
             switch (evt.keyCode)
             {
@@ -304,8 +317,8 @@ namespace UnityEngine.UIElements
                     selectedIndex = itemsSource.Count - 1;
                     break;
                 case KeyCode.Return:
-                    if (onItemChosen != null)
-                        onItemChosen.Invoke(m_ItemsSource[selectedIndex]);
+                    onItemChosen?.Invoke(m_ItemsSource[selectedIndex]);
+                    onItemsChosen?.Invoke(m_SelectedItems);
                     break;
                 case KeyCode.PageDown:
                     selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / resolvedItemHeight));
@@ -352,13 +365,9 @@ namespace UnityEngine.UIElements
                 // Scroll to last item
                 int actualCount = (int)(m_LastHeight / resolvedItemHeight);
                 if (itemsSource.Count < actualCount)
-                {
                     m_ScrollView.scrollOffset = new Vector2(0, 0);
-                }
                 else
-                {
                     m_ScrollView.scrollOffset = new Vector2(0, itemsSource.Count * resolvedItemHeight);
-                }
             }
             else if (m_FirstVisibleIndex > index)
             {
@@ -374,7 +383,7 @@ namespace UnityEngine.UIElements
                 int d = index - actualCount;
 
                 // we're scrolling down in that case
-                // if the listview size is not an integer multiple of the item height
+                // if the list view size is not an integer multiple of the item height
                 // the selected item might be the last visible and truncated one
                 // in that case, increment by one the index
                 if (someItemIsPartiallyVisible)
@@ -397,7 +406,6 @@ namespace UnityEngine.UIElements
             if (clickedIndex > m_ItemsSource.Count - 1)
                 return;
 
-            var clickedItem = m_ItemsSource[clickedIndex];
             var clickedItemId = GetIdFromIndex(clickedIndex);
             switch (evt.clickCount)
             {
@@ -424,11 +432,7 @@ namespace UnityEngine.UIElements
                         }
                         else
                         {
-                            foreach (var recycledItem in m_Pool)
-                                recycledItem.SetSelected(false);
-                            m_SelectedIds.Clear();
-                            m_SelectedIndices.Clear();
-                            m_SelectedItems.Clear();
+                            ClearSelectionWithoutValidation();
 
                             // Add range
                             if (clickedIndex < m_RangeSelectionOrigin)
@@ -450,10 +454,13 @@ namespace UnityEngine.UIElements
                     }
                     break;
                 case 2:
-                    if (onItemChosen == null)
-                        return;
+                    if (onItemChosen != null)
+                    {
+                        var clickedItem = m_ItemsSource[clickedIndex];
+                        onItemChosen.Invoke(clickedItem);
+                    }
 
-                    onItemChosen.Invoke(clickedItem);
+                    onItemsChosen?.Invoke(m_SelectedItems);
                     break;
             }
         }
@@ -498,9 +505,19 @@ namespace UnityEngine.UIElements
                 return m_GetItemId(index);
         }
 
-        protected void AddToSelection(int index)
+        public void AddToSelection(int index)
         {
             if (!HasValidDataAndBindings())
+                return;
+
+            AddToSelectionWithoutValidation(index);
+            NotifyOfSelectionChange();
+            SaveViewData();
+        }
+
+        private void AddToSelectionWithoutValidation(int index)
+        {
+            if (m_SelectedIndices.Contains(index))
                 return;
 
             var id = GetIdFromIndex(index);
@@ -510,21 +527,24 @@ namespace UnityEngine.UIElements
                 if (recycledItem.id == id)
                     recycledItem.SetSelected(true);
 
-            if (!m_SelectedIds.Contains(id))
-            {
-                m_SelectedIds.Add(id);
-                m_SelectedIndices.Add(index);
-                m_SelectedItems.Add(item);
-            }
+            m_SelectedIds.Add(id);
+            m_SelectedIndices.Add(index);
+            m_SelectedItems.Add(item);
+        }
 
+        public void RemoveFromSelection(int index)
+        {
+            if (!HasValidDataAndBindings())
+                return;
+
+            RemoveFromSelectionWithoutValidation(index);
             NotifyOfSelectionChange();
-
             SaveViewData();
         }
 
-        protected void RemoveFromSelection(int index)
+        private void RemoveFromSelectionWithoutValidation(int index)
         {
-            if (!HasValidDataAndBindings())
+            if (!m_SelectedIndices.Contains(index))
                 return;
 
             var id = GetIdFromIndex(index);
@@ -534,44 +554,43 @@ namespace UnityEngine.UIElements
                 if (recycledItem.id == id)
                     recycledItem.SetSelected(false);
 
-            if (m_SelectedIds.Contains(id))
-            {
-                m_SelectedIds.Remove(id);
-                m_SelectedIndices.Remove(index);
-                m_SelectedItems.Remove(item);
-            }
-
-            NotifyOfSelectionChange();
-
-            SaveViewData();
+            m_SelectedIds.Remove(id);
+            m_SelectedIndices.Remove(index);
+            m_SelectedItems.Remove(item);
         }
 
-        protected void SetSelection(int index)
+        public void SetSelection(int index)
         {
-            if (!HasValidDataAndBindings())
-                return;
-
             if (index < 0)
             {
                 ClearSelection();
                 return;
             }
 
-            var id = GetIdFromIndex(index);
-            var item = m_ItemsSource[index];
+            SetSelection(new[] {index});
+        }
 
-            foreach (var recycledItem in m_Pool)
-                recycledItem.SetSelected(recycledItem.id == id);
+        public void SetSelection(IEnumerable<int> indices)
+        {
+            SetSelectionInternal(indices, true);
+        }
 
-            m_SelectedIds.Clear();
-            m_SelectedIndices.Clear();
-            m_SelectedItems.Clear();
+        public void SetSelectionWithoutNotify(IEnumerable<int> indices)
+        {
+            SetSelectionInternal(indices, false);
+        }
 
-            m_SelectedIds.Add(id);
-            m_SelectedIndices.Add(index);
-            m_SelectedItems.Add(item);
+        internal void SetSelectionInternal(IEnumerable<int> indices, bool sendNotification)
+        {
+            if (!HasValidDataAndBindings() || indices == null)
+                return;
 
-            NotifyOfSelectionChange();
+            ClearSelectionWithoutValidation();
+            foreach (var index in indices)
+                AddToSelectionWithoutValidation(index);
+
+            if (sendNotification)
+                NotifyOfSelectionChange();
 
             SaveViewData();
         }
@@ -581,24 +600,26 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            if (onSelectionChanged == null)
-                return;
-
-            onSelectionChanged.Invoke(m_SelectedItems);
+            onSelectionChange?.Invoke(m_SelectedItems);
+            onSelectionChanged?.Invoke(m_SelectedItems);
         }
 
-        protected void ClearSelection()
+        public void ClearSelection()
         {
             if (!HasValidDataAndBindings())
                 return;
 
+            ClearSelectionWithoutValidation();
+            NotifyOfSelectionChange();
+        }
+
+        private void ClearSelectionWithoutValidation()
+        {
             foreach (var recycledItem in m_Pool)
                 recycledItem.SetSelected(false);
             m_SelectedIds.Clear();
             m_SelectedIndices.Clear();
             m_SelectedItems.Clear();
-
-            NotifyOfSelectionChange();
         }
 
         public void ScrollTo(VisualElement visualElement)
@@ -694,10 +715,23 @@ namespace UnityEngine.UIElements
 
             m_Pool.Clear();
             m_ScrollView.Clear();
+            m_VisibleItemCount = 0;
+
             m_SelectedIndices.Clear();
             m_SelectedItems.Clear();
 
-            m_VisibleItemCount = 0;
+            // O(n)
+            if (m_SelectedIds.Count > 0)
+            {
+                // Add selected objects to working lists.
+                for (var index = 0; index < m_ItemsSource.Count; ++index)
+                {
+                    if (!m_SelectedIds.Contains(GetIdFromIndex(index))) continue;
+
+                    m_SelectedIndices.Add(index);
+                    m_SelectedItems.Add(m_ItemsSource[index]);
+                }
+            }
 
             if (!HasValidDataAndBindings())
                 return;
@@ -723,7 +757,7 @@ namespace UnityEngine.UIElements
             var contentHeight = itemsSource.Count * m_PixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = contentHeight;
 
-            // Restore scroll offset and pre-emptively update the highValue
+            // Restore scroll offset and preemptively update the highValue
             // in case this is the initial restore from persistent data and
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
@@ -777,7 +811,6 @@ namespace UnityEngine.UIElements
                             item.style.visibility = Visibility.Hidden;
                         }
 
-
                         Add(item);
                     }
                 }
@@ -786,22 +819,6 @@ namespace UnityEngine.UIElements
             }
 
             m_LastHeight = height;
-
-
-            // O(n)
-            if (m_SelectedIds.Count > 0)
-            {
-                // Add selected objects to working lists.
-                for (int index = 0; index < m_ItemsSource.Count; ++index)
-                {
-                    if (m_SelectedIds.Contains(GetIdFromIndex(index)))
-                    {
-                        m_SelectedIndices.Add(index);
-                        m_SelectedItems.Add(m_ItemsSource[index]);
-                    }
-                }
-            }
-
             UpdateBackground();
         }
 
@@ -854,7 +871,7 @@ namespace UnityEngine.UIElements
             foreach (var child in m_EmptyRows.hierarchy.Children())
             {
                 index++;
-                child.style.height = itemHeight;
+                child.style.height = resolvedItemHeight;
                 child.EnableInClassList(itemAlternativeBackgroundUssClassName, index % 2 == 1);
             }
         }
@@ -864,7 +881,7 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            if (evt.newRect.height == evt.oldRect.height)
+            if (Mathf.Approximately(evt.newRect.height, evt.oldRect.height))
                 return;
 
             ResizeHeight(evt.newRect.height);
@@ -872,9 +889,15 @@ namespace UnityEngine.UIElements
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            int height = 0;
+            int height;
             if (!m_ItemHeightIsInline && e.customStyle.TryGetValue(s_ItemHeightProperty, out height))
-                itemHeight = height;
+            {
+                if (m_ItemHeight != height)
+                {
+                    m_ItemHeight = height;
+                    Refresh();
+                }
+            }
         }
     }
 }

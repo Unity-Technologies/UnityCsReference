@@ -241,26 +241,42 @@ namespace UnityEngine.UIElements
         public static readonly string contentUssClassName = ussClassName + "__content-container";
         public static readonly string hScrollerUssClassName = ussClassName + "__horizontal-scroller";
         public static readonly string vScrollerUssClassName = ussClassName + "__vertical-scroller";
-        public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
-        public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
-        public static readonly string verticalHorizontalVariantUssClassName = ussClassName + "--vertical-horizontal";
         public static readonly string scrollVariantUssClassName = ussClassName + "--scroll";
+
+        [Obsolete("horizontalVariantUssClassName has been deprecated. Use hContentVariantUssClassName and hViewportVariantUssClassName instead.")]
+        public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        [Obsolete("verticalVariantUssClassName has been deprecated. Use vContentVariantUssClassName and vViewportVariantUssClassName instead.")]
+        public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        [Obsolete("verticalHorizontalVariantUssClassName has been deprecated. Use vhContentVariantUssClassName and vhViewportVariantUssClassName instead.")]
+        public static readonly string verticalHorizontalVariantUssClassName = ussClassName + "--vertical-horizontal";
+
+        public static readonly string hContentVariantUssClassName = contentUssClassName + "--horizontal";
+        public static readonly string vContentVariantUssClassName = contentUssClassName + "--vertical";
+        public static readonly string vhContentVariantUssClassName = contentUssClassName + "--vertical-horizontal";
+
+        public static readonly string hViewportVariantUssClassName = viewportUssClassName + "--horizontal";
+        public static readonly string vViewportVariantUssClassName = viewportUssClassName + "--vertical";
+        public static readonly string vhViewportVariantUssClassName = viewportUssClassName + "--vertical-horizontal";
+
 
         public ScrollView() : this(ScrollViewMode.Vertical) {}
 
         public ScrollView(ScrollViewMode scrollViewMode)
         {
             AddToClassList(ussClassName);
+            AddToClassList(scrollVariantUssClassName);
 
             contentViewport = new VisualElement() { name = "unity-content-viewport" };
             contentViewport.AddToClassList(viewportUssClassName);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            contentViewport.pickingMode = PickingMode.Ignore;
             hierarchy.Add(contentViewport);
 
             m_ContentContainer = new VisualElement() { name = "unity-content-container" };
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ContentContainer.AddToClassList(contentUssClassName);
             m_ContentContainer.usageHints = UsageHints.GroupTransform;
+            m_ContentContainer.pickingMode = PickingMode.Ignore;
             contentViewport.Add(m_ContentContainer);
 
             SetScrollViewMode(scrollViewMode);
@@ -294,24 +310,27 @@ namespace UnityEngine.UIElements
 
         internal void SetScrollViewMode(ScrollViewMode scrollViewMode)
         {
-            RemoveFromClassList(verticalVariantUssClassName);
-            RemoveFromClassList(horizontalVariantUssClassName);
-            RemoveFromClassList(verticalHorizontalVariantUssClassName);
-            RemoveFromClassList(scrollVariantUssClassName);
+            contentContainer.RemoveFromClassList(hContentVariantUssClassName);
+            contentContainer.RemoveFromClassList(vContentVariantUssClassName);
+            contentContainer.RemoveFromClassList(vhContentVariantUssClassName);
+
+            contentViewport.RemoveFromClassList(hViewportVariantUssClassName);
+            contentViewport.RemoveFromClassList(vViewportVariantUssClassName);
+            contentViewport.RemoveFromClassList(vhViewportVariantUssClassName);
 
             switch (scrollViewMode)
             {
                 case ScrollViewMode.Vertical:
-                    AddToClassList(verticalVariantUssClassName);
-                    AddToClassList(scrollVariantUssClassName);
+                    contentContainer.AddToClassList(vContentVariantUssClassName);
+                    contentViewport.AddToClassList(vViewportVariantUssClassName);
                     break;
                 case ScrollViewMode.Horizontal:
-                    AddToClassList(horizontalVariantUssClassName);
-                    AddToClassList(scrollVariantUssClassName);
+                    contentContainer.AddToClassList(hContentVariantUssClassName);
+                    contentViewport.AddToClassList(hViewportVariantUssClassName);
                     break;
                 case ScrollViewMode.VerticalAndHorizontal:
-                    AddToClassList(scrollVariantUssClassName);
-                    AddToClassList(verticalHorizontalVariantUssClassName);
+                    contentContainer.AddToClassList(vhContentVariantUssClassName);
+                    contentViewport.AddToClassList(vhViewportVariantUssClassName);
                     break;
             }
         }

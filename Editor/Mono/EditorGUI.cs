@@ -3352,7 +3352,8 @@ namespace UnityEditor
             }
             else if (Event.current.type == EventType.Repaint)
             {
-                style.Draw(position, EditorGUIUtility.TempContent(tag), id, false, position.Contains(evt.mousePosition));
+                style.Draw(position, showMixedValue ? s_MixedValueContent : EditorGUIUtility.TempContent(tag),
+                    id, false, position.Contains(evt.mousePosition));
             }
 
             return tag;
@@ -3422,7 +3423,8 @@ namespace UnityEditor
             }
             else if (evt.type == EventType.Repaint)
             {
-                style.Draw(position, EditorGUIUtility.TempContent(InternalEditorUtility.GetLayerName(layer)), id, false, position.Contains(evt.mousePosition));
+                var layerFieldContent = showMixedValue ? s_MixedValueContent : EditorGUIUtility.TempContent(InternalEditorUtility.GetLayerName(layer));
+                style.Draw(position, layerFieldContent, id, false, position.Contains(evt.mousePosition));
             }
 
             return layer;
@@ -6108,10 +6110,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         private static Material GetPreviewMaterial(ref Material m, string shaderPath)
         {
             if (m == null)
-            {
                 m = new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader);
-                m.hideFlags = HideFlags.HideAndDontSave;
-            }
             return m;
         }
 

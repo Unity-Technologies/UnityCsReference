@@ -9,14 +9,12 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreClient
     {
-        event Action<ProductList, bool> onProductListFetched;
+        event Action<AssetStorePurchases, bool> onProductListFetched;
 
         event Action<long> onProductFetched;
 
         event Action<IEnumerable<IPackage>> onPackagesChanged;
         event Action<string, IPackageVersion> onPackageVersionUpdated;
-
-        event Action<DownloadProgress> onDownloadProgress;
 
         event Action<IOperation> onListOperation;
 
@@ -24,27 +22,13 @@ namespace UnityEditor.PackageManager.UI
         event Action onFetchDetailsFinish;
         event Action<Error> onFetchDetailsError;
 
-        void List(int offset, int limit, string searchText = "", bool fetchDetails = true);
+        void ListPurchases(PurchasesQueryArgs queryArgs, bool fetchDetails = true);
 
         void Fetch(long productId);
 
         void FetchDetails(IEnumerable<long> productIds);
 
         void RefreshLocal();
-
-        bool IsAnyDownloadInProgress();
-
-        bool IsDownloadInProgress(string productId);
-
-        bool GetDownloadProgress(string productId, out DownloadProgress progress);
-
-        void AbortDownload(string productId);
-
-        void AbortAllDownloads();
-
-        void Download(string productId);
-
-        void OnDownloadProgress(string productId, string message, ulong bytes, ulong total);
 
         void RegisterEvents();
 

@@ -71,20 +71,18 @@ namespace UnityEditor
 
         public void OnInspectorUpdate()
         {
-            if (m_DataStore != null && m_DataStore.Repopulate() && m_TreeView != null)
+            if (m_TreeView != null)
             {
-                m_TreeView.FullReload();
-            }
-            else if (m_TreeView != null && m_TreeView.Update())
-            {
-                m_TreeView.Repaint();
+                m_TreeView.Update();
             }
         }
 
         public void OnHierarchyChange()
         {
-            if (m_DataStore != null && m_DataStore.Repopulate() && m_TreeView != null)
-                m_TreeView.FullReload();
+            if (m_TreeView != null)
+            {
+                m_TreeView.Update();
+            }
         }
 
         public void OnSelectionChange()

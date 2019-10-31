@@ -909,7 +909,7 @@ namespace UnityEditor
                 var fieldInfo = UnityEditor.ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(this, out type);
                 var propertyBaseType = type;
 
-                if (!propertyBaseType.IsAssignableFrom(value.GetType()))
+                if (value != null  && !propertyBaseType.IsAssignableFrom(value.GetType()))
                 {
                     throw new System.InvalidOperationException(
                         $"Cannot assign an object of type '{value.GetType().Name}' to a managed reference with a base type of '{propertyBaseType.Name}': types are not compatible");

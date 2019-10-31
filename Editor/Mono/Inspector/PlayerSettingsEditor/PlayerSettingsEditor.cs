@@ -486,7 +486,7 @@ namespace UnityEditor
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
 
-            m_LegacyClampBlendShapeWeights  = FindPropertyAssert("legacyClampBlendShapeWeights");
+            m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
 
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
             for (int i = 0; i < validPlatforms.Length; i++)

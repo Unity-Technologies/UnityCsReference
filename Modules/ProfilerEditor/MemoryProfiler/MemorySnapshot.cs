@@ -14,8 +14,8 @@ namespace UnityEditor.Profiling.Memory.Experimental
     // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
     public class PackedMemorySnapshot : IDisposable
     {
-        static readonly UInt32 kMinSupportedVersion = 7;
-        static readonly UInt32 kCurrentVersion = 9;
+        static readonly UInt32 kMinSupportedVersion = 8;
+        static readonly UInt32 kCurrentVersion = 10;
 
         public static PackedMemorySnapshot Load(string path)
         {
@@ -217,7 +217,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
             nativeCallstackSymbols = new NativeCallstackSymbolEntries(m_Reader);
             nativeMemoryLabels = new NativeMemoryLabelEntries(m_Reader);
             nativeMemoryRegions = new NativeMemoryRegionEntries(m_Reader);
-            nativeObjects = new NativeObjectEntries(m_Reader);
+            nativeObjects = new NativeObjectEntries(m_Reader, version == kCurrentVersion);
             nativeRootReferences = new NativeRootReferenceEntries(m_Reader);
             nativeTypes = new NativeTypeEntries(m_Reader);
             typeDescriptions = new TypeDescriptionEntries(m_Reader);
@@ -245,11 +245,6 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 //   content_data
                 //   platform_data_length
                 //   platform_data
-                //   screenshot_data_length
-                //     [opt: screenshot_data ]
-                //     [opt: screenshot_width ]
-                //     [opt: screenshot_height ]
-                //     [opt: screenshot_format ]
                 var data = new UnityEngine.Profiling.Memory.Experimental.MetaData();
 
                 if (array.Length == 0)
@@ -265,31 +260,6 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 offset = ReadStringFromByteArray(array, offset, dataLength, out data.content);
                 offset = ReadIntFromByteArray(array, offset, out dataLength);
                 offset = ReadStringFromByteArray(array, offset, dataLength, out data.platform);
-                offset = ReadIntFromByteArray(array, offset, out dataLength);
-
-                if (dataLength > 0)
-                {
-                    int width;
-                    int height;
-                    int format;
-                    byte[] screenshot = new byte[dataLength];
-
-                    Array.Copy(array, offset, screenshot, 0, dataLength);
-                    offset += dataLength;
-
-                    offset = ReadIntFromByteArray(array, offset, out width);
-                    offset = ReadIntFromByteArray(array, offset, out height);
-                    offset = ReadIntFromByteArray(array, offset, out format);
-
-                    //Suppress compiler warning about member
-#pragma warning disable 618
-                    data.screenshot = new Texture2D(width, height, (TextureFormat)format, false);
-                    data.screenshot.LoadRawTextureData(screenshot);
-                    data.screenshot.Apply();
-#pragma warning restore 618
-                }
-
-                UnityEngine.Assertions.Assert.AreEqual(array.Length, offset);
 
                 return data;
             }

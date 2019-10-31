@@ -15,8 +15,8 @@ namespace UnityEngine.UIElements
         {
             if (evt.target != null)
             {
+                evt.propagateToIMGUI = evt.target is IMGUIContainer;
                 EventDispatchUtilities.PropagateEvent(evt);
-                evt.propagateToIMGUI = false;
             }
             else
             {

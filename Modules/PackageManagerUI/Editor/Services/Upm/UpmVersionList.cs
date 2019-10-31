@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -51,7 +52,7 @@ namespace UnityEditor.PackageManager.UI
                 var installed = m_Versions[m_InstalledIndex].version;
                 for (var i = m_Versions.Count - 1; i > m_InstalledIndex; --i)
                 {
-                    if (m_Versions[i].version.IsPatchOf(installed))
+                    if (m_Versions[i].version?.IsPatchOf(installed) == true)
                         return m_Versions[i];
                 }
                 return null;
@@ -121,7 +122,7 @@ namespace UnityEditor.PackageManager.UI
         {
             for (var i = 0; i < sortedVersions.Count; ++i)
             {
-                if (sortedVersions[i].version.CompareByPrecedence(versionToAdd.version) < 0)
+                if (versionToAdd.version != null && (sortedVersions[i].version?.CompareTo(versionToAdd.version) ?? -1) < 0)
                     continue;
                 // note that the difference between this and the previous function is that
                 // two upm package versions could have the the same version but different package id
@@ -146,7 +147,13 @@ namespace UnityEditor.PackageManager.UI
         public UpmVersionList(PackageInfo info, bool isInstalled)
         {
             var mainVersion = new UpmPackageVersion(info, isInstalled);
-            m_Versions = info.versions.compatible.Select(v => new UpmPackageVersion(info, false, v, mainVersion.displayName)).ToList();
+            m_Versions = info.versions.compatible.Select(v =>
+            {
+                SemVersion? version;
+                SemVersionParser.TryParse(v, out version);
+                return new UpmPackageVersion(info, false, version, mainVersion.displayName);
+            }).ToList();
+
             AddToSortedVersions(m_Versions, mainVersion);
 
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);

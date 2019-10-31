@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -44,7 +45,7 @@ namespace UnityEditor.PackageManager.UI
             if (installedVersion.HasTag(PackageTag.Local))
                 return "(local)";
 
-            return installedVersion.version == dependency.version
+            return installedVersion.version?.ToString() == dependency.version
                 ? "(installed \u2714)" : $"({installedVersion.version} installed \u2714)";
         }
 

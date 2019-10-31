@@ -2,28 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Linq;
-using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
-using UnityEngine.VFX;
 
-//Temporary
-//Adds ProcessCamera in UnityEngine.Experimental.VFX namespace for HDRP
-//Remove this code when a new com.unity.render-pipelines.high-definition built-in package has been provided
-using System.Runtime.CompilerServices;
-[assembly: InternalsVisibleTo("Unity.RenderPipelines.HighDefinition.Runtime")]
-[assembly: InternalsVisibleTo("Unity.RenderPipelines.HighDefinition.Runtime-testable")]
+//Keep this namespace to be compatible with visual effect graph package 7.0.1
+//There was an unexpected useless "using UnityEngine.Experimental.VFX;" in VFXMotionVector.cs
 namespace UnityEngine.Experimental.VFX
 {
     internal static class VFXManager
     {
-        public static void ProcessCamera(Camera cam)
-        {
-            UnityEngine.VFX.VFXManager.ProcessCamera(cam);
-        }
     }
 }
 

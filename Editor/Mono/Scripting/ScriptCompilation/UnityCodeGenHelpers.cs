@@ -15,7 +15,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     internal static class UnityCodeGenHelpers
     {
+        const string k_CompilerSuffix = ".Compiler";
         const string k_CodeGenSuffix = ".CodeGen";
+        const string k_CompilerTestsSuffix = ".Compiler.Tests";
+        const string k_CodeGenTestsSuffix = ".CodeGen.Tests";
         const string k_CodeGenPrefix = "Unity.";
 
         const string k_UnityEngineModules = "UnityEngine";
@@ -30,11 +33,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public List<ScriptAssembly> CodeGenAssemblies;
         }
 
-        public static bool IsCodeGen(string assemblyName, bool includesExtension = true)
+        public static bool IsCodeGen(string assemblyName)
         {
-            var name = (includesExtension ? Path.GetFileNameWithoutExtension(assemblyName) : assemblyName);
-            var isCodeGen = name.StartsWith(k_CodeGenPrefix, StringComparison.OrdinalIgnoreCase) && name.EndsWith(k_CodeGenSuffix, StringComparison.OrdinalIgnoreCase);
-            return isCodeGen;
+            var name = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
+
+            if (name.StartsWith(k_CodeGenPrefix, StringComparison.OrdinalIgnoreCase) && name.EndsWith(k_CompilerSuffix, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (name.StartsWith(k_CodeGenPrefix, StringComparison.OrdinalIgnoreCase) && name.EndsWith(k_CodeGenSuffix, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
+        }
+
+        public static bool IsCodeGenTest(string assemblyName)
+        {
+            var name = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
+
+            if (name.StartsWith(k_CodeGenPrefix, StringComparison.OrdinalIgnoreCase) && name.EndsWith(k_CompilerTestsSuffix, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (name.StartsWith(k_CodeGenPrefix, StringComparison.OrdinalIgnoreCase) && name.EndsWith(k_CodeGenTestsSuffix, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
         }
 
         public static void UpdateCodeGenScriptAssembly(ref ScriptAssembly scriptAssembly)
@@ -55,7 +77,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var scriptAssembly in scriptAssemblies)
             {
-                bool isCodeGen = IsCodeGen(scriptAssembly.Filename, true);
+                bool isCodeGen = IsCodeGen(scriptAssembly.Filename);
 
                 if (isCodeGen)
                 {

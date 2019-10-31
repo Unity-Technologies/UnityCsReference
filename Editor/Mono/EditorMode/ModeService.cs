@@ -427,6 +427,13 @@ namespace UnityEditor
             return key;
         }
 
+        internal static void RefreshMenus()
+        {
+            Menu.ResetMenus(true);
+            UpdateModeMenus(currentIndex);
+            EditorUtility.Internal_UpdateAllMenus();
+        }
+
         private static void UpdateModeMenus(int modeIndex)
         {
             var items = GetModeDataSection(modeIndex, ModeDescriptor.MenusKey);

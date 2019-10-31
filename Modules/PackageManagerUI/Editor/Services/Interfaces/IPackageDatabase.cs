@@ -17,8 +17,6 @@ namespace UnityEditor.PackageManager.UI
 
         event Action<IPackage> onPackageProgressUpdate;
 
-        event Action<IPackage, DownloadProgress> onDownloadProgress;
-
         void RegisterEvents();
 
         void UnregisterEvents();
@@ -36,8 +34,6 @@ namespace UnityEditor.PackageManager.UI
         void InstallFromPath(string path);
 
         void Uninstall(IPackage package);
-
-        DownloadProgress GetDownloadProgress(IPackageVersion version);
 
         bool IsDownloadInProgress(IPackageVersion version);
 

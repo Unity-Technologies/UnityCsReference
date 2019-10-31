@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var version = package.versions.installed;
                 if (!string.IsNullOrEmpty(packageVersion))
-                    version = package.versions.FirstOrDefault(v => v.version == packageVersion);
+                    version = package.versions.FirstOrDefault(v => v.version?.ToString() == packageVersion);
                 if (version != null)
                     return version.samples;
             }

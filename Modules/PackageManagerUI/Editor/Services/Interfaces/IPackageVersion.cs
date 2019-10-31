@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -31,7 +32,7 @@ namespace UnityEditor.PackageManager.UI
 
         IEnumerable<Sample> samples { get; }
 
-        SemVersion version { get; }
+        SemVersion? version { get; }
 
         DateTime? publishedDate { get; }
 
@@ -58,7 +59,7 @@ namespace UnityEditor.PackageManager.UI
 
         string versionId { get; }
 
-        SemVersion supportedVersion { get; }
+        SemVersion? supportedVersion { get; }
 
         IEnumerable<SemVersion> supportedVersions { get; }
 

@@ -63,7 +63,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    if (m_Object != null && typeof(Component).IsAssignableFrom(m_Object.GetType()))
+                    if (m_Object != null && m_Object is Component)
                     {
                         return ((Component)m_Object).gameObject.activeInHierarchy;
                     }
@@ -79,6 +79,7 @@ namespace UnityEditor
         // LightTreeDataStore members
         internal delegate UnityEngine.Object[] GatherDelegate();
         UnityEngine.Object[] m_Objects; // only used to keep track of changes
+        bool[] m_ActiveObjects;
         Data[] m_Elements;
         string[] m_PropNames;
         GatherDelegate m_GatherDel;
@@ -90,7 +91,8 @@ namespace UnityEditor
             m_PropNames = propNames;
             m_GatherDel = gatherDel;
 
-            Repopulate();
+            bool needsReload;
+            Repopulate(out needsReload);
         }
 
         ~SerializedPropertyDataStore()
@@ -98,8 +100,12 @@ namespace UnityEditor
             Clear();
         }
 
-        public bool Repopulate()
+        public bool Repopulate(out bool needsReload)
         {
+            // this is done due to optimization reasons. we want to know if any major changes has happened to the data
+            // without having to refetch it in another place and loop through it there
+            needsReload = false;
+
             Profiler.BeginSample("SerializedPropertyDataStore.Repopulate.GatherDelegate");
             UnityEngine.Object[] objs = m_GatherDel();
             Profiler.EndSample();
@@ -108,7 +114,13 @@ namespace UnityEditor
             {
                 // If nothing's changed -> bail
                 if (objs.Length == m_Objects.Length && ArrayUtility.ArrayReferenceEquals(objs, m_Objects))
+                {
+                    // The list of objects is the same, but since some should now potentially be hidden, we need to request a reload
+                    if (!ActiveObjectsEquals(objs, m_ActiveObjects))
+                        needsReload = true;
+
                     return false;
+                }
 
                 Clear();
             }
@@ -116,13 +128,19 @@ namespace UnityEditor
             // Recreate data store
             m_Objects = objs;
             m_Elements = new Data[objs.Length];
+            m_ActiveObjects = new bool[objs.Length];
 
             int elementIndex = 0;
             for (int i = 0; i < objs.Length; i++)
             {
                 // we don't want to list hidden objects
-                if (objs[i].hideFlags == HideFlags.HideAndDontSave)
+                if (objs[i].hideFlags == HideFlags.HideAndDontSave || objs[i].hideFlags == HideFlags.HideInHierarchy)
                     continue;
+
+                if (objs[i] != null && objs[i] is Component)
+                {
+                    m_ActiveObjects[i] = ((Component)objs[i]).gameObject.activeInHierarchy;
+                }
 
                 m_Elements[elementIndex] = new Data(objs[i], m_PropNames);
 
@@ -132,6 +150,7 @@ namespace UnityEditor
             if (elementIndex < objs.Length)
                 System.Array.Resize(ref m_Elements, elementIndex);
 
+            needsReload = true;
             return true;
         }
 
@@ -143,6 +162,23 @@ namespace UnityEditor
 
             m_Objects  = null;
             m_Elements = null;
+            m_ActiveObjects = null;
+        }
+
+        private static bool ActiveObjectsEquals(Object[] objects, bool[] activeObjects)
+        {
+            if (activeObjects != null && objects.Length != activeObjects.Length)
+                return true;
+
+            for (int i = 0; i < objects.Length; i++)
+            {
+                if (objects[i] != null && objects[i] is Component)
+                {
+                    if (((Component)objects[i]).gameObject.activeInHierarchy != activeObjects[i])
+                        return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -358,8 +394,24 @@ namespace UnityEditor
             return m_ChangedId != 0 && (m_ChangedId != GUIUtility.keyboardControl || !EditorGUIUtility.editingTextField);
         }
 
-        public bool Update()
+        public void Update()
         {
+            bool needsReload = false;
+
+            if (m_DataStore != null)
+            {
+                // If we re-populated all data, we need to clear the cached items
+                // The data can also be fine, but needs a reload without having to rebuild it all (inactive/active objects changed)
+                if (m_DataStore.Repopulate(out needsReload))
+                    m_Items = null;
+
+                if (needsReload)
+                {
+                    Reload();
+                    return;
+                }
+            }
+
             var rows = GetRows();
             int first, last;
 
@@ -375,13 +427,8 @@ namespace UnityEditor
                 }
             }
 
-            return changed;
-        }
-
-        public void FullReload()
-        {
-            m_Items = null;
-            Reload();
+            if (changed)
+                Repaint();
         }
 
         protected override TreeViewItem BuildRoot()

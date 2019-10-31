@@ -14,5 +14,11 @@ namespace UnityEditor.PackageManager.UI
         VisualState GetVisualState(string packageUniqueId);
         void LoadMore();
         void Load(IPackage package, IPackageVersion version = null);
+        void SetSelected(IPackage package, IPackageVersion version = null);
+        void SetSelected(string packageUniqueId, string versionUniqueId);
+        void SetSeeAllVersions(string packageUniqueId, bool value);
+        void SetSeeAllVersions(IPackage package, bool value);
+        bool Contain(IPackage package);
+        bool Contain(string packageUniqueId);
     }
 }

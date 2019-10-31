@@ -2743,6 +2743,9 @@
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\AssetEvents.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\AssetEvents.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\AvatarConfigurationStage.cs">
+      <Link>Editor\Mono\SceneManagement\StageManager\AvatarConfigurationStage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\BreadcrumbBar.cs">
       <Link>Editor\Mono\SceneManagement\StageManager\BreadcrumbBar.cs</Link>
     </Compile>
@@ -4117,9 +4120,6 @@
     <Compile Include="..\..\Modules\LocalizationEditor\LocalizedEditorFontManager.cs">
       <Link>Modules\LocalizationEditor\LocalizedEditorFontManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\SemVersion.cs">
-      <Link>Modules\PackageManagerUI\Editor\External\SemVersion.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs</Link>
     </Compile>
@@ -4131,6 +4131,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadInfo.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadManager.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs</Link>
@@ -4153,6 +4159,12 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePurchaseInfo.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePurchaseInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePurchases.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePurchases.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreRestAPI.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreRestAPI.cs</Link>
     </Compile>
@@ -4171,8 +4183,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\DownloadProgress.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\DownloadProgress.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\DownloadState.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\DownloadState.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs</Link>
@@ -4213,8 +4225,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadOperation.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadOperation.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadManager.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs</Link>
@@ -4407,6 +4419,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSampleList.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageSampleList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSelectionEditor.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageSelectionEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSelectionObject.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageSelectionObject.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs</Link>
@@ -4825,6 +4843,12 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\Public\FrameDataView.bindings.cs">
+      <Link>Modules\ProfilerEditor\Public\FrameDataView.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\Public\HierarchyFrameDataView.bindings.cs">
+      <Link>Modules\ProfilerEditor\Public\HierarchyFrameDataView.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\NativeProfilerTimeline.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\NativeProfilerTimeline.bindings.cs</Link>
     </Compile>
@@ -4834,9 +4858,6 @@
     <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerFrameDataIterator.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\ProfilerFrameDataIterator.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerFrameDataView.bindings.cs">
-      <Link>Modules\ProfilerEditor\Public\ProfilerFrameDataView.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerProperty.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\ProfilerProperty.bindings.cs</Link>
     </Compile>
@@ -4845,6 +4866,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs">
       <Link>Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs">
+      <Link>Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\RestService\Handler.cs">
       <Link>Modules\RestService\Handler.cs</Link>
@@ -5439,6 +5463,9 @@
     </Compile>
     <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VisualEffectUtility.bindings.cs">
       <Link>Modules\VFXEditor\Public\ScriptBindings\VisualEffectUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VFXEditor\Public\VisualEffectEditorDefault.cs">
+      <Link>Modules\VFXEditor\Public\VisualEffectEditorDefault.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VREditor\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs">
       <Link>Modules\VREditor\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs</Link>

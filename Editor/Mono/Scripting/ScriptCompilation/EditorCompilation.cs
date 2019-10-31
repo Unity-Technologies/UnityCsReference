@@ -1571,7 +1571,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 options,
                 compilationTaskOptions,
                 maxConcurrentCompilers,
-                ILPostProcessing.PostProcess);
+                ILPostProcessing);
 
             compilationTask.OnCompilationTaskStarted += (context) =>
             {

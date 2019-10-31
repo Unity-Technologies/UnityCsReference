@@ -184,7 +184,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, bool eventIsPropagatedFromNonFocusableVisualElement = false)
+        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, bool canAffectFocus = true)
         {
             // Extra checks are needed here because client code might have changed the IMGUIContainer
             // since we enter HandleIMGUIEvent()
@@ -302,7 +302,7 @@ namespace UnityEngine.UIElements
             }
             finally
             {
-                if (Event.current.type != EventType.Layout && !eventIsPropagatedFromNonFocusableVisualElement)
+                if (Event.current.type != EventType.Layout && canAffectFocus)
                 {
                     int currentKeyboardFocus = GUIUtility.keyboardControl;
                     int result = GUIUtility.CheckForTabEvent(Event.current);
@@ -467,17 +467,17 @@ namespace UnityEngine.UIElements
             m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
             m_CachedTransform = offset * worldTransform;
 
-            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, false);
+            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, true);
         }
 
-        internal bool SendEventToIMGUI(EventBase evt)
+        internal bool SendEventToIMGUI(EventBase evt, bool canAffectFocus = true)
         {
             if (evt is IPointerEvent)
             {
                 if (evt.imguiEvent != null && evt.imguiEvent.isDirectManipulationDevice)
                 {
                     bool sendPointerEvent = false;
-                    EventType originalEventType = evt.imguiEvent.type;
+                    EventType originalEventType = evt.imguiEvent.rawType;
                     if (evt is PointerDownEvent)
                     {
                         sendPointerEvent = true;
@@ -488,7 +488,7 @@ namespace UnityEngine.UIElements
                         sendPointerEvent = true;
                         evt.imguiEvent.type = EventType.TouchUp;
                     }
-                    else if (evt is PointerMoveEvent && evt.imguiEvent.type == EventType.MouseDrag)
+                    else if (evt is PointerMoveEvent && evt.imguiEvent.rawType == EventType.MouseDrag)
                     {
                         sendPointerEvent = true;
                         evt.imguiEvent.type = EventType.TouchMove;
@@ -511,7 +511,7 @@ namespace UnityEngine.UIElements
 
                     if (sendPointerEvent)
                     {
-                        bool result = SendEventToIMGUIPrivate(evt);
+                        bool result = SendEventToIMGUIPrivate(evt, canAffectFocus);
                         evt.imguiEvent.type = originalEventType;
                         return result;
                     }
@@ -520,41 +520,41 @@ namespace UnityEngine.UIElements
                 return false;
             }
             else
-                return SendEventToIMGUIPrivate(evt);
+                return SendEventToIMGUIPrivate(evt, canAffectFocus);
         }
 
-        private bool SendEventToIMGUIPrivate(EventBase evt)
+        private bool SendEventToIMGUIPrivate(EventBase evt, bool canAffectFocus)
         {
             bool result;
             using (new EventDebuggerLogIMGUICall(evt))
             {
-                result = HandleIMGUIEvent(evt.imguiEvent);
+                result = HandleIMGUIEvent(evt.imguiEvent, canAffectFocus);
             }
             return result;
         }
 
-        internal bool HandleIMGUIEvent(Event e, bool eventIsPropagatedFromNonFocusableVisualElement = false)
+        private bool HandleIMGUIEvent(Event e, bool canAffectFocus)
         {
             GetCurrentTransformAndClip(this, e, out m_CachedTransform, out m_CachedClippingRect);
 
-            return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, eventIsPropagatedFromNonFocusableVisualElement);
+            return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, canAffectFocus);
         }
 
-        private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, bool eventIsPropagatedFromNonFocusableVisualElement)
+        private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, bool canAffectFocus)
         {
-            if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.type) == false)
+            if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.rawType) == false)
             {
                 return false;
             }
 
-            EventType originalEventType = e.type;
+            EventType originalEventType = e.rawType;
             e.type = EventType.Layout;
 
             // layout event
-            DoOnGUI(e, worldTransform, clippingRect, false, layout, eventIsPropagatedFromNonFocusableVisualElement);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout, canAffectFocus);
             // the actual event
             e.type = originalEventType;
-            DoOnGUI(e, worldTransform, clippingRect, false, layout, eventIsPropagatedFromNonFocusableVisualElement);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout, canAffectFocus);
 
             if (newKeyboardFocusControlID > 0)
             {
@@ -565,14 +565,14 @@ namespace UnityEngine.UIElements
                     commandName = EventCommandNames.NewKeyboardFocus
                 };
 
-                HandleIMGUIEvent(focusCommand);
+                HandleIMGUIEvent(focusCommand, true);
             }
 
-            if (e.type == EventType.Used)
+            if (e.rawType == EventType.Used)
             {
                 return true;
             }
-            else if (e.type == EventType.MouseUp && this.HasMouseCapture())
+            else if (e.rawType == EventType.MouseUp && this.HasMouseCapture())
             {
                 // This can happen if a MouseDown was caught by a different IM element but we ended up here on the
                 // MouseUp event because no other element consumed it, including the one that had capture.
@@ -670,7 +670,7 @@ namespace UnityEngine.UIElements
                 // pass Rect.zero for the clipping rect as this eventually sets the
                 // global GUIClip.visibleRect which IMGUI code could be using to influence
                 // size. See case 1111923 and 1158089.
-                DoOnGUI(evt, m_CachedTransform, m_CachedClippingRect, true, layoutRect);
+                DoOnGUI(evt, m_CachedTransform, m_CachedClippingRect, true, layoutRect, true);
                 measuredWidth = layoutMeasuredWidth;
                 measuredHeight = layoutMeasuredHeight;
             }
@@ -709,7 +709,7 @@ namespace UnityEngine.UIElements
             }
 
             transform = container.worldTransform;
-            if (evt.type == EventType.Repaint
+            if (evt.rawType == EventType.Repaint
                 && container.elementPanel != null)
             {
                 // during repaint, we must use in case the current transform is not relative to Panel

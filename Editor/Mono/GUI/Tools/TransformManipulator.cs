@@ -334,7 +334,10 @@ namespace UnityEditor
                 var cur = s_MouseDownState[i];
                 undoObjects[i] = cur.transform;
             }
-            Undo.RegisterCompleteObjectUndo(undoObjects, "Scale");
+            if (AnimationMode.InAnimationMode())
+                Undo.RecordObjects(undoObjects, "Scale");
+            else
+                Undo.RegisterCompleteObjectUndo(undoObjects, "Scale");
 
             Vector3 point = Tools.handlePosition;
             for (int i = 0; i < s_MouseDownState.Length; i++)
@@ -391,7 +394,10 @@ namespace UnityEditor
                 var cur = s_MouseDownState[i];
                 undoObjects[i] = (cur.rectTransform != null ? (Object)cur.rectTransform : (Object)cur.transform);
             }
-            Undo.RegisterCompleteObjectUndo(undoObjects, "Move");
+            if (AnimationMode.InAnimationMode())
+                Undo.RecordObjects(undoObjects, "Move");
+            else
+                Undo.RegisterCompleteObjectUndo(undoObjects, "Move");
 
             if (s_MouseDownState.Length > 0)
             {

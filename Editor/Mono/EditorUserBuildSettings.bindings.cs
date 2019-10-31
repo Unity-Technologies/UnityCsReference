@@ -630,11 +630,25 @@ namespace UnityEditor
         }
 
         // Enable debug validation of NVN drawcalls
-        public static extern bool switchNVNDrawValidation
+        public static bool switchNVNDrawValidation
         {
-            [NativeMethod("GetNVNDrawValidation")]
+            get { return switchNVNDrawValidation_Heavy; }
+            set { switchNVNDrawValidation_Heavy = value; }
+        }
+
+        public static extern bool switchNVNDrawValidation_Light
+        {
+            [NativeMethod("GetNVNDrawValidationLight")]
             get;
-            [NativeMethod("SetNVNDrawValidation")]
+            [NativeMethod("SetNVNDrawValidationLight")]
+            set;
+        }
+
+        public static extern bool switchNVNDrawValidation_Heavy
+        {
+            [NativeMethod("GetNVNDrawValidationHeavy")]
+            get;
+            [NativeMethod("SetNVNDrawValidationHeavy")]
             set;
         }
 

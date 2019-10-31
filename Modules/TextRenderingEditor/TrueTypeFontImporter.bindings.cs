@@ -11,6 +11,7 @@ namespace UnityEditor
     {
         Dynamic = -2,
         Unicode = -1,
+        [InspectorName("ASCII default set")]
         ASCII = 0,
         ASCIIUpperCase = 1,
         ASCIILowerCase = 2,
@@ -27,8 +28,11 @@ namespace UnityEditor
 
     public enum AscentCalculationMode
     {
+        [InspectorName("Legacy version 2 mode (glyph bounding boxes)")]
         Legacy2x = 0,
+        [InspectorName("Face ascender metric")]
         FaceAscender = 1,
+        [InspectorName("Face bounding box metric")]
         FaceBoundingBox = 2
     }
 

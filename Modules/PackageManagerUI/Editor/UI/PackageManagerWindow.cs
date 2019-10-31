@@ -44,16 +44,16 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private float m_SplitPaneLeftWidth;
 
-        private static PackageManagerWindow s_Window;
+        internal static PackageManagerWindow instance { get; private set; }
 
         public void OnEnable()
         {
             this.SetAntiAliasing(4);
-            if (s_Window == null) s_Window = this;
-            if (s_Window != this)
+            if (instance == null) instance = this;
+            if (instance != this)
                 return;
 
-            s_Window.titleContent = GetLocalizedTitleContent();
+            instance.titleContent = GetLocalizedTitleContent();
 
             var windowResource = Resources.GetVisualTreeAsset("PackageManagerWindow.uxml");
             if (windowResource != null)
@@ -94,6 +94,7 @@ namespace UnityEditor.PackageManager.UI
                 mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
 
                 EditorApplication.focusChanged += OnFocusChanged;
+                Selection.selectionChanged += OnEditorSelectionChanged;
 
                 rootVisualElement.focusable = true;
                 rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -138,8 +139,8 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnDisable()
         {
-            if (s_Window == null) s_Window = this;
-            if (s_Window != this)
+            if (instance == null) instance = this;
+            if (instance != this)
                 return;
 
             PackageManagerPrefs.instance.lastUsedPackageFilter = PackageFiltering.instance.currentFilterTab;
@@ -154,76 +155,105 @@ namespace UnityEditor.PackageManager.UI
             packageStatusbar.OnDisable();
 
             EditorApplication.focusChanged -= OnFocusChanged;
+            Selection.selectionChanged -= OnEditorSelectionChanged;
         }
 
         public void OnDestroy()
         {
-            if (s_Window == null) s_Window = this;
-            if (s_Window != this)
-                return;
-
             foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
                 extension.OnWindowDestroy();
 
-            s_Window = null;
+            instance = null;
         }
 
         private void OnRefreshOperationFinish()
         {
             packageManagerToolbar.SetEnabled(true);
             packageDetails.packageToolbarContainer.SetEnabled(true);
-            SelectPackageAndFilter();
+
+            if (m_FilterToSelectAfterLoad != null && PageManager.instance.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
+                SelectPackageAndFilter();
         }
 
         private void SelectPackageAndFilter()
         {
-            if (m_FilterToSelectAfterLoad != null)
+            IPackageVersion version = null;
+            IPackage package = null;
+            if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
             {
-                PackageFiltering.instance.currentFilterTab = (PackageFilterTab)m_FilterToSelectAfterLoad;
+                var packageUniqueId = m_PackageToSelectOnLoaded.Split('@')[0];
+
+                PackageDatabase.instance.GetPackageAndVersion(packageUniqueId, m_PackageToSelectOnLoaded, out package, out version);
+                if (package == null)
+                    package = PackageDatabase.instance.GetPackage(m_PackageToSelectOnLoaded) ?? PackageDatabase.instance.GetPackageByDisplayName(m_PackageToSelectOnLoaded);
             }
 
-            if (string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
+            if (m_FilterToSelectAfterLoad == PackageFilterTab.AssetStore)
             {
-                m_FilterToSelectAfterLoad = null;
-            }
-            else
-            {
-                var package = PackageDatabase.instance.GetPackage(m_PackageToSelectOnLoaded)
-                    ?? PackageDatabase.instance.GetPackageByDisplayName(m_PackageToSelectOnLoaded);
+                PackageFiltering.instance.currentFilterTab = PackageFilterTab.AssetStore;
 
-                if (m_FilterToSelectAfterLoad == PackageFilterTab.AssetStore && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+                if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
                 {
                     if (package == null || package is PlaceholderPackage)
                         PageManager.instance.Fetch(m_PackageToSelectOnLoaded);
                     else
-                        PageManager.instance.GetCurrentPage().Load(package);
-
-                    m_FilterToSelectAfterLoad = null;
-                    m_PackageToSelectOnLoaded = null;
-                    return;
+                        PageManager.instance.GetPage(PackageFilterTab.AssetStore).Load(package, version);
                 }
 
-                if (package != null)
+                m_FilterToSelectAfterLoad = null;
+                m_PackageToSelectOnLoaded = null;
+                return;
+            }
+
+            if (package != null || m_FilterToSelectAfterLoad != null)
+            {
+                var tab = m_FilterToSelectAfterLoad ?? PackageFilterTab.All;
+                if (version != null)
                 {
-                    if (m_FilterToSelectAfterLoad == null)
-                    {
-                        var newFilterTab = PackageFilterTab.All;
-                        if (package.versions.Any(v => v.HasTag(PackageTag.BuiltIn)))
-                            newFilterTab = PackageFilterTab.BuiltIn;
-                        else
-                        {
-                            var installedVersion = package.versions.installed;
-                            if (installedVersion != null && installedVersion.isDirectDependency)
-                                newFilterTab = PackageFilterTab.InProject;
-                        }
-                        PackageFiltering.instance.currentFilterTab = newFilterTab;
-                    }
-
-                    PageManager.instance.SetSelected(package);
-
-                    m_FilterToSelectAfterLoad = null;
-                    m_PackageToSelectOnLoaded = null;
+                    if (!PackageManagerPrefs.instance.showPreviewPackages && version.HasTag(PackageTag.Preview))
+                        PackageManagerPrefs.instance.showPreviewPackages = true;
                 }
+
+                PackageFiltering.instance.currentFilterTab = tab;
+                if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
+                    PageManager.instance.GetPage(tab).SetSelected(package, version);
+
+                m_FilterToSelectAfterLoad = null;
+                m_PackageToSelectOnLoaded = null;
+            }
+        }
+
+        private void OnFocus()
+        {
+            packageList.AddToClassList("focus");
+            packageDetails.AddToClassList("focus");
+            packageList.OnFocus();
+        }
+
+        private void OnLostFocus()
+        {
+            packageList.RemoveFromClassList("focus");
+            packageDetails.RemoveFromClassList("focus");
+        }
+
+        private void OnEditorSelectionChanged()
+        {
+            if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded) || m_FilterToSelectAfterLoad != null)
+                return;
+
+            if (Selection.activeObject is PackageSelectionObject)
+            {
+                var packageSelectionObject = (PackageSelectionObject)Selection.activeObject;
+                IPackage package;
+                IPackageVersion version;
+
+                PackageDatabase.instance.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out package, out version);
+                if (package == null || version == null)
+                    return;
+
+                var tab = PageManager.instance.FindTab(packageSelectionObject.versionUniqueId);
+                PackageFiltering.instance.currentFilterTab = tab;
+                PageManager.instance.GetPage(tab).SetSelected(package, version);
             }
         }
 
@@ -268,9 +298,15 @@ namespace UnityEditor.PackageManager.UI
                 string packageId = null;
                 if (!string.IsNullOrEmpty(packageNameOrDisplayName))
                 {
-                    var package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName)
-                        ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
-                    packageId = package?.versions.primary.uniqueId ?? $"{packageNameOrDisplayName}@primary";
+                    var packageUniqueId = packageNameOrDisplayName.Split('@')[0];
+
+                    IPackageVersion version;
+                    IPackage package;
+                    PackageDatabase.instance.GetPackageAndVersion(packageUniqueId, packageNameOrDisplayName, out package, out version);
+                    if (package == null)
+                        package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName) ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
+
+                    packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? $"{packageNameOrDisplayName}@primary";
                 }
                 PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
             }
@@ -280,23 +316,33 @@ namespace UnityEditor.PackageManager.UI
 
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
-            s_Window = GetWindow<PackageManagerWindow>();
-            s_Window.minSize = new Vector2(700, 250);
-            if (!string.IsNullOrEmpty(packageIdOrDisplayName))
+            instance = GetWindow<PackageManagerWindow>();
+            instance.minSize = new Vector2(700, 250);
+            if (!string.IsNullOrEmpty(packageIdOrDisplayName) || filterTab != null)
             {
-                s_Window.packageManagerToolbar.SetCurrentSearch(searchText);
-                s_Window.m_PackageToSelectOnLoaded = packageIdOrDisplayName;
-                s_Window.m_FilterToSelectAfterLoad = filterTab;
-                if (refresh)
-                {
-                    PageManager.instance.Refresh(filterTab ?? PackageFilterTab.All);
-                }
-                else if (!PackageDatabase.instance.isEmpty)
-                {
-                    s_Window.SelectPackageAndFilter();
-                }
+                if (filterTab == null)
+                    filterTab = PageManager.instance.FindTab(packageIdOrDisplayName);
+
+                instance.m_FilterToSelectAfterLoad = filterTab;
+                instance.m_PackageToSelectOnLoaded = packageIdOrDisplayName;
+                instance.packageManagerToolbar.SetCurrentSearch(searchText);
+
+                if (refresh || PackageDatabase.instance.isEmpty)
+                    PageManager.instance.Refresh(filterTab);
+                else
+                    instance.SelectPackageAndFilter();
             }
-            s_Window.Show();
+            instance.Show();
+        }
+
+        internal static void CloseAll()
+        {
+            var windows = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
+            if (windows == null)
+                return;
+
+            foreach (var window in windows)
+                window.Close();
         }
 
         private VisualElementCache cache;

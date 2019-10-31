@@ -20,7 +20,7 @@ namespace UnityEngine
                 return null;
             }
         }
-        public bool   MoveNext() { return keepWaiting; }
-        public void   Reset() {}
+        public bool MoveNext() { return keepWaiting; }
+        public virtual void Reset() {}
     }
 }

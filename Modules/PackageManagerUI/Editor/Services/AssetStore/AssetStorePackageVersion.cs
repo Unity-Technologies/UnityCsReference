@@ -9,11 +9,12 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class AssetStorePackageVersion : BasePackageVersion
+    internal class AssetStorePackageVersion : BasePackageVersion, ISerializationCallbackReceiver
     {
         [SerializeField]
         private string m_Author;
@@ -28,13 +29,14 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private string m_LocalPath;
         [SerializeField]
-        private string m_VersionString;
-        [SerializeField]
         private string m_VersionId;
         [SerializeField]
         private List<SemVersion> m_SupportedUnityVersions;
+
         [SerializeField]
-        private SemVersion m_SupportedUnityVersion;
+        private string m_SupportedUnityVersionString;
+        private SemVersion? m_SupportedUnityVersion;
+
         [SerializeField]
         private List<PackageSizeInfo> m_SizeInfos;
 
@@ -66,7 +68,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public override string uniqueId => m_VersionId;
+        public override string uniqueId => $"{m_PackageUniqueId}@{m_VersionId}";
 
         public override bool isInstalled => false;
 
@@ -84,7 +86,7 @@ namespace UnityEditor.PackageManager.UI
 
         public override string versionId => m_VersionId;
 
-        public override SemVersion supportedVersion => m_SupportedUnityVersion;
+        public override SemVersion? supportedVersion => m_SupportedUnityVersion;
 
         public override IEnumerable<SemVersion> supportedVersions => m_SupportedUnityVersions;
 
@@ -113,7 +115,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_VersionString = localInfo?.versionString ?? fetchedInfo.versionString ?? string.Empty;
             m_VersionId = localInfo?.versionId ?? fetchedInfo.versionId ?? string.Empty;
-            m_Version = SemVersion.TryParse(m_VersionString.Trim(), out m_Version) ? m_Version : new SemVersion(0);
+            SemVersionParser.TryParse(m_VersionString.Trim(), out m_Version);
 
             var publishDateString = localInfo?.publishedDate ?? fetchedInfo.publishedDate ?? string.Empty;
             m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;
@@ -123,20 +125,27 @@ namespace UnityEditor.PackageManager.UI
             if (localInfo != null)
             {
                 var simpleVersion = Regex.Replace(localInfo.supportedVersion, @"(?<major>\d+)\.(?<minor>\d+).(?<patch>\d+)[abfp].+", "${major}.${minor}.${patch}");
-                SemVersion.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
+                SemVersionParser.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
+                m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
             else if (fetchedInfo.supportedVersions?.Any() ?? false)
             {
-                SemVersion version;
                 foreach (var supportedVersion in fetchedInfo.supportedVersions)
-                    if (SemVersion.TryParse(supportedVersion as string, out version))
-                        m_SupportedUnityVersions.Add(version);
-                m_SupportedUnityVersions.Sort((left, right) => left.CompareByPrecedence(right));
+                {
+                    SemVersion? version;
+                    bool isVersionParsed = SemVersionParser.TryParse(supportedVersion as string, out version);
+
+                    if (isVersionParsed)
+                        m_SupportedUnityVersions.Add((SemVersion)version);
+                }
+
+                m_SupportedUnityVersions.Sort((left, right) => (left).CompareTo(right));
                 m_SupportedUnityVersion = m_SupportedUnityVersions.LastOrDefault();
+                m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
 
             m_SizeInfos = new List<PackageSizeInfo>(fetchedInfo.sizeInfos);
-            m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareByPrecedence(right.supportedUnityVersion));
+            m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareTo(right.supportedUnityVersion));
 
             var state = fetchedInfo.state ?? string.Empty;
             if (state.Equals("published", StringComparison.InvariantCultureIgnoreCase))
@@ -151,6 +160,12 @@ namespace UnityEditor.PackageManager.UI
         {
             m_Errors.Add(error);
             m_Tag &= ~(PackageTag.Downloadable | PackageTag.Importable);
+        }
+
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+            SemVersionParser.TryParse(m_SupportedUnityVersionString, out m_SupportedUnityVersion);
         }
     }
 }

@@ -6,20 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 
 namespace UnityEditor.Profiling
 {
-    [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/FrameDataView.h")]
+    [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/HierarchyFrameDataView.h")]
     [StructLayout(LayoutKind.Sequential)]
-    public class HierarchyFrameDataView : IDisposable
+    public class HierarchyFrameDataView : FrameDataView
     {
-        IntPtr m_Ptr;
-
         public const int invalidSampleId = -1;
 
         [Flags]
@@ -52,73 +48,28 @@ namespace UnityEditor.Profiling
             m_Ptr = Internal_Create(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
 
-        ~HierarchyFrameDataView()
-        {
-            DisposeInternal();
-        }
-
-        public void Dispose()
-        {
-            DisposeInternal();
-            GC.SuppressFinalize(this);
-        }
-
-        // Protected implementation of Dispose pattern.
-        void DisposeInternal()
-        {
-            if (m_Ptr != IntPtr.Zero)
-            {
-                Internal_Destroy(m_Ptr);
-                m_Ptr = IntPtr.Zero;
-            }
-        }
-
         [ThreadSafe]
         static extern IntPtr Internal_Create(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending);
 
+        public extern ViewModes viewMode { [ThreadSafe] get; }
+
+        public extern int sortColumn { [ThreadSafe] get; }
+
+        public extern bool sortColumnAscending { [ThreadSafe] get; }
+
         [ThreadSafe]
-        static extern void Internal_Destroy(IntPtr ptr);
-
-
-        public bool valid
-        {
-            get
-            {
-                if (m_Ptr == IntPtr.Zero)
-                    return false;
-
-                return GetRootItemID() != invalidSampleId;
-            }
-        }
-
-        public extern float frameFps { get; }
-
-        public extern float frameTimeMs { get; }
-
-        public extern float frameGpuTimeMs { get; }
-
-        public extern int frameIndex { get; }
-
-        public extern int threadIndex { get; }
-
-        public extern string threadGroupName { get; }
-
-        public extern string threadName { get; }
-
-        public extern ulong threadId { get; }
-
-        public extern ViewModes viewMode { get; }
-
-        public extern int sortColumn { get; }
-
-        public extern bool sortColumnAscending { get; }
-
         public extern int GetRootItemID();
 
+        [ThreadSafe]
         public extern int GetItemMarkerID(int id);
 
+        [ThreadSafe]
         public extern MarkerFlags GetItemMarkerFlags(int id);
 
+        [ThreadSafe]
+        public extern ushort GetItemCategoryIndex(int id);
+
+        [ThreadSafe]
         public extern int GetItemDepth(int id);
 
         public extern bool HasItemChildren(int id);
@@ -134,10 +85,13 @@ namespace UnityEditor.Profiling
         [NativeThrows]
         public extern void GetItemDescendantsThatHaveChildren(int id, List<int> outChildren);
 
+        [ThreadSafe]
         public extern string GetItemName(int id);
 
+        [ThreadSafe]
         public extern int GetItemInstanceID(int id);
 
+        [ThreadSafe]
         public extern string GetItemColumnData(int id, int column);
 
         public float GetItemColumnDataAsSingle(int id, int column)
@@ -145,18 +99,25 @@ namespace UnityEditor.Profiling
             return GetItemColumnDataAsFloat(id, column);
         }
 
+        [ThreadSafe]
         public extern float GetItemColumnDataAsFloat(int id, int column);
 
+        [ThreadSafe]
         public extern double GetItemColumnDataAsDouble(int id, int column);
 
+        [ThreadSafe]
         public extern int GetItemMetadataCount(int id);
 
+        [ThreadSafe]
         public extern string GetItemMetadata(int id, int index);
 
+        [ThreadSafe]
         public extern float GetItemMetadataAsFloat(int id, int index);
 
+        [ThreadSafe]
         public extern long GetItemMetadataAsLong(int id, int index);
 
+        [ThreadSafe]
         internal extern string GetItemTooltip(int id, int column);
 
         public string ResolveItemCallstack(int id)
@@ -169,6 +130,7 @@ namespace UnityEditor.Profiling
             GetItemMergedSampleCallstack(id, 0, outCallstack);
         }
 
+        [ThreadSafe]
         public extern int GetItemMergedSamplesCount(int id);
 
         public void GetItemMergedSamplesColumnData(int id, int column, List<string> outStrings)
@@ -180,6 +142,7 @@ namespace UnityEditor.Profiling
         }
 
         [NativeMethod("GetItemMergedSamplesColumnData")]
+        [ThreadSafe]
         extern void GetItemMergedSamplesColumnDataInternal(int id, int column, List<string> outStrings);
 
         public void GetItemMergedSamplesColumnDataAsFloats(int id, int column, List<float> outValues)
@@ -191,6 +154,7 @@ namespace UnityEditor.Profiling
         }
 
         [NativeMethod("GetItemMergedSamplesColumnDataAsFloats")]
+        [ThreadSafe]
         extern void GetItemMergedSamplesColumnDataAsFloatsInternal(int id, int column, List<float> outValues);
 
         public void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds)
@@ -202,6 +166,7 @@ namespace UnityEditor.Profiling
         }
 
         [NativeMethod("GetItemMergedSamplesInstanceID")]
+        [ThreadSafe]
         extern void GetItemMergedSamplesInstanceIDInternal(int id, List<int> outInstanceIds);
 
         public void GetItemMergedSampleCallstack(int id, int sampleIndex, List<ulong> outCallstack)
@@ -213,17 +178,8 @@ namespace UnityEditor.Profiling
         }
 
         [NativeMethod("GetItemMergedSampleCallstack")]
+        [ThreadSafe]
         extern void GetItemMergedSampleCallstackInternal(int id, int sampleIndex, List<ulong> outCallstack);
-
-        [StructLayout(LayoutKind.Sequential)]
-        [RequiredByNativeCode]
-        public struct MethodInfo
-        {
-            public string methodName;
-            public string sourceFileName;
-            public uint sourceFileLine;
-        }
-        public extern MethodInfo ResolveMethodInfo(ulong addr);
 
         public extern string ResolveItemMergedSampleCallstack(int id, int sampleIndex);
 
@@ -252,41 +208,7 @@ namespace UnityEditor.Profiling
             return propertyPathBuilder.ToString();
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        struct Data
-        {
-            public IntPtr ptr;
-            public int size;
-        }
-
-        extern AtomicSafetyHandle GetSafetyHandle();
-
-        public NativeArray<T> GetFrameMetaData<T>(Guid id, int tag) where T : struct
-        {
-            return GetFrameMetaData<T>(id, tag, 0);
-        }
-
-        public unsafe NativeArray<T> GetFrameMetaData<T>(Guid id, int tag, int index) where T : struct
-        {
-            var stride = UnsafeUtility.SizeOf<T>();
-            var data = GetFrameMetaData(id.ToByteArray(), tag, index);
-            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(data.ptr.ToPointer(), data.size / stride, Allocator.None);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetSafetyHandle());
-            return array;
-        }
-
-        public int GetFrameMetaDataCount(Guid id, int tag)
-        {
-            return GetFrameMetaDataCount(id.ToByteArray(), tag);
-        }
-
-        extern Data GetFrameMetaData(byte[] statsId, int tag, int index);
-
-        extern int GetFrameMetaDataCount(byte[] statsId, int tag);
-
         public extern void Sort(int sortColumn, bool sortAscending);
-
-        internal static extern UnityEngine.Color32 GetMarkerCategoryColor(int category);
 
         public override bool Equals(object obj)
         {
