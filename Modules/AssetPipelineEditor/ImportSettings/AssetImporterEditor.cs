@@ -554,7 +554,6 @@ namespace UnityEditor.Experimental.AssetImporters
                     case 0:
                         Apply(); // we need to call Apply before re-importing in case the user overriden it.
                         ImportAssets(assetPaths.ToArray());
-                        ResetValues();
                         break;
                     case 1:
                         return false;

@@ -275,7 +275,11 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     }
                     else
                     {
-                        m_UserInfo.errorMessage = httpClient.text;
+                        // At this point if the request return a 400, this mean the AuthCode is not valid anymore, we should restart
+                        // the process from the beginning
+                        m_UserInfo.authCode = string.Empty;
+                        GetAuthCode();
+                        return;
                     }
 
                     OnDoneFetchUserInfo();

@@ -52,6 +52,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public BuildTarget BuildTarget { get; set; }
         public SupportedLanguage Language { get; set; }
         public string Filename { get; set; }
+
+        public string PdbFilename
+        {
+            get
+            {
+                return $"{AssetPath.GetAssemblyNameWithoutExtension(Filename)}.pdb";
+            }
+        }
         public string OutputDirectory { get; set; }
 
         /// <summary>
@@ -76,6 +84,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
+        public string PdbFullPath { get { return AssetPath.Combine(OutputDirectory, PdbFilename); } }
 
         public string[] GetAllReferences()
         {

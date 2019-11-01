@@ -990,23 +990,6 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetGraphicsJobModeForPlatform(BuildTarget platform, GraphicsJobMode gfxJobMode);
 
-        [Obsolete("GetPlatformVuforiaEnabled(BuildTargetGroup targetGroup) has been deprecated. Use vuforiaEnabled instead.")]
-        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-        public static extern bool GetPlatformVuforiaEnabled(BuildTargetGroup targetGroup);
-
-        [Obsolete("SetPlatformVuforiaEnabled(BuildTargetGroup targetGroup, bool enabled) has been deprecated. Use vuforiaEnabled instead.")]
-        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-        public static extern void SetPlatformVuforiaEnabled(BuildTargetGroup targetGroup, bool enabled);
-
-        public static extern bool vuforiaEnabled
-        {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-            get;
-
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-            set;
-        }
-
         [StaticAccessor("GetPlayerSettings()")]
         public static extern bool GetWsaHolographicRemotingEnabled();
 

@@ -5365,6 +5365,9 @@
     <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VisualEffectUtility.bindings.cs">
       <Link>Modules\VFXEditor\Public\ScriptBindings\VisualEffectUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\VFXEditor\Public\VisualEffectEditorDefault.cs">
+      <Link>Modules\VFXEditor\Public\VisualEffectEditorDefault.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\VREditor\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs">
       <Link>Modules\VREditor\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs</Link>
     </Compile>

@@ -21,6 +21,7 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
         m_AssemblyFilename = scriptAssembly.Filename;
         Name = Path.GetFileNameWithoutExtension(m_AssemblyFilename);
         References = scriptAssembly.GetAllReferences();
+        Defines = scriptAssembly.Defines;
 
         m_OutputPath = outputPath;
     }
@@ -35,6 +36,7 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
         var targetAssemblyReferences = targetAssembly.References.Select(a => a.FullPath(outputPath));
 
         References = precompiledAssemblyReferences.Concat(targetAssemblyReferences).ToArray();
+        Defines = targetAssembly.Defines;
 
         m_OutputPath = outputPath;
     }
@@ -63,6 +65,7 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
 
     public string Name { get; set; }
     public string[] References { get; set; }
+    public string[] Defines { get; private set; }
 
     public void WriteAssembly()
     {

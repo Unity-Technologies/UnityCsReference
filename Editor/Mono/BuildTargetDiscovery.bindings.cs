@@ -66,8 +66,7 @@ namespace UnityEditor
             SupportStereoInstancingRendering    = (1 << 1),
             SupportStereoMultiviewRendering     = (1 << 2),
             SupportStereo360Capture             = (1 << 3),
-            SupportVuforia                      = (1 << 4),
-            SupportTango                        = (1 << 5)
+            SupportTango                        = (1 << 4)
         }
 
         [StructLayout(LayoutKind.Sequential)]

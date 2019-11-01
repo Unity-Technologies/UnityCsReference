@@ -501,8 +501,6 @@ namespace TreeEditor
             s_SelectedNode = null;
             s_SelectedPoint = -1;
 
-            EditorUtility.SetDirty(target);
-
             Tree tree = target as Tree;
             if (tree == null) return;
             Renderer treeRenderer = tree.GetComponent<Renderer>();

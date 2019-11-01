@@ -906,13 +906,6 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
-            // don't bleed our scene view rendering into game view
-            var playModeView = PlayModeView.GetMainPlayModeView();
-            if (playModeView && playModeView.m_Parent != null && m_Parent != null && playModeView.m_Parent == m_Parent)
-            {
-                playModeView.m_Parent.backgroundValid = false;
-            }
-
             if (s_LastActiveSceneView == this)
                 SceneViewMotion.ResetMotion();
         }
@@ -943,7 +936,6 @@ namespace UnityEditor
 
             wantsMouseMove = true;
             wantsMouseEnterLeaveWindow = true;
-            dontClearBackground = true;
             s_SceneViews.Add(this);
 
             m_SceneViewOverlay = new SceneViewOverlay(this);

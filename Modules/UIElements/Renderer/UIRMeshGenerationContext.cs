@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
 {
     public struct Vertex
     {
-        public readonly static float nearZ = -1.0f;
+        public readonly static float nearZ = UIRUtility.k_MeshPosZ;
 
         public Vector3 position;
         public Color32 tint;

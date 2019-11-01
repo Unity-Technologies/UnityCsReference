@@ -17,13 +17,9 @@ namespace UnityEditor.PackageManager.UI.AssetStore
         public static IAssetStoreCache instance => s_Instance ?? AssetStoreCacheInternal.instance;
 
         [Serializable]
-        [FilePathAttribute("Asset Store/Cache/AssetStore.cache", FilePathAttribute.Location.AppDataFolder)]
         internal class AssetStoreCacheInternal : ScriptableSingleton<AssetStoreCacheInternal>, IAssetStoreCache, ISerializationCallbackReceiver
         {
             private Dictionary<long, string> m_ProductETags = new Dictionary<long, string>();
-
-            [NonSerialized]
-            internal bool m_IsModified;
 
             [SerializeField]
             private long[] m_SerializedIds = new long[0];
@@ -40,18 +36,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             public void OnAfterDeserialize()
             {
                 for (var i = 0; i < m_SerializedIds.Length; i++)
-                {
                     m_ProductETags[m_SerializedIds[i]] = m_SerializedETags[i];
-                }
-            }
-
-            private void OnDisable()
-            {
-                if (m_IsModified)
-                {
-                    Save(true);
-                    m_IsModified = false;
-                }
             }
 
             public string GetLastETag(long productId)
@@ -61,12 +46,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             public void SetLastETag(long productId, string etag)
             {
-                var lastEtag = GetLastETag(productId);
-                if (etag != lastEtag)
-                {
-                    m_ProductETags[productId] = etag;
-                    m_IsModified = true;
-                }
+                m_ProductETags[productId] = etag;
             }
 
             public Texture2D LoadImage(long productId, string url)

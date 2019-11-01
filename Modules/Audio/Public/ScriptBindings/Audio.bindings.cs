@@ -649,41 +649,84 @@ namespace UnityEngine
 
         extern public AudioMixerGroup outputAudioMixerGroup { get; set; }
 
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeMethod(Name = "AudioSourceBindings::PlayOnDualShock4", HasExplicitThis = true)]
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::PlayOnDualShock4", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use PlayOnGamepad instead")]
         extern public bool PlayOnDualShock4(Int32 userId);
 
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeMethod(Name = "AudioSourceBindings::DisableDualShock4Output", HasExplicitThis = true)]
-        extern public bool DisableDualShock4Output();
-
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeMethod(Name = "AudioSourceBindings::PlayOnDualShock4PadIndex", HasExplicitThis = true)]
-        extern public bool PlayOnDualShock4PadIndex(Int32 padIndex);
-
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeName("SetPS4DualShock4PadSpeakerMixLevel")]
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetDualShock4SpeakerMixLevel", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use SetGamepadSpeakerMixLevel instead")]
         extern public bool SetDualShock4PadSpeakerMixLevel(Int32 userId, Int32 mixLevel);
 
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeName("SetPS4DualShock4PadSpeakerMixLevelPadIndex")]
-        extern public bool SetDualShock4PadSpeakerMixLevelPadIndex(Int32 padIndex, Int32 mixLevel);
-
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeName("SetPS4DualShock4PadSpeakerMixLevelDefault")]
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetDualShock4SpeakerMixLevelDefault", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use SetGamepadSpeakerMixLevelDefault instead")]
         extern public bool SetDualShock4PadSpeakerMixLevelDefault(Int32 userId);
 
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeName("SetPS4DualShock4PadSpeakerMixLevelDefaultPadIndex")]
-        extern public bool SetDualShock4PadSpeakerMixLevelDefaultPadIndex(Int32 padIndex);
-
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeName("SetPS4DualShock4PadSpeakerRestrictedAudio")]
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetDualShock4SpeakerRestrictedAudio", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use SetgamepadSpeakerRestrictedAudio instead")]
         extern public bool SetDualShock4PadSpeakerRestrictedAudio(Int32 userId, bool restricted);
 
-        [NativeConditional("PS4_PAD_SPEAKER")]
-        [NativeName("SetPS4DualShock4PadSpeakerRestrictedAudioPadIndex")]
-        extern public bool SetDualShock4PadSpeakerRestrictedAudioPadIndex(Int32 padIndex, bool restricted);
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::PlayOnGamepad", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use PlayOnGamepad instead")]
+        extern public bool PlayOnDualShock4PadIndex(Int32 slot);
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::DisableGamepadOutput", HasExplicitThis = true)]
+        [Obsolete("Use DisableGamepadOutput instead")]
+        extern public bool DisableDualShock4Output();
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetGamepadSpeakerMixLevel", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use SetGamepadSpeakerMixLevel instead")]
+        extern public bool SetDualShock4PadSpeakerMixLevelPadIndex(Int32 slot, Int32 mixLevel);
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetGamepadSpeakerMixLevelDefault", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use SetGamepadSpeakerMixLevelDefault instead")]
+        extern public bool SetDualShock4PadSpeakerMixLevelDefaultPadIndex(Int32 slot);
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetGamepadSpeakerRestrictedAudio", HasExplicitThis = true, ThrowsException = true)]
+        [Obsolete("Use SetGamepadSpeakerRestrictedAudio instead")]
+        extern public bool SetDualShock4PadSpeakerRestrictedAudioPadIndex(Int32 slot, bool restricted);
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::PlayOnGamepad", HasExplicitThis = true, ThrowsException = true)]
+        extern public bool PlayOnGamepad(Int32 slot);
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::DisableGamepadOutput", HasExplicitThis = true)]
+        extern public bool DisableGamepadOutput();
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetGamepadSpeakerMixLevel", HasExplicitThis = true, ThrowsException = true)]
+        extern public bool SetGamepadSpeakerMixLevel(Int32 slot, Int32 mixLevel);
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetGamepadSpeakerMixLevelDefault", HasExplicitThis = true, ThrowsException = true)]
+        extern public bool SetGamepadSpeakerMixLevelDefault(Int32 slot);
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "AudioSourceBindings::SetGamepadSpeakerRestrictedAudio", HasExplicitThis = true, ThrowsException = true)]
+        extern public bool SetGamepadSpeakerRestrictedAudio(Int32 slot, bool restricted);
+
+        public enum GamepadSpeakerOutputType
+        {
+            Speaker = 0,
+            Vibration = 1,
+        }
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        [NativeMethod(Name = "GamepadSpeakerSupportsOutputType", HasExplicitThis = false)]
+        extern static public bool GamepadSpeakerSupportsOutputType(GamepadSpeakerOutputType outputType);
+
+
+        [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
+        extern public GamepadSpeakerOutputType gamepadSpeakerOutputType { get; set; }
 
         // Plays the ::ref::clip with a certain delay (the optional delay argument is deprecated since 4.1a3) and the functionality has been replaced by PlayDelayed.
         [ExcludeFromDocs]

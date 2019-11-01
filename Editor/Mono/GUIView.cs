@@ -78,7 +78,6 @@ namespace UnityEditor
         int m_AntiAliasing = 1;
         EventInterests m_EventInterests;
         bool m_AutoRepaintOnSceneChange = false;
-        private bool m_BackgroundValid = false;
 
         internal bool SendEvent(Event e)
         {
@@ -107,14 +106,11 @@ namespace UnityEditor
             Internal_SetWantsMouseEnterLeaveWindow(m_EventInterests.wantsMouseMove);
 
             panel.visualTree.SetSize(windowPosition.size);
-
-            m_BackgroundValid = false;
         }
 
         internal void RecreateContext()
         {
             Internal_Recreate(m_DepthBufferBits, m_AntiAliasing);
-            m_BackgroundValid = false;
         }
 
         public EventInterests eventInterests
@@ -152,12 +148,6 @@ namespace UnityEditor
 
                 Internal_SetWantsMouseEnterLeaveWindow(wantsMouseEnterLeaveWindow);
             }
-        }
-
-        internal bool backgroundValid
-        {
-            get { return m_BackgroundValid; }
-            set { m_BackgroundValid = value; }
         }
 
         public bool autoRepaintOnSceneChange
@@ -269,8 +259,6 @@ namespace UnityEditor
             }
 
             Internal_SetPosition(windowPosition);
-
-            m_BackgroundValid = false;
 
             panel.visualTree.SetSize(windowPosition.size);
 
