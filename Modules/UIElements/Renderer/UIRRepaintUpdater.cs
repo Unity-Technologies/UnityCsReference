@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
         {
             using (s_MarkerDrawChain.Auto())
             {
-                renderChain.Render(viewport, projection);
+                renderChain.Render(viewport, projection, panel.clearFlags);
             }
         }
 

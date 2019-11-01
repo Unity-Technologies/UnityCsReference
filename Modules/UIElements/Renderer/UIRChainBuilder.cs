@@ -205,7 +205,7 @@ namespace UnityEngine.UIElements.UIR
 
         internal static Action OnPreRender = null;
 
-        public void Render(Rect viewport, Matrix4x4 projection)
+        public void Render(Rect viewport, Matrix4x4 projection, PanelClearFlags clearFlags)
         {
             s_MarkerRender.Begin();
             m_Stats = new ChainBuilderStats();
@@ -357,7 +357,7 @@ namespace UnityEngine.UIElements.UIR
                 BeforeDrawChain(device);
 
             Exception immediateException = null;
-            device.DrawChain(m_FirstCommand, viewport, projection, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
+            device.DrawChain(m_FirstCommand, viewport, projection, clearFlags, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
                 (panel as BaseVisualElementPanel).scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
                 ref immediateException);
 

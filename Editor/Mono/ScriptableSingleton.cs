@@ -6,7 +6,6 @@ using UnityEngine;
 using System;
 using System.IO;
 using UnityEditorInternal;
-using Object = UnityEngine.Object;
 
 
 namespace UnityEditor
@@ -17,7 +16,7 @@ namespace UnityEditor
     [AttributeUsage(AttributeTargets.Class)]
     internal class FilePathAttribute : Attribute
     {
-        public enum Location { PreferencesFolder, ProjectFolder, AppDataFolder }
+        public enum Location { PreferencesFolder, ProjectFolder }
 
         private string filePath;
         private string relativePath;
@@ -62,8 +61,6 @@ namespace UnityEditor
 
             if (location == Location.PreferencesFolder)
                 return InternalEditorUtility.unityPreferencesFolder + "/" + relativePath;
-            else if (location == Location.AppDataFolder)
-                return InternalEditorUtility.userAppDataFolder + "/" + relativePath;
             else //location == Location.ProjectFolder
                 return relativePath;
         }

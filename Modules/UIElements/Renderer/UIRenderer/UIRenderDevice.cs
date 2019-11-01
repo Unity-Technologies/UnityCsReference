@@ -669,7 +669,7 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerBeforeDraw.End();
         }
 
-        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, Texture shaderInfo,
+        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, PanelClearFlags clearFlags, Texture atlas, Texture gradientSettings, Texture shaderInfo,
             float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, ref Exception immediateException)
         {
             var usesStraightYCoordinateSystem = m_APIUsesStraightYCoordinateSystem;
@@ -692,6 +692,11 @@ namespace UnityEngine.UIElements.UIR
                     UIR.Utility.SetVectorArray<Vector4>(standardMaterial, s_ClipRectsPropID, clipRects);
                 Set1PixelSizeOnMaterial(drawParams, standardMaterial);
                 standardMaterial.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                if (clearFlags != PanelClearFlags.None)
+                {
+                    GL.Clear((clearFlags & PanelClearFlags.Depth) != 0, // Clearing may impact MVP
+                        (clearFlags & PanelClearFlags.Color) != 0, Color.clear, UIRUtility.k_ClearZ);
+                }
                 GL.modelview = drawParams.view.Peek().transform;
                 GL.LoadProjectionMatrix(drawParams.projection);
             }
@@ -889,7 +894,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         // Called every frame to draw one entire UI window
-        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, Texture shaderInfo,
+        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, PanelClearFlags clearFlags, Texture atlas, Texture gradientSettings, Texture shaderInfo,
             float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, ref Exception immediateException)
         {
             if (head == null)
@@ -898,7 +903,7 @@ namespace UnityEngine.UIElements.UIR
             BeforeDraw();
             Utility.ProfileDrawChainBegin();
 
-            EvaluateChain(head, viewport, projection, atlas, gradientSettings, shaderInfo, pixelsPerPoint, transforms, clipRects, ref immediateException);
+            EvaluateChain(head, viewport, projection, clearFlags, atlas, gradientSettings, shaderInfo, pixelsPerPoint, transforms, clipRects, ref immediateException);
 
             Utility.ProfileDrawChainEnd();
 

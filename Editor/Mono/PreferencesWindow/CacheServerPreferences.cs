@@ -428,18 +428,16 @@ namespace UnityEditor
                 if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
                 {
                     var address = s_CacheServer2IPAddress.Split(':');
-                    if (address.Length == 2) // Expected format is '0.0.0.0:0'
-                    {
-                        var ip = address[0];
-                        var port = Convert.ToUInt16(address[1]);
+                    var ip = address[0];
+                    UInt16 port = 0;
+                    if (address.Length == 2)
+                        port = Convert.ToUInt16(address[1]);
 
-                        if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
-                            s_ConnectionState = ConnectionState.Success;
-                        else
-                            s_ConnectionState = ConnectionState.Failure;
-                    }
+                    if (AssetDatabaseExperimental.CanConnectToCacheServer(ip, port))
+                        s_ConnectionState = ConnectionState.Success;
                     else
                         s_ConnectionState = ConnectionState.Failure;
+
                 }
             }
 

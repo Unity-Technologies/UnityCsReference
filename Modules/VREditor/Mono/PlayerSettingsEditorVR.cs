@@ -124,8 +124,7 @@ namespace UnityEditorInternal.VR
 
         internal bool TargetGroupSupportsAugmentedReality(BuildTargetGroup targetGroup)
         {
-            return BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportVuforia) ||
-                BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportTango);
+            return BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportTango);
         }
 
         internal void XRSectionGUI(BuildTargetGroup targetGroup, int sectionIndex)
@@ -177,13 +176,9 @@ namespace UnityEditorInternal.VR
 
                     TangoGUI(targetGroup);
 
-                    VuforiaGUI(targetGroup);
-
                     RemotingWSAHolographicGUI(targetGroup);
 
                     Stereo360CaptureGUI(targetGroup);
-
-                    ErrorOnARDeviceIncompatibility(targetGroup);
 
                     WarnOnGraphicsAPIIncompatibility(targetGroup);
                 }
@@ -536,22 +531,11 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
-        {
-            if (targetGroup == BuildTargetGroup.Android)
-            {
-                if (PlayerSettings.Android.ARCoreEnabled && PlayerSettings.vuforiaEnabled)
-                {
-                    EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
-                }
-            }
-        }
-
         private void WarnOnGraphicsAPIIncompatibility(BuildTargetGroup targetGroup)
         {
             if (targetGroup == BuildTargetGroup.Android && PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan))
             {
-                if (PlayerSettings.Android.ARCoreEnabled || PlayerSettings.vuforiaEnabled || PlayerSettings.virtualRealitySupported)
+                if (PlayerSettings.Android.ARCoreEnabled || PlayerSettings.virtualRealitySupported)
                 {
                     EditorGUILayout.HelpBox("XR is currently not supported when using the Vulkan Graphics API.\nPlease go to 'Other Settings' and remove 'Vulkan' from the list of Graphics APIs.", MessageType.Warning);
                 }
@@ -565,41 +549,6 @@ namespace UnityEditorInternal.VR
 
             // Google Tango settings
             EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
-        }
-
-        internal void VuforiaGUI(BuildTargetGroup targetGroup)
-        {
-            // Vuforia is not supported in the Linux Editor
-            if (Application.platform == RuntimePlatform.LinuxEditor)
-                return;
-
-            if (!BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportVuforia))
-                return;
-
-            m_SharedSettingShown = true;
-
-            // Disable toggle when Vuforia is in the VRDevice list and VR Supported == true
-            bool vuforiaEnabled;
-            var shouldDisableScope = VREditor.GetVREnabledOnTargetGroup(targetGroup) && GetVRDeviceElementIsInList(targetGroup, "Vuforia");
-            using (new EditorGUI.DisabledScope(shouldDisableScope))
-            {
-                if (shouldDisableScope && !PlayerSettings.vuforiaEnabled) // Force Vuforia AR on if Vuforia is in the VRDevice List
-                    PlayerSettings.vuforiaEnabled = true;
-
-                vuforiaEnabled = PlayerSettings.vuforiaEnabled;
-
-                EditorGUI.BeginChangeCheck();
-                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Vuforia Augmented Reality Supported*"), vuforiaEnabled);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.vuforiaEnabled = vuforiaEnabled;
-                }
-            }
-
-            if (shouldDisableScope)
-            {
-                EditorGUILayout.HelpBox("Vuforia Augmented Reality is required when using the Vuforia Virtual Reality SDK.", MessageType.Info);
-            }
         }
 
         internal void RemotingWSAHolographicGUI(BuildTargetGroup targetGroup)

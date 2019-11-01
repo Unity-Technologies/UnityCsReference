@@ -90,8 +90,11 @@ namespace UnityEditor.Experimental.TerrainAPI
             EditorGUI.BeginChangeCheck();
 
             EditorGUILayout.Space();
+            var cacheFieldWidth = EditorGUIUtility.fieldWidth;
+            var cacheLabelWIdth = EditorGUIUtility.labelWidth;
             Editor.DrawFoldoutInspector(terrain.materialTemplate, ref m_TemplateMaterialEditor);
-
+            EditorGUIUtility.fieldWidth = cacheFieldWidth;
+            EditorGUIUtility.labelWidth = cacheLabelWIdth;
             EditorGUILayout.Space();
 
             if (m_SelectedTerrainLayerIndex == -1)

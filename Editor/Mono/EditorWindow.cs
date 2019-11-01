@@ -136,7 +136,6 @@ namespace UnityEditor
         Vector2 m_GameViewTargetSize;
 
         bool m_IsPlayModeView;
-        bool m_DontClearBackground;
         EventInterests m_EventInterests = new EventInterests();
         bool m_DisableInputEvents;
 
@@ -310,21 +309,6 @@ namespace UnityEditor
             GUI.Label(r, GUIContent.none, EditorStyles.notificationBackground);
             EditorGUI.DoDropShadowLabel(r, m_Notification, scaledNotificationText, .3f);
         }
-
-        internal bool dontClearBackground
-        {
-            get
-            {
-                return m_DontClearBackground;
-            }
-            set
-            {
-                m_DontClearBackground = value;
-                if (m_Parent && m_Parent.actualView == this)
-                    m_Parent.backgroundValid = false;
-            }
-        }
-
 
         // Does the window automatically repaint whenever the scene has changed?
         public bool autoRepaintOnSceneChange

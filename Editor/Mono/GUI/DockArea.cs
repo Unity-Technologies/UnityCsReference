@@ -310,7 +310,6 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            ClearBackground();
             EditorGUIUtility.ResetGUIState();
 
             // Exit if the window was destroyed after entering play mode or on domain-reload.
@@ -1062,7 +1061,6 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            ClearBackground();
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
 

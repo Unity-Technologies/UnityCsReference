@@ -2167,6 +2167,9 @@
     <Compile Include="..\..\Modules\UIElements\PopupWindow.cs">
       <Link>Modules\UIElements\PopupWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\ProjectionUtils.cs">
+      <Link>Modules\UIElements\ProjectionUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRAtlasAllocator.cs">
       <Link>Modules\UIElements\Renderer\UIRAtlasAllocator.cs</Link>
     </Compile>

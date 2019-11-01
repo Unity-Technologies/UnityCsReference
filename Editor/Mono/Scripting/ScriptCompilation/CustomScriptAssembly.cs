@@ -123,7 +123,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 (includePlatforms != null && includePlatforms.Length > 0))
                 throw new System.Exception("Both 'excludePlatforms' and 'includePlatforms' are set.");
 
-            if (autoReferenced && UnityCodeGenHelpers.IsCodeGen(name, includesExtension: false))
+            if (autoReferenced && UnityCodeGenHelpers.IsCodeGen(name))
             {
                 throw new Exception($"Assembly '{name}' is a CodeGen assembly and cannot be Auto Referenced");
             }
@@ -245,7 +245,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             get
             {
-                var assemblyFlags = AssemblyFlags.None;
+                var assemblyFlags = AssemblyFlags.UserAssembly;
 
                 if (IncludePlatforms != null && IncludePlatforms.Length == 1 && IncludePlatforms[0].BuildTarget == BuildTarget.NoTarget)
                     assemblyFlags |= AssemblyFlags.EditorOnly;

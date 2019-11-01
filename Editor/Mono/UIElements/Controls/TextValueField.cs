@@ -81,7 +81,7 @@ namespace UnityEditor.UIElements
         public override void SetValueWithoutNotify(TValueType newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            if (!isDelayed && textValueInput.m_UpdateTextFromValue)
+            if (textValueInput.m_UpdateTextFromValue)
             {
                 // Value is the same but the text might not be in sync
                 // In the case of an expression like 2+2, the text might not be equal to the result
