@@ -49,7 +49,7 @@ namespace UnityEngine
         public extern float frameRate { get; set; }
 
         [FreeFunction("AnimationClipBindings::Internal_SetCurve", HasExplicitThis = true)]
-        public extern void SetCurve([NotNull] string relativePath, Type type, [NotNull] string propertyName, AnimationCurve curve);
+        public extern void SetCurve([NotNull] string relativePath, [NotNull] Type type, [NotNull] string propertyName, AnimationCurve curve);
 
         //*undocumented*
         public extern void EnsureQuaternionContinuity();
