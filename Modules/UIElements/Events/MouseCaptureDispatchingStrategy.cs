@@ -110,7 +110,16 @@ namespace UnityEngine.UIElements
                 evt.skipElements.Add(capturingElement);
 
                 evt.stopDispatch = (captureBehavior & EventBehavior.IsSentExclusivelyToCapturingElement) == EventBehavior.IsSentExclusivelyToCapturingElement;
-                evt.propagateToIMGUI = false;
+
+                if (evt.target is IMGUIContainer)
+                {
+                    evt.propagateToIMGUI = true;
+                    evt.skipElements.Add(evt.target);
+                }
+                else
+                {
+                    evt.propagateToIMGUI = false;
+                }
             }
         }
     }

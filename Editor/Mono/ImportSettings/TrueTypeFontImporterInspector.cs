@@ -69,13 +69,16 @@ namespace UnityEditor
 
         protected override void Apply()
         {
-            m_FallbackFontReferencesArraySize.intValue = m_FallbackFontReferences.Length;
-            SerializedProperty fontReferenceProp = m_FallbackFontReferencesArraySize.Copy();
-
-            for (int i = 0; i < m_FallbackFontReferences.Length; i++)
+            if (targets.Length == 1)
             {
-                fontReferenceProp.Next(false);
-                fontReferenceProp.objectReferenceValue = m_FallbackFontReferences[i];
+                m_FallbackFontReferencesArraySize.intValue = m_FallbackFontReferences.Length;
+                SerializedProperty fontReferenceProp = m_FallbackFontReferencesArraySize.Copy();
+
+                for (int i = 0; i < m_FallbackFontReferences.Length; i++)
+                {
+                    fontReferenceProp.Next(false);
+                    fontReferenceProp.objectReferenceValue = m_FallbackFontReferences[i];
+                }
             }
 
             base.Apply();

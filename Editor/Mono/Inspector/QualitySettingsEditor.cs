@@ -523,7 +523,7 @@ namespace UnityEditor
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(customRenderPipeline);
+            customRenderPipeline.objectReferenceValue = EditorGUILayout.ObjectField(customRenderPipeline.objectReferenceValue, typeof(RenderPipelineAsset), false);
 
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);

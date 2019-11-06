@@ -38,7 +38,9 @@ namespace UnityEngine.UIElements
             }
             else if (evt.target == null && elementUnderPointer == null)
             {
-                // Don't modify evt.propagateToIMGUI.
+                // Event occured outside the window.
+                // Send event to visual tree root and
+                // don't modify evt.propagateToIMGUI.
                 evt.target = panel?.visualTree;
             }
             else if (evt.target != null)

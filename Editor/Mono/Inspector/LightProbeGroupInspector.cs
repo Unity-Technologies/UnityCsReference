@@ -749,8 +749,7 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
-            if (Event.current.type != EventType.Repaint)
-                InternalOnSceneView();
+            InternalOnSceneView();
         }
 
         public bool HasFrameBounds()

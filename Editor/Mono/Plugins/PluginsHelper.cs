@@ -19,7 +19,7 @@ namespace UnityEditorInternal
                 pluginImporterExtension = ModuleManager.GetPluginImporterExtension(buildTarget);
             if (pluginImporterExtension == null)
             {
-                // Some platforms don't have platform specific settings for plugins, but we still wan't to check that plugins don't collide, use default path in this case
+                // Some platforms don't have platform specific settings for plugins, but we still want to check that plugins don't collide, use default path in this case
                 if (BuildPipeline.GetBuildTargetGroup(buildTarget) == BuildTargetGroup.Standalone)
                     pluginImporterExtension = new DesktopPluginImporterExtension();
                 else

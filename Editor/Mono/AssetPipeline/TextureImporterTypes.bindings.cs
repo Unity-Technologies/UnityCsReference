@@ -24,6 +24,7 @@ namespace UnityEditor
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [NativeAsStruct]
+    [NativeType(CodegenOptions.Custom, "TextureImporterSettings")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.bindings.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterTypes.h")]
     public sealed partial class TextureImporterSettings

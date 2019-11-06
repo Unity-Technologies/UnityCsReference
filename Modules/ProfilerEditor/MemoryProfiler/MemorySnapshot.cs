@@ -14,8 +14,8 @@ namespace UnityEditor.Profiling.Memory.Experimental
     // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
     public class PackedMemorySnapshot : IDisposable
     {
-        static readonly UInt32 kMinSupportedVersion = 7;
-        static readonly UInt32 kCurrentVersion = 9;
+        static readonly UInt32 kMinSupportedVersion = 8;
+        static readonly UInt32 kCurrentVersion = 10;
 
         public static PackedMemorySnapshot Load(string path)
         {
@@ -217,7 +217,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
             nativeCallstackSymbols = new NativeCallstackSymbolEntries(m_Reader);
             nativeMemoryLabels = new NativeMemoryLabelEntries(m_Reader);
             nativeMemoryRegions = new NativeMemoryRegionEntries(m_Reader);
-            nativeObjects = new NativeObjectEntries(m_Reader);
+            nativeObjects = new NativeObjectEntries(m_Reader, version == kCurrentVersion);
             nativeRootReferences = new NativeRootReferenceEntries(m_Reader);
             nativeTypes = new NativeTypeEntries(m_Reader);
             typeDescriptions = new TypeDescriptionEntries(m_Reader);

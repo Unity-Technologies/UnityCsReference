@@ -65,6 +65,7 @@ namespace UnityEngine
         iPodTouchUnknown
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     partial class iPhoneSettings
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -184,6 +185,7 @@ namespace UnityEngine
         Fill
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public class iPhoneUtils
     {
         // we want to avoid obsolete warnings:

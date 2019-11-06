@@ -256,12 +256,14 @@ namespace UnityEngine.UIElements
             contentViewport = new VisualElement() { name = "unity-content-viewport" };
             contentViewport.AddToClassList(viewportUssClassName);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            contentViewport.pickingMode = PickingMode.Ignore;
             hierarchy.Add(contentViewport);
 
             m_ContentContainer = new VisualElement() { name = "unity-content-container" };
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ContentContainer.AddToClassList(contentUssClassName);
             m_ContentContainer.usageHints = UsageHints.GroupTransform;
+            m_ContentContainer.pickingMode = PickingMode.Ignore;
             contentViewport.Add(m_ContentContainer);
 
             SetScrollViewMode(scrollViewMode);

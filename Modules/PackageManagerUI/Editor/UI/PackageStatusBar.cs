@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI
         private void SetUpdateTimeLabel(string lastUpdateTime)
         {
             if (!string.IsNullOrEmpty(lastUpdateTime))
-                SetStatusMessage(StatusType.Normal, "Last update " + lastUpdateTime);
+                SetStatusMessage(StatusType.Normal, lastUpdateTime);
             else
                 SetStatusMessage(StatusType.Normal, string.Empty);
         }

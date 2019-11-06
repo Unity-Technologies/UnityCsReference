@@ -29,6 +29,14 @@ namespace UnityEditor.UIElements
 
         public new class UxmlFactory : UxmlFactory<InspectorElement, UxmlTraits> {}
 
+        public new class UxmlTraits : BindableElement.UxmlTraits
+        {
+            public UxmlTraits()
+            {
+                m_PickingMode.defaultValue = PickingMode.Ignore;
+            }
+        }
+
         [Flags]
         internal enum Mode
         {
@@ -82,6 +90,7 @@ namespace UnityEditor.UIElements
         {
             m_IgnoreOnInspectorGUIErrors = false;
 
+            pickingMode = PickingMode.Ignore;
             AddToClassList(ussClassName);
 
             this.mode = mode;
@@ -100,6 +109,7 @@ namespace UnityEditor.UIElements
 
         internal InspectorElement(SerializedObject obj, Mode mode)
         {
+            pickingMode = PickingMode.Ignore;
             AddToClassList(ussClassName);
 
             this.mode = mode;
@@ -118,6 +128,7 @@ namespace UnityEditor.UIElements
 
         internal InspectorElement(Editor editor, Mode mode)
         {
+            pickingMode = PickingMode.Ignore;
             AddToClassList(ussClassName);
 
             this.mode = mode;
