@@ -513,8 +513,8 @@ namespace UnityEngine.UIElements.UIR
                     vertexCount += 2;
 
                     mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
                 else
@@ -531,8 +531,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -545,8 +545,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -557,8 +557,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -568,8 +568,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerTopIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -580,8 +580,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(innerTopIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
             }
@@ -662,8 +662,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -672,8 +672,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -683,8 +683,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -697,8 +697,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -707,8 +707,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
             }
@@ -729,8 +729,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -740,8 +740,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -750,8 +750,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -761,8 +761,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
 
@@ -771,8 +771,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     mesh.SetNextIndex((ushort)(vertexCount - 2));
+                    mesh.SetNextIndex((ushort)(vertexCount - 1));
                     indexCount += 3;
                 }
             }
@@ -838,11 +838,11 @@ namespace UnityEngine.UIElements.UIR
             mesh.SetNextVertex(new Vertex { position = bottomRight, uv = uvBottomRight, tint = color, idsFlags = flagsBottomRight });
 
             mesh.SetNextIndex((UInt16)(vertexCount + 0));
-            mesh.SetNextIndex((UInt16)(vertexCount + 2));
             mesh.SetNextIndex((UInt16)(vertexCount + 1));
+            mesh.SetNextIndex((UInt16)(vertexCount + 2));
             mesh.SetNextIndex((UInt16)(vertexCount + 3));
-            mesh.SetNextIndex((UInt16)(vertexCount + 1));
             mesh.SetNextIndex((UInt16)(vertexCount + 2));
+            mesh.SetNextIndex((UInt16)(vertexCount + 1));
 
             vertexCount += 4;
             indexCount += 6;
@@ -885,8 +885,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(cornerIndex);
-                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
                     mesh.SetNextIndex((UInt16)(vertexCount - 2));
+                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
                     indexCount += 3;
                 }
             }
@@ -907,8 +907,8 @@ namespace UnityEngine.UIElements.UIR
                     ++vertexCount;
 
                     mesh.SetNextIndex(cornerIndex);
-                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
                     mesh.SetNextIndex((UInt16)(vertexCount - 2));
+                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
                     indexCount += 3;
                 }
             }
@@ -952,8 +952,8 @@ namespace UnityEngine.UIElements.UIR
                 vertexCount++;
 
                 mesh.SetNextIndex((UInt16)(indexOffset + 0));
-                mesh.SetNextIndex((UInt16)(indexOffset + k + 1));
                 mesh.SetNextIndex((UInt16)(indexOffset + k));
+                mesh.SetNextIndex((UInt16)(indexOffset + k + 1));
                 indexCount += 3;
             }
 
@@ -1011,11 +1011,11 @@ namespace UnityEngine.UIElements.UIR
                     vertexCount += 2;
 
                     mesh.SetNextIndex((UInt16)(vertexCount - 4));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
                     mesh.SetNextIndex((UInt16)(vertexCount - 3));
                     mesh.SetNextIndex((UInt16)(vertexCount - 2));
+                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
                     mesh.SetNextIndex((UInt16)(vertexCount - 1));
+                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
                     indexCount += 6;
                 }
             }
@@ -1044,11 +1044,11 @@ namespace UnityEngine.UIElements.UIR
                     vertexCount += 2;
 
                     mesh.SetNextIndex((UInt16)(vertexCount - 4));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
                     mesh.SetNextIndex((UInt16)(vertexCount - 3));
                     mesh.SetNextIndex((UInt16)(vertexCount - 2));
+                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
                     mesh.SetNextIndex((UInt16)(vertexCount - 1));
+                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
                     indexCount += 6;
                 }
             }
@@ -1090,11 +1090,11 @@ namespace UnityEngine.UIElements.UIR
 
                 int i = k * 2;
                 mesh.SetNextIndex((UInt16)(indexOffset + (i - 2)));
-                mesh.SetNextIndex((UInt16)(indexOffset + (i)));
-                mesh.SetNextIndex((UInt16)(indexOffset + (i - 1)));
                 mesh.SetNextIndex((UInt16)(indexOffset + (i - 1)));
                 mesh.SetNextIndex((UInt16)(indexOffset + (i)));
+                mesh.SetNextIndex((UInt16)(indexOffset + (i - 1)));
                 mesh.SetNextIndex((UInt16)(indexOffset + (i + 1)));
+                mesh.SetNextIndex((UInt16)(indexOffset + (i)));
                 indexCount += 6;
             }
 

@@ -67,6 +67,7 @@ namespace UnityEditor.UIElements
         {
             m_EditorIndex = editorIndex;
             inspectorWindow = iw;
+            pickingMode = PickingMode.Ignore;
 
             Init();
 

@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEditor.Experimental
 {
-    internal struct AssetMoveInfo : IEquatable<AssetMoveInfo>
+    public struct AssetMoveInfo : IEquatable<AssetMoveInfo>
     {
         public AssetMoveInfo(string sourceAssetPath, string destinationAssetPath)
         {

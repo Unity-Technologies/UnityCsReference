@@ -134,35 +134,35 @@ namespace UnityEngine.UIElements
             }
 
             // Send the event to the first IMGUIContainer that can handle it.
-            // If e.type != EventType.Used, avoid resending the event to the capture as it already had the chance to handle it.
 
             var imContainer = root as IMGUIContainer;
-            if (imContainer != null && (evt.imguiEvent.type == EventType.Used || !evt.Skip(root)))
+            if (imContainer != null)
             {
                 if (evt.Skip(imContainer))
                 {
+                    // IMGUIContainer have no children. We can return without iterating the children list.
                     return;
                 }
 
-                if (imContainer.SendEventToIMGUI(evt))
+                // Only permit switching the focus to another IMGUIContainer if the event target was not focusable.
+                bool targetIsFocusable = (evt.target as Focusable)?.focusable ?? false;
+                if (imContainer.SendEventToIMGUI(evt, !targetIsFocusable))
                 {
                     evt.StopPropagation();
                     evt.PreventDefault();
                 }
 
-                if (evt.imguiEvent.type == EventType.Used)
+                if (evt.imguiEvent.rawType == EventType.Used)
                     Debug.Assert(evt.isPropagationStopped);
             }
-            else
+
+            if (root != null)
             {
-                if (root != null)
+                for (int i = 0; i < root.hierarchy.childCount; i++)
                 {
-                    for (int i = 0; i < root.hierarchy.childCount; i++)
-                    {
-                        PropagateToIMGUIContainer(root.hierarchy[i], evt);
-                        if (evt.isPropagationStopped)
-                            break;
-                    }
+                    PropagateToIMGUIContainer(root.hierarchy[i], evt);
+                    if (evt.isPropagationStopped)
+                        break;
                 }
             }
         }

@@ -106,11 +106,11 @@ namespace UnityEngine.UIElements.UIR
                 mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 3, offset));
 
                 mesh.SetNextIndex((UInt16)(v + 0));
-                mesh.SetNextIndex((UInt16)(v + 2));
                 mesh.SetNextIndex((UInt16)(v + 1));
                 mesh.SetNextIndex((UInt16)(v + 2));
-                mesh.SetNextIndex((UInt16)(v + 0));
+                mesh.SetNextIndex((UInt16)(v + 2));
                 mesh.SetNextIndex((UInt16)(v + 3));
+                mesh.SetNextIndex((UInt16)(v + 0));
             }
         }
 
@@ -133,11 +133,11 @@ namespace UnityEngine.UIElements.UIR
                 mesh.SetNextVertex(ConvertTextVertexToUIRVertex(uiVertices[v + 3], offset));
 
                 mesh.SetNextIndex((UInt16)(v + 0));
-                mesh.SetNextIndex((UInt16)(v + 2));
                 mesh.SetNextIndex((UInt16)(v + 1));
                 mesh.SetNextIndex((UInt16)(v + 2));
-                mesh.SetNextIndex((UInt16)(v + 0));
+                mesh.SetNextIndex((UInt16)(v + 2));
                 mesh.SetNextIndex((UInt16)(v + 3));
+                mesh.SetNextIndex((UInt16)(v + 0));
             }
         }
 
@@ -205,25 +205,25 @@ namespace UnityEngine.UIElements.UIR
             });
 
             mesh.SetNextIndex(0);
-            mesh.SetNextIndex(1);
             mesh.SetNextIndex(2);
+            mesh.SetNextIndex(1);
 
             mesh.SetNextIndex(1);
-            mesh.SetNextIndex(3);
             mesh.SetNextIndex(2);
+            mesh.SetNextIndex(3);
         }
 
         private static readonly UInt16[] slicedQuadIndices = new UInt16[]
         {
-            0, 1, 4, 4, 1, 5,
-            1, 2, 5, 5, 2, 6,
-            2, 3, 6, 6, 3, 7,
-            4, 5, 8, 8, 5, 9,
-            5, 6, 9, 9, 6, 10,
-            6, 7, 10, 10, 7, 11,
-            8, 9, 12, 12, 9, 13,
-            9, 10, 13, 13, 10, 14,
-            10, 11, 14, 14, 11, 15
+            0, 4, 1, 4, 5, 1,
+            1, 5, 2, 5, 6, 2,
+            2, 6, 3, 6, 7, 3,
+            4, 8, 5, 8, 9, 5,
+            5, 9, 6, 9, 10, 6,
+            6, 10, 7, 10, 11, 7,
+            8, 12, 9, 12, 13, 9,
+            9, 13, 10, 13, 14, 10,
+            10, 14, 11, 14, 15, 11
         };
 
         // Caches.
@@ -822,13 +822,13 @@ namespace UnityEngine.UIElements.UIR
                 mwd.SetNextIndex((UInt16)(newVerticesIndex));
                 if (c.z < 0)
                 {
-                    mwd.SetNextIndex((UInt16)index1);
                     mwd.SetNextIndex((UInt16)index2);
+                    mwd.SetNextIndex((UInt16)index1);
                 }
                 else
                 {
-                    mwd.SetNextIndex((UInt16)index2);
                     mwd.SetNextIndex((UInt16)index1);
+                    mwd.SetNextIndex((UInt16)index2);
                 }
             } // For each new triangle
         }

@@ -591,7 +591,7 @@ namespace UnityEngine.UIElements.UIR
             const StencilOp zFailBack = StencilOp.Zero;
             const StencilOp failBack = StencilOp.Keep;
 
-            if (mode == DrawingModes.FlipY)
+            if (mode == DrawingModes.StraightY)
             {
                 material.SetInt("_StencilCompFront", (int)compBack);
                 material.SetInt("_StencilPassFront", (int)passBack);
@@ -603,7 +603,7 @@ namespace UnityEngine.UIElements.UIR
                 material.SetInt("_StencilZFailBack", (int)zFailFront);
                 material.SetInt("_StencilFailBack", (int)failFront);
             }
-            else if (mode == DrawingModes.StraightY)
+            else if (mode == DrawingModes.FlipY)
             {
                 material.SetInt("_StencilCompFront", (int)compFront);
                 material.SetInt("_StencilPassFront", (int)passFront);

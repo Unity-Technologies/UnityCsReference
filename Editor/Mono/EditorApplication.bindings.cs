@@ -63,7 +63,7 @@ namespace UnityEditor
 
         // Saves all serializable assets that have not yet been written to disk (eg. Materials)
         [System.Obsolete("Use AssetDatabase.SaveAssets instead (UnityUpgradable) -> AssetDatabase.SaveAssets()", true)]
-        public static extern  void SaveAssets();
+        public static void SaveAssets() {}
 
         // Is editor currently in play mode?
         public static extern bool isPlaying

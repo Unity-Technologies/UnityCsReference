@@ -40,7 +40,9 @@ namespace UnityEngine.UIElements
             }
             else if (evt.target == null && elementUnderMouse == null)
             {
-                // Don't modify evt.propagateToIMGUI.
+                // Event occured outside the window.
+                // Send event to visual tree root and
+                // don't modify evt.propagateToIMGUI.
                 evt.target = panel?.visualTree;
             }
             else if (evt.target != null)
@@ -69,6 +71,12 @@ namespace UnityEngine.UIElements
             if (evt.target != null)
             {
                 EventDispatchUtilities.PropagateEvent(evt);
+                if (evt.target is IMGUIContainer)
+                {
+                    evt.propagateToIMGUI = true;
+
+                    evt.skipElements.Add(evt.target);
+                }
             }
 
             if (!evt.isPropagationStopped && panel != null)

@@ -385,8 +385,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected bool CopyPlayerFilter(string path, BuildPostProcessArgs args)
     {
-        // Don't copy UnityEngine mdb files
-        return Path.GetExtension(path) != ".mdb" || !Path.GetFileName(path).StartsWith("UnityEngine.");
+        // Don't copy UnityEngine mdb/pdb files
+        return (Path.GetExtension(path) != ".mdb"  && Path.GetExtension(path)  != ".pdb") || !Path.GetFileName(path).StartsWith("UnityEngine.");
     }
 
     private static uint StringToFourCC(string literal)
@@ -408,21 +408,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected static void RecordCommonFiles(BuildPostProcessArgs args, string variationSourceFolder, string monoFolderRoot)
     {
-        // Mark all the managed DLLs in Data/Managed as engine API assemblies
-        // Data/Managed may already contain managed DLLs in the UnityEngine.*.dll naming scheme from the extensions
-        // So we find the files in the source Variations directory and mark the corresponding files in the output
-        var path = Path.Combine(variationSourceFolder, "Data/Managed");
-        foreach (var file in Directory.GetFiles(path, "*.dll")
-                 .Concat(Directory.GetFiles(path, "*.pdb")))
-        {
-            var filename = Path.GetFileName(file);
-            if (!filename.StartsWith("UnityEngine"))
-                continue;
-
-            var targetFilePath = Path.Combine(args.stagingArea, "Data/Managed/" + filename);
-            args.report.RecordFileAdded(targetFilePath, CommonRoles.managedEngineApi);
-        }
-
         // Mark the default resources file
         args.report.RecordFileAdded(Path.Combine(args.stagingArea, "Data/Resources/unity default resources"),
             CommonRoles.builtInResources);

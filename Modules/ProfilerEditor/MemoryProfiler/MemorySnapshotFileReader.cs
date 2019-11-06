@@ -8,7 +8,7 @@ using System.IO;
 
 namespace UnityEditorInternal.Profiling.Memory.Experimental
 {
-    // keep in sync with MemorySnapshot/FileFormat.h
+    // keep in sync with MemorySnapshot/MemorySnapshotFileEntryNames.h
     namespace FileFormat
     {
         public enum EntryType : UInt16
@@ -70,7 +70,8 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
             NativeAllocationSites_MemoryLabelIndex,
             NativeAllocationSites_CallstackSymbols,
             NativeCallstackSymbol_Symbol,
-            NativeCallstackSymbol_ReadableStackTrace
+            NativeCallstackSymbol_ReadableStackTrace,
+            NativeObjects_GCHandleIndex
         }
     }
 

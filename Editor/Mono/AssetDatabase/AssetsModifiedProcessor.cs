@@ -7,9 +7,9 @@ using System.Collections.Generic;
 
 namespace UnityEditor.Experimental
 {
-    internal abstract class AssetsModifiedProcessor
+    public abstract class AssetsModifiedProcessor
     {
-        internal HashSet<string> assetsReportedChanged { get; set; }
+        public HashSet<string> assetsReportedChanged { get; set; }
 
         protected void ReportAssetChanged(string assetChanged)
         {

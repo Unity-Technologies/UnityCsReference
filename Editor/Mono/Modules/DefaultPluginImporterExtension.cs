@@ -3,12 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.ComponentModel;
-using System.Text;
-using UnityEngine;
-using System.Linq;
-using System.IO;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor.Compilation;
+using UnityEngine;
 
 namespace UnityEditor.Modules
 {
@@ -152,7 +153,14 @@ namespace UnityEditor.Modules
 
         protected Dictionary<string, List<PluginImporter>> GetCompatiblePlugins(string buildTargetName)
         {
-            IEnumerable<PluginImporter> plugins = PluginImporter.GetAllImporters().Where(imp => imp.GetCompatibleWithPlatformOrAnyPlatformBuildTarget(buildTargetName));
+            var assemblies = CompilationPipeline.GetAssemblies();
+            var assemblyDefines = new Dictionary<string, string[]>(assemblies.Length);
+            foreach (var assembly in assemblies)
+            {
+                assemblyDefines.Add(assembly.name, assembly.defines);
+            }
+
+            IEnumerable<PluginImporter> plugins = PluginImporter.GetAllImporters().Where(imp => imp.GetCompatibleWithPlatformOrAnyPlatformBuildTarget(buildTargetName) && imp.IsCompatibleWithDefines(assemblyDefines.ContainsKey(imp.name) ? assemblyDefines[imp.name] : null));
             Dictionary<string, List<PluginImporter>> matchingPlugins = new Dictionary<string, List<PluginImporter>>();
 
             foreach (var plugin in plugins)

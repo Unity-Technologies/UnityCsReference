@@ -904,13 +904,13 @@ namespace UnityEditor.Experimental.GraphView
                 if ((i & 0x01) == 0)
                 {
                     md.SetNextIndex((UInt16)i);
-                    md.SetNextIndex((UInt16)(i + 1));
                     md.SetNextIndex((UInt16)(i + 2));
+                    md.SetNextIndex((UInt16)(i + 1));
                 }
                 else
                 {
-                    md.SetNextIndex((UInt16)(i + 1));
                     md.SetNextIndex((UInt16)i);
+                    md.SetNextIndex((UInt16)(i + 1));
                     md.SetNextIndex((UInt16)(i + 2));
                 }
             }
