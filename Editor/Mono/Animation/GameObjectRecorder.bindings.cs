@@ -18,6 +18,7 @@ namespace UnityEditor.Animations
         public float scaleError;
         public float floatError;
         public bool keyframeReduction;
+        public bool unrollRotation;
     }
 
     [NativeHeader("Editor/Src/Animation/EditorCurveBinding.bindings.h")]
@@ -28,6 +29,7 @@ namespace UnityEditor.Animations
     {
         readonly static CurveFilterOptions k_DefaultCurveFilterOptions = new CurveFilterOptions()
         {
+            unrollRotation = true,
             keyframeReduction = true,
             positionError = 0.5f,
             rotationError = 0.5f,

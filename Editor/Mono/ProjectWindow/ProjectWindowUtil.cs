@@ -14,6 +14,7 @@ using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
 using UnityEditor.Utils;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
@@ -93,7 +94,9 @@ namespace UnityEditor
 
         internal class DoCreateFolderWithTemplates : EndNameEditAction
         {
-            public string kResourcesTemplatePath = "Resources/ScriptTemplates";
+            public string ResourcesTemplatePath = "Resources/ScriptTemplates";
+
+            public bool UseCustomPath = false;
 
             public IList<string> templates { get; set; }
 
@@ -101,7 +104,8 @@ namespace UnityEditor
             {
                 var fileName = Path.GetFileName(pathName);
                 string guid = AssetDatabase.CreateFolder(Path.GetDirectoryName(pathName), fileName);
-                string basePath = Path.Combine(EditorApplication.applicationContentsPath, kResourcesTemplatePath);
+                string basePath = UseCustomPath ? ResourcesTemplatePath :
+                    Path.Combine(EditorApplication.applicationContentsPath, ResourcesTemplatePath);
 
                 foreach (var template in templates ?? Enumerable.Empty<string>())
                 {
@@ -273,7 +277,8 @@ namespace UnityEditor
         {
             var endNameEditAction = ScriptableObject.CreateInstance<DoCreateFolderWithTemplates>();
             endNameEditAction.templates = templates;
-            endNameEditAction.kResourcesTemplatePath = customResPath;
+            endNameEditAction.ResourcesTemplatePath = customResPath;
+            endNameEditAction.UseCustomPath = true;
             StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
         }
 
@@ -785,7 +790,11 @@ namespace UnityEditor
             AssetDatabase.StopAssetEditing();
             if (!success)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."), L10n.Tr("Ok"));
+                string message = (Provider.enabled && Provider.onlineState == OnlineState.Offline) ?
+                    L10n.Tr("Some assets could not be deleted.\nMake sure you are connected to your Version Control server or \"Work Offline\" is enabled.") :
+                    L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example.");
+
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), message, L10n.Tr("Ok"));
             }
             return success;
         }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -18,7 +17,7 @@ namespace UnityEditor.UIElements
             Popup
         }
 
-        Clickable clickable;
+        PointerClickable clickable;
 
         public DropdownMenu menu { get; }
         public override string text
@@ -40,7 +39,7 @@ namespace UnityEditor.UIElements
             Toolbar.SetToolbarStyleSheet(this);
             generateVisualContent = null;
 
-            clickable = new Clickable(this.ShowMenu);
+            clickable = new PointerClickable(this.ShowMenu);
             this.AddManipulator(clickable);
             menu = new DropdownMenu();
 

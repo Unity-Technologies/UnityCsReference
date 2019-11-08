@@ -32,6 +32,7 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         SplitterState m_VertSplit;
 
+        [SerializeField]
         ProfilerFrameDataMultiColumnHeader m_MultiColumnHeader;
         ObjectsTreeView m_TreeView;
         Vector2 m_CallstackScrollViewPos;
@@ -171,15 +172,23 @@ namespace UnityEditorInternal.Profiling
                 return false;
             }
         }
+        readonly string k_PrefKeyPrefix;
+        string multiColumnHeaderStatePrefKey => k_PrefKeyPrefix + "MultiColumnHeaderState";
+        string splitter0StatePrefKey => k_PrefKeyPrefix + "Splitter.Relative[0]";
+        string splitter1StatePrefKey => k_PrefKeyPrefix + "Splitter.Relative[1]";
 
-        public ProfilerDetailedObjectsView()
+        public ProfilerDetailedObjectsView(string prefKeyPrefix)
         {
+            k_PrefKeyPrefix = prefKeyPrefix;
         }
 
         void InitIfNeeded()
         {
             if (m_Initialized)
                 return;
+
+            if (m_CachedCallstack == null)
+                m_CachedCallstack = new List<ulong>();
 
             var cpuDetailColumns = new[]
             {
@@ -203,6 +212,19 @@ namespace UnityEditorInternal.Profiling
             headerState.columns[0].minWidth = 60;
             headerState.columns[0].autoResize = true;
             headerState.columns[0].allowToggleVisibility = false;
+
+            var multiColumnHeaderStateData = SessionState.GetString(multiColumnHeaderStatePrefKey, "");
+            if (!string.IsNullOrEmpty(multiColumnHeaderStateData))
+            {
+                try
+                {
+                    var restoredHeaderState = JsonUtility.FromJson<MultiColumnHeaderState>(multiColumnHeaderStateData);
+                    if (restoredHeaderState != null)
+                        m_MultiColumnHeaderState = restoredHeaderState;
+                }
+                catch{} // Nevermind, we'll just fall back to the default
+            }
+
             if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_MultiColumnHeaderState, headerState))
                 MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
 
@@ -213,15 +235,23 @@ namespace UnityEditorInternal.Profiling
             if (firstInit)
                 m_MultiColumnHeader.ResizeToFit();
 
+            m_MultiColumnHeader.visibleColumnsChanged += OnMultiColumnHeaderChanged;
+            m_MultiColumnHeader.sortingChanged += OnMultiColumnHeaderChanged;
+
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
             m_TreeView = new ObjectsTreeView(m_TreeViewState, m_MultiColumnHeader);
             m_TreeView.frameItemEvent += frameItemEvent;
 
             if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
-                m_VertSplit = new SplitterState(new[] { 60f, 40f }, new[] { 50, 50 }, null);
+                m_VertSplit = new SplitterState(new[] { SessionState.GetFloat(splitter0StatePrefKey, 60f), SessionState.GetFloat(splitter1StatePrefKey, 40f) }, new[] { 50, 50 }, null);
 
             m_Initialized = true;
+        }
+
+        void OnMultiColumnHeaderChanged(MultiColumnHeader header)
+        {
+            SessionState.SetString(multiColumnHeaderStatePrefKey, JsonUtility.ToJson(header.state));
         }
 
         public void DoGUI(GUIStyle headerStyle, HierarchyFrameDataView frameDataView, IList<int> selection)
@@ -322,7 +352,28 @@ namespace UnityEditorInternal.Profiling
         public void Clear()
         {
             if (m_TreeView != null)
+            {
+                if (m_TreeView.multiColumnHeader != null)
+                {
+                    m_TreeView.multiColumnHeader.visibleColumnsChanged -= OnMultiColumnHeaderChanged;
+                    m_TreeView.multiColumnHeader.sortingChanged -= OnMultiColumnHeaderChanged;
+                }
                 m_TreeView.SetData(null);
+            }
+        }
+
+        override public void SaveViewSettings()
+        {
+            if (m_VertSplit != null && m_VertSplit.relativeSizes != null && m_VertSplit.relativeSizes.Length >= 2)
+            {
+                SessionState.SetFloat(splitter0StatePrefKey, m_VertSplit.relativeSizes[0]);
+                SessionState.SetFloat(splitter1StatePrefKey, m_VertSplit.relativeSizes[1]);
+            }
+        }
+
+        override public void OnDisable()
+        {
+            SaveViewSettings();
         }
     }
 }

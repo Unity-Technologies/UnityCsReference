@@ -283,7 +283,7 @@ namespace UnityEditor.UIElements
         private Object TryReadComponentFromGameObject(Object obj, Type type)
         {
             var go = obj as GameObject;
-            if (go != null && type.IsSubclassOf(typeof(Component)))
+            if (go != null && type != null && type.IsSubclassOf(typeof(Component)))
             {
                 var comp = go.GetComponent(objectType);
                 if (comp != null)

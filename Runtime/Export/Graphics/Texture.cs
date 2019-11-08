@@ -652,6 +652,22 @@ namespace UnityEngine
             SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
         }
 
+        public unsafe NativeArray<T> GetPixelData<T>(int mipLevel) where T : struct
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+
+            int chainOffset = GetPixelDataOffset(mipLevel);
+            int arraySize = GetPixelDataSize(mipLevel);
+            int stride = UnsafeUtility.SizeOf<T>();
+
+            IntPtr dataPtr = new IntPtr(GetWritableImageData(0).ToInt64() + chainOffset);
+
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)(arraySize / stride), Allocator.None);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel));
+            return array;
+        }
+
         public unsafe NativeArray<T> GetRawTextureData<T>() where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
@@ -831,6 +847,22 @@ namespace UnityEngine
             SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, (int)face, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
         }
 
+        public unsafe NativeArray<T> GetPixelData<T>(int mipLevel, CubemapFace face) where T : struct
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+
+            int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, (int)face);
+            int chainOffset = GetPixelDataOffset(mipLevel, (int)face);
+            int arraySize = GetPixelDataSize(mipLevel, (int)face);
+            int stride = UnsafeUtility.SizeOf<T>();
+
+            IntPtr dataPtr = new IntPtr(GetWritableImageData(0).ToInt64() + (singleElementDataSize * (int)face + chainOffset));
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)(arraySize / stride), Allocator.None);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, (int)face));
+            return array;
+        }
+
         public void SetPixel(CubemapFace face, int x, int y, Color color)
         {
             if (!isReadable) throw CreateNonReadableException(this);
@@ -951,6 +983,21 @@ namespace UnityEngine
 
             SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
         }
+
+        public unsafe NativeArray<T> GetPixelData<T>(int mipLevel) where T : struct
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+
+            int chainOffset = GetPixelDataOffset(mipLevel);
+            int arraySize = GetPixelDataSize(mipLevel);
+            int stride = UnsafeUtility.SizeOf<T>();
+
+            IntPtr dataPtr = new IntPtr(GetImageDataPointer().ToInt64() + chainOffset);
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)(arraySize / stride), Allocator.None);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel));
+            return array;
+        }
     }
 
     public sealed partial class Texture2DArray : Texture
@@ -1017,6 +1064,22 @@ namespace UnityEngine
             if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
 
             SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, element, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
+        }
+
+        public unsafe NativeArray<T> GetPixelData<T>(int mipLevel, int element) where T : struct
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+
+            int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, element);
+            int chainOffset = GetPixelDataOffset(mipLevel, element);
+            int arraySize = GetPixelDataSize(mipLevel, element);
+            int stride = UnsafeUtility.SizeOf<T>();
+
+            IntPtr dataPtr = new IntPtr(GetImageDataPointer().ToInt64() + (singleElementDataSize * element + chainOffset));
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)(arraySize / stride), Allocator.None);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, element));
+            return array;
         }
 
         public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
@@ -1091,6 +1154,23 @@ namespace UnityEngine
             if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
 
             SetPixelDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), mipLevel, (int)face, element, UnsafeUtility.SizeOf<T>(), data.Length, sourceDataStartIndex);
+        }
+
+        public unsafe NativeArray<T> GetPixelData<T>(int mipLevel, CubemapFace face, int element) where T : struct
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+
+            int elementOffset = element * 6 + (int)face;
+            int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, elementOffset);
+            int chainOffset = GetPixelDataOffset(mipLevel, elementOffset);
+            int arraySize = GetPixelDataSize(mipLevel, elementOffset);
+            int stride = UnsafeUtility.SizeOf<T>();
+
+            IntPtr dataPtr = new IntPtr(GetImageDataPointer().ToInt64() + (singleElementDataSize * elementOffset + chainOffset));
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)dataPtr, (int)(arraySize / stride), Allocator.None);
+
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, (int)face, element));
+            return array;
         }
     }
 

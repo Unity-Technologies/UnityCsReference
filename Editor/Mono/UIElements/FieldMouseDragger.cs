@@ -17,9 +17,9 @@ namespace UnityEditor.UIElements
             dragging = false;
         }
 
-        IValueField<T> m_DrivenField;
-        VisualElement m_DragElement;
-        Rect m_DragHotZone;
+        private readonly IValueField<T> m_DrivenField;
+        private VisualElement m_DragElement;
+        private Rect m_DragHotZone;
 
         public bool dragging { get; set; }
         public T startValue { get; set; }
@@ -33,9 +33,14 @@ namespace UnityEditor.UIElements
         {
             if (m_DragElement != null)
             {
+                m_DragElement.UnregisterCallback<PointerDownEvent>(UpdateValueOnPointerDown);
+                m_DragElement.UnregisterCallback<PointerMoveEvent>(UpdateValueOnPointerMove);
+                m_DragElement.UnregisterCallback<PointerUpEvent>(UpdateValueOnPointerUp);
+
                 m_DragElement.UnregisterCallback<MouseDownEvent>(UpdateValueOnMouseDown);
                 m_DragElement.UnregisterCallback<MouseMoveEvent>(UpdateValueOnMouseMove);
                 m_DragElement.UnregisterCallback<MouseUpEvent>(UpdateValueOnMouseUp);
+
                 m_DragElement.UnregisterCallback<KeyDownEvent>(UpdateValueOnKeyDown);
             }
 
@@ -45,52 +50,111 @@ namespace UnityEditor.UIElements
             if (m_DragElement != null)
             {
                 dragging = false;
+                m_DragElement.RegisterCallback<PointerDownEvent>(UpdateValueOnPointerDown);
+                m_DragElement.RegisterCallback<PointerMoveEvent>(UpdateValueOnPointerMove);
+                m_DragElement.RegisterCallback<PointerUpEvent>(UpdateValueOnPointerUp);
+                m_DragElement.RegisterCallback<KeyDownEvent>(UpdateValueOnKeyDown);
+
                 m_DragElement.RegisterCallback<MouseDownEvent>(UpdateValueOnMouseDown);
                 m_DragElement.RegisterCallback<MouseMoveEvent>(UpdateValueOnMouseMove);
                 m_DragElement.RegisterCallback<MouseUpEvent>(UpdateValueOnMouseUp);
-                m_DragElement.RegisterCallback<KeyDownEvent>(UpdateValueOnKeyDown);
             }
         }
 
-        void UpdateValueOnMouseDown(MouseDownEvent evt)
+        private bool CanStartDrag(int button, Vector2 localPosition)
         {
-            if (evt.button == 0 && (m_DragHotZone.width < 0 || m_DragHotZone.height < 0 || m_DragHotZone.Contains(m_DragElement.WorldToLocal(evt.mousePosition))))
+            return button == 0 && (m_DragHotZone.width < 0 || m_DragHotZone.height < 0 ||
+                m_DragHotZone.Contains(m_DragElement.WorldToLocal(localPosition)));
+        }
+
+        private void UpdateValueOnPointerDown(PointerDownEvent evt)
+        {
+            if (CanStartDrag(evt.button, evt.localPosition))
+            {
+                if (evt.pointerId != PointerId.mousePointerId)
+                {
+                    evt.PreventDefault();
+                    m_DragElement.CapturePointer(evt.pointerId);
+                    ProcessDownEvent(evt);
+                }
+                else
+                {
+                    evt.StopImmediatePropagation();
+                }
+            }
+        }
+
+        private void UpdateValueOnMouseDown(MouseDownEvent evt)
+        {
+            if (CanStartDrag(evt.button, evt.mousePosition))
             {
                 m_DragElement.CaptureMouse();
-
-                // Make sure no other elements can capture the mouse!
-                evt.StopPropagation();
-
-                dragging = true;
-                startValue = m_DrivenField.value;
-
-                m_DrivenField.StartDragging();
-                EditorGUIUtility.SetWantsMouseJumping(1);
+                ProcessDownEvent(evt);
             }
         }
 
-        void UpdateValueOnMouseMove(MouseMoveEvent evt)
+        private void ProcessDownEvent(EventBase evt)
+        {
+            // Make sure no other elements can capture the mouse!
+            evt.StopPropagation();
+
+            dragging = true;
+            startValue = m_DrivenField.value;
+
+            m_DrivenField.StartDragging();
+            EditorGUIUtility.SetWantsMouseJumping(1);
+        }
+
+        private void UpdateValueOnPointerMove(PointerMoveEvent evt)
+        {
+            if (evt.pointerId == PointerId.mousePointerId)
+                return;
+
+            ProcessMoveEvent(evt.shiftKey, evt.altKey, evt.deltaPosition);
+        }
+
+        private void UpdateValueOnMouseMove(MouseMoveEvent evt)
+        {
+            ProcessMoveEvent(evt.shiftKey, evt.altKey, evt.mouseDelta);
+        }
+
+        private void ProcessMoveEvent(bool shiftKey, bool altKey, Vector2 deltaPosition)
         {
             if (dragging)
             {
-                DeltaSpeed s = evt.shiftKey ? DeltaSpeed.Fast : (evt.altKey ? DeltaSpeed.Slow : DeltaSpeed.Normal);
-                m_DrivenField.ApplyInputDeviceDelta(evt.mouseDelta, s, startValue);
+                DeltaSpeed s = shiftKey ? DeltaSpeed.Fast : (altKey ? DeltaSpeed.Slow : DeltaSpeed.Normal);
+                m_DrivenField.ApplyInputDeviceDelta(deltaPosition, s, startValue);
             }
         }
 
-        void UpdateValueOnMouseUp(MouseUpEvent evt)
+        private void UpdateValueOnPointerUp(PointerUpEvent evt)
+        {
+            if (evt.pointerId == PointerId.mousePointerId)
+                return;
+
+            ProcessUpEvent(evt, evt.pointerId);
+        }
+
+        private void UpdateValueOnMouseUp(MouseUpEvent evt)
+        {
+            ProcessUpEvent(evt, PointerId.mousePointerId);
+        }
+
+        private void ProcessUpEvent(EventBase evt, int pointerId)
         {
             if (dragging)
             {
                 dragging = false;
-                IPanel panel = (evt.target as VisualElement)?.panel;
-                panel.ReleasePointer(PointerId.mousePointerId);
+                m_DragElement.ReleasePointer(pointerId);
+                if (evt is IMouseEvent)
+                    m_DragElement.panel.ProcessPointerCapture(PointerId.mousePointerId);
+
                 EditorGUIUtility.SetWantsMouseJumping(0);
                 m_DrivenField.StopDragging();
             }
         }
 
-        void UpdateValueOnKeyDown(KeyDownEvent evt)
+        private void UpdateValueOnKeyDown(KeyDownEvent evt)
         {
             if (dragging && evt.keyCode == KeyCode.Escape)
             {

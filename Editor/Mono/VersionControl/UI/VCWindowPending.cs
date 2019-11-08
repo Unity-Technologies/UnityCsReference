@@ -37,12 +37,14 @@ namespace UnityEditor.VersionControl
         [SerializeField] ListControl incomingList;
 
         bool m_ShowIncoming = false;
+        bool m_ShowIncomingPrevious = true;
         const float k_ResizerHeight =  17f;
         const float k_MinIncomingAreaHeight = 50f;
         const float k_BottomBarHeight = 21f;
         float s_ToolbarButtonsWidth = 0f;
         float s_SettingsButtonWidth = 0f;
         float s_DeleteChangesetsButtonWidth = 0f;
+        string m_SearchText = string.Empty;
 
         static GUIContent[] sStatusWheel;
 
@@ -146,6 +148,7 @@ namespace UnityEditor.VersionControl
                 ListItem changeItem = pendingList.Add(item, asset.prettyPath, asset);
                 changeItem.Dummy = true;
                 pendingList.Refresh(false);  //true here would cause recursion
+                pendingList.Filter = m_SearchText;
                 Repaint();
             }
         }
@@ -165,6 +168,7 @@ namespace UnityEditor.VersionControl
                 ListItem changeItem = incomingList.Add(item, asset.prettyPath, asset);
                 changeItem.Dummy = true;
                 incomingList.Refresh(false);  //true here would cause recursion
+                incomingList.Filter = m_SearchText;
                 Repaint();
             }
         }
@@ -353,6 +357,7 @@ namespace UnityEditor.VersionControl
             // Refresh here will trigger the expand events to ensure the same change lists
             // are kept open. This will in turn trigger change list contents update requests
             list.Refresh();
+            list.Filter = m_SearchText;
             Repaint();
         }
 
@@ -385,6 +390,7 @@ namespace UnityEditor.VersionControl
             }
 
             list.Refresh(false); // false means the expanded events are not called
+            list.Filter = m_SearchText;
             Repaint();
         }
 
@@ -411,6 +417,53 @@ namespace UnityEditor.VersionControl
             Provider.DeleteChangeSets(changeSets).SetCompletionAction(CompletionAction.UpdatePendingWindow);
         }
 
+        private void SearchField(Event e, ListControl activeList)
+        {
+            string searchBarName = "SearchFilter";
+            if (e.commandName == EventCommandNames.Find)
+            {
+                if (e.type == EventType.ExecuteCommand)
+                {
+                    EditorGUI.FocusTextInControl(searchBarName);
+                }
+
+                if (e.type != EventType.Layout)
+                    e.Use();
+            }
+
+            string searchText = m_SearchText;
+            if (e.type == EventType.KeyDown)
+            {
+                if (e.keyCode == KeyCode.Escape)
+                {
+                    m_SearchText = searchText = string.Empty;
+                    activeList.Filter = searchText;
+
+                    GUI.FocusControl(null);
+                    activeList.SelectedSet(activeList.Root.NextOpenVisible);
+                }
+                else if ((e.keyCode == KeyCode.UpArrow || e.keyCode == KeyCode.DownArrow || e.keyCode == KeyCode.Return) && GUI.GetNameOfFocusedControl() == searchBarName)
+                {
+                    GUI.FocusControl(null);
+                    activeList.SelectedSet(activeList.Root.NextOpenVisible);
+                }
+            }
+
+            GUI.SetNextControlName(searchBarName);
+            Rect rect = GUILayoutUtility.GetRect(0, EditorGUILayout.kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight,
+                EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(100),
+                GUILayout.MaxWidth(300));
+
+            var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
+            if (m_SearchText != filteringText)
+            {
+                m_SearchText = filteringText;
+                activeList.SelectedClear();
+                activeList.listState.Scroll = 0;
+                activeList.Filter = filteringText;
+            }
+        }
+
         // Editor window GUI paint
         void OnGUI()
         {
@@ -429,7 +482,6 @@ namespace UnityEditor.VersionControl
 
             GUILayout.BeginArea(new Rect(0, 0, position.width, toolBarHeight));
 
-
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             EditorGUI.BeginChangeCheck();
@@ -444,6 +496,9 @@ namespace UnityEditor.VersionControl
                 refresh = true;
 
             GUILayout.FlexibleSpace();
+
+            Event e = Event.current;
+            SearchField(e, m_ShowIncoming ? incomingList : pendingList);
 
             // Global context custom commands goes here
             using (new EditorGUI.DisabledScope(Provider.activeTask != null))
@@ -481,6 +536,8 @@ namespace UnityEditor.VersionControl
             {
                 if (refreshButtonClicked)
                 {
+                    m_SearchText = string.Empty;
+                    GUI.FocusControl(null);
                     Provider.InvalidateCache();
                     Provider.UpdateSettings();
                 }
@@ -578,7 +635,7 @@ namespace UnityEditor.VersionControl
                     buttonRect.y = rect.y + 2f;
                     buttonRect.x = position.width - buttonSize.x - 5f;
 
-                    using (new EditorGUI.DisabledScope(incomingList.Size == 0))
+                    using (new EditorGUI.DisabledScope(incomingList?.Root?.VisibleChildCount == 0))
                     {
                         if (GUI.Button(buttonRect, content, EditorStyles.miniButton))
                         {
@@ -588,6 +645,12 @@ namespace UnityEditor.VersionControl
                         }
                     }
                 }
+            }
+
+            if (m_ShowIncoming != m_ShowIncomingPrevious)
+            {
+                (m_ShowIncoming ? incomingList : pendingList).Filter = m_SearchText;
+                m_ShowIncomingPrevious = m_ShowIncoming;
             }
 
             if (repaint)

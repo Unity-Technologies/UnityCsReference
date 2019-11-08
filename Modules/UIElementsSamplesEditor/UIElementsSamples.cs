@@ -141,12 +141,11 @@ namespace UnityEditor.UIElements.Samples
                 element.userData = item;
             };
 
-            Action<IEnumerable<ITreeViewItem>> onSelectionChanged = (selectedItems) =>
+            Action<IEnumerable<ITreeViewItem>> onSelectionChanged = selectedItems =>
             {
-                if (selectedItems.Any())
+                var item = (SampleTreeItem)selectedItems.FirstOrDefault();
+                if (item == null)
                     return;
-
-                var item = selectedItems.First() as SampleTreeItem;
 
                 m_ContentPanel.Clear();
                 m_ContentPanel.Add(item.makeItem(item));

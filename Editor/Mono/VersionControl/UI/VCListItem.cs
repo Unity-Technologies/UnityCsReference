@@ -13,31 +13,30 @@ namespace UnityEditorInternal.VersionControl
     // the list.  Particularly when parts of the list are expanded or not.
     public class ListItem
     {
-        ///@TODO: Violation of unity convention.... m_ on member variables...
+        ListItem m_Parent;
+        ListItem m_FirstChild;
+        ListItem m_LastChild;
+        ListItem m_Prev;
+        ListItem m_Next;
 
-        ListItem parent;
-        ListItem firstChild;
-        ListItem lastChild;
-        ListItem prev;
-        ListItem next;
+        Texture m_Icon;
+        string m_Name;
+        int m_Indent;
+        bool m_Expanded;
+        bool m_Exclusive;
+        bool m_Dummy;
+        bool m_Hidden;
+        bool m_Accept;
+        object m_Item;
+        string[] m_Actions;
+        int m_Identifier;
 
-        Texture icon;
-        string name;
-        int indent;
-        bool expanded;
-        bool exclusive;
-        bool dummy;
-        bool hidden;
-        bool accept;
-        object item;
-        string[] actions;
-        int      identifier;
-        static Texture2D defaultIcon = null;
+        static Texture2D s_DefaultIcon = null;
 
         public ListItem()
         {
             Clear();
-            identifier = (int)(VCSProviderIdentifier.UnsetIdentifier);
+            m_Identifier = (int)(VCSProviderIdentifier.UnsetIdentifier);
         }
 
         ~ListItem()
@@ -49,100 +48,100 @@ namespace UnityEditorInternal.VersionControl
         {
             get
             {
-                if (defaultIcon == null)
+                if (s_DefaultIcon == null)
                 {
-                    defaultIcon = EditorGUIUtility.LoadIcon("vcs_document");
-                    defaultIcon.hideFlags = HideFlags.HideAndDontSave;
+                    s_DefaultIcon = EditorGUIUtility.LoadIcon("vcs_document");
+                    s_DefaultIcon.hideFlags = HideFlags.HideAndDontSave;
                 }
 
-                Asset asset = item as Asset;
-                if (icon == null && asset != null)
+                Asset asset = m_Item as Asset;
+                if (m_Icon == null && asset != null)
                 {
                     if (asset.isInCurrentProject)
                     {
-                        icon = AssetDatabase.GetCachedIcon(asset.path);
+                        m_Icon = AssetDatabase.GetCachedIcon(asset.path);
                     }
                     else
                     {
-                        icon = defaultIcon;
+                        m_Icon = s_DefaultIcon;
                     }
                 }
 
-                return icon;
+                return m_Icon;
             }
-            set { icon = value; }
+            set { m_Icon = value; }
         }
 
         public int Identifier
         {
             get
             {
-                if (identifier == (int)(VCSProviderIdentifier.UnsetIdentifier))
+                if (m_Identifier == (int)(VCSProviderIdentifier.UnsetIdentifier))
                 {
-                    identifier = Provider.GenerateID();
+                    m_Identifier = Provider.GenerateID();
                 }
-                return identifier;
+                return m_Identifier;
             }
         }
 
         public string Name
         {
-            get { return name; }
-            set { name = value; }
+            get { return m_Name; }
+            set { m_Name = value; }
         }
 
         public int Indent
         {
-            get { return indent; }
+            get { return m_Indent; }
             set { SetIntent(this, value); }
         }
 
         public object Item
         {
-            get { return item; }
-            set { item = value; }
+            get { return m_Item; }
+            set { m_Item = value; }
         }
 
         public Asset Asset
         {
-            get { return item as Asset; }
-            set { item = value; }
+            get { return m_Item as Asset; }
+            set { m_Item = value; }
         }
 
         public bool HasPath()
         {
-            Asset a = item as Asset;
+            Asset a = m_Item as Asset;
             return a != null && a.path != null;
         }
 
         public ChangeSet Change
         {
-            get { return item as ChangeSet; }
-            set { item = value; }
+            get { return m_Item as ChangeSet; }
+            set { m_Item = value; }
         }
 
         public bool Expanded
         {
-            get { return expanded; }
-            set { expanded = value; }
+            get { return m_Expanded; }
+            set { m_Expanded = value; }
         }
 
         public bool Exclusive
         {
-            get { return exclusive; }
-            set { exclusive = value; }
+            get { return m_Exclusive; }
+            set { m_Exclusive = value; }
         }
 
         public bool Dummy
         {
-            get { return dummy; }
-            set { dummy = value; }
+            get { return m_Dummy; }
+            set { m_Dummy = value; }
         }
 
         public bool Hidden
         {
-            get { return hidden; }
-            set { hidden = value; }
+            get { return m_Hidden; }
+            set { m_Hidden = value; }
         }
 
         public bool HasChildren
@@ -152,13 +151,13 @@ namespace UnityEditorInternal.VersionControl
 
         public bool HasActions
         {
-            get { return actions != null && actions.Length != 0; }
+            get { return m_Actions != null && m_Actions.Length != 0; }
         }
 
         public string[] Actions
         {
-            get { return actions; }
-            set { actions = value; }
+            get { return m_Actions; }
+            set { m_Actions = value; }
         }
 
         public bool CanExpand
@@ -166,7 +165,7 @@ namespace UnityEditorInternal.VersionControl
             get
             {
                 // Asset asset = item as Asset;
-                ChangeSet change = item as ChangeSet;
+                ChangeSet change = m_Item as ChangeSet;
                 //              return ((asset != null && asset.isFolder) ||
                 //                      change != null ||
                 //                      HasChildren);
@@ -176,8 +175,8 @@ namespace UnityEditorInternal.VersionControl
 
         public bool CanAccept
         {
-            get { return accept; }
-            set { accept = value; }
+            get { return m_Accept; }
+            set { m_Accept = value; }
         }
 
         public int OpenCount
@@ -188,7 +187,7 @@ namespace UnityEditorInternal.VersionControl
                     return 0;
 
                 int count = 0;
-                ListItem listItem = firstChild;
+                ListItem listItem = m_FirstChild;
 
                 while (listItem != null)
                 {
@@ -198,7 +197,7 @@ namespace UnityEditorInternal.VersionControl
                         count += listItem.OpenCount;
                     }
 
-                    listItem = listItem.next;
+                    listItem = listItem.m_Next;
                 }
 
                 return count;
@@ -210,12 +209,50 @@ namespace UnityEditorInternal.VersionControl
             get
             {
                 int count = 0;
-                ListItem listItem = firstChild;
+                ListItem listItem = m_FirstChild;
 
                 while (listItem != null)
                 {
                     ++count;
-                    listItem = listItem.next;
+                    listItem = listItem.m_Next;
+                }
+
+                return count;
+            }
+        }
+
+        internal int VisibleChildCount
+        {
+            get
+            {
+                if (!m_Expanded) return 0;
+
+                int count = 0;
+                ListItem listItem = m_FirstChild;
+
+                while (listItem != null)
+                {
+                    if (!listItem.Hidden && !listItem.Dummy) ++count;
+                    listItem = listItem.m_Next;
+                }
+
+                return count;
+            }
+        }
+
+        internal int VisibleItemCount
+        {
+            get
+            {
+                if (!m_Expanded) return 0;
+
+                int count = 0;
+                ListItem listItem = m_FirstChild;
+
+                while (listItem != null)
+                {
+                    if (!listItem.Hidden) ++count;
+                    listItem = listItem.m_Next;
                 }
 
                 return count;
@@ -224,27 +261,27 @@ namespace UnityEditorInternal.VersionControl
 
         public ListItem Parent
         {
-            get { return parent; }
+            get { return m_Parent; }
         }
 
         public ListItem FirstChild
         {
-            get { return firstChild; }
+            get { return m_FirstChild; }
         }
 
         public ListItem LastChild
         {
-            get { return lastChild; }
+            get { return m_LastChild; }
         }
 
         public ListItem Prev
         {
-            get { return prev; }
+            get { return m_Prev; }
         }
 
         public ListItem Next
         {
-            get { return next; }
+            get { return m_Next; }
         }
 
         public ListItem PrevOpen
@@ -252,19 +289,19 @@ namespace UnityEditorInternal.VersionControl
             get
             {
                 // Previous sibbling or its last open child
-                ListItem enumChild = prev;
+                ListItem enumChild = m_Prev;
 
                 while (enumChild != null)
                 {
-                    if (enumChild.lastChild == null || !enumChild.Expanded)
+                    if (enumChild.m_LastChild == null || !enumChild.Expanded)
                         return enumChild;
 
-                    enumChild = enumChild.lastChild;
+                    enumChild = enumChild.m_LastChild;
                 }
 
                 // Move to parent as long as its not the root
-                if (parent != null && parent.parent != null)
-                    return parent;
+                if (m_Parent != null && m_Parent.m_Parent != null)
+                    return m_Parent;
 
                 return null;
             }
@@ -275,22 +312,22 @@ namespace UnityEditorInternal.VersionControl
             get
             {
                 // Next child
-                if (Expanded && firstChild != null)
-                    return firstChild;
+                if (Expanded && m_FirstChild != null)
+                    return m_FirstChild;
 
                 // Next sibbling
-                if (next != null)
-                    return next;
+                if (m_Next != null)
+                    return m_Next;
 
                 // Find a parent with a next
-                ListItem enumParent = parent;
+                ListItem enumParent = m_Parent;
 
                 while (enumParent != null)
                 {
                     if (enumParent.Next != null)
                         return enumParent.Next;
 
-                    enumParent = enumParent.parent;
+                    enumParent = enumParent.m_Parent;
                 }
 
                 return null;
@@ -362,38 +399,38 @@ namespace UnityEditorInternal.VersionControl
 
         public void Clear()
         {
-            parent = null;
-            firstChild = null;
-            lastChild = null;
-            prev = null;
-            next = null;
+            m_Parent = null;
+            m_FirstChild = null;
+            m_LastChild = null;
+            m_Prev = null;
+            m_Next = null;
 
-            icon = null;
-            name = string.Empty;
-            indent = 0;
-            expanded = false;
-            exclusive = false;
-            dummy = false;
-            accept = false;
-            item = null;
+            m_Icon = null;
+            m_Name = string.Empty;
+            m_Indent = 0;
+            m_Expanded = false;
+            m_Exclusive = false;
+            m_Dummy = false;
+            m_Accept = false;
+            m_Item = null;
         }
 
         public void Add(ListItem listItem)
         {
-            listItem.parent = this;
-            listItem.next = null;
-            listItem.prev = lastChild;
+            listItem.m_Parent = this;
+            listItem.m_Next = null;
+            listItem.m_Prev = m_LastChild;
 
             // recursively update the indent
-            listItem.Indent = indent + 1;
+            listItem.Indent = m_Indent + 1;
 
-            if (firstChild == null)
-                firstChild = listItem;
+            if (m_FirstChild == null)
+                m_FirstChild = listItem;
 
-            if (lastChild != null)
-                lastChild.next = listItem;
+            if (m_LastChild != null)
+                m_LastChild.m_Next = listItem;
 
-            lastChild = listItem;
+            m_LastChild = listItem;
         }
 
         public bool Remove(ListItem listItem)
@@ -402,39 +439,39 @@ namespace UnityEditorInternal.VersionControl
                 return false;
 
             // Can only remove children of this item
-            if (listItem.parent != this)
+            if (listItem.m_Parent != this)
                 return false;
 
-            if (listItem == firstChild)
-                firstChild = listItem.next;
+            if (listItem == m_FirstChild)
+                m_FirstChild = listItem.m_Next;
 
-            if (listItem == lastChild)
-                lastChild = listItem.prev;
+            if (listItem == m_LastChild)
+                m_LastChild = listItem.m_Prev;
 
-            if (listItem.prev != null)
-                listItem.prev.next = listItem.next;
+            if (listItem.m_Prev != null)
+                listItem.m_Prev.m_Next = listItem.m_Next;
 
-            if (listItem.next != null)
-                listItem.next.prev = listItem.prev;
+            if (listItem.m_Next != null)
+                listItem.m_Next.m_Prev = listItem.m_Prev;
 
-            listItem.parent = null;
-            listItem.prev = null;
-            listItem.next = null;
+            listItem.m_Parent = null;
+            listItem.m_Prev = null;
+            listItem.m_Next = null;
 
             return true;
         }
 
         public void RemoveAll()
         {
-            ListItem en = firstChild;
+            ListItem en = m_FirstChild;
             while (en != null)
             {
-                en.parent = null;
-                en = en.next;
+                en.m_Parent = null;
+                en = en.m_Next;
             }
 
-            firstChild = null;
-            lastChild = null;
+            m_FirstChild = null;
+            m_LastChild = null;
         }
 
         public ListItem FindWithIdentifierRecurse(int inIdentifier)
@@ -442,21 +479,21 @@ namespace UnityEditorInternal.VersionControl
             if (Identifier == inIdentifier)
                 return this;
 
-            ListItem listItem = firstChild;
+            ListItem listItem = m_FirstChild;
             while (listItem != null)
             {
                 ListItem found = listItem.FindWithIdentifierRecurse(inIdentifier);
                 if (found != null)
                     return found;
 
-                listItem = listItem.next;
+                listItem = listItem.m_Next;
             }
             return null;
         }
 
         void SetIntent(ListItem listItem, int indent)
         {
-            listItem.indent = indent;
+            listItem.m_Indent = indent;
 
             // Update children
             ListItem en = listItem.FirstChild;

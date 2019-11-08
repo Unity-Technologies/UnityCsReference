@@ -111,7 +111,7 @@ namespace UnityEditor.VersionControl
             GUILayout.BeginArea(r1);
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             GUILayout.EndArea();
-            checkoutFailureList.OnGUI(new Rect(r1.x + 2, r1.y + 2, r1.width - 4, r1.height - 4), true);
+            bool repaint = checkoutFailureList.OnGUI(new Rect(r1.x + 2, r1.y + 2, r1.width - 4, r1.height - 4), true);
 
             GUILayout.Space(20 + h);
             GUILayout.Label("The following files were successfully checked out:", EditorStyles.boldLabel);
@@ -120,7 +120,7 @@ namespace UnityEditor.VersionControl
             GUILayout.BeginArea(r2);
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             GUILayout.EndArea();
-            checkoutSuccessList.OnGUI(new Rect(r2.x + 2, r2.y + 2, r2.width - 4, r2.height - 4), true);
+            repaint |= checkoutSuccessList.OnGUI(new Rect(r2.x + 2, r2.y + 2, r2.width - 4, r2.height - 4), true);
 
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
@@ -151,6 +151,9 @@ namespace UnityEditor.VersionControl
 
             GUILayout.EndHorizontal();
             GUILayout.Space(12);
+
+            if (repaint)
+                Repaint();
         }
     }
 }

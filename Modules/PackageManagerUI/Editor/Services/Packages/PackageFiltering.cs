@@ -95,6 +95,11 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
+            public PackageFilterTab defaultFilterTab
+            {
+                get { return PackageFilterTab.InProject; }
+            }
+
             [SerializeField]
             private string m_CurrentSearchText;
             public string currentSearchText

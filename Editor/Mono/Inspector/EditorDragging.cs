@@ -322,7 +322,7 @@ namespace UnityEditor
 
         private static Rect GetTargetRect(Rect contentRect)
         {
-            var targetHeight = 6f;
+            var targetHeight = 9f;
             var yPos = contentRect.yMax - targetHeight * .75f;
             var uiDragTargetHeight = targetHeight * .75f;
             return new Rect(contentRect.x, yPos + uiDragTargetHeight / (targetHeight * .25f), contentRect.width, uiDragTargetHeight);

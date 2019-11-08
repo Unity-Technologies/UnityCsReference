@@ -4,7 +4,7 @@
 
 namespace UnityEngine.UIElements
 {
-    public class Clickable : MouseManipulator
+    public class Clickable : PointerManipulator
     {
         public event System.Action<EventBase> clickedWithEventInfo;
         public event System.Action clicked;
@@ -79,92 +79,101 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
         }
 
-        private void Invoke(EventBase evt)
+        protected void Invoke(EventBase evt)
         {
-            if (clicked != null)
-                clicked();
-
+            clicked?.Invoke();
             clickedWithEventInfo?.Invoke(evt);
         }
 
         protected void OnMouseDown(MouseDownEvent evt)
         {
-            if (evt != null && CanStartManipulation(evt))
-            {
-                active = true;
-                target.CaptureMouse();
-                lastMousePosition = evt.localMousePosition;
-
-                if (IsRepeatable())
-                {
-                    // Repeatable button clicks are performed on the MouseDown and at timer events
-                    if (target.ContainsPoint(evt.localMousePosition))
-                    {
-                        Invoke(evt);
-                    }
-
-                    if (m_Repeater == null)
-                    {
-                        m_Repeater = target.schedule.Execute(OnTimer).Every(m_Interval).StartingIn(m_Delay);
-                    }
-                    else
-                    {
-                        m_Repeater.ExecuteLater(m_Delay);
-                    }
-                }
-
-                target.pseudoStates |= PseudoStates.Active;
-
-                evt.StopImmediatePropagation();
-            }
+            if (CanStartManipulation(evt))
+                ProcessDownEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
         }
 
         protected void OnMouseMove(MouseMoveEvent evt)
         {
-            if (evt != null && active)
-            {
-                lastMousePosition = evt.localMousePosition;
-
-                if (target.ContainsPoint(evt.localMousePosition))
-                {
-                    target.pseudoStates |= PseudoStates.Active;
-                }
-                else
-                {
-                    target.pseudoStates &= ~PseudoStates.Active;
-                }
-
-                evt.StopPropagation();
-            }
+            if (active)
+                ProcessMoveEvent(evt, evt.localMousePosition);
         }
 
         protected void OnMouseUp(MouseUpEvent evt)
         {
-            if (evt != null && active && CanStopManipulation(evt))
-            {
-                active = false;
-                target.ReleaseMouse();
-                target.pseudoStates &= ~PseudoStates.Active;
+            if (active && CanStopManipulation(evt))
+                ProcessUpEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
+        }
 
-                if (IsRepeatable())
+        protected virtual void ProcessDownEvent(EventBase evt, Vector2 localPosition, int pointerId)
+        {
+            active = true;
+            target.CapturePointer(pointerId);
+            if (!(evt is IPointerEvent))
+                target.panel.ProcessPointerCapture(PointerId.mousePointerId);
+
+            lastMousePosition = localPosition;
+            if (IsRepeatable())
+            {
+                // Repeatable button clicks are performed on the MouseDown and at timer events
+                if (target.ContainsPoint(localPosition))
                 {
-                    // Repeatable button clicks are performed on the MouseDown and at timer events only
-                    if (m_Repeater != null)
-                    {
-                        m_Repeater.Pause();
-                    }
+                    Invoke(evt);
+                }
+
+                if (m_Repeater == null)
+                {
+                    m_Repeater = target.schedule.Execute(OnTimer).Every(m_Interval).StartingIn(m_Delay);
                 }
                 else
                 {
-                    // Non repeatable button clicks are performed on the MouseUp
-                    if (target.ContainsPoint(evt.localMousePosition))
-                    {
-                        Invoke(evt);
-                    }
+                    m_Repeater.ExecuteLater(m_Delay);
                 }
-
-                evt.StopPropagation();
             }
+
+            target.pseudoStates |= PseudoStates.Active;
+
+            evt.StopImmediatePropagation();
+        }
+
+        protected virtual void ProcessMoveEvent(EventBase evt, Vector2 localPosition)
+        {
+            lastMousePosition = localPosition;
+
+            if (target.ContainsPoint(localPosition))
+            {
+                target.pseudoStates |= PseudoStates.Active;
+            }
+            else
+            {
+                target.pseudoStates &= ~PseudoStates.Active;
+            }
+
+            evt.StopPropagation();
+        }
+
+        protected virtual void ProcessUpEvent(EventBase evt, Vector2 localPosition, int pointerId)
+        {
+            active = false;
+            target.ReleasePointer(pointerId);
+            if (!(evt is IPointerEvent))
+                target.panel.ProcessPointerCapture(PointerId.mousePointerId);
+
+            target.pseudoStates &= ~PseudoStates.Active;
+
+            if (IsRepeatable())
+            {
+                // Repeatable button clicks are performed on the MouseDown and at timer events only
+                m_Repeater?.Pause();
+            }
+            else
+            {
+                // Non repeatable button clicks are performed on the MouseUp
+                if (target.ContainsPoint(localPosition))
+                {
+                    Invoke(evt);
+                }
+            }
+
+            evt.StopPropagation();
         }
     }
 }

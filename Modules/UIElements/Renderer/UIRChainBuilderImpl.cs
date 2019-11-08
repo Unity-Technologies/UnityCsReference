@@ -1527,7 +1527,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return;
 
             if (currentElement.panel.contextType == ContextType.Editor)
-                textParams.fontColor *= UIElementsUtility.editorPlayModeTintColor;
+                textParams.fontColor *= textParams.playmodeTintColor;
 
             if (handle.useLegacy)
                 DrawTextNative(textParams, handle, pixelsPerPoint);
@@ -1581,7 +1581,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams)
         {
-            rectParams.color *= rectParams.playmodeTintColor;
+            if (currentElement.panel.contextType == ContextType.Editor)
+                rectParams.color *= rectParams.playmodeTintColor;
 
             var meshAlloc = new MeshBuilder.AllocMeshData()
             {
@@ -1600,10 +1601,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams)
         {
-            borderParams.leftColor *= borderParams.playmodeTintColor;
-            borderParams.topColor *= borderParams.playmodeTintColor;
-            borderParams.rightColor *= borderParams.playmodeTintColor;
-            borderParams.bottomColor *= borderParams.playmodeTintColor;
+            if (currentElement.panel.contextType == ContextType.Editor)
+            {
+                borderParams.leftColor *= borderParams.playmodeTintColor;
+                borderParams.topColor *= borderParams.playmodeTintColor;
+                borderParams.rightColor *= borderParams.playmodeTintColor;
+                borderParams.bottomColor *= borderParams.playmodeTintColor;
+            }
 
             MeshBuilder.MakeBorder(borderParams, UIRUtility.k_MeshPosZ, new MeshBuilder.AllocMeshData()
             {
@@ -1633,6 +1637,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var style = currentElement.computedStyle;
             if (style.backgroundColor != Color.clear)
             {
+                // Draw solid color background
                 var rectParams = new MeshGenerationContextUtils.RectangleParams
                 {
                     rect = GUIUtility.AlignRectToDevice(currentElement.rect),
@@ -1650,6 +1655,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var background = style.backgroundImage.value;
             if (background.texture != null || background.vectorImage != null)
             {
+                // Draw background image (be it from a texture or a vector image)
                 var rectParams = new MeshGenerationContextUtils.RectangleParams();
                 if (background.texture != null)
                 {
@@ -1987,27 +1993,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams, TextHandle handle, float pixelsPerPoint)
         {
-            float scaling = TextNative.ComputeTextScaling(m_CurrentElement.worldTransform, pixelsPerPoint);
-            var textSettings = new TextNativeSettings()
-            {
-                text = textParams.text,
-                font = textParams.font,
-                size = textParams.fontSize,
-                scaling = scaling,
-                style = textParams.fontStyle,
-                color = textParams.fontColor,
-                anchor = textParams.anchor,
-                wordWrap = textParams.wordWrap,
-                wordWrapWidth = textParams.wordWrapWidth,
-                richText = textParams.richText
-            };
-
-            if (textSettings.font == null)
-            {
+            if (textParams.font == null)
                 return;
-            }
 
-            textSettings.color *= textParams.playmodeTintColor;
+            if (m_CurrentElement.panel.contextType == ContextType.Editor)
+                textParams.fontColor *= textParams.playmodeTintColor;
+
+            float scaling = TextNative.ComputeTextScaling(m_CurrentElement.worldTransform, pixelsPerPoint);
+            TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, scaling);
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {

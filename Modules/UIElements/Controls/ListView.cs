@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
             private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
             private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
             private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
+            private readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = false };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -35,19 +36,24 @@ namespace UnityEngine.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                int itemHeight = 0;
+                var itemHeight = 0;
+                var listView = (ListView)ve;
+                listView.reorderable = m_Reorderable.GetValueFromBag(bag, cc);
+
+                // Avoid setting itemHeight unless it's explicitly defined.
+                // Setting itemHeight property will activate inline property mode.
                 if (m_ItemHeight.TryGetValueFromBag(bag, cc, ref itemHeight))
                 {
-                    ((ListView)ve).itemHeight = itemHeight;
+                    listView.itemHeight = itemHeight;
                 }
 
-                ((ListView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
-                ((ListView)ve).selectionType = m_SelectionType.GetValueFromBag(bag, cc);
-                ((ListView)ve).showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
+                listView.showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
+                listView.selectionType = m_SelectionType.GetValueFromBag(bag, cc);
+                listView.showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
             }
         }
 
-        private class RecycledItem
+        internal class RecycledItem
         {
             public VisualElement element { get; private set; }
             public int index;
@@ -142,6 +148,11 @@ namespace UnityEngine.UIElements
         private float m_PixelAlignedItemHeight;
         public float resolvedItemHeight => m_PixelAlignedItemHeight;
 
+        internal List<RecycledItem> Pool
+        {
+            get { return m_Pool; }
+        }
+
         [SerializeField]
         internal int m_ItemHeight = s_DefaultItemHeight;
 
@@ -169,6 +180,29 @@ namespace UnityEngine.UIElements
             set { EnableInClassList(borderUssClassName, value); }
         }
 
+        public bool reorderable
+        {
+            get
+            {
+                var controller = m_Dragger?.dragAndDropController;
+                return controller != null && controller.enableReordering;
+            }
+            set
+            {
+                if (m_Dragger?.dragAndDropController == null)
+                {
+                    if (value)
+                        SetDragAndDropController(new ListViewReorderableDragAndDropController(this));
+
+                    return;
+                }
+
+                var controller = m_Dragger.dragAndDropController;
+                if (controller != null)
+                    controller.enableReordering = value;
+            }
+        }
+
         // Persisted.
         [SerializeField]
         private float m_ScrollOffset;
@@ -186,6 +220,7 @@ namespace UnityEngine.UIElements
         private readonly List<object> m_SelectedItems = new List<object>();
 
         private int m_RangeSelectionOrigin = -1;
+        private ListViewDragger m_Dragger;
 
         public int selectedIndex
         {
@@ -249,6 +284,8 @@ namespace UnityEngine.UIElements
         public static readonly string ussClassName = "unity-list-view";
         public static readonly string borderUssClassName = ussClassName + "--with-border";
         public static readonly string itemUssClassName = ussClassName + "__item";
+        public static readonly string dragHoverBarUssClassName = ussClassName + "__drag-hover-bar";
+        public static readonly string itemDragHoverUssClassName = itemUssClassName + "--drag-hover";
         public static readonly string itemSelectedVariantUssClassName = itemUssClassName + "--selected";
         public static readonly string itemAlternativeBackgroundUssClassName = itemUssClassName + "--alternative-background";
 
@@ -270,7 +307,8 @@ namespace UnityEngine.UIElements
             RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
 
-            m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnClick);
+            m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            m_ScrollView.contentContainer.RegisterCallback<MouseUpEvent>(OnMouseUp);
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
             m_ScrollView.contentContainer.focusable = true;
             m_ScrollView.contentContainer.usageHints &= ~UsageHints.GroupTransform; // Scroll views with virtualized content shouldn't have the "view transform" optimization
@@ -393,7 +431,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void OnClick(MouseDownEvent evt)
+        private void OnMouseDown(MouseDownEvent evt)
         {
             if (!HasValidDataAndBindings())
                 return;
@@ -447,6 +485,11 @@ namespace UnityEngine.UIElements
                             }
                         }
                     }
+                    else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(clickedIndex))
+                    {
+                        // Do noting, selection will be processed OnMouseUp
+                        // If drag and drop will be started listview dragger will capture the mouse and ListView will not receive the mouse up event
+                    }
                     else // single
                     {
                         m_RangeSelectionOrigin = clickedIndex;
@@ -456,12 +499,30 @@ namespace UnityEngine.UIElements
                 case 2:
                     if (onItemChosen != null)
                     {
-                        var clickedItem = m_ItemsSource[clickedIndex];
-                        onItemChosen.Invoke(clickedItem);
+                        ProcessSingleClick(clickedIndex);
                     }
 
                     onItemsChosen?.Invoke(m_SelectedItems);
                     break;
+            }
+        }
+
+        private void ProcessSingleClick(int clickedIndex)
+        {
+            m_RangeSelectionOrigin = clickedIndex;
+            SetSelection(clickedIndex);
+        }
+
+        private void OnMouseUp(MouseUpEvent evt)
+        {
+            var clickedIndex = (int)(evt.localMousePosition.y / itemHeight);
+            if (selectionType == SelectionType.Multiple
+                && !evt.shiftKey
+                && !evt.actionKey
+                && m_SelectedIndices.Count > 1
+                && m_SelectedIndices.Contains(clickedIndex))
+            {
+                ProcessSingleClick(clickedIndex);
             }
         }
 
@@ -493,7 +554,6 @@ namespace UnityEngine.UIElements
             }
 
             NotifyOfSelectionChange();
-
             SaveViewData();
         }
 
@@ -627,12 +687,19 @@ namespace UnityEngine.UIElements
             m_ScrollView.ScrollTo(visualElement);
         }
 
+        internal void SetDragAndDropController(IListViewDragAndDropController dragAndDropController)
+        {
+            if (m_Dragger == null)
+                m_Dragger = new ListViewDragger(this);
+
+            m_Dragger.dragAndDropController = dragAndDropController;
+        }
+
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
 
-            string key = GetFullHierarchicalViewDataKey();
-
+            var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
         }
 

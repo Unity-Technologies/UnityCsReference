@@ -81,7 +81,7 @@ namespace UnityEditor.PackageManager.UI
                 rootVisualElement.Add(root);
                 root.StretchToParentSize();
 
-                var newTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFilterTab.All;
+                var newTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFiltering.instance.defaultFilterTab;
                 PackageFiltering.instance.currentFilterTab = newTab;
 
                 if (PageManager.instance.GetRefreshTimestamp(newTab) == 0)

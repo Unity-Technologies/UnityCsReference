@@ -163,6 +163,9 @@ namespace UnityEngine
             [FreeFunction(Name = "Texture2DScripting::EnableCreateTextureThreaded")]
             set;
         }
+
+        extern internal int GetPixelDataSize(int mipLevel, int element = 0);
+        extern internal int GetPixelDataOffset(int mipLevel, int element = 0);
     }
 
     [NativeHeader("Runtime/Graphics/Texture2D.h")]
@@ -222,6 +225,7 @@ namespace UnityEngine
         extern private long GetRawImageDataSize();
 
         extern private static AtomicSafetyHandle GetSafetyHandle(Texture2D tex);
+        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel);
 
         [FreeFunction("Texture2DScripting::GenerateAtlas")]
         extern private static void GenerateAtlasImpl(Vector2[] sizes, int padding, int atlasSize, [Out] Rect[] rect);
@@ -381,6 +385,9 @@ namespace UnityEngine
             SetPixels(colors, face, 0);
         }
 
+        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face);
+        extern private IntPtr GetWritableImageData(int frame);
+
         extern public bool streamingMipmaps { get; }
         extern public int streamingMipmapsPriority { get; }
 
@@ -486,6 +493,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "Texture3DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
+        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel);
+        extern private IntPtr GetImageDataPointer();
     }
 
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
@@ -545,6 +555,9 @@ namespace UnityEngine
         {
             SetPixels32(colors, arrayElement, 0);
         }
+
+        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int element);
+        extern private IntPtr GetImageDataPointer();
     }
 
     [NativeHeader("Runtime/Graphics/CubemapArrayTexture.h")]
@@ -603,6 +616,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "CubemapArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+
+        extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel, int face, int element);
+        extern private IntPtr GetImageDataPointer();
     }
 
     [NativeHeader("Runtime/Graphics/SparseTexture.h")]

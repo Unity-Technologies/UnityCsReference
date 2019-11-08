@@ -68,6 +68,22 @@ namespace UnityEditor
 
         internal ShowMode showMode => (ShowMode)m_ShowMode;
 
+        private string m_WindowID = null;
+        internal string windowID
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(m_WindowID))
+                    return GetWindowID();
+                return m_WindowID;
+            }
+
+            set
+            {
+                m_WindowID = value;
+            }
+        }
+
         internal static bool IsPopup(ShowMode mode)
         {
             return (ShowMode.PopupMenu == mode);
@@ -206,28 +222,21 @@ namespace UnityEditor
             );
         }
 
-        private string NotDockedWindowID()
+        internal string GetWindowID()
         {
-            if (IsNotDocked())
-            {
-                HostView v = rootView as HostView;
+            HostView v = rootView as HostView;
 
-                if (v == null)
-                {
-                    if (rootView is SplitView)
-                        v = (HostView)rootView.children[0];
-                    else
-                        return rootView.GetType().ToString();
-                }
+            if (v == null && rootView is SplitView && rootView.children.Length > 0)
+                v = rootView.children[0] as HostView;
 
-                if (rootView.children.Length > 0)
-                    return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
-                        : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
+            if (v == null)
+                return rootView.GetType().ToString();
 
-                return v.actualView.GetType().ToString();
-            }
+            if (rootView.children.Length > 0)
+                return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
+                    : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
 
-            return null;
+            return v.actualView.GetType().ToString();
         }
 
         public bool IsMainWindow()
@@ -237,44 +246,51 @@ namespace UnityEditor
             return false;
         }
 
+        internal void SaveGeometry()
+        {
+            string ID = windowID;
+            if (String.IsNullOrEmpty(ID))
+                return;
+
+            // save position/size
+            EditorPrefs.SetFloat(ID + "x", m_PixelRect.x);
+            EditorPrefs.SetFloat(ID + "y", m_PixelRect.y);
+            EditorPrefs.SetFloat(ID + "w", m_PixelRect.width);
+            EditorPrefs.SetFloat(ID + "h", m_PixelRect.height);
+            EditorPrefs.SetBool(ID + "z", m_Maximized);
+        }
+
         public void Save()
         {
             m_Maximized = IsZoomed();
+            SaveGeometry();
+        }
 
-            // only save it if its not docked and its not the MainWindow
-            if (!IsMainWindow() && IsNotDocked() && !IsZoomed())
+        internal void LoadGeometry(bool loadPosition)
+        {
+            string ID = windowID;
+            if (String.IsNullOrEmpty(ID))
+                return;
+
+            // get position/size
+            Rect p = m_PixelRect;
+            if (loadPosition)
             {
-                string ID = NotDockedWindowID();
-
-                // save position/size
-                EditorPrefs.SetFloat(ID + "x", m_PixelRect.x);
-                EditorPrefs.SetFloat(ID + "y", m_PixelRect.y);
-                EditorPrefs.SetFloat(ID + "w", m_PixelRect.width);
-                EditorPrefs.SetFloat(ID + "h", m_PixelRect.height);
-                EditorPrefs.SetBool(ID + "z", m_Maximized);
+                p.x = EditorPrefs.GetFloat(ID + "x", m_PixelRect.x);
+                p.y = EditorPrefs.GetFloat(ID + "y", m_PixelRect.y);
+                p.width = EditorPrefs.GetFloat(ID + "w", m_PixelRect.width);
+                p.height = EditorPrefs.GetFloat(ID + "h", m_PixelRect.height);
+                m_Maximized = EditorPrefs.GetBool(ID + "z");
             }
+            p.width = Mathf.Min(Mathf.Max(p.width, m_MinSize.x), m_MaxSize.x);
+            p.height = Mathf.Min(Mathf.Max(p.height, m_MinSize.y), m_MaxSize.y);
+            m_PixelRect = p;
         }
 
         private void Load(bool loadPosition)
         {
             if (!IsMainWindow() && IsNotDocked())
-            {
-                string ID = NotDockedWindowID();
-
-                // get position/size
-                Rect p = m_PixelRect;
-                if (loadPosition)
-                {
-                    p.x = EditorPrefs.GetFloat(ID + "x", m_PixelRect.x);
-                    p.y = EditorPrefs.GetFloat(ID + "y", m_PixelRect.y);
-                    p.width = EditorPrefs.GetFloat(ID + "w", m_PixelRect.width);
-                    p.height = EditorPrefs.GetFloat(ID + "h", m_PixelRect.height);
-                    m_Maximized = EditorPrefs.GetBool(ID + "z");
-                }
-                p.width = Mathf.Min(Mathf.Max(p.width, m_MinSize.x), m_MaxSize.x);
-                p.height = Mathf.Min(Mathf.Max(p.height, m_MinSize.y), m_MaxSize.y);
-                m_PixelRect = p;
-            }
+                LoadGeometry(loadPosition);
         }
 
         internal void OnResize()
@@ -339,8 +355,15 @@ namespace UnityEditor
                     return rootView.children[1] as SplitView;
                 if (m_ShowMode == (int)ShowMode.MainWindow && rootView && rootView.children.Length == 2)
                     return rootView.children[0] as SplitView;
-                else
-                    return rootView as SplitView;
+
+                foreach (var c in rootView.children)
+                {
+                    var sv = c as SplitView;
+                    if (sv)
+                        return sv;
+                }
+
+                return rootView as SplitView;
             }
         }
 

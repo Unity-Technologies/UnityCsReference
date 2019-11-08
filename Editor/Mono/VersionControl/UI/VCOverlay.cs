@@ -55,23 +55,15 @@ namespace UnityEditorInternal.VersionControl
             DrawOverlays(asset, metaAsset, itemRect);
         }
 
-        private static void DrawMetaOverlay(Rect iconRect, bool isRemote)
+        static void DrawMetaOverlay(Rect iconRect, bool isRemote)
         {
-            iconRect.y -= 1;
-            if (isRemote)
-            {
-                iconRect.x -= 5;
-                GUI.DrawTexture(iconRect, s_BlueLeftParan);
-                iconRect.x += 8;
-                GUI.DrawTexture(iconRect, s_BlueRightParan);
-            }
-            else
-            {
-                iconRect.x -= 5;
-                GUI.DrawTexture(iconRect, s_RedLeftParan);
-                iconRect.x += 8;
-                GUI.DrawTexture(iconRect, s_RedRightParan);
-            }
+            var offset = Mathf.FloorToInt(iconRect.width / 3);
+            var pos1 = iconRect.x - offset;
+            var pos2 = iconRect.x + iconRect.width + offset - iconRect.width + 1;
+            iconRect.x = pos1;
+            GUI.DrawTexture(iconRect, isRemote ? s_BlueLeftParan : s_RedLeftParan);
+            iconRect.x = pos2;
+            GUI.DrawTexture(iconRect, isRemote ? s_BlueRightParan : s_RedRightParan);
         }
 
         static void DrawOverlay(Asset.States state, Rect iconRect)
@@ -93,16 +85,15 @@ namespace UnityEditorInternal.VersionControl
                 return;
 
             CreateStaticResources();
-            float iconWidth = 16;
-            float offsetX = 1f; // offset to compensate that icons are 16x16 with 8x8 content
-            float offsetY = 4f;
-            float syncOffsetX = -4f; // offset to compensate that icons are 16x16 with 8x8 content and sync overlay pos
+            float iconWidth = Mathf.Min(itemRect.height / 2 + 4, 16);
+            // slightly offset icons since their texture space is not filled with content entirely
+            float offsetX = 0;
+            float offsetY = 2;
 
             Rect topLeft = new Rect(itemRect.x - offsetX, itemRect.y - offsetY, iconWidth, iconWidth);
             Rect topRight = new Rect(itemRect.xMax - iconWidth + offsetX, itemRect.y - offsetY, iconWidth, iconWidth);
             Rect bottomLeft = new Rect(itemRect.x - offsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
             Rect bottomRight = new Rect(itemRect.xMax - iconWidth + offsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
-            Rect syncRect = new Rect(itemRect.xMax - iconWidth + syncOffsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
 
             Asset.States assetState = asset.state;
             Asset.States metaState = metaAsset != null ? metaAsset.state : Asset.States.None;
@@ -269,23 +260,23 @@ namespace UnityEditorInternal.VersionControl
             }
 
             if (Asset.IsState(assetState, Asset.States.OutOfSync) || (metaAsset != null && Asset.IsState(metaState, Asset.States.OutOfSync)))
-                DrawOverlay(Asset.States.OutOfSync, syncRect);
+                DrawOverlay(Asset.States.OutOfSync, bottomRight);
         }
 
         private static void CreateStaticResources()
         {
             if (s_BlueLeftParan == null)
             {
-                s_BlueLeftParan = EditorGUIUtility.LoadIcon("P4_BlueLeftParenthesis");
+                s_BlueLeftParan = EditorGUIUtility.LoadIcon("VersionControl/P4_BlueLeftParenthesis");
                 s_BlueLeftParan.hideFlags = HideFlags.HideAndDontSave;
 
-                s_BlueRightParan = EditorGUIUtility.LoadIcon("P4_BlueRightParenthesis");
+                s_BlueRightParan = EditorGUIUtility.LoadIcon("VersionControl/P4_BlueRightParenthesis");
                 s_BlueRightParan.hideFlags = HideFlags.HideAndDontSave;
 
-                s_RedLeftParan = EditorGUIUtility.LoadIcon("P4_RedLeftParenthesis");
+                s_RedLeftParan = EditorGUIUtility.LoadIcon("VersionControl/P4_RedLeftParenthesis");
                 s_RedLeftParan.hideFlags = HideFlags.HideAndDontSave;
 
-                s_RedRightParan = EditorGUIUtility.LoadIcon("P4_RedRightParenthesis");
+                s_RedRightParan = EditorGUIUtility.LoadIcon("VersionControl/P4_RedRightParenthesis");
                 s_RedRightParan.hideFlags = HideFlags.HideAndDontSave;
 
                 s_DisconnectedIcon = EditorGUIUtility.LoadIcon("CollabError");

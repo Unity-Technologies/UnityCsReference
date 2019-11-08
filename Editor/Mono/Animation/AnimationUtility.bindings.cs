@@ -209,6 +209,7 @@ namespace UnityEditor
             Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
         }
 
+        [NativeThrows]
         extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
 
         extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
@@ -225,6 +226,7 @@ namespace UnityEditor
             Internal_InvokeOnCurveWasModified(clip, binding, curve != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
         }
 
+        [NativeThrows]
         extern private static void Internal_SetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve, bool syncEditorCurves);
 
         extern internal static void SyncEditorCurves([NotNull] AnimationClip clip);

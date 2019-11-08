@@ -820,20 +820,8 @@
     <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
       <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\BaseField.cs">
-      <Link>Modules\UIElements\BaseField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\BaseSlider.cs">
-      <Link>Modules\UIElements\BaseSlider.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\BindableElement.cs">
       <Link>Modules\UIElements\BindableElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Box.cs">
-      <Link>Modules\UIElements\Box.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Button.cs">
-      <Link>Modules\UIElements\Button.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\ClampedDragger.cs">
       <Link>Modules\UIElements\ClampedDragger.cs</Link>
@@ -847,14 +835,59 @@
     <Compile Include="..\..\Modules\UIElements\ContextualMenuManipulator.cs">
       <Link>Modules\UIElements\ContextualMenuManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\BaseField.cs">
+      <Link>Modules\UIElements\Controls\BaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\BaseSlider.cs">
+      <Link>Modules\UIElements\Controls\BaseSlider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Controls\Binding.cs">
       <Link>Modules\UIElements\Controls\Binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\Box.cs">
+      <Link>Modules\UIElements\Controls\Box.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\Button.cs">
+      <Link>Modules\UIElements\Controls\Button.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\Foldout.cs">
+      <Link>Modules\UIElements\Controls\Foldout.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Controls\INotifyValueChanged.cs">
       <Link>Modules\UIElements\Controls\INotifyValueChanged.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\Image.cs">
+      <Link>Modules\UIElements\Controls\Image.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Controls\KeyboardTextEditor.cs">
       <Link>Modules\UIElements\Controls\KeyboardTextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\Label.cs">
+      <Link>Modules\UIElements\Controls\Label.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\ListView.cs">
+      <Link>Modules\UIElements\Controls\ListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\MinMaxSlider.cs">
+      <Link>Modules\UIElements\Controls\MinMaxSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\PopupWindow.cs">
+      <Link>Modules\UIElements\Controls\PopupWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\RepeatButton.cs">
+      <Link>Modules\UIElements\Controls\RepeatButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\ScrollView.cs">
+      <Link>Modules\UIElements\Controls\ScrollView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\Scroller.cs">
+      <Link>Modules\UIElements\Controls\Scroller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\Slider.cs">
+      <Link>Modules\UIElements\Controls\Slider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\SliderInt.cs">
+      <Link>Modules\UIElements\Controls\SliderInt.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Controls\TextEditor.cs">
       <Link>Modules\UIElements\Controls\TextEditor.cs</Link>
@@ -874,6 +907,12 @@
     <Compile Include="..\..\Modules\UIElements\Controls\TouchScreenTextEditor.cs">
       <Link>Modules\UIElements\Controls\TouchScreenTextEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\TreeView.cs">
+      <Link>Modules\UIElements\Controls\TreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\TreeViewItem.cs">
+      <Link>Modules\UIElements\Controls\TreeViewItem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Controls\VisualTreeBindingsUpdater.cs">
       <Link>Modules\UIElements\Controls\VisualTreeBindingsUpdater.cs</Link>
     </Compile>
@@ -882,6 +921,33 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\DisposeHelper.cs">
       <Link>Modules\UIElements\DisposeHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\DragAndDropUtility.cs">
+      <Link>Modules\UIElements\DragAndDrop\DragAndDropUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\DragEventsProcessor.cs">
+      <Link>Modules\UIElements\DragAndDrop\DragEventsProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IDragAndDrop.cs">
+      <Link>Modules\UIElements\DragAndDrop\IDragAndDrop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IDragAndDropController.cs">
+      <Link>Modules\UIElements\DragAndDrop\IDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IListDragAndDropArgs.cs">
+      <Link>Modules\UIElements\DragAndDrop\IListDragAndDropArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IListViewDragAndDropController.cs">
+      <Link>Modules\UIElements\DragAndDrop\IListViewDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IReorderable.cs">
+      <Link>Modules\UIElements\DragAndDrop\IReorderable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\ListViewDragger.cs">
+      <Link>Modules\UIElements\DragAndDrop\ListViewDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\DragAndDrop\ListViewReorderableDragAndDropController.cs">
+      <Link>Modules\UIElements\DragAndDrop\ListViewReorderableDragAndDropController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\DropdownMenu.cs">
       <Link>Modules\UIElements\DropdownMenu.cs</Link>
@@ -1003,9 +1069,6 @@
     <Compile Include="..\..\Modules\UIElements\FocusController.cs">
       <Link>Modules\UIElements\FocusController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Foldout.cs">
-      <Link>Modules\UIElements\Foldout.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\HierarchyTraversal.cs">
       <Link>Modules\UIElements\HierarchyTraversal.cs</Link>
     </Compile>
@@ -1021,9 +1084,6 @@
     <Compile Include="..\..\Modules\UIElements\ITransform.cs">
       <Link>Modules\UIElements\ITransform.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Image.cs">
-      <Link>Modules\UIElements\Image.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\ImmediateModeElement.cs">
       <Link>Modules\UIElements\ImmediateModeElement.cs</Link>
     </Compile>
@@ -1033,20 +1093,11 @@
     <Compile Include="..\..\Modules\UIElements\InteractionEnums.cs">
       <Link>Modules\UIElements\InteractionEnums.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Label.cs">
-      <Link>Modules\UIElements\Label.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ListView.cs">
-      <Link>Modules\UIElements\ListView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\ManipulatorActivationFilter.cs">
       <Link>Modules\UIElements\ManipulatorActivationFilter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Manipulators.cs">
       <Link>Modules\UIElements\Manipulators.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\MinMaxSlider.cs">
-      <Link>Modules\UIElements\MinMaxSlider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\MouseButton.cs">
       <Link>Modules\UIElements\MouseButton.cs</Link>
@@ -1066,8 +1117,11 @@
     <Compile Include="..\..\Modules\UIElements\PointerCaptureController.cs">
       <Link>Modules\UIElements\PointerCaptureController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\PopupWindow.cs">
-      <Link>Modules\UIElements\PopupWindow.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\PointerClickable.cs">
+      <Link>Modules\UIElements\PointerClickable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\PointerManipulator.cs">
+      <Link>Modules\UIElements\PointerManipulator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\ProjectionUtils.cs">
       <Link>Modules\UIElements\ProjectionUtils.cs</Link>
@@ -1129,23 +1183,8 @@
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderers.cs">
       <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\RepeatButton.cs">
-      <Link>Modules\UIElements\RepeatButton.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Scheduler.cs">
       <Link>Modules\UIElements\Scheduler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ScrollView.cs">
-      <Link>Modules\UIElements\ScrollView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Scroller.cs">
-      <Link>Modules\UIElements\Scroller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Slider.cs">
-      <Link>Modules\UIElements\Slider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\SliderInt.cs">
-      <Link>Modules\UIElements\SliderInt.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Spacing.cs">
       <Link>Modules\UIElements\Spacing.cs</Link>
@@ -1338,12 +1377,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Transitions.cs">
       <Link>Modules\UIElements\Transitions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\TreeView.cs">
-      <Link>Modules\UIElements\TreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\TreeViewItem.cs">
-      <Link>Modules\UIElements\TreeViewItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElements\UIElementsUtility.bindings.cs</Link>

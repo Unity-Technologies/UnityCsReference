@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_Clickable == null)
                 {
-                    clickable = new Clickable(value);
+                    clickable = new PointerClickable(value);
                 }
                 else
                 {
@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
             AddToClassList(ussClassName);
 
             // Click-once behaviour
-            clickable = new Clickable(clickEvent);
+            clickable = new PointerClickable(clickEvent);
         }
 
         private static readonly string NonEmptyString = " ";

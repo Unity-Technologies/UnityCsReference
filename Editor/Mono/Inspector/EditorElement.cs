@@ -132,13 +132,15 @@ namespace UnityEditor.UIElements
 
         private void UpdateInspectorVisibility()
         {
-            if (!editor.CanBeExpandedViaAFoldout())
+            if (editor.CanBeExpandedViaAFoldout())
             {
-                SetElementVisible(m_InspectorElement, false);
+                m_Footer.style.marginTop = 0;
+                m_InspectorElement.style.paddingBottom = InspectorWindow.kEditorElementPaddingBottom;
             }
             else
             {
-                SetElementVisible(m_InspectorElement, true);
+                m_Footer.style.marginTop = -kFooterDefaultHeight;
+                m_InspectorElement.style.paddingBottom = 0;
             }
         }
 
@@ -222,14 +224,12 @@ namespace UnityEditor.UIElements
                 InvalidateIMGUILayouts(this);
             }
 
-            wasVisible = wasVisible && editor.CanBeExpandedViaAFoldout();
-
             if (wasVisible != IsElementVisible(m_InspectorElement))
             {
                 SetElementVisible(m_InspectorElement, wasVisible);
-
-                m_Footer.style.marginTop = wasVisible ? 0 : -kFooterDefaultHeight;
             }
+
+            UpdateInspectorVisibility();
 
             var multiEditingSupported = inspectorWindow.IsMultiEditingSupported(editor, target);
 
@@ -333,7 +333,7 @@ namespace UnityEditor.UIElements
             {
                 // TODO: Check if we can fix this in the GameObjectInspector instead
                 GUILayout.Space(
-                    -1f // move back up so line overlaps
+                    -3f // move back up so line overlaps
                     - EditorStyles.inspectorBig.margin.bottom -
                     EditorStyles.inspectorTitlebar.margin.top // move back up margins
                 );
@@ -394,7 +394,7 @@ namespace UnityEditor.UIElements
         #endregion Header
 
         #region Footer
-        const float kFooterDefaultHeight = 3;
+        const float kFooterDefaultHeight = 5;
         IMGUIContainer BuildFooterElement(string editorTitle)
         {
             IMGUIContainer footerElement = inspectorWindow.CreateIMGUIContainer(FooterOnGUI, editorTitle + "Footer");

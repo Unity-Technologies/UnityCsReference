@@ -4491,6 +4491,7 @@ namespace UnityEditor
                                         }
                                     },
                                     null);
+                                evt.Use();
                                 return origColor;
                         }
                     }

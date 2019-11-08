@@ -2,9 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
 using UnityEditor.ShortcutManagement;
+using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor.VersionControl
 {
@@ -160,7 +163,10 @@ namespace UnityEditor.VersionControl
             if ((task.resultCode & (int)SubmitResult.OK) != 0)
                 win.ResetAndClose();
             else
-                win.RefreshList();
+            {
+                WindowResolve.Open(win.assetList);
+                win.ResetAndClose();
+            }
         }
 
         internal static void OnAdded(Task task)
@@ -257,9 +263,6 @@ namespace UnityEditor.VersionControl
             GUILayout.EndArea();
             bool repaint = submitList.OnGUI(new Rect(r1.x + 2, r1.y + 2, r1.width - 4, r1.height - 4), true);
 
-            if (repaint)
-                Repaint();
-
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
 
@@ -331,6 +334,9 @@ namespace UnityEditor.VersionControl
             GUILayout.Space(12);
 
             if (progressTask != null)
+                repaint = true;
+
+            if (repaint)
                 Repaint();
         }
 
@@ -439,6 +445,9 @@ namespace UnityEditor.VersionControl
                 return;
             }
 
+            bool cancelSubmit = HandleActiveScenes();
+            if (cancelSubmit)
+                return;
             UnityEditor.AssetDatabase.SaveAssets();
 
             // Submit the change list. Last parameter is "save only" so invert the submit flag
@@ -455,6 +464,45 @@ namespace UnityEditor.VersionControl
             var window = args.context as WindowChange;
             if (window != null)
                 window.Save(true);
+        }
+
+        private bool HandleActiveScenes()
+        {
+            List<Scene> scenes = new List<Scene>();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                Asset asset = Provider.GetAssetByPath(scene.path);
+                if (asset != null && asset.IsUnderVersionControl && scene.isDirty)
+                {
+                    scenes.Add(scene);
+                }
+            }
+
+            if (scenes.Count > 0)
+            {
+                List<Scene> filteredScenes = new List<Scene>();
+                foreach (var asset in assetList)
+                {
+                    foreach (var scene in scenes)
+                    {
+                        if (asset.path.Equals(scene.path))
+                        {
+                            filteredScenes.Add(scene);
+                            break;
+                        }
+                    }
+                }
+
+                if (filteredScenes.Count > 0)
+                {
+                    if (!EditorSceneManager.SaveModifiedScenesIfUserWantsTo(filteredScenes.ToArray()))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }

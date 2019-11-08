@@ -18,6 +18,9 @@ namespace UnityEditorInternal.VersionControl
         {
             public static readonly GUIStyle evenBackground = "CN EntryBackEven";
             public static GUIStyle dragBackground = new GUIStyle("CN EntryBackEven");
+            public static GUIStyle changeset = new GUIStyle(EditorStyles.boldLabel);
+            public static GUIStyle asset = new GUIStyle(EditorStyles.label);
+            public static GUIStyle meta = new GUIStyle(EditorStyles.miniLabel);
 
             static Styles()
             {
@@ -28,6 +31,14 @@ namespace UnityEditorInternal.VersionControl
                 yellowTex.Apply();
 
                 dragBackground.onNormal.background = yellowTex;
+
+                changeset.focused.textColor = EditorGUIUtility.isProSkin ? Color.white : Color.black;
+                asset.focused.textColor = Color.white;
+                meta.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
+
+                meta.active.textColor = meta.onActive.textColor
+                        = meta.focused.textColor = meta.onFocused.textColor
+                            = Color.white;
             }
         }
 
@@ -73,6 +84,7 @@ namespace UnityEditorInternal.VersionControl
         Dictionary<string, ListItem> selectList = new Dictionary<string, ListItem>();
         ListItem singleSelect = null;
         GUIContent calcSizeTmpContent = new GUIContent();
+        string filter;
 
         const float c_lineHeight = 16;
         const float c_scrollWidth = 14;
@@ -80,6 +92,8 @@ namespace UnityEditorInternal.VersionControl
         const string c_changeKeyPrefix = "_chkeyprfx_"; // Workaround to make path mapping refresh work with changesets
         const string c_metaSuffix = ".meta";
         internal const string c_emptyChangeListMessage = "Empty change list";
+        internal const string c_noSearchResultChangeListMessage = "No search results found in this change list";
+        internal const string c_noChangeListsMessage = "No changelists found";
 
         // Handle unique id access to the list.  This was added to enable us to pass the list as
         // an integer.  If the unity pop up menu could handle passing simple C# objects then we
@@ -90,15 +104,7 @@ namespace UnityEditorInternal.VersionControl
         static Dictionary<int, ListControl> s_uniqueIDList = new Dictionary<int, ListControl>();
         static public ListControl FromID(int id) { try { return s_uniqueIDList[id]; } catch { return null; } }
 
-        public ListState listState
-        {
-            get
-            {
-                if (m_listState == null)
-                    m_listState = new ListState();
-                return m_listState;
-            }
-        }
+        public ListState listState => m_listState ?? (m_listState = new ListState());
 
         // Delegate for handling list expansion events
         public ExpandDelegate ExpandEvent
@@ -122,10 +128,7 @@ namespace UnityEditorInternal.VersionControl
         }
 
         // Root item in the list
-        public ListItem Root
-        {
-            get { return root; }
-        }
+        public ListItem Root => root;
 
         public AssetList SelectedAssets
         {
@@ -133,7 +136,7 @@ namespace UnityEditorInternal.VersionControl
             {
                 AssetList list = new AssetList();
                 foreach (KeyValuePair<string, ListItem> listItem in selectList)
-                    if (listItem.Value != null && (listItem.Value.Item as Asset) != null)
+                    if (listItem.Value?.Item is Asset)
                         list.Add(listItem.Value.Item as Asset);
 
                 return list;
@@ -146,7 +149,7 @@ namespace UnityEditorInternal.VersionControl
             {
                 ChangeSets list = new ChangeSets();
                 foreach (KeyValuePair<string, ListItem> listItem in selectList)
-                    if (listItem.Value != null && (listItem.Value.Item as ChangeSet) != null)
+                    if (listItem.Value?.Item is ChangeSet)
                         list.Add(listItem.Value.Item as ChangeSet);
 
                 return list;
@@ -210,6 +213,19 @@ namespace UnityEditorInternal.VersionControl
             get { return visibleList.Count; }
         }
 
+        internal string Filter
+        {
+            get
+            {
+                return filter;
+            }
+            set
+            {
+                filter = value.ToLowerInvariant();
+                FilterItems();
+            }
+        }
+
         public ListControl()
         {
             // Assign a unique id.  A workaround to pass the class as an int
@@ -237,7 +253,7 @@ namespace UnityEditorInternal.VersionControl
 
         public ListItem Add(ListItem parent, string name, Asset asset)
         {
-            ListItem insert = (parent != null) ? parent : root;
+            ListItem insert = parent ?? root;
             ListItem item = new ListItem();
             item.Name = name;
             // Can this be null
@@ -262,14 +278,14 @@ namespace UnityEditorInternal.VersionControl
 
         public ListItem Add(ListItem parent, string name, ChangeSet change)
         {
-            ListItem insert = (parent != null) ? parent : root;
+            ListItem insert = parent ?? root;
             ListItem item = new ListItem();
             item.Name = name;
             item.Change = change ?? new ChangeSet(name);
             insert.Add(item);
 
             // Create a lookup table
-            pathSearch[c_changeKeyPrefix + change.id] = item;
+            pathSearch[c_changeKeyPrefix + change?.id] = item;
 
             return item;
         }
@@ -352,14 +368,15 @@ namespace UnityEditorInternal.VersionControl
 
             Event e = Event.current;
             int open = active.OpenCount;
-            int max = (int)(area.height / c_lineHeight);
+            int max = (int)((area.height - 1) / c_lineHeight);
 
             // Scroll up/down
             if (e.type == EventType.ScrollWheel)
             {
-                repaint = true;
                 listState.Scroll += e.delta.y;
                 listState.Scroll = Mathf.Clamp(listState.Scroll, 0, open - max);
+
+                e.Use();
             }
 
             // Draw the scrollbar if required
@@ -389,6 +406,7 @@ namespace UnityEditorInternal.VersionControl
                 {
                     //GUIUtility.hotControl = 0;
                     scrollVisible = false;
+                    listState.Scroll = 0;
                 }
             }
 
@@ -446,8 +464,8 @@ namespace UnityEditorInternal.VersionControl
                 if (singleSelect != null && !singleSelect.Dummy)
                 {
                     // Double click handling
-                    if (e.button == 0 && e.clickCount > 1 && singleSelect.Asset != null)
-                        singleSelect.Asset.Edit();
+                    if (e.button == 0 && e.clickCount > 1)
+                        singleSelect.Asset?.Edit();
 
                     // Expand/Contract
                     if (e.button < 2)
@@ -542,14 +560,7 @@ namespace UnityEditorInternal.VersionControl
                 if (dragCount > 2 && Selection.objects.Length > 0)
                 {
                     DragAndDrop.PrepareStartDrag();
-                    if (singleSelect != null)
-                    {
-                        DragAndDrop.objectReferences = new UnityEngine.Object[] { singleSelect.Asset.Load() };
-                    }
-                    else
-                    {
-                        DragAndDrop.objectReferences = Selection.objects;
-                    }
+                    DragAndDrop.objectReferences = singleSelect?.Asset != null ? new UnityEngine.Object[] {singleSelect.Asset.Load()} : Selection.objects;
                     DragAndDrop.StartDrag("Move");
                 }
             }
@@ -572,7 +583,7 @@ namespace UnityEditorInternal.VersionControl
                     {
                         if (dragAcceptOnly)
                         {
-                            if (!dragTarget.CanAccept)
+                            if (!dragTarget.CanAccept && dragTarget.Parent.Change == null)
                                 dragTarget = null;
                         }
                         else
@@ -599,8 +610,13 @@ namespace UnityEditorInternal.VersionControl
                 if (dragTarget != null)
                 {
                     ListItem drag = dragAdjust == SelectDirection.Current ? dragTarget : dragTarget.Parent;
-                    if (dragDelegate != null && drag != null && drag.CanAccept)
-                        dragDelegate(drag.Change);
+                    if (dragDelegate != null && drag != null && (drag.CanAccept || drag.Parent.Change != null))
+                    {
+                        if (drag.Change == null)
+                            dragDelegate(drag.Parent.Change);
+                        else
+                            dragDelegate(drag.Change);
+                    }
 
                     dragTarget = null;
                 }
@@ -617,9 +633,9 @@ namespace UnityEditorInternal.VersionControl
             foreach (ListItem it in visibleList)
             {
                 float x = area.x + ((it.Indent - 1) * 18);
-                bool isSelected = readOnly ? false : IsSelected(it);
+                bool isSelected = !readOnly && IsSelected(it);
 
-                if (it.Parent != null && it.Parent.Parent != null && it.Parent.Parent.Parent == null)
+                if (it.Parent?.Parent != null && it.Parent.Parent.Parent == null)
                     x += 5;
 
                 DrawItem(it, area, x, y, focus, isSelected);
@@ -666,12 +682,12 @@ namespace UnityEditorInternal.VersionControl
                 if (e.keyCode == KeyCode.UpArrow)
                 {
                     sel = SelectedFirstIn(active);
-                    if (sel != null) sel = sel.PrevOpenSkip;
+                    sel = sel?.PrevOpenSkip;
                 }
                 else
                 {
                     sel = SelectedLastIn(active);
-                    if (sel != null) sel = sel.NextOpenSkip;
+                    sel = sel?.NextOpenSkip;
                 }
 
                 if (sel != null)
@@ -689,6 +705,7 @@ namespace UnityEditorInternal.VersionControl
                         SelectedSet(sel);
                     }
                 }
+                e.Use();
             }
 
             // Expand/contract on left/right arrow keys
@@ -697,13 +714,15 @@ namespace UnityEditorInternal.VersionControl
                 ListItem sel = SelectedCurrentIn(active);
                 sel.Expanded = (e.keyCode == KeyCode.RightArrow);
                 CallExpandedEvent(sel, true);
+                e.Use();
             }
 
             // Edit on return key
             if (e.keyCode == KeyCode.Return && GUIUtility.keyboardControl == 0)
             {
                 ListItem sel = SelectedCurrentIn(active);
-                sel.Asset.Edit();
+                sel.Asset?.Edit();
+                e.Use();
             }
         }
 
@@ -734,7 +753,7 @@ namespace UnityEditorInternal.VersionControl
                         }
                         break;
                     default:
-                        if (item.CanAccept)
+                        if (item.CanAccept || item.Parent.Change != null)
                         {
                             if (Event.current.type == EventType.Repaint)
                             {
@@ -780,12 +799,8 @@ namespace UnityEditorInternal.VersionControl
             Color tmpColor = GUI.color;
             Color tmpContentColor = GUI.contentColor;
 
-            // We grey the items when we dont know the state or its a dummy item
-            if (/*item.Asset.State == Asset.States.Local ||*/ item.Dummy) //< Locals shown with icon for now
-                GUI.color = new Color(0.65f, 0.65f, 0.65f);
-
             // This should not be an else statement as the previous if can set icon
-            if (!item.Dummy)
+            if (!item.Dummy || item.Change != null)
             {
                 // If there is no icon set then we look for cached items
                 if (icon == null)
@@ -795,6 +810,12 @@ namespace UnityEditorInternal.VersionControl
                 }
 
                 var iconRect = new Rect(x + 14, y, 16, c_lineHeight);
+
+                if (selected)
+                {
+                    Texture activeIcon = EditorUtility.GetIconInActiveState(icon);
+                    if (activeIcon != null) icon = activeIcon;
+                }
 
                 if (icon != null)
                     GUI.DrawTexture(iconRect, icon);
@@ -818,28 +839,64 @@ namespace UnityEditorInternal.VersionControl
                 }
             }
 
+            if (Event.current.type != EventType.Repaint) return;
+
+            GUIStyle label = item.Change != null ? Styles.changeset : Styles.asset;
+
             string displayName = DisplayName(item);
-            Vector2 displayNameSize = EditorStyles.label.CalcSize(EditorGUIUtility.TempContent(displayName));
+            Vector2 displayNameSize = label.CalcSize(EditorGUIUtility.TempContent(displayName));
             float labelOffsetX = x + 32;
 
-            if (highlight)
+            Rect textRect = new Rect(labelOffsetX, y, area.width - labelOffsetX, c_lineHeight + 2);
+
+            int startIndex = -1;
+            if (!string.IsNullOrEmpty(filter))
             {
-                GUI.contentColor = new Color(3, 3, 3);
-                GUI.Label(new Rect(labelOffsetX, y, area.width - labelOffsetX, c_lineHeight + 2), displayName);
+                startIndex = displayName.IndexOf(filter, StringComparison.OrdinalIgnoreCase);
+            }
+
+            GUIContent content = new GUIContent(displayName);
+
+            if (item.Dummy)
+            {
+                GUI.Label(textRect, content, Styles.meta);
+            }
+            else if (startIndex == -1 || item.Asset == null || Event.current.type != EventType.Repaint)
+            {
+                label.Draw(textRect, content, false, false, selected, selected);
             }
             else
             {
-                GUI.Label(new Rect(labelOffsetX, y, area.width - labelOffsetX, c_lineHeight + 2), displayName);
+                int endIndex = startIndex + filter.Length;
+                label.DrawWithTextSelection(textRect, content, selected, selected, startIndex, endIndex, false, GUI.skin.settings.selectionColor);
             }
+
+            float spaceBefore = labelOffsetX + displayNameSize.x + (item.Change != null ? 10 : 2);
+            Rect metaPosition = new Rect(spaceBefore, y, area.width - spaceBefore, c_lineHeight + 2);
+            int visibleChildCount = item.VisibleChildCount;
 
             if (HasHiddenMetaFile(item))
             {
-                GUI.color = new Color(0.55f, 0.55f, 0.55f);
-                float spaceBefore = labelOffsetX + displayNameSize.x + 2;
-                GUI.Label(new Rect(spaceBefore, y, area.width - spaceBefore, c_lineHeight + 2), "+meta");
+                Styles.meta.Draw(metaPosition, GUIContent.Temp("+meta"), false, false, selected, selected);
             }
-            GUI.contentColor = tmpContentColor;
-            GUI.color = tmpColor;
+
+            if (visibleChildCount > 0)
+            {
+                Styles.meta.Draw(metaPosition, GUIContent.Temp($"{visibleChildCount} files"), false, false, selected, selected);
+            }
+        }
+
+        void FilterItems()
+        {
+            for (ListItem item = root.NextOpen; item != null; item = item.NextOpen)
+            {
+                item.Hidden = GetTwinAsset(item) != null;
+
+                if (!string.IsNullOrEmpty(filter) && item.Change == null)
+                {
+                    item.Hidden |= !DisplayName(item).ToLowerInvariant().Contains(filter) || item.Dummy;
+                }
+            }
         }
 
         void UpdateVisibleList(Rect area, float scrollPos)
@@ -863,6 +920,26 @@ namespace UnityEditorInternal.VersionControl
             {
                 visibleList.Add(it);
                 y += c_lineHeight;
+
+                if (it.Change != null && it.Expanded && it.VisibleItemCount < 1)
+                {
+                    ListItem item = new ListItem();
+                    item.Icon = null;
+                    item.Dummy = true;
+                    item.Name = c_noSearchResultChangeListMessage;
+                    item.Indent = it.Indent;
+                    visibleList.Add(item);
+                    y += c_lineHeight;
+                }
+            }
+
+            if (visibleList.Count == 0)
+            {
+                ListItem item = new ListItem();
+                item.Icon = null;
+                item.Dummy = true;
+                item.Name = c_noChangeListsMessage;
+                visibleList.Add(item);
             }
         }
 
@@ -934,11 +1011,9 @@ namespace UnityEditorInternal.VersionControl
 
         internal void ExpandLastItem()
         {
-            if (root.LastChild != null)
-            {
-                root.LastChild.Expanded = true;
-                CallExpandedEvent(root.LastChild, true);
-            }
+            if (root.LastChild == null) return;
+            root.LastChild.Expanded = true;
+            CallExpandedEvent(root.LastChild, true);
         }
 
         // Parameter added for removing entries as this isnt necessary when updating the full list
@@ -948,8 +1023,7 @@ namespace UnityEditorInternal.VersionControl
             {
                 if (item.Expanded)
                 {
-                    if (expandDelegate != null)
-                        expandDelegate(item.Change, item);
+                    expandDelegate?.Invoke(item.Change, item);
 
                     listState.Expanded.Add(item.Change.id);
                 }
@@ -979,10 +1053,7 @@ namespace UnityEditorInternal.VersionControl
         {
             if (item.Asset != null)
                 return selectList.ContainsKey(item.Asset.path.ToLower());
-            if (item.Change != null)
-                return selectList.ContainsKey(c_changeKeyPrefix + item.Change.id);
-
-            return false;
+            return item.Change != null && selectList.ContainsKey(c_changeKeyPrefix + item.Change.id);
         }
 
         // Is an asset selected in the list
@@ -990,7 +1061,7 @@ namespace UnityEditorInternal.VersionControl
         {
             foreach (KeyValuePair<string, ListItem> de in selectList)
             {
-                if (de.Value != null && de.Value.Asset != null)
+                if (de.Value?.Asset != null)
                 {
                     return true;
                 }
@@ -1000,7 +1071,7 @@ namespace UnityEditorInternal.VersionControl
         }
 
         // Clear the current selection list
-        void SelectedClear()
+        internal void SelectedClear()
         {
             selectList.Clear();
             Selection.activeObject = null;
@@ -1066,10 +1137,9 @@ namespace UnityEditorInternal.VersionControl
         ListItem GetTwinAsset(ListItem item)
         {
             ListItem prev = item.Prev;
-            if (item.Name.EndsWith(c_metaSuffix) &&
-                prev != null &&
-                prev.Asset != null &&
-                AssetDatabase.GetTextMetaFilePathFromAssetPath(prev.Asset.path).ToLower() == item.Asset.path.ToLower())
+            if (item.Name.EndsWith(c_metaSuffix)
+                && prev?.Asset != null
+                && AssetDatabase.GetTextMetaFilePathFromAssetPath(prev.Asset.path).ToLower() == item.Asset.path.ToLower())
                 return prev;
             return null;
         }
@@ -1077,10 +1147,9 @@ namespace UnityEditorInternal.VersionControl
         ListItem GetTwinMeta(ListItem item)
         {
             ListItem next = item.Next;
-            if (!item.Name.EndsWith(c_metaSuffix) &&
-                next != null &&
-                next.Asset != null &&
-                next.Asset.path.ToLower() == AssetDatabase.GetTextMetaFilePathFromAssetPath(item.Asset.path).ToLower())
+            if (!item.Name.EndsWith(c_metaSuffix)
+                && next?.Asset != null
+                && next.Asset.path.ToLower() == AssetDatabase.GetTextMetaFilePathFromAssetPath(item.Asset.path).ToLower())
                 return next;
             return null;
         }
@@ -1088,9 +1157,7 @@ namespace UnityEditorInternal.VersionControl
         ListItem GetTwin(ListItem item)
         {
             ListItem a = GetTwinAsset(item);
-            if (a != null)
-                return a;
-            return GetTwinMeta(item);
+            return a ?? GetTwinMeta(item);
         }
 
         // Add a selection to the list
@@ -1124,10 +1191,10 @@ namespace UnityEditorInternal.VersionControl
                 return; // The items were already present
 
             // Update core selection list... Only non-meta files can be selectable
-            int[] sel = Selection.instanceIDs;
+            int[] selection = Selection.instanceIDs;
 
             int arrayLen = 0;
-            if (sel != null) arrayLen = sel.Length;
+            if (selection != null) arrayLen = selection.Length;
 
             // UnityEngine.Object tmpObj = item.Asset.Load ();
 
@@ -1143,7 +1210,8 @@ namespace UnityEditorInternal.VersionControl
                 newSel[arrayLen] = itemID;
             }
 
-            Array.Copy(sel, newSel, arrayLen);
+            Debug.Assert(selection != null, nameof(selection) + " != null");
+            Array.Copy(selection, newSel, arrayLen);
             Selection.instanceIDs = newSel;
         }
 

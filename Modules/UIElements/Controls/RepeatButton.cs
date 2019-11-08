@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        Clickable m_Clickable;
+        private PointerClickable m_Clickable;
 
         public new static readonly string ussClassName = "unity-repeat-button";
 
@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
         public void SetAction(System.Action clickEvent, long delay, long interval)
         {
             this.RemoveManipulator(m_Clickable);
-            m_Clickable = new Clickable(clickEvent, delay, interval);
+            m_Clickable = new PointerClickable(clickEvent, delay, interval);
             this.AddManipulator(m_Clickable);
         }
     }

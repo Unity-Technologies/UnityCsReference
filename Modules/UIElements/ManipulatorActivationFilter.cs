@@ -48,30 +48,51 @@ namespace UnityEngine.UIElements
         private bool HasModifiers(IMouseEvent e)
         {
             if (e == null)
+                return false;
+
+            return MatchModifiers(e.altKey, e.ctrlKey, e.shiftKey, e.commandKey);
+        }
+
+        public bool Matches(IPointerEvent e)
+        {
+            if (e == null)
+            {
+                return false;
+            }
+            // Default clickCount field value is 0 since we're in a struct -- this case is covered if the user
+            // did not explicitly set clickCount
+            var minClickCount = (clickCount == 0 || e.clickCount >= clickCount);
+            return button == (MouseButton)e.button && HasModifiers(e) && minClickCount;
+        }
+
+        private bool HasModifiers(IPointerEvent e)
+        {
+            if (e == null)
+                return false;
+
+            return MatchModifiers(e.altKey, e.ctrlKey, e.shiftKey, e.commandKey);
+        }
+
+        private bool MatchModifiers(bool alt, bool ctrl, bool shift, bool command)
+        {
+            if ((modifiers & EventModifiers.Alt) != 0 && !alt ||
+                (modifiers & EventModifiers.Alt) == 0 && alt)
+            {
+                return false;
+            }
+            if ((modifiers & EventModifiers.Control) != 0 && !ctrl ||
+                (modifiers & EventModifiers.Control) == 0 && ctrl)
             {
                 return false;
             }
 
-            if (((modifiers & EventModifiers.Alt) != 0 && !e.altKey) ||
-                ((modifiers & EventModifiers.Alt) == 0 && e.altKey))
+            if ((modifiers & EventModifiers.Shift) != 0 && !shift ||
+                (modifiers & EventModifiers.Shift) == 0 && shift)
             {
                 return false;
             }
-
-            if (((modifiers & EventModifiers.Control) != 0 && !e.ctrlKey) ||
-                ((modifiers & EventModifiers.Control) == 0 && e.ctrlKey))
-            {
-                return false;
-            }
-
-            if (((modifiers & EventModifiers.Shift) != 0 && !e.shiftKey) ||
-                ((modifiers & EventModifiers.Shift) == 0 && e.shiftKey))
-            {
-                return false;
-            }
-
-            return ((modifiers & EventModifiers.Command) == 0 || e.commandKey) &&
-                ((modifiers & EventModifiers.Command) != 0 || !e.commandKey);
+            return ((modifiers & EventModifiers.Command) == 0 || command) &&
+                ((modifiers & EventModifiers.Command) != 0 || !command);
         }
 
         public static bool operator==(ManipulatorActivationFilter filter1, ManipulatorActivationFilter filter2)

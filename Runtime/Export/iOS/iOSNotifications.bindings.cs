@@ -10,6 +10,7 @@ using System.Collections;
 namespace UnityEngine.iOS
 {
     // must be kept in sync with CalendarIdentifier in Notifications.h
+    [System.Obsolete("iOS.Notification Services is deprecated. Consider using the Mobile Notifications package (available in the package manager) which implements the UserNotifications framework.")]
     public enum CalendarIdentifier
     {
         GregorianCalendar   = 0,
@@ -26,6 +27,7 @@ namespace UnityEngine.iOS
     }
 
     // values are taken from NSCalendarUnit/CFCalendarUnit
+    [System.Obsolete("iOS.Notification Services is deprecated. Consider using the Mobile Notifications package (available in the package manager) which implements the UserNotifications framework.")]
     public enum CalendarUnit
     {
         Era     = 2,
@@ -42,6 +44,7 @@ namespace UnityEngine.iOS
     }
 
     // values are taken from UIUserNotificationType
+    [System.Obsolete("iOS.Notification Services is deprecated. Consider using the Mobile Notifications package (available in the package manager) which implements the UserNotifications framework.")]
     public enum NotificationType
     {
         None  = 0,
@@ -65,6 +68,7 @@ namespace UnityEngine.iOS
     [RequiredByNativeCode]
     [NativeHeader("PlatformDependent/iPhonePlayer/Notifications.h")]
     [NativeConditional("PLATFORM_IOS")]
+    [System.Obsolete("iOS.Notification Services is deprecated. Consider using the Mobile Notifications package (available in the package manager) which implements the UserNotifications framework.")]
     public sealed partial class LocalNotification
     {
         #pragma warning disable 169, 649
@@ -72,7 +76,6 @@ namespace UnityEngine.iOS
 
         public LocalNotification() { m_Ptr = NotificationHelper.CreateLocal(); }
         ~LocalNotification() { NotificationHelper.DestroyLocal(m_Ptr); }
-
 
         extern public string timeZone { get; set; }
         extern public CalendarIdentifier repeatCalendar
@@ -114,6 +117,7 @@ namespace UnityEngine.iOS
     [RequiredByNativeCode]
     [NativeHeader("PlatformDependent/iPhonePlayer/Notifications.h")]
     [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+    [System.Obsolete("iOS.Notification Services is deprecated. Consider using the Mobile Notifications package (available in the package manager) which implements the UserNotifications framework.")]
     public sealed partial class RemoteNotification
     {
         #pragma warning disable 169, 649
@@ -133,6 +137,7 @@ namespace UnityEngine.iOS
 
     [NativeHeader("PlatformDependent/iPhonePlayer/Notifications.h")]
     [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+    [System.Obsolete("iOS.Notification Services is deprecated. Consider using the Mobile Notifications package (available in the package manager) which implements the UserNotifications framework.")]
     public sealed partial class NotificationServices
     {
         extern public static int localNotificationCount  {[FreeFunction("NotificationScripting::GetLocalCount")]  get; }

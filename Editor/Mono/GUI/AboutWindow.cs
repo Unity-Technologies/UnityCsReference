@@ -105,20 +105,17 @@ namespace UnityEditor
                 int t = InternalEditorUtility.GetUnityVersionDate();
                 DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
                 string branch = InternalEditorUtility.GetUnityBuildBranch();
-                string branchString = "";
-                if (branch.Length > 0)
-                {
-                    branchString = "Branch: " + branch;
-                }
                 EditorGUILayout.SelectableLabel(
-                    string.Format("Version {0}{1}{2}\n{3:r}\n{4}", InternalEditorUtility.GetFullUnityVersion(), licenseTypeString, extensionVersion, dt.AddSeconds(t), branchString),
+                    string.Format("Version: {0}{1}{2}\nRevision: {3} {4}\nBuilt: {5:r}",
+                        InternalEditorUtility.GetUnityDisplayVersionVerbose(), licenseTypeString, extensionVersion,
+                        branch, InternalEditorUtility.GetUnityBuildHash(), dt.AddSeconds(t)),
                     GUILayout.Width(550), GUILayout.Height(50));
 
                 m_TextInitialYPos = 120 - 12;
             }
             else
             {
-                GUILayout.Label(string.Format("Version {0}{1}{2}", Application.unityVersion, licenseTypeString, extensionVersion));
+                GUILayout.Label(string.Format("Version {0}{1}{2}", InternalEditorUtility.GetUnityDisplayVersion(), licenseTypeString, extensionVersion));
             }
 
             if (Event.current.type == EventType.ValidateCommand)

@@ -28,7 +28,7 @@ namespace UnityEditor
         protected const float kReorderableListElementHeight = 16;
 
         // Module rulers that are fixed
-        static public float k_CompactFixedModuleWidth = 310f;
+        static public float k_CompactFixedModuleWidth = 400f;
         static public float k_SpaceBetweenModules = 5;
 
         public static readonly GUIStyle s_ControlRectStyle = new GUIStyle { margin = new RectOffset(0, 0, 2, 2) };

@@ -963,7 +963,7 @@ namespace UnityEditor
 
             GUILayout.Label("    " + Asset.StateToString(state), EditorStyles.miniLabel);
             Rect r = GUILayoutUtility.GetLastRect();
-            r.width = 16f;
+            r.width = r.height;
             GUI.DrawTextureWithTexCoords(r, atlas, atlasUV);
         }
 

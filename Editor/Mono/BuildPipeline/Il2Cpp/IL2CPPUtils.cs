@@ -368,6 +368,10 @@ namespace UnityEditorInternal
                 var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
                 var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
 
+                var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
+                if (!string.IsNullOrEmpty(additionalArgs))
+                    arguments.Add(additionalArgs);
+
                 arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(Path.GetFullPath(GetCppOutputDirectoryInStagingArea()))}");
                 arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));

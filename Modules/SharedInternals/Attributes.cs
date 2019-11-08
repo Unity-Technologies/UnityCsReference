@@ -52,14 +52,6 @@ namespace UnityEngine.Scripting
         public bool Optional { get; set; }
         public bool GenerateProxy { get; set; }
     }
-
-    // NOTE(rb): This is a temporary attribute that UnityBindingsParser will
-    // generate for all custom methods and properties in the transition process
-    // to new bindings generator. It will be removed when migration is complete.
-    [VisibleToOtherModules]
-    internal class GeneratedByOldBindingsGeneratorAttribute : System.Attribute
-    {
-    }
 }
 
 namespace UnityEngine

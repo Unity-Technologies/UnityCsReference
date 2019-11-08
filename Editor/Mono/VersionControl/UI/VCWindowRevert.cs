@@ -94,7 +94,7 @@ namespace UnityEditor.VersionControl
             GUILayout.BeginArea(r1);
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             GUILayout.EndArea();
-            revertList.OnGUI(new Rect(r1.x + 2, r1.y + 2, r1.width - 4, r1.height - 4), true);
+            bool repaint = revertList.OnGUI(new Rect(r1.x + 2, r1.y + 2, r1.width - 4, r1.height - 4), true);
 
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
@@ -138,6 +138,9 @@ namespace UnityEditor.VersionControl
 
             GUILayout.EndHorizontal();
             GUILayout.Space(12);
+
+            if (repaint)
+                Repaint();
         }
     }
 }

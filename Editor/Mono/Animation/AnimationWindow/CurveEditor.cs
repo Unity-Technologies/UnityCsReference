@@ -240,7 +240,16 @@ namespace UnityEditor
                 for (int i = 0; i < m_AnimationCurves.Length; ++i)
                 {
                     m_AnimationCurves[i].listIndex = i;
-                    curveIDToIndexMap.Add(m_AnimationCurves[i].id, i);
+
+                    if (!curveIDToIndexMap.ContainsKey(m_AnimationCurves[i].id))
+                    {
+                        curveIDToIndexMap.Add(m_AnimationCurves[i].id, i);
+                    }
+                    else
+                    {
+                        var binding = m_AnimationCurves[i].binding;
+                        Debug.LogWarning("Mismatching curve: '" + (string.IsNullOrEmpty(binding.path) ? "" : binding.path + " : ") + binding.propertyName + "'");
+                    }
                     m_EnableCurveGroups = m_EnableCurveGroups || (m_AnimationCurves[i].groupId != -1);
                 }
                 SyncDrawOrder();

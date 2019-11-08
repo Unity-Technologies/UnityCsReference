@@ -206,6 +206,20 @@ namespace UnityEngine.Tilemaps
         [NativeMethod(Name = "BoxFill")]
         private extern void BoxFillTileAsset(Vector3Int position, Object tile, int startX, int startY, int endX, int endY);
 
+        public void InsertCells(Vector3Int position, Vector3Int insertCells)
+        {
+            InsertCells(position, insertCells.x, insertCells.y, insertCells.z);
+        }
+
+        public extern void InsertCells(Vector3Int position, int numColumns, int numRows, int numLayers);
+
+        public void DeleteCells(Vector3Int position, Vector3Int deleteCells)
+        {
+            DeleteCells(position, deleteCells.x, deleteCells.y, deleteCells.z);
+        }
+
+        public extern void DeleteCells(Vector3Int position, int numColumns, int numRows, int numLayers);
+
         public extern void ClearAllTiles();
         public extern void ResizeBounds();
         public extern void CompressBounds();

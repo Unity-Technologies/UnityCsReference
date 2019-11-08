@@ -9,7 +9,9 @@ using UnityEditor.Modules;
 using System.Globalization;
 using UnityEngine.Rendering;
 using System.Linq;
+using System.Collections.Generic;
 using JetBrains.Annotations;
+using UnityEngine.XR;
 
 /*
 The main GameView can be in the following states when entering playmode.
@@ -77,6 +79,8 @@ namespace UnityEditor
         [SerializeField] RenderTexture m_RenderTexture;
 
         int m_SizeChangeID = int.MinValue;
+
+        List<XRDisplaySubsystemDescriptor> m_DisplaySubsystemDescs = new List<XRDisplaySubsystemDescriptor>();
 
         internal static class Styles
         {
@@ -540,11 +544,16 @@ namespace UnityEditor
                     }
                 }
 
+                SubsystemManager.GetSubsystemDescriptors<XRDisplaySubsystemDescriptor>(m_DisplaySubsystemDescs);
                 // Allow the user to select how the XR device will be rendered during "Play In Editor"
-                if (PlayerSettings.virtualRealitySupported)
+                if (PlayerSettings.virtualRealitySupported || m_DisplaySubsystemDescs.Count != 0)
                 {
+                    EditorGUI.BeginChangeCheck();
                     int selectedRenderMode = EditorGUILayout.Popup(m_XRRenderMode, Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
-                    SetXRRenderMode(selectedRenderMode);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        SetXRRenderMode(selectedRenderMode);
+                    }
                 }
 
                 maximizeOnPlay = GUILayout.Toggle(maximizeOnPlay, Styles.maximizeOnPlayContent, EditorStyles.toolbarButton);

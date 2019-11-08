@@ -171,7 +171,7 @@ namespace UnityEditor
 
         [SerializeField]
         string m_WindowGUID;
-        internal string windowGUID { get { return m_WindowGUID; } }
+        internal string windowGUID => m_WindowGUID;
 
         [SerializeField] bool m_Gizmos = true;
         public bool drawGizmos
@@ -179,6 +179,8 @@ namespace UnityEditor
             get { return m_Gizmos; }
             set { m_Gizmos = value; }
         }
+
+        internal bool showToolbar { get; set; } = true;
 
         Scene m_CustomScene;
         protected internal Scene customScene
@@ -207,9 +209,18 @@ namespace UnityEditor
 
         SceneViewStageHandling m_StageHandling;
 
-        float toolbarHeight { get { return (m_StageHandling != null && m_StageHandling.isShowingBreadcrumbBar) ? m_StageHandling.breadcrumbHeight + EditorGUI.kWindowToolbarHeight : EditorGUI.kWindowToolbarHeight; } }
+        float toolbarHeight
+        {
+            get
+            {
+                var _toolbarHeight = showToolbar ? EditorGUI.kWindowToolbarHeight.value : 0;
+                return (m_StageHandling != null && m_StageHandling.isShowingBreadcrumbBar)
+                    ? m_StageHandling.breadcrumbHeight + _toolbarHeight
+                    : _toolbarHeight;
+            }
+        }
 
-        float sceneViewHeight { get { return position.height - toolbarHeight; } }
+        float sceneViewHeight => position.height - toolbarHeight;
 
         // Returns the calculated rect where we render the camera in the SceneView (in window space coordinates)
         internal Rect cameraRect
@@ -398,7 +409,7 @@ namespace UnityEditor
         {
             get
             {
-                // fix for case 969889 where the toolbar is empty when we havent fully initialized the value
+                // fix for case 969889 where the toolbar is empty when we haven't fully initialized the value
                 if (string.IsNullOrEmpty(m_CameraMode.name))
                 {
                     m_CameraMode = SceneRenderModeWindow.GetBuiltinCameraMode(m_CameraMode.drawMode);
@@ -805,7 +816,7 @@ namespace UnityEditor
 
             static Styles()
             {
-                gizmoButtonStyle = (GUIStyle)"GV Gizmo DropDown";
+                gizmoButtonStyle = "GV Gizmo DropDown";
                 renderDocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         }
@@ -926,7 +937,7 @@ namespace UnityEditor
             }
         }
 
-        internal override void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll, bool delayed = false)
+        internal override void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll, bool delayed)
         {
             if (m_SearchFilter == "" || searchFilter == "")
                 m_StartSearchFilterTime = EditorApplication.timeSinceStartup;
@@ -1000,6 +1011,8 @@ namespace UnityEditor
             }
 
             s_ActiveEditorsDirty = true;
+
+            showToolbar = ModeService.HasCapability("scene_view_toolbar", true);
         }
 
         void GridOnGridVisibilityChanged(bool visible)
@@ -1171,9 +1184,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            m_SceneIsLit = GUILayout.Toggle(m_SceneIsLit, Styles.lighting, EditorStyles.toolbarButton);
-            if (cameraMode.drawMode == DrawCameraMode.ShadowCascades)     // cascade visualization requires actual lights with shadows
-                m_SceneIsLit = true;
+            m_SceneIsLit = GUILayout.Toggle(m_SceneIsLit, Styles.lighting, EditorStyles.toolbarButton) || cameraMode.drawMode == DrawCameraMode.ShadowCascades;
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
@@ -1316,14 +1327,13 @@ namespace UnityEditor
         {
             if (SceneVisibilityManager.instance.IsCurrentStageIsolated())
             {
-                SceneViewOverlay.Window(Styles.isolationModeOverlayContent,
-                    delegate(Object target, SceneView view)
+                SceneViewOverlay.Window(Styles.isolationModeOverlayContent, (target, view) =>
+                {
+                    if (GUILayout.Button(Styles.isolationModeExitButton, GUILayout.MinWidth(120)))
                     {
-                        if (GUILayout.Button(Styles.isolationModeExitButton, GUILayout.MinWidth(120)))
-                        {
-                            SceneVisibilityManager.instance.ExitIsolation();
-                        }
-                    }, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
+                        SceneVisibilityManager.instance.ExitIsolation();
+                    }
+                }, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
                     SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             }
         }
@@ -1641,10 +1651,12 @@ namespace UnityEditor
 
             if (m_SceneTargetTexture == null)
             {
-                m_SceneTargetTexture = new RenderTexture(0, 0, 24, format);
-                m_SceneTargetTexture.name = "SceneView RT";
-                m_SceneTargetTexture.antiAliasing = 1;
-                m_SceneTargetTexture.hideFlags = HideFlags.HideAndDontSave;
+                m_SceneTargetTexture = new RenderTexture(0, 0, 24, format)
+                {
+                    name = "SceneView RT",
+                    antiAliasing = 1,
+                    hideFlags = HideFlags.HideAndDontSave
+                };
             }
             if (m_SceneTargetTexture.width != width || m_SceneTargetTexture.height != height)
             {
@@ -1705,8 +1717,7 @@ namespace UnityEditor
         internal static bool DoesCameraDrawModeSupportHDR(DrawCameraMode mode)
         {
             // HDR/Tonemap only supported on regular views, and not on any special visualizations
-            return
-                mode == DrawCameraMode.Textured || mode == DrawCameraMode.TexturedWire;
+            return mode == DrawCameraMode.Textured || mode == DrawCameraMode.TexturedWire;
         }
 
         private void PrepareCameraTargetTexture(Rect cameraRect)
@@ -2379,7 +2390,8 @@ namespace UnityEditor
             float oldShadowDistance;
             SetupFogAndShadowDistance(out oldFog, out oldShadowDistance);
 
-            DoToolbarGUI();
+            if (showToolbar)
+                DoToolbarGUI();
             GUI.skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Scene);
 
             // Don't apply any playmode tinting to scene views
@@ -3142,7 +3154,7 @@ namespace UnityEditor
             svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
-        // Look directally at a specific point from a given direction with a given zoom level.
+        // Look directionally at a specific point from a given direction with a given zoom level.
         public void LookAtDirect(Vector3 point, Quaternion direction, float newSize)
         {
             FixNegativeSize();

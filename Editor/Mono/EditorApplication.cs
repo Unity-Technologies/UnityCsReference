@@ -287,7 +287,7 @@ namespace UnityEditor
 
             var desc = new ApplicationTitleDescriptor(
                 isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath)),
-                Application.unityVersion,
+                InternalEditorUtility.GetUnityDisplayVersion(),
                 activeSceneName,
                 GetLicenseType(),
                 isPreviewPackageInUse,
@@ -455,6 +455,13 @@ namespace UnityEditor
         static void Internal_FocusChanged(bool isFocused)
         {
             focusChanged?.Invoke(isFocused);
+        }
+
+        [MenuItem("File/New Scene %n", priority = 150)]
+        static void FireFileMenuNewScene()
+        {
+            if (!ModeService.Execute("file_new_scene"))
+                FileMenuNewScene();
         }
     }
 }

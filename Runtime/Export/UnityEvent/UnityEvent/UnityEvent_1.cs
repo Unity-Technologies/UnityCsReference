@@ -20,7 +20,7 @@ namespace UnityEngine.Events
     public delegate void UnityAction<T0>(T0 arg0);
 
     [Serializable]
-    public abstract class UnityEvent<T0> : UnityEventBase
+    public class UnityEvent<T0> : UnityEventBase
     {
         [RequiredByNativeCode]
         public UnityEvent() {}

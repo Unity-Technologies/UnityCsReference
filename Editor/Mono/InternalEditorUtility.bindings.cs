@@ -458,6 +458,15 @@ namespace UnityEditorInternal
         [FreeFunction("GetUnityBuildBranchName")]
         extern public static string GetUnityBuildBranch();
 
+        [FreeFunction("GetUnityBuildHash")]
+        extern public static string GetUnityBuildHash();
+
+        [FreeFunction("GetUnityDisplayVersion")]
+        extern public static string GetUnityDisplayVersion();
+
+        [FreeFunction("GetUnityDisplayVersionVerbose")]
+        extern public static string GetUnityDisplayVersionVerbose();
+
         [FreeFunction("GetUnityBuildTimeSinceEpoch")]
         extern public static int GetUnityVersionDate();
 

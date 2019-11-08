@@ -50,6 +50,7 @@ namespace UnityEditor
     [UsedImplicitly, ExcludeFromPreset, ScriptedImporter(version: 1, ext: "mode")]
     class ModeDescriptorImporter : ScriptedImporter
     {
+        internal static bool allowExplicitModeRefresh { get; set; }
         public override void OnImportAsset(AssetImportContext ctx)
         {
             var modeDescriptor = ScriptableObject.CreateInstance<ModeDescriptor>();
@@ -57,6 +58,18 @@ namespace UnityEditor
             modeDescriptor.hideFlags = HideFlags.NotEditable;
             ctx.AddObjectToAsset("mode", modeDescriptor);
             ctx.SetMainObject(modeDescriptor);
+
+            if (!allowExplicitModeRefresh)
+                return;
+
+            EditorApplication.update -= DelayLoadMode;
+            EditorApplication.update += DelayLoadMode;
+        }
+
+        public static void DelayLoadMode()
+        {
+            EditorApplication.update -= DelayLoadMode;
+            ModeService.Refresh(null);
         }
     }
 
@@ -95,6 +108,8 @@ namespace UnityEditor
 
             modeChanged += OnModeChangeMenus;
             modeChanged += OnModeChangeLayouts;
+
+            ModeDescriptorImporter.allowExplicitModeRefresh = true;
         }
 
         internal static int GetModeIndexById(string modeId)
@@ -349,9 +364,9 @@ namespace UnityEditor
             {
                 searchArea = SearchFilter.SearchArea.InPackagesOnly,
                 classNames = new[] { nameof(ModeDescriptor) },
-                skipHidden = true,
                 showAllHits = true
             });
+
             while (modeDescriptors.MoveNext())
             {
                 var md = modeDescriptors.Current.pptrValue as ModeDescriptor;
@@ -397,6 +412,20 @@ namespace UnityEditor
         private static void SetModeIndex(int modeIndex)
         {
             currentIndex = Math.Max(0, Math.Min(modeIndex, modeCount - 1));
+
+            var capabilities = GetModeDataSection(currentIndex, ModeDescriptor.CapabilitiesKey) as IDictionary;
+            if (capabilities != null)
+            {
+                foreach (var cap in capabilities.Keys)
+                {
+                    var capName = Convert.ToString(cap);
+                    if (String.IsNullOrEmpty(capName))
+                        continue;
+                    var state = capabilities[capName];
+                    if (state is Boolean)
+                        SessionState.SetBool(capName, (Boolean)state);
+                }
+            }
         }
 
         private static int LoadProjectPrefModeIndex()

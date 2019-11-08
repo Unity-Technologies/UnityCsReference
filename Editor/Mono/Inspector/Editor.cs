@@ -874,8 +874,8 @@ namespace UnityEditor
             Rect settingsRect = new Rect(r.xMax - currentOffset, r.y + kTopMargin, settingsSize.x, settingsSize.y);
             var wasEnabled = GUI.enabled;
             GUI.enabled = true;
-            var showMenu = EditorGUI.DropdownButton(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, FocusType.Passive,
-                EditorStyles.iconButton);
+            var showMenu = EditorGUI.DropdownButton(settingsRect, GUIContent.none, FocusType.Passive,
+                EditorStyles.optionsButtonStyle);
             GUI.enabled = wasEnabled;
             if (showMenu)
             {

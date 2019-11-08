@@ -112,9 +112,11 @@ namespace UnityEditor
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
 
-            GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo);
+            var mainWindow = GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo);
+            if (mainWindow)
+                mainWindow.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
 
-            return true;
+            return mainWindow != null;
         }
 
         private static View LoadLayoutView<T>(Type[] availableEditorWindowTypes, LayoutViewInfo viewInfo, float width, float height) where T : View
@@ -183,7 +185,7 @@ namespace UnityEditor
             return view;
         }
 
-        private static void GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom)
+        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom)
         {
             ContainerWindow mainContainerWindow = null;
             var containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
@@ -199,7 +201,7 @@ namespace UnityEditor
             if (keepMainWindow && mainContainerWindow == null)
             {
                 Debug.LogWarning($"No main window to restore layout from while loading dynamic layout for mode {ModeService.currentId}");
-                return;
+                return null;
             }
 
             try
@@ -208,6 +210,9 @@ namespace UnityEditor
 
                 if (!mainContainerWindow)
                     mainContainerWindow = ScriptableObject.CreateInstance<ContainerWindow>();
+
+                mainContainerWindow.windowID = $"MainView_{ModeService.currentId}";
+                mainContainerWindow.LoadGeometry(true);
 
                 var width = mainContainerWindow.position.width;
                 var height = mainContainerWindow.position.height;
@@ -254,6 +259,8 @@ namespace UnityEditor
             {
                 ContainerWindow.SetFreezeDisplay(false);
             }
+
+            return mainContainerWindow;
         }
 
         private static bool GetLayoutViewInfo(JSONObject layoutData, Type[] availableEditorWindowTypes, ref LayoutViewInfo viewInfo)

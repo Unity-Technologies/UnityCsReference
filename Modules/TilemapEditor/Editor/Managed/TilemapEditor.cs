@@ -208,6 +208,7 @@ namespace UnityEditor
         static internal void CompressBounds(MenuCommand item)
         {
             Tilemap tilemap = (Tilemap)item.context;
+            Undo.RegisterCompleteObjectUndo(tilemap, "Compress Tilemap Bounds");
             tilemap.CompressBounds();
         }
     }

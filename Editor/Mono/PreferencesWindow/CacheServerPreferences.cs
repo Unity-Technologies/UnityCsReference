@@ -140,7 +140,10 @@ namespace UnityEditor
             EditorPrefs.SetBool(LocalCacheServer.CustomPathKey, s_EnableCustomPath);
             LocalCacheServer.Setup();
 
-            AssetDatabaseExperimental.RefreshConnectionToCacheServer();
+            if (AssetDatabase.IsV2Enabled())
+            {
+                AssetDatabaseExperimental.RefreshConnectionToCacheServer();
+            }
 
             if (changedDir)
             {
