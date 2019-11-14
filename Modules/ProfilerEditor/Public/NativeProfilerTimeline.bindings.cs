@@ -5,26 +5,42 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Accessibility;
 
 namespace UnityEditorInternal
 {
+    public struct ProfilerColorDescriptor
+    {
+        public readonly Color color;
+        public readonly bool isBright;
+        const float k_LuminanceThreshold = 0.7f;
+        public ProfilerColorDescriptor(Color color)
+        {
+            this.color = color;
+            float lum = VisionUtility.ComputePerceivedLuminance(color);
+            isBright = lum >= k_LuminanceThreshold;
+        }
+    }
+
     public struct NativeProfilerTimeline_InitializeArgs
     {
         public float ghostAlpha;
         public float nonSelectedAlpha;
-        public IntPtr guiStyle;
         public float lineHeight;
         public float textFadeOutWidth;
         public float textFadeStartWidth;
+        public IntPtr guiStyle;
+        public ProfilerColorDescriptor[] profilerColorDescriptors;
 
         public void Reset()
         {
             ghostAlpha = 0;
             nonSelectedAlpha = 0;
-            guiStyle = (IntPtr)0;
+            guiStyle = IntPtr.Zero;
             lineHeight = 0;
             textFadeOutWidth = 0;
             textFadeStartWidth = 0;
+            profilerColorDescriptors = null;
         }
     }
 

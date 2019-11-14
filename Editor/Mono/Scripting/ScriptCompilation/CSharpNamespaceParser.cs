@@ -34,7 +34,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly Regex k_NewlineRegex = new Regex("\r\n?", RegexOptions.Compiled);
         static readonly Regex k_SingleQuote = new Regex(@"((?<![\\])['])(?:.(?!(?<![\\])\1))*.?\1", RegexOptions.Compiled);
         static readonly Regex k_ConditionalCompilation = new Regex(@"[\t ]*#[\t ]*(if|else|elif|endif|define|undef)([\t !(]+[^/\n]*)?", RegexOptions.Compiled);
-        static readonly Regex k_GenerateAuthoringComponentClassName = new Regex(@"\[GenerateAuthoringComponent\][\s|\n]*.*struct[\s|\n]*(\S*)", RegexOptions.Compiled);
+        static readonly Regex k_GenerateAuthoringComponentClassName = new Regex(@"\[GenerateAuthoringComponent\][\s|\n]*.*(struct|class)[\s|\n]*(\S*)", RegexOptions.Compiled);
         static readonly Regex k_Namespace = new Regex(@"\s*namespace\s.", RegexOptions.Compiled);
         static readonly string k_GenerateAuthoringComponentAttribute = "[GenerateAuthoringComponent]";
         static readonly string k_AuthoringComponentSuffix = "Authoring";
@@ -63,11 +63,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 string foundClassName = string.Empty;
                 var codeFromAttribute = sourceCode.Substring(authoringComponentCodeIndex);
                 var match = k_GenerateAuthoringComponentClassName.Match(codeFromAttribute);
-                if (match.Groups.Count <= 1)
-                    s_LogWarningAction($"Code contains {k_GenerateAuthoringComponentAttribute} attributes but no valid following struct.");
+                if (match.Groups.Count <= 2)
+                    s_LogWarningAction($"Code contains {k_GenerateAuthoringComponentAttribute} attributes but no valid following struct or class.");
                 else
                 {
-                    foundClassName = match.Groups[1].Value;
+                    foundClassName = match.Groups[2].Value;
                     outClassName = foundClassName + k_AuthoringComponentSuffix;
                     outNamespace = FindNamespace(sourceCode, foundClassName, true, defines);
                     namespaceParsed = true;

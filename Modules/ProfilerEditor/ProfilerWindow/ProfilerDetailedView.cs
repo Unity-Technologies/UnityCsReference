@@ -39,6 +39,8 @@ namespace UnityEditorInternal.Profiling
         }
 
         protected HierarchyFrameDataView m_FrameDataView;
+
+        [SerializeField]
         protected int m_SelectedID = -1;
 
         protected ProfilerDetailedView()
@@ -59,5 +61,8 @@ namespace UnityEditorInternal.Profiling
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
+
+        public abstract void SaveViewSettings();
+        public abstract void OnDisable();
     }
 }

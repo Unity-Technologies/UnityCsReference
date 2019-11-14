@@ -176,7 +176,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
             if (isDirectory)
             {
-                FileUtil.CopyDirectoryRecursive(imp.assetPath, finalDestinationPath);
+                // Since we may be copying from Assets make sure to not include .meta files to the build
+                FileUtil.CopyDirectoryRecursive(imp.assetPath, finalDestinationPath, overwrite: false, ignoreMeta: true);
             }
             else
             {

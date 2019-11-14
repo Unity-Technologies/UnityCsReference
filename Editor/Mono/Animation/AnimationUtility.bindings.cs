@@ -242,19 +242,19 @@ namespace UnityEditor
 
         extern internal static void UpdateTangentsFromMode([NotNull] AnimationCurve curve);
 
-        [NativeThrows]
+        [NativeThrows, ThreadSafe]
         extern public static TangentMode GetKeyLeftTangentMode([NotNull] AnimationCurve curve, int index);
 
-        [NativeThrows]
+        [NativeThrows, ThreadSafe]
         extern public static TangentMode GetKeyRightTangentMode([NotNull] AnimationCurve curve, int index);
 
         [NativeThrows]
         extern public static bool GetKeyBroken([NotNull] AnimationCurve curve, int index);
 
-        [NativeThrows]
+        [NativeThrows, ThreadSafe]
         extern public static void SetKeyLeftTangentMode([NotNull] AnimationCurve curve, int index, TangentMode tangentMode);
 
-        [NativeThrows]
+        [NativeThrows, ThreadSafe]
         extern public static void SetKeyRightTangentMode([NotNull] AnimationCurve curve, int index, TangentMode tangentMode);
 
         [NativeThrows]

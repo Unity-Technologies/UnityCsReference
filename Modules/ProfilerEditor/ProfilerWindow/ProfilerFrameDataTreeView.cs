@@ -129,6 +129,7 @@ namespace UnityEditorInternal
         public ProfilerFrameDataTreeView(TreeViewState state, ProfilerFrameDataMultiColumnHeader multicolumnHeader) : base(state, multicolumnHeader)
         {
             Assert.IsNotNull(multicolumnHeader);
+            deselectOnUnhandledMouseDown = true;
             m_MultiColumnHeader = multicolumnHeader;
             m_MultiColumnHeader.sortingChanged += OnSortingChanged;
         }

@@ -105,6 +105,23 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetCustomParticleData", HasExplicitThis = true)]
         extern public int GetCustomParticleData([NotNull] List<Vector4> customData, ParticleSystemCustomData streamIndex);
 
+        // Set/get the playback state
+        extern public PlaybackState GetPlaybackState();
+        extern public void SetPlaybackState(PlaybackState playbackState);
+
+        // Set/get the trail data
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetTrailData", HasExplicitThis = true)]
+        extern private void GetTrailDataInternal(ref Trails trailData);
+        public Trails GetTrails()
+        {
+            var result = new Trails() { positions = new List<Vector4>(), frontPositions = new List<int>(), backPositions = new List<int>(), positionCounts = new List<int>() };
+            GetTrailDataInternal(ref result);
+            return result;
+        }
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetTrailData", HasExplicitThis = true)]
+        extern public void SetTrails(Trails trailData);
+
         // Playback
         [FreeFunction(Name = "ParticleSystemScriptBindings::Simulate", HasExplicitThis = true)]
         extern public void Simulate(float t, bool withChildren, bool restart, bool fixedTimeStep);

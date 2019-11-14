@@ -22,7 +22,7 @@ namespace UnityEngine.Experimental.U2D
     [NativeHeader("Runtime/2D/Renderer/SpriteRendererGroup.h")]
     internal struct SpriteIntermediateRendererInfo
     {
-        public int SpriteID;
+        public int TextureID;
         public Color Color;
         public Matrix4x4 Transform;
         public Bounds Bounds;
@@ -31,6 +31,11 @@ namespace UnityEngine.Experimental.U2D
         public int SortingLayer;
         public int SortingOrder;
         public ulong SceneCullingMask;
+        public IntPtr IndexData;
+        public IntPtr VertexData;
+        public int IndexCount;
+        public int VertexCount;
+        public int ShaderChannelMask;
     }
 
     [NativeHeader("Runtime/2D/Renderer/SpriteRendererGroup.h")]

@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -76,7 +77,7 @@ namespace UnityEngine.UIElements
 
         public static bool operator==(StyleEnum<T> lhs, StyleEnum<T> rhs)
         {
-            return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value.ToInt32(CultureInfo.InvariantCulture) == rhs.m_Value.ToInt32(CultureInfo.InvariantCulture);
+            return lhs.m_Keyword == rhs.m_Keyword && UnsafeUtility.EnumToInt(lhs.m_Value) == UnsafeUtility.EnumToInt(rhs.m_Value);
         }
 
         public static bool operator!=(StyleEnum<T> lhs, StyleEnum<T> rhs)

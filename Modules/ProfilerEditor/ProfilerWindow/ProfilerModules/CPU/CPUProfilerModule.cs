@@ -13,10 +13,11 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class CPUProfilerModule : CPUorGPUProfilerModule
     {
+        [SerializeField]
         ProfilerTimelineGUI m_TimelineGUI;
 
-        const string k_ViewTypeSettingsKey = "Profiler.CPUProfilerModule.ViewType";
-        protected override string ViewTypeSettingsKey => k_ViewTypeSettingsKey;
+        const string k_SettingsKeyPrefix = "Profiler.CPUProfilerModule.";
+        protected override string SettingsKeyPrefix => k_SettingsKeyPrefix;
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Timeline;
 
         public override void OnEnable(IProfilerWindowController profilerWindow)
