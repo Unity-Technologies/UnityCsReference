@@ -12,8 +12,8 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class GPUProfilerModule : CPUorGPUProfilerModule
     {
-        const string k_ViewTypeSettingsKey = "Profiler.GPUProfilerModule.ViewType";
-        protected override string ViewTypeSettingsKey => k_ViewTypeSettingsKey;
+        const string k_SettingsKeyPrefix = "Profiler.GPUProfilerModule.";
+        protected override string SettingsKeyPrefix => k_SettingsKeyPrefix;
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Hierarchy;
 
         public override void OnEnable(IProfilerWindowController profilerWindow)

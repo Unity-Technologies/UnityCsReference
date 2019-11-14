@@ -31,9 +31,10 @@ namespace UnityEngine
     /// </summary>
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    [UnityEngine.Internal.ExcludeFromDocs]
     public sealed partial class SerializeReference : Attribute
     {
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public SerializeReference() {}
     }
 
     [RequiredByNativeCode]

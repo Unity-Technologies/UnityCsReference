@@ -1586,7 +1586,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.OnCompilationTaskFinished += (context) =>
             {
-                if (!compilationTask.CompileErrors)
+                // Do not overwrite IsCodeGenAssemblyChanged if it was
+                // set to true during a previous failed compilation within
+                // the same domain.
+                if (IsCodeGenAssemblyChanged == false)
                 {
                     IsCodeGenAssemblyChanged = pendingCodeGenAssembly;
                 }

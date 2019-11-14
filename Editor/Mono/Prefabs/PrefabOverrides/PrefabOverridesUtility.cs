@@ -35,28 +35,28 @@ namespace UnityEditor.SceneManagement
             if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
                 return modifiedObjects;
 
-            System.Action<Transform, object> checkMethod;
+            Func<Transform, object, bool> checkMethod;
             if (includeDefaultOverrides)
                 checkMethod = CheckForModifiedObjectsIncludingDefaultOverrides;
             else
                 checkMethod = CheckForModifiedObjectsExcludingDefaultOverrides;
-            transformVisitor.VisitAll(prefabInstanceRoot.transform, checkMethod, modifiedObjects);
+            transformVisitor.VisitPrefabInstanceTransforms(prefabInstanceRoot.transform, checkMethod, modifiedObjects);
             return modifiedObjects;
         }
 
-        static void CheckForModifiedObjectsIncludingDefaultOverrides(Transform transform, object userData)
+        static bool CheckForModifiedObjectsIncludingDefaultOverrides(Transform transform, object userData)
         {
             var modifiedObjects = (List<ObjectOverride>)userData;
-            CheckForModifiedObjects(transform, modifiedObjects, true);
+            return CheckForModifiedObjects(transform, modifiedObjects, true);
         }
 
-        static void CheckForModifiedObjectsExcludingDefaultOverrides(Transform transform, object userData)
+        static bool CheckForModifiedObjectsExcludingDefaultOverrides(Transform transform, object userData)
         {
             var modifiedObjects = (List<ObjectOverride>)userData;
-            CheckForModifiedObjects(transform, modifiedObjects, false);
+            return CheckForModifiedObjects(transform, modifiedObjects, false);
         }
 
-        static void CheckForModifiedObjects(Transform transform, List<ObjectOverride> modifiedObjects, bool includeDefaultOverrides)
+        static bool CheckForModifiedObjects(Transform transform, List<ObjectOverride> modifiedObjects, bool includeDefaultOverrides)
         {
             GameObject gameObject = transform.gameObject;
             if (PrefabUtility.HasObjectOverride(gameObject, includeDefaultOverrides))
@@ -73,6 +73,8 @@ namespace UnityEditor.SceneManagement
                 if (PrefabUtility.HasObjectOverride(component, includeDefaultOverrides))
                     modifiedObjects.Add(new ObjectOverride() { instanceObject = component });
             }
+
+            return true;
         }
 
         public static List<AddedComponent> GetAddedComponents(GameObject prefabInstance)
@@ -87,17 +89,18 @@ namespace UnityEditor.SceneManagement
             if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
                 return addedComponents;
 
-            transformVisitor.VisitAll(prefabInstanceRoot.transform, CheckForAddedComponents, addedComponents);
+            transformVisitor.VisitPrefabInstanceTransforms(prefabInstanceRoot.transform, CheckForAddedComponents, addedComponents);
             return addedComponents;
         }
 
-        static void CheckForAddedComponents(Transform transform, object userData)
+        // Return value indicates if caller should traverse children of the the input transform or not
+        static bool CheckForAddedComponents(Transform transform, object userData)
         {
             s_ComponentList.Clear();
             transform.gameObject.GetComponents(s_ComponentList);
             var assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(transform.gameObject);
             if (assetGameObject == null)
-                return; // If this is an added normal GameObject then we do not record added compoenents
+                return false; // If this is an added normal GameObject then we do not record added components
 
             foreach (var component in s_ComponentList)
             {
@@ -116,6 +119,8 @@ namespace UnityEditor.SceneManagement
                     addedComponents.Add(new AddedComponent() { instanceComponent = component });
                 }
             }
+
+            return true;
         }
 
         public static List<RemovedComponent> GetRemovedComponents(GameObject prefabInstance)
@@ -129,7 +134,7 @@ namespace UnityEditor.SceneManagement
             if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstance))
                 return removedComponents;
             TransformVisitor transformVisitor = new TransformVisitor();
-            transformVisitor.VisitAll(prefabInstanceRoot.transform, CheckForRemovedComponents, removedComponents);
+            transformVisitor.VisitPrefabInstanceTransforms(prefabInstanceRoot.transform, CheckForRemovedComponents, removedComponents);
             return removedComponents;
         }
 
@@ -144,12 +149,13 @@ namespace UnityEditor.SceneManagement
             return removedComponents;
         }
 
-        static void CheckForRemovedComponents(Transform transform, object userData)
+        // Return value indicates if caller should traverse children of the the input transform or not
+        static bool CheckForRemovedComponents(Transform transform, object userData)
         {
             GameObject instanceGameObject = transform.gameObject;
             GameObject assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(instanceGameObject);
             if (assetGameObject == null)
-                return; // skip added GameObjects (non of its components will be in the asset)
+                return false; // skip added GameObjects (non of its components will be in the asset)
 
             // Compare asset with instance component lists
             s_ComponentList.Clear();
@@ -181,6 +187,7 @@ namespace UnityEditor.SceneManagement
                     removedComponents.Add(new RemovedComponent() { assetComponent = assetComponent, containingInstanceGameObject = instanceGameObject });
                 }
             }
+            return true;
         }
 
         internal class AddedGameObjectUserData

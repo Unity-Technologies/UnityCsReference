@@ -64,5 +64,29 @@ namespace UnityEditor.SceneManagement
             for (int i = 0; i < transform.childCount; ++i)
                 VisitAndConditionallyEnterChildrenRecursively(transform.GetChild(i), visitorFunc, userData);
         }
+
+        // Only visit transforms under the same PrefabInstance
+        public void VisitPrefabInstanceTransforms(Transform transform, Func<Transform, object, bool> visitorFunc, object userData)
+        {
+            Assert.IsNotNull(transform, "Please provide a valid transform");
+            Assert.IsNotNull(visitorFunc, "Please provide a valid visitorFunc");
+            Assert.IsNotNull(PrefabUtility.GetPrefabInstanceHandle(transform), "Please provide a Prefab instance");
+
+            VisitPrefabInstanceTransformsRecursively(transform, visitorFunc, userData);
+        }
+
+        static void VisitPrefabInstanceTransformsRecursively(Transform transform, Func<Transform, object, bool> visitorFunc, object userData)
+        {
+            if (!visitorFunc(transform, userData))
+                return;
+
+            var prefabInstanceHandle = PrefabUtility.GetPrefabInstanceHandle(transform);
+            for (int i = 0; i < transform.childCount; ++i)
+            {
+                var child = transform.GetChild(i);
+                if (PrefabUtility.GetPrefabInstanceHandle(child) == prefabInstanceHandle)
+                    VisitPrefabInstanceTransformsRecursively(child, visitorFunc, userData);
+            }
+        }
     }
 }

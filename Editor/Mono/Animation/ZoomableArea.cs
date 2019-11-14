@@ -518,6 +518,20 @@ namespace UnityEditor
             }
         }
 
+        float GetWidthInsideMargins(float widthWithMargins, bool substractSliderWidth = false)
+        {
+            float width = (widthWithMargins < kMinWidth) ? kMinWidth : widthWithMargins;
+            float widthInsideMargins = width - leftmargin - rightmargin - (substractSliderWidth ? (m_VSlider ? styles.visualSliderWidth : 0) : 0);
+            return Mathf.Max(widthInsideMargins, kMinWidth);
+        }
+
+        float GetHeightInsideMargins(float heightWithMargins, bool substractSliderHeight = false)
+        {
+            float height = (heightWithMargins < kMinHeight) ? kMinHeight : heightWithMargins;
+            float heightInsideMargins = height - topmargin - bottommargin - (substractSliderHeight ? (m_HSlider ? styles.visualSliderWidth : 0) : 0);
+            return Mathf.Max(heightInsideMargins, kMinHeight);
+        }
+
         public virtual Bounds drawingBounds
         {
             get
@@ -920,45 +934,38 @@ namespace UnityEditor
                 return;
 
             float epsilon = 0.00001f;
+            float minChange = 0.01f;
 
-            if (newArea.width < oldArea.width - epsilon)
+            if (!Mathf.Approximately(newArea.width, oldArea.width))
             {
-                float xLerp = Mathf.InverseLerp(oldArea.width, newArea.width, rect.width / m_HScaleMax);
+                float constrainedValue = newArea.width < oldArea.width - epsilon ? rect.width / m_HScaleMax : constrainedHScaleMin;
+                constrainedValue = GetWidthInsideMargins(constrainedValue, true);
+                float xLerp = Mathf.InverseLerp(oldArea.width, newArea.width, constrainedValue);
+                float newWidth = Mathf.Lerp(oldArea.width, newArea.width, xLerp);
+                float widthChange = Mathf.Abs(newWidth - newArea.width);
                 newArea = new Rect(
-                    Mathf.Lerp(oldArea.x, newArea.x, xLerp),
+                    // only affect the position if there was any significant change in width (the unit is in pixels so technically anything under 0.05f would already be impossible to see)
+                    // this fixes an issue where if width was only different due to rounding issues, position changes are ignored as xLerp comes back 0 (or very nearly 0)
+                    widthChange > minChange ? Mathf.Lerp(oldArea.x, newArea.x, xLerp) : newArea.x,
                     newArea.y,
-                    Mathf.Lerp(oldArea.width, newArea.width, xLerp),
+                    newWidth,
                     newArea.height
                 );
             }
-            if (newArea.height < oldArea.height - epsilon)
+            if (!Mathf.Approximately(newArea.height, oldArea.height))
             {
-                float yLerp = Mathf.InverseLerp(oldArea.height, newArea.height, rect.height / m_VScaleMax);
+                float constrainedValue = newArea.height < oldArea.height - epsilon ? rect.height / m_VScaleMax : constrainedVScaleMin;
+                constrainedValue = GetHeightInsideMargins(constrainedValue, true);
+                float yLerp = Mathf.InverseLerp(oldArea.height, newArea.height, constrainedValue);
+                float newHeight = Mathf.Lerp(oldArea.height, newArea.height, yLerp);
+                float heightChange = Mathf.Abs(newHeight - newArea.height);
                 newArea = new Rect(
                     newArea.x,
-                    Mathf.Lerp(oldArea.y, newArea.y, yLerp),
+                    // only affect the position if there was any significant change in height (the unit is in pixels so technically anything under 0.05f would already be impossible to see)
+                    // this fixes an issue where if height was only different due to rounding issues, position changes are ignored as yLerp comes back 0 (or very nearly 0)
+                    heightChange > minChange ? Mathf.Lerp(oldArea.y, newArea.y, yLerp) : newArea.y,
                     newArea.width,
-                    Mathf.Lerp(oldArea.height, newArea.height, yLerp)
-                );
-            }
-            if (newArea.width > oldArea.width + epsilon)
-            {
-                float xLerp = Mathf.InverseLerp(oldArea.width, newArea.width, constrainedHScaleMin);
-                newArea = new Rect(
-                    Mathf.Lerp(oldArea.x, newArea.x, xLerp),
-                    newArea.y,
-                    Mathf.Lerp(oldArea.width, newArea.width, xLerp),
-                    newArea.height
-                );
-            }
-            if (newArea.height > oldArea.height + epsilon)
-            {
-                float yLerp = Mathf.InverseLerp(oldArea.height, newArea.height, constrainedVScaleMin);
-                newArea = new Rect(
-                    newArea.x,
-                    Mathf.Lerp(oldArea.y, newArea.y, yLerp),
-                    newArea.width,
-                    Mathf.Lerp(oldArea.height, newArea.height, yLerp)
+                    newHeight
                 );
             }
 

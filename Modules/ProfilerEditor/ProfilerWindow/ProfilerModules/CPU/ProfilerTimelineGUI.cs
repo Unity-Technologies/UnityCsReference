@@ -12,6 +12,8 @@ using Object = UnityEngine.Object;
 using UnityEditor.AnimatedValues;
 using Unity.Profiling;
 using System.Globalization;
+using UnityEditor.Accessibility;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditorInternal
 {
@@ -32,7 +34,7 @@ namespace UnityEditorInternal
         const string k_TickFormatSeconds = "{0}s";
         const int k_TickLabelSeparation = 60;
 
-        internal class ThreadInfo
+        internal class ThreadInfo : IComparable<ThreadInfo>
         {
             public float height = 0;
             public float linesToDisplay = 2f;
@@ -46,6 +48,13 @@ namespace UnityEditorInternal
                 this.threadIndex = threadIndex;
                 this.linesToDisplay = linesToDisplay;
                 this.maxDepth = Mathf.Max(1, maxDepth);
+            }
+
+            public int CompareTo(ThreadInfo other)
+            {
+                if (this == other)
+                    return 0;
+                return EditorUtility.NaturalCompare(name, other.name);
             }
         }
 
@@ -152,7 +161,8 @@ namespace UnityEditorInternal
 
         private class SelectedEntryInfo : EntryInfo
         {
-            public int instanceId = -1;
+            // The associated GameObjects instance ID. Negative means Native Object, Positive means Managed Object, 0 means not set (as in, no object associated)
+            public int instanceId = 0;
             public string metaData = string.Empty;
 
             public float totalDuration = -1.0f;
@@ -163,7 +173,7 @@ namespace UnityEditorInternal
             {
                 base.Reset();
 
-                this.instanceId = -1;
+                this.instanceId = 0;
                 this.metaData = string.Empty;
 
                 this.totalDuration = -1.0f;
@@ -285,6 +295,11 @@ namespace UnityEditorInternal
                 }
                 thread.alive = true;
             }
+            foreach (var group in m_Groups)
+            {
+                group.threads.Sort();
+            }
+
             m_LastSelectedFrameID = frameIndex;
         }
 
@@ -576,7 +591,7 @@ namespace UnityEditorInternal
             {
                 t = m_SelectedEntry.time;
                 dt = m_SelectedEntry.duration;
-                if (m_SelectedEntry.instanceId < 0 || dt <= 0.0f)
+                if (m_SelectedEntry.instanceCount <= 0 || dt <= 0.0f)
                 {
                     t = 0.0f;
                     dt = frameMS;
@@ -585,7 +600,7 @@ namespace UnityEditorInternal
 
             m_TimeArea.SetShownHRangeInsideMargins(t - dt * 0.2f, t + dt * 1.2f);
 
-            if (verticallyFrameSelected && m_SelectedEntry.instanceId >= 0)
+            if (m_SelectedEntry.instanceCount >= 0 && verticallyFrameSelected)
             {
                 if (m_SelectedEntry.relativeYPos > m_SelectedThread.height)
                 {
@@ -1233,7 +1248,7 @@ namespace UnityEditorInternal
 
                 if (initializing)
                 {
-                    NativeProfilerTimeline_InitializeArgs args = new NativeProfilerTimeline_InitializeArgs();
+                    var args = new NativeProfilerTimeline_InitializeArgs();
                     args.Reset();
                     args.ghostAlpha = 0.3f;
                     args.nonSelectedAlpha = 0.75f;
@@ -1241,6 +1256,14 @@ namespace UnityEditorInternal
                     args.lineHeight = k_LineHeight;
                     args.textFadeOutWidth = k_TextFadeOutWidth;
                     args.textFadeStartWidth = k_TextFadeStartWidth;
+
+                    var timelineColors = ProfilerColors.timelineColors;
+                    args.profilerColorDescriptors = new ProfilerColorDescriptor[timelineColors.Length];
+
+                    for (int i = 0; i < timelineColors.Length; ++i)
+                    {
+                        args.profilerColorDescriptors[i] = new ProfilerColorDescriptor(timelineColors[i]);
+                    }
 
                     NativeProfilerTimeline.Initialize(ref args);
                 }

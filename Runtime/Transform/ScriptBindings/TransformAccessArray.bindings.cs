@@ -27,6 +27,9 @@ namespace UnityEngine.Jobs
         public Quaternion localRotation { get { Quaternion r; GetLocalRotation(ref this, out r); return r; } set { SetLocalRotation(ref this, ref value); } }
         public Vector3 localScale       { get { Vector3 s; GetLocalScale(ref this, out s); return s; }       set { SetLocalScale(ref this, ref value); } }
 
+        public Matrix4x4 localToWorldMatrix { get { Matrix4x4 m; GetLocalToWorldMatrix(ref this, out m); return m; } }
+        public Matrix4x4 worldToLocalMatrix { get { Matrix4x4 m; GetWorldToLocalMatrix(ref this, out m); return m; } }
+
         //@TODO: Static code analysis needs to prevent creation of TransformAccess except through TransformAccessArray accessor.
         // Code below assumes this to be true since it doesn't check if TransformAccess is valid
 
@@ -61,6 +64,12 @@ namespace UnityEngine.Jobs
 
         [NativeMethod(Name = "TransformAccessBindings::SetLocalScale", IsThreadSafe = true, IsFreeFunction = true)]
         private static extern void SetLocalScale(ref TransformAccess access, ref Vector3 r);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalToWorldMatrix", IsThreadSafe = true, IsFreeFunction = true)]
+        private static extern void GetLocalToWorldMatrix(ref TransformAccess access, out Matrix4x4 m);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetWorldToLocalMatrix", IsThreadSafe = true, IsFreeFunction = true)]
+        private static extern void GetWorldToLocalMatrix(ref TransformAccess access, out Matrix4x4 m);
 
         //@TODO: API incomplete...
     }

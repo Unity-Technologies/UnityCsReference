@@ -89,8 +89,28 @@ namespace UnityEditor
             RefreshStatus();
         }
 
+        public override void OnOpen()
+        {
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            base.OnOpen();
+        }
+
+        public override void OnClose()
+        {
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            base.OnClose();
+        }
+
+        void OnUndoRedoPerformed()
+        {
+            RefreshStatus();
+        }
+
         internal void RefreshStatus()
         {
+            if (m_TreeView != null)
+                m_TreeView.Reload();
+
             if (m_SelectedGameObjects.Length == 1)
                 UpdateTextSingle(PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObjects[0]));
             else

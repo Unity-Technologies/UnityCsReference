@@ -160,11 +160,16 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class ProfilerDetailedCallsView : ProfilerDetailedView
     {
+        static class Content
+        {
+            public static readonly GUIContent totalSelectedPropertyTimeLabel = EditorGUIUtility.TrTextContent("", "Total time of all calls of the selected function in the frame.");
+        }
+
         [NonSerialized]
         bool m_Initialized = false;
 
         [NonSerialized]
-        GUIContent m_TotalSelectedPropertyTimeLabel = EditorGUIUtility.TrTextContent("", "Total time of all calls of the selected function in the frame.");
+        GUIContent m_TotalSelectedPropertyTimeLabel;
 
         [SerializeField]
         SplitterState m_VertSplit;
@@ -391,8 +396,11 @@ namespace UnityEditorInternal.Profiling
 
             public event FrameItemCallback frameItemEvent;
 
-            public CallsTreeViewController()
+            readonly string k_PrefKeyPrefix;
+            string multiColumnHeaderStatePrefKey => k_PrefKeyPrefix + "MultiColumnHeaderState";
+            public CallsTreeViewController(string prefKeyPrefix)
             {
+                k_PrefKeyPrefix = prefKeyPrefix;
             }
 
             void InitIfNeeded()
@@ -403,11 +411,24 @@ namespace UnityEditorInternal.Profiling
                 if (m_ViewState == null)
                     m_ViewState = new TreeViewState();
 
-                var firstInit = m_ViewHeaderState == null;
                 var headerState = CreateDefaultMultiColumnHeaderState();
+
+                var multiColumnHeaderStateData = SessionState.GetString(multiColumnHeaderStatePrefKey, "");
+                if (!string.IsNullOrEmpty(multiColumnHeaderStateData))
+                {
+                    try
+                    {
+                        var restoredHeaderState = JsonUtility.FromJson<MultiColumnHeaderState>(multiColumnHeaderStateData);
+                        if (restoredHeaderState != null)
+                            m_ViewHeaderState = restoredHeaderState;
+                    }
+                    catch{} // Nevermind, we'll just fall back to the default
+                }
 
                 if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_ViewHeaderState, headerState))
                     MultiColumnHeaderState.OverwriteSerializedFields(m_ViewHeaderState, headerState);
+
+                var firstInit = m_ViewHeaderState == null;
                 m_ViewHeaderState = headerState;
 
                 var multiColumnHeader = new MultiColumnHeader(m_ViewHeaderState) { height = 25 };
@@ -416,15 +437,23 @@ namespace UnityEditorInternal.Profiling
                 {
                     multiColumnHeader.state.visibleColumns = new[]
                     {
-                        (int)CallsTreeView.Column.Name, (int)CallsTreeView.Column.Calls, (int)CallsTreeView.Column.TimeMs, (int)CallsTreeView.Column.TimePercent,
+                        (int)CallsTreeView.Column.Name, (int)CallsTreeView.Column.Calls, (int)CallsTreeView.Column.GcAlloc, (int)CallsTreeView.Column.TimeMs, (int)CallsTreeView.Column.TimePercent,
                     };
                     multiColumnHeader.ResizeToFit();
                 }
+
+                multiColumnHeader.visibleColumnsChanged += OnMultiColumnHeaderChanged;
+                multiColumnHeader.sortingChanged += OnMultiColumnHeaderChanged;
 
                 m_View = new CallsTreeView(m_Type, m_ViewState, multiColumnHeader);
                 m_View.frameItemEvent += frameItemEvent;
 
                 m_Initialized = true;
+            }
+
+            void OnMultiColumnHeaderChanged(MultiColumnHeader header)
+            {
+                SessionState.SetString(multiColumnHeaderStatePrefKey, JsonUtility.ToJson(header.state));
             }
 
             MultiColumnHeaderState CreateDefaultMultiColumnHeaderState()
@@ -505,8 +534,16 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public ProfilerDetailedCallsView()
+
+        readonly string k_PrefKeyPrefix;
+        string callsTreePrefKeyPrefix => k_PrefKeyPrefix + "CallsTree.";
+        string calleesTreePrefKey => k_PrefKeyPrefix + "CalleesTree.";
+        string spillter0StatePrefKey => k_PrefKeyPrefix + "Splitter.Relative[0]";
+        string spillter1StatePrefKey => k_PrefKeyPrefix + "Splitter.Relative[1]";
+        string selectedIDpathprefKey => k_PrefKeyPrefix + "SelectedPath";
+        public ProfilerDetailedCallsView(string prefKeyPrefix)
         {
+            k_PrefKeyPrefix = prefKeyPrefix;
         }
 
         void InitIfNeeded()
@@ -515,19 +552,33 @@ namespace UnityEditorInternal.Profiling
                 return;
 
             if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
-                m_VertSplit = new SplitterState(new[] { 40f, 60f }, new[] { 50, 50 }, null);
+                m_VertSplit = new SplitterState(new[] { SessionState.GetFloat(spillter0StatePrefKey, 40f), SessionState.GetFloat(spillter1StatePrefKey, 60f) }, new[] { 50, 50 }, null);
+
+            if (m_FrameDataView != null && m_FrameDataView.valid && m_SelectedID >= 0)
+            {
+                var restoredPath = m_FrameDataView.GetItemPath(m_SelectedID);
+                var storedPath = SessionState.GetString(selectedIDpathprefKey, string.Empty);
+                if (restoredPath != storedPath)
+                    m_SelectedID = -1;
+            }
+            else
+            {
+                m_SelectedID = -1;
+            }
 
             if (m_CalleesTreeView == null)
-                m_CalleesTreeView = new CallsTreeViewController();
+                m_CalleesTreeView = new CallsTreeViewController(callsTreePrefKeyPrefix);
             m_CalleesTreeView.SetType(CallsTreeView.Type.Callees);
             m_CalleesTreeView.frameItemEvent += frameItemEvent;
 
             if (m_CallersTreeView == null)
-                m_CallersTreeView = new CallsTreeViewController();
+                m_CallersTreeView = new CallsTreeViewController(calleesTreePrefKey);
             m_CallersTreeView.SetType(CallsTreeView.Type.Callers);
             m_CallersTreeView.frameItemEvent += frameItemEvent;
 
             callersAndCalleeData = new ProfilerCallersAndCalleeData();
+
+            m_TotalSelectedPropertyTimeLabel = new GUIContent(Content.totalSelectedPropertyTimeLabel);
 
             m_Initialized = true;
         }
@@ -580,10 +631,29 @@ namespace UnityEditorInternal.Profiling
 
         public void Clear()
         {
+            m_SelectedID = -1;
             if (m_CallersTreeView != null)
                 m_CallersTreeView.SetCallsData(new ProfilerCallersAndCalleeData.CallsData() { calls = null, totalSelectedPropertyTime = 0 });
             if (m_CalleesTreeView != null)
                 m_CalleesTreeView.SetCallsData(new ProfilerCallersAndCalleeData.CallsData() { calls = null, totalSelectedPropertyTime = 0 });
+        }
+
+        override public void SaveViewSettings()
+        {
+            if (m_FrameDataView != null && m_FrameDataView.valid && m_SelectedID >= 0)
+            {
+                SessionState.SetString(selectedIDpathprefKey, m_FrameDataView.GetItemPath(m_SelectedID));
+            }
+            if (m_VertSplit != null && m_VertSplit.relativeSizes != null && m_VertSplit.relativeSizes.Length >= 2)
+            {
+                SessionState.SetFloat(spillter0StatePrefKey, m_VertSplit.relativeSizes[0]);
+                SessionState.GetFloat(spillter1StatePrefKey, m_VertSplit.relativeSizes[1]);
+            }
+        }
+
+        override public void OnDisable()
+        {
+            SaveViewSettings();
         }
     }
 }

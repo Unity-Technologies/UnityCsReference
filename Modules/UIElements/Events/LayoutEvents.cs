@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
         {
             oldRect = Rect.zero;
             newRect = Rect.zero;
+            layoutPass = 0;
         }
 
         public Rect oldRect { get; private set; }

@@ -10,10 +10,12 @@ using UnityEditor;
 
 namespace UnityEditorInternal.Profiling
 {
+    [Serializable]
     internal abstract class ProfilerModuleBase
     {
         protected IProfilerWindowController m_ProfilerWindow;
 
+        [SerializeField]
         protected Vector2 m_PaneScroll;
 
         public virtual void OnEnable(IProfilerWindowController profilerWindow)
@@ -21,8 +23,13 @@ namespace UnityEditorInternal.Profiling
             m_ProfilerWindow = profilerWindow;
         }
 
+        public virtual void SaveViewSettings()
+        {
+        }
+
         public virtual void OnDisable()
         {
+            SaveViewSettings();
         }
 
         public virtual void OnClosed()

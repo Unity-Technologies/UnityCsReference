@@ -67,10 +67,10 @@ namespace UnityEditor
 
         private static void SetVisualStudioAsEditorIfNoEditorWasSet()
         {
-            var externalEditor = EditorPrefs.GetString("kScriptsDefaultApp");
+            var externalEditor = CodeEditor.CurrentEditorInstallation;
             var bestVisualStudio = FindBestVisualStudio();
-            if (externalEditor == "" && bestVisualStudio != null)
-                EditorPrefs.SetString("kScriptsDefaultApp", bestVisualStudio);
+            if (externalEditor == CodeEditor.SystemDefaultPath && bestVisualStudio != null)
+                CodeEditor.SetExternalScriptEditor(bestVisualStudio);
         }
 
         public static string FindBestVisualStudio()
@@ -88,7 +88,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    var vs = ScriptEditorUtility.GetExternalScriptEditor();
+                    var vs = CodeEditor.CurrentEditorInstallation;
                     if (InstalledVisualStudios.ContainsKey(UnityEditor.VisualStudioVersion.VisualStudio2008) &&
                         (vs != String.Empty) &&
                         PathsAreEquivalent(InstalledVisualStudios[UnityEditor.VisualStudioVersion.VisualStudio2008].Last().Path, vs))

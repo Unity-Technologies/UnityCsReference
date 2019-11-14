@@ -16,7 +16,11 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         protected ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
 
-        protected abstract string ViewTypeSettingsKey { get; }
+        const string k_ViewTypeSettingsKey = "ViewType";
+        const string k_HierarchyViewSettingsKeyPrefix = "HierarchyView.";
+        protected abstract string SettingsKeyPrefix { get; }
+        string ViewTypeSettingsKey { get { return SettingsKeyPrefix + k_ViewTypeSettingsKey; } }
+        string HierarchyViewSettingsKeyPrefix { get { return SettingsKeyPrefix + k_HierarchyViewSettingsKeyPrefix; } }
         protected abstract ProfilerViewType DefaultViewTypeSetting { get; }
 
         [SerializeField]
@@ -36,22 +40,30 @@ namespace UnityEditorInternal.Profiling
         {
             base.OnEnable(profilerWindow);
             if (m_FrameDataHierarchyView == null)
-                m_FrameDataHierarchyView = new ProfilerFrameDataHierarchyView();
+                m_FrameDataHierarchyView = new ProfilerFrameDataHierarchyView(HierarchyViewSettingsKeyPrefix);
             m_FrameDataHierarchyView.gpuView = false;
             m_FrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_FrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
             m_ProfilerWindow.selectionChanged += m_FrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
-
-            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
             m_ViewType = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
+        }
+
+        public override void SaveViewSettings()
+        {
+            base.SaveViewSettings();
+            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)m_ViewType);
+            if (m_FrameDataHierarchyView == null)
+                m_FrameDataHierarchyView.SaveViewSettings();
         }
 
         public override void OnDisable()
         {
+            SaveViewSettings();
             base.OnDisable();
+            if (m_FrameDataHierarchyView == null)
+                m_FrameDataHierarchyView.OnDisable();
 
-            // Automatic Serialization on Domain Reload does not work yet as the base is abstract and the array on the ProfilerWindwo is of type ProfilerModuleBase
-            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)m_ViewType);
+            Clear();
         }
 
         public override void DrawToolbar(Rect position)

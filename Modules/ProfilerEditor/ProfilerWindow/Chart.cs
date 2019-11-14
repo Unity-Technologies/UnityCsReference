@@ -502,8 +502,7 @@ namespace UnityEditorInternal
                     if (stacked)
                     {
                         var accumulatedValues = 0f;
-                        //if the current series is non stackable a.k.a "Others" then just add up all other series
-                        int currentChartIndex = s == data.unstackableSeriesIndex ? data.series.Length : m_LabelOrder.FindIndex(x => x == s);
+                        int currentChartIndex = m_LabelOrder.FindIndex(x => x == s);
 
                         for (int i = currentChartIndex - 1; i >= 0; --i)
                         {
@@ -511,8 +510,7 @@ namespace UnityEditorInternal
                             var otherChartData = data.hasOverlay ? data.overlays[otherSeriesIdx] : data.series[otherSeriesIdx];
                             bool enabled = data.series[otherSeriesIdx].enabled;
 
-                            // account for "non stackable category"
-                            if (enabled &&  otherSeriesIdx != data.unstackableSeriesIndex)
+                            if (enabled)
                             {
                                 accumulatedValues += otherChartData.yValues[selectedIndex] * otherChartData.yScale;
                             }
@@ -771,7 +769,7 @@ namespace UnityEditorInternal
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
-                var serie = cdata.unstackableSeriesIndex == index && cdata.hasOverlay ? cdata.overlays[index] : cdata.series[index];
+                var serie = cdata.series[index];
                 float value = serie.yValues[i] * serie.yScale;
                 if (value == -1f)
                     continue;
@@ -1046,15 +1044,8 @@ namespace UnityEditorInternal
         public int numSeries { get; private set; }
         public int chartDomainOffset { get; private set; }
 
-        public int unstackableSeriesIndex { get; private set; }
-
-        public void Assign(ChartSeriesViewData[] series, int unstackableSeriesIndex, int firstFrame, int firstSelectableFrame)
+        public void Assign(ChartSeriesViewData[] series, int firstFrame, int firstSelectableFrame)
         {
-            if (unstackableSeriesIndex != -1)
-            {
-                this.unstackableSeriesIndex = unstackableSeriesIndex;
-            }
-
             this.series = series;
             this.chartDomainOffset = firstFrame;
             this.firstSelectableFrame = firstSelectableFrame;

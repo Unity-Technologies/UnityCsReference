@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -226,6 +227,7 @@ namespace UnityEngine
             private Vector3 m_StartSize;
             private Color32 m_StartColor;
             private UInt32 m_RandomSeed;
+            private UInt32 m_ParentRandomSeed;
             private float m_Lifetime;
             private float m_StartLifetime;
             private int m_MeshIndex;
@@ -300,6 +302,105 @@ namespace UnityEngine
             [NativeName("startLifetimeSet")] private bool m_StartLifetimeSet;
             [NativeName("meshIndexSet")] private bool m_MeshIndexSet;
             [NativeName("applyShapeToPosition")] private bool m_ApplyShapeToPosition;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PlaybackState
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Seed
+            {
+                public UInt32 x, y, z, w;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Seed4
+            {
+                public Seed x, y, z, w;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Emission
+            {
+                public float m_ParticleSpacing;
+                public float m_ToEmitAccumulator;
+                public Seed m_Random;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Initial
+            {
+                public Seed4 m_Random;
+            };
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Shape
+            {
+                public Seed4 m_Random;
+                public float m_RadiusTimer;
+                public float m_RadiusTimerPrev;
+                public float m_ArcTimer;
+                public float m_ArcTimerPrev;
+                public float m_MeshSpawnTimer;
+                public float m_MeshSpawnTimerPrev;
+                public int m_OrderedMeshVertexIndex;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Force
+            {
+                public Seed4 m_Random;
+            };
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Collision
+            {
+                public Seed4 m_Random;
+            };
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Noise
+            {
+                public float m_ScrollOffset;
+            };
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Lights
+            {
+                public Seed m_Random;
+                public float m_ParticleEmissionCounter;
+            };
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct Trail
+            {
+                public float m_Timer;
+            };
+
+            internal float m_AccumulatedDt;
+            internal float m_StartDelay;
+            internal float m_PlaybackTime;
+            internal int m_RingBufferIndex;
+            internal Emission m_Emission;
+            internal Initial m_Initial;
+            internal Shape m_Shape;
+            internal Force m_Force;
+            internal Collision m_Collision;
+            internal Noise m_Noise;
+            internal Lights m_Lights;
+            internal Trail m_Trail;
+        }
+
+        [NativeType(CodegenOptions.Custom, "MonoParticleTrails")]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Trails
+        {
+            internal List<Vector4> positions;
+            internal List<int> frontPositions;
+            internal List<int> backPositions;
+            internal List<int> positionCounts;
+            internal int maxTrailCount;
+            internal int maxPositionsPerTrailCount;
         }
     }
 
