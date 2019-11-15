@@ -336,7 +336,6 @@ namespace UnityEditor.EditorTools
             res = (EditorTool)CreateInstance(type);
             res.hideFlags = HideFlags.DontSave;
             instance.m_ToolSingletons.Add(res);
-            instance.Save(true);
             return res;
         }
 

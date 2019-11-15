@@ -23,12 +23,13 @@ namespace UnityEditor
             public static readonly int[] kSampleRateValues = {8000, 11025, 22050, 44100, 48000, 96000, 192000};
 
             public static GUIContent LoadType = EditorGUIUtility.TrTextContent("Load Type");
-            public static GUIContent PreloadAudioData = EditorGUIUtility.TrTextContent("Preload Audio Data");
+            public static GUIContent PreloadAudioData = EditorGUIUtility.TrTextContent("Preload Audio Data*");
             public static GUIContent CompressionFormat = EditorGUIUtility.TrTextContent("Compression Format");
             public static GUIContent Quality = EditorGUIUtility.TrTextContent("Quality");
             public static GUIContent SampleRateSetting = EditorGUIUtility.TrTextContent("Sample Rate Setting");
             public static GUIContent SampleRate = EditorGUIUtility.TrTextContent("Sample Rate");
             public static GUIContent DefaultPlatform = EditorGUIUtility.TrTextContent("Default");
+            public static GUIContent SharedSettingInformation = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
         }
 
         public SerializedProperty m_ForceToMono;
@@ -350,7 +351,7 @@ namespace UnityEditor
                             EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
                             using (var changed = new EditorGUI.ChangeCheckScope())
                             {
-                                var newValue = EditorGUILayout.IntSlider(propertyScope.content, (int)Mathf.Clamp(property.floatValue * 100.0f, 1.0f, 100.0f), 1, 100);
+                                var newValue = EditorGUILayout.IntSlider(propertyScope.content, (int)Mathf.Clamp(property.floatValue * 100.0f + 0.5f, 1.0f, 100.0f), 1, 100);
                                 if (changed.changed)
                                 {
                                     property.floatValue = 0.01f * newValue;
@@ -410,6 +411,8 @@ namespace UnityEditor
                 }
 
                 //TODO include the settings for things like HEVAG
+
+                EditorGUILayout.LabelField(Style.SharedSettingInformation, EditorStyles.miniLabel);
             }
         }
 

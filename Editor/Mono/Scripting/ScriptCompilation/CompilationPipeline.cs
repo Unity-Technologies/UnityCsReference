@@ -241,7 +241,7 @@ namespace UnityEditor.Compilation
 
         public static ResponseFileData ParseResponseFile(string relativePath, string projectDirectory, string[] systemReferenceDirectories)
         {
-            return ScriptCompilerBase.ParseResponseFileFromFile(relativePath, projectDirectory, systemReferenceDirectories);
+            return MicrosoftResponseFileParser.ParseResponseFileFromFile(relativePath, projectDirectory, systemReferenceDirectories);
         }
 
         public static Assembly[] GetAssemblies()

@@ -1707,6 +1707,7 @@ namespace UnityEngine.Rendering
         UNITY_LIGHTMAP_DLDR_ENCODING,
         UNITY_LIGHTMAP_RGBM_ENCODING,
         UNITY_LIGHTMAP_FULL_HDR,
+        UNITY_VIRTUAL_TEXTURING,
     }
 
     // Match VideoShadersMode on C++ side

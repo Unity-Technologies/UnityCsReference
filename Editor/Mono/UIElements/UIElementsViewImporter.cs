@@ -330,7 +330,10 @@ namespace UnityEditor.UIElements
         {
             var h = new Hash128();
             byte[] b = Encoding.UTF8.GetBytes(xml);
-            HashUtilities.ComputeHash128(b, ref h);
+            if (b.Length > 0)
+            {
+                HashUtilities.ComputeHash128(b, ref h);
+            }
 
             CreateVisualTreeAsset(out vta, h);
 
@@ -572,7 +575,7 @@ namespace UnityEditor.UIElements
             if (parent == null)
             {
                 vea.parentId = 0;
-                parentHash = vta.GetHashCode();
+                parentHash = vta.contentHash;
             }
             else
             {

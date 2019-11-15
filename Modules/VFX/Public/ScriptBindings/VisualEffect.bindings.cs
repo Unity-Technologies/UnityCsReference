@@ -11,6 +11,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace UnityEngine.VFX
 {
@@ -185,6 +186,12 @@ namespace UnityEngine.VFX
         }
 
         [FreeFunction(Name = "VisualEffectBindings::Internal_GetAnimationCurveFromScript", HasExplicitThis = true)] extern private void Internal_GetAnimationCurve(int nameID, AnimationCurve curve);
+
+        [FreeFunction(Name = "VisualEffectBindings::HasSystemFromScript", HasExplicitThis = true)] extern public bool HasSystem(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetParticleSystemInfo", HasExplicitThis = true, ThrowsException = true)] extern public VFXParticleSystemInfo GetParticleSystemInfo(int nameID);
+
+        [FreeFunction(Name = "VisualEffectBindings::GetSystemNamesFromScript", HasExplicitThis = true)] extern public void GetSystemNames([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectBindings::GetParticleSystemNamesFromScript", HasExplicitThis = true)] extern public void GetParticleSystemNames([NotNull] List<string> names);
 
         public void ResetOverride(string name)
         {
@@ -379,6 +386,16 @@ namespace UnityEngine.VFX
             return GetGradient(Shader.PropertyToID(name));
         }
 
+        public bool HasSystem(string name)
+        {
+            return HasSystem(Shader.PropertyToID(name));
+        }
+
+        public VFXParticleSystemInfo GetParticleSystemInfo(string name)
+        {
+            return GetParticleSystemInfo(Shader.PropertyToID(name));
+        }
+
         extern public int aliveParticleCount { get; }
 
         extern public void Simulate(float stepDeltaTime, uint stepCount = 1);
@@ -391,5 +408,23 @@ namespace UnityEngine.VFX
     [NativeType(Header = "Modules/VFX/Public/VFXRenderer.h")]
     internal sealed partial class VFXRenderer : Renderer
     {
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Modules/VFX/Public/VFXSystem.h")]
+    public struct VFXParticleSystemInfo
+    {
+        public uint aliveCount;
+        public uint capacity;
+        public bool sleeping;
+        public Bounds bounds;
+
+        public VFXParticleSystemInfo(uint aliveCount, uint capacity, bool sleeping, Bounds bounds)
+        {
+            this.aliveCount = aliveCount;
+            this.capacity = capacity;
+            this.sleeping = sleeping;
+            this.bounds = bounds;
+        }
     }
 }

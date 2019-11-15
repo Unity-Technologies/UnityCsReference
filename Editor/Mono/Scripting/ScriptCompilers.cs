@@ -124,13 +124,6 @@ namespace UnityEditor.Scripting
             throw new ApplicationException(string.Format("Script file extension '{0}' is not supported", extension));
         }
 
-        internal static ScriptCompilerBase CreateCompilerInstance(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, string tempOutputDirectory)
-        {
-            if (scriptAssembly.Files.Length == 0) throw new ArgumentException("Cannot compile ScriptAssembly with no files");
-
-            return CSharpSupportedLanguage.CreateCompiler(scriptAssembly, options, tempOutputDirectory);
-        }
-
         public static string GetExtensionOfSourceFile(string file)
         {
             var ext = Path.GetExtension(file).ToLower();

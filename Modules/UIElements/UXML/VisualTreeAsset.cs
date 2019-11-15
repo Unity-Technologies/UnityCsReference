@@ -80,9 +80,74 @@ namespace UnityEngine.UIElements
         [SerializeField] private List<UsingEntry> m_Usings;
 #pragma warning restore 0649
 
+        public IEnumerable<VisualTreeAsset> templateDependencies
+        {
+            get
+            {
+                HashSet<VisualTreeAsset> sent = new HashSet<VisualTreeAsset>();
+
+                foreach (var entry in m_Usings)
+                {
+                    if (entry.asset != null && !sent.Contains(entry.asset))
+                    {
+                        sent.Add(entry.asset);
+                        yield return entry.asset;
+                    }
+                    else if (!string.IsNullOrEmpty(entry.path))
+                    {
+                        var vta = Panel.LoadResource(entry.path, typeof(VisualTreeAsset), GUIUtility.pixelsPerPoint) as
+                            VisualTreeAsset;
+                        if (vta != null && !sent.Contains(entry.asset))
+                        {
+                            sent.Add(entry.asset);
+                            yield return vta;
+                        }
+                    }
+                }
+            }
+        }
+
         [SerializeField] internal StyleSheet inlineSheet;
 
         [SerializeField] private List<VisualElementAsset> m_VisualElementAssets;
+
+        public IEnumerable<StyleSheet> stylesheets
+        {
+            get
+            {
+                HashSet<StyleSheet> sent = new HashSet<StyleSheet>();
+
+                foreach (var vea in m_VisualElementAssets)
+                {
+                    if (vea.hasStylesheets)
+                    {
+                        foreach (var stylesheet in vea.stylesheets)
+                        {
+                            if (!sent.Contains(stylesheet))
+                            {
+                                sent.Add(stylesheet);
+                                yield return stylesheet;
+                            }
+                        }
+                    }
+
+                    if (vea.hasStylesheetPaths)
+                    {
+                        foreach (var stylesheetPath in vea.stylesheetPaths)
+                        {
+                            var stylesheet =
+                                Panel.LoadResource(stylesheetPath, typeof(StyleSheet),
+                                    GUIUtility.pixelsPerPoint) as StyleSheet;
+                            if (stylesheet != null && !sent.Contains(stylesheet))
+                            {
+                                sent.Add(stylesheet);
+                                yield return stylesheet;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         internal List<VisualElementAsset> visualElementAssets
         {
@@ -107,7 +172,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField] private int m_ContentContainerId;
-        [SerializeField] int m_ContentHash;
+        [SerializeField] private int m_ContentHash;
 
         internal int contentContainerId
         {
@@ -159,6 +224,9 @@ namespace UnityEngine.UIElements
 
         public void CloneTree(VisualElement target, out int firstElementIndex, out int elementAddedCount)
         {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+
             firstElementIndex = target.childCount;
             try
             {
@@ -208,11 +276,13 @@ namespace UnityEngine.UIElements
 
             Debug.Assert(rootAssets.Count == 1);
 
-            AssignClassListFromAssetToElement(rootAssets[0], target);
-            AssignStyleSheetFromAssetToElement(rootAssets[0], target);
+            var root = rootAssets[0];
+            AssignClassListFromAssetToElement(root, target);
+            AssignStyleSheetFromAssetToElement(root, target);
 
             // Get the first-level elements. These will be instantiated and added to target.
-            idToChildren.TryGetValue(rootAssets[0].id, out rootAssets);
+            rootAssets.Clear();
+            idToChildren.TryGetValue(root.id, out rootAssets);
 
             if (rootAssets == null || rootAssets.Count == 0)
             {
@@ -226,9 +296,16 @@ namespace UnityEngine.UIElements
                 VisualElement rootVe = CloneSetupRecursively(rootElement, idToChildren,
                     new CreationContext(slotInsertionPoints, attributeOverrides, this, target));
 
-                // if contentContainer == this, the shadow and the logical hierarchy are identical
-                // otherwise, if there is a CC, we want to insert in the shadow
-                target.hierarchy.Add(rootVe);
+                if (rootVe != null)
+                {
+                    // if contentContainer == this, the shadow and the logical hierarchy are identical
+                    // otherwise, if there is a CC, we want to insert in the shadow
+                    target.hierarchy.Add(rootVe);
+                }
+                else
+                {
+                    Debug.LogWarning("VisualTreeAsset instantiated an empty UI. Check the syntax of your UXML document.");
+                }
             }
         }
 
@@ -236,6 +313,10 @@ namespace UnityEngine.UIElements
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
             VisualElement ve = Create(root, context);
+            if (ve == null)
+            {
+                return null;
+            }
 
             // context.target is the created templateContainer
             if (root.id == context.visualTreeAsset.contentContainerId)
@@ -474,28 +555,28 @@ namespace UnityEngine.UIElements
 
         static void AssignStyleSheetFromAssetToElement(VisualElementAsset asset, VisualElement element)
         {
-            if (asset.stylesheetPaths != null)
+            if (asset.hasStylesheetPaths)
             {
                 for (int i = 0; i < asset.stylesheetPaths.Count; i++)
                     element.AddStyleSheetPath(asset.stylesheetPaths[i]);
             }
 
-            if (asset.stylesheets != null)
+            if (asset.hasStylesheets)
             {
                 for (int i = 0; i < asset.stylesheets.Count; ++i)
-                    element.styleSheets.Add(asset.stylesheets[i]);
+                {
+                    if (asset.stylesheets[i] != null)
+                    {
+                        element.styleSheets.Add(asset.stylesheets[i]);
+                    }
+                }
             }
         }
 
-        internal int contentHash
+        public int contentHash
         {
             get { return m_ContentHash; }
             set { m_ContentHash = value; }
-        }
-
-        public override int GetHashCode()
-        {
-            return contentHash;
         }
     }
 

@@ -513,10 +513,8 @@ namespace UnityEditor
 
         public static extern bool enableFrameTimingStats { get; set; }
 
-        [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool useHDRDisplay { get; set; }
 
-        [NativeProperty(TargetType = TargetType.Field)]
         public static extern D3DHDRDisplayBitDepth D3DHDRBitDepth { get; set; }
 
 
@@ -1171,5 +1169,13 @@ namespace UnityEditor
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
 
         internal static extern bool disableOldInputManagerSupport { get; }
+
+        [StaticAccessor("GetPlayerSettings()")]
+        [NativeMethod("GetVirtualTexturingSupportEnabled")]
+        public static extern bool GetVirtualTexturingSupportEnabled();
+
+        [StaticAccessor("GetPlayerSettings()")]
+        [NativeMethod("SetVirtualTexturingSupportEnabled")]
+        public static extern void SetVirtualTexturingSupportEnabled(bool enabled);
     }
 }

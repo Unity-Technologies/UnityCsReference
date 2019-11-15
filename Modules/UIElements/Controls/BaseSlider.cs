@@ -62,6 +62,7 @@ namespace UnityEngine.UIElements
             set { m_PageSize = value; }
         }
 
+        internal bool clamped { get; set; } = true;
 
         internal ClampedDragger<TValueType> clampedDragger { get; private set; }
         Rect m_DragElementStartPos;
@@ -99,7 +100,7 @@ namespace UnityEngine.UIElements
             get { return base.value; }
             set
             {
-                var newValue = GetClampedValue(value);
+                var newValue = clamped ? GetClampedValue(value) : value;
                 base.value = newValue;
             }
         }
@@ -107,7 +108,7 @@ namespace UnityEngine.UIElements
         public override void SetValueWithoutNotify(TValueType newValue)
         {
             // Clamp the value around the real lowest and highest range values.
-            var clampedValue = GetClampedValue(newValue);
+            var clampedValue = clamped ? GetClampedValue(newValue) : newValue;
 
             base.SetValueWithoutNotify(clampedValue);
             UpdateDragElementPosition();

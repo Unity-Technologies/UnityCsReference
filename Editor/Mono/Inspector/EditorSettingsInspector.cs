@@ -89,24 +89,12 @@ namespace UnityEditor
         struct PopupElement
         {
             public readonly string id;
-            public readonly bool requiresTeamLicense;
             public readonly GUIContent content;
 
-            public bool Enabled
-            {
-                get { return (!requiresTeamLicense || InternalEditorUtility.HasTeamLicense()); }
-            }
-
             public PopupElement(string content)
-                : this(content, false)
-            {
-            }
-
-            public PopupElement(string content, bool requiresTeamLicense)
             {
                 this.id = content;
                 this.content = new GUIContent(content);
-                this.requiresTeamLicense = requiresTeamLicense;
             }
         }
 
@@ -244,7 +232,7 @@ namespace UnityEditor
             List<PopupElement> popupArray = new List<PopupElement>(vcDefaultPopupList);
             foreach (var plugin in availvc)
             {
-                popupArray.Add(new PopupElement(plugin.name, true));
+                popupArray.Add(new PopupElement(plugin.name));
             }
 
 
@@ -993,11 +981,7 @@ namespace UnityEditor
             for (int i = 0; i < elements.Length; i++)
             {
                 var element = elements[i];
-
-                if (element.Enabled)
-                    menu.AddItem(element.content, i == selectedIndex, func, i);
-                else
-                    menu.AddDisabledItem(element.content);
+                menu.AddItem(element.content, i == selectedIndex, func, i);
             }
             menu.DropDown(popupRect);
         }

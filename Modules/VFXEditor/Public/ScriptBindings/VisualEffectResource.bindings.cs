@@ -139,6 +139,7 @@ namespace UnityEditor.VFX
         public string source;
     }
 
+    [UsedByNativeCode]
     [NativeType(CodegenOptions.Custom, "ScriptingVFXEditorTaskDesc")]
     internal struct VFXEditorTaskDesc
     {
@@ -175,13 +176,15 @@ namespace UnityEditor.VFX
             }
         }
     }
-
+    [UsedByNativeCode]
+    [NativeType(CodegenOptions.Custom, "ScriptingVFXEditorSystemDesc")]
     internal struct VFXEditorSystemDesc
     {
         public VFXSystemType type;
         public VFXSystemFlag flags;
         public uint capacity;
         public uint layer;
+        public string name;
         public VFXMapping[] buffers;
         public VFXMapping[] values;
         public VFXEditorTaskDesc[] tasks;

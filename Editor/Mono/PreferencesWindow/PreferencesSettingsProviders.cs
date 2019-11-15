@@ -390,7 +390,6 @@ namespace UnityEditor
 
             GUILayout.Space(10f);
 
-            using (new EditorGUI.DisabledScope(!InternalEditorUtility.HasTeamLicense()))
             {
                 m_DiffToolIndex = EditorGUILayout.Popup(ExternalProperties.revisionControlDiffMerge, m_DiffToolIndex, m_DiffTools);
                 if (m_DiffToolIndex == m_DiffTools.Length - 1)
@@ -1046,8 +1045,7 @@ namespace UnityEditor
             InternalEditorUtility.SetCustomDiffToolData(m_CustomDiffToolPath, m_CustomDiffToolArguments[0], m_CustomDiffToolArguments[1], m_CustomDiffToolArguments[2]);
 
 
-            // only show warning if has team license
-            if ((m_DiffTools == null || (m_DiffTools.Length == 1 && m_CustomDiffToolPath.Equals(""))) && InternalEditorUtility.HasTeamLicense())
+            if ((m_DiffTools == null || (m_DiffTools.Length == 1 && m_CustomDiffToolPath.Equals(""))))
             {
                 m_noDiffToolsMessage = InternalEditorUtility.GetNoDiffToolsDetectedMessage();
             }

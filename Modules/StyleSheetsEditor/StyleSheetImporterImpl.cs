@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using ParserStyleSheet = ExCSS.StyleSheet;
 using ParserStyleRule = ExCSS.StyleRule;
@@ -376,6 +377,14 @@ namespace UnityEditor.StyleSheets
         {
             ParserStyleSheet styleSheet = m_Parser.Parse(contents);
             ImportParserStyleSheet(asset, styleSheet);
+
+            var h = new Hash128();
+            byte[] b = Encoding.UTF8.GetBytes(contents);
+            if (b.Length > 0)
+            {
+                HashUtilities.ComputeHash128(b, ref h);
+            }
+            asset.contentHash = h.GetHashCode();
         }
 
         protected void ImportParserStyleSheet(UnityStyleSheet asset, ParserStyleSheet styleSheet)

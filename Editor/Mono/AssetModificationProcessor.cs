@@ -197,18 +197,9 @@ namespace UnityEditor
             }
         }
 
-        static void RequireTeamLicense()
-        {
-            if (!InternalEditorUtility.HasTeamLicense())
-                throw new MethodAccessException("Requires team license");
-        }
-
         static AssetMoveResult OnWillMoveAsset(string fromPath, string toPath, string[] newPaths, string[] NewMetaPaths)
         {
             AssetMoveResult finalResult = AssetMoveResult.DidNotMove;
-            if (!InternalEditorUtility.HasTeamLicense())
-                return finalResult;
-
             finalResult = AssetModificationHook.OnWillMoveAsset(fromPath, toPath);
 
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
@@ -216,8 +207,6 @@ namespace UnityEditor
                 MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillMoveAsset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
-                    RequireTeamLicense();
-
                     object[] args = { fromPath, toPath };
                     if (!CheckArgumentsAndReturnType(args, method, finalResult.GetType()))
                         continue;
@@ -232,16 +221,12 @@ namespace UnityEditor
         static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
         {
             AssetDeleteResult finalResult = AssetDeleteResult.DidNotDelete;
-            if (!InternalEditorUtility.HasTeamLicense())
-                return finalResult;
 
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {
                 MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillDeleteAsset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
-                    RequireTeamLicense();
-
                     object[] args = { assetPath, options };
                     if (!CheckArgumentsAndReturnType(args, method, finalResult.GetType()))
                         continue;
@@ -269,8 +254,6 @@ namespace UnityEditor
                     MethodInfo method = assetModificationProcessorClass.GetMethod("IsOpenForEdit", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                     if (method != null)
                     {
-                        RequireTeamLicense();
-
                         string dummy = "";
                         bool bool_dummy = false;
                         Type[] types = { dummy.GetType(), dummy.GetType().MakeByRefType() };
@@ -390,8 +373,6 @@ namespace UnityEditor
                 MethodInfo method = assetModificationProcessorClass.GetMethod("OnStatusUpdated", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
-                    RequireTeamLicense();
-
                     object[] args = {};
                     if (!CheckArgumentsAndReturnType(args, method, typeof(void)))
                         continue;

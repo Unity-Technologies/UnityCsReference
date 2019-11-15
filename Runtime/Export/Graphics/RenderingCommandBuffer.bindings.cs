@@ -8,6 +8,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine;
+using UnityEngine.Experimental;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Collections.Generic;
@@ -812,6 +813,9 @@ namespace UnityEngine.Rendering
             RenderBufferLoadAction[] colorLoadActions, RenderBufferStoreAction[] colorStoreActions,
             RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction,
             int mipLevel, CubemapFace cubemapFace, int depthSlice);
+
+        [NativeMethod("ProcessVTFeedback")]
+        extern private void Internal_ProcessVTFeedback(RenderTargetIdentifier rt, IntPtr resolver, int slice, int x, int width, int y, int height, int mip);
 
         // Set buffer data.
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf

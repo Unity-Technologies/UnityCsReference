@@ -11,6 +11,7 @@ using UnityEngine.UIElements;
 using UnityEditor.Profiling;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.StyleSheets;
 
 namespace UnityEditor
 {
@@ -536,12 +537,44 @@ namespace UnityEditor
 
         protected virtual RectOffset GetBorderSize() { return m_BorderSize; }
 
-        protected bool HasExtraDockAreaButton()
+        private static WindowAction[] s_windowActions;
+        private static WindowAction[] windowActions
         {
-            MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
-            return mi != null;
+            get
+            {
+                if (s_windowActions == null)
+                {
+                    s_windowActions = FetchWindowActionFromAttribute();
+                }
+                return s_windowActions;
+            }
         }
 
+        public static SVC<float> genericMenuLeftOffset = new SVC<float>("--window-generic-menu-left-offset", 20f);
+        public static SVC<float> genericMenuFloatingLeftOffset = new SVC<float>("--window-floating-generic-menu-left-offset", 20f);
+        internal static float GetGenericMenuLeftOffset(bool addFloatingWindowButtonsTopRight)
+        {
+            if (addFloatingWindowButtonsTopRight)
+                return genericMenuFloatingLeftOffset + ContainerWindow.buttonStackWidth;
+            else
+                return genericMenuLeftOffset;
+        }
+
+        internal float GetExtraButtonsWidth()
+        {
+            float extraWidth = 0;
+            MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
+            if (mi != null) extraWidth += ContainerWindow.kButtonWidth;
+
+            foreach (var item in windowActions)
+            {
+                if (item != null && (item.validateHandler == null || item.validateHandler(actualView, item)) && item.width.HasValue)
+                    extraWidth += item.width.Value + k_iconMargin;
+            }
+            return extraWidth;
+        }
+
+        internal const float k_iconMargin = 1f;
         protected void ShowGenericMenu(float leftOffset, float topOffset)
         {
             GUIStyle gs = "PaneOptions";
@@ -553,28 +586,47 @@ namespace UnityEditor
             MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
             if (mi != null)
             {
-                const float rightOffset = 16f;
-                object[] lockButton = { new Rect(leftOffset - rightOffset, topOffset, 16, 16) };
+                leftOffset -= ContainerWindow.kButtonWidth + k_iconMargin;
+                object[] lockButton = { new Rect(leftOffset, topOffset, ContainerWindow.kButtonWidth, ContainerWindow.kButtonHeight) };
                 mi.Invoke(m_ActualView, lockButton);
             }
 
-            // Developer-mode render doc button to enable capturing any HostView content/panels
-            if (Unsupported.IsDeveloperMode() && UnityEditorInternal.RenderDoc.IsLoaded() && UnityEditorInternal.RenderDoc.IsSupported())
+            foreach (var item in windowActions)
             {
-                Rect renderDocRect = new Rect(leftOffset - (mi == null ? 16 : 32), Mathf.Floor(background.margin.top + 4), 17, 16);
-                RenderDocCaptureButton(renderDocRect);
+                if (item != null && (item.validateHandler == null || item.validateHandler(actualView, item)) && item.width.HasValue)
+                {
+                    leftOffset -= item.width.Value + k_iconMargin;
+                    Rect itemRect = new Rect(leftOffset, topOffset, item.width.Value, ContainerWindow.kButtonHeight);
+                    if (item.drawHandler != null)
+                    {
+                        if (item.drawHandler(actualView, item, itemRect))
+                            item.executeHandler(actualView, item);
+                    }
+                    else if (item.icon != null)
+                    {
+                        if (EditorGUI.Button(itemRect, EditorGUIUtility.TrIconContent(item.icon, item.menuPath), EditorStyles.iconButton))
+                            item.executeHandler(actualView, item);
+                    }
+                }
             }
         }
 
-        static GUIContent s_RenderDocContent;
-        private void RenderDocCaptureButton(Rect r)
+        private static WindowAction[] FetchWindowActionFromAttribute()
         {
-            if (s_RenderDocContent == null)
-                s_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
-
-            Rect r2 = new Rect(r.xMax - r.width, r.y, r.width, r.height);
-            if (GUI.Button(r2, s_RenderDocContent, EditorStyles.iconButton))
-                CaptureRenderDocFullContent();
+            var methods = AttributeHelper.GetMethodsWithAttribute<WindowActionAttribute>();
+            return methods.methodsWithAttributes.Select(method =>
+            {
+                try
+                {
+                    var callback = Delegate.CreateDelegate(typeof(Func<WindowAction>), method.info) as Func<WindowAction>;
+                    return callback?.Invoke();
+                }
+                catch (Exception)
+                {
+                    Debug.LogError("Cannot create Window Action for: " + method.info.Name);
+                }
+                return null;
+            }).OrderBy(a => a.priority).ToArray();
         }
 
         public void PopupGenericMenu(EditorWindow view, Rect pos)
@@ -586,8 +638,33 @@ namespace UnityEditor
                 menuProvider.AddItemsToMenu(menu);
 
             AddDefaultItemsToMenu(menu, view);
+
+            AddWindowActionMenu(menu, view);
+
             menu.DropDown(pos);
             Event.current.Use();
+        }
+
+        internal static void AddWindowActionMenu(GenericMenu menu, EditorWindow view)
+        {
+            bool itemAdded = false;
+            int previousItemPriority = 0;
+            foreach (var item in windowActions)
+            {
+                if (item != null && (item.validateHandler == null || item.validateHandler(view, item)) && !string.IsNullOrEmpty(item.menuPath))
+                {
+                    if (!itemAdded)
+                    {
+                        menu.AddSeparator("");
+                        itemAdded = true;
+                    }
+                    else if (item.priority >= previousItemPriority + 10)
+                        menu.AddSeparator("");
+
+                    menu.AddItem(new GUIContent(item.menuPath, item.icon), false, () => item.executeHandler(view, item));
+                    previousItemPriority = item.priority;
+                }
+            }
         }
 
         private void Inspect(object userData)

@@ -1696,6 +1696,9 @@
     <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs">
       <Link>Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\VirtualTexturing\ScriptBindings\VirtualTexturing.bindings.cs">
+      <Link>Modules\VirtualTexturing\ScriptBindings\VirtualTexturing.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Wind\Public\WindZone.bindings.cs">
       <Link>Modules\Wind\Public\WindZone.bindings.cs</Link>
     </Compile>

@@ -54,6 +54,15 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal Object[] assets;
 
+        [SerializeField]
+        private int m_ContentHash;
+
+        public int contentHash
+        {
+            get { return m_ContentHash; }
+            set { m_ContentHash = value; }
+        }
+
         [NonSerialized]
         internal TableType orderedNameSelectors;
 

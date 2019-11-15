@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Scripting.Compilers
@@ -21,11 +22,6 @@ namespace UnityEditor.Scripting.Compilers
         public override string GetLanguageName()
         {
             return "CSharp";
-        }
-
-        public override ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, string tempOutputDirectory)
-        {
-            return new MicrosoftCSharpCompiler(scriptAssembly, options, tempOutputDirectory);
         }
 
         public override bool CompilerRequiresAdditionalReferences()

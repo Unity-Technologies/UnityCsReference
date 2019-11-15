@@ -9,16 +9,13 @@ using System.Linq;
 using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityEditor.Compilation;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEditorInternal;
-using UnityEditor.Scripting.Compilers;
-using UnityEngine.Profiling;
-
-using UnityEditor.Compilation;
 using UnityEngine;
-using UnityEditor.PackageManager;
+using UnityEngine.Profiling;
 
 namespace UnityEditor.VisualStudioIntegration
 {
@@ -106,7 +103,7 @@ namespace UnityEditor.VisualStudioIntegration
 
         private void SetupProjectSupportedExtensions()
         {
-            ProjectSupportedExtensions = EditorSettings.projectGenerationUserExtensions;
+            ProjectSupportedExtensions = m_assemblyNameProvider.ProjectSupportedExtensions;
         }
 
         bool ShouldFileBePartOfSolution(string file)
@@ -114,10 +111,8 @@ namespace UnityEditor.VisualStudioIntegration
             string extension = Path.GetExtension(file);
 
             // Exclude files coming from packages except if they are internalized.
-            if (!m_ShouldGenerateAll && IsInternalizedPackagePath(file))
-            {
+            if (!m_ShouldGenerateAll && m_assemblyNameProvider.IsInternalizedPackagePath(file))
                 return false;
-            }
 
             // Dll's are not scripts but still need to be included..
             if (extension == ".dll")
@@ -307,7 +302,7 @@ namespace UnityEditor.VisualStudioIntegration
             foreach (string asset in m_assemblyNameProvider.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (!m_ShouldGenerateAll && IsInternalizedPackagePath(asset))
+                if (!m_ShouldGenerateAll && m_assemblyNameProvider.IsInternalizedPackagePath(asset))
                 {
                     continue;
                 }
@@ -344,23 +339,6 @@ namespace UnityEditor.VisualStudioIntegration
                 result[entry.Key] = entry.Value.ToString();
 
             return result;
-        }
-
-        bool IsInternalizedPackagePath(string file)
-        {
-            if (string.IsNullOrEmpty(file.Trim()))
-            {
-                return false;
-            }
-
-            var packageInfo = m_assemblyNameProvider.FindForAssetPath(file);
-            if (packageInfo == null)
-            {
-                return false;
-            }
-
-            var packageSource = packageInfo.source;
-            return packageSource != PackageSource.Embedded && packageSource != PackageSource.Local;
         }
 
         void SyncProject(Compilation.Assembly assembly,
@@ -594,33 +572,15 @@ namespace UnityEditor.VisualStudioIntegration
             Compilation.Assembly assembly,
             IEnumerable<ResponseFileData> responseFilesData)
         {
-            string targetframeworkversion = "v3.5";
-            string targetLanguageVersion = "4";
+            string targetframeworkversion = "v4.7.1";
+            string targetLanguageVersion = "latest";
             string toolsversion = "4.0";
             string productversion = "10.0.20506";
             string baseDirectory = ".";
             string cscToolPath = "$(CscToolPath)";
-            string cscToolExe = "$(CscToolExe)";
-            ScriptingLanguage language = ScriptingLanguageFor(assembly);
-
-            if (PlayerSettingsEditor.IsLatestApiCompatibility(assembly.compilerOptions.ApiCompatibilityLevel))
-            {
-                targetframeworkversion = "v4.7.1";
-                targetLanguageVersion = "latest";
-
-                cscToolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynScripts");
-                if (Application.platform == RuntimePlatform.WindowsEditor)
-                    cscToolExe = "unity_csc.bat";
-                else
-                    cscToolExe = "unity_csc.sh";
-
-                cscToolPath = Paths.UnifyDirectorySeparator(cscToolPath);
-            }
-            else if (_settings.VisualStudioVersion == 9)
-            {
-                toolsversion = "3.5";
-                productversion = "9.0.21022";
-            }
+            cscToolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynScripts");
+            cscToolPath = Paths.UnifyDirectorySeparator(cscToolPath);
+            string cscToolExe = Application.platform == RuntimePlatform.WindowsEditor ? "unity_csc.bat" : "unity_csc.sh";
 
             var arguments = new object[]
             {
@@ -632,7 +592,7 @@ namespace UnityEditor.VisualStudioIntegration
                 string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(assembly.defines).Concat(responseFilesData.SelectMany(x => x.Defines)).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 assembly.name,
-                EditorSettings.projectGenerationRootNamespace,
+                m_assemblyNameProvider.ProjectGenerationRootNamespace,
                 targetframeworkversion,
                 targetLanguageVersion,
                 baseDirectory,
@@ -643,6 +603,7 @@ namespace UnityEditor.VisualStudioIntegration
 
             try
             {
+                ScriptingLanguage language = ScriptingLanguageFor(assembly);
                 return string.Format(_settings.GetProjectHeaderTemplate(language), arguments);
             }
             catch (Exception)

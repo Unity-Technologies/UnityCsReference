@@ -214,11 +214,7 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 200f;
             // Get event type before the event is used.
             var eventType = Event.current.type;
-            if (!InternalEditorUtility.HasTeamLicense())
-                GUILayout.Label(EditorGUIUtility.TempContent("You need to have a Pro or Team license to use the cache server.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)), EditorStyles.helpBox);
 
-
-            using (new EditorGUI.DisabledScope(!InternalEditorUtility.HasTeamLicense()))
             {
                 if (!s_PrefsLoaded)
                 {

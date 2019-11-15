@@ -29,9 +29,7 @@ namespace UnityEditor
             public static readonly GUIStyle tabScrollerPrevButton = new GUIStyle("dragtab scroller prev");
             public static readonly GUIStyle tabScrollerNextButton = new GUIStyle("dragtab scroller next");
 
-            public static SVC<float> genericMenuLeftOffset = new SVC<float>("--window-generic-menu-left-offset", 20f);
             public static SVC<float> genericMenuTopOffset = new SVC<float>("--window-generic-menu-top-offset", 20f);
-            public static SVC<float> genericMenuFloatingLeftOffset = new SVC<float>("--window-floating-generic-menu-left-offset", 20f);
             public static SVC<float> genericMenuFloatingTopOffset = new SVC<float>("--window-floating-generic-menu-top-offset", 20f);
 
             public static readonly GUIStyle tabLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
@@ -329,17 +327,16 @@ namespace UnityEditor
 
             var viewRect = UpdateViewRect(dockAreaRect);
             var titleBarRect = new Rect(viewRect.x, dockAreaRect.y, viewRect.width, borderSize.top);
-            m_TabAreaRect = new Rect(titleBarRect.x, viewRect.y - kTabHeight, titleBarRect.width - GetExtraButtonsWidth(), kTabHeight);
+            float genericMenuLeftOffset = GetGenericMenuLeftOffset(floatingWindow && isTopRightPane);
+            m_TabAreaRect = new Rect(titleBarRect.x, viewRect.y - kTabHeight, titleBarRect.width - (GetExtraButtonsWidth() + genericMenuLeftOffset), kTabHeight);
 
             DrawDockTitleBarBackground(titleBarRect);
             HandleTabScrolling(m_TabAreaRect);
 
 
-            float genericMenuLeftOffset = Styles.genericMenuLeftOffset;
             float genericMenuTopOffset = Styles.genericMenuTopOffset;
             if (floatingWindow && isTopRightPane)
             {
-                genericMenuLeftOffset = ContainerWindow.buttonStackWidth + Styles.genericMenuFloatingLeftOffset;
                 genericMenuTopOffset = Styles.genericMenuFloatingTopOffset;
             }
             ShowGenericMenu(position.width - genericMenuLeftOffset, m_TabAreaRect.y + genericMenuTopOffset);
@@ -457,11 +454,6 @@ namespace UnityEditor
         private void DrawTabScroller(Rect scrollRect, GUIStyle tabScroller)
         {
             tabScroller.Draw(scrollRect, scrollRect.Contains(Event.current.mousePosition), false, false, false);
-        }
-
-        private float GetExtraButtonsWidth()
-        {
-            return (HasExtraDockAreaButton() ? 42f : 20f) + (floatingWindow && isTopRightPane ? ContainerWindow.buttonStackWidth : 0f);
         }
 
         private void DrawTabScrollers(Rect tabAreaRect)
@@ -1054,7 +1046,6 @@ namespace UnityEditor
             public static readonly GUIStyle titleBackground = "dockHeader";
             public static readonly GUIStyle titleLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
             public static readonly GUIStyle background = "dockarea";
-            public static SVC<float> genericMenuLeftOffset = new SVC<float>("--window-generic-menu-left-offset", 20f);
             public static SVC<float> genericMenuTopOffset = new SVC<float>("--window-generic-menu-top-offset", 20f);
         }
 
@@ -1079,7 +1070,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition))
                 PopupGenericMenu(actualView, new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 0, 0));
 
-            ShowGenericMenu(position.width - Styles.genericMenuLeftOffset, backRect.yMin + Styles.genericMenuTopOffset);
+            ShowGenericMenu(position.width - GetGenericMenuLeftOffset(true), backRect.yMin + Styles.genericMenuTopOffset);
 
             const float topBottomPadding = 0f;
             Rect viewRect = maximizedViewRect;

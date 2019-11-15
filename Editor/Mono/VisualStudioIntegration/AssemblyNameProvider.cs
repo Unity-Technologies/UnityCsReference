@@ -7,12 +7,17 @@ using System.Collections.Generic;
 using System.Linq;
 
 using UnityEditor.Compilation;
+using UnityEditor.PackageManager;
 
 namespace UnityEditor.VisualStudioIntegration
 {
     interface IAssemblyNameProvider
     {
+        string[] ProjectSupportedExtensions { get; }
+        string ProjectGenerationRootNamespace { get; }
+
         string GetAssemblyNameFromScriptPath(string path);
+        bool IsInternalizedPackagePath(string path);
         IEnumerable<Compilation.Assembly> GetAssemblies(Func<string, bool> shouldFileBePartOfSolution);
         IEnumerable<string> GetAllAssetPaths();
         UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath);
@@ -21,6 +26,16 @@ namespace UnityEditor.VisualStudioIntegration
 
     class AssemblyNameProvider : IAssemblyNameProvider
     {
+        public string[] ProjectSupportedExtensions
+        {
+            get { return EditorSettings.projectGenerationUserExtensions; }
+        }
+
+        public string ProjectGenerationRootNamespace
+        {
+            get { return EditorSettings.projectGenerationRootNamespace; }
+        }
+
         public string GetAssemblyNameFromScriptPath(string path)
         {
             return CompilationPipeline.GetAssemblyNameFromScriptPath(path);
@@ -40,6 +55,23 @@ namespace UnityEditor.VisualStudioIntegration
         public UnityEditor.PackageManager.PackageInfo FindForAssetPath(string assetPath)
         {
             return UnityEditor.PackageManager.PackageInfo.FindForAssetPath(assetPath);
+        }
+
+        public bool IsInternalizedPackagePath(string path)
+        {
+            if (string.IsNullOrEmpty(path.Trim()))
+            {
+                return false;
+            }
+
+            var packageInfo = FindForAssetPath(path);
+            if (packageInfo == null)
+            {
+                return false;
+            }
+
+            var packageSource = packageInfo.source;
+            return packageSource != PackageSource.Embedded && packageSource != PackageSource.Local;
         }
 
         public ResponseFileData ParseResponseFile(string responseFilePath, string projectDirectory, string[] systemReferenceDirectories)

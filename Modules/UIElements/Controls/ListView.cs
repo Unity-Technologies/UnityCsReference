@@ -302,14 +302,15 @@ namespace UnityEngine.UIElements
             m_ScrollView.viewDataKey = "list-view__scroll-view";
             m_ScrollView.StretchToParentSize();
             m_ScrollView.verticalScroller.valueChanged += OnScroll;
-            hierarchy.Add(m_ScrollView);
 
             RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
 
-            m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            m_ScrollView.contentContainer.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            m_ScrollView.contentContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            m_ScrollView.contentContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            hierarchy.Add(m_ScrollView);
+
             m_ScrollView.contentContainer.focusable = true;
             m_ScrollView.contentContainer.usageHints &= ~UsageHints.GroupTransform; // Scroll views with virtualized content shouldn't have the "view transform" optimization
 
@@ -328,6 +329,48 @@ namespace UnityEngine.UIElements
             m_ItemHeightIsInline = true;
             m_MakeItem = makeItem;
             m_BindItem = bindItem;
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            if (evt.destinationPanel == null)
+            {
+                return;
+            }
+
+            if (evt.destinationPanel.contextType == ContextType.Editor)
+            {
+                m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
+                m_ScrollView.contentContainer.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            }
+            else if (evt.destinationPanel.contextType == ContextType.Player)
+            {
+                m_ScrollView.contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
+                m_ScrollView.contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            }
+
+            m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            if (evt.originPanel == null)
+            {
+                return;
+            }
+
+            if (evt.originPanel.contextType == ContextType.Editor)
+            {
+                m_ScrollView.contentContainer.UnregisterCallback<MouseDownEvent>(OnMouseDown);
+                m_ScrollView.contentContainer.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            }
+            else if (evt.originPanel.contextType == ContextType.Player)
+            {
+                m_ScrollView.contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+                m_ScrollView.contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            }
+
+            m_ScrollView.contentContainer.UnregisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         public void OnKeyDown(KeyDownEvent evt)
@@ -439,19 +482,70 @@ namespace UnityEngine.UIElements
             if (evt.button != (int)MouseButton.LeftMouse)
                 return;
 
-            var clickedIndex = (int)(evt.localMousePosition.y / resolvedItemHeight);
+            DoSelect(evt.localMousePosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+        }
+
+        private long m_TouchDownTime = 0;
+        private Vector3 m_TouchDownPosition;
+
+        private void OnPointerDown(PointerDownEvent evt)
+        {
+            if (!HasValidDataAndBindings())
+                return;
+
+            if (!evt.isPrimary)
+                return;
+
+            if (evt.button != (int)MouseButton.LeftMouse)
+                return;
+
+            if (evt.pointerType != PointerType.mouse)
+            {
+                m_TouchDownTime = evt.timestamp;
+                m_TouchDownPosition = evt.position;
+                return;
+            }
+
+            DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+        }
+
+        private void OnPointerUp(PointerUpEvent evt)
+        {
+            if (!HasValidDataAndBindings())
+                return;
+
+            if (!evt.isPrimary)
+                return;
+
+            if (evt.button != (int)MouseButton.LeftMouse)
+                return;
+
+            if (evt.pointerType != PointerType.mouse)
+            {
+                var delay = evt.timestamp - m_TouchDownTime;
+                var delta = evt.position - m_TouchDownPosition;
+                if (delay < 500 && delta.sqrMagnitude <= 100)
+                {
+                    DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+                }
+            }
+        }
+
+        private void DoSelect(Vector2 localPosition, int clickCount, bool actionKey, bool shiftKey)
+        {
+            var clickedIndex = (int)(localPosition.y / resolvedItemHeight);
 
             if (clickedIndex > m_ItemsSource.Count - 1)
                 return;
 
             var clickedItemId = GetIdFromIndex(clickedIndex);
-            switch (evt.clickCount)
+            switch (clickCount)
             {
                 case 1:
                     if (selectionType == SelectionType.None)
                         return;
 
-                    if (selectionType == SelectionType.Multiple && evt.actionKey)
+                    if (selectionType == SelectionType.Multiple && actionKey)
                     {
                         m_RangeSelectionOrigin = clickedIndex;
 
@@ -461,7 +555,7 @@ namespace UnityEngine.UIElements
                         else
                             AddToSelection(clickedIndex);
                     }
-                    else if (selectionType == SelectionType.Multiple && evt.shiftKey)
+                    else if (selectionType == SelectionType.Multiple && shiftKey)
                     {
                         if (m_RangeSelectionOrigin == -1)
                         {
@@ -497,7 +591,7 @@ namespace UnityEngine.UIElements
                     }
                     break;
                 case 2:
-                    if (onItemChosen != null)
+                    if (onItemsChosen != null)
                     {
                         ProcessSingleClick(clickedIndex);
                     }

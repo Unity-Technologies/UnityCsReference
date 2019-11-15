@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using UnityEditor.Scripting.Compilers;
 using System.IO;
+using Unity.Scripting.Compilation;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -46,6 +47,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         int maxConcurrentCompilers;
         CompilionTaskState state = CompilionTaskState.Started;
         IILPostProcessing ilPostProcessing;
+        private readonly CompilerFactory compilerFactory;
 
         public event Action<object> OnCompilationTaskStarted;
         public event Action<object> OnCompilationTaskFinished;
@@ -63,7 +65,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                EditorScriptCompilationOptions options,
                                CompilationTaskOptions compilationTaskOptions,
                                int maxConcurrentCompilers,
-                               IILPostProcessing ilPostProcessing)
+                               IILPostProcessing ilPostProcessing,
+                               CompilerFactory compilerFactory)
         {
             pendingAssemblies = new HashSet<ScriptAssembly>(scriptAssemblies);
             CompileErrors = false;
@@ -73,6 +76,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             this.compilationTaskOptions = compilationTaskOptions;
             this.maxConcurrentCompilers = maxConcurrentCompilers;
             this.ilPostProcessing = ilPostProcessing;
+            this.compilerFactory = compilerFactory;
         }
 
         public bool IsCompiling
@@ -426,7 +430,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (assembly.CallOnBeforeCompilationStarted && OnBeforeCompilationStarted != null)
                     OnBeforeCompilationStarted(assembly, compilePhase);
 
-                var compiler = ScriptCompilers.CreateCompilerInstance(assembly, options, buildOutputDirectory);
+                var compiler = compilerFactory.Create(assembly, buildOutputDirectory);
 
                 compilerTasks.Add(assembly, compiler);
 

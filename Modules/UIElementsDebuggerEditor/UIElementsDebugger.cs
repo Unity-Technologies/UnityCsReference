@@ -211,16 +211,12 @@ namespace UnityEditor.UIElements.Debugger
                 DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
         }
 
-        void OnGenerateVisualContent(MeshGenerationContext mgc)
+        public override void Refresh()
         {
-            if (m_PickElement)
-                m_PickOverlay.Draw(mgc);
-
             if (!m_PickElement)
             {
                 var selectedElement = m_DebuggerSelection.element;
                 m_TreeViewContainer.RebuildTree(panelDebug);
-                m_TreeViewContainer.DrawOverlay(mgc);
 
                 //we should not lose the selection when the tree has changed.
                 if (selectedElement != m_DebuggerSelection.element)
@@ -229,22 +225,31 @@ namespace UnityEditor.UIElements.Debugger
                         SelectElement(selectedElement);
                 }
 
-                m_StylesDebuggerContainer.Refresh(mgc);
-
+                m_StylesDebuggerContainer.RefreshStylePropertyDebugger();
                 Repaint();
+            }
+            panelDebug?.MarkDebugContainerDirtyRepaint();
+        }
+
+        void OnGenerateVisualContent(MeshGenerationContext mgc)
+        {
+            if (m_PickElement)
+                m_PickOverlay.Draw(mgc);
+            else
+            {
+                m_TreeViewContainer.DrawOverlay(mgc);
+                m_StylesDebuggerContainer.RefreshBoxModelView(mgc);
+
+                if (m_ShowRepaintOverlay)
+                    m_RepaintOverlay.Draw(mgc);
             }
 
             if (m_ShowLayoutBound)
                 DrawLayoutBounds(mgc);
-
-            if (!m_PickElement && m_ShowRepaintOverlay)
-                m_RepaintOverlay.Draw(mgc);
         }
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag)
         {
-            if (ve == panelDebug?.debugContainer)
-                return;
             if ((changeTypeFlag & VersionChangeType.Repaint) == VersionChangeType.Repaint && m_ShowRepaintOverlay)
             {
                 var visible = ve.resolvedStyle.visibility == Visibility.Visible &&
@@ -257,10 +262,7 @@ namespace UnityEditor.UIElements.Debugger
                 m_TreeViewContainer.hierarchyHasChanged = true;
 
             if (panelDebug?.debuggerOverlayPanel != null)
-            {
                 panelDebug.debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
-                panelDebug.MarkDebugContainerDirtyRepaint();
-            }
         }
 
         protected override void OnSelectPanelDebug(IPanelDebug pdbg)
@@ -275,6 +277,8 @@ namespace UnityEditor.UIElements.Debugger
 
             if (panelDebug?.debugContainer != null)
                 panelDebug.debugContainer.generateVisualContent += OnGenerateVisualContent;
+
+            Refresh();
         }
 
         protected override void OnRestorePanelSelection()

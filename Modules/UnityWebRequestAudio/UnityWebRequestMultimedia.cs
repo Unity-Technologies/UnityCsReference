@@ -19,16 +19,16 @@ namespace UnityEngine.Networking
         }
 
 
-        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
+        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", true)]
         public static UnityWebRequest GetMovieTexture(string uri)
         {
-            return new UnityWebRequest(uri, UnityWebRequest.kHttpVerbGET, new DownloadHandlerMovieTexture(), null);
+            return null;
         }
 
-        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
+        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", true)]
         public static UnityWebRequest GetMovieTexture(Uri uri)
         {
-            return new UnityWebRequest(uri, UnityWebRequest.kHttpVerbGET, new DownloadHandlerMovieTexture(), null);
+            return null;
         }
 
     }

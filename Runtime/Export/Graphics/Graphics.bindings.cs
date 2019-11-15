@@ -705,8 +705,8 @@ namespace UnityEngine
 
     static public class HDROutputSettings
     {
-        [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
-        static extern public void SetPaperWhiteInNits(float paperWhite);
+        [StaticAccessor("GetScreenManager()", StaticAccessorType.Dot)]
+        extern public static void SetPaperWhiteInNits(float paperWhite);
     }
 }
 

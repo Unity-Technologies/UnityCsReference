@@ -55,7 +55,7 @@ namespace UnityEditor
 
         private ArrayList menuItems = new ArrayList();
 
-        private sealed class MenuItem
+        internal sealed class MenuItem
         {
             public GUIContent content;
             public bool separator;

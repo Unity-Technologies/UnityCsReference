@@ -182,6 +182,10 @@ namespace UnityEditorInternal
             set;
         }
 
+        // Set the marker name to be filtered, or null to disable marker filtering.
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static public extern void SetMarkerFiltering(string name);
+
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static public extern string GetFormattedStatisticsValue(int frame, int identifier);
 

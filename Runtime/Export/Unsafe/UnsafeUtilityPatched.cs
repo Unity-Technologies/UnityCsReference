@@ -98,5 +98,11 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             throw new NotImplementedException("Patching this method failed");
         }
+
+        // generic enum equals check without boxing
+        public static bool EnumEquals<T>(T lhs, T rhs) where T : struct, IConvertible
+        {
+            throw new NotImplementedException("Patching this method failed");
+        }
     }
 }

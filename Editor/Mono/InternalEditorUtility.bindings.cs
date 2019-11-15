@@ -268,8 +268,8 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::SetRectTransformTemporaryRect")]
         extern public static void SetRectTransformTemporaryRect([NotNull] RectTransform rectTransform, Rect rect);
 
-        [FreeFunction("InternalEditorUtilityBindings::HasTeamLicense", IsThreadSafe = true)]
-        extern public static bool HasTeamLicense();
+        [Obsolete("HasTeamLicense always returns true, no need to call it")]
+        public static bool HasTeamLicense() { return true; }
 
         [FreeFunction("InternalEditorUtilityBindings::HasPro", IsThreadSafe = true)]
         extern public static bool HasPro();

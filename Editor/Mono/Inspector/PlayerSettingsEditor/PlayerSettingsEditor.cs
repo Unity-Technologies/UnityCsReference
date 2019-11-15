@@ -188,6 +188,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
             public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
+            public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Support for virtual texturing", "If enabled virtual texturing may be used in this project.");
 
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
@@ -343,6 +344,8 @@ namespace UnityEditor
         // Legacy
         SerializedProperty m_LegacyClampBlendShapeWeights;
 
+        SerializedProperty m_VirtualTexturingSupportEnabled;
+
         // Localization Cache
         string m_LocalizedTargetName;
 
@@ -488,6 +491,8 @@ namespace UnityEditor
 
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
 
+            m_VirtualTexturingSupportEnabled = FindPropertyAssert("virtualTexturingSupportEnabled");
+
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
             for (int i = 0; i < validPlatforms.Length; i++)
             {
@@ -630,6 +635,16 @@ namespace UnityEditor
             Rect rect = EditorGUILayout.GetControlRect();
             rect = EditorGUI.PrefixLabel(rect, 0, SettingsContent.cursorHotspot);
             EditorGUI.PropertyField(rect, m_CursorHotspot, GUIContent.none);
+
+            Rect vtPropRect = EditorGUILayout.GetControlRect();
+            vtPropRect = EditorGUI.PrefixLabel(vtPropRect, 0, SettingsContent.virtualTexturingSupportEnabled);
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.PropertyField(vtPropRect, m_VirtualTexturingSupportEnabled, GUIContent.none);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(this.target, "Change virtual texture setting");
+                PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
+            }
         }
 
         public bool BeginSettingsBox(int nr, GUIContent header)
@@ -1495,7 +1510,10 @@ namespace UnityEditor
             }
 
             // Graphics APIs
-            GraphicsAPIsGUI(targetGroup, platform.defaultTarget);
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
+            {
+                GraphicsAPIsGUI(targetGroup, platform.defaultTarget);
+            }
 
             // Output color spaces
             ColorGamutGUI(targetGroup);

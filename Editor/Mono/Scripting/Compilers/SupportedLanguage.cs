@@ -16,8 +16,6 @@ namespace UnityEditor.Scripting.Compilers
         public abstract string GetExtensionICanCompile();
         public abstract string GetLanguageName();
 
-        public abstract ScriptCompilerBase CreateCompiler(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, string tempOutputDirectory);
-
         public virtual bool CompilerRequiresAdditionalReferences()
         {
             return false;

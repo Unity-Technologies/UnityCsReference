@@ -19,20 +19,37 @@ namespace UnityEngine.XR
     [NativeConditional("ENABLE_XR")]
     public class XRDisplaySubsystem : IntegratedSubsystem<XRDisplaySubsystemDescriptor>
     {
-        public static event Action<bool> displayFocusChanged;
+        public event Action<bool> displayFocusChanged;
 
         [RequiredByNativeCode]
-        private static void InvokeDisplayFocusChanged(bool focus)
+        private void InvokeDisplayFocusChanged(bool focus)
         {
             if (displayFocusChanged != null)
                 displayFocusChanged.Invoke(focus);
         }
 
         [System.Obsolete("singlePassRenderingDisabled{get;set;} is deprecated. Use textureLayout and supportedTextureLayouts instead.", false)]
-        extern public bool singlePassRenderingDisabled { get; set; }
+        public bool singlePassRenderingDisabled
+        {
+            get { return (textureLayout & TextureLayout.Texture2DArray) == 0; }
+            set
+            {
+                if (value)
+                {
+                    textureLayout = TextureLayout.SeparateTexture2Ds;
+                }
+                else
+                {
+                    if ((supportedTextureLayouts & TextureLayout.Texture2DArray) > 0)
+                        textureLayout = TextureLayout.Texture2DArray;
+                }
+            }
+        }
 
         extern public bool displayOpaque { get; }
         extern public bool contentProtectionEnabled { get; set; }
+        extern public float scaleOfAllViewports { get; set; }
+        extern public float scaleOfAllRenderTargets { get; set; }
 
         [Flags]
         public enum TextureLayout
@@ -44,7 +61,7 @@ namespace UnityEngine.XR
             // *MUST* be in sync with the kUnityXRTextureLayoutFlagsSeparateTexture2Ds
             SeparateTexture2Ds = 1 << 2
         }
-        extern public TextureLayout textureLayout { set; }
+        extern public TextureLayout textureLayout { get; set; }
         extern public TextureLayout supportedTextureLayouts { get; }
 
         public enum ReprojectionMode

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Rendering
@@ -859,6 +860,12 @@ namespace UnityEngine.Rendering
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
 
             IssuePluginCustomTextureUpdateInternal(callback, targetTexture, userData, true);
+        }
+
+        public void ProcessVTFeedback(RenderTargetIdentifier rt, IntPtr resolver, int slice, int x, int width, int y, int height, int mip)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            Internal_ProcessVTFeedback(rt, resolver, slice, x, width, y, height, mip);
         }
     }
 }

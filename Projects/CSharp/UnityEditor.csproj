@@ -544,6 +544,9 @@
     <Compile Include="..\..\Editor\Mono\BlendTreePreviewUtility.bindings.cs">
       <Link>Editor\Mono\BlendTreePreviewUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BugReportingTools.bindings.cs">
+      <Link>Editor\Mono\BugReportingTools.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline.bindings.cs">
       <Link>Editor\Mono\BuildPipeline.bindings.cs</Link>
     </Compile>
@@ -2923,6 +2926,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\CompilerFactory.cs">
+      <Link>Editor\Mono\Scripting\CompilerFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs">
       <Link>Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs</Link>
     </Compile>
@@ -2935,11 +2941,17 @@
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CommandLineFormatter.cs">
       <Link>Editor\Mono\Scripting\Compilers\CommandLineFormatter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CompilerBase.cs">
+      <Link>Editor\Mono\Scripting\Compilers\CompilerBase.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CompilerOutputParserBase.cs">
       <Link>Editor\Mono\Scripting\Compilers\CompilerOutputParserBase.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CompilerSpecificReponseFiles.cs">
       <Link>Editor\Mono\Scripting\Compilers\CompilerSpecificReponseFiles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\ExternalCSharpCompiler.cs">
+      <Link>Editor\Mono\Scripting\Compilers\ExternalCSharpCompiler.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\Il2CppOutputParser.cs">
       <Link>Editor\Mono\Scripting\Compilers\Il2CppOutputParser.cs</Link>
@@ -2952,6 +2964,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MicrosoftCSharpResponseFileProvider.cs">
       <Link>Editor\Mono\Scripting\Compilers\MicrosoftCSharpResponseFileProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\Compilers\MicrosoftResponseFileParser.cs">
+      <Link>Editor\Mono\Scripting\Compilers\MicrosoftResponseFileParser.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\ResponseFileProvider.cs">
       <Link>Editor\Mono\Scripting\Compilers\ResponseFileProvider.cs</Link>
@@ -3690,6 +3705,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs">
       <Link>Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\WindowAction.cs">
+      <Link>Editor\Mono\WindowAction.cs</Link>
     </Compile>
     <Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs">
       <Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>

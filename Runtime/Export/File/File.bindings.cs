@@ -7,6 +7,13 @@ using UnityEngine.Bindings;
 namespace UnityEngine.IO
 {
     [NativeHeader("Runtime/VirtualFileSystem/VirtualFileSystem.h")]
+    internal enum ThreadIORestrictionMode
+    {
+        Allowed = 0,
+        TreatAsError = 1,
+    }
+
+    [NativeHeader("Runtime/VirtualFileSystem/VirtualFileSystem.h")]
     [NativeConditional("ENABLE_PROFILER")]
     [StaticAccessor("FileAccessor", StaticAccessorType.DoubleColon)]
     internal static class File
@@ -59,6 +66,14 @@ namespace UnityEngine.IO
             get { return GetRecordZeroSeeks(); }
         }
 
+        // This can be used to print errors when when I/O is performed on the main thread. This is useful for testing async operations
+        // to ensure they don't block the main thread with file I/O.
+        internal static ThreadIORestrictionMode MainThreadIORestrictionMode
+        {
+            get { return GetMainThreadFileIORestriction(); }
+            set { SetMainThreadFileIORestriction(value); }
+        }
+
         internal extern static void SetRecordZeroSeeks(bool enable);
         internal extern static bool GetRecordZeroSeeks();
 
@@ -73,5 +88,8 @@ namespace UnityEngine.IO
         internal extern static ulong GetTotalFilesClosed();
         internal extern static ulong GetTotalBytesRead();
         internal extern static ulong GetTotalBytesWritten();
+
+        private extern unsafe static void SetMainThreadFileIORestriction(ThreadIORestrictionMode mode);
+        private extern unsafe static ThreadIORestrictionMode GetMainThreadFileIORestriction();
     }
 }

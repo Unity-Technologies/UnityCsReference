@@ -152,54 +152,55 @@ namespace UnityEditor
         Texture m_Texture;
         GUIContent m_PreviewTitle;
 
-        class Styles
+        bool m_SourcesHaveAlpha;
+        bool m_SourcesHaveAudio;
+
+        static class Styles
         {
-            public GUIContent[] playIcons =
+            public static readonly GUIContent[] playIcons =
             {
-                EditorGUIUtility.IconContent("preAudioPlayOff"),
-                EditorGUIUtility.IconContent("preAudioPlayOn")
+                EditorGUIUtility.TrIconContent("preAudioPlayOff"),
+                EditorGUIUtility.TrIconContent("preAudioPlayOn")
             };
-            public GUIContent globalTranscodeOptionsContent = EditorGUIUtility.TextContent(
-                "Global Transcode Options");
-            public GUIContent keepAlphaContent = EditorGUIUtility.TextContent(
-                "Keep Alpha|If the source clip has alpha, it will be preserved during transcoding so that transparency is usable during render.");
-            public GUIContent deinterlaceContent = EditorGUIUtility.TextContent(
-                "Deinterlace|Remove interlacing on this video during transcoding.");
-            public GUIContent flipHorizontalContent = EditorGUIUtility.TextContent(
-                "Flip Horizontally|Flip the video horizontally during transcoding.");
-            public GUIContent flipVerticalContent = EditorGUIUtility.TextContent(
-                "Flip Vertically|Flip the video vertically during transcoding.");
-            public GUIContent importAudioContent = EditorGUIUtility.TextContent(
-                "Import Audio|Defines if the audio tracks will be imported during transcoding.");
-            public GUIContent transcodeContent = EditorGUIUtility.TextContent(
-                "Transcode|Transcoding a clip gives more flexibility through the options below, but takes more time.");
-            public GUIContent dimensionsContent = EditorGUIUtility.TextContent(
-                "Dimensions|Pixel size of the resulting video.");
-            public GUIContent widthContent = EditorGUIUtility.TextContent(
-                "Width|Width in pixels of the resulting video.");
-            public GUIContent heightContent = EditorGUIUtility.TextContent(
-                "Height|Height in pixels of the resulting video.");
-            public GUIContent aspectRatioContent = EditorGUIUtility.TextContent(
-                "Aspect Ratio|How the original video is mapped into the target dimensions.");
-            public GUIContent codecContent = EditorGUIUtility.TextContent(
-                "Codec|Codec for the resulting clip. Automatic will make the best choice for the target platform.");
-            public GUIContent bitrateContent = EditorGUIUtility.TextContent(
-                "Bitrate Mode|Higher bit rates give a better quality, but impose higher load on network connections or storage.");
-            public GUIContent spatialQualityContent = EditorGUIUtility.TextContent(
-                "Spatial Quality|Adds a downsize during import to reduce bitrate using resolution.");
-            public GUIContent transcodeWarning = EditorGUIUtility.TextContent(
+            public static readonly GUIContent globalTranscodeOptionsContent = EditorGUIUtility.TrTextContent(
+                "* Shared setting between multiple platforms.");
+            public static readonly GUIContent keepAlphaContent = EditorGUIUtility.TrTextContent(
+                "Keep Alpha*", "If the source clip has alpha, it will be preserved during transcoding so that transparency is usable during render.");
+            public static readonly GUIContent deinterlaceContent = EditorGUIUtility.TrTextContent(
+                "Deinterlace*", "Remove interlacing on this video during transcoding.");
+            public static readonly GUIContent flipHorizontalContent = EditorGUIUtility.TrTextContent(
+                "Flip Horizontally*", "Flip the video horizontally during transcoding.");
+            public static readonly GUIContent flipVerticalContent = EditorGUIUtility.TrTextContent(
+                "Flip Vertically*", "Flip the video vertically during transcoding.");
+            public static readonly GUIContent importAudioContent = EditorGUIUtility.TrTextContent(
+                "Import Audio*", "Defines if the audio tracks will be imported during transcoding.");
+            public static readonly GUIContent transcodeContent = EditorGUIUtility.TrTextContent(
+                "Transcode", "Transcoding a clip gives more flexibility through the options below, but takes more time.");
+            public static readonly GUIContent dimensionsContent = EditorGUIUtility.TrTextContent(
+                "Dimensions", "Pixel size of the resulting video.");
+            public static readonly GUIContent widthContent = EditorGUIUtility.TrTextContent(
+                "Width", "Width in pixels of the resulting video.");
+            public static readonly GUIContent heightContent = EditorGUIUtility.TrTextContent(
+                "Height", "Height in pixels of the resulting video.");
+            public static readonly GUIContent aspectRatioContent = EditorGUIUtility.TrTextContent(
+                "Aspect Ratio", "How the original video is mapped into the target dimensions.");
+            public static readonly GUIContent codecContent = EditorGUIUtility.TrTextContent(
+                "Codec", "Codec for the resulting clip. Automatic will make the best choice for the target platform.");
+            public static readonly GUIContent bitrateContent = EditorGUIUtility.TrTextContent(
+                "Bitrate Mode", "Higher bit rates give a better quality, but impose higher load on network connections or storage.");
+            public static readonly GUIContent spatialQualityContent = EditorGUIUtility.TrTextContent(
+                "Spatial Quality", "Adds a downsize during import to reduce bitrate using resolution.");
+            public static readonly GUIContent transcodeWarning = EditorGUIUtility.TrTextContent(
                 "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");
-            public GUIContent transcodeOptionsWarning = EditorGUIUtility.TextContent(
+            public static readonly GUIContent transcodeOptionsWarning = EditorGUIUtility.TrTextContent(
                 "Global transcode options are not applied on all platforms. You must enable \"Transcode\" for these to take effect.");
-            public GUIContent transcodeSkippedWarning = EditorGUIUtility.TextContent(
+            public static readonly GUIContent transcodeSkippedWarning = EditorGUIUtility.TrTextContent(
                 "Transcode was skipped. Current clip does not match import settings. Reimport to resolve.");
-            public GUIContent multipleTranscodeSkippedWarning = EditorGUIUtility.TextContent(
+            public static readonly GUIContent multipleTranscodeSkippedWarning = EditorGUIUtility.TrTextContent(
                 "Transcode was skipped for some clips and they don't match import settings. Reimport to resolve.");
-            public GUIContent sRGBTextureContent = EditorGUIUtility.TrTextContent(
+            public static readonly GUIContent sRGBTextureContent = EditorGUIUtility.TrTextContent(
                 "sRGB (Color Texture)", "Texture content is stored in gamma space.");
         }
-
-        static Styles s_Styles;
 
         // Don't show the imported movie as a separate editor
         public override bool showImportedObject { get { return false; } }
@@ -264,15 +265,25 @@ namespace UnityEditor
         {
             base.OnEnable();
 
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             m_EncodeAlpha = serializedObject.FindProperty("m_EncodeAlpha");
             m_Deinterlace = serializedObject.FindProperty("m_Deinterlace");
             m_FlipVertical = serializedObject.FindProperty("m_FlipVertical");
             m_FlipHorizontal = serializedObject.FindProperty("m_FlipHorizontal");
             m_ImportAudio = serializedObject.FindProperty("m_ImportAudio");
             m_ColorSpace = serializedObject.FindProperty("m_ColorSpace");
+
+            // setup alpha and audio values
+            m_SourcesHaveAlpha = true;
+            m_SourcesHaveAudio = true;
+            if (assetTarget != null)
+            {
+                for (int i = 0; i < targets.Length; ++i)
+                {
+                    VideoClipImporter importer = (VideoClipImporter)targets[i];
+                    m_SourcesHaveAlpha &= importer.sourceHasAlpha;
+                    m_SourcesHaveAudio &= (importer.sourceAudioTrackCount > 0);
+                }
+            }
 
             m_ShowResizeModeOptions.valueChanged.AddListener(Repaint);
             var defaultResizeMode = extraDataSerializedObject.FindProperty("allSettings.Array.data[0].settings.resizeMode");
@@ -338,45 +349,19 @@ namespace UnityEditor
 
         private void OnCrossTargetInspectorGUI()
         {
-            bool sourcesHaveAlpha = true;
-            bool sourcesHaveAudio = true;
-            for (int i = 0; i < targets.Length; ++i)
+            using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
-                VideoClipImporter importer = (VideoClipImporter)targets[i];
-                sourcesHaveAlpha &= importer.sourceHasAlpha;
-                sourcesHaveAudio &= (importer.sourceAudioTrackCount > 0);
+                using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.sRGBTextureContent, m_ColorSpace))
+                {
+                    using (var changed = new EditorGUI.ChangeCheckScope())
+                    {
+                        var sRGB = EditorGUILayout.Toggle(property.content,
+                            m_ColorSpace.enumValueIndex == (int)VideoColorSpace.sRGB);
+                        if (changed.changed)
+                            m_ColorSpace.enumValueIndex = (int)(sRGB ? VideoColorSpace.sRGB : VideoColorSpace.Linear);
+                    }
+                }
             }
-
-            EditorGUI.BeginChangeCheck();
-            var sRGB = EditorGUILayout.Toggle(s_Styles.sRGBTextureContent,
-                m_ColorSpace.enumValueIndex == (int)VideoColorSpace.sRGB);
-            if (EditorGUI.EndChangeCheck())
-                m_ColorSpace.enumValueIndex = (int)(sRGB ? VideoColorSpace.sRGB : VideoColorSpace.Linear);
-
-            EditorGUILayout.Space();
-
-            EditorGUILayout.LabelField(s_Styles.globalTranscodeOptionsContent, EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-
-            if (sourcesHaveAlpha)
-            {
-                EditorGUILayout.PropertyField(m_EncodeAlpha, s_Styles.keepAlphaContent);
-                EditorGUILayout.Space();
-            }
-
-            EditorGUILayout.PropertyField(m_Deinterlace, s_Styles.deinterlaceContent);
-            EditorGUILayout.Space();
-
-            EditorGUILayout.PropertyField(m_FlipHorizontal, s_Styles.flipHorizontalContent);
-            EditorGUILayout.PropertyField(m_FlipVertical, s_Styles.flipVerticalContent);
-            EditorGUILayout.Space();
-
-            using (new EditorGUI.DisabledScope(!sourcesHaveAudio))
-            {
-                EditorGUILayout.PropertyField(m_ImportAudio, s_Styles.importAudioContent);
-            }
-
-            EditorGUI.indentLevel--;
         }
 
         private void FrameSettingsGUI(SerializedProperty videoImporterTargetSettings)
@@ -384,7 +369,7 @@ namespace UnityEditor
             var resizeModeProperty = videoImporterTargetSettings.FindPropertyRelative("resizeMode");
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
-                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, s_Styles.dimensionsContent, resizeModeProperty))
+                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.dimensionsContent, resizeModeProperty))
                 {
                     using (var changed = new EditorGUI.ChangeCheckScope())
                     {
@@ -404,21 +389,19 @@ namespace UnityEditor
             m_ShowResizeModeOptions.target = resizeModeProperty.hasMultipleDifferentValues || resizeValue != VideoResizeMode.OriginalSize;
             if (EditorGUILayout.BeginFadeGroup(m_ShowResizeModeOptions.faded))
             {
-                EditorGUI.indentLevel++;
-
                 if (!resizeModeProperty.hasMultipleDifferentValues && resizeValue == VideoResizeMode.CustomSize)
                 {
                     var customWidthProperty = videoImporterTargetSettings.FindPropertyRelative("customWidth");
-                    EditorGUILayout.PropertyField(customWidthProperty, s_Styles.widthContent);
+                    EditorGUILayout.PropertyField(customWidthProperty, Styles.widthContent);
 
                     var customHeightProperty = videoImporterTargetSettings.FindPropertyRelative("customHeight");
-                    EditorGUILayout.PropertyField(customHeightProperty, s_Styles.heightContent);
+                    EditorGUILayout.PropertyField(customHeightProperty, Styles.heightContent);
                 }
 
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
                     var property = videoImporterTargetSettings.FindPropertyRelative("aspectRatio");
-                    using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, s_Styles.aspectRatioContent, property))
+                    using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.aspectRatioContent, property))
                     {
                         using (var changed = new EditorGUI.ChangeCheckScope())
                         {
@@ -432,8 +415,6 @@ namespace UnityEditor
                         }
                     }
                 }
-
-                EditorGUI.indentLevel--;
             }
 
             EditorGUILayout.EndFadeGroup();
@@ -444,7 +425,7 @@ namespace UnityEditor
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
                 var property = videoImporterTargetSettings.FindPropertyRelative("codec");
-                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, s_Styles.codecContent, property))
+                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.codecContent, property))
                 {
                     using (var changed = new EditorGUI.ChangeCheckScope())
                     {
@@ -462,7 +443,7 @@ namespace UnityEditor
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
                 var property = videoImporterTargetSettings.FindPropertyRelative("bitrateMode");
-                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, s_Styles.bitrateContent, property))
+                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.bitrateContent, property))
                 {
                     using (var changed = new EditorGUI.ChangeCheckScope())
                     {
@@ -480,7 +461,7 @@ namespace UnityEditor
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
                 var property = videoImporterTargetSettings.FindPropertyRelative("spatialQuality");
-                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, s_Styles.spatialQualityContent, property))
+                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.spatialQualityContent, property))
                 {
                     using (var changed = new EditorGUI.ChangeCheckScope())
                     {
@@ -499,17 +480,29 @@ namespace UnityEditor
         private void OnTargetSettingsInspectorGUI(SerializedProperty videoImporterTargetSettings)
         {
             var enableTranscodingProperty = videoImporterTargetSettings.FindPropertyRelative("enableTranscoding");
-            EditorGUILayout.PropertyField(enableTranscodingProperty, s_Styles.transcodeContent);
+            EditorGUILayout.PropertyField(enableTranscodingProperty, Styles.transcodeContent);
 
-            EditorGUI.indentLevel++;
-
-            using (new EditorGUI.DisabledScope(!(enableTranscodingProperty.boolValue || enableTranscodingProperty.hasMultipleDifferentValues)))
+            using (new EditorGUI.DisabledScope(!enableTranscodingProperty.boolValue || enableTranscodingProperty.hasMultipleDifferentValues))
             {
                 FrameSettingsGUI(videoImporterTargetSettings);
                 EncodingSettingsGUI(videoImporterTargetSettings);
-            }
 
-            EditorGUI.indentLevel--;
+                using (new EditorGUI.DisabledScope(!m_SourcesHaveAlpha))
+                {
+                    EditorGUILayout.PropertyField(m_EncodeAlpha, Styles.keepAlphaContent);
+                }
+
+                EditorGUILayout.PropertyField(m_Deinterlace, Styles.deinterlaceContent);
+                EditorGUILayout.PropertyField(m_FlipHorizontal, Styles.flipHorizontalContent);
+                EditorGUILayout.PropertyField(m_FlipVertical, Styles.flipVerticalContent);
+
+                using (new EditorGUI.DisabledScope(!m_SourcesHaveAudio))
+                {
+                    EditorGUILayout.PropertyField(m_ImportAudio, Styles.importAudioContent);
+                }
+
+                EditorGUILayout.LabelField(Styles.globalTranscodeOptionsContent, EditorStyles.miniLabel);
+            }
         }
 
         private void OnTargetInspectorGUI(int platformIndex, string platformName)
@@ -518,22 +511,24 @@ namespace UnityEditor
             var overrideEnabled = inspectorTargetSettings.FindPropertyRelative("overridePlatform");
             if (platformIndex != 0)
             {
-                EditorGUI.showMixedValue = overrideEnabled.hasMultipleDifferentValues;
-                EditorGUI.BeginChangeCheck();
-                var newValue = EditorGUILayout.Toggle("Override for " + platformName, overrideEnabled.boolValue);
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
+                using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
-                    overrideEnabled.boolValue = newValue;
-                    if (!newValue)
+                    using (var property = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.Temp("Override for " + platformName), overrideEnabled))
                     {
-                        //TODO: copy default to this platform ? or we don't care ? The AudioImporter doesn't care after all...
+                        using (var changed = new EditorGUI.ChangeCheckScope())
+                        {
+                            EditorGUI.showMixedValue = overrideEnabled.hasMultipleDifferentValues;
+                            var newValue = EditorGUILayout.Toggle(property.content, overrideEnabled.boolValue);
+                            EditorGUI.showMixedValue = false;
+                            if (changed.changed)
+                            {
+                                overrideEnabled.boolValue = newValue;
+                            }
+                        }
                     }
                 }
+                EditorGUILayout.Space();
             }
-
-            EditorGUILayout.Space();
-
             using (new EditorGUI.DisabledScope(overrideEnabled.hasMultipleDifferentValues || !overrideEnabled.boolValue))
             {
                 OnTargetSettingsInspectorGUI(inspectorTargetSettings.FindPropertyRelative("settings"));
@@ -562,11 +557,11 @@ namespace UnityEditor
 
             // Warn the user if there is no transcoding happening on at least one platform
             if (AnySettingsNotTranscoded())
-                EditorGUILayout.HelpBox(s_Styles.transcodeWarning.text, MessageType.Info);
+                EditorGUILayout.HelpBox(Styles.transcodeWarning.text, MessageType.Info);
 
             // Warn the user if any of the global transcode settings are on, but transcoding isn't applied
             if (AnyUnappliedGlobalTranscodeOptions())
-                EditorGUILayout.HelpBox(s_Styles.transcodeOptionsWarning.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.transcodeOptionsWarning.text, MessageType.Warning);
 
             foreach (var t in targets)
             {
@@ -574,8 +569,8 @@ namespace UnityEditor
                 if (importer && importer.transcodeSkipped)
                 {
                     EditorGUILayout.HelpBox(
-                        targets.Length == 1 ? s_Styles.transcodeSkippedWarning.text :
-                        s_Styles.multipleTranscodeSkippedWarning.text,
+                        targets.Length == 1 ? Styles.transcodeSkippedWarning.text :
+                        Styles.multipleTranscodeSkippedWarning.text,
                         MessageType.Error);
                     break;
                 }
@@ -630,7 +625,7 @@ namespace UnityEditor
         public override void OnPreviewSettings()
         {
             EditorGUI.BeginDisabledGroup(Application.isPlaying);
-            m_IsPlaying = PreviewGUI.CycleButton(m_IsPlaying ? 1 : 0, s_Styles.playIcons) != 0;
+            m_IsPlaying = PreviewGUI.CycleButton(m_IsPlaying ? 1 : 0, Styles.playIcons) != 0;
             EditorGUI.EndDisabledGroup();
         }
 

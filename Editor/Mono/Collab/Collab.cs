@@ -15,11 +15,15 @@ using UnityEditor.SceneManagement;
 namespace UnityEditor.Collaboration
 {
     internal delegate void StateChangedDelegate(CollabInfo info);
+    internal delegate void RevisionChangedDelegate(CollabInfo info, string rev, string action);
+    internal delegate void SetErrorDelegate(UnityErrorInfo error);
     internal delegate void ErrorDelegate();
     internal delegate bool ShowToolbarAtPositionDelegate(Rect screenRect);
     internal delegate bool IsToolbarVisibleDelegate();
     internal delegate void ShowHistoryWindowDelegate();
     internal delegate void CloseToolbarDelegate();
+    internal delegate void ChangesChangedDelegate(Change[] changes, bool isFiltered);
+    internal delegate void ChangeItemsChangedDelegate(ChangeItem[] changes, bool isFiltered);
 
     //*undocumented
     // We want to raise this exception from Cpp code but it fails
@@ -34,14 +38,24 @@ namespace UnityEditor.Collaboration
     internal partial class Collab
     {
         // Pointer to native Collab object used by automatic bindings system.
-        #pragma warning disable 414            // The private field is assigned but its value is never used
+#pragma warning disable 414            // The private field is assigned but its value is never used
         IntPtr m_nativeCollab = IntPtr.Zero;
 
         public event StateChangedDelegate StateChanged;
+
         public event StateChangedDelegate RevisionUpdated;
+        public event RevisionChangedDelegate RevisionUpdated_V2;
+
         public event StateChangedDelegate JobsCompleted;
+
         public event ErrorDelegate ErrorOccurred;
+        public event SetErrorDelegate ErrorOccurred_V2;
+
         public event ErrorDelegate ErrorCleared;
+
+        public event ChangeItemsChangedDelegate ChangeItemsChanged;
+        public event ChangeItemsChangedDelegate SelectedChangeItemsChanged;
+        public event StateChangedDelegate CollabInfoChanged;
 
         // Toolbar delegates
         public static ShowToolbarAtPositionDelegate ShowToolbarAtPosition = null;
@@ -67,18 +81,18 @@ namespace UnityEditor.Collaboration
         [Flags]
         public enum Operation
         {
-            Noop          = 0,
-            Publish       = 1 << 0,
-            Update        = 1 << 1,
-            Revert        = 1 << 2,
-            GoBack        = 1 << 3,
-            Restore       = 1 << 4,
-            Diff          = 1 << 5,
-            ConflictDiff  = 1 << 6,
-            Exclude       = 1 << 7,
-            Include       = 1 << 8,
-            ChooseMine    = 1 << 9,
-            ChooseTheirs  = 1 << 10,
+            Noop = 0,
+            Publish = 1 << 0,
+            Update = 1 << 1,
+            Revert = 1 << 2,
+            GoBack = 1 << 3,
+            Restore = 1 << 4,
+            Diff = 1 << 5,
+            ConflictDiff = 1 << 6,
+            Exclude = 1 << 7,
+            Include = 1 << 8,
+            ChooseMine = 1 << 9,
+            ChooseTheirs = 1 << 10,
             ExternalMerge = 1 << 11,
         }
 
@@ -87,38 +101,38 @@ namespace UnityEditor.Collaboration
         [Flags]
         public enum CollabStates : uint
         {
-            kCollabNone     = 0,
-            kCollabLocal    = 1,
+            kCollabNone = 0,
+            kCollabLocal = 1,
 
-            kCollabSynced           =   1 << 1,
-            kCollabOutOfSync        =   1 << 2,
-            kCollabIgnored          =   1 << 3,
-            kCollabCheckedOutLocal  =   1 << 4,
-            kCollabCheckedOutRemote =   1 << 5,
-            kCollabDeletedLocal     =   1 << 6,
-            kCollabDeletedRemote    =   1 << 7,
-            kCollabAddedLocal       =   1 << 8,
-            kCollabAddedRemote      =   1 << 9,
-            kCollabConflicted       =   1 << 10,
-            kCollabMovedLocal       =   1 << 11,
-            kCollabMovedRemote      =   1 << 12,
-            kCollabUpdating         =   1 << 13,
-            kCollabReadOnly         =   1 << 14,
-            kCollabMetaFile         =   1 << 15,
-            kCollabUseMine          =   1 << 16,
-            kCollabUseTheir         =   1 << 17,
-            kCollabMerged           =   1 << 18,
-            kCollabPendingMerge     =   1 << 19,
-            kCollabFolderMetaFile   =   1 << 20,
-            KCollabContentChanged   =   1 << 21,
-            KCollabContentConflicted =   1 << 22,
-            KCollabContentDeleted   =   1 << 23,
+            kCollabSynced = 1 << 1,
+            kCollabOutOfSync = 1 << 2,
+            kCollabIgnored = 1 << 3,
+            kCollabCheckedOutLocal = 1 << 4,
+            kCollabCheckedOutRemote = 1 << 5,
+            kCollabDeletedLocal = 1 << 6,
+            kCollabDeletedRemote = 1 << 7,
+            kCollabAddedLocal = 1 << 8,
+            kCollabAddedRemote = 1 << 9,
+            kCollabConflicted = 1 << 10,
+            kCollabMovedLocal = 1 << 11,
+            kCollabMovedRemote = 1 << 12,
+            kCollabUpdating = 1 << 13,
+            kCollabReadOnly = 1 << 14,
+            kCollabMetaFile = 1 << 15,
+            kCollabUseMine = 1 << 16,
+            kCollabUseTheir = 1 << 17,
+            kCollabMerged = 1 << 18,
+            kCollabPendingMerge = 1 << 19,
+            kCollabFolderMetaFile = 1 << 20,
+            KCollabContentChanged = 1 << 21,
+            KCollabContentConflicted = 1 << 22,
+            KCollabContentDeleted = 1 << 23,
 
             // always keep most significant
-            kCollabInvalidState     = 1 << 30,
+            kCollabInvalidState = 1 << 30,
 
-            kAnyLocalChanged        = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabDeletedLocal | kCollabMovedLocal),
-            kAnyLocalEdited         = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabMovedLocal),
+            kAnyLocalChanged = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabDeletedLocal | kCollabMovedLocal),
+            kAnyLocalEdited = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabMovedLocal),
             kCollabAny = 0xFFFFFFFF
         }
 
@@ -383,6 +397,27 @@ namespace UnityEditor.Collaboration
             };
         }
 
+        public PublishInfo_V2 GetChangesToPublish_V2()
+        {
+            ChangeItem[] changes = GetChangeItemsToPublishInternal_V2();
+            bool isFiltered = false;
+
+            if (SupportsAsyncChanges())
+            {
+                changes = GetSelectedChangeItemsInternal_V2();
+                if (Toolbar.isLastShowRequestPartial)
+                {
+                    isFiltered = true;
+                }
+            }
+
+            return new PublishInfo_V2()
+            {
+                changes = changes,
+                filter = isFiltered
+            };
+        }
+
         public void SetChangesToPublish(ChangeItem[] changes)
         {
             SetChangesToPublishInternal(changes);
@@ -413,9 +448,45 @@ namespace UnityEditor.Collaboration
         }
 
         [RequiredByNativeCode]
-        private static void OnRevisionUpdated()
+        private static void OnRevisionUpdated(string revisionId, string action)
         {
             var handler = instance.RevisionUpdated;
+            if (handler != null)
+            {
+                handler(instance.collabInfo);
+            }
+
+            var handler_v2 = instance.RevisionUpdated_V2;
+            if (handler_v2 != null)
+            {
+                handler_v2(instance.collabInfo, revisionId, action);
+            }
+        }
+
+        [RequiredByNativeCode]
+        private static void OnChangeItemsChanged(ChangeItem[] changes, bool isFiltered)
+        {
+            var handler = instance.ChangeItemsChanged;
+            if (handler != null)
+            {
+                handler(changes, isFiltered);
+            }
+        }
+
+        [RequiredByNativeCode]
+        private static void OnSelectedChangeItemsChanged(ChangeItem[] changeItems, bool isFiltered)
+        {
+            var handler = instance.SelectedChangeItemsChanged;
+            if (handler != null)
+            {
+                handler(changeItems, isFiltered);
+            }
+        }
+
+        [RequiredByNativeCode]
+        private static void OnCollabInfoChanged()
+        {
+            var handler = instance.CollabInfoChanged;
             if (handler != null)
             {
                 handler(instance.collabInfo);
@@ -423,11 +494,20 @@ namespace UnityEditor.Collaboration
         }
 
         [RequiredByNativeCode]
-        private static void SetCollabError()
+        private static void SetCollabError(int code, int priority, int behavior, string msg, string shortmsg, string codeStr)
         {
             var handler = instance.ErrorOccurred;
+
             if (handler != null)
+            {
                 handler();
+            }
+            var handler_v2 = instance.ErrorOccurred_V2;
+
+            if (handler_v2 != null)
+            {
+                handler_v2(new UnityErrorInfo() { code = code, priority = priority, behaviour = behavior, msg = msg, shortMsg = shortmsg, codeStr = codeStr });
+            }
         }
 
         [RequiredByNativeCode]

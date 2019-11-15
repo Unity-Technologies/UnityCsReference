@@ -14,30 +14,25 @@ namespace UnityEditor
     // Example: [FilePathAttribute("Library/SearchFilters.ssf", FilePathAttribute.Location.ProjectFolder)]
     // Ensure to call Save() from client code (derived instance)
     [AttributeUsage(AttributeTargets.Class)]
-    internal class FilePathAttribute : Attribute
+    public class FilePathAttribute : Attribute
     {
         public enum Location { PreferencesFolder, ProjectFolder }
 
-        private string filePath;
-        private string relativePath;
-        private Location location;
+        private string m_FilePath;
+        private string m_RelativePath;
+        private Location m_Location;
 
-        public string filepath
+        internal string filepath
         {
             get
             {
-                if (filePath == null && relativePath != null)
+                if (m_FilePath == null && m_RelativePath != null)
                 {
-                    filePath = GetFilePath(relativePath, location);
-                    relativePath = null;
+                    m_FilePath = CombineFilePath(m_RelativePath, m_Location);
+                    m_RelativePath = null;
                 }
 
-                return filePath;
-            }
-
-            set
-            {
-                filePath = value;
+                return m_FilePath;
             }
         }
 
@@ -45,24 +40,27 @@ namespace UnityEditor
         {
             if (string.IsNullOrEmpty(relativePath))
             {
-                Debug.LogError("Invalid relative path! (its null or empty)");
-                return;
+                throw new ArgumentException("Invalid relative path (it is empty)");
             }
 
-            this.relativePath = relativePath;
-            this.location = location;
+            m_RelativePath = relativePath;
+            m_Location = location;
         }
 
-        static string GetFilePath(string relativePath, Location location)
+        static string CombineFilePath(string relativePath, Location location)
         {
             // We do not want a slash as first char
             if (relativePath[0] == '/')
                 relativePath = relativePath.Substring(1);
 
-            if (location == Location.PreferencesFolder)
-                return InternalEditorUtility.unityPreferencesFolder + "/" + relativePath;
-            else //location == Location.ProjectFolder
-                return relativePath;
+            switch (location)
+            {
+                case Location.PreferencesFolder: return InternalEditorUtility.unityPreferencesFolder + "/" + relativePath;
+                case Location.ProjectFolder:     return relativePath;
+                default:
+                    Debug.LogError("Unhandled enum: " + location);
+                    return relativePath; // fallback to ProjectFolder relative path
+            }
         }
     }
 
@@ -122,7 +120,7 @@ namespace UnityEditor
         {
             if (s_Instance == null)
             {
-                Debug.Log("Cannot save ScriptableSingleton: no instance!");
+                Debug.LogError("Cannot save ScriptableSingleton: no instance!");
                 return;
             }
 
@@ -137,11 +135,11 @@ namespace UnityEditor
             }
         }
 
-        private static string GetFilePath()
+        protected static string GetFilePath()
         {
             Type type = typeof(T);
-            object[] atributes = type.GetCustomAttributes(true);
-            foreach (object attr in atributes)
+            object[] attributes = type.GetCustomAttributes(true);
+            foreach (object attr in attributes)
             {
                 if (attr is FilePathAttribute)
                 {
@@ -149,7 +147,7 @@ namespace UnityEditor
                     return f.filepath;
                 }
             }
-            return null;
+            return string.Empty;
         }
     }
 }

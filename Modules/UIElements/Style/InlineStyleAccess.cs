@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Yoga;
 
@@ -318,7 +319,7 @@ namespace UnityEngine.UIElements
         private bool SetStyleValue<T>(StylePropertyId id, StyleEnum<T> inlineValue, StyleEnum<T> sharedValue) where T : struct, IConvertible
         {
             var sv = new StyleValue();
-            int intValue = inlineValue.value.ToInt32(CultureInfo.InvariantCulture);
+            int intValue = UnsafeUtility.EnumToInt(inlineValue.value);
             if (TryGetStyleValue(id, ref sv))
             {
                 if (sv.number == intValue && sv.keyword == inlineValue.keyword)

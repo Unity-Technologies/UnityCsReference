@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -27,13 +28,18 @@ namespace UnityEngine.UIElements
 
         internal List<StyleSheet> styleSheetList;
 
+        private static readonly Regex s_InternalStyleSheetPath = new Regex("^instanceId:[-0-9]+$", RegexOptions.Compiled);
+
         internal void AddStyleSheetPath(string sheetPath)
         {
             StyleSheet sheetAsset = Panel.LoadResource(sheetPath, typeof(StyleSheet), scaledPixelsPerPoint) as StyleSheet;
 
             if (sheetAsset == null)
             {
-                Debug.LogWarning(string.Format("Style sheet not found for path \"{0}\"", sheetPath));
+                if (!s_InternalStyleSheetPath.IsMatch(sheetPath))
+                {
+                    Debug.LogWarning(string.Format("Style sheet not found for path \"{0}\"", sheetPath));
+                }
                 return;
             }
 

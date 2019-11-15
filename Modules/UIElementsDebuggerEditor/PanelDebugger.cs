@@ -137,7 +137,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        public virtual void Refresh() {}
+        public abstract void Refresh();
 
         protected virtual bool ValidateDebuggerConnection(IPanel panelConnection)
         {

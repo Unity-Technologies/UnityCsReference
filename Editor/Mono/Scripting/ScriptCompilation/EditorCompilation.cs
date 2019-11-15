@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Unity.Scripting.Compilation;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
@@ -173,6 +174,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         List<AssemblyBuilder> assemblyBuilders = new List<Compilation.AssemblyBuilder>();
         HashSet<string> changedAssemblies = new HashSet<string>();
         int maxConcurrentCompilers = 0;
+        CompilerFactory compilerFactory;
 
         static readonly string EditorTempPath = "Temp";
 
@@ -198,6 +200,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 SetMaxConcurrentCompilers(UnityEngine.SystemInfo.processorCount);
 
             ILPostProcessing.ILPostProcessors = ILPostProcessing.FindAllPostProcessors();
+
+            compilerFactory = new CompilerFactory(new CompilerFactoryHelper());
+            if (compilerFactory.CompilerChanged())
+            {
+                RecompileAllScriptsOnNextTick();
+            }
         }
 
         public void SetMaxConcurrentCompilers(int maxCompilers)
@@ -1571,7 +1579,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 options,
                 compilationTaskOptions,
                 maxConcurrentCompilers,
-                ILPostProcessing);
+                ILPostProcessing,
+                compilerFactory);
 
             compilationTask.OnCompilationTaskStarted += (context) =>
             {
@@ -1673,7 +1682,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string tempBuildDirectory,
             EditorScriptCompilationOptions options)
         {
-            assembly.GeneratedResponseFile = MicrosoftCSharpCompiler.GenerateResponseFile(assembly, options, tempBuildDirectory);
+            assembly.GeneratedResponseFile = MicrosoftCSharpCompiler.GenerateResponseFile(assembly, tempBuildDirectory);
 
             APIUpdaterHelper.UpdateScripts(
                 assembly.GeneratedResponseFile,

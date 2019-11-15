@@ -225,6 +225,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnFocus()
         {
+            if (cache == null)
+                return;
             packageList.AddToClassList("focus");
             packageDetails.AddToClassList("focus");
             packageList.OnFocus();

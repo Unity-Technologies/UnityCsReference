@@ -6,18 +6,19 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.Collaboration;
 using UnityEditor.Connect;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Collaboration
 {
     delegate void RevisionsDelegate(RevisionsResult revisionsResult);
-
+    delegate void SingleRevisionDelegate(Revision? revision);
     internal class RevisionsResult
     {
         public List<Revision> Revisions = new List<Revision>();
         public int RevisionsInRepo = -1;
 
-        public int Count {get { return Revisions.Count; }}
+        public int Count { get { return Revisions.Count; } }
 
         public void Clear()
         {
@@ -37,6 +38,8 @@ namespace UnityEditor.Collaboration
     internal class RevisionsService : IRevisionsService
     {
         public event RevisionsDelegate FetchRevisionsCallback;
+        public event SingleRevisionDelegate FetchSingleRevisionCallback;
+
         protected Collab collab;
         protected UnityConnect connect;
         private static RevisionsService instance;
@@ -55,6 +58,25 @@ namespace UnityEditor.Collaboration
         {
             // Only send down request for the desired data.
             Collab.GetRevisionsData(true, offset, count);
+        }
+
+        public void GetRevision(string revId)
+        {
+            Collab.GetSingleRevisionData(true, revId);
+        }
+
+        [RequiredByNativeCode]
+        private static void onFetchSingleRevision(IntPtr ptr)
+        {
+            Revision? ret = null;
+            if (instance.FetchSingleRevisionCallback != null && ptr != IntPtr.Zero)
+            {
+                Revision nativeStruct = Collab.PopulateSingleRevisionData(ptr);
+                // this copies the content as it's a struct not a class.
+                ret = nativeStruct;
+            }
+
+            instance.FetchSingleRevisionCallback(ret);
         }
 
         [RequiredByNativeCode]

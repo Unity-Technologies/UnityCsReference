@@ -9,7 +9,6 @@ using UnityEngine.Bindings;
 namespace UnityEngine.Networking
 {
     [NativeHeader("Modules/UnityWebRequestAudio/Public/DownloadHandlerAudioClip.h")]
-    [NativeHeader("Modules/UnityWebRequestAudio/Public/DownloadHandlerMovieTexture.h")]
     internal static class WebRequestWWW
     {
         [FreeFunction("UnityWebRequestCreateAudioClip")]

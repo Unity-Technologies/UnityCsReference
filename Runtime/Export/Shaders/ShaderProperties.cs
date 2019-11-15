@@ -56,6 +56,9 @@ namespace UnityEngine
         extern private static TextureDimension GetPropertyTextureDimension([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::GetPropertyTextureDefaultName")]
         extern private static string GetPropertyTextureDefaultName([NotNull] Shader shader, int propertyIndex);
+        [FreeFunction("ShaderScripting::FindTextureStack")]
+        extern private static string FindTextureStackImpl([NotNull] Shader s, int propertyIdx);
+
 
         private static void CheckPropertyIndex(Shader s, int propertyIndex)
         {
@@ -145,6 +148,15 @@ namespace UnityEngine
             if (propType != ShaderPropertyType.Texture)
                 throw new ArgumentException("Property type is not Texture.");
             return GetPropertyTextureDefaultName(this, propertyIndex);
+        }
+
+        public string FindTextureStack(int propertyIndex)
+        {
+            CheckPropertyIndex(this, propertyIndex);
+            var propType = GetPropertyType(propertyIndex);
+            if (propType != ShaderPropertyType.Texture)
+                throw new ArgumentException("Property type is not Texture.");
+            return FindTextureStackImpl(this, propertyIndex);
         }
     }
 }

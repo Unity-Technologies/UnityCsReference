@@ -78,18 +78,22 @@ namespace UnityEngine.UIElements
 
         public List<string> stylesheetPaths
         {
-            get { return m_StylesheetPaths == null ? (m_StylesheetPaths = new List<string>()) : m_StylesheetPaths; }
+            get { return m_StylesheetPaths ?? (m_StylesheetPaths = new List<string>()); }
             set { m_StylesheetPaths = value; }
         }
+
+        public bool hasStylesheetPaths => m_StylesheetPaths != null;
 
         [SerializeField]
         private List<StyleSheet> m_Stylesheets;
 
         public List<StyleSheet> stylesheets
         {
-            get { return m_Stylesheets == null ? (m_Stylesheets = new List<StyleSheet>()) : m_Stylesheets; }
+            get { return m_Stylesheets ?? (m_Stylesheets = new List<StyleSheet>()); }
             set { m_Stylesheets = value; }
         }
+
+        public bool hasStylesheets => m_Stylesheets != null;
 
         [SerializeField]
         private List<string> m_Properties;
