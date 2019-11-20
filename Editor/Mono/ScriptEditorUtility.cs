@@ -39,7 +39,7 @@ namespace UnityEditorInternal
         {
             string lowerCasePath = path.ToLower();
 
-            if (lowerCasePath == "internal")
+            if (lowerCasePath == CodeEditor.SystemDefaultPath)
                 return ScriptEditor.SystemDefault;
 
             if (lowerCasePath.Contains("monodevelop") || lowerCasePath.Contains("xamarinstudio") || lowerCasePath.Contains("xamarin studio"))
@@ -68,7 +68,7 @@ namespace UnityEditorInternal
         #pragma warning disable 618
         public static string GetExternalScriptEditor()
         {
-            var editor =  EditorPrefs.GetString("kScriptsDefaultApp");
+            var editor = CodeEditor.CurrentEditorInstallation;
 
             if (!string.IsNullOrEmpty(editor))
                 return editor;
@@ -135,7 +135,7 @@ namespace UnityEditorInternal
         [Obsolete("Use UnityEditor.ScriptEditor.GetCurrentEditor()", false)]
         public static ScriptEditor GetScriptEditorFromPreferences()
         {
-            return GetScriptEditorFromPath(GetExternalScriptEditor());
+            return GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation);
         }
 
         [Obsolete("This method is being internalized, please use UnityEditorInternal.CodeEditorUtility.GetFoundScriptEditorPaths", false)]

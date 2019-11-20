@@ -29,6 +29,15 @@ namespace UnityEditor.IMGUI.Controls
             set { m_TreeView.getNewSelectionOverride = (x, y, z) => value(x, y, z); }
         }
 
+        internal bool deselectOnUnhandledMouseDown
+        {
+            set
+            {
+                if (m_TreeView != null)
+                    m_TreeView.deselectOnUnhandledMouseDown = value;
+            }
+        }
+
         TreeViewController m_TreeView;
         TreeViewControlDataSource m_DataSource;
         TreeViewControlGUI m_GUI;

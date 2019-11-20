@@ -2,15 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEditor.Callbacks;
-using UnityEditor.PlatformSupport;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -22,6 +19,7 @@ namespace Unity.CodeEditor
         internal static CodeEditor Editor { get; } = new CodeEditor();
         List<IExternalCodeEditor> m_ExternalCodeEditors = new List<IExternalCodeEditor>();
         IExternalCodeEditor m_DefaultEditor = new DefaultExternalCodeEditor();
+        internal const string SystemDefaultPath = "";
 
         public struct Installation
         {
@@ -60,13 +58,20 @@ namespace Unity.CodeEditor
         {
             get
             {
-                var editorPath = EditorPrefs.GetString("kScriptsDefaultApp");
-                if (string.IsNullOrEmpty(editorPath))
+                var editorPath = CurrentEditorInstallation.Trim();
+                if (editorPath == CodeEditor.SystemDefaultPath)
                 {
+                    // If no script editor is set, try to use first found supported one.
+                    var editorPaths = GetFoundScriptEditorPaths();
+                    if (editorPaths.Count > 0)
+                    {
+                        return new Installation { Path = editorPaths.Keys.First() };
+                    }
+
                     return new Installation
                     {
                         Name = "Internal",
-                        Path = "",
+                        Path = editorPath,
                     };
                 }
 
@@ -79,17 +84,7 @@ namespace Unity.CodeEditor
                     }
                 }
 
-                // This is supporting legacy script editors until they are moved to packages
-                if (!string.IsNullOrEmpty(editorPath))
-                    return new Installation { Path = editorPath };
-
-                // If no script editor is set, try to use first found supported one.
-                var editorPaths = GetFoundScriptEditorPaths();
-
-                if (editorPaths.Count > 0)
-                    return new Installation { Path = editorPaths.Keys.ToArray()[0] };
-
-                return new Installation();
+                return new Installation { Path = editorPath };
             }
         }
 
@@ -97,8 +92,8 @@ namespace Unity.CodeEditor
         {
             get
             {
-                var editorPath = EditorPrefs.GetString("kScriptsDefaultApp");
-                if (string.IsNullOrEmpty(editorPath))
+                var editorPath = CurrentEditorInstallation.Trim();
+                if (editorPath == CodeEditor.SystemDefaultPath)
                 {
                     return m_DefaultEditor;
                 }
@@ -154,7 +149,7 @@ namespace Unity.CodeEditor
 
         public static IExternalCodeEditor CurrentEditor => Editor.Current;
 
-        public static string CurrentEditorInstallation => Editor.EditorInstallation.Path;
+        public static string CurrentEditorInstallation => EditorPrefs.GetString("kScriptsDefaultApp");
 
         public static bool OSOpenFile(string appPath, string arguments)
         {

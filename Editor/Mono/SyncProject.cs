@@ -57,16 +57,6 @@ namespace UnityEditor
                 Console.WriteLine("Error detecting Visual Studio installations: {0}{1}{2}", ex.Message, Environment.NewLine, ex.StackTrace);
                 InstalledVisualStudios = new Dictionary<VisualStudioVersion, VisualStudioPath[]>();
             }
-
-            SetVisualStudioAsEditorIfNoEditorWasSet();
-        }
-
-        private static void SetVisualStudioAsEditorIfNoEditorWasSet()
-        {
-            var externalEditor = EditorPrefs.GetString("kScriptsDefaultApp");
-            var bestVisualStudio = FindBestVisualStudio();
-            if (externalEditor == "" && bestVisualStudio != null)
-                EditorPrefs.SetString("kScriptsDefaultApp", bestVisualStudio);
         }
 
         public static string FindBestVisualStudio()
@@ -84,7 +74,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    var vs = ScriptEditorUtility.GetExternalScriptEditor();
+                    var vs = CodeEditor.CurrentEditorInstallation;
                     if (InstalledVisualStudios.ContainsKey(UnityEditor.VisualStudioVersion.VisualStudio2008) &&
                         (vs != String.Empty) &&
                         PathsAreEquivalent(InstalledVisualStudios[UnityEditor.VisualStudioVersion.VisualStudio2008].Last().Path, vs))
