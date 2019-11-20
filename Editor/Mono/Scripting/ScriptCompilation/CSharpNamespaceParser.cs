@@ -34,7 +34,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly Regex k_NewlineRegex = new Regex("\r\n?", RegexOptions.Compiled);
         static readonly Regex k_SingleQuote = new Regex(@"((?<![\\])['])(?:.(?!(?<![\\])\1))*.?\1", RegexOptions.Compiled);
         static readonly Regex k_ConditionalCompilation = new Regex(@"[\t ]*#[\t ]*(if|else|elif|endif|define|undef)([\t !(]+[^/\n]*)?", RegexOptions.Compiled);
+        static readonly Regex k_Namespace = new Regex(@"\s*namespace\s.", RegexOptions.Compiled);
         static string s_ClassName;
+
+        // Used for detecting warning in PureCSharpTests
+        public static Action<string> s_LogWarningAction;
+        static CSharpNamespaceParser()
+        {
+            s_LogWarningAction = Debug.LogWarning;
+        }
 
         public static string GetNamespace(string sourceCode, string className, params string[] defines)
         {
@@ -48,7 +56,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             sourceCode = k_VerbatimStrings.Replace(sourceCode, "");
             try
             {
-                sourceCode = RemoveUnusedDefines(sourceCode, defines.ToList());
+                sourceCode = ReduceCodeAndCheckForNamespacesModification(sourceCode);
 
                 return FindNamespaceForMono(className, sourceCode);
             }
@@ -66,6 +74,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var builder = new StringBuilder(source.Length);
             var buildingNode = false;
             var buildingClass = false;
+            var classAlreadyFoundInOtherNamespace = false;
             var level = 0;
             var resNamespace = "";
             foreach (var token in split)
@@ -101,10 +110,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         if (buildingNode)
                         {
                             var strippedClassname = StripClassName(token);
-                            if (buildingClass && strippedClassname.Equals(className))
+                            if (buildingClass)
                             {
                                 buildingClass = false;
-                                resNamespace = CollectNamespace(parent);
+                                if (strippedClassname.Equals(className))
+                                {
+                                    var foundNamespace = CollectNamespace(parent);
+                                    if (classAlreadyFoundInOtherNamespace && foundNamespace != resNamespace)
+                                    {
+                                        s_LogWarningAction(
+                                            $"Class {className} can not exist in multiple namespaces in the same file, even if one is excluded with preprocessor directives. Please move these to separate files if this is the case.");
+                                    }
+
+                                    resNamespace = foundNamespace;
+                                    classAlreadyFoundInOtherNamespace = true;
+                                }
                             }
                             else
                             {
@@ -167,21 +187,53 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public Node Parent;
         }
 
-        static string RemoveUnusedDefines(string source, List<string> defines)
+        static bool CheckForNamespaceModification(Stack<Tuple<bool, int>> namespaceScopeStack, int stackCount)
+        {
+            foreach (var tuple in namespaceScopeStack)
+            {
+                if (tuple.Item1 && (stackCount == -1 || tuple.Item2 == stackCount))
+                    return true;
+            }
+            return false;
+        }
+
+        // Reduce code to path that assumes all definitions are true
+        // Also check for the case where we have a namespace keyword inside any non-outter #if statement.
+        static string ReduceCodeAndCheckForNamespacesModification(string source)
         {
             var stack = new Stack<Tuple<bool, bool>>();
+            var namespaceScopeStack = new Stack<Tuple<bool, int>>(); // <true if namespace scope, stack depth>
             var split = source.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
             var longest = split.Aggregate("", (max, cur) => max.Length > cur.Length ? max : cur);
             var stringBuilder = new StringBuilder(split.Length * longest.Length);
+            bool foundNamespace = false;
+            bool namespaceModificationFound = false;
+
             foreach (var s in split)
             {
+                // Check for new namespace declarations, when we have are inside of multiple #ifs,
+                // and also have seen previous namespace declarations (likely namespace modification).
+                if (k_Namespace.IsMatch(s))
+                {
+                    namespaceModificationFound |= (stack.Count > 1 && CheckForNamespaceModification(namespaceScopeStack, -1));
+                    foundNamespace = true;
+                }
+                if (s.IndexOf("{", StringComparison.Ordinal) >= 0)
+                {
+                    namespaceScopeStack.Push(new Tuple<bool, int>(foundNamespace, stack.Count));
+                    foundNamespace = false;
+                }
+                if (s.IndexOf("}", StringComparison.Ordinal) >= 0)
+                {
+                    if (namespaceScopeStack.Count > 0)
+                        namespaceScopeStack.Pop();
+                }
+
+                // Handle directives from here on down
                 if (s.IndexOf("#", StringComparison.Ordinal) < 0)
                 {
                     if (stack.Count == 0 || stack.Peek().Item1)
-                    {
                         stringBuilder.Append(s).Append("\n");
-                    }
-
                     continue;
                 }
 
@@ -189,6 +241,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var directive = match.Groups[1].Value;
                 if (directive == "else")
                 {
+                    namespaceModificationFound |= CheckForNamespaceModification(namespaceScopeStack, stack.Count);
                     var elseEmitting = stack.Peek().Item2;
                     stack.Pop();
                     stack.Push(new Tuple<bool, bool>(elseEmitting, false));
@@ -205,35 +258,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     throw new UnsupportedDefineExpression(s);
                 }
-
-                if (directive == "define")
-                {
-                    if (!defines.Contains(arg) && (stack.Count == 0 || stack.Peek().Item1))
-                    {
-                        defines.Add(arg);
-                    }
-                }
-                else if (directive == "undefine")
-                {
-                    if (stack.Count == 0 || stack.Peek().Item1)
-                    {
-                        defines.Remove(arg);
-                    }
-                }
                 else if (directive == "if")
                 {
-                    var evalResult = EvaluateDefine(arg.Trim(), defines);
+                    var evalResult = true;
                     var isEmitting = stack.Count == 0 || stack.Peek().Item1;
                     stack.Push(new Tuple<bool, bool>(isEmitting && evalResult, isEmitting && !evalResult));
                 }
                 else if (directive == "elif")
                 {
-                    var evalResult = EvaluateDefine(arg, defines);
+                    namespaceModificationFound |= CheckForNamespaceModification(namespaceScopeStack, stack.Count);
+                    var evalResult = true;
                     var elseEmitting = stack.Peek().Item2;
                     stack.Pop();
                     stack.Push(new Tuple<bool, bool>(elseEmitting && evalResult, elseEmitting && !evalResult));
                 }
             }
+
+            if (namespaceModificationFound)
+                s_LogWarningAction(
+                    $"A namespace modification was detected. Namespace modification with preprocessor directives is not supported. Please ensure that all directives do not change the namespaces of types.");
 
             return stringBuilder.ToString();
         }
@@ -264,7 +307,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 else if (match.Groups[3].Value == "true" || match.Groups[3].Value == "false")
                     res.Add((match.Groups[3].Value == "true").ToString().ToLower());
                 else if (match.Groups[3].Success)
-                    res.Add(defines.Contains(match.Groups[3].Value).ToString().ToLower());
+                {
+                    if (defines.Contains(match.Groups[3].Value))
+                        res.Add("true");
+                    else
+                        res.Add("false");
+                }
                 else if (match.Groups[4].Success)
                     res.Add(match.Groups[4].Value);
             }
