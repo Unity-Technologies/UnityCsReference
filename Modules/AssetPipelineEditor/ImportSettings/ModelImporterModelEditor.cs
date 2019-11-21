@@ -414,7 +414,7 @@ namespace UnityEditor
                         if (m_SecondaryUVMarginMethod.intValue == (int)ModelImporterSecondaryUVMarginMethod.Calculate)
                         {
                             EditorGUILayout.PropertyField(m_SecondaryUVMinLightmapResolution, Styles.secondaryUVMinLightmapResolution);
-                            if (LightmapEditorSettings.bakeResolution < m_SecondaryUVMinLightmapResolution.floatValue)
+                            if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapResolution < m_SecondaryUVMinLightmapResolution.floatValue)
                             {
                                 EditorGUILayout.HelpBox(Styles.secondaryUVMinLightmapResolutionNotice);
                             }

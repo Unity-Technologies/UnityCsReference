@@ -403,7 +403,7 @@ namespace UnityEditor
         bool m_ShowCreateMaterialButton = false;
         bool m_LODTreePrototypePresent = false;
 
-        private LightingSettingsInspector m_Lighting;
+        private RendererLightingSettings m_Lighting;
 
         private static Terrain s_LastActiveTerrain;
 
@@ -832,7 +832,7 @@ namespace UnityEditor
 
             CheckToolActivation();
 
-            m_Lighting = new LightingSettingsInspector(serializedObject);
+            m_Lighting = new RendererLightingSettings(serializedObject);
             m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
             m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
             m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);

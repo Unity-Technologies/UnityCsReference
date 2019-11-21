@@ -104,6 +104,8 @@ namespace UnityEditor
             var tilemapGO = ObjectFactory.CreateGameObject(uniqueName, typeof(Tilemap), typeof(TilemapRenderer));
             Undo.SetTransformParent(tilemapGO.transform, root.transform, "");
             tilemapGO.transform.position = Vector3.zero;
+
+            Selection.activeGameObject = tilemapGO;
             Undo.SetCurrentGroupName("Create Tilemap");
         }
 
@@ -149,6 +151,8 @@ namespace UnityEditor
 
             var tilemapRenderer = tilemapGO.GetComponent<TilemapRenderer>();
             tilemapRenderer.sortOrder = TilemapRenderer.SortOrder.TopRight;
+
+            Selection.activeGameObject = tilemapGO;
             Undo.RegisterCreatedObjectUndo(tilemapGO, undoMessage);
         }
 
@@ -164,6 +168,7 @@ namespace UnityEditor
             grid.cellSwizzle = swizzle;
             var tilemap = tilemapGO.GetComponent<Tilemap>();
             tilemap.tileAnchor = Vector3.zero;
+            Selection.activeGameObject = tilemapGO;
             Undo.RegisterCreatedObjectUndo(tilemapGO, undoMessage);
         }
 

@@ -114,11 +114,13 @@ namespace UnityEditor
             if (item != null && item.icon != null)
             {
                 var icon = item.icon;
-                AssetsTreeViewDataSource.FolderTreeItemBase folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
-
-                if (folderItem != null && m_TreeView.data.IsExpanded(folderItem))
+                var folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
+                if (folderItem != null)
                 {
-                    icon = openFolderTexture;
+                    if (folderItem.IsEmpty)
+                        icon = emptyFolderTexture;
+                    else if (m_TreeView.data.IsExpanded(folderItem))
+                        icon = openFolderTexture;
                 }
 
                 return icon;
@@ -344,7 +346,7 @@ namespace UnityEditor
             {
                 if (property.isFolder)
                 {
-                    AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, property.instanceID, baseDepth + property.depth, null, property.name);
+                    AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, !property.hasChildren, property.instanceID, baseDepth + property.depth, null, property.name);
                     folderItem.icon = folderIcon;
                     allFolders.Add(folderItem);
                 }

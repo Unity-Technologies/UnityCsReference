@@ -315,7 +315,7 @@ namespace UnityEditor
                 return;
             }
 
-            if (reflectionProbeTarget.mode == ReflectionProbeMode.Baked && Lightmapping.giWorkflowMode != Lightmapping.GIWorkflowMode.OnDemand)
+            if (reflectionProbeTarget.mode == ReflectionProbeMode.Baked && Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate)
             {
                 EditorGUILayout.HelpBox("Baking of this reflection probe is automatic because this probe's type is 'Baked' and the Lighting window is using 'Auto Baking'. The cubemap created is stored in the GI cache.", MessageType.Info);
                 return;

@@ -442,8 +442,8 @@ namespace UnityEditor
             if (isRealtimeLightmap)
             {
                 Hash128 inputSystemHash;
-                if ((renderer != null && LightmapEditorSettings.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
-                    || (terrain != null && LightmapEditorSettings.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
+                if ((renderer != null && Lightmapping.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
+                    || (terrain != null && Lightmapping.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
                 {
                     m_ActiveGameObjectTextureHash = inputSystemHash;
                 }
@@ -463,7 +463,7 @@ namespace UnityEditor
             {
                 if (isRealtimeLightmap)
                 {
-                    Hash128[] mainHashes = LightmapEditorSettings.GetMainSystemHashes();
+                    Hash128[] mainHashes = Lightmapping.GetMainSystemHashes();
 
                     if (!m_RealtimeTextureHash.isValid || !mainHashes.Contains(m_RealtimeTextureHash))
                     {
@@ -477,7 +477,7 @@ namespace UnityEditor
                 {
                     Hash128 systemHash;
 
-                    if (!LightmapEditorSettings.GetInputSystemHash(m_InstanceID, out systemHash))
+                    if (!Lightmapping.GetInputSystemHash(m_InstanceID, out systemHash))
                     {
                         m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
                         return;
@@ -488,7 +488,7 @@ namespace UnityEditor
                 {
                     int lightmapIndex;
 
-                    if (!LightmapEditorSettings.GetLightmapIndex(m_InstanceID, out lightmapIndex))
+                    if (!Lightmapping.GetLightmapIndex(m_InstanceID, out lightmapIndex))
                     {
                         m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
                         return;

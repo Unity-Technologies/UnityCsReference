@@ -454,7 +454,10 @@ namespace UnityEditor.PackageManager.UI
                 UnregisterEvents();
 
                 ClearPages();
+
+                m_RefreshTimestamps.Clear();
                 InitializeRefreshTimestamps();
+
                 m_RefreshErrors.Clear();
                 m_RefreshOperationsInProgress.Clear();
 
@@ -467,6 +470,9 @@ namespace UnityEditor.PackageManager.UI
             {
                 foreach (RefreshOptions filter in Enum.GetValues(typeof(RefreshOptions)))
                 {
+                    if (m_RefreshTimestamps.ContainsKey(filter))
+                        continue;
+
                     m_RefreshTimestamps[filter] = 0;
                 }
             }

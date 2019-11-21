@@ -284,7 +284,9 @@ namespace UnityEditor
 
                 ReserveWidthLeft(standardButtonWidth, ref pos);
                 if (GUI.Button(EditorToolGUI.GetThinArea(pos), s_CloudIcon, Styles.command))
-                    UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "cloud_icon"); // Should show hub when it's done
+                {
+                    ServicesEditorWindow.ShowServicesWindow();
+                }
             }
 
             foreach (SubToolbar subToolbar in s_SubToolbars)

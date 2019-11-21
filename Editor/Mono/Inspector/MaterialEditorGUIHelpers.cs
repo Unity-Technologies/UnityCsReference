@@ -156,7 +156,7 @@ namespace UnityEditor
         public bool DoubleSidedGIField()
         {
             Rect r = GetControlRectForSingleLine();
-            if (isPrefabAsset || LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
+            if (isPrefabAsset || Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
             {
                 EditorGUI.PropertyField(r, m_DoubleSidedGI, Styles.doubleSidedGILabel);
                 serializedObject.ApplyModifiedProperties();
@@ -164,7 +164,7 @@ namespace UnityEditor
             }
             else
             {
-                using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten))
+                using (new EditorGUI.DisabledScope(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten))
                     EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
             }
             return false;

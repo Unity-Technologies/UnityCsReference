@@ -512,6 +512,15 @@ namespace UnityEngine
         MSAA = 4
     }
 
+    [Flags]
+    public enum HDRDisplaySupportFlags
+    {
+        None = 0,
+        Supported = 1 << 0,
+        RuntimeSwitchable = 1 << 1,
+        AutomaticTonemapping = 1 << 2
+    }
+
     namespace Experimental
     {
         namespace Rendering
@@ -545,6 +554,7 @@ namespace UnityEngine
                 MSAA2x = 11,
                 MSAA4x = 12,
                 MSAA8x = 13,
+                //MSAA16x = 14, // this is only used internally.
                 StencilSampling = 15,
             }
 

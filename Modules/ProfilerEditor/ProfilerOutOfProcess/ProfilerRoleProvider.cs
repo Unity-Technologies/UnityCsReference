@@ -81,8 +81,8 @@ namespace UnityEditor
                 EventService.On(nameof(EventType.UmpProfilerPing), HandlePingEvent);
                 EventService.On(nameof(EventType.UmpProfilerExit), HandleExitEvent);
 
-                EditorApplication.delayCall -= SetupProfilerDriver;
-                EditorApplication.delayCall += SetupProfilerDriver;
+                EditorApplication.update -= SetupProfilerDriver;
+                EditorApplication.update += SetupProfilerDriver;
                 EditorApplication.updateMainWindowTitle -= SetProfilerWindowTitle;
                 EditorApplication.updateMainWindowTitle += SetProfilerWindowTitle;
                 EditorApplication.quitting -= SaveWindowLayout;
@@ -109,6 +109,8 @@ namespace UnityEditor
 
             static void SetupProfilerDriver()
             {
+                EditorApplication.update -= SetupProfilerDriver;
+
                 if (s_ProfilerDriverSetup)
                     return;
 
@@ -118,14 +120,16 @@ namespace UnityEditor
                     recording = ProfilerDriver.enabled,
                     profileEditor = ProfilerDriver.profileEditor
                 };
-                EventService.Request(nameof(EventType.UmpProfilerOpenPlayerConnection), HandlePlayerConnectionOpened, playerConnectionInfo, 5000L);
+                if (!SessionState.GetBool("OOPP.PlayerConnectionOpened", false))
+                    EventService.Request(nameof(EventType.UmpProfilerOpenPlayerConnection), HandlePlayerConnectionOpened, playerConnectionInfo, 5000L);
                 s_ProfilerDriverSetup = true;
+
+                ModeService.RefreshMenus();
             }
 
             static void SetupProfiledConnection(int connId)
             {
                 ProfilerDriver.connectedProfiler = ProfilerDriver.GetAvailableProfilers().FirstOrDefault(id => id == connId);
-                ModeService.RefreshMenus();
                 Menu.SetChecked("Edit/Record", s_SlaveProfilerWindow.IsRecording());
                 Menu.SetChecked("Edit/Deep Profiling", ProfilerDriver.deepProfiling);
                 EditorApplication.UpdateMainWindowTitle();
@@ -138,6 +142,7 @@ namespace UnityEditor
                     throw err;
                 var connectionId = Convert.ToInt32(args[0]);
                 EditorApplication.delayCall += () => SetupProfiledConnection(connectionId);
+                SessionState.SetBool("OOPP.PlayerConnectionOpened", true);
             }
 
             static object HandleToggleRecording(string eventType, object[] args)
@@ -361,7 +366,8 @@ namespace UnityEditor
                 umpWindowTitleSwitch, "Profiler",
                 umpCap, "disable-extra-resources",
                 umpCap, "menu_bar",
-                "editor-mode", k_RoleName);
+                "editor-mode", k_RoleName,
+                "disableManagedDebugger", "true");
             s_LastStartupTime = EditorApplication.timeSinceStartup;
         }
     }

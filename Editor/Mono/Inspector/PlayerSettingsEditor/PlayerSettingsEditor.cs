@@ -1808,9 +1808,8 @@ namespace UnityEditor
             if (hdrDisplaySupported)
             {
                 string label = "Use display in HDR mode";
-                string tooltip = "Automatically switch the display to HDR output (on supported displays)" + ((targetGroup == BuildTargetGroup.XboxOne) ? " at start of application." : ".");
+                string tooltip = "Switch the display to HDR output (on supported displays)" + ((targetGroup == BuildTargetGroup.XboxOne) ? " at start of application." : ".");
                 PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent(label, tooltip), PlayerSettings.useHDRDisplay);
-
 
                 if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA)
                 {

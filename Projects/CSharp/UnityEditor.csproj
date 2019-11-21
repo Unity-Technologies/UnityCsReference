@@ -2002,9 +2002,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\LightProbesInspector.cs">
       <Link>Editor\Mono\Inspector\LightProbesInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\LightingSettingsInspector.cs">
-      <Link>Editor\Mono\Inspector\LightingSettingsInspector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LineRendererCurveEditor.cs">
       <Link>Editor\Mono\Inspector\LineRendererCurveEditor.cs</Link>
     </Compile>
@@ -2154,6 +2151,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RendererEditorBase.cs">
       <Link>Editor\Mono\Inspector\RendererEditorBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\RendererLightingSettings.cs">
+      <Link>Editor\Mono\Inspector\RendererLightingSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Rigidbody2DEditor.cs">
       <Link>Editor\Mono\Inspector\Rigidbody2DEditor.cs</Link>
@@ -2808,6 +2808,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneModeWindows\LightingWindowBakeSettings.cs">
       <Link>Editor\Mono\SceneModeWindows\LightingWindowBakeSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneModeWindows\LightingWindowEnvironmentTab.cs">
+      <Link>Editor\Mono\SceneModeWindows\LightingWindowEnvironmentTab.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneModeWindows\LightingWindowLightingTab.cs">
       <Link>Editor\Mono\SceneModeWindows\LightingWindowLightingTab.cs</Link>
@@ -3474,12 +3477,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectConsentView.cs">
       <Link>Editor\Mono\UnityConnect\UnityConnectConsentView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectEditorWindow.cs">
-      <Link>Editor\Mono\UnityConnect\UnityConnectEditorWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectPrefs.cs">
-      <Link>Editor\Mono\UnityConnect\UnityConnectPrefs.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectServiceCollection.cs">
       <Link>Editor\Mono\UnityConnect\UnityConnectServiceCollection.cs</Link>
@@ -5461,6 +5458,99 @@
     <Compile Include="..\..\Modules\UMPE\Editor\UMPE.bindings.cs">
       <Link>Modules\UMPE\Editor\UMPE.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\CoppaManager.cs">
+      <Link>Modules\UnityConnectEditor\Common\CoppaManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\INotificationSubscriber.cs">
+      <Link>Modules\UnityConnectEditor\Common\INotificationSubscriber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\Notification.cs">
+      <Link>Modules\UnityConnectEditor\Common\Notification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\NotificationManager.cs">
+      <Link>Modules\UnityConnectEditor\Common\NotificationManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\ProjectBindManager.cs">
+      <Link>Modules\UnityConnectEditor\Common\ProjectBindManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\ServicesConfiguration.cs">
+      <Link>Modules\UnityConnectEditor\Common\ServicesConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\SimpleStateMachine.cs">
+      <Link>Modules\UnityConnectEditor\Common\SimpleStateMachine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\UIElementsNotificationSubscriber.cs">
+      <Link>Modules\UnityConnectEditor\Common\UIElementsNotificationSubscriber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\UnityConnectWebRequestException.cs">
+      <Link>Modules\UnityConnectEditor\Common\UnityConnectWebRequestException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\AdsProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\AdsProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\AnalyticsProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\AnalyticsProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\CloudBuildProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\CloudBuildProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\CloudDiagProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\CloudDiagProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\CollabProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\CollabProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\GeneralProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\GeneralProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\PurchasingProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\PurchasingProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ServicesEditorWindow.cs">
+      <Link>Modules\UnityConnectEditor\ServicesEditorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ServicesProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ServicesProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ServicesRepository.cs">
+      <Link>Modules\UnityConnectEditor\ServicesRepository.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\AdsService.cs">
+      <Link>Modules\UnityConnectEditor\Services\AdsService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\AnalyticsConfiguration.cs">
+      <Link>Modules\UnityConnectEditor\Services\AnalyticsConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\AnalyticsService.cs">
+      <Link>Modules\UnityConnectEditor\Services\AnalyticsService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\AnalyticsValidationPoller.cs">
+      <Link>Modules\UnityConnectEditor\Services\AnalyticsValidationPoller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\AnalyticsValidatorEvent.cs">
+      <Link>Modules\UnityConnectEditor\Services\AnalyticsValidatorEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\BuildService.cs">
+      <Link>Modules\UnityConnectEditor\Services\BuildService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\CollabService.cs">
+      <Link>Modules\UnityConnectEditor\Services\CollabService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\CrashService.cs">
+      <Link>Modules\UnityConnectEditor\Services\CrashService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\PurchasingConfiguration.cs">
+      <Link>Modules\UnityConnectEditor\Services\PurchasingConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\PurchasingService.cs">
+      <Link>Modules\UnityConnectEditor\Services\PurchasingService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\ServicesUtils.cs">
+      <Link>Modules\UnityConnectEditor\Services\ServicesUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Services\SingleService.cs">
+      <Link>Modules\UnityConnectEditor\Services\SingleService.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\BuildEventsHandler.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\BuildEventsHandler.cs</Link>
     </Compile>
@@ -5555,7 +5645,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEditor.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CEF_IMPLEMENTATION;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

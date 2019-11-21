@@ -33,9 +33,9 @@ namespace UnityEditor.SceneManagement
             m_AvatarEditor = avatarEditor;
         }
 
-        protected internal override bool OpenStage()
+        protected internal override bool OnOpenStage()
         {
-            base.OpenStage();
+            base.OnOpenStage();
 
             if (!File.Exists(assetPath))
             {
@@ -55,11 +55,11 @@ namespace UnityEditor.SceneManagement
             return true;
         }
 
-        protected override void CloseStage()
+        protected override void OnCloseStage()
         {
             m_AvatarEditor.CleanupEditor();
 
-            base.CloseStage();
+            base.OnCloseStage();
         }
 
         protected internal override void OnFirstTimeOpenStageInSceneView(SceneView sceneView)

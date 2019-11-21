@@ -196,25 +196,25 @@ namespace UnityEditor.Experimental.SceneManagement
             get { return m_Mode; }
         }
 
-        internal override ulong GetCombinedSceneCullingMaskForSceneViewCamera(SceneView sceneView)
+        public override ulong GetCombinedSceneCullingMaskForCamera()
         {
             if (m_Mode == Mode.InIsolation)
             {
-                return GetSceneCullingMask(sceneView);
+                return GetSceneCullingMask();
             }
             else if (m_Mode == Mode.InContext)
             {
                 var stageHistory = StageNavigationManager.instance.stageHistory;
                 if (this == stageHistory.Last())
                 {
-                    ulong mask = GetSceneCullingMask(sceneView);
+                    ulong mask = GetSceneCullingMask();
                     int count = stageHistory.Count;
                     for (int i = count - 2; i >= 0; i--)
                     {
                         var stage = stageHistory[i];
                         if (stage)
                         {
-                            mask |= stage.GetSceneCullingMask(sceneView);
+                            mask |= stage.GetSceneCullingMask();
 
                             var prefabStage = stage as PrefabStage;
                             if (prefabStage)
@@ -433,7 +433,7 @@ namespace UnityEditor.Experimental.SceneManagement
         }
 
         // Returns true if opened successfully
-        protected internal override bool OpenStage()
+        protected internal override bool OnOpenStage()
         {
             if (LoadStage())
             {
@@ -459,7 +459,7 @@ namespace UnityEditor.Experimental.SceneManagement
             return false;
         }
 
-        protected override void CloseStage()
+        protected override void OnCloseStage()
         {
             if (isValid)
                 prefabStageClosing?.Invoke(this);
@@ -732,7 +732,7 @@ namespace UnityEditor.Experimental.SceneManagement
             foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
                 SaveHierarchyState(sceneHierarchyWindow);
 
-            if (OpenStage())
+            if (OnOpenStage())
             {
                 foreach (SceneView sceneView in SceneView.sceneViews)
                     SyncSceneViewToStage(sceneView);
@@ -764,7 +764,7 @@ namespace UnityEditor.Experimental.SceneManagement
                     sceneView.overrideSceneCullingMask = 0;
                     break;
                 case PrefabStage.Mode.InContext:
-                    sceneView.overrideSceneCullingMask = GetCombinedSceneCullingMaskForSceneViewCamera(sceneView);
+                    sceneView.overrideSceneCullingMask = GetCombinedSceneCullingMaskForCamera();
                     break;
                 default:
                     Debug.LogError("Unhandled enum");

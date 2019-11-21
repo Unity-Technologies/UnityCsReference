@@ -26,13 +26,13 @@ namespace UnityEditor.SceneManagement
         {
         }
 
-        protected internal override bool OpenStage()
+        protected internal override bool OnOpenStage()
         {
             m_Scene = EditorSceneManager.NewPreviewScene();
             return true;
         }
 
-        protected override void CloseStage()
+        protected override void OnCloseStage()
         {
             if (scene.IsValid())
             {
@@ -58,7 +58,7 @@ namespace UnityEditor.SceneManagement
             get { return StageHandle.GetStageHandle(scene); }
         }
 
-        internal override ulong GetSceneCullingMask(SceneView sceneView)
+        internal override ulong GetSceneCullingMask()
         {
             return EditorSceneManager.GetSceneCullingMask(scene);
         }

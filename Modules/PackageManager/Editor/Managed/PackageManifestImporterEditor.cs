@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager
     [CanEditMultipleObjects]
     internal class PackageManifestImporterEditor : AssetImporterEditor
     {
-        private enum PackageVisibility
+        enum PackageVisibility
         {
             DependsOnType,
             AlwaysHidden,
@@ -54,20 +54,20 @@ namespace UnityEditor.PackageManager
         private static readonly List<string> MinorUnityVersions = new List<string> { "1", "2", "3", "4" };
 
         [Serializable]
-        private class AdvancedSettings
+        class AdvancedSettings
         {
             public PackageVisibility visibility;
         }
 
         [Serializable]
-        private class PackageDependency
+        class PackageDependency
         {
             public string packageName;
             public string version;
         }
 
         [Serializable]
-        private class PackageUnityVersion
+        class PackageUnityVersion
         {
             public bool isEnable;
             public string major;
@@ -76,7 +76,7 @@ namespace UnityEditor.PackageManager
         }
 
         [Serializable]
-        private class PackageInformation
+        class PackageInformation
         {
             public string packageName;
             public string displayName;
@@ -88,7 +88,7 @@ namespace UnityEditor.PackageManager
         }
 
         [Serializable]
-        private class PackageManifestState : ScriptableObject
+        class PackageManifestState : ScriptableObject
         {
             public bool isValidFile;
             public PackageInformation info;

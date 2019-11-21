@@ -42,7 +42,7 @@ namespace UnityEditor
             public static readonly GUIContent ambientDown = EditorGUIUtility.TrTextContent("Ground Color", "Controls the color of light emitted from the ground of the Scene.");
             public static readonly GUIContent ambient = EditorGUIUtility.TrTextContent("Ambient Color", "Controls the color of the ambient light contributed to the Scene.");
             public static readonly GUIContent customReflection = EditorGUIUtility.TrTextContent("Cubemap", "Specifies the custom cube map used for reflection effects in the Scene.");
-            public static readonly GUIContent AmbientLightingMode = EditorGUIUtility.TrTextContent("Ambient Mode", "Specifies the Global Illumination mode that should be used for handling ambient light in the Scene. Options are Realtime or Baked. This property is not editable unless both Realtime Global Illumination and Baked Global Illumination are enabled for the scene.");
+            public static readonly GUIContent SubtractiveColor = EditorGUIUtility.TrTextContent("Realtime Shadow Color", "The color used for mixing realtime shadows with baked lightmaps in Subtractive lighting mode. The color defines the darkest point of the realtime shadow.");
 
             public static readonly GUIContent[] kFullAmbientSource =
             {
@@ -51,25 +51,16 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Color"),
             };
 
-            public static readonly GUIContent[] AmbientLightingModes =
-            {
-                EditorGUIUtility.TrTextContent("Realtime"),
-                EditorGUIUtility.TrTextContent("Baked")
-            };
-
             public static readonly int[] kFullAmbientSourceValues = { (int)AmbientMode.Skybox, (int)AmbientMode.Trilight, (int)AmbientMode.Flat };
         }
 
-        protected SerializedProperty m_EnabledBakedGI;
-        protected SerializedProperty m_EnabledRealtimeGI;
-
         protected SerializedProperty m_Sun;
+        protected SerializedProperty m_SubtractiveShadowColor;
         protected SerializedProperty m_AmbientSource;
         protected SerializedProperty m_AmbientSkyColor;
         protected SerializedProperty m_AmbientEquatorColor;
         protected SerializedProperty m_AmbientGroundColor;
         protected SerializedProperty m_AmbientIntensity;
-        protected SerializedProperty m_AmbientLightingMode;
 
         protected SerializedProperty m_ReflectionIntensity;
         protected SerializedProperty m_ReflectionBounces;
@@ -88,11 +79,12 @@ namespace UnityEditor
             get
             {
                 // if we set a new scene as the active scene, we need to make sure to respond to those changes
-                if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings())
+                if (m_RenderSettings == null || m_RenderSettings.targetObject == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings())
                 {
                     m_RenderSettings = new SerializedObject(RenderSettings.GetRenderSettings());
 
                     m_Sun = m_RenderSettings.FindProperty("m_Sun");
+                    m_SubtractiveShadowColor = m_RenderSettings.FindProperty("m_SubtractiveShadowColor");
                     m_AmbientSource = m_RenderSettings.FindProperty("m_AmbientMode");
                     m_AmbientSkyColor = m_RenderSettings.FindProperty("m_AmbientSkyColor");
                     m_AmbientEquatorColor = m_RenderSettings.FindProperty("m_AmbientEquatorColor");
@@ -115,13 +107,10 @@ namespace UnityEditor
             get
             {
                 // if we set a new scene as the active scene, we need to make sure to respond to those changes
-                if (m_LightmapSettings == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())
+                if (m_LightmapSettings == null || m_LightmapSettings.targetObject == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())
                 {
                     m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
                     m_ReflectionCompression = m_LightmapSettings.FindProperty("m_LightmapEditorSettings.m_ReflectionCompression");
-                    m_AmbientLightingMode = m_LightmapSettings.FindProperty("m_GISettings.m_EnvironmentLightingMode");
-                    m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
-                    m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
                 }
 
                 return m_LightmapSettings;
@@ -158,6 +147,9 @@ namespace UnityEditor
                 }
 
                 EditorGUILayout.PropertyField(m_Sun, Styles.env_skybox_sun);
+                EditorGUILayout.Space();
+
+                EditorGUILayout.PropertyField(m_SubtractiveShadowColor, Styles.SubtractiveColor);
                 EditorGUILayout.Space();
 
                 EditorGUILayout.LabelField(Styles.env_amb_top);
@@ -204,39 +196,6 @@ namespace UnityEditor
                             EditorGUILayout.Slider(m_AmbientIntensity, 0.0F, 8.0F, Styles.env_amb_int);
                         }
                         break;
-                }
-
-                // ambient GI - realtime / baked
-                bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
-                bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
-
-                if ((m_EnabledBakedGI.boolValue || m_EnabledRealtimeGI.boolValue) && (bakedGISupported || realtimeGISupported))
-                {
-                    int[] modeVals = { 0, 1 };
-
-                    if (m_EnabledBakedGI.boolValue && m_EnabledRealtimeGI.boolValue)
-                    {
-                        // if the user has selected the only state that is supported, then gray it out
-                        using (new EditorGUI.DisabledScope(((m_AmbientLightingMode.intValue == 0) && realtimeGISupported && !bakedGISupported) || ((m_AmbientLightingMode.intValue == 1) && bakedGISupported && !realtimeGISupported)))
-                        {
-                            EditorGUILayout.IntPopup(m_AmbientLightingMode, Styles.AmbientLightingModes, modeVals, Styles.AmbientLightingMode);
-                        }
-
-                        // if they have selected a state that isnt supported, show dialog, and still make the box editable
-                        if (((m_AmbientLightingMode.intValue == 0) && !realtimeGISupported) ||
-                            ((m_AmbientLightingMode.intValue == 1) && !bakedGISupported))
-                        {
-                            EditorGUILayout.HelpBox("The following mode is not supported and will fallback on " + (((m_AmbientLightingMode.intValue == 0) && !realtimeGISupported) ? "Baked" : "Realtime"), MessageType.Warning);
-                        }
-                    }
-                    // Show "Baked" if precomputed GI is disabled and "Realtime" if baked GI is disabled (but we don't wanna show the box if the whole mode is not supported.)
-                    else if ((m_EnabledBakedGI.boolValue && bakedGISupported) || (m_EnabledRealtimeGI.boolValue && realtimeGISupported))
-                    {
-                        using (new EditorGUI.DisabledScope(true))
-                        {
-                            EditorGUILayout.IntPopup(Styles.AmbientLightingMode, m_EnabledBakedGI.boolValue ? 1 : 0, Styles.AmbientLightingModes, modeVals);
-                        }
-                    }
                 }
 
                 EditorGUI.indentLevel--;

@@ -11,7 +11,7 @@ using System.Globalization;
 
 namespace UnityEditor
 {
-    internal class LightingSettingsInspector
+    internal class RendererLightingSettings
     {
         static class Styles
         {
@@ -43,7 +43,7 @@ namespace UnityEditor
             public static readonly GUIContent AtlasTilingY = EditorGUIUtility.TrTextContent("Tiling Y");
             public static readonly GUIContent AtlasOffsetX = EditorGUIUtility.TrTextContent("Offset X");
             public static readonly GUIContent AtlasOffsetY = EditorGUIUtility.TrTextContent("Offset Y");
-            public static readonly GUIContent ClampedSize = EditorGUIUtility.TrTextContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightmapEditorSettings class.");
+            public static readonly GUIContent ClampedSize = EditorGUIUtility.TrTextContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightingSettings class.");
             public static readonly GUIContent ClampedPackingResolution = EditorGUIUtility.TrTextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
             public static readonly GUIContent ZeroAreaPackingMesh = EditorGUIUtility.TrTextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
             public static readonly GUIContent NoNormalsNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
@@ -89,7 +89,6 @@ namespace UnityEditor
 
         SerializedObject m_SerializedObject;
         SerializedObject m_GameObjectsSerializedObject;
-        SerializedObject m_LightmapSettings;
 
         SerializedProperty m_StaticEditorFlags;
         SerializedProperty m_ImportantGI;
@@ -109,9 +108,6 @@ namespace UnityEditor
         SerializedProperty m_ReceiveGI;
         SerializedProperty m_CastShadows;
         SerializedProperty m_ReceiveShadows;
-
-        SerializedProperty m_EnabledBakedGI;
-        SerializedProperty m_EnabledRealtimeGI;
 
         Renderer[] m_Renderers;
         Terrain[] m_Terrains;
@@ -150,7 +146,7 @@ namespace UnityEditor
             return lodScale;
         }
 
-        public LightingSettingsInspector(SerializedObject serializedObject)
+        public RendererLightingSettings(SerializedObject serializedObject)
         {
             m_SerializedObject = serializedObject;
 
@@ -178,10 +174,6 @@ namespace UnityEditor
             m_Terrains = m_SerializedObject.targetObjects.OfType<Terrain>().ToArray();
 
             m_StaticEditorFlags = m_GameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
-
-            m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
-            m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
-            m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
         }
 
         public void RenderSettings(bool showLightmapSettings, bool showshadowBias)
@@ -189,12 +181,16 @@ namespace UnityEditor
             if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjectsCount == 0)
                 return;
 
+            var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
+            var lightmapper = settings.lightmapper;
+            bool bakedGI = settings.bakedGI;
+            bool realtimeGI = settings.realtimeGI;
+
             m_GameObjectsSerializedObject.Update();
-            m_LightmapSettings.Update();
 
             ReceiveGI receiveGI = (ReceiveGI)m_ReceiveGI.intValue;
             bool contributeGI = (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
-            bool showEnlightenSettings = isPrefabAsset || m_EnabledRealtimeGI.boolValue || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten);
+            bool showEnlightenSettings = isPrefabAsset || realtimeGI || (bakedGI && lightmapper == LightingSettings.Lightmapper.Enlighten);
 
             // m_ReceiveGI might still be set to Lightmaps, but LightProbes is shown in the inspector since the contributeGI if off.
             // In this case we still have to mark it as "multiple values" even though both have "Lightmaps" as the value, but one is showing a grayed out "Light Probes" in the UI
@@ -226,7 +222,7 @@ namespace UnityEditor
 
                 contributeGI = ContributeGISettings();
 
-                if (!(m_EnabledBakedGI.boolValue || m_EnabledRealtimeGI.boolValue) && !isPrefabAsset && contributeGI)
+                if (!(bakedGI || realtimeGI) && !isPrefabAsset && contributeGI)
                 {
                     EditorGUILayout.HelpBox(Styles.GINotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
@@ -278,7 +274,7 @@ namespace UnityEditor
                 {
                     EditorGUI.indentLevel += 1;
 
-                    bool showProgressiveSettings = isPrefabAsset || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten);
+                    bool showProgressiveSettings = isPrefabAsset || (bakedGI && lightmapper != LightingSettings.Lightmapper.Enlighten);
 
                     LightmapScaleGUI(true, Styles.ScaleInLightmap, false);
 
@@ -295,20 +291,20 @@ namespace UnityEditor
                     ShowAtlasGUI(m_Renderers[0].GetInstanceID());
                     ShowRealtimeLMGUI(m_Renderers[0]);
 
-                    if (LightmapEditorSettings.HasZeroAreaMesh(m_Renderers[0]))
+                    if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
                         EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
 
                     DisplayMeshWarning();
 
                     if (showEnlightenSettings)
                     {
-                        if (LightmapEditorSettings.HasClampedResolution(m_Renderers[0]))
+                        if (Lightmapping.HasClampedResolution(m_Renderers[0]))
                             EditorGUILayout.HelpBox(Styles.ClampedPackingResolution.text, MessageType.Warning);
                     }
 
                     if (showProgressiveSettings)
                     {
-                        if (LightmapEditorSettings.HasUVOverlaps(m_Renderers[0]))
+                        if (Lightmapping.HasUVOverlaps(m_Renderers[0]))
                             EditorGUILayout.HelpBox(Styles.UVOverlap.text, MessageType.Warning);
                     }
 
@@ -325,7 +321,10 @@ namespace UnityEditor
                 return;
 
             m_GameObjectsSerializedObject.Update();
-            m_LightmapSettings.Update();
+
+            var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
+            bool bakedGI = settings.bakedGI;
+            bool realtimeGI = settings.realtimeGI;
 
             bool contributeGI = (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
 
@@ -337,7 +336,7 @@ namespace UnityEditor
 
                 contributeGI = ContributeGISettings();
 
-                if (!(m_EnabledBakedGI.boolValue || m_EnabledRealtimeGI.boolValue) && !isPrefabAsset && contributeGI)
+                if (!(bakedGI || realtimeGI) && !isPrefabAsset && contributeGI)
                 {
                     EditorGUILayout.HelpBox(Styles.GINotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
@@ -436,9 +435,9 @@ namespace UnityEditor
 
         void ShowClampedSizeInLightmapGUI(float lightmapScale, float cachedSurfaceArea, bool isSSD)
         {
-            float sizeInLightmap = Mathf.Sqrt(cachedSurfaceArea) * LightmapEditorSettings.bakeResolution * lightmapScale;
+            float sizeInLightmap = Mathf.Sqrt(cachedSurfaceArea) * Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapResolution * lightmapScale;
 
-            if (sizeInLightmap > LightmapEditorSettings.maxAtlasSize)
+            if (sizeInLightmap > Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapMaxSize)
                 EditorGUILayout.HelpBox(Styles.ClampedSize.text, MessageType.Info);
         }
 
@@ -446,7 +445,7 @@ namespace UnityEditor
         {
             // SSDs (with the exception of those being computed with Enlighten) do not end up in a lightmap,
             // therefore we do not show clamping information.
-            if (isSSD && LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
+            if (isSSD && Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
                 return;
 
             float lodScale = CalcLODScale(meshRenderer);
@@ -512,7 +511,9 @@ namespace UnityEditor
             GUILayout.Label(Styles.AtlasOffsetX.text + ": " + m_LightmapTilingOffsetZ.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
             GUILayout.Label(Styles.AtlasOffsetY.text + ": " + m_LightmapTilingOffsetW.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
 
-            float lightmapResolution = LightmapEditorSettings.bakeResolution * CalcLODScale(true) * m_LightmapScale.floatValue;
+            var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
+
+            float lightmapResolution = settings.lightmapResolution * CalcLODScale(true) * m_LightmapScale.floatValue;
             Transform transform = m_Renderers[0].GetComponent<Transform>();
             float lightmapObjectScale = System.Math.Min(System.Math.Min(transform.localScale.x, transform.localScale.y), transform.localScale.z);
             GUILayout.Label(Styles.LightmapResolution.text + ": " + lightmapResolution.ToString(CultureInfo.InvariantCulture.NumberFormat));
@@ -522,20 +523,20 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            bool showProgressiveInfo = isPrefabAsset || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten);
+            bool showProgressiveInfo = isPrefabAsset || (settings.bakedGI && settings.lightmapper != LightingSettings.Lightmapper.Enlighten);
 
             if (showProgressiveInfo && Unsupported.IsDeveloperMode())
             {
                 Hash128 instanceHash;
-                LightmapEditorSettings.GetPVRInstanceHash(instanceID, out instanceHash);
+                Lightmapping.GetPVRInstanceHash(instanceID, out instanceHash);
                 EditorGUILayout.LabelField(Styles.PVRInstanceHash, GUIContent.Temp(instanceHash.ToString()));
 
                 Hash128 atlasHash;
-                LightmapEditorSettings.GetPVRAtlasHash(instanceID, out atlasHash);
+                Lightmapping.GetPVRAtlasHash(instanceID, out atlasHash);
                 EditorGUILayout.LabelField(Styles.PVRAtlasHash, GUIContent.Temp(atlasHash.ToString()));
 
                 int atlasInstanceOffset;
-                LightmapEditorSettings.GetPVRAtlasInstanceOffset(instanceID, out atlasInstanceOffset);
+                Lightmapping.GetPVRAtlasInstanceOffset(instanceID, out atlasInstanceOffset);
                 EditorGUILayout.LabelField(Styles.PVRAtlasInstanceOffset, GUIContent.Temp(atlasInstanceOffset.ToString()));
             }
             EditorGUI.indentLevel -= 1;
@@ -546,7 +547,7 @@ namespace UnityEditor
         void ShowRealtimeLMGUI(Terrain terrain)
         {
             Hash128 inputSystemHash;
-            if (terrain == null || !LightmapEditorSettings.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
+            if (terrain == null || !Lightmapping.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
                 return; // early return since we don't have any lightmaps for it
 
             if (!UpdateRealtimeTexture(inputSystemHash, terrain.GetInstanceID()))
@@ -568,7 +569,7 @@ namespace UnityEditor
             // Resolution of the system.
             int width, height;
             int numChunksInX, numChunksInY;
-            if (LightmapEditorSettings.GetTerrainSystemResolution(terrain, out width, out height, out numChunksInX, out numChunksInY))
+            if (Lightmapping.GetTerrainSystemResolution(terrain, out width, out height, out numChunksInX, out numChunksInY))
             {
                 var str = width + "x" + height;
                 if (numChunksInX > 1 || numChunksInY > 1)
@@ -588,7 +589,7 @@ namespace UnityEditor
         void ShowRealtimeLMGUI(Renderer renderer)
         {
             Hash128 inputSystemHash;
-            if (renderer == null || !LightmapEditorSettings.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
+            if (renderer == null || !Lightmapping.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
                 return; // early return since we don't have any lightmaps for it
 
             if (!UpdateRealtimeTexture(inputSystemHash, renderer.GetInstanceID()))
@@ -608,13 +609,13 @@ namespace UnityEditor
             GUILayout.BeginVertical();
 
             int instWidth, instHeight;
-            if (LightmapEditorSettings.GetInstanceResolution(renderer, out instWidth, out instHeight))
+            if (Lightmapping.GetInstanceResolution(renderer, out instWidth, out instHeight))
             {
                 GUILayout.Label(Styles.RealtimeLMInstanceResolution.text + ": " + instWidth + "x" + instHeight);
             }
 
             int width, height;
-            if (LightmapEditorSettings.GetSystemResolution(renderer, out width, out height))
+            if (Lightmapping.GetSystemResolution(renderer, out width, out height))
             {
                 GUILayout.Label(Styles.RealtimeLMResolution.text + ": " + width + "x" + height);
             }
@@ -626,13 +627,13 @@ namespace UnityEditor
             if (Unsupported.IsDeveloperMode())
             {
                 Hash128 instanceHash;
-                if (LightmapEditorSettings.GetInstanceHash(renderer, out instanceHash))
+                if (Lightmapping.GetInstanceHash(renderer, out instanceHash))
                 {
                     EditorGUILayout.LabelField(Styles.RealtimeLMInstanceHash, GUIContent.Temp(instanceHash.ToString()));
                 }
 
                 Hash128 geometryHash;
-                if (LightmapEditorSettings.GetGeometryHash(renderer, out geometryHash))
+                if (Lightmapping.GetGeometryHash(renderer, out geometryHash))
                 {
                     EditorGUILayout.LabelField(Styles.RealtimeLMGeometryHash, GUIContent.Temp(geometryHash.ToString()));
                 }
@@ -707,7 +708,9 @@ namespace UnityEditor
         private void DisplayMeshWarning()
         {
             Mesh mesh = GetSharedMesh(m_Renderers[0]);
-            bool showEnlightenSettings = isPrefabAsset || m_EnabledRealtimeGI.boolValue || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten);
+
+            var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
+            bool showEnlightenSettings = isPrefabAsset || settings.realtimeGI || (settings.bakedGI && settings.lightmapper == LightingSettings.Lightmapper.Enlighten);
 
             if (!HasSupportedTopologyForGI(mesh))
             {
@@ -729,7 +732,7 @@ namespace UnityEditor
 
             if (showEnlightenSettings)
             {
-                if (LightmapEditorSettings.HasZeroAreaMesh(m_Renderers[0]))
+                if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
                 {
                     EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
                 }
@@ -792,8 +795,8 @@ namespace UnityEditor
             // If object is null, then get the scene parameter setting and view this instead.
             if (prop.objectReferenceValue == null)
             {
-                SerializedObject so = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
-                SerializedProperty lightmapParameters = so.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
+                SerializedObject so = new SerializedObject(Lightmapping.GetLightingSettingsOrDefaultsFallback());
+                SerializedProperty lightmapParameters = so.FindProperty("m_LightmapParameters");
 
                 using (new EditorGUI.DisabledScope(lightmapParameters == null))
                 {
@@ -850,9 +853,10 @@ namespace UnityEditor
             var terrainWidth = terrain.terrainData.size.x;
             var terrainHeight = terrain.terrainData.size.z;
             var lightmapParameters = (LightmapParameters)m_LightmapParameters.objectReferenceValue ?? new LightmapParameters();
+            var indirectResolution = Lightmapping.GetLightingSettingsOrDefaultsFallback().indirectResolution;
 
-            var terrainSystemTexelsInWidth = terrainWidth * lightmapParameters.resolution * LightmapEditorSettings.realtimeResolution;
-            var terrainSystemTexelsInHeight = terrainHeight * lightmapParameters.resolution * LightmapEditorSettings.realtimeResolution;
+            var terrainSystemTexelsInWidth = terrainWidth * lightmapParameters.resolution * indirectResolution;
+            var terrainSystemTexelsInHeight = terrainHeight * lightmapParameters.resolution * indirectResolution;
             const int kTerrainTexelsThreshold = 64 * 8;
             if (terrainSystemTexelsInWidth > kTerrainTexelsThreshold || terrainSystemTexelsInHeight > kTerrainTexelsThreshold)
             {

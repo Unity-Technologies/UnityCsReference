@@ -156,7 +156,7 @@ namespace UnityEditor
                         lightmappingTypeIsSame && isRealtime && !bounceIntensity.hasMultipleDifferentValues && bounceIntensity.floatValue > 0.0F;
                 }
             }
-            internal bool showBakingWarning { get { return !isPrefabAsset && !Lightmapping.bakedGI && lightmappingTypeIsSame && isBakedOrMixed; } }
+            internal bool showBakingWarning { get { return !isPrefabAsset && !Lightmapping.GetLightingSettingsOrDefaultsFallback().bakedGI && lightmappingTypeIsSame && isBakedOrMixed; } }
 
             internal bool showCookieWarning
             {
@@ -399,7 +399,7 @@ namespace UnityEditor
                         bool selected = (lightmappingTypeIsSame && (value == lightmapping.intValue));
 
                         if (((value == (int)LightmapBakeType.Mixed) || (value == (int)LightmapBakeType.Baked)) &&
-                            ((!SupportedRenderingFeatures.IsLightmapBakeTypeSupported((LightmapBakeType)value) || !Lightmapping.bakedGI) && !isPrefabAsset))
+                            ((!SupportedRenderingFeatures.IsLightmapBakeTypeSupported((LightmapBakeType)value) || !Lightmapping.GetLightingSettingsOrDefaultsFallback().bakedGI) && !isPrefabAsset))
                         {
                             menu.AddDisabledItem(Styles.LightmapBakeTypeTitles[i], selected);
                         }
@@ -724,7 +724,7 @@ namespace UnityEditor
             // Light type (shape and usage)
             settings.DrawLightType();
 
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten && settings.light.type == LightType.Disc)
+            if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten && settings.light.type == LightType.Disc)
                 EditorGUILayout.HelpBox(StylesEx.noDiscLightInEnlighten.text, MessageType.Warning);
 
             EditorGUILayout.Space();

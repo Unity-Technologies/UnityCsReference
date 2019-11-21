@@ -125,5 +125,18 @@ namespace UnityEditor
 
         [NativeConditional("ENABLE_PLAYERCONNECTION && UNITY_EDITOR")]
         public extern static void DisconnectAll();
+
+        [NativeConditional("ENABLE_PLAYERCONNECTION")]
+        public extern static UInt32 GetLocalGuid();
+
+        [NativeConditional("ENABLE_PLAYERCONNECTION && UNITY_EDITOR")]
+        extern public static string GetMulticastAddress();
+
+        [NativeConditional("ENABLE_PLAYERCONNECTION && UNITY_EDITOR")]
+        extern public static UInt32 GetMulticastPort();
+
+        [NativeConditional("ENABLE_PLAYERCONNECTION && UNITY_EDITOR")]
+        [NativeName("BuildServerIDString")]
+        extern public static string BuildServerIdentificationFormat(string localIP, UInt32 listenPort, int flags, UInt32 localGuid, UInt32 editorGuid, string idString, bool allowDebugging, string packageString, string projectName);
     }
 }

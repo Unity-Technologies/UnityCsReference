@@ -16,28 +16,28 @@ namespace UnityEngine.UIElements
         {
             m_Target = target;
 
-            m_Target.RegisterCallback<MouseDownEvent>(OnMouseDownEvent);
-            m_Target.RegisterCallback<MouseUpEvent>(OnMouseUpEvent);
+            m_Target.RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
+            m_Target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent);
             m_Target.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
+            m_Target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
 
             m_Target.RegisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.RegisterCallback<DragExitedEvent>(OnDragExitedEvent);
-            m_Target.RegisterCallback<MouseMoveEvent>(OnMouseMoveEvent);
 
             m_Target.RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
         }
 
         private void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
         {
-            m_Target.UnregisterCallback<MouseDownEvent>(OnMouseDownEvent);
-            m_Target.UnregisterCallback<MouseUpEvent>(OnMouseUpEvent);
+            m_Target.UnregisterCallback<PointerDownEvent>(OnPointerDownEvent);
+            m_Target.UnregisterCallback<PointerUpEvent>(OnPointerUpEvent);
             m_Target.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
 
             m_Target.UnregisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.UnregisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.UnregisterCallback<DragExitedEvent>(OnDragExitedEvent);
-            m_Target.UnregisterCallback<MouseMoveEvent>(OnMouseMoveEvent);
+            m_Target.UnregisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
 
             m_Target.UnregisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
         }
@@ -49,7 +49,7 @@ namespace UnityEngine.UIElements
         protected abstract void OnDrop(Vector3 pointerPosition);
         protected abstract void ClearDragAndDropUI();
 
-        private void OnMouseDownEvent(MouseDownEvent evt)
+        private void OnPointerDownEvent(PointerDownEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse)
             {
@@ -57,14 +57,14 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (CanStartDrag(evt.mousePosition))
+            if (CanStartDrag(evt.position))
             {
                 m_CanStartDrag = true;
-                m_Start = evt.mousePosition;
+                m_Start = evt.position;
             }
         }
 
-        private void OnMouseUpEvent(MouseUpEvent evt)
+        private void OnPointerUpEvent(PointerUpEvent evt)
         {
             m_CanStartDrag = false;
         }
@@ -95,15 +95,15 @@ namespace UnityEngine.UIElements
             DragAndDropUtility.dragAndDrop.SetVisualMode(visualMode);
         }
 
-        private void OnMouseMoveEvent(MouseMoveEvent evt)
+        private void OnPointerMoveEvent(PointerMoveEvent evt)
         {
             if (!m_CanStartDrag)
                 return;
 
-            if (Mathf.Abs(m_Start.x - evt.mousePosition.x) > k_DistanceToActivation ||
-                Mathf.Abs(m_Start.y - evt.mousePosition.y) > k_DistanceToActivation)
+            if (Mathf.Abs(m_Start.x - evt.position.x) > k_DistanceToActivation ||
+                Mathf.Abs(m_Start.y - evt.position.y) > k_DistanceToActivation)
             {
-                var args = StartDrag(evt.mousePosition);
+                var args = StartDrag(evt.position);
                 DragAndDropUtility.dragAndDrop.StartDrag(args);
                 m_CanStartDrag = false;
             }

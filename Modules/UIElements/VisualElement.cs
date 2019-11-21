@@ -928,16 +928,40 @@ namespace UnityEngine.UIElements
         //TODO: Make private once VisualContainer is merged with VisualElement
         protected internal bool SetEnabledFromHierarchy(bool state)
         {
-            //returns false if state hasn't changed
-            if (state == ((pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled))
-                return false;
-
-            if (state && enabledSelf && (parent == null || parent.enabledInHierarchy))
-                pseudoStates &= ~PseudoStates.Disabled;
+            var initialState = enabledInHierarchy;
+            if (state)
+            {
+                if (isParentEnabledInHierarchy)
+                {
+                    if (enabledSelf)
+                    {
+                        pseudoStates &= ~PseudoStates.Disabled;
+                        RemoveFromClassList(disabledUssClassName);
+                    }
+                    else
+                    {
+                        pseudoStates |= PseudoStates.Disabled;
+                        AddToClassList(disabledUssClassName);
+                    }
+                }
+                else
+                {
+                    pseudoStates |= PseudoStates.Disabled;
+                    RemoveFromClassList(disabledUssClassName);
+                }
+            }
             else
+            {
                 pseudoStates |= PseudoStates.Disabled;
+                EnableInClassList(disabledUssClassName, isParentEnabledInHierarchy);
+            }
 
-            return true;
+            return initialState != enabledInHierarchy;
+        }
+
+        private bool isParentEnabledInHierarchy
+        {
+            get { return hierarchy.parent == null || hierarchy.parent.enabledInHierarchy; }
         }
 
         //Returns true if 'this' can be enabled relative to the enabled state of its panel
@@ -951,16 +975,10 @@ namespace UnityEngine.UIElements
 
         public void SetEnabled(bool value)
         {
-            if (enabledSelf != value)
-            {
-                enabledSelf = value;
+            if (enabledSelf == value) return;
 
-                if (value)
-                    RemoveFromClassList(disabledUssClassName);
-                else AddToClassList(disabledUssClassName);
-
-                PropagateEnabledToChildren(value);
-            }
+            enabledSelf = value;
+            PropagateEnabledToChildren(value);
         }
 
         void PropagateEnabledToChildren(bool value)

@@ -74,6 +74,8 @@ namespace UnityEditor.VersionControl
         {
             resolveList.Clear();
 
+            assetList.NaturalSort();
+
             bool first = true;
             foreach (Asset it in assetList)
             {

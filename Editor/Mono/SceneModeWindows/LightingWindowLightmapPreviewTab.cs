@@ -29,7 +29,6 @@ namespace UnityEditor
 
         SerializedObject m_LightmapSettings;
         SerializedProperty m_LightingDataAsset;
-        SerializedProperty m_TextureCompression;
 
         static class Styles
         {
@@ -59,7 +58,7 @@ namespace UnityEditor
         {
             get
             {
-                return !isRealtimeLightmap && Unsupported.IsDeveloperMode() && LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten;
+                return !isRealtimeLightmap && Unsupported.IsDeveloperMode() && Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten;
             }
         }
 
@@ -80,8 +79,8 @@ namespace UnityEditor
             if (isRealtimeLightmap)
             {
                 Hash128 inputSystemHash;
-                if ((renderer != null && LightmapEditorSettings.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
-                    || (terrain != null && LightmapEditorSettings.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
+                if ((renderer != null && Lightmapping.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
+                    || (terrain != null && Lightmapping.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
                 {
                     m_ActiveGameObjectTextureHash = inputSystemHash;
                 }
@@ -112,7 +111,6 @@ namespace UnityEditor
             {
                 m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
                 m_LightingDataAsset = m_LightmapSettings.FindProperty("m_LightingDataAsset");
-                m_TextureCompression = m_LightmapSettings.FindProperty("m_LightmapEditorSettings.m_TextureCompression");
             }
         }
 
@@ -120,7 +118,7 @@ namespace UnityEditor
         {
             m_ScrollPosition = GUILayout.BeginScrollView(m_ScrollPosition);
 
-            if (Lightmapping.giWorkflowMode == Lightmapping.GIWorkflowMode.OnDemand && !isRealtimeLightmap)
+            if (!Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate && !isRealtimeLightmap)
             {
                 EditorGUILayout.PropertyField(m_LightingDataAsset, Styles.LightingDataAsset);
                 m_LightmapSettings.ApplyModifiedProperties();
@@ -158,7 +156,7 @@ namespace UnityEditor
                     GUILayout.Label("Format: " + texture.format, EditorStyles.miniBoldLabel);
 
                     if (!isRealtimeLightmap)
-                        GUILayout.Label("Compressed: " + (m_TextureCompression.boolValue ? "Compressed" : "None"), EditorStyles.miniBoldLabel);
+                        GUILayout.Label("Compressed: " + (Lightmapping.GetLightingSettingsOrDefaultsFallback().compressLightmaps ? "Compressed" : "None"), EditorStyles.miniBoldLabel);
 
                     GUILayout.EndVertical();
                     LightmapDebugInfo(i);

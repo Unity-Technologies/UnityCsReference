@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -528,7 +529,11 @@ namespace UnityEditor.UIElements
                                     else
                                     {
                                         InspectorWindowUtils.DrawAddedComponentBackground(contentRect, editor.targets);
-                                        editor.OnInspectorGUI();
+
+                                        var editorElementParent = parent as EditorElement;
+                                        var trackerId = editorElementParent == null ? editor.GetType().Name : editorElementParent.name;
+                                        using (new EditorPerformanceTracker($"Editor.{trackerId}.OnInspectorGUI"))
+                                            editor.OnInspectorGUI();
                                     }
                                 }
                                 catch (Exception e)

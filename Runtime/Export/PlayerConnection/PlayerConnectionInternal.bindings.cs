@@ -22,6 +22,15 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/PlayerConnection/PlayerConnectionInternal.bindings.h")]
     internal class PlayerConnectionInternal : IPlayerEditorConnectionNative
     {
+        [Flags]
+        public enum MulticastFlags
+        {
+            kRequestImmediateConnect = 1 << 0,
+            kSupportsProfile = 1 << 1,
+            kCustomMessage = 1 << 2,
+            kUseAlternateIP = 1 << 3,
+        };
+
         void IPlayerEditorConnectionNative.SendMessage(Guid messageId, byte[] data, int playerId)
         {
             if (messageId == Guid.Empty)

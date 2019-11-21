@@ -21,7 +21,11 @@ namespace UnityEditor
 
         private bool showBakeMode
         {
-            get { return Lightmapping.bakedGI || Lightmapping.realtimeGI; }
+            get
+            {
+                var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
+                return settings.bakedGI || settings.realtimeGI;
+            }
         }
 
         protected override void OnEnable()
@@ -198,7 +202,7 @@ namespace UnityEditor
             if (!showBakeMode)
                 return "";
 
-            return "Auto Generate Lighting " + (Lightmapping.giWorkflowMode == Lightmapping.GIWorkflowMode.Iterative ? "On" : "Off");
+            return "Auto Generate Lighting " + (Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate ? "On" : "Off");
         }
     }
 } //namespace

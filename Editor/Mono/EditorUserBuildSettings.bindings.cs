@@ -679,6 +679,15 @@ namespace UnityEditor
             set;
         }
 
+        // Enable using the HTC devkit connection for script debugging
+        public static extern bool switchHTCSScriptDebugging
+        {
+            [NativeMethod("GetHTCSScriptDebuggingForSwitch")]
+            get;
+            [NativeMethod("SetHTCSScriptDebuggingForSwitch")]
+            set;
+        }
+
         internal static extern SwitchShaderCompilerConfig switchShaderCompilerConfig
         {
             [NativeMethod("GetSwitchShaderCompilerConfig")]

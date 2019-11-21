@@ -113,6 +113,8 @@ namespace UnityEditor.VersionControl
         {
             submitList.Clear();
 
+            assetList.NaturalSort();
+
             foreach (Asset it in assetList)
                 submitList.Add(null, it.prettyPath, it);
 

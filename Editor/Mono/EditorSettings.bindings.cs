@@ -252,6 +252,9 @@ namespace UnityEditor
         public static extern EnterPlayModeOptions enterPlayModeOptions { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool serializeInlineMappingsOnOneLine { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern AssetPipelineMode assetPipelineMode { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]

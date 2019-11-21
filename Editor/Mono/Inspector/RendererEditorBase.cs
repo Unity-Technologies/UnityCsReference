@@ -337,7 +337,7 @@ namespace UnityEditor
         }
 
         protected Probes m_Probes;
-        protected LightingSettingsInspector m_Lighting;
+        protected RendererLightingSettings m_Lighting;
 
         protected SavedBool m_ShowMaterials;
         protected SavedBool m_ShowProbeSettings;
@@ -360,7 +360,7 @@ namespace UnityEditor
             m_ShowProbeSettings = new SavedBool($"{target.GetType()}.ShowProbeSettings", true);
             m_ShowOtherSettings = new SavedBool($"{target.GetType()}.ShowOtherSettings", true);
 
-            m_Lighting = new LightingSettingsInspector(serializedObject);
+            m_Lighting = new RendererLightingSettings(serializedObject);
             m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
             m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
             m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);

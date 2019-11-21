@@ -15,16 +15,13 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/LightmapEditorSettings.h")]
     public static partial class LightmapEditorSettings
     {
-        // Which baking backend is used.
+        [Obsolete("LightmapEditorSettings.Lightmapper is obsolete. Use LightingSettings.Lightmapper instead. ", false)]
         public enum Lightmapper
         {
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use Lightmapper.Enlighten instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.Enlighten", true)]
             Radiosity = 0,
-
-            // Lightmaps are baked by Enlighten
             Enlighten = 0,
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
             PathTracer = 1,
@@ -36,310 +33,514 @@ namespace UnityEditor
             ProgressiveGPU = 2
         }
 
-        // Which path tracer sampling scheme is used.
+        [Obsolete("LightmapEditorSettings.Sampling is obsolete. Use LightingSettings.Sampling instead. ", false)]
         public enum Sampling
         {
-            // Convergence testing is automatic, stops when lightmap has converged.
             Auto = 0,
-
-            // No convergence testing, always uses the given number of samples.
             Fixed = 1
         }
 
-        // Set the path tracer filter mode.
+        [Obsolete("LightmapEditorSettings.FilterMode is obsolete. Use LightingSettings.FilterMode instead. ", false)]
         public enum FilterMode
         {
-            // Do not filter.
             None = 0,
-
-            // Select settings for filtering automatically
             Auto = 1,
-
-            // Setup filtering manually
             Advanced = 2
         }
 
-        // Which path tracer denoiser is used.
+        [Obsolete("LightmapEditorSettings.DenoiserType is obsolete. Use LightingSettings.DenoiserType instead. ", false)]
         public enum DenoiserType
         {
-            // No denoiser
             None = 0,
-
-            // The NVIDIA Optix AI denoiser is applied.
             Optix = 1,
-
-            // The Intel Open Image AI denoiser is applied.
             OpenImage = 2,
 
             // The AMD Radeon Pro Image Processing denoiser is applied.
             RadeonPro = 3
         }
 
-        // Which path tracer filter is used.
+        [Obsolete("LightmapEditorSettings.FilterType is obsolete. Use LightingSettings.FilterType instead. ", false)]
         public enum FilterType
         {
-            // A Gaussian filter is applied.
             Gaussian = 0,
-
-            // An A-Trous filter is applied.
             ATrous = 1,
-
-            // No filter
             None = 2
         }
 
-        // Which baking backend is used.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("BakeBackend")]
-        public extern static Lightmapper lightmapper { get; set; }
+#pragma warning disable 0618
+        [Obsolete("LightmapEditorSettings.lightmapper is obsolete, use Lightmapping.lightingSettings.lightmapper instead. ", false)]
+        public static Lightmapper lightmapper
+        {
+            get { return ConvertToOldLightmapperEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper); }
+            set { Lightmapping.GetOrCreateLightingsSettings().lightmapper = ConvertToNewLightmapperEnum(value); }
+        }
 
-        // Which lightmap mode is used.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("LightmapsBakeMode")]
-        public extern static LightmapsMode lightmapsMode { get; set; }
+        private static Lightmapper ConvertToOldLightmapperEnum(LightingSettings.Lightmapper lightmapper)
+        {
+            switch (lightmapper)
+            {
+                case LightingSettings.Lightmapper.Enlighten:
+                    return Lightmapper.Enlighten;
 
-        // Which mixed mode is used.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("MixedBakeMode")]
-        public extern static MixedLightingMode mixedBakeMode { get; set; }
+                case LightingSettings.Lightmapper.ProgressiveCPU:
+                    return Lightmapper.ProgressiveCPU;
 
-        // Which path tracer sampling scheme is used.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRSampling")]
-        public extern static Sampling sampling { get; set; }
+                case LightingSettings.Lightmapper.ProgressiveGPU:
+                    return Lightmapper.ProgressiveGPU;
 
-        // Amount of direct sample used for the path tracer.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRDirectSampleCount")]
-        public extern static int directSampleCount { get; set; }
+                default:
+                {
+                    Debug.LogError("Unsupported Lightmapper type was added and not handled correctly. ");
+                    return Lightmapper.ProgressiveCPU;
+                }
+            }
+        }
 
-        // Amount of indirect sample used for the path tracer.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRSampleCount")]
-        public extern static int indirectSampleCount { get; set; }
+        private static LightingSettings.Lightmapper ConvertToNewLightmapperEnum(Lightmapper lightmapper)
+        {
+            switch (lightmapper)
+            {
+                case Lightmapper.Enlighten:
+                    return LightingSettings.Lightmapper.Enlighten;
 
-        // Amount of light bounce used for the path tracer.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRBounces")]
-        public extern static int bounces { get; set; }
+                case Lightmapper.ProgressiveCPU:
+                    return LightingSettings.Lightmapper.ProgressiveCPU;
 
-        // Is view prioritization enabled?
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRCulling")]
-        public extern static bool prioritizeView { get; set; }
+                case Lightmapper.ProgressiveGPU:
+                    return LightingSettings.Lightmapper.ProgressiveGPU;
 
-        // Which path tracer filtering mode is used.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilteringMode")]
-        public extern static FilterMode filteringMode { get; set; }
+                default:
+                {
+                    Debug.LogError("Unsupported Lightmapper type was added and not handled correctly. ");
+                    return LightingSettings.Lightmapper.ProgressiveCPU;
+                }
+            }
+        }
 
-        // Which path tracer denoiser is used for the direct light.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRDenoiserTypeDirect")]
-        public extern static DenoiserType denoiserTypeDirect { get; set; }
+#pragma warning restore 0618
 
-        // Which path tracer denoiser is used for the indirect light.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRDenoiserTypeIndirect")]
-        public extern static DenoiserType denoiserTypeIndirect { get; set; }
+        [Obsolete("LightmapEditorSettings.lightmapsMode is obsolete, use Lightmapping.lightingSettings.directionalityMode instead. ", false)]
+        public static LightmapsMode lightmapsMode
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().directionalityMode; }
+            set { Lightmapping.GetOrCreateLightingsSettings().directionalityMode = value; }
+        }
 
-        // Which path tracer denoiser is used for ambient occlusion.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRDenoiserTypeAO")]
-        public extern static DenoiserType denoiserTypeAO { get; set; }
+        [Obsolete("LightmapEditorSettings.mixedBakeMode is obsolete, use Lightmapping.lightingSettings.mixedBakeMode instead. ", false)]
+        public static MixedLightingMode mixedBakeMode
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().mixedBakeMode; }
+            set { Lightmapping.GetOrCreateLightingsSettings().mixedBakeMode = value; }
+        }
 
-        // Which path tracer filter is used for the direct light.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilterTypeDirect")]
-        public extern static FilterType filterTypeDirect { get; set; }
+#pragma warning disable 0618
+        [Obsolete("LightmapEditorSettings.sampling is obsolete, use Lightmapping.lightingSettings.sampling instead. ", false)]
+        public static Sampling sampling
+        {
+            get { return ConvertToOldSamplingEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().sampling); }
+            set { Lightmapping.GetOrCreateLightingsSettings().sampling = ConvertToNewSamplingEnum(value); }
+        }
 
-        // Which path tracer filter is used for the indirect light.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilterTypeIndirect")]
-        public extern static FilterType filterTypeIndirect { get; set; }
+        private static Sampling ConvertToOldSamplingEnum(LightingSettings.Sampling lightmapper)
+        {
+            switch (lightmapper)
+            {
+                case LightingSettings.Sampling.Auto:
+                    return Sampling.Auto;
 
-        // Which path tracer filter is used for ambient occlusion.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilterTypeAO")]
-        public extern static FilterType filterTypeAO { get; set; }
+                case LightingSettings.Sampling.Fixed:
+                    return Sampling.Fixed;
 
-        // Which radius is used for the direct light path tracer filter if gauss is chosen.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilteringGaussRadiusDirect")]
-        public extern static int filteringGaussRadiusDirect { get; set; }
+                default:
+                {
+                    Debug.LogError("Unsupported Sampling type was added and not handled correctly. ");
+                    return Sampling.Fixed;
+                }
+            }
+        }
 
-        // Which radius is used for the indirect light path tracer filter if gauss is chosen.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilteringGaussRadiusIndirect")]
-        public extern static int filteringGaussRadiusIndirect { get; set; }
+        private static LightingSettings.Sampling ConvertToNewSamplingEnum(Sampling lightmapper)
+        {
+            switch (lightmapper)
+            {
+                case Sampling.Auto:
+                    return LightingSettings.Sampling.Auto;
 
-        // Which radius is used for AO path tracer filter if gauss is chosen.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilteringGaussRadiusAO")]
-        public extern static int filteringGaussRadiusAO { get; set; }
+                case Sampling.Fixed:
+                    return LightingSettings.Sampling.Fixed;
 
-        // Which position sigma is used for the direct light path tracer filter if Atrous is chosen.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilteringAtrousPositionSigmaDirect")]
-        public extern static float filteringAtrousPositionSigmaDirect { get; set; }
+                default:
+                {
+                    Debug.LogError("Unsupported Sampling type was added and not handled correctly. ");
+                    return LightingSettings.Sampling.Fixed;
+                }
+            }
+        }
 
-        // Which position sigma is used for the indirect light path tracer filter if Atrous is chosen.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilteringAtrousPositionSigmaIndirect")]
-        public extern static float filteringAtrousPositionSigmaIndirect { get; set; }
+#pragma warning restore 0618
 
-        // Which position sigma is used for AO path tracer filter if Atrous is chosen.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVRFilteringAtrousPositionSigmaAO")]
-        public extern static float filteringAtrousPositionSigmaAO { get; set; }
+        [Obsolete("LightmapEditorSettings.directSampleCount is obsolete, use Lightmapping.lightingSettings.directSampleCount instead. ", false)]
+        public static int directSampleCount
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().directSampleCount; }
+            set { Lightmapping.GetOrCreateLightingsSettings().directSampleCount = value; }
+        }
 
-        // Whether to enable or disable environment multiple importance sampling
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVREnvironmentMIS")]
-        internal extern static int environmentMIS { get; set; }
+        [Obsolete("LightmapEditorSettings.indirectSampleCount is obsolete, use Lightmapping.lightingSettings.indirectSampleCount instead. ", false)]
+        public static int indirectSampleCount
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().indirectSampleCount; }
+            set { Lightmapping.GetOrCreateLightingsSettings().indirectSampleCount = value; }
+        }
 
-        // How many samples to use for environment sampling
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVREnvironmentSampleCount")]
-        public extern static int environmentSampleCount { get; set; }
+        [Obsolete("LightmapEditorSettings.bounces is obsolete, use Lightmapping.lightingSettings.bounces instead. ", false)]
+        public static int bounces
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().bounces; }
+            set { Lightmapping.GetOrCreateLightingsSettings().bounces = value; }
+        }
 
-        // How many samples to use for light probes relative to lightmap texels
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("LightProbeSampleCountMultiplier")]
-        public extern static float lightProbeSampleCountMultiplier { get; set; }
+        [Obsolete("LightmapEditorSettings.prioritizeView is obsolete, use Lightmapping.lightingSettings.prioritizeView instead. ", false)]
+        public static bool prioritizeView
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().prioritizeView; }
+            set { Lightmapping.GetOrCreateLightingsSettings().prioritizeView = value; }
+        }
 
-        // How many reference points to generate when using MIS
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("PVREnvironmentReferencePointCount")]
-        internal extern static int environmentReferencePointCount { get; set; }
+#pragma warning disable 0618
+        [Obsolete("LightmapEditorSettings.filteringMode is obsolete, use Lightmapping.lightingSettings.filteringMode instead. ", false)]
+        public static FilterMode filteringMode
+        {
+            get { return ConvertToOldFilteringModeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringMode); }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringMode = ConvertToNewFilteringModeEnum(value); }
+        }
 
-        // Reset lightmapping settings
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        extern internal static void Reset();
+        private static FilterMode ConvertToOldFilteringModeEnum(LightingSettings.FilterMode filteringMode)
+        {
+            switch (filteringMode)
+            {
+                case LightingSettings.FilterMode.None:
+                    return FilterMode.None;
 
-        [FreeFunction]
-        extern static internal bool IsLightmappedOrDynamicLightmappedForRendering([NotNull] Renderer renderer);
+                case LightingSettings.FilterMode.Auto:
+                    return FilterMode.Auto;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool IsOptixDenoiserSupported();
+                case LightingSettings.FilterMode.Advanced:
+                    return FilterMode.Advanced;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool IsRadeonDenoiserSupported();
+                default:
+                {
+                    Debug.LogError("Unsupported FilterMode type was added and not handled correctly. ");
+                    return FilterMode.Advanced;
+                }
+            }
+        }
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool IsOpenImageDenoiserSupported();
+        private static LightingSettings.FilterMode ConvertToNewFilteringModeEnum(FilterMode filteringMode)
+        {
+            switch (filteringMode)
+            {
+                case FilterMode.None:
+                    return LightingSettings.FilterMode.None;
 
-        // Packing for realtime GI may fail of the mesh has zero UV or surface area. This is the outcome for the given renderer.
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasZeroAreaMesh(Renderer renderer);
+                case FilterMode.Auto:
+                    return LightingSettings.FilterMode.Auto;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasUVOverlaps(Renderer renderer);
+                case FilterMode.Advanced:
+                    return LightingSettings.FilterMode.Advanced;
 
-        // Packing for realtime GI may clamp the output resolution. This is the outcome for the given renderer.
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasClampedResolution(Renderer renderer);
+                default:
+                {
+                    Debug.LogError("Unsupported FilterMode type was added and not handled correctly. ");
+                    return LightingSettings.FilterMode.Advanced;
+                }
+            }
+        }
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetSystemResolution(Renderer renderer, out int width, out int height);
+        [Obsolete("LightmapEditorSettings.denoiserTypeDirect is obsolete, use Lightmapping.lightingSettings.denoiserTypeDirect instead. ", false)]
+        public static DenoiserType denoiserTypeDirect
+        {
+            get { return ConvertToOldDenoiserTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().denoiserTypeDirect); }
+            set { Lightmapping.GetOrCreateLightingsSettings().denoiserTypeDirect = ConvertToNewDenoiserTypeEnum(value); }
+        }
 
-        [FreeFunction("GetSystemResolution")]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetTerrainSystemResolution(Terrain terrain, out int width, out int height, out int numChunksInX, out int numChunksInY);
+        [Obsolete("LightmapEditorSettings.denoiserTypeIndirect is obsolete, use Lightmapping.lightingSettings.denoiserTypeIndirect instead. ", false)]
+        public static DenoiserType denoiserTypeIndirect
+        {
+            get { return ConvertToOldDenoiserTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().denoiserTypeIndirect); }
+            set { Lightmapping.GetOrCreateLightingsSettings().denoiserTypeIndirect = ConvertToNewDenoiserTypeEnum(value); }
+        }
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInstanceResolution(Renderer renderer, out int width, out int height);
+        [Obsolete("LightmapEditorSettings.denoiserTypeAO is obsolete, use Lightmapping.lightingSettings.denoiserTypeAO instead. ", false)]
+        public static DenoiserType denoiserTypeAO
+        {
+            get { return ConvertToOldDenoiserTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().denoiserTypeAO); }
+            set { Lightmapping.GetOrCreateLightingsSettings().denoiserTypeAO = ConvertToNewDenoiserTypeEnum(value); }
+        }
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInputSystemHash(int instanceID, out Hash128 inputSystemHash);
+        private static DenoiserType ConvertToOldDenoiserTypeEnum(LightingSettings.DenoiserType denoiserType)
+        {
+            switch (denoiserType)
+            {
+                case LightingSettings.DenoiserType.None:
+                    return DenoiserType.None;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetLightmapIndex(int instanceID, out int lightmapIndex);
+                case LightingSettings.DenoiserType.Optix:
+                    return DenoiserType.Optix;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal Hash128[] GetMainSystemHashes();
+                case LightingSettings.DenoiserType.OpenImage:
+                    return DenoiserType.OpenImage;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInstanceHash(Renderer renderer, out Hash128 instanceHash);
+                case LightingSettings.DenoiserType.RadeonPro:
+                    return DenoiserType.RadeonPro;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetPVRInstanceHash(int instanceID, out Hash128 instanceHash);
+                default:
+                {
+                    Debug.LogError("Unsupported DenoiserType type was added and not handled correctly. ");
+                    return DenoiserType.None;
+                }
+            }
+        }
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetPVRAtlasHash(int instanceID, out Hash128 atlasHash);
+        private static LightingSettings.DenoiserType ConvertToNewDenoiserTypeEnum(DenoiserType denoiserType)
+        {
+            switch (denoiserType)
+            {
+                case DenoiserType.None:
+                    return LightingSettings.DenoiserType.None;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetPVRAtlasInstanceOffset(int instanceID, out int atlasInstanceOffset);
+                case DenoiserType.Optix:
+                    return LightingSettings.DenoiserType.Optix;
 
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetGeometryHash(Renderer renderer, out Hash128 geometryHash);
+                case DenoiserType.OpenImage:
+                    return LightingSettings.DenoiserType.OpenImage;
 
-        // The maximum size of an individual lightmap texture.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("AtlasSize")]
-        public extern static int maxAtlasSize { get; set; }
+                case DenoiserType.RadeonPro:
+                    return LightingSettings.DenoiserType.RadeonPro;
 
-        // Realtime lightmap resolution in texels per world unit. Also used for indirect resolution when using baked GI.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        public extern static float realtimeResolution { get; set; }
+                default:
+                {
+                    Debug.LogError("Unsupported DenoiserType type was added and not handled correctly. ");
+                    return LightingSettings.DenoiserType.None;
+                }
+            }
+        }
 
-        // Static lightmap resolution in texels per world unit.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        public extern static float bakeResolution { get; set; }
+        [Obsolete("LightmapEditorSettings.filterTypeDirect is obsolete, use Lightmapping.lightingSettings.filterTypeDirect instead. ", false)]
+        public static FilterType filterTypeDirect
+        {
+            get {  return ConvertToOldFilterTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filterTypeDirect); }
+            set { Lightmapping.GetOrCreateLightingsSettings().filterTypeDirect = ConvertToNewFilterTypeEnum(value); }
+        }
 
-        // Whether to use DXT1 compression on the generated lightmaps.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        public extern static bool textureCompression { get; set; }
+        [Obsolete("LightmapEditorSettings.filterTypeIndirect is obsolete, use Lightmapping.lightingSettings.filterTypeIndirect instead. ", false)]
+        public static FilterType filterTypeIndirect
+        {
+            get { return ConvertToOldFilterTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filterTypeIndirect); }
+            set { Lightmapping.GetOrCreateLightingsSettings().filterTypeIndirect = ConvertToNewFilterTypeEnum(value); }
+        }
+
+        [Obsolete("LightmapEditorSettings.filterTypeAO is obsolete, use Lightmapping.lightingSettings.filterTypeAO instead. ", false)]
+        public static FilterType filterTypeAO
+        {
+            get { return ConvertToOldFilterTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filterTypeAO); }
+            set { Lightmapping.GetOrCreateLightingsSettings().filterTypeAO = ConvertToNewFilterTypeEnum(value); }
+        }
+
+        private static FilterType ConvertToOldFilterTypeEnum(LightingSettings.FilterType filterType)
+        {
+            switch (filterType)
+            {
+                case LightingSettings.FilterType.Gaussian:
+                    return FilterType.Gaussian;
+
+                case LightingSettings.FilterType.ATrous:
+                    return FilterType.ATrous;
+
+                case LightingSettings.FilterType.None:
+                    return FilterType.None;
+
+                default:
+                {
+                    Debug.LogError("Unsupported FilterType type was added and not handled correctly. ");
+                    return FilterType.None;
+                }
+            }
+        }
+
+        private static LightingSettings.FilterType ConvertToNewFilterTypeEnum(FilterType filterType)
+        {
+            switch (filterType)
+            {
+                case FilterType.Gaussian:
+                    return LightingSettings.FilterType.Gaussian;
+
+                case FilterType.ATrous:
+                    return LightingSettings.FilterType.ATrous;
+
+                case FilterType.None:
+                    return LightingSettings.FilterType.None;
+
+                default:
+                {
+                    Debug.LogError("Unsupported FilterType type was added and not handled correctly. ");
+                    return LightingSettings.FilterType.None;
+                }
+            }
+        }
+
+#pragma warning restore 0618
+
+        [Obsolete("LightmapEditorSettings.filteringGaussRadiusDirect is obsolete, use Lightmapping.lightingSettings.filteringGaussRadiusDirect instead. ", false)]
+        public static int filteringGaussRadiusDirect
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussRadiusDirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussRadiusDirect = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.filteringGaussRadiusIndirect is obsolete, use Lightmapping.lightingSettings.filteringGaussRadiusIndirect instead. ", false)]
+        public static int filteringGaussRadiusIndirect
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussRadiusIndirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussRadiusIndirect = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.filteringGaussRadiusAO is obsolete, use Lightmapping.lightingSettings.filteringGaussRadiusAO instead. ", false)]
+        public static int filteringGaussRadiusAO
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussRadiusAO; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussRadiusAO = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaDirect is obsolete, use Lightmapping.lightingSettings.filteringAtrousPositionSigmaDirect instead. ", false)]
+        public static float filteringAtrousPositionSigmaDirect
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringAtrousPositionSigmaDirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringAtrousPositionSigmaDirect = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaIndirect is obsolete, use Lightmapping.lightingSettings.filteringAtrousPositionSigmaIndirect instead. ", false)]
+        public static float filteringAtrousPositionSigmaIndirect
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringAtrousPositionSigmaIndirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringAtrousPositionSigmaIndirect = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaIndirect is obsolete, use Lightmapping.lightingSettings.filteringAtrousPositionSigmaIndirect instead. ", false)]
+        public static float filteringAtrousPositionSigmaAO
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringAtrousPositionSigmaIndirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringAtrousPositionSigmaIndirect = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.environmentMIS is obsolete, use Lightmapping.lightingSettings.environmentMIS instead. ", false)]
+        internal static int environmentMIS
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentMIS; }
+            set { Lightmapping.GetOrCreateLightingsSettings().environmentMIS = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.environmentSampleCount is obsolete, use Lightmapping.lightingSettings.environmentSampleCount instead. ", false)]
+        public static int environmentSampleCount
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentSampleCount; }
+            set { Lightmapping.GetOrCreateLightingsSettings().environmentSampleCount = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.environmentReferencePointCount is obsolete, use Lightmapping.lightingSettings.environmentReferencePointCount instead. ", false)]
+        internal static int environmentReferencePointCount
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentReferencePointCount; }
+            set { Lightmapping.GetOrCreateLightingsSettings().environmentReferencePointCount = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.lightProbeSampleCountMultiplier is obsolete, use Lightmapping.lightingSettings.lightProbeSampleCountMultiplier instead. ", false)]
+        internal static float lightProbeSampleCountMultiplier
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightProbeSampleCountMultiplier; }
+            set { Lightmapping.GetOrCreateLightingsSettings().lightProbeSampleCountMultiplier = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.maxAtlasSize is obsolete, use Lightmapping.lightingSettings.lightmapMaxSize instead. ", false)]
+        public static int maxAtlasSize
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapMaxSize; }
+            set { Lightmapping.GetOrCreateLightingsSettings().lightmapMaxSize = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.realtimeResolution is obsolete, use Lightmapping.lightingSettings.indirectResolution instead. ", false)]
+        public static float realtimeResolution
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().indirectResolution; }
+            set { Lightmapping.GetOrCreateLightingsSettings().indirectResolution = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.bakeResolution is obsolete, use Lightmapping.lightingSettings.lightmapResolution instead. ", false)]
+        public static float bakeResolution
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapResolution; }
+            set { Lightmapping.GetOrCreateLightingsSettings().lightmapResolution = value; }
+        }
+
+        [Obsolete("LightmapEditorSettings.textureCompression is obsolete, use Lightmapping.lightingSettings.compressLightmaps instead. ", false)]
+        public static bool textureCompression
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().compressLightmaps; }
+            set { Lightmapping.GetOrCreateLightingsSettings().compressLightmaps = value; }
+        }
 
         [StaticAccessor("GetLightmapEditorSettings()")]
         [NativeName("ReflectionCompression")]
         public extern static ReflectionCubemapCompression reflectionCubemapCompression { get; set; }
 
-        // Wether to apply ambient occlusion to the lightmap.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("AO")]
-        public extern static bool enableAmbientOcclusion { get; set; }
+        [Obsolete("LightmapEditorSettings.enableAmbientOcclusion is obsolete, use Lightmapping.lightingSettings.ao instead. ", false)]
+        public static bool enableAmbientOcclusion
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().ao; }
+            set { Lightmapping.GetOrCreateLightingsSettings().ao = value; }
+        }
 
-        // Beyond this distance a ray is considered to be unoccluded.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("AOMaxDistance")]
-        public extern static float aoMaxDistance { get; set; }
+        [Obsolete("LightmapEditorSettings.aoMaxDistance is obsolete, use Lightmapping.lightingSettings.aoMaxDistance instead. ", false)]
+        public static float aoMaxDistance
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().aoMaxDistance; }
+            set { Lightmapping.GetOrCreateLightingsSettings().aoMaxDistance = value; }
+        }
 
-        // Exponent for ambient occlusion on indirect lighting.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("CompAOExponent")]
-        public extern static float aoExponentIndirect { get; set; }
+        [Obsolete("LightmapEditorSettings.aoExponentIndirect is obsolete, use Lightmapping.lightingSettings.aoExponentIndirect instead. ", false)]
+        public static float aoExponentIndirect
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().aoExponentIndirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().aoExponentIndirect = value; }
+        }
 
-        // Exponent for ambient occlusion on direct lighting.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        [NativeName("CompAOExponentDirect")]
-        public extern static float aoExponentDirect { get; set; }
+        [Obsolete("LightmapEditorSettings.aoExponentDirect is obsolete, use Lightmapping.lightingSettings.aoExponentDirect instead. ", false)]
+        public static float aoExponentDirect
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().aoExponentDirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().aoExponentDirect = value; }
+        }
 
-        // Texel separation between shapes.
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        public extern static int padding { get; set; }
+        [Obsolete("LightmapEditorSettings.padding is obsolete, use Lightmapping.lightingSettings.lightmapPadding instead. ", false)]
+        public static int padding
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapPadding; }
+            set { Lightmapping.GetOrCreateLightingsSettings().lightmapPadding = value; }
+        }
 
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        public extern static bool exportTrainingData { get; set; }
+        [Obsolete("LightmapEditorSettings.exportTrainingData is obsolete, use Lightmapping.lightingSettings.exportTrainingData instead. ", false)]
+        public static bool exportTrainingData
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().exportTrainingData; }
+            set { Lightmapping.GetOrCreateLightingsSettings().exportTrainingData = value; }
+        }
 
-        [StaticAccessor("GetLightmapEditorSettings()")]
-        public extern static string trainingDataDestination { get; set; }
+        [Obsolete("LightmapEditorSettings.trainingDataDestination is obsolete, use Lightmapping.lightingSettings.trainingDataDestination instead. ", false)]
+        public static string trainingDataDestination
+        {
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().trainingDataDestination; }
+            set { Lightmapping.GetOrCreateLightingsSettings().trainingDataDestination = value; }
+        }
 
         [FreeFunction]
         [NativeHeader("Runtime/Graphics/LightmapSettings.h")]

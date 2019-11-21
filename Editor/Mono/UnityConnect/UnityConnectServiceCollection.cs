@@ -16,7 +16,6 @@ namespace UnityEditor.Connect
     internal class UnityConnectServiceCollection
     {
         private static UnityConnectServiceCollection s_UnityConnectEditor; //singleton
-        private static UnityConnectEditorWindow s_UnityConnectEditorWindow; //This is the drawer
         private const string kDrawerContainerTitle = "Services";
 
         private string m_CurrentServiceName = "";
@@ -39,57 +38,20 @@ namespace UnityEditor.Connect
         {
             get
             {
-                var wins = Resources.FindObjectsOfTypeAll(typeof(UnityConnectEditorWindow)) as UnityConnectEditorWindow[];
-                return wins != null && wins.Any(win => win != null);
+                return false;
             }
         }
         private void EnsureDrawerIsVisible(bool forceFocus)
         {
-            //Create the container in case it doesnt exist
-            if (s_UnityConnectEditorWindow == null || !s_UnityConnectEditorWindow.UrlsMatch(GetAllServiceUrls()))
-            {
-                var fixTitle = kDrawerContainerTitle;
-
-                var panelEnv = UnityConnectPrefs.GetServiceEnv(m_CurrentServiceName);
-                if (panelEnv != UnityConnectPrefs.kProductionEnv)
-                {
-                    fixTitle += " [" + UnityConnectPrefs.kEnvironmentFamilies[panelEnv] + "]";
-                }
-
-                s_UnityConnectEditorWindow = UnityConnectEditorWindow.Create(fixTitle, GetAllServiceUrls());
-                s_UnityConnectEditorWindow.ErrorUrl = m_Services[ErrorHubAccess.kServiceName].serviceUrl;
-                s_UnityConnectEditorWindow.minSize = new Vector2(275, 50);
-            }
-            //Since s_UnityConnectEditorWindow.currentUrl is a property that load a page we must build the url before changing it
-            var newUrl = m_Services[m_CurrentServiceName].serviceUrl;
-            if (m_CurrentPageName.Length > 0)
-            {
-                newUrl += ("/#/" + m_CurrentPageName);
-            }
-            s_UnityConnectEditorWindow.currentUrl = newUrl;
-            s_UnityConnectEditorWindow.ShowTab();
-
-            if (InternalEditorUtility.isApplicationActive && forceFocus)
-                s_UnityConnectEditorWindow.Focus();
         }
 
         public void CloseServices()
         {
-            if (s_UnityConnectEditorWindow != null)
-            {
-                s_UnityConnectEditorWindow.Close();
-                s_UnityConnectEditorWindow = null;
-            }
-
             UnityConnect.instance.ClearCache();
         }
 
         public void ReloadServices()
         {
-            if (s_UnityConnectEditorWindow != null)
-            {
-                s_UnityConnectEditorWindow.Reload();
-            }
         }
 
         public static UnityConnectServiceCollection instance
@@ -119,21 +81,6 @@ namespace UnityEditor.Connect
 
         public void ReloadWindow()
         {
-            var unityConnectEditorWindows = Resources.FindObjectsOfTypeAll(typeof(UnityConnectEditorWindow)) as UnityConnectEditorWindow[];
-            if (unityConnectEditorWindows != null)
-            {
-                foreach (var w in unityConnectEditorWindows)
-                {
-                    try
-                    {
-                        w.Reload();
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogException(ex, w);
-                    }
-                }
-            }
         }
 
         public bool AddService(UnityConnectServiceData cloudService)
@@ -271,16 +218,7 @@ namespace UnityEditor.Connect
 
         public WebView GetWebViewFromServiceName(string serviceName)
         {
-            if (s_UnityConnectEditorWindow == null || !s_UnityConnectEditorWindow.UrlsMatch(GetAllServiceUrls()))
-                return null;
-
-            if (!m_Services.ContainsKey(serviceName))
-                return null;
-
-            ConnectInfo state = UnityConnect.instance.connectInfo;
-            string actualName = GetActualServiceName(serviceName, state);
-            var url = m_Services[actualName].serviceUrl;
-            return s_UnityConnectEditorWindow.GetWebViewFromURL(url);
+            return null;
         }
 
         public void UnbindAllServices()

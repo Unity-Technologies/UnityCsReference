@@ -86,7 +86,7 @@ namespace UnityEditor
             if (m_SceneView == null || m_SceneView.sceneViewState == null)
                 return;
 
-            Draw(rect);
+            Draw();
 
             // Escape closes the window
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
@@ -96,7 +96,7 @@ namespace UnityEditor
             }
         }
 
-        void Draw(Rect rect)
+        void Draw()
         {
             Styles.Init();
 
@@ -172,7 +172,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
                 m_WindowSize.y = Math.Min(GUILayoutUtility.GetLastRect().yMax + kContentPadding, kWindowHeight * 3);
 
-            GUILayout.BeginVertical(Styles.settingsArea);
+            GUILayout.EndVertical();
             GUILayout.EndScrollView();
         }
 

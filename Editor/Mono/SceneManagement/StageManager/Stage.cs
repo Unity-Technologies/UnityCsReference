@@ -20,11 +20,11 @@ namespace UnityEditor.SceneManagement
 
         // Called when the user have accepted to switch away from previous stage. This method should load stage contents.
         // Should return 'true' if the stage was opened succesfully otherwise 'false'.
-        protected internal abstract bool OpenStage();
+        protected internal abstract bool OnOpenStage();
 
         // Called when the stage is destroyed (when OnDestroy() is called). Should unload the contents of the stage.
-        // Only called if OpenStage was called.
-        protected abstract void CloseStage();
+        // Only called if OnOpenStage was called.
+        protected abstract void OnCloseStage();
 
         internal bool opened { get; set; }
 
@@ -78,14 +78,14 @@ namespace UnityEditor.SceneManagement
             };
         }
 
-        internal virtual ulong GetSceneCullingMask(SceneView sceneView) { return EditorSceneManager.DefaultSceneCullingMask; }
+        internal virtual ulong GetSceneCullingMask() { return EditorSceneManager.DefaultSceneCullingMask; }
 
         public virtual StageHandle stageHandle
         {
             get { return StageHandle.GetMainStageHandle(); }
         }
 
-        internal virtual ulong GetCombinedSceneCullingMaskForSceneViewCamera(SceneView sceneView) { return GetSceneCullingMask(sceneView); }
+        public virtual ulong GetCombinedSceneCullingMaskForCamera() { return GetSceneCullingMask(); }
 
         internal virtual Stage GetContextStage() { return this; }
 
@@ -143,7 +143,7 @@ namespace UnityEditor.SceneManagement
         {
             if (opened)
             {
-                CloseStage();
+                OnCloseStage();
                 opened = false;
             }
         }
@@ -157,6 +157,16 @@ namespace UnityEditor.SceneManagement
         protected virtual void OnDisable()
         {
             s_AllStages.Remove(this);
+        }
+
+        public T FindComponentOfType<T>() where T : Component
+        {
+            return stageHandle.FindComponentOfType<T>();
+        }
+
+        public T[] FindComponentsOfType<T>() where T : Component
+        {
+            return stageHandle.FindComponentsOfType<T>();
         }
     }
 

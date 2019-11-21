@@ -247,6 +247,9 @@ namespace UnityEngine.UIElements
                     return;
                 }
 
+                if (evt.actionKey)
+                    return;
+
                 evt.StopPropagation();
 
                 if (c == '\n' && !editorEngine.multiline && !evt.altKey)

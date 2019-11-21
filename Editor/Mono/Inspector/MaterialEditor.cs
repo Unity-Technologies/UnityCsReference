@@ -109,10 +109,6 @@ namespace UnityEditor
         private SerializedProperty m_EnableInstancing;
         private SerializedProperty m_DoubleSidedGI;
 
-        private SerializedObject m_LightmapSettings;
-        private SerializedProperty m_EnabledRealtimeGI;
-        private SerializedProperty m_EnabledBakedGI;
-
         private string                      m_InfoMessage;
         private Vector2                     m_PreviewDir = new Vector2(0, -20);
         private int                         m_SelectedMesh;
@@ -1288,10 +1284,10 @@ namespace UnityEditor
         {
             Material[] materials = Array.ConvertAll(targets, (Object o) => { return (Material)o; });
 
-            m_LightmapSettings.Update();
+            var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
 
-            MaterialGlobalIlluminationFlags defaultEnabled = m_EnabledRealtimeGI.boolValue ? MaterialGlobalIlluminationFlags.RealtimeEmissive
-                : (m_EnabledBakedGI.boolValue ? MaterialGlobalIlluminationFlags.BakedEmissive : MaterialGlobalIlluminationFlags.None);
+            MaterialGlobalIlluminationFlags defaultEnabled = settings.realtimeGI ? MaterialGlobalIlluminationFlags.RealtimeEmissive
+                : (settings.bakedGI ? MaterialGlobalIlluminationFlags.BakedEmissive : MaterialGlobalIlluminationFlags.None);
 
             // Calculate isMixed
             bool enabled = materials[0].globalIlluminationFlags != MaterialGlobalIlluminationFlags.EmissiveIsBlack;
@@ -1680,11 +1676,6 @@ namespace UnityEditor
                 return false;
             }
 
-            if (m_LightmapSettings.targetObject == null)
-            {
-                return false;
-            }
-
             EditorGUI.BeginChangeCheck();
 
             MaterialProperty[] props = GetMaterialProperties(targets);
@@ -2070,10 +2061,6 @@ namespace UnityEditor
 
             m_EnableInstancing = serializedObject.FindProperty("m_EnableInstancingVariants");
             m_DoubleSidedGI =  serializedObject.FindProperty("m_DoubleSidedGI");
-
-            m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
-            m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
-            m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
 
             s_MaterialEditors.Add(this);
             Undo.undoRedoPerformed += UndoRedoPerformed;

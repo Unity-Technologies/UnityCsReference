@@ -18,7 +18,7 @@ namespace UnityEditor.Connect
         {
             get
             {
-                return UnityConnectPrefs.FixUrl(m_HtmlSourcePath, m_ServiceName);
+                return m_HtmlSourcePath;
             }
         }
         public CloudServiceAccess serviceJsGlobalObject { get { return m_JavascriptGlobalObject; }}

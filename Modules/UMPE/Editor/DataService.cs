@@ -38,13 +38,15 @@ namespace Unity.MPE
                     return;
 
                 s_AboutToRefresh = true;
-                EditorApplication.delayCall -= EmitRefresh;
-                EditorApplication.delayCall += EmitRefresh;
+                EditorApplication.update -= EmitRefresh;
+                EditorApplication.update += EmitRefresh;
             }
         }
 
         private static void EmitRefresh()
         {
+            EditorApplication.update -= EmitRefresh;
+
             EventService.Emit(nameof(DataServiceEvent.AUTO_REFRESH), s_ImportedAssets);
             s_AboutToRefresh = false;
             s_ImportedAssets = new string[] {};
@@ -62,7 +64,7 @@ namespace Unity.MPE
             EventService.On(nameof(DataServiceEvent.AUTO_REFRESH), (eventType, data) =>
             {
                 string[] paths = data.Cast<string>().ToArray();
-                Debug.Log($"Slave need to refresh the following assets: {String.Join(", ", paths)}");
+                Console.WriteLine($"Slave need to refresh the following assets: {String.Join(", ", paths)}");
                 AssetDatabase.Refresh();
                 if (paths.Any(p => p.EndsWith(".cs")))
                     EditorUtility.RequestScriptReload();

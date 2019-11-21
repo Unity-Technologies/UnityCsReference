@@ -9,9 +9,16 @@ using UnityEngine.SceneManagement;
 
 namespace UnityEditor.SceneManagement
 {
-    internal class MainStage : Stage
+    public sealed class MainStage : Stage
     {
         static StateCache<MainStageHierarchyState> s_StateCache = new StateCache<MainStageHierarchyState>("Library/StateCache/MainStageHierarchy/");
+
+        internal static MainStage CreateMainStage()
+        {
+            var mainStage = CreateInstance<MainStage>();
+            mainStage.name = "MainStage";
+            return mainStage;
+        }
 
         internal override int sceneCount { get { return SceneManager.sceneCount; } }
 
@@ -20,15 +27,15 @@ namespace UnityEditor.SceneManagement
             return SceneManager.GetSceneAt(index);
         }
 
-        protected internal override bool OpenStage()
+        protected internal override bool OnOpenStage()
         {
             // do nothing as the main stage is always in memory
             return true;
         }
 
-        protected override void CloseStage()
+        protected override void OnCloseStage()
         {
-            // do nothing as the main stage is always in memory
+            Debug.LogError("The MainStage should not be destroyed. This is not supported.");
         }
 
         protected internal override GUIContent CreateHeaderContent()
@@ -45,7 +52,7 @@ namespace UnityEditor.SceneManagement
             return item;
         }
 
-        internal override ulong GetSceneCullingMask(SceneView sceneView)
+        internal override ulong GetSceneCullingMask()
         {
             return SceneCullingMasks.MainStageSceneViewObjects;
         }
@@ -58,7 +65,7 @@ namespace UnityEditor.SceneManagement
             // NOTE: We always set overrideSceneCullingMask to ensure the gizmo handling in the Entities package works (in dots search for 'gizmo hack').
             // This ensures normal picking works with the livelink since the SceneCullingMasks.MainStageSceneViewObjects is part of the mask while the gizmo bit is also set.
             // When the gizmo hack is removed in dots we can set 'sceneView.overrideSceneCullingMask = 0'.
-            sceneView.overrideSceneCullingMask = GetSceneCullingMask(sceneView);
+            sceneView.overrideSceneCullingMask = GetSceneCullingMask();
         }
 
         internal override void SyncSceneHierarchyToStage(SceneHierarchyWindow sceneHierarchyWindow)

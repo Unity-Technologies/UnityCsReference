@@ -53,6 +53,26 @@ namespace UnityEditor.SceneManagement
                 SetSceneToRenderInSameStageAsOtherSceneInternal(scene.handle, stageHandle.customScene.handle);
         }
 
+        public static Stage GetCurrentStage()
+        {
+            return StageNavigationManager.instance.currentStage;
+        }
+
+        public static MainStage GetMainStage()
+        {
+            return StageNavigationManager.instance.mainStage;
+        }
+
+        public static Stage GetStage(GameObject gameObject)
+        {
+            return GetStage(gameObject.scene);
+        }
+
+        public static Stage GetStage(Scene scene)
+        {
+            return StageNavigationManager.instance.GetStage(scene);
+        }
+
         public static StageHandle GetCurrentStageHandle()
         {
             return StageHandle.GetCurrentStageHandle();

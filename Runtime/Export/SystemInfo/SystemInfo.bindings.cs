@@ -556,6 +556,11 @@ namespace UnityEngine
             get { return UsesLoadStoreActions(); }
         }
 
+        public static HDRDisplaySupportFlags hdrDisplaySupportFlags
+        {
+            get { return GetHDRDisplaySupportFlags(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -804,6 +809,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetHDRDisplaySupportFlags")]
+        static extern HDRDisplaySupportFlags GetHDRDisplaySupportFlags();
     }
 
 
@@ -980,6 +988,8 @@ namespace UnityEngine
         public static bool supportsMipStreaming => ShimManager.SystemInfoShim.supportsMipStreaming;
 
         public static bool usesLoadStoreActions => ShimManager.SystemInfoShim.usesLoadStoreActions;
+
+        public static HDRDisplaySupportFlags hdrDisplaySupportFlags => ShimManager.SystemInfoShim.hdrDisplaySupportFlags;
 
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {

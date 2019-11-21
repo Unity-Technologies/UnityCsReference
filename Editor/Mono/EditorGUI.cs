@@ -2470,86 +2470,96 @@ namespace UnityEditor
                 if (!property.serializedObject.targetObjects[icount])
                     return null;
             }
+
             // Since the menu items are invoked with delay, we can't assume a SerializedObject we don't own
             // will still be around at that time. Hence create our own copy. (case 1051734)
             SerializedObject serializedObjectCopy = new SerializedObject(property.serializedObject.targetObjects);
             SerializedProperty propertyWithPath = serializedObjectCopy.FindProperty(property.propertyPath);
-            ScriptAttributeUtility.GetHandler(property).AddMenuItems(property, pm);
 
-            SerializedProperty linkedPropertyWithPath = null;
-            if (linkedProperty != null)
+            // FillPropertyContextMenu is now always called when a right click is done on a property.
+            // However we don't want those menu to be added when the property is disabled.
+            if (GUI.enabled)
             {
-                linkedPropertyWithPath = serializedObjectCopy.FindProperty(linkedProperty.propertyPath);
-                ScriptAttributeUtility.GetHandler(linkedProperty).AddMenuItems(linkedProperty, pm);
-            }
+                ScriptAttributeUtility.GetHandler(property).AddMenuItems(property, pm);
 
-            // Would be nice to allow to set to value of a specific target for properties with children too,
-            // but it's not currently supported.
-            if (property.hasMultipleDifferentValues && !property.hasVisibleChildren)
-            {
-                TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
-            }
-
-            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride)
-            {
-                Object targetObject = property.serializedObject.targetObject;
-
-                SerializedProperty[] properties;
-                if (linkedProperty == null)
-                    properties = new SerializedProperty[] { propertyWithPath };
-                else
-                    properties = new SerializedProperty[] { propertyWithPath, linkedPropertyWithPath };
-
-                PrefabUtility.HandleApplyRevertMenuItems(
-                    null,
-                    targetObject,
-                    (menuItemContent, sourceObject) =>
-                    {
-                        // Add apply menu item for this apply target.
-                        TargetChoiceHandler.PropertyAndSourcePathInfo info = new TargetChoiceHandler.PropertyAndSourcePathInfo();
-                        info.properties = properties;
-                        info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
-                        GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
-                            pm.AddDisabledItem(menuItemContent);
-                        else
-                            pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
-                    },
-                    (menuItemContent) =>
-                    {
-                        // Add revert menu item.
-                        pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
-                    },
-                    false
-                );
-            }
-
-            // If property is an element in an array, show duplicate and delete menu options
-            if (property.propertyPath.LastIndexOf(']') == property.propertyPath.Length - 1)
-            {
-                var parentArrayPropertyPath = property.propertyPath.Substring(0, property.propertyPath.LastIndexOf(".Array.data[", StringComparison.Ordinal));
-                var parentArrayProperty = property.serializedObject.FindProperty(parentArrayPropertyPath);
-
-                if (!parentArrayProperty.isFixedBuffer)
+                SerializedProperty linkedPropertyWithPath = null;
+                if (linkedProperty != null)
                 {
-                    if (pm.GetItemCount() > 0)
+                    linkedPropertyWithPath = serializedObjectCopy.FindProperty(linkedProperty.propertyPath);
+                    ScriptAttributeUtility.GetHandler(linkedProperty).AddMenuItems(linkedProperty, pm);
+                }
+
+                // Would be nice to allow to set to value of a specific target for properties with children too,
+                // but it's not currently supported.
+                if (property.hasMultipleDifferentValues && !property.hasVisibleChildren)
+                {
+                    TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
+                }
+
+                if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride)
+                {
+                    Object targetObject = property.serializedObject.targetObject;
+
+                    SerializedProperty[] properties;
+                    if (linkedProperty == null)
+                        properties = new SerializedProperty[] { propertyWithPath };
+                    else
+                        properties = new SerializedProperty[] { propertyWithPath, linkedPropertyWithPath };
+
+                    PrefabUtility.HandleApplyRevertMenuItems(
+                        null,
+                        targetObject,
+                        (menuItemContent, sourceObject) =>
+                        {
+                            // Add apply menu item for this apply target.
+                            TargetChoiceHandler.PropertyAndSourcePathInfo info = new TargetChoiceHandler.PropertyAndSourcePathInfo();
+                            info.properties = properties;
+                            info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
+                            GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
+                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
+                                pm.AddDisabledItem(menuItemContent);
+                            else
+                                pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
+                        },
+                        (menuItemContent) =>
+                        {
+                            // Add revert menu item.
+                            pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
+                        },
+                        false
+                    );
+                }
+
+                // If property is an element in an array, show duplicate and delete menu options
+                if (property.propertyPath.LastIndexOf(']') == property.propertyPath.Length - 1)
+                {
+                    var parentArrayPropertyPath = property.propertyPath.Substring(0, property.propertyPath.LastIndexOf(".Array.data[", StringComparison.Ordinal));
+                    var parentArrayProperty = property.serializedObject.FindProperty(parentArrayPropertyPath);
+
+                    if (!parentArrayProperty.isFixedBuffer)
                     {
-                        pm.AddSeparator("");
+                        if (pm.GetItemCount() > 0)
+                        {
+                            pm.AddSeparator("");
+                        }
+
+                        pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
+                        {
+                            TargetChoiceHandler.DuplicateArrayElement(a);
+                            EditorGUIUtility.editingTextField = false;
+                        }, propertyWithPath);
+                        pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
+                        {
+                            TargetChoiceHandler.DeleteArrayElement(a);
+                            EditorGUIUtility.editingTextField = false;
+                        }, propertyWithPath);
                     }
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
-                    {
-                        TargetChoiceHandler.DuplicateArrayElement(a);
-                        EditorGUIUtility.editingTextField = false;
-                    }, propertyWithPath);
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
-                    {
-                        TargetChoiceHandler.DeleteArrayElement(a);
-                        EditorGUIUtility.editingTextField = false;
-                    }, propertyWithPath);
                 }
             }
 
             // If shift is held down, show debug menu options
+            // This menu is not excluded when the field is disabled
+            // because it is nice to get information about the property even when it's disabled.
             if (Event.current.shift)
             {
                 if (pm.GetItemCount() > 0)
@@ -2558,6 +2568,8 @@ namespace UnityEditor
             }
 
             // If property is a reference and we're using VCS, add item to check it out
+            // This menu is not excluded when the field is disabled
+            // because it is nice to get information about the property even when it's disabled.
             if (propertyWithPath.propertyType == SerializedPropertyType.ObjectReference && Provider.isActive)
             {
                 var obj = propertyWithPath.objectReferenceValue;
@@ -2573,12 +2585,19 @@ namespace UnityEditor
                 }
             }
 
-            if (EditorApplication.contextualPropertyMenu != null)
+            // FillPropertyContextMenu is now always called when a right click is done on a property.
+            // However we don't want those menu to be added when the property is disabled.
+            if (GUI.enabled)
             {
-                if (pm.GetItemCount() > 0)
-                    pm.AddSeparator("");
-                EditorApplication.contextualPropertyMenu(pm, property);
+                if (EditorApplication.contextualPropertyMenu != null)
+                {
+                    if (pm.GetItemCount() > 0)
+                        pm.AddSeparator("");
+                    EditorApplication.contextualPropertyMenu(pm, property);
+                }
             }
+
+            EditorGUIUtility.ContextualPropertyMenuCallback(pm, property);
 
             return pm;
         }
@@ -5768,6 +5787,8 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
 
+            EditorGUIUtility.BeginPropertyCallback(totalPosition, property);
+
             if (GUIDebugger.active && Event.current.type != EventType.Layout)
             {
                 var targetObjectTypeName = property.serializedObject.targetObject != null ?
@@ -5830,13 +5851,17 @@ This warning only shows up in development builds.", helpTopic, pageName);
             // Handle context menu in EndProperty instead of BeginProperty. This ensures that child properties
             // get the event rather than parent properties when clicking inside the child property rects, but the menu can
             // still be invoked for the parent property by clicking inside the parent rect but outside the child rects.
+            var oldEnable = GUI.enabled;
+            GUI.enabled = true; // Event.current.type will never return ContextClick if the GUI is disabled.
             if (Event.current.type == EventType.ContextClick && data.totalPosition.Contains(Event.current.mousePosition))
             {
+                GUI.enabled = oldEnable;
                 if (linkedProperties)
                     DoPropertyContextMenu(data.property, parentData.property);
                 else
                     DoPropertyContextMenu(data.property);
             }
+            GUI.enabled = oldEnable;
 
             EditorGUIUtility.SetBoldDefaultFont(data.wasBoldDefaultFont);
             GUI.enabled = data.wasEnabled;

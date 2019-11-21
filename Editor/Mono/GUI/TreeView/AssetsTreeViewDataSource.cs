@@ -210,7 +210,7 @@ namespace UnityEditor
 
                     // Create root item TreeView item
                     if (subDepth > 0)
-                        rootItem = new FolderTreeItem(rootGuid, rootInstanceID, rootDepth, parentItem, displayName);
+                        rootItem = new FolderTreeItem(rootGuid, !property.hasChildren, rootInstanceID, rootDepth, parentItem, displayName);
                     else
                         rootItem = new RootTreeItem(rootInstanceID, rootDepth, parentItem, displayName);
                     rootItem.icon = folderIcon;
@@ -240,7 +240,7 @@ namespace UnityEditor
                             depth = property.depth - minDepth;
                             TreeViewItem item;
                             if (property.isFolder)
-                                item = new FolderTreeItem(property.guid, property.instanceID, depth + subDepth, null, property.name);
+                                item = new FolderTreeItem(property.guid, !property.hasChildren, property.instanceID, depth + subDepth, null, property.name);
                             else
                                 item = new NonFolderTreeItem(property.guid, property.GetInstanceIDIfImported(), depth + subDepth, null, property.name);
 
@@ -522,6 +522,10 @@ namespace UnityEditor
 
         internal abstract class FolderTreeItemBase : TreeViewItem
         {
+            public virtual bool IsEmpty
+            {
+                get { return false; }
+            }
             protected FolderTreeItemBase(int id, int depth, TreeViewItem parent, string displayName)
                 : base(id, depth, parent, displayName)
             {
@@ -546,11 +550,13 @@ namespace UnityEditor
         internal class FolderTreeItem : FolderTreeItemBase, IAssetTreeViewItem
         {
             public string Guid { get; }
+            public override bool IsEmpty { get; }
 
-            public FolderTreeItem(string guid, int id, int depth, TreeViewItem parent, string displayName)
+            public FolderTreeItem(string guid, bool isEmpty, int id, int depth, TreeViewItem parent, string displayName)
                 : base(id, depth, parent, displayName)
             {
                 Guid = guid;
+                IsEmpty = isEmpty;
             }
         }
 

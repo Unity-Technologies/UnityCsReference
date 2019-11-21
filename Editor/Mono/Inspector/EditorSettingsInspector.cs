@@ -46,6 +46,7 @@ namespace UnityEditor
             public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download");
             public static GUIContent cacheServerEnableUploadLabel = EditorGUIUtility.TrTextContent("Upload");
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
+            public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Force Serialize References On One Line", "Forces Unity to write references and other inline mappings on one line, to help reduce version control noise");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
@@ -528,6 +529,9 @@ namespace UnityEditor
             {
                 EditorGUILayout.HelpBox("Asset Serialization is forced to Text when using Collaboration feature.", MessageType.Warning);
             }
+
+            if (EditorSettings.serializationMode != SerializationMode.ForceBinary)
+                EditorSettings.serializeInlineMappingsOnOneLine = EditorGUILayout.Toggle(Content.textSerializeMappingsOnOneLine, EditorSettings.serializeInlineMappingsOnOneLine);
 
             GUILayout.Space(10);
 

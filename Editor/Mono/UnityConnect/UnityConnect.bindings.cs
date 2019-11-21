@@ -146,6 +146,7 @@ namespace UnityEditor.Connect
 
     internal delegate void StateChangedDelegate(ConnectInfo state);
     internal delegate void ProjectStateChangedDelegate(ProjectInfo state);
+    internal delegate void ProjectRefreshedDelegate(ProjectInfo state);
     internal delegate void UserStateChangedDelegate(UserInfo state);
 
     public static class UnityOAuth
@@ -268,6 +269,7 @@ namespace UnityEditor.Connect
     internal partial class UnityConnect
     {
         public event StateChangedDelegate StateChanged;
+        public event ProjectRefreshedDelegate ProjectRefreshed;
         public event ProjectStateChangedDelegate ProjectStateChanged;
         public event UserStateChangedDelegate UserStateChanged;
 
@@ -308,9 +310,10 @@ namespace UnityEditor.Connect
         {
         }
 
+        [Obsolete]
         public void GoToHub(string page)
         {
-            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, page, true, "goto_hub_method");
+            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, page, true, "goto_hub_method_OLD");
         }
 
         public void UnbindProject()
@@ -413,6 +416,13 @@ namespace UnityEditor.Connect
         private static void OnProjectStateChanged()
         {
             var handler = instance.ProjectStateChanged;
+            if (handler != null)
+                handler(instance.projectInfo);
+        }
+
+        private static void OnProjectRefreshed()
+        {
+            var handler = instance.ProjectRefreshed;
             if (handler != null)
                 handler(instance.projectInfo);
         }

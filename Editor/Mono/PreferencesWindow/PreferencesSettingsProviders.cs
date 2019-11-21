@@ -333,19 +333,6 @@ namespace UnityEditor
             return null;
         }
 
-        [UsedImplicitly, SettingsProvider]
-        internal static SettingsProvider CreateUnityServicesProvider()
-        {
-            if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
-            {
-                var settings = new PreferencesProvider("Preferences/Unity Services");
-                settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowUnityConnectPrefs); };
-                return settings;
-            }
-            return null;
-        }
-
-
         // Group Preference sections with the same name
         private static void OnGUI(string searchContext, Action<string> drawAction)
         {
@@ -467,12 +454,6 @@ namespace UnityEditor
         {
             CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
             UnityEditor.VisualStudioIntegration.UnityVSSupport.ScriptEditorChanged(m_ScriptEditorPath.str);
-        }
-
-        private void ShowUnityConnectPrefs(string searchContext)
-        {
-            UnityConnectPrefs.ShowPanelPrefUI();
-            ApplyChangesToPrefs();
         }
 
         private void EnableGeneral()
@@ -937,9 +918,6 @@ namespace UnityEditor
             {
                 EditorPrefs.SetInt(kContentScalePrefKey, m_ContentScalePercentValue);
             }
-
-            if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
-                UnityConnectPrefs.StorePanelPrefs();
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
             EditorPrefs.SetBool("UseOSColorPicker", m_UseOSColorPicker);

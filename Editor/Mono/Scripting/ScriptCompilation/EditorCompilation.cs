@@ -625,6 +625,83 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return targetAssemblies;
         }
 
+        public string[] GetCompiledAssemblyGraph(string assemblyName)
+        {
+            if (assemblyName == null)
+                throw new ArgumentNullException("assemblyName");
+
+            if (compilationTask == null)
+                throw new InvalidOperationException("Cannot call GetCompiledAssemblyGraph without having an active CompilationTask");
+
+            var compiledScriptAssemblies = compilationTask.ScriptAssemblies;
+
+            assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
+            ScriptAssembly scriptAssembly = compiledScriptAssemblies.SingleOrDefault(a => AssetPath.GetAssemblyNameWithoutExtension(a.Filename) == assemblyName);
+
+            if (scriptAssembly == null)
+                throw new ArgumentException($"Could not find assembly name '{assemblyName}' in GetCompiledAssemblyGraph.");
+
+            // Build a dictionary with the set of compiled referencing assemblies for each compiled assembly.
+            var referencingAssemblies = new Dictionary<ScriptAssembly, HashSet<ScriptAssembly>>();
+
+            foreach (var compiledScriptAssembly in compiledScriptAssemblies)
+            {
+                foreach (var referenceAssembly in compiledScriptAssembly.ScriptAssemblyReferences)
+                {
+                    HashSet<ScriptAssembly> referencingScriptAssemblies;
+
+                    if (!referencingAssemblies.TryGetValue(referenceAssembly, out referencingScriptAssemblies))
+                    {
+                        referencingScriptAssemblies = new HashSet<ScriptAssembly>();
+                        referencingAssemblies[referenceAssembly] = referencingScriptAssemblies;
+                    }
+
+                    referencingScriptAssemblies.Add(compiledScriptAssembly);
+                }
+            }
+
+            HashSet<ScriptAssembly> referencing;
+
+            // If there are no referencing assemblies, just return the single assembly
+            if (!referencingAssemblies.TryGetValue(scriptAssembly, out referencing))
+            {
+                return new string[] { scriptAssembly.Filename };
+            }
+
+            // Find all direct and indirect referencing assemblies, e.g. the
+            // entire graph of assemblies that would be recompiled if this assembly
+            // was recompiled.
+            HashSet<string> result = new HashSet<string>();
+
+            result.Add(scriptAssembly.Filename);
+
+            List<ScriptAssembly> visit = new List<ScriptAssembly>(referencing);
+
+            while (visit.Count > 0)
+            {
+                int lastIndex = visit.Count - 1;
+                var visitAssembly = visit[lastIndex];
+                visit.RemoveAt(lastIndex);
+
+                result.Add(visitAssembly.Filename);
+
+                if (!referencingAssemblies.TryGetValue(visitAssembly, out referencing))
+                {
+                    continue;
+                }
+
+                foreach (var referencingAssembly in referencing)
+                {
+                    if (result.Contains(referencingAssembly.Filename))
+                        continue;
+
+                    visit.Add(referencingAssembly);
+                }
+            }
+
+            return result.ToArray();
+        }
+
         static CustomScriptAssembly LoadCustomScriptAssemblyFromJsonPath(string path, string guid)
         {
             var json = Utility.ReadTextAsset(path);

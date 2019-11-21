@@ -185,6 +185,9 @@ namespace UnityEngine.Tilemaps
         [NativeMethod(Name = "GetTileInstantiatedObject")]
         public extern GameObject GetInstantiatedObject(Vector3Int position);
 
+        [NativeMethod(Name = "GetTileObjectToInstantiate")]
+        public extern GameObject GetObjectToInstantiate(Vector3Int position);
+
         [NativeMethod(Name = "SetTileColliderType")]
         public extern void SetColliderType(Vector3Int position, Tile.ColliderType colliderType);
         [NativeMethod(Name = "GetTileColliderType")]

@@ -180,6 +180,8 @@ namespace UnityEngine
 
         public virtual bool usesLoadStoreActions => EditorSystemInfo.usesLoadStoreActions;
 
+        public virtual HDRDisplaySupportFlags hdrDisplaySupportFlags => EditorSystemInfo.hdrDisplaySupportFlags;
+
         public virtual bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
             return EditorSystemInfo.IsFormatSupported(format, usage);

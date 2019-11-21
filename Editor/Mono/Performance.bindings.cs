@@ -41,7 +41,8 @@ namespace UnityEditor.Profiling
         public static extern double GetTotalTime(string trackerName);
         public static extern double GetTotalUsage(string trackerName);
         public static extern double GetTimestamp(string trackerName);
-        public static extern void SetCallstackRecording(string trackerName, bool on);
+        public static extern void LogCallstack(string trackerName);
+        public static extern void GetCallstack(string trackerName, Action<string> onCallstackCaptured);
 
         internal static extern int StartTracker(string trackerName);
         internal static extern void StopTracker(int trackerToken);

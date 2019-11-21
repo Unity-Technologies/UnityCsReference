@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.Analytics;
-
 
 namespace UnityEditor.Web
 {
@@ -48,12 +46,12 @@ namespace UnityEditor.Web
 
         public void ShowServicePage()
         {
-            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(GetServiceName(), true, "show_service_page");
+            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(GetServiceName(), true, "show_service_page_OLD");
         }
 
         public void GoBackToHub()
         {
-            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, true, "go_back_to_hub");
+            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, true, "go_back_to_hub_OLD");
         }
     }
 }

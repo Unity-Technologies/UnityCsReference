@@ -1494,7 +1494,9 @@ namespace UnityEditor
 
                 res.revert = Provider.RevertIsValid(res.assets, RevertMode.Normal);
                 res.revertUnchanged = Provider.RevertIsValid(res.assets, RevertMode.Unchanged);
-                res.checkout = isFolder || Provider.CheckoutIsValid(res.assets, Provider.NeedToCheckOutBoth(assetEditor.target) ? CheckoutMode.Both : CheckoutMode.Meta);
+
+                bool checkoutBoth = assetEditor.target == null || Provider.NeedToCheckOutBoth(assetEditor.target);
+                res.checkout = isFolder || Provider.CheckoutIsValid(res.assets, checkoutBoth ? CheckoutMode.Both : CheckoutMode.Meta);
                 res.add = Provider.AddIsValid(res.assets);
                 res.submit = Provider.SubmitIsValid(null, res.assets);
                 res.@lock = !isFolder && Provider.LockIsValid(res.assets);

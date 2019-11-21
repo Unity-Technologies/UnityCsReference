@@ -103,6 +103,25 @@ namespace UnityEditor
             s_HasCurrentWindowKeyFocusFunc = HasCurrentWindowKeyFocus;
         }
 
+        // this method gets called on right clicking a property regardless of GUI.enable value.
+        internal static event Action<GenericMenu, SerializedProperty> contextualPropertyMenu;
+        internal static event Action<Rect, SerializedProperty> beginProperty;
+
+        internal static void BeginPropertyCallback(Rect totalRect, SerializedProperty property)
+        {
+            beginProperty?.Invoke(totalRect, property);
+        }
+
+        internal static void ContextualPropertyMenuCallback(GenericMenu gm, SerializedProperty prop)
+        {
+            if (contextualPropertyMenu != null)
+            {
+                if (gm.GetItemCount() > 0)
+                    gm.AddSeparator("");
+                contextualPropertyMenu(gm, prop);
+            }
+        }
+
         // returns position and size of the main Unity Editor window
         public static Rect GetMainWindowPosition()
         {

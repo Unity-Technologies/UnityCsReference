@@ -248,12 +248,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         public static PrefabStage GetPrefabStage(GameObject gameObject)
         {
-            // Currently there's at most one prefab stage. Refactor in future if we have multiple.
-            PrefabStage prefabStage = GetCurrentPrefabStage();
-            if (prefabStage != null && prefabStage.scene == gameObject.scene)
-                return prefabStage;
-
-            return null;
+            return StageUtility.GetStage(gameObject) as PrefabStage;
         }
 
         [RequiredByNativeCode]

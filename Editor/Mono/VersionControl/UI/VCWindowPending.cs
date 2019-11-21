@@ -376,6 +376,8 @@ namespace UnityEditor.VersionControl
 
             AssetList assetList = task.assetList;
 
+            assetList.NaturalSort();
+
             // Add all files to the list
             if (assetList.Count == 0)
             {

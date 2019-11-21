@@ -187,6 +187,8 @@ namespace UnityEditor
             // Otherwise, don't - as this may cause Textures to load unintendedly (e.g if we have 3000 search results we do not want to load icons before needed when rendering)
             if (!property.isMainRepresentation)
                 result.icon = property.icon;
+            else if (property.isFolder && !property.hasChildren)
+                result.icon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
             else
                 result.icon = null;
 

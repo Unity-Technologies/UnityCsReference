@@ -69,6 +69,8 @@ namespace UnityEditor.VersionControl
         {
             revertList.Clear();
 
+            assetList.NaturalSort();
+
             foreach (Asset it in assetList)
                 revertList.Add(null, it.prettyPath, it);
 

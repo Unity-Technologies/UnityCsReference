@@ -81,5 +81,11 @@ namespace UnityEditor.VersionControl
 
             return unique;
         }
+
+        internal AssetList NaturalSort()
+        {
+            Sort((a, b) => EditorUtility.NaturalCompare(a.name, b.name));
+            return this;
+        }
     }
 }

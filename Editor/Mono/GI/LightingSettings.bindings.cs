@@ -74,7 +74,10 @@ namespace UnityEditor
             Optix = 1,
 
             // The Intel Open Image AI denoiser is applied.
-            OpenImage = 2
+            OpenImage = 2,
+
+            // The AMD Radeon Pro Image Processing denoiser is applied.
+            RadeonPro = 3
         }
 
         // Which path tracer filter is used.
@@ -259,5 +262,9 @@ namespace UnityEditor
         // How many reference points to generate when using MIS
         [NativeName("PVREnvironmentReferencePointCount")]
         internal extern int environmentReferencePointCount { get; set; }
+
+        // How many samples to use for light probes relative to lightmap texels
+        [NativeName("LightProbeSampleCountMultiplier")]
+        public extern float lightProbeSampleCountMultiplier { get; set; }
     }
 }

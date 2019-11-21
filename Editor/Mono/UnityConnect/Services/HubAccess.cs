@@ -40,7 +40,7 @@ namespace UnityEditor.Web
 
         public void ShowService(string name)
         {
-            UnityConnectServiceCollection.instance.ShowService(name, true, "show_service_method");
+            UnityConnectServiceCollection.instance.ShowService(name, true, "show_service_method_OLD");
         }
 
         public void EnableCloudService(string name, bool enabled)
@@ -53,12 +53,6 @@ namespace UnityEditor.Web
             s_Instance = new HubAccess();
             var serviceData = new UnityConnectServiceData(kServiceName, kServiceUrl, s_Instance, "unity/project/cloud/hub");
             UnityConnectServiceCollection.instance.AddService(serviceData);
-        }
-
-        [MenuItem("Window/General/Services %0", false, 302)]
-        private static void ShowMyWindow()
-        {
-            UnityConnectServiceCollection.instance.ShowService(kServiceName, true, "window_menu_item");
         }
     }
 }

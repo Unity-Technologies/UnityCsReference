@@ -11,6 +11,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine
 {
@@ -703,10 +704,104 @@ namespace UnityEngine
         D3DHDRDisplayBitDepth16
     }
 
-    static public class HDROutputSettings
+    [NativeHeader("Runtime/GfxDevice/HDROutputSettings.h")]
+    [UsedByNativeCode]
+    public class HDROutputSettings
     {
-        [StaticAccessor("GetScreenManager()", StaticAccessorType.Dot)]
-        extern public static void SetPaperWhiteInNits(float paperWhite);
+        private int m_DisplayIndex;
+
+        //Don't allow users to construct these themselves, instead they need to be accessed from an internally managed list
+        //This lines up with how multiple displays are handled, and while HDR is currently primary display only this will help with
+        //future proofing this implementation, see Display in Display.bindings.cs
+        internal HDROutputSettings() { m_DisplayIndex = 0; }
+        internal HDROutputSettings(int displayIndex) { this.m_DisplayIndex = displayIndex; }
+
+        public static HDROutputSettings[] displays = new HDROutputSettings[1] { new HDROutputSettings() };
+        private static HDROutputSettings _mainDisplay = displays[0];
+        public static HDROutputSettings main { get { return _mainDisplay; } }
+
+        public bool active { get { return GetActive(m_DisplayIndex); } }
+        public bool available { get { return GetAvailable(m_DisplayIndex); } }
+        public bool automaticHDRTonemapping
+        {
+            get
+            {
+                return GetAutomaticHDRTonemapping(m_DisplayIndex);
+            }
+            set
+            {
+                SetAutomaticHDRTonemapping(m_DisplayIndex, value);
+            }
+        }
+        public ColorGamut displayColorGamut { get { return GetDisplayColorGamut(m_DisplayIndex); } }
+        public RenderTextureFormat format { get { return GraphicsFormatUtility.GetRenderTextureFormat(GetGraphicsFormat(m_DisplayIndex)); } }
+        public GraphicsFormat graphicsFormat { get { return GetGraphicsFormat(m_DisplayIndex); }  }
+        public float paperWhiteNits
+        {
+            get
+            {
+                return GetPaperWhiteNits(m_DisplayIndex);
+            }
+            set
+            {
+                SetPaperWhiteNits(m_DisplayIndex, value);
+            }
+        }
+        public int maxFullFrameToneMapLuminance { get { return GetMaxFullFrameToneMapLuminance(m_DisplayIndex); } }
+        public int maxToneMapLuminance { get { return GetMaxToneMapLuminance(m_DisplayIndex); } }
+        public int minToneMapLuminance { get { return GetMinToneMapLuminance(m_DisplayIndex); } }
+        public bool HDRModeChangeRequested { get { return GetHDRModeChangeRequested(m_DisplayIndex); } }
+
+        public void RequestHDRModeChange(bool enabled)
+        {
+            RequestHDRModeChangeInternal(m_DisplayIndex, enabled);
+        }
+
+        [Obsolete("SetPaperWhiteInNits is deprecated, please use paperWhiteNits instead.")]
+        public static void SetPaperWhiteInNits(float paperWhite)
+        {
+            //Set paper white on the primary display
+            SetPaperWhiteNits(0, paperWhite);
+        }
+
+        [FreeFunction("HDROutputSettingsBindings::GetActive", HasExplicitThis = false, ThrowsException = true)]
+        extern private static bool GetActive(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::GetAvailable", HasExplicitThis = false, ThrowsException = true)]
+        extern private static bool GetAvailable(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::GetAutomaticHDRTonemapping", HasExplicitThis = false, ThrowsException = true)]
+        extern private static bool GetAutomaticHDRTonemapping(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::SetAutomaticHDRTonemapping", HasExplicitThis = false, ThrowsException = true)]
+        extern private static void SetAutomaticHDRTonemapping(int displayIndex, bool scripted);
+
+        [FreeFunction("HDROutputSettingsBindings::GetDisplayColorGamut", HasExplicitThis = false, ThrowsException = true)]
+        extern private static ColorGamut GetDisplayColorGamut(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::GetGraphicsFormat", HasExplicitThis = false, ThrowsException = true)]
+        extern private static GraphicsFormat GetGraphicsFormat(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::GetPaperWhiteNits", HasExplicitThis = false, ThrowsException = true)]
+        extern private static float GetPaperWhiteNits(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::SetPaperWhiteNits", HasExplicitThis = false, ThrowsException = true)]
+        extern private static void SetPaperWhiteNits(int displayIndex, float paperWhite);
+
+        [FreeFunction("HDROutputSettingsBindings::GetMaxFullFrameToneMapLuminance", HasExplicitThis = false, ThrowsException = true)]
+        extern private static int GetMaxFullFrameToneMapLuminance(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::GetMaxToneMapLuminance", HasExplicitThis = false, ThrowsException = true)]
+        extern private static int GetMaxToneMapLuminance(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::GetMinToneMapLuminance", HasExplicitThis = false, ThrowsException = true)]
+        extern private static int GetMinToneMapLuminance(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::GetHDRModeChangeRequested", HasExplicitThis = false, ThrowsException = true)]
+        extern private static bool GetHDRModeChangeRequested(int displayIndex);
+
+        [FreeFunction("HDROutputSettingsBindings::RequestHDRModeChange", HasExplicitThis = false, ThrowsException = true)]
+        extern private static void RequestHDRModeChangeInternal(int displayIndex, bool enabled);
     }
 }
 
