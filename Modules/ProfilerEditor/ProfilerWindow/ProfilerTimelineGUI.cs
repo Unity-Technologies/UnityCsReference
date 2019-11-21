@@ -10,6 +10,9 @@ using UnityEditorInternal.Profiling;
 using Object = UnityEngine.Object;
 using UnityEditor.AnimatedValues;
 using Unity.Profiling;
+using System.Globalization;
+using UnityEditor.Accessibility;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditorInternal
 {
@@ -1228,7 +1231,7 @@ namespace UnityEditorInternal
 
                 if (initializing)
                 {
-                    NativeProfilerTimeline_InitializeArgs args = new NativeProfilerTimeline_InitializeArgs();
+                    var args = new NativeProfilerTimeline_InitializeArgs();
                     args.Reset();
                     args.ghostAlpha = 0.3f;
                     args.nonSelectedAlpha = 0.75f;
@@ -1236,6 +1239,14 @@ namespace UnityEditorInternal
                     args.lineHeight = k_LineHeight;
                     args.textFadeOutWidth = k_TextFadeOutWidth;
                     args.textFadeStartWidth = k_TextFadeStartWidth;
+
+                    var timelineColors = ProfilerColors.timelineColors;
+                    args.profilerColorDescriptors = new ProfilerColorDescriptor[timelineColors.Length];
+
+                    for (int i = 0; i < timelineColors.Length; ++i)
+                    {
+                        args.profilerColorDescriptors[i] = new ProfilerColorDescriptor(timelineColors[i]);
+                    }
 
                     NativeProfilerTimeline.Initialize(ref args);
                 }

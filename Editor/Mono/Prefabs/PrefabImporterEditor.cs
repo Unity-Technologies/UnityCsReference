@@ -124,6 +124,9 @@ namespace UnityEditor
                     if (!EditorUtility.IsPersistent(asset))
                         continue;
 
+                    if (!(asset is GameObject))
+                        continue;
+
                     var rootGameObject = (GameObject)asset;
                     if (IsDirty(rootGameObject))
                     {
@@ -159,6 +162,9 @@ namespace UnityEditor
         internal bool HasDirtyPrefabAssets()
         {
             if (assetTarget == null)
+                return false;
+
+            if (typeof(GameObject) != assetTarget.GetType())
                 return false;
 
             // We just check one target since we assume that a multi-edit will
@@ -226,6 +232,11 @@ namespace UnityEditor
 
         internal override void OnHeaderControlsGUI()
         {
+            if (assetTarget is DefaultAsset)
+            {
+                return;
+            }
+
             var variantBase = PrefabUtility.GetCorrespondingObjectFromSource(assetTarget);
             if (variantBase != null)
             {
@@ -247,6 +258,11 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (assetTarget is DefaultAsset)
+            {
+                return;
+            }
+
             EditorGUILayout.BeginVertical(EditorStyles.inspectorFullWidthMargins);
 
             // Allow opening prefab even if file is not open for edit.

@@ -87,8 +87,6 @@ namespace UnityEditor
                 profilerGraphBackground.overflow.left = -(int)Chart.kSideWidth;
             }
         }
-
-        private const string k_CPUUnstackableSeriesName = "Others";
         private static readonly ProfilerArea[] ms_StackedAreas = { ProfilerArea.CPU, ProfilerArea.GPU, ProfilerArea.UI, ProfilerArea.GlobalIllumination };
 
         [NonSerialized]
@@ -365,7 +363,7 @@ namespace UnityEditor
 
             m_Charts = new ProfilerChart[Profiler.areaCount];
 
-            Color[] chartAreaColors = ProfilerColors.chartAreaColors;
+            var chartAreaColors = ProfilerColors.chartAreaColors;
 
             for (int i = 0; i < Profiler.areaCount; i++)
             {
@@ -1189,8 +1187,7 @@ namespace UnityEditor
                 float timeNow = 0.0F;
                 for (int j = 0; j < chart.m_Series.Length; j++)
                 {
-                    var series = chart.m_Data.unstackableSeriesIndex == j && chart.m_Data.hasOverlay ?
-                        chart.m_Data.overlays[j] : chart.m_Series[j];
+                    var series = chart.m_Series[j];
 
                     if (series.enabled)
                         timeNow += series.yValues[k];
@@ -1218,7 +1215,6 @@ namespace UnityEditor
         internal static void UpdateSingleChart(ProfilerChart chart, int firstEmptyFrame, int firstFrame)
         {
             float totalMaxValue = 1;
-            int unstackableChartIndex = -1;
             var maxValues = new float[chart.m_Series.Length];
             for (int i = 0, count = chart.m_Series.Length; i < count; ++i)
             {
@@ -1244,14 +1240,6 @@ namespace UnityEditor
                 else
                 {
                     maxValues[i] = maxValue;
-                    if (chart.m_Area == ProfilerArea.CPU)
-                    {
-                        if (chart.m_Series[i].name == k_CPUUnstackableSeriesName)
-                        {
-                            unstackableChartIndex = i;
-                            break;
-                        }
-                    }
                 }
             }
             if (chart.m_Area == ProfilerArea.NetworkMessages || chart.m_Area == ProfilerArea.NetworkOperations)
@@ -1260,7 +1248,7 @@ namespace UnityEditor
                     chart.m_Series[i].rangeAxis = new Vector2(0f, 0.9f * totalMaxValue);
                 chart.m_Data.maxValue = totalMaxValue;
             }
-            chart.m_Data.Assign(chart.m_Series, unstackableChartIndex, firstEmptyFrame, firstFrame);
+            chart.m_Data.Assign(chart.m_Series, firstEmptyFrame, firstFrame);
             ProfilerDriver.GetStatisticsAvailable(chart.m_Area, firstEmptyFrame, chart.m_Data.dataAvailable);
 
             if (chart is UISystemProfilerChart)

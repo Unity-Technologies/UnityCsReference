@@ -1645,6 +1645,9 @@ namespace UnityEditor
                 gameObjectOrComponent = (GameObject)comp.gameObject;
             }
 
+            if (!(gameObjectOrComponent is GameObject))
+                return false;
+
             GameObject go;
             go = (GameObject)gameObjectOrComponent;
             TransformVisitor transformVisitor = new TransformVisitor();

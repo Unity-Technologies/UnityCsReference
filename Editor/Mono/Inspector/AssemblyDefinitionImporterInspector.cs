@@ -62,6 +62,9 @@ namespace UnityEditor
             {
                 get { return AssetDatabase.GetAssetPath(asset); }
             }
+
+            public string name;
+            public string serializedReference;
             public AssemblyDefinitionAsset asset;
             public CustomScriptAssemblyData data;
             public MixedBool displayValue;
@@ -75,10 +78,13 @@ namespace UnityEditor
             }
             public PrecompiledAssembly? precompiled;
 
-            public string name
+            public string fileName
             {
                 get { return precompiled.HasValue ? AssetPath.GetFileName(precompiled.Value.Path) : null; }
             }
+
+            public string name;
+
             public MixedBool displayValue;
         }
 
@@ -161,11 +167,23 @@ namespace UnityEditor
                 m_DefineConstraints.DoLayoutList();
 
                 GUILayout.Label(Styles.references, EditorStyles.boldLabel);
+
+                if (m_State.references.Any(x => x.asset == null))
+                {
+                    EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
+                }
+
                 m_ReferencesList.DoLayoutList();
 
                 if (m_State.overrideReferences == MixedBool.True)
                 {
                     GUILayout.Label(Styles.precompiledReferences, EditorStyles.boldLabel);
+
+                    if (m_State.precompiledReferences.Any(x => !x.precompiled.HasValue && !string.IsNullOrEmpty(x.name)))
+                    {
+                        EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
+                    }
+
                     m_PrecompiledReferencesList.DoLayoutList();
                 }
 
@@ -559,12 +577,12 @@ namespace UnityEditor
             var precompiledReference = list[index] as PrecompiledReference;
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
-            GUIContent label = precompiledReference.precompiled.HasValue ? GUIContent.Temp(precompiledReference.name) : EditorGUIUtility.TrTempContent("(Missing Reference)");
+            GUIContent label = GUIContent.Temp(precompiledReference.name);
 
             bool mixed = precompiledReference.displayValue == MixedBool.Mixed;
             EditorGUI.showMixedValue = mixed;
 
-            var currentSelectedPrecompiledReferences = m_State.precompiledReferences.Select(x => x.name);
+            var currentSelectedPrecompiledReferences = m_State.precompiledReferences.Select(x => x.fileName);
 
             var precompiledAssemblyNames = CompilationPipeline.GetPrecompiledAssemblyNames()
                 .Where(x => !currentSelectedPrecompiledReferences.Contains(x));
@@ -583,22 +601,25 @@ namespace UnityEditor
             }
             else
             {
-                contextList.Insert(0, precompiledReference.name);
+                contextList.Insert(0, precompiledReference.fileName);
             }
 
             int currentlySelectedIndex = 0;
             if (precompiledReference.precompiled.HasValue)
             {
-                currentlySelectedIndex = Array.IndexOf(contextList.ToArray(), precompiledReference.name);
+                currentlySelectedIndex = Array.IndexOf(contextList.ToArray(), precompiledReference.fileName);
             }
 
+            EditorGUI.BeginDisabled(!precompiledReference.precompiled.HasValue && !string.IsNullOrEmpty(precompiledReference.name));
             int selectedIndex = EditorGUI.Popup(rect, label, currentlySelectedIndex, contextList.ToArray());
+            EditorGUI.EndDisabled();
 
             if (selectedIndex > 0)
             {
                 var selectedAssemblyName = contextList[selectedIndex];
                 precompiledReference.precompiled = EditorCompilationInterface.Instance.GetAllPrecompiledAssemblies()
                     .Single(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
+                precompiledReference.name = selectedAssemblyName;
             }
 
             EditorGUI.showMixedValue = false;
@@ -714,18 +735,21 @@ namespace UnityEditor
                 {
                     try
                     {
-                        var assemblyDefinitionFile = new AssemblyDefinitionReference();
+                        var assemblyDefinitionFile = new AssemblyDefinitionReference
+                        {
+                            name = reference,
+                            serializedReference = reference
+                        };
+
                         var referencePath = Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(reference);
 
-                        if (string.IsNullOrEmpty(referencePath))
-                            throw new AssemblyDefinitionException(string.Format("Could not find assembly reference '{0}'", reference), path);
+                        if (!string.IsNullOrEmpty(referencePath))
+                        {
+                            assemblyDefinitionFile.asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(referencePath);
+                            assemblyDefinitionFile.data = CustomScriptAssemblyData.FromJson(assemblyDefinitionFile.asset.text);
+                            assemblyDefinitionFile.name = assemblyDefinitionFile.data.name;
+                        }
 
-                        assemblyDefinitionFile.asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(referencePath);
-
-                        if (assemblyDefinitionFile.asset == null)
-                            throw new AssemblyDefinitionException(string.Format("Reference assembly definition file '{0}' not found", referencePath), path);
-
-                        assemblyDefinitionFile.data = CustomScriptAssemblyData.FromJson(assemblyDefinitionFile.asset.text);
                         assemblyDefinitionFile.displayValue = MixedBool.False;
                         state.references.Add(assemblyDefinitionFile);
                     }
@@ -745,19 +769,18 @@ namespace UnityEditor
             {
                 try
                 {
-                    var precompiledReference = new PrecompiledReference();
-
-                    var precompiledAssemblyExists = nameToPrecompiledReference.ContainsKey(precompiledReferenceName);
-                    if (!precompiledAssemblyExists && data.overrideReferences)
+                    var precompiledReference = new PrecompiledReference
                     {
-                        throw new AssemblyDefinitionException(string.Format("Referenced precompiled assembly '{0}' not found", precompiledReferenceName), path);
-                    }
+                        name = precompiledReferenceName,
+                    };
 
-                    if (precompiledAssemblyExists)
+                    var precompiledAssemblyPossibleReference = nameToPrecompiledReference.ContainsKey(precompiledReferenceName);
+                    if (precompiledAssemblyPossibleReference)
                     {
                         precompiledReference.precompiled = nameToPrecompiledReference[precompiledReferenceName];
-                        precompiledReference.displayValue = MixedBool.True;
                     }
+
+                    precompiledReference.displayValue = MixedBool.True;
                     state.precompiledReferences.Add(precompiledReference);
                 }
                 catch (AssemblyDefinitionException e)
@@ -893,7 +916,7 @@ namespace UnityEditor
 
         static void SaveAssemblyDefinitionState(AssemblyDefintionState state)
         {
-            var references = state.references.Where(r => r.asset != null);
+            var references = state.references;
             var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
             var OptinalUnityAssemblies = CustomScriptAssembly.OptinalUnityAssemblies;
 
@@ -901,7 +924,7 @@ namespace UnityEditor
 
             data.name = state.name;
 
-            data.references = references.Select(r => r.data.name).ToArray();
+            data.references = references.Select(r => r.name).ToArray();
             data.defineConstraints = state.defineConstraints
                 .Where(x => !string.IsNullOrEmpty(x.name))
                 .Select(r => r.name)
@@ -911,7 +934,6 @@ namespace UnityEditor
             data.overrideReferences = state.overrideReferences == MixedBool.True;
 
             data.precompiledReferences = state.precompiledReferences
-                .Where(x => x.precompiled.HasValue)
                 .Select(r => r.name).ToArray();
 
             List<string> optionalUnityReferences = new List<string>();
@@ -965,17 +987,20 @@ namespace UnityEditor
             var assemblyDefinitionFile = list[index] as AssemblyDefinitionReference;
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
-            var label = assemblyDefinitionFile.data != null ? assemblyDefinitionFile.data.name : "(Missing Reference)";
+            var label = assemblyDefinitionFile.name != null ? assemblyDefinitionFile.name : "(Missing Reference)";
             var asset = assemblyDefinitionFile.asset;
 
             bool mixed = assemblyDefinitionFile.displayValue == MixedBool.Mixed;
             EditorGUI.showMixedValue = mixed;
+            EditorGUI.BeginDisabled(assemblyDefinitionFile.name != null && asset == null);
             assemblyDefinitionFile.asset = EditorGUI.ObjectField(rect, mixed ? "(Multiple Values)" : label, asset, typeof(AssemblyDefinitionAsset), false) as AssemblyDefinitionAsset;
+            EditorGUI.EndDisabled();
             EditorGUI.showMixedValue = false;
 
             if (asset != assemblyDefinitionFile.asset && assemblyDefinitionFile.asset != null)
             {
                 assemblyDefinitionFile.data = CustomScriptAssemblyData.FromJson(assemblyDefinitionFile.asset.text);
+                assemblyDefinitionFile.name = assemblyDefinitionFile.data.name;
 
                 foreach (var state in m_TargetStates)
                     state.references[index] = assemblyDefinitionFile;

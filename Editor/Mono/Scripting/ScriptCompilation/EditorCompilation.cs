@@ -609,15 +609,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                             }
                         }
                     }
-
-                    if (assembly.References != null)
-                    {
-                        foreach (var reference in assembly.References)
-                        {
-                            if (!customScriptAssemblies.Any(a => a.Name == reference))
-                                throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has reference to non-existent assembly '{0}'", reference), assembly.FilePath);
-                        }
-                    }
                 }
                 catch (Exception e)
                 {

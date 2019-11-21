@@ -1342,6 +1342,8 @@ namespace UnityEngine
             return GetRayIntersectionAll_Internal(defaultPhysicsScene, ray.origin, ray.direction, distance, DefaultRaycastLayers);
         }
 
+        // Needs the [RequiredByNativeCode] attribute as it is called by reflection
+        // from GraphicsRaycaster.cs, to avoid a hard dependency to this module.
         [RequiredByNativeCode]
         public static RaycastHit2D[] GetRayIntersectionAll(Ray ray, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
         {
@@ -1365,6 +1367,8 @@ namespace UnityEngine
             return defaultPhysicsScene.GetRayIntersection(ray, distance, results);
         }
 
+        // Needs the [RequiredByNativeCode] attribute as it is called by reflection
+        // from GraphicsRaycaster.cs, to avoid a hard dependency to this module.
         [RequiredByNativeCode]
         public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
         {

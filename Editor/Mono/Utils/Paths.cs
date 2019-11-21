@@ -279,11 +279,15 @@ namespace UnityEditor.Utils
         {
             var normalizedFileName = unsafeFileName.Trim().Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
-            foreach (var c in normalizedFileName)
+
+            // We need to use a TextElementEmumerator in order to support UTF16 characters that may take up more than one char(case 1169358)
+            TextElementEnumerator charEnum = StringInfo.GetTextElementEnumerator(normalizedFileName);
+            while (charEnum.MoveNext())
             {
-                if (Path.GetInvalidFileNameChars().Contains(c))
+                var c = charEnum.GetTextElement();
+                if (c.Length == 1 && Path.GetInvalidFileNameChars().Contains(c[0]))
                     continue;
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c, 0);
                 if (unicodeCategory != UnicodeCategory.NonSpacingMark)
                     stringBuilder.Append(c);
             }
