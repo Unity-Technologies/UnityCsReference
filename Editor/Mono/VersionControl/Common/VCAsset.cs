@@ -138,6 +138,9 @@ namespace UnityEditor.VersionControl
             if (IsState(state, States.ReadOnly))
                 sb.Append("ReadOnly, ");
 
+            if (IsState(state, States.Unversioned))
+                sb.Append("Unversioned, ");
+
             // remove trailing ", " if had any
             if (sb.Length > 2)
                 sb.Remove(sb.Length - 2, 2);

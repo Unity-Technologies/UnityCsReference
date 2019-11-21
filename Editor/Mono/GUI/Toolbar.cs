@@ -108,6 +108,7 @@ namespace UnityEditor
         static GUIContent s_CustomToolIcon;
         static GUIContent[] s_SnapToGridIcons;
         static int s_ViewToolOnOffset;
+        internal static event Action<Rect> toolSettingsGui = delegate(Rect rect) {};
         private static GUIContent s_AccountContent;
         static GUIContent   s_CloudIcon;
         static class Styles
@@ -237,6 +238,8 @@ namespace UnityEditor
 
             ReserveWidthRight(standardButtonWidth, ref pos);
             DoSnapButtons(EditorToolGUI.GetThickArea(pos));
+
+            DoAdditionalSettingsCallback(EditorToolGUI.GetThickArea(pos));
 
             // Position centered controls.
             pos = new Rect(playModeControlsStart, 0, 240, 0);
@@ -402,7 +405,6 @@ namespace UnityEditor
 
         void DoToolSettings(Rect rect)
         {
-            rect = EditorToolGUI.GetThinArea(rect);
             EditorToolGUI.DoBuiltinToolSettings(rect, Styles.buttonLeft, Styles.buttonRight);
         }
 
@@ -415,6 +417,14 @@ namespace UnityEditor
                 rect = EditorToolGUI.GetThickArea(rect);
                 EditorSnapSettings.gridSnapEnabled = GUI.Toggle(rect, snap, icon, Styles.command);
             }
+        }
+
+        void DoAdditionalSettingsCallback(Rect rect)
+        {
+            rect.x += rect.width + 8;
+            float playButtonsStart = position.width / 2 - (Styles.commandLeft.fixedWidth + Styles.commandMid.fixedWidth + Styles.commandRight.fixedWidth) * .5f;
+            rect.width = (playButtonsStart - rect.x) - 28;
+            toolSettingsGui(rect);
         }
 
         void DoPlayButtons(bool isOrWillEnterPlaymode)

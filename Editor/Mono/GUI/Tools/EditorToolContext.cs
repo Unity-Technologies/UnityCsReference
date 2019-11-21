@@ -577,7 +577,7 @@ namespace UnityEditor.EditorTools
 
             foreach (var tool in instance.m_CustomEditorTools)
             {
-                if (tool.target == target)
+                if (tool.targets.Contains(target))
                     list.Add(tool);
             }
 
@@ -585,7 +585,7 @@ namespace UnityEditor.EditorTools
             {
                 foreach (var tool in instance.m_LockedCustomEditorTools)
                 {
-                    if (tool.target == target)
+                    if (tool.targets.Contains(target))
                         list.Add(tool);
                 }
             }
