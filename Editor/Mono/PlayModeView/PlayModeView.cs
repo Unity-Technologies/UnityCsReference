@@ -22,12 +22,15 @@ namespace UnityEditor
     }
 
     [Serializable]
-    internal abstract class PlayModeView : EditorWindow
+    internal abstract class PlayModeView : EditorWindow, ISerializationCallbackReceiver
     {
         static List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
         static PlayModeView s_LastFocused;
         static PlayModeView s_RenderingView;
 
+        Dictionary<Type, string> m_SerializedViews = new Dictionary<Type, string>();
+        [SerializeField] private List<string> m_SerializedViewsNames = new List<string>();
+        [SerializeField] private List<string> m_SerializedViewsValues = new List<string>();
         [SerializeField] string m_PlayModeViewName;
         [SerializeField] bool m_ShowGizmos;
         [SerializeField] int m_TargetDisplay;
@@ -183,15 +186,43 @@ namespace UnityEditor
             return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
         }
 
+        protected virtual string SerializeView()
+        {
+            return null;
+        }
+
+        protected virtual void DeserializeView(string serializedView)
+        {
+        }
+
+        private void SetSerializedViews(Dictionary<Type, string> serializedViews)
+        {
+            m_SerializedViews = serializedViews;
+        }
+
         protected void SwapMainWindow(Type type)
         {
             if (type.BaseType != typeof(PlayModeView))
                 throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);
-
             if (type.Name != GetType().Name)
             {
+                var serializedObject = SerializeView();
+                if (serializedObject != null)
+                {
+                    if (!m_SerializedViews.ContainsKey(GetType()))
+                        m_SerializedViews.Add(GetType(), serializedObject);
+                    else
+                        m_SerializedViews[GetType()] = serializedObject;
+                }
+
                 var window = CreateInstance(type) as PlayModeView;
                 window.autoRepaintOnSceneChange = true;
+
+                if (m_SerializedViews.ContainsKey(window.GetType()))
+                    window.DeserializeView(m_SerializedViews[window.GetType()]);
+
+                window.SetSerializedViews(m_SerializedViews);
+
                 var da = m_Parent as DockArea;
                 if (da)
                 {
@@ -336,6 +367,27 @@ namespace UnityEditor
 
             foreach (PlayModeView playModeView in s_PlayModeViews)
                 playModeView.Repaint();
+        }
+
+        public void OnBeforeSerialize()
+        {
+            m_SerializedViewsNames = new List<string>();
+            m_SerializedViewsValues = new List<string>();
+
+            foreach (var serializedView in m_SerializedViews)
+            {
+                m_SerializedViewsNames.Add(serializedView.Key.ToString());
+                m_SerializedViewsValues.Add(serializedView.Value);
+            }
+        }
+
+        public void OnAfterDeserialize()
+        {
+            m_SerializedViews = new Dictionary<Type, string>();
+            for (int i = 0; i < m_SerializedViewsNames.Count; i++)
+            {
+                m_SerializedViews.Add(Type.GetType(m_SerializedViewsNames[i]), m_SerializedViewsValues[i]);
+            }
         }
     }
 }

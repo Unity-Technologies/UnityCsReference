@@ -739,7 +739,7 @@ namespace UnityEditor
                         m_Content.image = null;
                         Texture2D icon;
 
-                        if (assetReference.instanceID != 0 && m_Owner.GetCreateAssetUtility().instanceID == assetReference.instanceID && m_Owner.GetCreateAssetUtility().icon != null)
+                        if (string.IsNullOrEmpty(assetReference.guid) && m_Owner.GetCreateAssetUtility().instanceID == assetReference.instanceID && m_Owner.GetCreateAssetUtility().icon != null)
                         {
                             // If we are creating a new asset we might have an icon to use
                             icon = m_Owner.GetCreateAssetUtility().icon;
@@ -773,7 +773,7 @@ namespace UnityEditor
                     {
                         // Get icon
                         bool drawDropShadow = false;
-                        if (m_Owner.GetCreateAssetUtility().instanceID == assetReference.instanceID && m_Owner.GetCreateAssetUtility().icon != null)
+                        if (string.IsNullOrEmpty(assetReference.guid) && m_Owner.GetCreateAssetUtility().instanceID == assetReference.instanceID && m_Owner.GetCreateAssetUtility().icon != null)
                         {
                             // If we are creating a new asset we might have an icon to use
                             m_Content.image = m_Owner.GetCreateAssetUtility().icon;

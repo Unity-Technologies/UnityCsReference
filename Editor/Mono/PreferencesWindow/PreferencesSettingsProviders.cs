@@ -63,7 +63,7 @@ namespace UnityEditor
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
-            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage.");
+            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
         }
 
         internal class ExternalProperties
@@ -161,6 +161,7 @@ namespace UnityEditor
 
         private bool m_AllowAlphaNumericHierarchy = false;
         private bool m_EnableCodeCoverage = false;
+        private bool m_EnableCodeCoverageChangedInThisSession = false;
 
         private string[] m_ScriptApps;
         private string[] m_ScriptAppsEditions;
@@ -457,7 +458,7 @@ namespace UnityEditor
 
         private void EnableGeneral()
         {
-            var fontNames = new List<string>(EditorResources.GetSupportedFonts());
+            var fontNames = new List<string>(EditorResources.supportedFontNames);
 
             fontNames.Sort();
 
@@ -584,7 +585,10 @@ namespace UnityEditor
 
             m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
             if (m_EnableCodeCoverage != Coverage.enabled)
+            {
                 EditorGUILayout.HelpBox((m_EnableCodeCoverage ? "Enabling " : "Disabling ") + "Code Coverage will not take effect until Unity is restarted.", MessageType.Warning);
+                m_EnableCodeCoverageChangedInThisSession = true;
+            }
 
             ApplyChangesToPrefs();
 
@@ -936,6 +940,13 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
             EditorPrefs.SetBool("CodeCoverageEnabled", m_EnableCodeCoverage);
+
+            if (m_EnableCodeCoverageChangedInThisSession)
+            {
+                EditorPrefs.SetBool("CodeCoverageEnabledMessageShown", false);
+                m_EnableCodeCoverageChangedInThisSession = false;
+            }
+
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);

@@ -958,6 +958,9 @@
     <Compile Include="..\..\Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs">
       <Link>Runtime\Export\StaticBatching\MeshSubsetCombineUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\StaticShim\ApplicationShimBase.cs">
+      <Link>Runtime\Export\StaticShim\ApplicationShimBase.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\StaticShim\ScreenShimBase.cs">
       <Link>Runtime\Export\StaticShim\ScreenShimBase.cs</Link>
     </Compile>

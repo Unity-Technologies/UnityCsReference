@@ -24,7 +24,17 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                EditorGUIUtility.SetCurrentViewCursor(null, Vector2.zero, (MouseCursor)cursor.defaultCursorId);
+                var mouseCursor = (MouseCursor)cursor.defaultCursorId;
+                if (mouseCursor == MouseCursor.Arrow)
+                {
+                    // If it's the default cursor reset the cursor state
+                    // so that editor cursor rects can be processed
+                    EditorGUIUtility.ClearCurrentViewCursor();
+                }
+                else
+                {
+                    EditorGUIUtility.SetCurrentViewCursor(null, Vector2.zero, mouseCursor);
+                }
             }
         }
 

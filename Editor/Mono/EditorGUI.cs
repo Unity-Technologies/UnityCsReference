@@ -6068,10 +6068,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         private static Material GetPreviewMaterial(ref Material m, string shaderPath)
         {
             if (m == null)
-            {
                 m = new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader);
-                m.hideFlags = HideFlags.HideAndDontSave;
-            }
             return m;
         }
 

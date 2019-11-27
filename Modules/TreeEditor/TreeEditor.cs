@@ -2546,22 +2546,26 @@ namespace TreeEditor
             GUI.EndScrollView();
 
             // draw stats
-            MeshFilter m = renderer.GetComponent<MeshFilter>();
-            if (m && m.sharedMesh && renderer)
+            if (renderer)
             {
-                int vs = m.sharedMesh.vertices.Length;
-                int ts = m.sharedMesh.triangles.Length / 3;
-                int ms = renderer.sharedMaterials.Length;
-                Rect labelrect = new Rect(hierachyDisplayRect.xMax - 80 - 4, hierachyDisplayRect.yMax + offset.y - 40 - 4, 80, 40);
+                MeshFilter m = renderer.GetComponent<MeshFilter>();
+                if (m && m.sharedMesh && renderer)
+                {
+                    int vs = m.sharedMesh.vertices.Length;
+                    int ts = m.sharedMesh.triangles.Length / 3;
+                    int ms = renderer.sharedMaterials.Length;
+                    Rect labelrect = new Rect(hierachyDisplayRect.xMax - 80 - 4, hierachyDisplayRect.yMax + offset.y - 40 - 4, 80, 40);
 
-                string text = TreeEditorHelper.GetGUIContent("Hierarchy Stats").text;
-                text = text.Replace("[v]", vs.ToString());
-                text = text.Replace("[t]", ts.ToString());
-                text = text.Replace("[m]", ms.ToString());
-                text = text.Replace(" / ", "\n");
+                    string text = TreeEditorHelper.GetGUIContent("Hierarchy Stats").text;
+                    text = text.Replace("[v]", vs.ToString());
+                    text = text.Replace("[t]", ts.ToString());
+                    text = text.Replace("[m]", ms.ToString());
+                    text = text.Replace(" / ", "\n");
 
-                GUI.Label(labelrect, text, EditorStyles.helpBox);
+                    GUI.Label(labelrect, text, EditorStyles.helpBox);
+                }
             }
+
 
             // Pass scroll wheel event through..
             if ((cloneEvent.type == EventType.ScrollWheel) && (Event.current.type == EventType.Used))

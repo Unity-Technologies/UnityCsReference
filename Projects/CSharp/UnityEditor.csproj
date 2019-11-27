@@ -5425,6 +5425,9 @@
     <Compile Include="..\..\Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs">
       <Link>Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
+      <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
+    </Compile>
     <Compile Include="..\..\artifacts\generated\OldBindingsForCsProjects\Editor\AssetModificationProcessorBindings.gen.cs">
       <Link>artifacts\generated\OldBindingsForCsProjects\Editor\AssetModificationProcessorBindings.gen.cs</Link>
     </Compile>

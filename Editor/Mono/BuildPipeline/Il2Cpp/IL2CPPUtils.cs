@@ -521,12 +521,12 @@ namespace UnityEditorInternal
 
         private string GetIl2CppExe()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/build/il2cpp.exe";
+            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/net471/il2cpp.exe";
         }
 
         private string GetIl2CppCoreExe()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/build/il2cppcore/il2cppcore.dll";
+            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/il2cppcore/il2cppcore.dll";
         }
 
         private bool ShouldUseIl2CppCore()

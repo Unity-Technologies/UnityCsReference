@@ -444,7 +444,7 @@ namespace UnityEditor
             {
                 if (m_MaterialImportMode.intValue != (int)ModelImporterMaterialImportMode.None)
                 {
-                    if (m_MaterialImportMode.intValue == (int)ModelImporterMaterialImportMode.LegacyImport)
+                    if (m_MaterialImportMode.intValue == (int)ModelImporterMaterialImportMode.ImportStandard)
                     {
                         EditorGUILayout.PropertyField(m_UseSRGBMaterialColor, Styles.SRGBMaterialColor);
                     }

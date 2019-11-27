@@ -74,7 +74,7 @@ namespace UnityEngine
         public static event LowMemoryCallback lowMemory;
 
         [RequiredByNativeCode]
-        private static void CallLowMemory()
+        internal static void CallLowMemory()
         {
             var handler = lowMemory;
             if (handler != null)
@@ -232,15 +232,6 @@ namespace UnityEngine
             get
             {
                 return !isEditor;
-            }
-        }
-
-        // Are we running inside the Unity editor? (RO)
-        public static bool isEditor
-        {
-            get
-            {
-                return true;
             }
         }
 
@@ -403,5 +394,22 @@ namespace UnityEngine
 
         [System.Obsolete("Use SceneManager.UnloadScene")]
         static public bool UnloadLevel(string scenePath) { return SceneManager.UnloadScene(scenePath); }
+    }
+
+    internal partial class ApplicationEditor
+    {
+        // Are we running inside the Unity editor? (RO)
+        public static bool isEditor
+        {
+            get
+            {
+                return true;
+            }
+        }
+    }
+
+    public partial class Application
+    {
+        public static bool isEditor => ShimManager.applicationShim.isEditor;
     }
 }
