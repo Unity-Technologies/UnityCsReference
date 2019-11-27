@@ -29,6 +29,8 @@ namespace UnityEngine
         // Keyboard with symbol keys often used on social media such as Twitter, features the "@" (and "#" on iOS/tvOS)
         Social = 9,
         // Keyboard optimized for search terms, features the space and "."
-        Search = 10
+        Search = 10,
+        // Keyboard with numbers and a decimal point.
+        DecimalPad = 11
     }
 }

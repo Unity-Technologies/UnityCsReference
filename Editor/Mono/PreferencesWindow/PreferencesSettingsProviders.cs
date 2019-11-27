@@ -310,7 +310,7 @@ namespace UnityEditor
         private void ShowExternalApplications(string searchContext)
         {
             // Applications
-            FilePopup(ExternalProperties.externalScriptEditor, ScriptEditorUtility.GetExternalScriptEditor(), ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
+            FilePopup(ExternalProperties.externalScriptEditor, ScriptEditorUtility.GetExternalScriptEditor(), ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, CodeEditor.SystemDefaultPath, OnScriptEditorChanged);
 
             #pragma warning disable 618
             if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
@@ -830,7 +830,7 @@ namespace UnityEditor
             m_ExternalEditorSupportsUnityProj = EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false);
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
 
-            m_ScriptApps = BuildAppPathList(m_ScriptEditorPath, kRecentScriptAppsKey, "internal");
+            m_ScriptApps = BuildAppPathList(m_ScriptEditorPath, kRecentScriptAppsKey, CodeEditor.SystemDefaultPath);
             m_ScriptAppsEditions = new string[m_ScriptApps.Length];
 
             if (Application.platform == RuntimePlatform.WindowsEditor)
@@ -1021,7 +1021,7 @@ namespace UnityEditor
             {
                 var appPath = appPathList[i];
 
-                if (appPath == "internal" || appPath == "")     // use built-in
+                if (appPath == CodeEditor.SystemDefaultPath)     // use built-in
                     list.Add(defaultBuiltIn);
                 else
                 {

@@ -463,7 +463,7 @@ namespace UnityEditor.UIElements
 
                     var originalWideMode = SetWideModeForWidth(inspector);
 
-                    GUIStyle editorWrapper = (editor.UseDefaultMargins()
+                    GUIStyle editorWrapper = (editor.UseDefaultMargins() && editor.CanBeExpandedViaAFoldout()
                         ? EditorStyles.inspectorDefaultMargins
                         : GUIStyle.none);
                     try

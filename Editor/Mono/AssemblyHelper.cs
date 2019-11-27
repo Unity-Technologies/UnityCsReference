@@ -333,44 +333,12 @@ namespace UnityEditor
             public string[] SearchDirs;
         }
 
-        static GetAssemblyResolverData GetAssemblyResolver(BuildTarget targetPlatform, bool isEditor, string assemblyPathName, string[] searchDirs)
-        {
-            var target = ModuleManager.GetTargetStringFromBuildTarget(targetPlatform);
-            var extension = ModuleManager.GetCompilationExtension(target);
-            var extraPaths = extension.GetCompilerExtraAssemblyPaths(isEditor, assemblyPathName);
-            if (extraPaths != null && extraPaths.Length > 0)
-            {
-                var dirs = new List<string>(searchDirs);
-                dirs.AddRange(extraPaths);
-                searchDirs = dirs.ToArray();
-            }
-
-            var assemblyResolver = extension.GetAssemblyResolver(isEditor, assemblyPathName, searchDirs);
-
-            return new GetAssemblyResolverData
-            {
-                Resolver = assemblyResolver,
-                SearchDirs = searchDirs
-            };
-        }
-
         /// Extract information about all types in the specified assembly, searchDirs might be used to resolve dependencies.
         static public AssemblyTypeInfoGenerator.ClassInfo[] ExtractAssemblyTypeInfo(BuildTarget targetPlatform, bool isEditor, string assemblyPathName, string[] searchDirs)
         {
             try
             {
-                var assemblyResolverData = GetAssemblyResolver(targetPlatform, isEditor, assemblyPathName, searchDirs);
-
-                AssemblyTypeInfoGenerator gen;
-                if (assemblyResolverData.Resolver == null)
-                {
-                    gen = new AssemblyTypeInfoGenerator(assemblyPathName, assemblyResolverData.SearchDirs);
-                }
-                else
-                {
-                    gen = new AssemblyTypeInfoGenerator(assemblyPathName, assemblyResolverData.Resolver);
-                }
-
+                AssemblyTypeInfoGenerator gen = new AssemblyTypeInfoGenerator(assemblyPathName, searchDirs);
                 return gen.GatherClassInfo();
             }
             catch (System.Exception ex)
@@ -432,16 +400,12 @@ namespace UnityEditor
             {
                 try
                 {
-                    var assemblyResolverData = GetAssemblyResolver(targetPlatform, false, assemblyPath, searchDirs);
+                    var assemblyResolverData = new GetAssemblyResolverData { SearchDirs = searchDirs, };
+                    var resolver = new DefaultAssemblyResolver();
+                    foreach (var searchDir in searchDirs)
+                        resolver.AddSearchDirectory(searchDir);
 
-                    if (assemblyResolverData.Resolver == null)
-                    {
-                        var resolver = new DefaultAssemblyResolver();
-                        foreach (var searchDir in searchDirs)
-                            resolver.AddSearchDirectory(searchDir);
-
-                        assemblyResolverData.Resolver = resolver;
-                    }
+                    assemblyResolverData.Resolver = resolver;
 
                     var assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters
                     {

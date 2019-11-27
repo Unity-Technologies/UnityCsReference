@@ -133,13 +133,15 @@ namespace UnityEditor.UIElements
 
         private void UpdateInspectorVisibility()
         {
-            if (!editor.CanBeExpandedViaAFoldout())
+            if (editor.CanBeExpandedViaAFoldout())
             {
-                SetElementVisible(m_InspectorElement, false);
+                m_Footer.style.marginTop = 0.0f;
+                m_InspectorElement.style.paddingBottom = InspectorWindow.kEditorElementPaddingBottom;
             }
             else
             {
-                SetElementVisible(m_InspectorElement, true);
+                m_Footer.style.marginTop = -kFooterDefaultHeight;
+                m_InspectorElement.style.paddingBottom = 0.0f;
             }
         }
 
@@ -223,12 +225,12 @@ namespace UnityEditor.UIElements
                 InvalidateIMGUILayouts(this);
             }
 
-            wasVisible = wasVisible && editor.CanBeExpandedViaAFoldout();
-
             if (wasVisible != IsElementVisible(m_InspectorElement))
             {
                 SetElementVisible(m_InspectorElement, wasVisible);
             }
+
+            UpdateInspectorVisibility();
 
             var multiEditingSupported = inspectorWindow.IsMultiEditingSupported(editor, target);
 

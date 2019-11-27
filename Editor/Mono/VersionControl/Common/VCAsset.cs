@@ -138,6 +138,9 @@ namespace UnityEditor.VersionControl
             if (IsState(state, Asset.States.ReadOnly))
                 sb.AppendLine("ReadOnly");
 
+            if (IsState(state, Asset.States.Unversioned))
+                sb.Append("Unversioned");
+
             return sb.ToString();
         }
 

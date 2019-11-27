@@ -708,6 +708,8 @@ namespace UnityEditor
                 if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(prefabAssetPath, PrefabUtility.SaveVerb.Apply))
                     return;
                 m_Modification.Apply(prefabAssetPath);
+                EditorUtility.ForceRebuildInspectors(); // handles applying RemovedComponents
+
                 UpdateAndClose();
             }
 

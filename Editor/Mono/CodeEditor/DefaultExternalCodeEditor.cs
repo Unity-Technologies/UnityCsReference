@@ -114,12 +114,11 @@ namespace UnityEditor
                 return false;
             }
 
-            string applicationPath = EditorPrefs.GetString("kScriptsDefaultApp");
-            if (string.IsNullOrEmpty(applicationPath.Trim()))
+            string applicationPath = CodeEditor.CurrentEditorInstallation.Trim();
+            if (applicationPath == CodeEditor.SystemDefaultPath)
             {
                 return false;
             }
-
 
             if (IsOSX)
             {
@@ -131,7 +130,7 @@ namespace UnityEditor
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = applicationPath,
-                    Arguments = string.IsNullOrEmpty(applicationPath) ? "" : CodeEditor.ParseArgument(Arguments, path, line, column),
+                    Arguments = CodeEditor.ParseArgument(Arguments, path, line, column),
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
                     UseShellExecute = true,
