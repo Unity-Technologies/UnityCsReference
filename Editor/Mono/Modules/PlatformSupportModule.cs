@@ -409,7 +409,6 @@ namespace UnityEditor.Modules
     {
         CSharpCompiler GetCsCompiler(bool buildingForEditor, ScriptAssembly scriptAssembly);
         string[] GetCompilerExtraAssemblyPaths(bool isEditor, string assemblyPathName);
-        IAssemblyResolver GetAssemblyResolver(bool buildingForEditor, string assemblyPath, string[] searchDirectories);
 
         // Returns an array of windows metadata files (.winmd) that should be referenced when compiling scripts.
         // Only WinRT based platforms need these references.

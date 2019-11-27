@@ -102,6 +102,7 @@ namespace UnityEditor
             public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TrTextContent("Paint Collision Particles");
             public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TrTextContent("Select Collision Particles");
             public static readonly GUIContent brushRadiusString = EditorGUIUtility.TrTextContent("Brush Radius");
+            public static readonly GUIContent constraintSizeString = EditorGUIUtility.TrTextContent("Constraint Size");
             public static readonly GUIContent selfAndInterCollisionMode = EditorGUIUtility.TrTextContent("Paint or Select Particles");
             public static readonly GUIContent backFaceManipulationMode = EditorGUIUtility.TrTextContent("Back Face Manipulation");
             public static readonly GUIContent manipulateBackFaceString = EditorGUIUtility.TrTextContent("Manipulate Backfaces");
@@ -840,6 +841,8 @@ namespace UnityEditor
                 }
                 cloth.coefficients = coefficients;
             }
+
+            EditConstraintSize();
         }
 
         void CollSelectionGUI()
@@ -919,6 +922,19 @@ namespace UnityEditor
             }
         }
 
+        void EditConstraintSize()
+        {
+            EditorGUI.BeginChangeCheck();
+            float fieldValue = EditorGUILayout.FloatField(Styles.constraintSizeString, state.ConstraintSize);
+            bool changed = EditorGUI.EndChangeCheck();
+            if (changed)
+            {
+                state.ConstraintSize = fieldValue;
+                if (state.ConstraintSize < 0.0f)
+                    state.ConstraintSize = 0.0f;
+            }
+        }
+
         void PaintGUI()
         {
             state.PaintMaxDistance = PaintField(state.PaintMaxDistance, ref state.PaintMaxDistanceEnabled, DrawMode.MaxDistance);
@@ -940,6 +956,7 @@ namespace UnityEditor
             }
 
             EditBrushSize();
+            EditConstraintSize();
         }
 
         int GetMouseVertex(Event e)

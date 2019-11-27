@@ -35,17 +35,6 @@ namespace UnityEditor.Scripting.Compilers
             // Case 755238: Always use english for outputing errors, the same way as Mono compilers do
             arguments.Add("/preferreduilang:en-US");
             arguments.Add("/langversion:latest");
-
-            var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            if (platformSupportModule != null && !m_Island._editor)
-            {
-                var compilationExtension = platformSupportModule.CreateCompilationExtension();
-
-                arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
-                arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
-                arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
-                arguments.AddRange(compilationExtension.GetAdditionalSourceFiles());
-            }
         }
 
         private static void ThrowCompilerNotFoundException(string path)

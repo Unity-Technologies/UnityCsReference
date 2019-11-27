@@ -39,7 +39,8 @@ namespace UnityEditor.VersionControl
             ReadOnly = 16384,
             MetaFile = 32768,
             MovedLocal = 65536,
-            MovedRemote = 131072
+            MovedRemote = 131072,
+            Unversioned = 262144
         }
 
         public Asset(string clientPath)

@@ -636,8 +636,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Setup ScriptAssembly references
             index = 0;
             foreach (var entry in targetAssemblies)
-                AddScriptAssemblyReferences(ref scriptAssemblies[index++], entry.Key, settings,
+            {
+                var scriptAssembly = scriptAssemblies[index++];
+                AddScriptAssemblyReferences(ref scriptAssembly, entry.Key, settings,
                     assemblies, targetToScriptAssembly);
+
+                if (!buildingForEditor)
+                {
+                    PlatformSupportModuleHelpers.AddAdditionalPlatformSupportData(settings.CompilationExtension, ref scriptAssembly);
+                }
+            }
 
             return scriptAssemblies;
         }

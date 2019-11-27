@@ -1585,6 +1585,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 predefinedAssembliesCompilerOptions.AllowUnsafeCode = true;
             predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
 
+            ICompilationExtension compilationExtension = null;
+            if ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0)
+            {
+                compilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
+            }
+
             var settings = new ScriptAssemblySettings
             {
                 BuildTarget = buildTarget,
@@ -1592,6 +1598,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 OutputDirectory = GetCompileScriptsOutputDirectory(),
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
+                CompilationExtension = compilationExtension
             };
 
             return settings;
