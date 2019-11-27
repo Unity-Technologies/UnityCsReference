@@ -46,7 +46,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                return Path.Combine(IL2CPPUtils.GetIl2CppFolder(), "build/UnityLinker.exe");
+                return Path.Combine(IL2CPPUtils.GetIl2CppFolder(), "build/deploy/net471/UnityLinker.exe");
             }
         }
 

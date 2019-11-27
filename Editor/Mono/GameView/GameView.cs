@@ -690,6 +690,16 @@ namespace UnityEditor
             Repaint();
         }
 
+        protected override string SerializeView()
+        {
+            return EditorJsonUtility.ToJson(this);
+        }
+
+        protected override void DeserializeView(string serializedView)
+        {
+            EditorJsonUtility.FromJsonOverwrite(serializedView, this);
+        }
+
         private void OnGUI()
         {
             if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()

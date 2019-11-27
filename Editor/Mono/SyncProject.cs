@@ -61,16 +61,6 @@ namespace UnityEditor
                 Console.WriteLine("Error detecting Visual Studio installations: {0}{1}{2}", ex.Message, Environment.NewLine, ex.StackTrace);
                 InstalledVisualStudios = new Dictionary<VisualStudioVersion, VisualStudioPath[]>();
             }
-
-            SetVisualStudioAsEditorIfNoEditorWasSet();
-        }
-
-        private static void SetVisualStudioAsEditorIfNoEditorWasSet()
-        {
-            var externalEditor = CodeEditor.CurrentEditorInstallation;
-            var bestVisualStudio = FindBestVisualStudio();
-            if (externalEditor == CodeEditor.SystemDefaultPath && bestVisualStudio != null)
-                CodeEditor.SetExternalScriptEditor(bestVisualStudio);
         }
 
         public static string FindBestVisualStudio()

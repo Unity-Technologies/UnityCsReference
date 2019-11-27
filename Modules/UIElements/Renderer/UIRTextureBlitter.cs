@@ -134,6 +134,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 var blitShader = Shader.Find("Hidden/Internal-UIRAtlasBlitCopy");
                 m_BlitMaterial = new Material(blitShader);
+                m_BlitMaterial.hideFlags |= HideFlags.DontSaveInEditor;
             }
 
             // store viewport as we'll have to restore it once the AtlasManager is done rendering

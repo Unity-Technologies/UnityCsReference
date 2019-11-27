@@ -88,6 +88,19 @@ namespace UnityEngine.UIElements
                 {
                     EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
                 }
+                else if (panel.visualTree.childCount > 0 && panel.visualTree[0] is IMGUIContainer)
+                {
+                    // Send the events to the GUIView container so that it can process them.
+                    // This avoid elements near the edge of the window preventing the dock area splitter to work.
+                    // See case : https://fogbugz.unity3d.com/f/cases/1197851/
+                    var topLevelIMGUI = (IMGUIContainer)panel.visualTree[0];
+                    if (!evt.Skip(topLevelIMGUI) && evt.imguiEvent != null)
+                    {
+                        topLevelIMGUI.SendEventToIMGUI(evt, false);
+                        if (evt.imguiEvent.rawType == EventType.Used)
+                            evt.StopPropagation();
+                    }
+                }
             }
 
             evt.stopDispatch = true;

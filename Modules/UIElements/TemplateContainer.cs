@@ -20,11 +20,6 @@ namespace UnityEngine.UIElements
                 get { yield break; }
             }
 
-            public UxmlTraits()
-            {
-                m_PickingMode.defaultValue = PickingMode.Ignore;
-            }
-
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -69,7 +64,6 @@ namespace UnityEngine.UIElements
         {
             this.templateId = templateId;
             m_ContentContainer = this;
-            pickingMode = PickingMode.Ignore;
         }
 
         public override VisualElement contentContainer

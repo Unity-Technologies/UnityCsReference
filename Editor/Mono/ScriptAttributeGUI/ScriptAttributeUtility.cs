@@ -210,7 +210,34 @@ namespace UnityEditor
                 type = null;
                 return null;
             }
-            return GetFieldInfoFromPropertyPath(classType, property.propertyPath, out type);
+
+            var fieldPath = property.propertyPath;
+            if (property.isReferencingAManagedReferenceField)
+            {
+                // When the field we are trying to access is a dynamic instance, things are a bit more tricky
+                // since we cannot "statically" (looking only at the parent class field types) know the actual
+                // "classType" of the parent class.
+
+                // The issue also is that at this point our only view on the object is the very limited SerializedProperty.
+
+                // So we have to:
+                // 1. try to get the FQN from for the current managed type from the serialized data,
+                // 2. get the path *in the current managed instance* of the field we are pointing to,
+                // 3. foward that to 'GetFieldInfoFromPropertyPath' as if it was a regular field,
+
+                var objectTypename = property.GetFullyQualifiedTypenameForCurrentTypeTreeInternal();
+                GetTypeFromManagedReferenceFullTypeName(objectTypename, out classType);
+
+                fieldPath = property.GetPropertyPathInCurrentManagedTypeTreeInternal();
+            }
+
+            if (classType == null)
+            {
+                type = null;
+                return null;
+            }
+
+            return GetFieldInfoFromPropertyPath(classType, fieldPath, out type);
         }
 
         /// <summary>

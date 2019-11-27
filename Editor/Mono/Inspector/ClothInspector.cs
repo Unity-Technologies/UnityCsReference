@@ -94,6 +94,7 @@ namespace UnityEditor
 
         int m_NumSelection = 0;
 
+        [NonSerialized]
         SkinnedMeshRenderer m_SkinnedMeshRenderer;
 
         private static class Styles

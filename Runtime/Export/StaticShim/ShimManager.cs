@@ -16,8 +16,12 @@ namespace UnityEngine
         private static SystemInfoShimBase s_ActiveSystemInfoShim;
         private static readonly SystemInfoShimBase s_DefaultSystemInfoShim = new SystemInfoShimBase();
 
-        internal static ScreenShimBase ScreenShim => s_ActiveScreenShim ?? s_DefaultScreenShim;
-        internal static SystemInfoShimBase SystemInfoShim => s_ActiveSystemInfoShim ?? s_DefaultSystemInfoShim;
+        private static ApplicationShimBase s_ActiveApplicationShim;
+        private static readonly ApplicationShimBase s_DefaultApplicationShim = new ApplicationShimBase();
+
+        internal static ScreenShimBase screenShim => s_ActiveScreenShim ?? s_DefaultScreenShim;
+        internal static SystemInfoShimBase systemInfoShim => s_ActiveSystemInfoShim ?? s_DefaultSystemInfoShim;
+        internal static ApplicationShimBase applicationShim => s_ActiveApplicationShim ?? s_DefaultApplicationShim;
 
         internal static void UseShim(ScreenShimBase shim)
         {
@@ -28,6 +32,12 @@ namespace UnityEngine
         internal static void UseShim(SystemInfoShimBase shim)
         {
             s_ActiveSystemInfoShim = shim;
+            ActiveShimChanged?.Invoke();
+        }
+
+        internal static void UseShim(ApplicationShimBase shim)
+        {
+            s_ActiveApplicationShim = shim;
             ActiveShimChanged?.Invoke();
         }
 
@@ -49,6 +59,15 @@ namespace UnityEngine
             }
         }
 
+        internal static void RemoveShim(ApplicationShimBase shim)
+        {
+            if (s_ActiveApplicationShim == shim)
+            {
+                s_ActiveApplicationShim = null;
+                ActiveShimChanged?.Invoke();
+            }
+        }
+
         internal static bool IsShimActive(ScreenShimBase shim)
         {
             return s_ActiveScreenShim == shim;
@@ -59,6 +78,11 @@ namespace UnityEngine
             return s_ActiveSystemInfoShim == shim;
         }
 
+        internal static bool IsShimActive(ApplicationShimBase shim)
+        {
+            return s_ActiveApplicationShim == shim;
+        }
+
         internal bool IsScreenShimActive()
         {
             return s_ActiveScreenShim != null;
@@ -67,6 +91,11 @@ namespace UnityEngine
         internal bool IsSystemInfoShimActive()
         {
             return s_ActiveSystemInfoShim != null;
+        }
+
+        internal bool IsApplicationShimActive()
+        {
+            return s_ActiveApplicationShim != null;
         }
     }
 }

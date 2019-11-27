@@ -2328,7 +2328,6 @@ namespace UnityEditor
             {
                 s_MouseRects.Clear();
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
-                Profiler.BeginSample("SceneView.Repaint");
             }
 
             Color origColor = GUI.color;
@@ -2508,11 +2507,6 @@ namespace UnityEditor
             m_SceneViewOverlay.End();
 
             HandleMouseCursor();
-
-            if (evt.type == EventType.Repaint)
-            {
-                Profiler.EndSample();
-            }
 
             s_CurrentDrawingSceneView = null;
             m_Camera.rect = origCameraRect;

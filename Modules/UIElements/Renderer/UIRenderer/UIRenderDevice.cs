@@ -247,6 +247,7 @@ namespace UnityEngine.UIElements.UIR
                     // suffer this issue, so we can use it as a reference.
                     var stockDefaultShader = getEditorShader();
                     var stockDefaultMaterial = new Material(stockDefaultShader);
+                    stockDefaultMaterial.hideFlags |= HideFlags.DontSaveInEditor;
                     string tagValue = stockDefaultMaterial.GetTag(k_VertexTexturingIsAvailableTag, false);
                     UIRUtility.Destroy(stockDefaultMaterial);
                     s_VertexTexturingIsAvailable = (tagValue == k_VertexTexturingIsAvailableTrue);
@@ -590,6 +591,8 @@ namespace UnityEngine.UIElements.UIR
             const StencilOp passBack = StencilOp.Keep;
             const StencilOp zFailBack = StencilOp.Zero;
             const StencilOp failBack = StencilOp.Keep;
+
+            material.hideFlags |= HideFlags.DontSaveInEditor;
 
             if (mode == DrawingModes.StraightY)
             {
