@@ -74,7 +74,8 @@ namespace UnityEngine.UIElements
             if (m_ParentList.Contains(ve))
             {
                 m_ParentList.Remove(ve);
-                for (int i = 0; i < ve.hierarchy.childCount; ++i)
+                var childCount = ve.hierarchy.childCount;
+                for (int i = 0; i < childCount; ++i)
                 {
                     ValidateViewDataOnSubTree(ve.hierarchy[i], enablePersistence);
                 }

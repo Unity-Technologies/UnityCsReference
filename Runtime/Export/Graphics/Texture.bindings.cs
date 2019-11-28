@@ -229,6 +229,7 @@ namespace UnityEngine
 
         [FreeFunction("Texture2DScripting::GenerateAtlas")]
         extern private static void GenerateAtlasImpl(Vector2[] sizes, int padding, int atlasSize, [Out] Rect[] rect);
+        extern internal bool isPreProcessed { get; }
 
         extern public bool streamingMipmaps { get; }
         extern public int streamingMipmapsPriority { get; }

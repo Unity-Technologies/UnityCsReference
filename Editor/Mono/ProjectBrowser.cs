@@ -100,7 +100,7 @@ namespace UnityEditor
         [SerializeField]
         ViewMode m_ViewMode = ViewMode.TwoColumns;
         [SerializeField]
-        int m_StartGridSize = 64;
+        int m_StartGridSize = 16;
         [SerializeField]
         string[] m_LastFolders = new string[0];
         [SerializeField]

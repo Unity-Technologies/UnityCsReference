@@ -117,6 +117,15 @@ namespace UnityEditor.Experimental
         [FreeFunction()]
         public extern static void RefreshCacheServerNamespacePrefix();
 
+        [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
+        public extern static bool IsCacheServerEnabled();
+        [FreeFunction("AssetDatabase::GetCacheServerNamespacePrefix")]
+        public extern static string GetCacheServerNamespacePrefix();
+        [FreeFunction("AssetDatabase::GetCacheServerEnableDownload")]
+        public extern static bool GetCacheServerEnableDownload();
+        [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
+        public extern static bool GetCacheServerEnableUpload();
+
         [FreeFunction("CacheServerCountersResetDeltas")]
         private extern static void CacheServerCountersResetDeltas();
 
@@ -195,19 +204,13 @@ namespace UnityEditor.Experimental
             return assetsReportedChanged.ToArray();
         }
 
-        [FreeFunction("RegisterCustomDependency")]
+        [FreeFunction("AssetDatabaseExperimental::RegisterCustomDependency")]
         public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
 
-        [FreeFunction("UnregisterCustomDependencyPrefixFilter")]
+        [FreeFunction("AssetDatabaseExperimental::UnregisterCustomDependencyPrefixFilter")]
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
         public extern static bool IsAssetImportWorkerProcess();
-
-        [FreeFunction("AssetDatabaseExperimental::RemoveArtifacts_Internal")]
-        public extern static long RemoveArtifacts(string[] assets);
-
-        [FreeFunction("AssetDatabaseExperimental::ReimportAssets_Internal")]
-        public extern static void ReimportAssets(string[] assets);
     }
 }

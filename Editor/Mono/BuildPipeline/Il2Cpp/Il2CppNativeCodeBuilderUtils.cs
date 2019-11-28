@@ -45,6 +45,11 @@ namespace UnityEditorInternal
             foreach (var library in additionalLibs)
                 arguments.Add(FormatArgument("additional-libraries", library));
 
+            if (!string.IsNullOrEmpty(builder.BaselibLibraryDirectory))
+                arguments.Add(FormatArgument("baselib-directory", builder.BaselibLibraryDirectory));
+
+            arguments.Add("--avoid-dynamic-library-copy");
+
             arguments.AddRange(builder.AdditionalIl2CPPArguments);
 
             return arguments;

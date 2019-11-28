@@ -90,7 +90,14 @@ namespace UnityEngine.UIElements
             {
                 if (m_Values[i].id == value.id)
                 {
-                    m_Values[i] = value;
+                    if (value.keyword == StyleKeyword.Null)
+                    {
+                        m_Values.RemoveAt(i);
+                    }
+                    else
+                    {
+                        m_Values[i] = value;
+                    }
                     return;
                 }
             }
@@ -339,7 +346,7 @@ namespace UnityEngine.UIElements
             if (inlineValue.keyword == StyleKeyword.Null)
             {
                 sv.keyword = sharedValue.keyword;
-                sv.number = sharedValue.value.ToInt32(CultureInfo.InvariantCulture);
+                sv.number = UnsafeUtility.EnumToInt(sharedValue.value);
             }
 
             ApplyStyleValue(sv);

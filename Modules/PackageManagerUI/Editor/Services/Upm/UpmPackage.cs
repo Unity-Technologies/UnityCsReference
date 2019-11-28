@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI
             m_Name = name;
             m_IsDiscoverable = isDiscoverable;
             m_VersionList = new UpmVersionList();
-            m_Errors = new List<Error>();
+            m_Errors = new List<UIError>();
             m_Type = type;
         }
 
@@ -37,7 +37,7 @@ namespace UnityEditor.PackageManager.UI
         {
             m_Progress = PackageProgress.None;
             m_Name = info.name;
-            m_Errors = new List<Error>();
+            m_Errors = new List<UIError>();
             m_IsDiscoverable = isDiscoverable;
             m_VersionList = new UpmVersionList(info, isInstalled);
             m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;

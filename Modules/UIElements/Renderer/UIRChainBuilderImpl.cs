@@ -299,12 +299,18 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
                         renderChain.shaderInfoAllocator.FreeClipRect(ve.renderChainData.clipRectID);
 
-                    // Inherit parent's clipRectID if possible
-                    newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
-                    newClipRectID.owned = 0;
+                    // Inherit parent's clipRectID if possible.
+                    // Group transforms shouldn't inherit the clipRectID since they have a new frame of reference,
+                    // they provide a new baseline with the _PixelClipRect instead.
+                    if ((ve.renderHints & RenderHints.GroupTransform) == 0)
+                    {
+                        newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
+                        newClipRectID.owned = 0;
+                    }
                 }
 
                 clipRectIDChanged = !ve.renderChainData.clipRectID.Equals(newClipRectID);
+                Debug.Assert((ve.renderHints & RenderHints.GroupTransform) == 0 || !clipRectIDChanged);
                 ve.renderChainData.clipRectID = newClipRectID;
             }
 
@@ -799,7 +805,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     cmdPrev = ve.renderChainData.lastCommand;
                     cmdNext = cmdPrev.next;
                 }
-                else if (oldCmdPrev == null && oldCmdNext == null)
+                else if (cmdPrev == null && cmdNext == null)
                     FindClosingCommandInsertionPoint(ve, out cmdPrev, out cmdNext);
 
                 if (painter.closingInfo.clipperRegisterIndices.Length > 0)
@@ -1550,7 +1556,17 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_CurrentEntry.clipRectID = m_ClipRectID;
                 m_CurrentEntry.isStencilClipped = m_StencilClip;
                 MeshBuilder.MakeText(textVertices, localOffset,  new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
-                m_CurrentEntry.font = textParams.font.material.mainTexture;
+
+                var activeFont = textParams.font;
+
+                if (handle.useLegacy)
+                {
+                    var activeFontStyle = textParams.fontStyle;
+
+                    Font.FindClosestMatchingFont(ref activeFont, ref activeFontStyle);
+                }
+
+                m_CurrentEntry.font = activeFont.material.mainTexture;
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
@@ -1618,10 +1634,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             });
         }
 
-        public void DrawImmediate(Action callback)
+        public void DrawImmediate(Action callback, bool cullingEnabled)
         {
             var cmd = m_Owner.AllocCommand();
-            cmd.type = CommandType.Immediate;
+            cmd.type = cullingEnabled ? CommandType.ImmediateCull : CommandType.Immediate;
             cmd.owner = currentElement;
             cmd.callback = callback;
             m_Entries.Add(new Entry() { customCommand = cmd });
@@ -1969,7 +1985,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams) {}
         public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams) {}
-        public void DrawImmediate(Action callback) {}
+        public void DrawImmediate(Action callback, bool cullingEnabled) {}
 
         public VisualElement visualElement { get { return m_CurrentElement; } }
 
@@ -2007,10 +2023,19 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var textEntry = m_CurrentElement.renderChainData.textEntries[m_TextEntryIndex++];
 
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
+                var activeFont = textParams.font;
+
+                if (handle.useLegacy)
+                {
+                    var activeFontStyle = textParams.fontStyle;
+
+                    Font.FindClosestMatchingFont(ref activeFont, ref activeFontStyle);
+                }
+
                 MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace,
                     m_XFormClipPages, m_IDsFlags, m_OpacityPagesSettingsIndex,
                     m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
-                textEntry.command.state.font = textParams.font.material.mainTexture;
+                textEntry.command.state.font = activeFont.material.mainTexture;
             }
         }
     }

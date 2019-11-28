@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI
 
         public RefreshOptions refreshOptions => RefreshOptions.None;
 
-        public event Action<IOperation, Error> onOperationError = delegate {};
+        public event Action<IOperation, UIError> onOperationError = delegate {};
         public event Action<IOperation> onOperationSuccess = delegate {};
         public event Action<IOperation> onOperationFinalized = delegate {};
         public event Action<IOperation> onOperationProgress = delegate {};
@@ -85,7 +85,7 @@ namespace UnityEditor.PackageManager.UI
                     m_DownloadedBytes = 0;
                     m_State = DownloadState.Aborted;
                     m_ErrorMessage = L10n.Tr("Download aborted");
-                    onOperationError?.Invoke(this, new Error(NativeErrorCode.Unknown, m_ErrorMessage));
+                    onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
                     onOperationFinalized?.Invoke(this);
                     break;
                 default:
@@ -101,7 +101,7 @@ namespace UnityEditor.PackageManager.UI
             m_State = DownloadState.Error;
             m_ErrorMessage = k_LocalizedDownloadErrorMessage;
             Debug.LogError(errorMessage);
-            onOperationError?.Invoke(this, new Error(NativeErrorCode.Unknown, m_ErrorMessage));
+            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
             onOperationFinalized?.Invoke(this);
         }
 

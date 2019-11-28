@@ -178,7 +178,7 @@ namespace UnityEditor
         [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader(Shader shader);
 
 
-        extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants);
+        extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly);
         extern internal static void OpenCompiledComputeShader(ComputeShader shader, bool allVariantsAndPlatforms);
         extern internal static void OpenParsedSurfaceShader(Shader shader);
         extern internal static void OpenGeneratedFixedFunctionShader(Shader shader);

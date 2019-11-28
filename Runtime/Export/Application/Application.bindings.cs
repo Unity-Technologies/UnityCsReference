@@ -118,13 +118,6 @@ namespace UnityEngine
             get;
         }
 
-        // Returns the platform the game is running (RO).
-        extern public static RuntimePlatform platform
-        {
-            [FreeFunction("systeminfo::GetRuntimePlatform", IsThreadSafe = true)]
-            get;
-        }
-
         [FreeFunction("GetBuildSettings().GetBuildTags")]
         extern public static string[] GetBuildTags();
 
@@ -135,36 +128,6 @@ namespace UnityEngine
         {
             [FreeFunction("Application_Bindings::GetBuildGUID")]
             get;
-        }
-
-        public static bool isMobilePlatform
-        {
-            get
-            {
-                switch (Application.platform)
-                {
-                    case RuntimePlatform.IPhonePlayer:
-                    case RuntimePlatform.Android:
-                        return true;
-                    case RuntimePlatform.WSAPlayerX86:
-                    case RuntimePlatform.WSAPlayerX64:
-                    case RuntimePlatform.WSAPlayerARM:
-                        return SystemInfo.deviceType == DeviceType.Handheld;
-                    default:
-                        return false;
-                }
-            }
-        }
-
-
-        public static bool isConsolePlatform
-        {
-            get
-            {
-                RuntimePlatform platform = Application.platform;
-                return platform == RuntimePlatform.PS4
-                    || platform == RuntimePlatform.XboxOne;
-            }
         }
 
         // Should the player be running when the application is in the background?
@@ -335,13 +298,6 @@ namespace UnityEngine
             set;
         }
 
-        // The language the user's operating system is running in.
-        extern public static SystemLanguage systemLanguage
-        {
-            [FreeFunction("(SystemLanguage)systeminfo::GetSystemLanguage")]
-            get;
-        }
-
         [FreeFunction("Application_Bindings::SetLogCallbackDefined")]
         extern private static void SetLogCallbackDefined(bool defined);
 
@@ -374,14 +330,6 @@ namespace UnityEngine
             [FreeFunction("GetPreloadManager().SetThreadPriority")]
             set;
         }
-
-        // Returns the type of Internet reachability currently possible on the device.
-        extern public static NetworkReachability internetReachability
-        {
-            [FreeFunction("GetInternetReachability")]
-            get;
-        }
-
 
         // Returns false if application is altered in any way after it was built.
         extern public static bool genuine
@@ -420,5 +368,71 @@ namespace UnityEngine
                 return !UnityEngine.Rendering.SplashScreen.isFinished;
             }
         }
+    }
+
+    internal partial class ApplicationEditor
+    {
+        // Returns the platform the game is running (RO).
+        extern public static RuntimePlatform platform
+        {
+            [FreeFunction("systeminfo::GetRuntimePlatform", IsThreadSafe = true)]
+            get;
+        }
+
+        public static bool isMobilePlatform
+        {
+            get
+            {
+                switch (Application.platform)
+                {
+                    case RuntimePlatform.IPhonePlayer:
+                    case RuntimePlatform.Android:
+                        return true;
+                    case RuntimePlatform.WSAPlayerX86:
+                    case RuntimePlatform.WSAPlayerX64:
+                    case RuntimePlatform.WSAPlayerARM:
+                        return SystemInfo.deviceType == DeviceType.Handheld;
+                    default:
+                        return false;
+                }
+            }
+        }
+
+        public static bool isConsolePlatform
+        {
+            get
+            {
+                RuntimePlatform platform = Application.platform;
+                return platform == RuntimePlatform.PS4
+                    || platform == RuntimePlatform.XboxOne;
+            }
+        }
+
+        // The language the user's operating system is running in.
+        extern public static SystemLanguage systemLanguage
+        {
+            [FreeFunction("(SystemLanguage)systeminfo::GetSystemLanguage")]
+            get;
+        }
+
+        // Returns the type of Internet reachability currently possible on the device.
+        extern public static NetworkReachability internetReachability
+        {
+            [FreeFunction("GetInternetReachability")]
+            get;
+        }
+    }
+
+    public partial class Application
+    {
+        public static RuntimePlatform platform => ShimManager.applicationShim.platform;
+
+        public static bool isMobilePlatform => ShimManager.applicationShim.isMobilePlatform;
+
+        public static bool isConsolePlatform => ShimManager.applicationShim.isConsolePlatform;
+
+        public static SystemLanguage systemLanguage => ShimManager.applicationShim.systemLanguage;
+
+        public static NetworkReachability internetReachability => ShimManager.applicationShim.internetReachability;
     }
 }

@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine;
-using UnityEditor;
 using System.Collections.Generic;
 
 using Object = UnityEngine.Object;
@@ -35,41 +34,33 @@ namespace UnityEditor
             OneWindowPerTitle
         }
 
-        private class OverlayWindow : IComparable<OverlayWindow>
-        {
-            public GUIContent m_Title;
-            public SceneViewOverlay.WindowFunction m_SceneViewFunc;
-            public int m_PrimaryOrder;      // lower order is below high order
-            public int m_SecondaryOrder;    // used for primary order that are equal (should be unique)
-            public Object m_Target;
-            public EditorWindow m_EditorWindow;
-
-            public int CompareTo(OverlayWindow other)
-            {
-                int result =  other.m_PrimaryOrder.CompareTo(m_PrimaryOrder);
-                if (result == 0)
-                    result = other.m_SecondaryOrder.CompareTo(m_SecondaryOrder);
-                return result;
-            }
-        }
         public delegate void WindowFunction(Object target, SceneView sceneView);
 
-        static List<OverlayWindow> m_Windows;
+        static List<OverlayWindow> s_Windows;
 
-        SceneView m_SceneView;
+        readonly SceneView m_SceneView;
 
-        float k_WindowPadding = 9f;
+        const float k_WindowPadding = 9f;
+
+        GUIStyle m_TitleStyle;
 
         public SceneViewOverlay(SceneView sceneView)
         {
             m_SceneView = sceneView;
-            m_Windows = new List<OverlayWindow>();
+            if (s_Windows == null)
+                s_Windows = new List<OverlayWindow>();
         }
 
         public void Begin()
         {
             if (Event.current.type == EventType.Layout)
-                m_Windows.Clear();
+                s_Windows.Clear();
+
+            if (m_TitleStyle == null)
+            {
+                m_TitleStyle = new GUIStyle(GUI.skin.window);
+                m_TitleStyle.padding.top = m_TitleStyle.padding.bottom;
+            }
 
             m_SceneView.BeginWindows();
         }
@@ -81,53 +72,73 @@ namespace UnityEditor
 
         public void End()
         {
-            m_Windows.Sort();
+            s_Windows.Sort();
 
-            if (m_Windows.Count > 0)
+            if (s_Windows.Count > 0)
             {
-                Rect sceneViewGUIRect = m_SceneView.cameraRect;
-                Rect windowOverlayRect = new Rect(sceneViewGUIRect.x, 0f, sceneViewGUIRect.width, m_SceneView.position.height);
+                var sceneViewGUIRect = m_SceneView.cameraRect;
+                var windowOverlayRect = new Rect(sceneViewGUIRect.x, 0f, sceneViewGUIRect.width, m_SceneView.position.height);
                 GUILayout.Window("SceneViewOverlay".GetHashCode(), windowOverlayRect, WindowTrampoline, "", Styles.sceneViewOverlayTransparentBackground);
             }
 
             m_SceneView.EndWindows();
         }
 
-        private void WindowTrampoline(int id)
+        float m_LastWidth;
+
+        void WindowTrampoline(int id)
         {
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             GUILayout.BeginVertical();
             GUILayout.FlexibleSpace();
-            GUILayout.BeginVertical();
-            float paddingOffset = -k_WindowPadding;
-            foreach (OverlayWindow win in m_Windows)
+            EditorGUILayout.BeginVertical(GUILayout.MinWidth(210));
+
+            var paddingOffset = -k_WindowPadding;
+
+            foreach (OverlayWindow win in s_Windows)
             {
-                if (!m_SceneView.m_ShowSceneViewWindows && win.m_EditorWindow != m_SceneView)
+                if (!m_SceneView.m_ShowSceneViewWindows && win.editorWindow != m_SceneView)
                     continue;
 
                 GUILayout.Space(k_WindowPadding + paddingOffset);
                 paddingOffset = 0f;
                 EditorGUIUtility.ResetGUIState();
-                GUILayout.BeginHorizontal(GUILayout.Width(210));
-                GUILayout.FlexibleSpace();
-                GUILayout.BeginVertical(win.m_Title, GUI.skin.window);
-                win.m_SceneViewFunc(win.m_Target, m_SceneView);
-                GUILayout.EndVertical();
-                GUILayout.EndHorizontal();
+                if (win.canCollapse)
+                {
+                    GUILayout.BeginVertical(m_TitleStyle);
+
+                    win.expanded = EditorGUILayout.Foldout(win.expanded, win.title);
+
+                    if (win.expanded)
+                        win.sceneViewFunc(win.target, m_SceneView);
+                    GUILayout.EndVertical();
+                }
+                else
+                {
+                    GUILayout.BeginVertical(win.title, GUI.skin.window);
+                    win.sceneViewFunc(win.target, m_SceneView);
+                    GUILayout.EndVertical();
+                }
             }
+
             GUILayout.EndVertical();
-            Rect inputEaterRect = GUILayoutUtility.GetLastRect();
+
+            var inputEaterRect = GUILayoutUtility.GetLastRect();
             EatMouseInput(inputEaterRect);
+
+            if (Event.current.type == EventType.Repaint)
+                m_LastWidth = inputEaterRect.width;
+
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
 
-        private void EatMouseInput(Rect position)
+        static void EatMouseInput(Rect position)
         {
             SceneView.AddCursorRect(position, MouseCursor.Arrow);
 
-            int id = GUIUtility.GetControlID("SceneViewOverlay".GetHashCode(), FocusType.Passive, position);
+            var id = GUIUtility.GetControlID("SceneViewOverlay".GetHashCode(), FocusType.Passive, position);
             switch (Event.current.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
@@ -155,6 +166,7 @@ namespace UnityEditor
             }
         }
 
+        // pass window parameter to render in sceneviews that are not the active view.
         public static void Window(GUIContent title, WindowFunction sceneViewFunc, int order, WindowDisplayOption option)
         {
             Window(title, sceneViewFunc, order, null, option);
@@ -166,26 +178,79 @@ namespace UnityEditor
             if (Event.current.type != EventType.Layout)
                 return;
 
-            foreach (OverlayWindow overlayWindow in m_Windows)
+            foreach (var overlayWindow in s_Windows)
             {
-                if (option == WindowDisplayOption.OneWindowPerTarget && overlayWindow.m_Target == target && target !=  null)
+                if (option == WindowDisplayOption.OneWindowPerTarget && overlayWindow.target == target && target !=  null)
                     return;
 
-                if (option == WindowDisplayOption.OneWindowPerTitle && (overlayWindow.m_Title == title || overlayWindow.m_Title.text == title.text))
+                if (option == WindowDisplayOption.OneWindowPerTitle && (overlayWindow.title == title || overlayWindow.title.text == title.text))
                     return;
             }
 
-            OverlayWindow newWindow = new OverlayWindow
+            var newWindow = new OverlayWindow(title, sceneViewFunc, order, target, option)
             {
-                m_Title = title,
-                m_SceneViewFunc = sceneViewFunc,
-                m_PrimaryOrder = order,
-                m_SecondaryOrder = m_Windows.Count,
-                m_Target = target,
-                m_EditorWindow = window
+                secondaryOrder = s_Windows.Count,
+                canCollapse = false
             };
 
-            m_Windows.Add(newWindow);
+
+            s_Windows.Add(newWindow);
+        }
+
+        public static void ShowWindow(OverlayWindow window)
+        {
+            if (Event.current.type != EventType.Layout)
+                return;
+
+            foreach (var overlayWindow in s_Windows)
+            {
+                if (window.option == WindowDisplayOption.OneWindowPerTarget && overlayWindow.target == window.target && window.target !=  null)
+                    return;
+
+                if (window.option == WindowDisplayOption.OneWindowPerTitle && (overlayWindow.title == window.title || overlayWindow.title.text == window.title.text))
+                    return;
+            }
+
+            window.secondaryOrder = s_Windows.Count;
+
+            s_Windows.Add(window);
+        }
+    }
+
+    internal class OverlayWindow : IComparable<OverlayWindow>
+    {
+        public OverlayWindow(GUIContent title, SceneViewOverlay.WindowFunction guiFunction, int primaryOrder, Object target,
+                             SceneViewOverlay.WindowDisplayOption option)
+        {
+            this.title = title;
+            this.sceneViewFunc = guiFunction;
+            this.primaryOrder = primaryOrder;
+            this.option = option;
+            this.target = target;
+            this.canCollapse = true;
+            this.expanded = true;
+        }
+
+        public SceneViewOverlay.WindowFunction sceneViewFunc { get;  }
+        public int primaryOrder { get; }
+        public int secondaryOrder { get; set; }
+        public Object target { get; }
+        public EditorWindow editorWindow { get; set; }
+
+        public SceneViewOverlay.WindowDisplayOption option { get; } =
+            SceneViewOverlay.WindowDisplayOption.MultipleWindowsPerTarget;
+
+        public bool canCollapse { get; set; }
+        public bool expanded { get; set; }
+
+        public GUIContent title { get; }
+
+        public int CompareTo(OverlayWindow other)
+        {
+            var result =  other.primaryOrder.CompareTo(primaryOrder);
+            if (result == 0)
+                result = other.secondaryOrder.CompareTo(secondaryOrder);
+            return result;
         }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -55,20 +56,20 @@ namespace UnityEditor.PackageManager.UI
 
         // errors on the package level (not just about a particular version)
         [SerializeField]
-        protected List<Error> m_Errors;
+        protected List<UIError> m_Errors;
 
         // Combined errors for this package or any version.
         // Stop lookup after first error encountered on a version to save time not looking up redundant errors.
-        public IEnumerable<Error> errors
+        public IEnumerable<UIError> errors
         {
             get
             {
-                var versionErrors = versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? Enumerable.Empty<Error>();
-                return versionErrors.Concat(m_Errors ?? Enumerable.Empty<Error>());
+                var versionErrors = versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? Enumerable.Empty<UIError>();
+                return versionErrors.Concat(m_Errors ?? Enumerable.Empty<UIError>());
             }
         }
 
-        public void AddError(Error error)
+        public void AddError(UIError error)
         {
             m_Errors.Add(error);
         }
@@ -89,6 +90,9 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual IEnumerable<PackageImage> images => Enumerable.Empty<PackageImage>();
         public virtual IEnumerable<PackageLink> links => Enumerable.Empty<PackageLink>();
+
+        public virtual DateTime? purchasedTime => null;
+        public virtual IEnumerable<string> labels => Enumerable.Empty<string>();
 
         public abstract string uniqueId { get; }
         public abstract IVersionList versions { get; }

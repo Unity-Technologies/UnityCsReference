@@ -8,9 +8,8 @@ using UnityEngine;
 using System.Text;
 using JetBrains.Annotations;
 using UnityEngine.Scripting;
-using UnityEngine.Experimental.Networking.PlayerConnection;
-using UnityEditor.Experimental.Networking.PlayerConnection;
-using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
+using UnityEngine.Networking.PlayerConnection;
+using UnityEditor.Networking.PlayerConnection;
 using System.Collections.Generic;
 
 namespace UnityEditor
@@ -513,7 +512,7 @@ namespace UnityEditor
             SetFlag(ConsoleFlags.ClearOnBuild, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnBuild), Constants.ClearOnBuildLabel, Constants.MiniButton));
             SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPauseLabel, Constants.MiniButton));
 
-            ConnectionGUILayout.AttachToPlayerDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown);
+            PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown);
 
             EditorGUILayout.Space();
 
@@ -573,13 +572,14 @@ namespace UnityEditor
                         int mode = 0;
                         string text = null;
                         LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode, ref text);
+                        bool entryIsSelected = m_ListView.selectedItems != null && el.row < m_ListView.selectedItems.Length && m_ListView.selectedItems[el.row];
 
                         // offset value in x for icon and text
                         var offset = Constants.LogStyleLineCount == 1 ? 4 : 8;
 
                         // Draw the background
                         GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
-                        s.Draw(el.position, false, false, m_ListView.selectedItems != null && m_ListView.selectedItems.Length == m_ListView.totalRows && m_ListView.selectedItems[el.row], false);
+                        s.Draw(el.position, false, false, entryIsSelected, false);
 
                         // Draw the icon
                         GUIStyle iconStyle = GetStyleForErrorMode(mode, true, Constants.LogStyleLineCount == 1);
@@ -587,7 +587,7 @@ namespace UnityEditor
                         iconRect.x += offset;
                         iconRect.y += 2;
 
-                        iconStyle.Draw(iconRect, false, false, m_ListView.selectedItems != null && m_ListView.selectedItems.Length == m_ListView.totalRows && m_ListView.selectedItems[el.row], false);
+                        iconStyle.Draw(iconRect, false, false, entryIsSelected, false);
 
                         // Draw the text
                         tempContent.text = text;

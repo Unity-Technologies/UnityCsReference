@@ -46,6 +46,7 @@ namespace UnityEditor.Connect
         public bool valid { get { return m_Valid != 0; } }
         public bool buildAllowed { get { return m_BuildAllowed != 0; } }
         public bool projectBound { get { return m_ProjectBound != 0; } }
+        public string projectId { get { return m_ProjectId; } }
         public string projectGUID { get { return m_ProjectGUID; } }
         public string projectName { get { return m_ProjectName; } }
         public string organizationId { get { return m_OrganizationID; } }
@@ -66,6 +67,7 @@ namespace UnityEditor.Connect
         int m_Valid;
         int m_BuildAllowed;
         int m_ProjectBound;
+        string m_ProjectId;
         string m_ProjectGUID;
         string m_ProjectName;
         string m_OrganizationID;

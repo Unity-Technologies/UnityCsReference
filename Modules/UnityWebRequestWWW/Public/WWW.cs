@@ -129,7 +129,7 @@ namespace UnityEngine
                 {
                     if (!WaitUntilDoneIfPossible())
                         return null;
-                    if (_uwr.isNetworkError)
+                    if (_uwr.result == UnityWebRequest.Result.ConnectionError)
                         return null;
                     var dh = _uwr.downloadHandler as DownloadHandlerAssetBundle;
                     if (dh != null)
@@ -158,7 +158,7 @@ namespace UnityEngine
             {
                 if (!WaitUntilDoneIfPossible())
                     return new byte[] {};
-                if (_uwr.isNetworkError)
+                if (_uwr.result == UnityWebRequest.Result.ConnectionError)
                     return new byte[] {};
                 var dh = _uwr.downloadHandler;
                 if (dh == null)
@@ -185,7 +185,7 @@ namespace UnityEngine
             {
                 if (!_uwr.isDone)
                     return null;
-                if (_uwr.isNetworkError)
+                if (_uwr.result == UnityWebRequest.Result.ConnectionError)
                     return _uwr.error;
                 if (_uwr.responseCode >= 400)
                 {
@@ -245,7 +245,7 @@ namespace UnityEngine
             {
                 if (!WaitUntilDoneIfPossible())
                     return "";
-                if (_uwr.isNetworkError)
+                if (_uwr.result == UnityWebRequest.Result.ConnectionError)
                     return "";
                 var dh = _uwr.downloadHandler;
                 if (dh == null)
@@ -258,7 +258,7 @@ namespace UnityEngine
         {
             if (!WaitUntilDoneIfPossible())
                 return new Texture2D(2, 2);
-            if (_uwr.isNetworkError)
+            if (_uwr.result == UnityWebRequest.Result.ConnectionError)
                 return null;
             var dh = _uwr.downloadHandler;
             if (dh == null)
@@ -276,7 +276,7 @@ namespace UnityEngine
         {
             if (!WaitUntilDoneIfPossible())
                 return;
-            if (_uwr.isNetworkError)
+            if (_uwr.result == UnityWebRequest.Result.ConnectionError)
             {
                 Debug.LogError("Cannot load image: download failed");
                 return;

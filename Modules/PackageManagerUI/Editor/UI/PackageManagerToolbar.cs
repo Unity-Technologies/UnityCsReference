@@ -68,10 +68,6 @@ namespace UnityEditor.PackageManager.UI
             var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
             if (!changed.Any(p => p.versions.installed?.HasTag(PackageTag.InDevelopment) ?? false))
                 return;
-
-            // If we have a filter set and no packages are in this filter, reset the filter to local packages.
-            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment && !HasPackageInDevelopment)
-                SetFilter(PackageFilterTab.InProject);
         }
 
         internal void SetCurrentSearch(string text)
@@ -111,8 +107,6 @@ namespace UnityEditor.PackageManager.UI
                     return L10n.Tr("Built-in packages");
                 case PackageFilterTab.AssetStore:
                     return L10n.Tr("My Assets");
-                case PackageFilterTab.InDevelopment:
-                    return L10n.Tr("In Development");
                 default:
                     return filter.ToString();
             }
@@ -193,17 +187,6 @@ namespace UnityEditor.PackageManager.UI
             {
                 SetFilterFromMenu(PackageFilterTab.InProject);
             }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.InProject ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
-            filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.InDevelopment), a =>
-            {
-                SetFilterFromMenu(PackageFilterTab.InDevelopment);
-            }, a =>
-                {
-                    if (!HasPackageInDevelopment)
-                        return DropdownMenuAction.Status.Hidden;
-
-                    return PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-                });
 
             filterMenu.menu.AppendSeparator();
             filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.AssetStore), a =>

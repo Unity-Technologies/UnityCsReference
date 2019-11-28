@@ -410,7 +410,7 @@ namespace UnityEngine.Networking.Match
 
             JSONRESPONSE jsonInterface = new JSONRESPONSE();
 
-            if (!(client.isNetworkError || client.isHttpError))
+            if (client.result == UnityWebRequest.Result.Success)
             {
                 try
                 {

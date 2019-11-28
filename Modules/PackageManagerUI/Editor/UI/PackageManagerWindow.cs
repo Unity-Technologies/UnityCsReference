@@ -216,7 +216,10 @@ namespace UnityEditor.PackageManager.UI
 
                 PackageFiltering.instance.currentFilterTab = tab;
                 if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
+                {
                     PageManager.instance.GetPage(tab).SetSelected(package, version);
+                    packageList.OnFocus();
+                }
 
                 m_FilterToSelectAfterLoad = null;
                 m_PackageToSelectOnLoaded = null;
@@ -225,7 +228,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnFocus()
         {
-            if (cache == null)
+            if (cache == null || focusedWindow != this)
                 return;
             packageList.AddToClassList("focus");
             packageDetails.AddToClassList("focus");
@@ -265,7 +268,7 @@ namespace UnityEditor.PackageManager.UI
             packageDetails.packageToolbarContainer.SetEnabled(false);
         }
 
-        private void OnRefreshOperationError(Error error)
+        private void OnRefreshOperationError(UIError error)
         {
             Debug.Log("[PackageManager] Error " + error.message);
 
@@ -318,7 +321,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
-            instance = GetWindow<PackageManagerWindow>();
+            instance = GetWindow<PackageManagerWindow>(typeof(SceneView));
             instance.minSize = new Vector2(700, 250);
             if (!string.IsNullOrEmpty(packageIdOrDisplayName) || filterTab != null)
             {
@@ -349,7 +352,7 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache cache;
 
-        private PackageList packageList { get { return cache.Get<PackageList>("packageList"); } }
+        internal PackageList packageList { get { return cache.Get<PackageList>("packageList"); } }
         private PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
         private PackageManagerToolbar packageManagerToolbar { get {return cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
         private PackageStatusBar packageStatusbar { get {return cache.Get<PackageStatusBar>("packageStatusBar");} }

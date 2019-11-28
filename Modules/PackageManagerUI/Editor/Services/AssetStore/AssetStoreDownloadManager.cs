@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI
         [Serializable]
         private class AssetStoreDownloadManagerInternal : ScriptableSingleton<AssetStoreDownloadManagerInternal>, IDownloadManager, ISerializationCallbackReceiver
         {
-            public event Action<IOperation, Error> onDownloadError = delegate {};
+            public event Action<IOperation, UIError> onDownloadError = delegate {};
             public event Action<IOperation> onDownloadFinalized = delegate {};
             public event Action<IOperation> onDownloadProgress = delegate {};
 

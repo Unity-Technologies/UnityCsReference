@@ -62,6 +62,9 @@ namespace UnityEditor
         [FreeFunction("Internal_SetSceneViewColors")]
         internal static extern void SetSceneViewColors(Color wire, Color wireOverlay, Color selectedOutline, Color selectedChildrenOutline, Color selectedWire);
 
+        [FreeFunction("Internal_SetSceneViewModeGIContributorsReceiversColors")]
+        internal static extern void SetSceneViewModeGIContributorsReceiversColors(Color noContributeGI, Color receiveGILightmaps, Color receiveGILightProbesColor);
+
         [FreeFunction("Internal_EnableCameraFx")]
         internal static extern void EnableCameraFx(Camera cam, bool fx);
 

@@ -25,7 +25,7 @@ namespace UnityEditor
 
             for (var i = 0; i < props.Length; i++)
             {
-                if ((props[i].flags & (MaterialProperty.PropFlags.HideInInspector | MaterialProperty.PropFlags.PerRendererData)) != 0)
+                if ((props[i].flags & MaterialProperty.PropFlags.HideInInspector) != 0)
                     continue;
 
                 //_SunSizeConvergence is only used with the HighQuality sun disk.

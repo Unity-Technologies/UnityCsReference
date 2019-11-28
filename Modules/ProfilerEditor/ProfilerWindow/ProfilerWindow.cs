@@ -11,10 +11,8 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEditorInternal.Profiling;
 using UnityEngine.Scripting;
-using UnityEngine.Experimental.Networking.PlayerConnection;
-using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
-using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
-using UnityEditor.Experimental.Networking.PlayerConnection;
+using UnityEngine.Networking.PlayerConnection;
+using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.StyleSheets;
 
 namespace UnityEditor
@@ -267,7 +265,7 @@ namespace UnityEditor
         {
             // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
             if (m_AttachProfilerState == null)
-                m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, (player) => ClearFramesCallback()) as IConnectionStateInternal;
+                m_AttachProfilerState = PlayerConnectionGUIUtility.GetConnectionState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, (player) => ClearFramesCallback()) as IConnectionStateInternal;
 
             int historySize = ProfilerUserSettings.frameCount;
 
@@ -905,7 +903,7 @@ namespace UnityEditor
             }
 
             // Engine attach
-            ConnectionGUILayout.AttachToPlayerDropdown(m_AttachProfilerState, EditorStyles.toolbarDropDown);
+            PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachProfilerState, EditorStyles.toolbarDropDown);
 
             // Record
             var profilerEnabled = GUILayout.Toggle(m_Recording, m_Recording ? Styles.profilerRecordOn : Styles.profilerRecordOff, EditorStyles.toolbarButton);

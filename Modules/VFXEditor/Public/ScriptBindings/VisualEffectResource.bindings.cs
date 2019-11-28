@@ -394,27 +394,42 @@ namespace UnityEditor.VFX
 
         public extern bool compileInitialVariants { get; set; }
 
+        public const uint uncompiledVersion = 0;
+        public const uint defaultVersion = 1;
+
         public void SetRuntimeData(VFXExpressionSheet sheet,
             VFXEditorSystemDesc[] systemDesc,
             VFXEventDesc[] eventDesc,
             VFXGPUBufferDesc[] bufferDesc,
             VFXCPUBufferDesc[] cpuBufferDesc,
-            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc = null,
-            VFXShaderSourceDesc[] shaderSourceDesc = null)
+            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
+            VFXShaderSourceDesc[] shaderSourceDesc,
+            ShadowCastingMode shadowCastingMode,
+            MotionVectorGenerationMode motionVectorGenerationMode,
+            uint version = defaultVersion)
         {
             var internalSheet = new VFXExpressionSheetInternal();
             internalSheet.expressions = sheet.expressions;
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 
-            //Ensure compatibility with the actual visual effect compilation behavior.
-            //This code and default value can be removed with 2020.1
-            if (shaderSourceDesc == null)
-            {
-                shaderSourceDesc = shaderSources;
-            }
+            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, version);
+        }
 
-            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc);
+        //This version is for backward compatibility
+        public void SetRuntimeData(VFXExpressionSheet sheet,
+            VFXEditorSystemDesc[] systemDesc,
+            VFXEventDesc[] eventDesc,
+            VFXGPUBufferDesc[] bufferDesc,
+            VFXCPUBufferDesc[] cpuBufferDesc,
+            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc)
+        {
+            var internalSheet = new VFXExpressionSheetInternal();
+            internalSheet.expressions = sheet.expressions;
+            internalSheet.values = CreateValueSheet(sheet.values);
+            internalSheet.exposed = sheet.exposed;
+
+            SetRuntimeDataDeprecated(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc, this.shaderSources, defaultVersion);
         }
 
         [NativeThrows]
@@ -424,7 +439,22 @@ namespace UnityEditor.VFX
             VFXGPUBufferDesc[] bufferDesc,
             VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
             VFXCPUBufferDesc[] cpuBufferDesc,
-            VFXShaderSourceDesc[] shaderSourceDesc);
+            VFXShaderSourceDesc[] shaderSourceDesc,
+            ShadowCastingMode shadowCastingMode,
+            MotionVectorGenerationMode motionVectorGenerationMode,
+            uint version);
+
+
+        //This version is for backward compatilibity
+        [NativeThrows]
+        extern private void SetRuntimeDataDeprecated(VFXExpressionSheetInternal sheet,
+            VFXEditorSystemDesc[] systemDesc,
+            VFXEventDesc[] eventDesc,
+            VFXGPUBufferDesc[] bufferDesc,
+            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
+            VFXCPUBufferDesc[] cpuBufferDesc,
+            VFXShaderSourceDesc[] shaderSourceDesc,
+            uint version);
         extern public VFXRendererSettings rendererSettings { get; set; }
         extern public VFXUpdateMode updateMode { get; set; }
         extern public float preWarmDeltaTime { get; set; }
@@ -473,5 +503,8 @@ namespace UnityEditor.VFX
         extern public ScriptableObject graph { get; set; }
         extern public int GetShaderIndex(UnityObject shader);
         public extern void ShowGeneratedShaderFile(int index, int line = 0);
+
+        extern public void ClearDependencies();
+        extern public void AddDependency(string dep);
     }
 }

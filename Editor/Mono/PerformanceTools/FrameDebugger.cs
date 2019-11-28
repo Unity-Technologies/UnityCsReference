@@ -13,9 +13,8 @@ using UnityEditor.Rendering;
 using UnityEditorInternal;
 using System.Runtime.InteropServices;
 using UnityEditor.IMGUI.Controls;
-using UnityEngine.Experimental.Networking.PlayerConnection;
-using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
-using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
+using UnityEngine.Networking.PlayerConnection;
+using UnityEditor.Networking.PlayerConnection;
 using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditorInternal
@@ -194,6 +193,7 @@ namespace UnityEditorInternal
         public int depthBias;
         public float slopeScaledDepthBias;
         public bool depthClip;
+        public bool conservative;
     }
 
     // Match C++ ScriptingFrameDebuggerDepthState memory layout!
@@ -418,7 +418,7 @@ namespace UnityEditor
         internal void OnEnable()
         {
             if (m_AttachToPlayerState == null)
-                m_AttachToPlayerState = ConnectionUtility.GetAttachToPlayerState(this);
+                m_AttachToPlayerState = PlayerConnectionGUIUtility.GetConnectionState(this);
 
             autoRepaintOnSceneChange = true;
             s_FrameDebuggers.Add(this);
@@ -640,7 +640,7 @@ namespace UnityEditor
             else
                 styles.recordButton.text = L10n.Tr("Enable");
 
-            ConnectionGUILayout.AttachToPlayerDropdown(m_AttachToPlayerState, EditorStyles.toolbarDropDown);
+            PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachToPlayerState, EditorStyles.toolbarDropDown);
 
             bool isAnyEnabled = FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled();
             if (isAnyEnabled && ProfilerDriver.connectedProfiler != FrameDebuggerUtility.GetRemotePlayerGUID())
@@ -1325,6 +1325,7 @@ namespace UnityEditor
             EditorGUILayout.LabelField("ZTest", depthState.depthFunc.ToString());
             EditorGUILayout.LabelField("ZWrite", depthState.depthWrite == 0 ? "Off" : "On");
             EditorGUILayout.LabelField("Cull", rasterState.cullMode.ToString());
+            EditorGUILayout.LabelField("Conservative", rasterState.conservative.ToString());
 
             // only add depth offset if non zero
             if (rasterState.slopeScaledDepthBias != 0 || rasterState.depthBias != 0)

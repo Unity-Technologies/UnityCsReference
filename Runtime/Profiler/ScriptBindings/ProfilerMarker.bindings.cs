@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling.LowLevel;
 using Unity.Profiling.LowLevel.Unsafe;
@@ -35,6 +36,7 @@ namespace Unity.Profiling
 
         [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
+        [Pure]
         public void Begin()
         {
             ProfilerUnsafeUtility.BeginSample(m_Ptr);
@@ -49,6 +51,7 @@ namespace Unity.Profiling
 
         [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
+        [Pure]
         public void End()
         {
             ProfilerUnsafeUtility.EndSample(m_Ptr);
@@ -81,9 +84,37 @@ namespace Unity.Profiling
         }
 
         [MethodImpl(256)]
+        [Pure]
         public AutoScope Auto()
         {
             return new AutoScope(m_Ptr);
         }
+    }
+
+    public enum ProfilerFlowEventType : byte
+    {
+        Begin = 0,
+        Next = 1,
+        End = 2,
+    }
+
+    // Supported profiler metadata units.
+    // Must be in sync with profiling::Marker::MetadataDesc::Unit!
+    public enum ProfilerMarkerDataUnit : byte
+    {
+        Undefined = 0,
+        Time = 1,
+        Bytes = 2,
+        Count = 3,
+        Percent = 4,
+        Frequency = 5,
+    }
+
+    [Flags]
+    public enum ProfilerCounterOptions : ushort
+    {
+        None = 0,
+        FlushOnEndOfFrame = 1 << 1,
+        ResetToZeroOnFlush = 1 << 2,
     }
 }

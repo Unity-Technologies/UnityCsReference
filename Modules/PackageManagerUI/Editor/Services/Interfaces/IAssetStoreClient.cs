@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI
 
         event Action onFetchDetailsStart;
         event Action onFetchDetailsFinish;
-        event Action<Error> onFetchDetailsError;
+        event Action<UIError> onFetchDetailsError;
 
         void ListPurchases(PurchasesQueryArgs queryArgs, bool fetchDetails = true);
 

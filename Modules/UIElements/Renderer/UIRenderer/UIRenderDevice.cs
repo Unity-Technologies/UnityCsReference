@@ -797,7 +797,7 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (!m_MockDevice)
                             head.ExecuteNonDrawMesh(drawParams, usesStraightYCoordinateSystem, pixelsPerPoint, ref immediateException);
-                        if (head.type == CommandType.Immediate)
+                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
                         {
                             curState.material = m_DefaultMaterial; // A value that is considered unique and not null to force material reset on next draw command
                             m_DrawStats.immediateDraws++;

@@ -130,9 +130,9 @@ namespace Unity.Jobs.LowLevel.Unsafe
             get { return GetJobQueueWorkerThreadCount(); }
             set
             {
-                if ((value < 1) || (value > JobsUtility.JobWorkerMaximumCount))
+                if ((value < 0) || (value > JobsUtility.JobWorkerMaximumCount))
                 {
-                    throw new ArgumentOutOfRangeException("JobWorkerCount", $"Invalid JobWorkerCount {value} must be in the range 1 -> {JobsUtility.JobWorkerMaximumCount}");
+                    throw new ArgumentOutOfRangeException("JobWorkerCount", $"Invalid JobWorkerCount {value} must be in the range 0 -> {JobsUtility.JobWorkerMaximumCount}");
                 }
                 SetJobQueueMaximumActiveThreadCount(value);
             }

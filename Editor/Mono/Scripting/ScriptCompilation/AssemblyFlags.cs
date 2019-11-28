@@ -21,6 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         ExplicitlyReferenced = (1 << 6),
         ExplicitReferences = (1 << 7),
         UnityModule = (1 << 8),
-        NoEngineReferences = (1 << 9)
+        NoEngineReferences = (1 << 9),
+        SuppressCompilerWarnings = (1 << 10)
     }
 }

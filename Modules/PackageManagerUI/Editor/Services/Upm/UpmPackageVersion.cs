@@ -24,8 +24,10 @@ namespace UnityEditor.PackageManager.UI
 
         public override string category => m_PackageInfo.category;
 
-        Error entitlementsError => !entitlements.isAllowed && isInstalled ? new Error(NativeErrorCode.Unknown, L10n.Tr("You do not have entitlements for this package.")) : null;
-        public override IEnumerable<Error> errors => m_PackageInfo.errors.Concat(entitlementsError != null ? new List<Error> { entitlementsError } : new List<Error>());
+        UIError entitlementsError => !entitlements.isAllowed && isInstalled ?
+        new UIError(UIErrorCode.UpmError, L10n.Tr("You do not have entitlements for this package.")) : null;
+        public override IEnumerable<UIError> errors =>
+            m_PackageInfo.errors.Select(e => (UIError)e).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
 
         [SerializeField]
@@ -173,13 +175,13 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        internal void UpdateFetchedInfo(AssetStoreFetchedInfo fetchedInfo)
+        internal void UpdateProductInfo(AssetStoreProductInfo productInfo)
         {
-            m_PackageUniqueId = fetchedInfo.id;
+            m_PackageUniqueId = productInfo.id;
 
             // override version info with product info
-            m_DisplayName = fetchedInfo.displayName;
-            m_Description = fetchedInfo.description;
+            m_DisplayName = productInfo.displayName;
+            m_Description = productInfo.description;
         }
 
         public void SetInstalled(bool value)

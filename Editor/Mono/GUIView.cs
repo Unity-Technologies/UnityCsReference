@@ -314,5 +314,28 @@ namespace UnityEditor
 
             return currentView.GetType().FullName;
         }
+
+        public static void BeginOffsetArea(Rect screenRect, GUIContent content, GUIStyle style)
+        {
+            GUILayoutGroup g = EditorGUILayoutUtilityInternal.BeginLayoutArea(style, typeof(GUILayoutGroup));
+            switch (Event.current.type)
+            {
+                case EventType.Layout:
+                    g.resetCoords = false;
+                    g.minWidth = g.maxWidth = screenRect.width;
+                    g.minHeight = g.maxHeight = screenRect.height;
+                    g.rect = Rect.MinMaxRect(0, 0, g.rect.xMax, g.rect.yMax);
+                    break;
+            }
+            GUI.BeginGroup(screenRect, content, style);
+        }
+
+        public static void EndOffsetArea()
+        {
+            if (Event.current.type == EventType.Used)
+                return;
+            GUILayoutUtility.EndLayoutGroup();
+            GUI.EndGroup();
+        }
     }
 } //namespace

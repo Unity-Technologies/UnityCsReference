@@ -23,8 +23,7 @@ namespace UnityEditor.PackageManager.UI
                 RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.All
                 RefreshOptions.UpmList,                                             // PackageFilterTab.InProject
                 RefreshOptions.UpmListOffline | RefreshOptions.UpmSearchOffline,    // PackageFilterTab.BuiltIn
-                RefreshOptions.Purchased,                                           // PackageFilterTab.AssetStore
-                RefreshOptions.UpmList                                              // PackageFilterTab.InDevelopment
+                RefreshOptions.Purchased                                            // PackageFilterTab.AssetStore
             };
 
             public event Action<IPackageVersion> onSelectionChanged = delegate {};
@@ -36,10 +35,10 @@ namespace UnityEditor.PackageManager.UI
 
             public event Action onRefreshOperationStart = delegate {};
             public event Action onRefreshOperationFinish = delegate {};
-            public event Action<Error> onRefreshOperationError = delegate {};
+            public event Action<UIError> onRefreshOperationError = delegate {};
 
             private Dictionary<RefreshOptions, long> m_RefreshTimestamps = new Dictionary<RefreshOptions, long>();
-            private Dictionary<RefreshOptions, Error> m_RefreshErrors = new Dictionary<RefreshOptions, Error>();
+            private Dictionary<RefreshOptions, UIError> m_RefreshErrors = new Dictionary<RefreshOptions, UIError>();
 
             [NonSerialized]
             private List<IOperation> m_RefreshOperationsInProgress = new List<IOperation>();
@@ -55,7 +54,7 @@ namespace UnityEditor.PackageManager.UI
             private RefreshOptions[] m_SerializedRefreshErrorsKeys = new RefreshOptions[0];
 
             [SerializeField]
-            private Error[] m_SerializedRefreshErrorsValues = new Error[0];
+            private UIError[] m_SerializedRefreshErrorsValues = new UIError[0];
 
             internal Dictionary<PackageFilterTab, Page> m_Pages = new Dictionary<PackageFilterTab, Page>();
 
@@ -506,7 +505,7 @@ namespace UnityEditor.PackageManager.UI
                     m_RefreshErrors.Remove(operation.refreshOptions);
             }
 
-            private void OnRefreshOperationError(IOperation operation, Error error)
+            private void OnRefreshOperationError(IOperation operation, UIError error)
             {
                 m_RefreshErrors[operation.refreshOptions] = error;
                 onRefreshOperationError?.Invoke(error);
@@ -540,7 +539,7 @@ namespace UnityEditor.PackageManager.UI
                 return result;
             }
 
-            public Error GetRefreshError(RefreshOptions option)
+            public UIError GetRefreshError(RefreshOptions option)
             {
                 // only return the first one when there are multiple errors
                 foreach (var item in m_RefreshErrors)
@@ -555,7 +554,7 @@ namespace UnityEditor.PackageManager.UI
                 return GetRefreshTimestamp(GetRefreshOptionsByTab(filterTab));
             }
 
-            public Error GetRefreshError(PackageFilterTab? tab = null)
+            public UIError GetRefreshError(PackageFilterTab? tab = null)
             {
                 var filterTab = tab ?? PackageFiltering.instance.currentFilterTab;
                 return GetRefreshError(GetRefreshOptionsByTab(filterTab));

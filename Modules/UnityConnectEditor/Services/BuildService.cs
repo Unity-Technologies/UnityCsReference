@@ -29,6 +29,11 @@ namespace UnityEditor.Connect
             k_Instance = new BuildService();
         }
 
+        struct BuildServiceState
+        {
+            public bool build;
+        }
+
         BuildService()
         {
             name = "Build";
@@ -39,6 +44,15 @@ namespace UnityEditor.Connect
             displayToggle = true;
             packageId = null;
             ServicesRepository.AddService(this);
+        }
+
+        protected override void InternalEnableService(bool enable)
+        {
+            if (IsServiceEnabled() != enable)
+            {
+                EditorAnalytics.SendEventServiceInfo(new BuildServiceState() { build = enable });
+            }
+            base.InternalEnableService(enable);
         }
     }
 }

@@ -25,9 +25,9 @@ namespace UnityEngine.Rendering
             m_OffsetUnits = offsetUnits;
             m_OffsetFactor = offsetFactor;
             m_DepthClip = Convert.ToByte(depthClip);
+            m_Conservative = Convert.ToByte(false);
             m_Padding1 = 0;
             m_Padding2 = 0;
-            m_Padding3 = 0;
         }
 
         public CullMode cullingMode
@@ -40,6 +40,12 @@ namespace UnityEngine.Rendering
         {
             get { return Convert.ToBoolean(m_DepthClip); }
             set { m_DepthClip = Convert.ToByte(value); }
+        }
+
+        public bool conservative
+        {
+            get { return Convert.ToBoolean(m_Conservative); }
+            set { m_Conservative = Convert.ToByte(value); }
         }
 
         public int offsetUnits
@@ -58,13 +64,13 @@ namespace UnityEngine.Rendering
         int m_OffsetUnits;
         float m_OffsetFactor;
         byte m_DepthClip;
+        byte m_Conservative;
         byte m_Padding1;
         byte m_Padding2;
-        byte m_Padding3;
 
         public bool Equals(RasterState other)
         {
-            return m_CullingMode == other.m_CullingMode && m_OffsetUnits == other.m_OffsetUnits && m_OffsetFactor.Equals(other.m_OffsetFactor) && m_DepthClip == other.m_DepthClip;
+            return m_CullingMode == other.m_CullingMode && m_OffsetUnits == other.m_OffsetUnits && m_OffsetFactor.Equals(other.m_OffsetFactor) && m_DepthClip == other.m_DepthClip && m_Conservative == other.m_Conservative;
         }
 
         public override bool Equals(object obj)
@@ -81,6 +87,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_OffsetUnits;
                 hashCode = (hashCode * 397) ^ m_OffsetFactor.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_DepthClip.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_Conservative.GetHashCode();
                 return hashCode;
             }
         }

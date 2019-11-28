@@ -21,7 +21,7 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private string m_Category;
         [SerializeField]
-        private List<Error> m_Errors;
+        private List<UIError> m_Errors;
         [SerializeField]
         private string m_PublisherId;
         [SerializeField]
@@ -74,7 +74,7 @@ namespace UnityEditor.PackageManager.UI
 
         public override bool isFullyFetched => true;
 
-        public override IEnumerable<Error> errors => m_Errors;
+        public override IEnumerable<UIError> errors => m_Errors;
 
         public override bool isAvailableOnDisk => m_IsAvailableOnDisk;
 
@@ -98,28 +98,28 @@ namespace UnityEditor.PackageManager.UI
             m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && File.Exists(m_LocalPath);
         }
 
-        public AssetStorePackageVersion(AssetStoreFetchedInfo fetchedInfo, AssetStoreLocalInfo localInfo = null)
+        public AssetStorePackageVersion(AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
         {
-            if (fetchedInfo == null)
-                throw new ArgumentNullException(nameof(fetchedInfo));
+            if (productInfo == null)
+                throw new ArgumentNullException(nameof(productInfo));
 
-            m_Errors = new List<Error>();
+            m_Errors = new List<UIError>();
             m_Tag = PackageTag.Downloadable | PackageTag.Importable;
-            m_PackageUniqueId = fetchedInfo.id;
+            m_PackageUniqueId = productInfo.id;
 
-            m_Description = fetchedInfo.description;
-            m_Author = fetchedInfo.author;
-            m_PublisherId = fetchedInfo.publisherId;
+            m_Description = productInfo.description;
+            m_Author = productInfo.author;
+            m_PublisherId = productInfo.publisherId;
 
-            m_Category = fetchedInfo.category;
+            m_Category = productInfo.category;
 
-            m_VersionString = localInfo?.versionString ?? fetchedInfo.versionString ?? string.Empty;
-            m_VersionId = localInfo?.versionId ?? fetchedInfo.versionId ?? string.Empty;
+            m_VersionString = localInfo?.versionString ?? productInfo.versionString ?? string.Empty;
+            m_VersionId = localInfo?.versionId ?? productInfo.versionId ?? string.Empty;
             SemVersionParser.TryParse(m_VersionString.Trim(), out m_Version);
 
-            var publishDateString = localInfo?.publishedDate ?? fetchedInfo.publishedDate ?? string.Empty;
+            var publishDateString = localInfo?.publishedDate ?? productInfo.publishedDate ?? string.Empty;
             m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;
-            m_DisplayName = !string.IsNullOrEmpty(fetchedInfo.displayName) ? fetchedInfo.displayName : $"Package {m_PackageUniqueId}@{m_VersionId}";
+            m_DisplayName = !string.IsNullOrEmpty(productInfo.displayName) ? productInfo.displayName : $"Package {m_PackageUniqueId}@{m_VersionId}";
 
             m_SupportedUnityVersions = new List<SemVersion>();
             if (localInfo != null)
@@ -128,9 +128,9 @@ namespace UnityEditor.PackageManager.UI
                 SemVersionParser.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
-            else if (fetchedInfo.supportedVersions?.Any() ?? false)
+            else if (productInfo.supportedVersions?.Any() ?? false)
             {
-                foreach (var supportedVersion in fetchedInfo.supportedVersions)
+                foreach (var supportedVersion in productInfo.supportedVersions)
                 {
                     SemVersion? version;
                     bool isVersionParsed = SemVersionParser.TryParse(supportedVersion as string, out version);
@@ -144,10 +144,10 @@ namespace UnityEditor.PackageManager.UI
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
 
-            m_SizeInfos = new List<PackageSizeInfo>(fetchedInfo.sizeInfos);
+            m_SizeInfos = new List<PackageSizeInfo>(productInfo.sizeInfos);
             m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareTo(right.supportedUnityVersion));
 
-            var state = fetchedInfo.state ?? string.Empty;
+            var state = productInfo.state ?? string.Empty;
             if (state.Equals("published", StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Published;
             else if (state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase))
@@ -156,7 +156,7 @@ namespace UnityEditor.PackageManager.UI
             SetLocalPath(localInfo?.packagePath);
         }
 
-        public void SetUpmPackageFetchError(Error error)
+        public void SetUpmPackageFetchError(UIError error)
         {
             m_Errors.Add(error);
             m_Tag &= ~(PackageTag.Downloadable | PackageTag.Importable);

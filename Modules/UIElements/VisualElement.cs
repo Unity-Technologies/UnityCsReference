@@ -285,6 +285,7 @@ namespace UnityEngine.UIElements
                 if (m_Rotation == value)
                     return;
                 m_Rotation = value;
+
                 IncrementVersion(VersionChangeType.Transform);
             }
         }
@@ -416,6 +417,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static Rect TransformAlignedRect(Matrix4x4 lhc, Rect rect)
+        {
+            var min = MultiplyMatrix44Point2(lhc, rect.min);
+            var max = MultiplyMatrix44Point2(lhc, rect.max);
+
+            // We assume that the transform performs translation/scaling without rotation.
+            return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
+        }
+
         internal static Vector2 MultiplyMatrix44Point2(Matrix4x4 lhs, Vector2 point)
         {
             Vector2 res;
@@ -426,6 +436,8 @@ namespace UnityEngine.UIElements
 
         internal bool isBoundingBoxDirty = true;
         private Rect m_BoundingBox;
+        internal bool isWorldBoundingBoxDirty = true;
+        private Rect m_WorldBoundingBox;
 
         internal Rect boundingBox
         {
@@ -441,6 +453,20 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal Rect worldBoundingBox
+        {
+            get
+            {
+                if (isWorldBoundingBoxDirty || isBoundingBoxDirty)
+                {
+                    UpdateWorldBoundingBox();
+                    isWorldBoundingBoxDirty = false;
+                }
+
+                return m_WorldBoundingBox;
+            }
+        }
+
         internal void UpdateBoundingBox()
         {
             if (float.IsNaN(rect.x) || float.IsNaN(rect.y) || float.IsNaN(rect.width) || float.IsNaN(rect.height))
@@ -451,9 +477,12 @@ namespace UnityEngine.UIElements
             else
             {
                 m_BoundingBox = rect;
-                for (int i = 0; i < hierarchy.childCount; i++)
+                var childCount = m_Children.Count;
+                for (int i = 0; i < childCount; i++)
                 {
                     var childBB = m_Children[i].boundingBox;
+
+                    // Use localtransform instead
                     childBB = m_Children[i].ChangeCoordinatesTo(this, childBB);
                     m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
                     m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
@@ -461,6 +490,13 @@ namespace UnityEngine.UIElements
                     m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
                 }
             }
+
+            isWorldBoundingBoxDirty = true;
+        }
+
+        internal void UpdateWorldBoundingBox()
+        {
+            m_WorldBoundingBox = TransformAlignedRect(worldTransform, boundingBox);
         }
 
         /// <summary>
@@ -471,11 +507,8 @@ namespace UnityEngine.UIElements
             get
             {
                 var g = worldTransform;
-                var min = GUIUtility.Internal_MultiplyPoint(new Vector3(rect.min.x, rect.min.y, 1), g);
-                var max = GUIUtility.Internal_MultiplyPoint(new Vector3(rect.max.x, rect.max.y, 1), g);
 
-                // We assume that the transform performs translation/scaling without rotation.
-                return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
+                return TransformAlignedRect(g, rect);
             }
         }
 
@@ -487,11 +520,10 @@ namespace UnityEngine.UIElements
             get
             {
                 var g = transform.matrix;
-                var min = GUIUtility.Internal_MultiplyPoint(layout.min, g);
-                var max = GUIUtility.Internal_MultiplyPoint(layout.max, g);
 
-                // We assume that the transform performs translation/scaling without rotation.
-                return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
+                var l = layout;
+
+                return TransformAlignedRect(g, l);
             }
         }
 
@@ -565,6 +597,7 @@ namespace UnityEngine.UIElements
             }
 
             isWorldTransformInverseDirty = true;
+            isWorldBoundingBoxDirty = true;
         }
 
         internal bool isWorldClipDirty { get; set; } = true;
@@ -768,8 +801,25 @@ namespace UnityEngine.UIElements
 
         internal readonly uint controlid;
 
+        // IMGUIContainers are special snowflakes that need custom treatment regarding events.
+        // This enables early outs in some dispatching strategies.
+        // see focusable.isIMGUIContainer;
+        internal int imguiContainerDescendantCount = 0;
+
+        private void ChangeIMGUIContainerCount(int delta)
+        {
+            VisualElement ve = this;
+
+            while (ve != null)
+            {
+                ve.imguiContainerDescendantCount += delta;
+                ve = ve.hierarchy.parent;
+            }
+        }
+
         public VisualElement()
         {
+            m_Children = s_EmptyList;
             controlid = ++s_NextId;
 
             hierarchy = new Hierarchy(this);
@@ -985,9 +1035,10 @@ namespace UnityEngine.UIElements
         {
             if (SetEnabledFromHierarchy(value))
             {
-                for (int i = 0; i < hierarchy.childCount; ++i)
+                var count = m_Children.Count;
+                for (int i = 0; i < count; ++i)
                 {
-                    hierarchy[i].PropagateEnabledToChildren(value);
+                    m_Children[i].PropagateEnabledToChildren(value);
                 }
             }
         }
@@ -1193,13 +1244,23 @@ namespace UnityEngine.UIElements
                 m_RequireMeasureFunction = value;
                 if (m_RequireMeasureFunction && !yogaNode.IsMeasureDefined)
                 {
-                    yogaNode.SetMeasureFunction(Measure);
+                    AssignMeasureFunction();
                 }
                 else if (!m_RequireMeasureFunction && yogaNode.IsMeasureDefined)
                 {
-                    yogaNode.SetMeasureFunction(null);
+                    RemoveMeasureFunction();
                 }
             }
+        }
+
+        private void AssignMeasureFunction()
+        {
+            yogaNode.SetMeasureFunction((node, f, mode, f1, heightMode) => Measure(node, f, mode, f1, heightMode));
+        }
+
+        private void RemoveMeasureFunction()
+        {
+            yogaNode.SetMeasureFunction(null);
         }
 
         protected internal virtual Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)

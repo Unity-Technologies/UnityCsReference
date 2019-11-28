@@ -13,6 +13,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Profiling;
 
 namespace UnityEngine.Rendering
 {
@@ -618,6 +619,13 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RenderingCommandBuffer_Bindings::EndSample", HasExplicitThis = true)]
         extern public void EndSample(string name);
+        public void BeginSample(CustomSampler sampler) { BeginSample_CustomSampler(sampler); }
+        public void EndSample(CustomSampler sampler) { EndSample_CustomSampler(sampler); }
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample_CustomSampler", HasExplicitThis = true)]
+        extern private void BeginSample_CustomSampler([NotNull] CustomSampler sampler);
+        [FreeFunction("RenderingCommandBuffer_Bindings::EndSample_CustomSampler", HasExplicitThis = true)]
+        extern private void EndSample_CustomSampler([NotNull] CustomSampler sampler);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::IssuePluginEventAndDataInternal", HasExplicitThis = true)]
         extern private void IssuePluginEventAndDataInternal(IntPtr callback, int eventID, IntPtr data);

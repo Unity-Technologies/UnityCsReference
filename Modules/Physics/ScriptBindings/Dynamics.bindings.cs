@@ -916,6 +916,78 @@ namespace UnityEngine
 
     #endregion
 
+    public enum ArticulationJointType
+    {
+        FixedJoint = 0,
+        PrismaticJoint = 1,
+        RevoluteJoint = 2,
+        SphericalJoint = 3
+    };
+
+    public enum ArticulationDofLock
+    {
+        LockedMotion = 0,
+        LimitedMotion = 1,
+        FreeMotion = 2
+    };
+
+    [NativeHeader("Modules/Physics/ArticulationBody.h")]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ArticulationDrive
+    {
+        public float lowerLimit;
+        public float upperLimit;
+        public float stiffness;
+        public float damping;
+        public float forceLimit;
+        public float target;
+        public float targetVelocity;
+    }
+
+
+    [NativeHeader("Modules/Physics/ArticulationBody.h")]
+    [NativeClass("Unity::ArticulationBody")]
+    public class ArticulationBody : Behaviour
+    {
+        extern public ArticulationJointType jointType { get; set; }
+        extern public Vector3 anchorPosition { get; set; }
+        extern public Vector3 parentAnchorPosition { get; set; }
+        extern public Quaternion anchorRotation { get; set; }
+        extern public Quaternion parentAnchorRotation { get; set; }
+        extern public bool isRoot { get; }
+
+        extern public ArticulationDofLock linearLockX { get; set; }
+        extern public ArticulationDofLock linearLockY { get; set; }
+        extern public ArticulationDofLock linearLockZ { get; set; }
+
+        extern public ArticulationDofLock swingYLock { get; set; }
+        extern public ArticulationDofLock swingZLock { get; set; }
+        extern public ArticulationDofLock twistLock { get; set; }
+
+        extern public ArticulationDrive xDrive { get; set; }
+        extern public ArticulationDrive yDrive { get; set; }
+        extern public ArticulationDrive zDrive { get; set; }
+
+        extern public bool immovable { get; set; }
+
+        extern public float linearDamping { get; set; }
+        extern public float angularDamping { get; set; }
+        extern public float jointFriction { get; set; }
+
+        extern public void AddForce(Vector3 force);
+        extern public void AddTorque(Vector3 torque);
+
+        extern public Vector3 velocity { get; }
+        extern public Vector3 angularVelocity { get; }
+
+        extern public float mass { get; set; }
+        extern public Vector3 centerOfMass { get; }
+        extern public Vector3 inertiaTensor { get; }
+
+        extern public void TeleportRoot(Vector3 position, Quaternion rotation);
+        extern public Vector3 GetClosestPoint(Vector3 point);
+    }
+
     [NativeHeader("Modules/Physics/PhysicsManager.h")]
     [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
     public class Physics

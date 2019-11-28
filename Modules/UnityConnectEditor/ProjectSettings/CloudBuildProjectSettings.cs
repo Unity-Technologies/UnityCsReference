@@ -243,10 +243,6 @@ namespace UnityEditor.Connect
             var mainTemplateContainer = mainTemplate.CloneTree().contentContainer;
             ServicesUtils.TranslateStringsInTree(mainTemplateContainer);
             rootVisualElement.Add(mainTemplateContainer);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
 
             // Make sure to reset the state machine
             m_StateMachine.ClearCurrentState();
@@ -270,7 +266,9 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    Application.OpenURL(ServicesConfiguration.instance.analyticsDashboardUrl);
+                    var dashboardUrl = ServicesConfiguration.instance.GetCloudBuildCurrentProjectUrl();
+                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = BuildService.instance.name, url = dashboardUrl });
+                    Application.OpenURL(dashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -483,16 +481,6 @@ namespace UnityEditor.Connect
                     {
                         Application.OpenURL(ServicesConfiguration.instance.GetCloudBuildAddTargetUrl());
                     };
-                }
-
-                var gotoDashboard = m_Provider.rootVisualElement.Q(k_GoToDashboardLink);
-                if (gotoDashboard != null)
-                {
-                    var clickable = new Clickable(() =>
-                    {
-                        Application.OpenURL(ServicesConfiguration.instance.GetCloudBuildCurrentProjectUrl());
-                    });
-                    gotoDashboard.AddManipulator(clickable);
                 }
 
                 ResetData();

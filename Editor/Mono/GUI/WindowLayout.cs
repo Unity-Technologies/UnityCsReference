@@ -455,14 +455,18 @@ namespace UnityEditor
 
         static WindowLayout()
         {
-            EditorApplication.delayCall += () =>
+            EditorApplication.update -= DelayReloadWindowLayoutMenu;
+            EditorApplication.update += DelayReloadWindowLayoutMenu;
+        }
+
+        internal static void DelayReloadWindowLayoutMenu()
+        {
+            EditorApplication.update -= DelayReloadWindowLayoutMenu;
+            if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
             {
-                if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
-                {
-                    ReloadWindowLayoutMenu();
-                    EditorUtility.Internal_UpdateAllMenus();
-                }
-            };
+                ReloadWindowLayoutMenu();
+                EditorUtility.Internal_UpdateAllMenus();
+            }
         }
 
         internal static void ReloadWindowLayoutMenu()
@@ -1240,6 +1244,7 @@ namespace UnityEditor
             UnityObject[] windows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
             UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             UnityObject[] views = Resources.FindObjectsOfTypeAll(typeof(View));
+            UnityObject[] toolbars = Resources.FindObjectsOfTypeAll(typeof(EditorToolbar));
 
             foreach (ContainerWindow w in containers)
             {
@@ -1265,7 +1270,15 @@ namespace UnityEditor
                 all.Add(w);
             }
 
+            foreach (EditorToolbar toolbar in toolbars)
+            {
+                if (toolbar.m_DontSaveToLayout)
+                    continue;
+                all.Add(toolbar);
+            }
+
             var parentLayoutFolder = Path.GetDirectoryName(path);
+
             if (!String.IsNullOrEmpty(parentLayoutFolder))
             {
                 if (!Directory.Exists(parentLayoutFolder))
@@ -1282,7 +1295,6 @@ namespace UnityEditor
                 if (window.showMode == ShowMode.MainWindow)
                     return window.rootView;
             }
-
 
             Debug.LogError("No Main View found!");
             return null;

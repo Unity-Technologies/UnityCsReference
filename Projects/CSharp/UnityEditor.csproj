@@ -37,6 +37,15 @@
     <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\EditorSpriteAtlas.bindings.cs">
       <Link>Editor\Mono\2D\SpriteAtlas\EditorSpriteAtlas.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\SpriteAtlasAsset.bindings.cs">
+      <Link>Editor\Mono\2D\SpriteAtlas\SpriteAtlasAsset.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\SpriteAtlasImporter.bindings.cs">
+      <Link>Editor\Mono\2D\SpriteAtlas\SpriteAtlasImporter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\SpriteAtlasImporterInspector.cs">
+      <Link>Editor\Mono\2D\SpriteAtlas\SpriteAtlasImporterInspector.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\SpriteAtlasInspector.cs">
       <Link>Editor\Mono\2D\SpriteAtlas\SpriteAtlasInspector.cs</Link>
     </Compile>
@@ -1192,6 +1201,9 @@
     <Compile Include="..\..\Editor\Mono\GUI\EditorStyles.cs">
       <Link>Editor\Mono\GUI\EditorStyles.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\EditorToolbar.cs">
+      <Link>Editor\Mono\GUI\EditorToolbar.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditorUpdateWindow.cs">
       <Link>Editor\Mono\GUI\EditorUpdateWindow.cs</Link>
     </Compile>
@@ -1492,6 +1504,9 @@
     <Compile Include="..\..\Editor\Mono\GUI\TypeSelectionList.cs">
       <Link>Editor\Mono\GUI\TypeSelectionList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\UnityMainToolbar.cs">
+      <Link>Editor\Mono\GUI\UnityMainToolbar.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\VUMeter.cs">
       <Link>Editor\Mono\GUI\VUMeter.cs</Link>
     </Compile>
@@ -1719,6 +1734,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AreaEffector2DEditor.cs">
       <Link>Editor\Mono\Inspector\AreaEffector2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\ArticulationBodyEditor.cs">
+      <Link>Editor\Mono\Inspector\ArticulationBodyEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AssemblyDefinitionImporterInspector.cs">
       <Link>Editor\Mono\Inspector\AssemblyDefinitionImporterInspector.cs</Link>
@@ -2001,6 +2019,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LightProbesInspector.cs">
       <Link>Editor\Mono\Inspector\LightProbesInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\LightingSettingsEditor.cs">
+      <Link>Editor\Mono\Inspector\LightingSettingsEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LineRendererCurveEditor.cs">
       <Link>Editor\Mono\Inspector\LineRendererCurveEditor.cs</Link>
@@ -3015,6 +3036,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipelineCommonHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationTask.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationTask.cs</Link>
@@ -4162,9 +4186,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreFetchedInfo.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreFetchedInfo.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreListOperation.cs</Link>
     </Compile>
@@ -4179,6 +4200,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreProductInfo.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreProductInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePurchaseInfo.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePurchaseInfo.cs</Link>
@@ -4221,6 +4245,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Resources.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Resources.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UIError.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\UIError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UIErrorCode.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\UIErrorCode.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs</Link>
@@ -4543,6 +4573,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\PackRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\PackRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\PerformSearchRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\PerformSearchRequest.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs</Link>
     </Compile>
@@ -4554,6 +4587,27 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchEntitlement.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Search\SearchEntitlement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchOptions.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Search\SearchOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchOrder.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Search\SearchOrder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchOrderBy.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Search\SearchOrderBy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchResultEntry.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Search\SearchResultEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchResults.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Search\SearchResults.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\StatusCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\StatusCode.cs</Link>
@@ -5527,9 +5581,6 @@
     <Compile Include="..\..\Modules\UnityConnectEditor\Services\AnalyticsValidationPoller.cs">
       <Link>Modules\UnityConnectEditor\Services\AnalyticsValidationPoller.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\Services\AnalyticsValidatorEvent.cs">
-      <Link>Modules\UnityConnectEditor\Services\AnalyticsValidatorEvent.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Services\BuildService.cs">
       <Link>Modules\UnityConnectEditor\Services\BuildService.cs</Link>
     </Compile>
@@ -5637,6 +5688,9 @@
     </Compile>
     <Compile Include="..\..\Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs">
       <Link>Modules\XREditor\Transition\WindowsMRDeviceSettingsTransition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
+      <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
   </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

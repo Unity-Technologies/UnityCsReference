@@ -14,12 +14,108 @@ using UnityEngine.Internal;
 
 namespace UnityEditor.Experimental
 {
+    internal class FontDef
+    {
+        class FontData
+        {
+            private string m_File;
+            private Font m_LoadedFont;
+            private string[] m_FontNames;
+
+            public FontData(string file, string[] fontNames)
+            {
+                m_File = file;
+                m_FontNames = fontNames;
+            }
+
+            public Font font
+            {
+                get
+                {
+                    if (m_LoadedFont == null)
+                    {
+                        m_LoadedFont = EditorGUIUtility.LoadRequired(m_File) as Font;
+                        if (m_LoadedFont != null && m_FontNames != null)
+                        {
+                            m_LoadedFont.fontNames = m_FontNames;
+                        }
+                    }
+
+                    return m_LoadedFont;
+                }
+            }
+        }
+
+        public const string k_Inter = "Inter";
+        public const string k_LucidaGrande = "Lucida Grande";
+        public const string k_Verdana = "Verdana";
+
+        private Dictionary<Style, FontData> m_Fonts = new Dictionary<Style, FontData>();
+
+        public enum Style
+        {
+            Normal = FontStyle.Normal,
+            Bold = FontStyle.Bold,
+            Italic = FontStyle.Italic,
+            BoldAndItalic = FontStyle.BoldAndItalic,
+            Small
+        }
+
+        public string name { get; set; }
+
+        public FontDef(string name)
+        {
+            this.name = name;
+        }
+
+        public Font GetFont(Style style)
+        {
+            FontData data;
+
+            if (m_Fonts.TryGetValue(style, out data))
+            {
+                return data.font;
+            }
+
+            if (style != Style.Normal)
+                return GetFont(Style.Normal);
+            return null;
+        }
+
+        public void SetFont(Style style, string file, string[] fontNames = null)
+        {
+            m_Fonts[style] = new FontData(file, fontNames);
+        }
+
+        public static FontDef CreateFromResources(string fontName, Dictionary<Style, string> fonts)
+        {
+            FontDef fontDef = new FontDef(fontName);
+
+            foreach (var font in fonts)
+            {
+                fontDef.SetFont(font.Key, font.Value);
+            }
+
+            return fontDef;
+        }
+
+        public static FontDef CreateSystemFont(string fontName)
+        {
+            FontDef fontDef = new FontDef(fontName);
+
+            fontDef.SetFont(Style.Small, "Fonts/System/System Small.ttf", new string[] {fontName});
+            fontDef.SetFont(Style.Normal, "Fonts/System/System Normal.ttf", new string[] { fontName });
+            fontDef.SetFont(Style.Bold, "Fonts/System/System Normal Bold.ttf", new string[] { fontName + "Bold"});
+            return fontDef;
+        }
+    }
+
     [ExcludeFromDocs]
     public partial class EditorResources
     {
+        private const string k_PrefsUserFontKey = "user_editor_font";
         private static StyleCatalog s_StyleCatalog;
         private static bool s_RefreshGlobalStyleCatalog = false;
-        private static Dictionary<string, string> s_BuiltInFonts = null;
 
         // Global editor styles
         internal static StyleCatalog styleCatalog
@@ -43,167 +139,110 @@ namespace UnityEditor.Experimental
 
         private static bool IsEditorStyleSheet(string path)
         {
-            var pathLowerCased = path.ToLower();
-            return pathLowerCased.Contains("/stylesheets/extensions/") && (pathLowerCased.EndsWith("common.uss") ||
-                pathLowerCased.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss"));
+            return path.IndexOf("/stylesheets/extensions/", StringComparison.OrdinalIgnoreCase) != -1 &&
+                (path.EndsWith("common.uss", StringComparison.OrdinalIgnoreCase) || path.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss", StringComparison.OrdinalIgnoreCase));
         }
 
         internal static string GetDefaultFont()
         {
-            return "Inter";
-        }
-
-        internal static string GetCurrentFont()
-        {
-            var currentFont = EditorPrefs.GetString("user_editor_font", GetDefaultFont());
-
-            // If the current is not available then fallback to the default font
-            if (!GetSupportedFonts().Contains(currentFont))
+            // In languages other than english, we use 'lucida grande' because the localization settings are currently mapped to 'Lucida Grande'.
+            // see Editor/Resources/Windows/fontsettings.text for instance
+            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {
-                currentFont = GetDefaultFont();
-                EditorPrefs.DeleteKey("user_editor_font");
+                return FontDef.k_Inter;
             }
-
-            return currentFont;
-        }
-
-        private static Font s_SmallFont;
-        internal static Font GetSmallFont()
-        {
-            if (s_SmallFont == null)
+            else
             {
-                var currentFont = GetCurrentFont();
-
-                if (IsSystemFont(currentFont))
-                {
-                    s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/System/System Small.ttf") as Font;
-                    s_SmallFont.fontNames = new[] { currentFont };
-                }
-                else
-                {
-                    if (currentFont == "Inter")
-                    {
-                        s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/Inter/Inter-Small.ttf") as Font;
-                    }
-                    else if (currentFont == "Lucida Grande")
-                    {
-                        s_SmallFont = EditorGUIUtility.LoadRequired("Fonts/Lucida Grande small.ttf") as Font;
-                    }
-                    else
-                    {
-                        s_SmallFont = GetNormalFont();
-                    }
-                }
+                return FontDef.k_LucidaGrande;
             }
-
-            return s_SmallFont;
         }
 
-        private static Font s_NormalFont;
-        internal static Font GetNormalFont()
-        {
-            if (s_NormalFont == null)
-            {
-                var currentFont = GetCurrentFont();
+        internal static IEnumerable<string> supportedFontNames => EditorResources.supportedFonts.Keys;
 
-                if (IsSystemFont(currentFont))
-                {
-                    s_NormalFont = EditorGUIUtility.LoadRequired("Fonts/System/System Normal.ttf") as Font;
-                    s_NormalFont.fontNames = new[] { currentFont };
-                }
-                else
-                {
-                    s_NormalFont = EditorGUIUtility.LoadRequired(builtInFonts[currentFont]) as Font;
-                }
-            }
-
-            return s_NormalFont;
-        }
-
-        private static Font s_BoldFont;
-        internal static Font GetBoldFont()
-        {
-            if (s_BoldFont == null)
-            {
-                var currentFont = GetCurrentFont();
-
-                if (IsSystemFont(currentFont))
-                {
-                    s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/System/System Normal Bold.ttf") as Font;
-                    s_BoldFont.fontNames = new[] { currentFont + " Bold" };
-                }
-                else
-                {
-                    if (currentFont == "Inter")
-                    {
-                        s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/Inter/Inter-Bold.ttf") as Font;
-                    }
-                    else if (currentFont == "Lucida Grande")
-                    {
-                        s_BoldFont = EditorGUIUtility.LoadRequired("Fonts/Lucida Grande Bold.ttf") as Font;
-                    }
-                    else
-                    {
-                        s_BoldFont = EditorGUIUtility.LoadRequired(builtInFonts[currentFont]) as Font;
-                    }
-                }
-            }
-
-            return s_BoldFont;
-        }
-
-        private static List<string> s_SupportedFonts = null;
-
-        internal static List<string> GetSupportedFonts()
-        {
-            if (s_SupportedFonts == null)
-            {
-                s_SupportedFonts = new List<string>();
-
-                if (Application.platform == RuntimePlatform.WindowsEditor)
-                {
-                    s_SupportedFonts.Add("Verdana");
-                }
-
-                foreach (var builtinFont in EditorResources.builtInFonts.Keys)
-                {
-                    s_SupportedFonts.Add(builtinFont);
-                }
-
-                if (!s_SupportedFonts.Contains(EditorResources.GetDefaultFont()))
-                    s_SupportedFonts.Add(EditorResources.GetDefaultFont());
-            }
-
-            return s_SupportedFonts;
-        }
-
-        internal static Dictionary<string, string> builtInFonts
+        internal static string currentFontName
         {
             get
             {
-                if (s_BuiltInFonts == null)
-                {
-                    s_BuiltInFonts = new Dictionary<string, string>
-                    {
-                        ["Inter"] = "Fonts/Inter/Inter-Regular.ttf"
-                    };
+                string currentFont = null;
 
-                    if (Application.platform != RuntimePlatform.WindowsEditor)
+                if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
+                {
+                    currentFont = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
+
+                    // If the current is not available then fallback to the default font
+                    if (!supportedFontNames.Contains(currentFont))
                     {
-                        s_BuiltInFonts["Lucida Grande"] = "Fonts/Lucida Grande.ttf";
+                        currentFont = GetDefaultFont();
+                        EditorPrefs.DeleteKey(k_PrefsUserFontKey);
                     }
                 }
+                else
+                {
+                    currentFont = GetDefaultFont();
+                }
 
-                return s_BuiltInFonts;
+                return currentFont;
             }
         }
 
-        internal static bool IsSystemFont(string font)
+        internal static Font GetFont(FontDef.Style fontStyle)
         {
-            // TODO: Can be better
-            if (builtInFonts.ContainsKey(font))
-                return false;
-            return true;
+            var currentFontDef = supportedFonts[currentFontName];
+
+            return currentFontDef.GetFont(fontStyle);
+        }
+
+        static void AddLucidaGrande()
+        {
+            s_SupportedFonts[FontDef.k_LucidaGrande] = FontDef.CreateFromResources(FontDef.k_LucidaGrande,
+                new Dictionary<FontDef.Style, string>
+                {
+                    {FontDef.Style.Small, "Fonts/Lucida Grande small.ttf"},
+                    {FontDef.Style.Normal, "Fonts/Lucida Grande.ttf"},
+                    {FontDef.Style.Bold, "Fonts/Lucida Grande Bold.ttf"}
+                });
+        }
+
+        private static Dictionary<string, FontDef> s_SupportedFonts = null;
+        internal static Dictionary<string, FontDef> supportedFonts
+        {
+            get
+            {
+                if (s_SupportedFonts == null)
+                {
+                    s_SupportedFonts = new Dictionary<string, FontDef>();
+
+                    // In languages other than english, we use 'lucida grande' because the localization settings are currently are mapped to 'lucida grande'.
+                    // see Editor/Resources/Windows/fontsettings.text for instance
+                    if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English)
+                    {
+                        AddLucidaGrande();
+                    }
+                    else
+                    {
+                        s_SupportedFonts[FontDef.k_Inter] = FontDef.CreateFromResources(FontDef.k_Inter,
+                            new Dictionary<FontDef.Style, string>
+                            {
+                                {FontDef.Style.Small, "Fonts/Inter/Inter-Small.ttf"},
+                                {FontDef.Style.Normal, "Fonts/Inter/Inter-Regular.ttf"},
+                                {FontDef.Style.Bold, "Fonts/Inter/Inter-SemiBold.ttf"},
+                                {FontDef.Style.Italic, "Fonts/Inter/Inter-Italic.ttf"},
+                                {FontDef.Style.BoldAndItalic, "Fonts/Inter/Inter-SemiBoldItalic.ttf"}
+                            });
+
+                        if (Application.platform == RuntimePlatform.WindowsEditor)
+                        {
+                            s_SupportedFonts[FontDef.k_Verdana] = FontDef.CreateSystemFont(FontDef.k_Verdana);
+                        }
+                        else
+                        {
+                            AddLucidaGrande();
+                        }
+                    }
+                }
+
+                return s_SupportedFonts;
+            }
         }
 
         private static List<string> GetDefaultStyleCatalogPaths()
@@ -217,7 +256,7 @@ namespace UnityEditor.Experimental
 
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {
-                string currentFontStyleSheet = "StyleSheets/Extensions/fonts/" + GetCurrentFont().ToLower() + ".uss";
+                string currentFontStyleSheet = "StyleSheets/Extensions/fonts/" + currentFontName.ToLower() + ".uss";
 
                 catalogFiles.Add(currentFontStyleSheet);
             }
@@ -235,7 +274,7 @@ namespace UnityEditor.Experimental
                 s_RefreshGlobalStyleCatalog = false;
 
                 var paths = GetDefaultStyleCatalogPaths();
-                foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
+                foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
                     paths.Add(editorUssPath);
 
                 Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
@@ -259,7 +298,7 @@ namespace UnityEditor.Experimental
                     // TODO: Emit OnStyleCatalogLoaded
                     if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
                         ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
-                    skin.font = GetNormalFont();
+                    skin.font = GetFont(FontDef.Style.Normal);
                     UpdateGUIStyleProperties(skin);
                 }
             }
@@ -293,13 +332,6 @@ namespace UnityEditor.Experimental
             return extendedStyles;
         }
 
-        private static void ResetDeprecatedBackgroundImage(GUIStyleState state)
-        {
-            state.background = null;
-            if (state.scaledBackgrounds != null && state.scaledBackgrounds.Length >= 1)
-                state.scaledBackgrounds[0] = null;
-        }
-
         /* ONLY NEEDED BY STYLING DEVS AND DESIGNERS.
         [MenuItem("Theme/Refresh Styles &r", priority = 420)]
         internal static void RefreshStyles()
@@ -327,17 +359,7 @@ namespace UnityEditor.Experimental
             try
             {
                 GUIStyleExtensions.PopulateStyle(styleCatalog, style, sname);
-
-                // The new style extension do not support state backgrounds anymore.
-                // Any background images needs to be defined in the uss data files.
-                ResetDeprecatedBackgroundImage(style.normal);
-                ResetDeprecatedBackgroundImage(style.hover);
-                ResetDeprecatedBackgroundImage(style.active);
-                ResetDeprecatedBackgroundImage(style.focused);
-                ResetDeprecatedBackgroundImage(style.onNormal);
-                ResetDeprecatedBackgroundImage(style.onHover);
-                ResetDeprecatedBackgroundImage(style.onActive);
-                ResetDeprecatedBackgroundImage(style.onFocused);
+                GUIStyleExtensions.ConvertToExtendedStyle(style);
             }
             catch (Exception ex)
             {

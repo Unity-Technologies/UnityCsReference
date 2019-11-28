@@ -233,11 +233,16 @@ namespace UnityEditor
     {
         [Tooltip("Do not import materials")]
         None = 0,
-        [InspectorName("Import (Legacy)")]
-        [Tooltip("Use the legacy Material import method.")]
-        LegacyImport = 1,
-        [InspectorName("Import (Experimental)")]
+        [InspectorName("Standard")]
+        [Tooltip("Use the standard Material import method.")]
+        ImportStandard = 1,
+        [InspectorName("Import via MaterialDescription (Experimental)")]
         [Tooltip("Use AssetPostprocessor.OnPreprocessMaterialDescription")]
+        ImportViaMaterialDescription = 2,
+
+        [System.Obsolete("Use ImportStandard (UnityUpgradable) -> ImportStandard")]
+        LegacyImport = 1,
+        [System.Obsolete("Use ImportViaMaterialDescription (UnityUpgradable) -> ImportViaMaterialDescription")]
         Import = 2
     }
 

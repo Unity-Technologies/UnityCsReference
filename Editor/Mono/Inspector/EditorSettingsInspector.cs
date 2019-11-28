@@ -123,10 +123,11 @@ namespace UnityEditor
         private PopupElement[] spritePackerPopupList =
         {
             new PopupElement("Disabled"),
-            new PopupElement("Enabled For Builds(Legacy Sprite Packer)"),
-            new PopupElement("Always Enabled(Legacy Sprite Packer)"),
-            new PopupElement("Enabled For Builds"),
-            new PopupElement("Always Enabled"),
+            new PopupElement("Legacy Sprite Packer - Enabled For Builds"),
+            new PopupElement("Legacy Sprite Packer - Always Enabled"),
+            new PopupElement("Sprite Atlas V1 - Enabled For Builds"),
+            new PopupElement("Sprite Atlas V1 - Always Enabled"),
+            new PopupElement("Sprite Atlas V2 (Experimental) - Enabled"),
         };
 
         private PopupElement[] lineEndingsPopupList =
@@ -604,6 +605,12 @@ namespace UnityEditor
             index = Mathf.Clamp((int)EditorSettings.spritePackerMode, 0, spritePackerPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
 
+            if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)
+            {
+                var message = "Sprite Atlas V2 (Experimental) supports CacheServer with Importer workflow. Please take a backup of your project before switching to V2.";
+                EditorGUILayout.HelpBox(message, MessageType.Info, true);
+            }
+
             if (EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOn
                 || EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnly)
             {
@@ -1069,6 +1076,9 @@ namespace UnityEditor
             int popupIndex = (int)data;
 
             EditorSettings.spritePackerMode = (SpritePackerMode)popupIndex;
+
+            if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)
+                UnityEditor.U2D.SpriteAtlasImporter.MigrateAllSpriteAtlases();
         }
 
         private void SetSpritePackerPaddingPower(object data)

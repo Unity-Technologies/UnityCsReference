@@ -50,6 +50,8 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
+            if (!UnityEngine.VFX.VFXManager.activateVFX)
+                return null;
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
                 "Project/VFX", "ProjectSettings/VFXManager.asset",
                 SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/VFXManager.asset"));

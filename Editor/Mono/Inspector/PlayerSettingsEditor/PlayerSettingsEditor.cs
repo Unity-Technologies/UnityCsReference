@@ -1621,7 +1621,7 @@ namespace UnityEditor
 
             bool hdrDisplaySupported = false;
             bool gfxJobModesSupported = false;
-            bool customLightmapEncodingSupported = (targetGroup == BuildTargetGroup.Standalone);
+            bool customLightmapEncodingSupported = (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WebGL);
             if (settingsExtension != null)
             {
                 hdrDisplaySupported = settingsExtension.SupportsHighDynamicRangeDisplays();

@@ -281,6 +281,76 @@ namespace UnityEngine
         private event FontTextureRebuildCallback m_FontTextureRebuildCallback;
         public delegate void FontTextureRebuildCallback();
 
+        class FontMatchingResult
+        {
+            public Font font;
+            public FontStyle style;
+        }
+
+        private static Dictionary<string, FontMatchingResult> sFontMatchingResultCache = new Dictionary<string, FontMatchingResult>();
+
+        internal delegate void FindClosestMatchingFontCallback(ref Font font, ref FontStyle fontStyle);
+        private static FindClosestMatchingFontCallback sFindClosestMatchingFontCallback;
+
+        static internal FindClosestMatchingFontCallback findClosestMatchingFontCallback
+        {
+            get
+            {
+                return sFindClosestMatchingFontCallback;
+            }
+            set
+            {
+                if (sFindClosestMatchingFontCallback == value)
+                    return;
+
+                sFindClosestMatchingFontCallback = value;
+
+                if (sFindClosestMatchingFontCallback != null)
+                {
+                    SetFindClosestMatchingFontCallback_Internal((Font font, int fontStyle, IntPtr outFontInstanceID, IntPtr outFontStyle) => {
+                        var outFont = font;
+                        var tempOutFontStyle = (FontStyle)fontStyle;
+
+                        sFindClosestMatchingFontCallback?.Invoke(ref outFont, ref tempOutFontStyle);
+
+                        unsafe
+                        {
+                            *(int*)outFontInstanceID = outFont ? outFont.GetInstanceID() : 0;
+                            *(int*)outFontStyle = (int)tempOutFontStyle;
+                        }
+                    });
+                }
+                else
+                {
+                    SetFindClosestMatchingFontCallback_Internal(null);
+                }
+            }
+        }
+
+        internal static void FindClosestMatchingFont(ref Font font, ref FontStyle fontStyle)
+        {
+            if (sFindClosestMatchingFontCallback == null)
+                return;
+
+            string key = font.name + "_" + (int)fontStyle;
+            FontMatchingResult fontData;
+
+            if (sFontMatchingResultCache.TryGetValue(key, out fontData) == false)
+            {
+                sFindClosestMatchingFontCallback?.Invoke(ref font, ref fontStyle);
+                sFontMatchingResultCache[key] = fontData = new FontMatchingResult();
+                fontData.font = font;
+                fontData.style = fontStyle;
+            }
+
+            font = fontData.font;
+            fontStyle = fontData.style;
+        }
+
+        private delegate void FindClosestMatchingFontCallbackInternal(Font font, int fontStyle, IntPtr outFontInstanceID, IntPtr outFontStyle);
+
+        private static extern void SetFindClosestMatchingFontCallback_Internal(FindClosestMatchingFontCallbackInternal matcher);
+
         public extern Material material { get; set; }
         public extern string[] fontNames { get; set; }
         public extern bool dynamic { get; }

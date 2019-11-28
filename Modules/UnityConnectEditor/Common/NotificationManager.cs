@@ -82,7 +82,8 @@ namespace UnityEditor.Connect
         /// <param name="topic"></param>
         /// <param name="severity"></param>
         /// <param name="message"></param>
-        public void Publish(Notification.Topic topic, Notification.Severity severity, string message)
+        /// <param name="avoidDuplicates"></param>
+        public void Publish(Notification.Topic topic, Notification.Severity severity, string message, bool avoidDuplicates = true)
         {
             Publish(topic, severity, message, element =>
             {
@@ -97,8 +98,10 @@ namespace UnityEditor.Connect
         /// </summary>
         /// <param name="topic"></param>
         /// <param name="severity"></param>
-        /// <param name="message"></param>
-        public void Publish(Notification.Topic topic, Notification.Severity severity, string rawMessage, Notification.PopulateNotificationMessage populateNotificationMessage)
+        /// <param name="rawMessage"></param>
+        /// <param name="populateNotificationMessage"></param>
+        /// <param name="avoidDuplicates"></param>
+        public void Publish(Notification.Topic topic, Notification.Severity severity, string rawMessage, Notification.PopulateNotificationMessage populateNotificationMessage, bool avoidDuplicates = true)
         {
             var publishedOn = DateTime.Now.ToUniversalTime();
             foreach (var existingNotificationBuilder in m_NotificationBuilders)
@@ -106,9 +109,10 @@ namespace UnityEditor.Connect
                 if (existingNotificationBuilder.topic == topic
                     && existingNotificationBuilder.severity == severity
                     && existingNotificationBuilder.rawMessage == rawMessage
-                    && (publishedOn - existingNotificationBuilder.publishedOn) <= TimeSpan.FromMilliseconds(k_DuplicateNotificationMillisecondsThreshold))
+                    && (avoidDuplicates || (publishedOn - existingNotificationBuilder.publishedOn) <= TimeSpan.FromMilliseconds(k_DuplicateNotificationMillisecondsThreshold))
+                )
                 {
-                    //Duplicate messages should at least be a minimum amount of time apart. We don't want spam.
+                    //Duplicate messages should at least be a minimum amount of time apart and specifically requested. We don't want spam.
                     return;
                 }
             }

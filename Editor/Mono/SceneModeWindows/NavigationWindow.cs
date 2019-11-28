@@ -55,6 +55,10 @@ namespace UnityEditor
         private ReorderableList m_AreasList = null;
         private ReorderableList m_AgentsList = null;
 
+        OverlayWindow m_DisplayControlsOverlayWindow;
+        OverlayWindow m_DisplayAgentControlsOverlayWindow;
+        OverlayWindow m_DisplayObstacleControlsOverlayWindow;
+
         enum Mode
         {
             AgentSettings = 0,
@@ -148,6 +152,11 @@ namespace UnityEditor
             UpdateSelectedAgentAndObstacleState();
 
             Repaint();
+
+
+            m_DisplayControlsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Navmesh Display"), DisplayControls, (int)SceneViewOverlay.Ordering.NavMesh, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_DisplayAgentControlsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Agent Display"), DisplayAgentControls, (int)SceneViewOverlay.Ordering.NavMesh, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_DisplayObstacleControlsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Obstacle Display"), DisplayObstacleControls, (int)SceneViewOverlay.Ordering.NavMesh, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
         private void InitProjectSettings()
@@ -462,18 +471,18 @@ namespace UnityEditor
             if (NavMeshVisualizationSettings.showNavigation == 0)
                 return;
 
-            SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Navmesh Display"), DisplayControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            SceneViewOverlay.ShowWindow(m_DisplayControlsOverlayWindow);
 
             // Display Agent display only if there are selected NavMeshAgents.
             if (m_SelectedNavMeshAgentCount > 0)
             {
-                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Agent Display"), DisplayAgentControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.ShowWindow(m_DisplayAgentControlsOverlayWindow);
             }
 
             // Display Obstacle display only if there are selected NavMeshObstacles.
             if (m_SelectedNavMeshObstacleCount > 0)
             {
-                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Obstacle Display"), DisplayObstacleControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.ShowWindow(m_DisplayObstacleControlsOverlayWindow);
             }
         }
 

@@ -25,8 +25,6 @@ namespace UnityEditor.Connect
         public override Notification.Topic notificationTopic => Notification.Topic.AnalyticsService;
         public override string packageId { get; }
 
-        const string k_JsonValueBasic = "basic";
-
         static readonly AnalyticsService k_Instance;
 
         public static AnalyticsService instance => k_Instance;
@@ -87,22 +85,6 @@ namespace UnityEditor.Connect
             request.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
             var operation = request.SendWebRequest();
             operation.completed += onGet;
-        }
-
-        public void ClearValidationData(Action<AsyncOperation> onClear, string authSignature, out UnityWebRequest request)
-        {
-            var payload = "{\"event\": \"" + k_JsonValueBasic + "\"}";
-            var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
-            request = new UnityWebRequest(
-                String.Format(AnalyticsConfiguration.instance.clearUrl, UnityConnect.instance.projectInfo.projectGUID),
-                UnityWebRequest.kHttpVerbPOST)
-            { uploadHandler = uploadHandler};
-
-            var encodedAuthToken = ServicesUtils.Base64Encode((UnityConnect.instance.projectInfo.projectGUID + ":" + authSignature));
-            request.SetRequestHeader("Authorization", $"Basic {encodedAuthToken}");
-            request.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
-            var operation = request.SendWebRequest();
-            operation.completed += onClear;
         }
     }
 }

@@ -112,17 +112,17 @@ namespace UnityEngine.UIElements
         public void OnAfterDeserialize()
         {
             // These properties were previously treated in a special way.
-            // Now they are trated like all other properties. Put them in
+            // Now they are treated like all other properties. Put them in
             // the property list.
-            if (!m_Properties.Contains("name"))
+            if (!string.IsNullOrEmpty(m_Name) && !m_Properties.Contains("name"))
             {
                 AddProperty("name", m_Name);
             }
-            if (!m_Properties.Contains("text"))
+            if (!string.IsNullOrEmpty(m_Text) && !m_Properties.Contains("text"))
             {
                 AddProperty("text", m_Text);
             }
-            if (!m_Properties.Contains("picking-mode") && !m_Properties.Contains("pickingMode"))
+            if (m_PickingMode != PickingMode.Position && !m_Properties.Contains("picking-mode") && !m_Properties.Contains("pickingMode"))
             {
                 AddProperty("picking-mode", m_PickingMode.ToString());
             }

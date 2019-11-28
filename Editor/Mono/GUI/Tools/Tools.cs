@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal;
@@ -406,7 +407,7 @@ namespace UnityEditor
         }
         int m_LockedLayers = -1;
 
-        private void OnEnable()
+        void OnEnable()
         {
             s_Get = this;
             pivotMode = (PivotMode)EditorPrefs.GetInt("PivotMode", 0);
@@ -414,6 +415,8 @@ namespace UnityEditor
             pivotRotation = (PivotRotation)EditorPrefs.GetInt("PivotRotation", 0);
             visibleLayers = EditorPrefs.GetInt("VisibleLayers", -1);
             lockedLayers = EditorPrefs.GetInt("LockedLayers", 0);
+            Selection.selectionChanged += OnSelectionChange;
+            Undo.undoRedoPerformed += OnSelectionChange;
 
             EditorToolContext.activeToolChanged += (previous, active) =>
             {
@@ -424,6 +427,12 @@ namespace UnityEditor
                         EditorToolUtility.GetEnumWithEditorTool(active));
 #pragma warning restore 618
             };
+        }
+
+        void OnDisable()
+        {
+            Selection.selectionChanged -= OnSelectionChange;
+            Undo.undoRedoPerformed -= OnSelectionChange;
         }
 
         internal static void OnSelectionChange()

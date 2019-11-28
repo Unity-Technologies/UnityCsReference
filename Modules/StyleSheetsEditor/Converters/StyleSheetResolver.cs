@@ -80,6 +80,11 @@ namespace UnityEditor.StyleSheets
                 return ValueType == StyleValueType.Float || ValueType == StyleValueType.Dimension;
             }
 
+            public bool IsString()
+            {
+                return ValueType == StyleValueType.String;
+            }
+
             public bool CompareTo(Value v)
             {
                 if (ValueType != v.ValueType)

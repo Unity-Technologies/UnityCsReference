@@ -126,15 +126,15 @@ namespace UnityEngine
 {
     public sealed partial class Screen
     {
-        public static int width => ShimManager.ScreenShim.width;
-        public static int height => ShimManager.ScreenShim.height;
-        public static float dpi => ShimManager.ScreenShim.dpi;
-        public static Resolution currentResolution => ShimManager.ScreenShim.currentResolution;
-        public static Resolution[] resolutions => ShimManager.ScreenShim.resolutions;
+        public static int width => ShimManager.screenShim.width;
+        public static int height => ShimManager.screenShim.height;
+        public static float dpi => ShimManager.screenShim.dpi;
+        public static Resolution currentResolution => ShimManager.screenShim.currentResolution;
+        public static Resolution[] resolutions => ShimManager.screenShim.resolutions;
 
         public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, [uei.DefaultValue("0")] int preferredRefreshRate)
         {
-            ShimManager.ScreenShim.SetResolution(width, height, fullscreenMode, preferredRefreshRate);
+            ShimManager.screenShim.SetResolution(width, height, fullscreenMode, preferredRefreshRate);
         }
 
         public static void SetResolution(int width, int height, FullScreenMode fullscreenMode)
@@ -154,60 +154,60 @@ namespace UnityEngine
 
         public static bool fullScreen
         {
-            get { return ShimManager.ScreenShim.fullScreen; }
-            set { ShimManager.ScreenShim.fullScreen = value; }
+            get { return ShimManager.screenShim.fullScreen; }
+            set { ShimManager.screenShim.fullScreen = value; }
         }
 
         public static FullScreenMode fullScreenMode
         {
-            get { return ShimManager.ScreenShim.fullScreenMode; }
-            set { ShimManager.ScreenShim.fullScreenMode = value; }
+            get { return ShimManager.screenShim.fullScreenMode; }
+            set { ShimManager.screenShim.fullScreenMode = value; }
         }
 
-        public static Rect safeArea => ShimManager.ScreenShim.safeArea;
+        public static Rect safeArea => ShimManager.screenShim.safeArea;
 
-        public static Rect[] cutouts => ShimManager.ScreenShim.cutouts;
+        public static Rect[] cutouts => ShimManager.screenShim.cutouts;
 
         public static bool autorotateToPortrait
         {
-            get { return ShimManager.ScreenShim.autorotateToPortrait; }
-            set { ShimManager.ScreenShim.autorotateToPortrait = value; }
+            get { return ShimManager.screenShim.autorotateToPortrait; }
+            set { ShimManager.screenShim.autorotateToPortrait = value; }
         }
 
         public static bool autorotateToPortraitUpsideDown
         {
-            get { return ShimManager.ScreenShim.autorotateToPortraitUpsideDown; }
-            set { ShimManager.ScreenShim.autorotateToPortraitUpsideDown = value; }
+            get { return ShimManager.screenShim.autorotateToPortraitUpsideDown; }
+            set { ShimManager.screenShim.autorotateToPortraitUpsideDown = value; }
         }
 
         public static bool autorotateToLandscapeLeft
         {
-            get { return ShimManager.ScreenShim.autorotateToLandscapeLeft; }
-            set { ShimManager.ScreenShim.autorotateToLandscapeLeft = value; }
+            get { return ShimManager.screenShim.autorotateToLandscapeLeft; }
+            set { ShimManager.screenShim.autorotateToLandscapeLeft = value; }
         }
 
         public static bool autorotateToLandscapeRight
         {
-            get { return ShimManager.ScreenShim.autorotateToLandscapeRight; }
-            set { ShimManager.ScreenShim.autorotateToLandscapeRight = value; }
+            get { return ShimManager.screenShim.autorotateToLandscapeRight; }
+            set { ShimManager.screenShim.autorotateToLandscapeRight = value; }
         }
 
         public static ScreenOrientation orientation
         {
-            get { return ShimManager.ScreenShim.orientation; }
-            set { ShimManager.ScreenShim.orientation = value; }
+            get { return ShimManager.screenShim.orientation; }
+            set { ShimManager.screenShim.orientation = value; }
         }
 
         public static int sleepTimeout
         {
-            get { return ShimManager.ScreenShim.sleepTimeout; }
-            set { ShimManager.ScreenShim.sleepTimeout = value; }
+            get { return ShimManager.screenShim.sleepTimeout; }
+            set { ShimManager.screenShim.sleepTimeout = value; }
         }
 
         public static float brightness
         {
-            get { return ShimManager.ScreenShim.brightness; }
-            set { ShimManager.ScreenShim.brightness = value; }
+            get { return ShimManager.screenShim.brightness; }
+            set { ShimManager.screenShim.brightness = value; }
         }
     }
 }

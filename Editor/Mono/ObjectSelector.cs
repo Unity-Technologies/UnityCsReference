@@ -38,7 +38,6 @@ namespace UnityEditor
 
             public static GUIContent assetsTabLabel = EditorGUIUtility.TrTextContent("Assets");
             public static GUIContent sceneTabLabel = EditorGUIUtility.TrTextContent("Scene");
-            public static GUIContent selfTabLabel = EditorGUIUtility.TrTextContent("Self");
 
             public static readonly GUIContent packagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle packages visibility");
         }
@@ -284,13 +283,30 @@ namespace UnityEditor
 
             var hierarchyType = m_IsShowingAssets ? HierarchyType.Assets : HierarchyType.GameObjects;
 
-            // We do not support cross scene references so ensure we only show game objects
-            // from the same scene as the object being edited is part of.
-            if (EditorSceneManager.preventCrossSceneReferences && hierarchyType == HierarchyType.GameObjects && m_ObjectBeingEdited != null)
+            if (hierarchyType == HierarchyType.GameObjects)
             {
-                var scene = GetSceneFromObject(m_ObjectBeingEdited);
-                if (scene.IsValid())
-                    filter.sceneHandles = new[] { scene.handle };
+                if (m_ObjectBeingEdited != null)
+                {
+                    var scene = GetSceneFromObject(m_ObjectBeingEdited);
+                    if (scene.IsValid())
+                    {
+                        // We do not support cross scene references so ensure we only show game objects
+                        // from the same scene as the object being edited is part of.
+                        // Also don't allow references to other scenes if object being edited
+                        // is in a preview scene.
+                        if (EditorSceneManager.IsPreviewScene(scene) || EditorSceneManager.preventCrossSceneReferences)
+                            filter.sceneHandles = new[] { scene.handle };
+                    }
+                }
+                else
+                {
+                    // If we don't know which object is being edited, assume it's one in current stage.
+                    PreviewSceneStage previewSceneStage = StageUtility.GetCurrentStage() as PreviewSceneStage;
+                    if (previewSceneStage != null)
+                    {
+                        filter.sceneHandles = new[] { previewSceneStage.scene.handle };
+                    }
+                }
             }
 
             if (hierarchyType == HierarchyType.Assets)
@@ -311,47 +327,46 @@ namespace UnityEditor
             return (String.Equals(typeof(AudioMixerGroup).Name, typeStr));
         }
 
-        public void Show(UnityObject obj, Type requiredType, SerializedProperty property, bool allowSceneObjects)
-        {
-            Show(obj, requiredType, property, allowSceneObjects, null);
-        }
-
         private readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
 
-        internal void Show(UnityObject obj, Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs)
+        internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
         {
-            Show(obj, requiredType, property, allowSceneObjects, allowedInstanceIDs, null, null);
+            if (property == null)
+                throw new ArgumentNullException(nameof(property));
+
+            UnityObject objectBeingEdited = null;
+            if (requiredType == null)
+            {
+                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
+                // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
+                // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
+                if (requiredType == null)
+                    m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+            }
+
+            // Don't select anything on multi selection
+            UnityObject obj = property.hasMultipleDifferentValues ? null : property.objectReferenceValue;
+
+            objectBeingEdited = property.serializedObject.targetObject;
+
+            Show(obj, requiredType, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
 
-        internal void Show(UnityObject obj, Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs, Action<UnityObject> onObjectSelectorClosed, Action<UnityObject> onObjectSelectedUpdated)
+        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
         {
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
             m_IsShowingAssets = true;
             m_SkipHiddenPackages = true;
             m_AllowedIDs = allowedInstanceIDs;
+            m_ObjectBeingEdited = objectBeingEdited;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
             m_OnObjectSelectorUpdated = onObjectSelectedUpdated;
 
-            if (property != null)
-            {
-                if (requiredType == null)
-                {
-                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
-                    // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
-                    // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
-                    if (requiredType == null)
-                        m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
-                }
-
-                obj = property.objectReferenceValue;
-                m_ObjectBeingEdited = property.serializedObject.targetObject;
-
-                // Do not allow to show scene objects if the object being edited is persistent
-                if (m_ObjectBeingEdited != null && EditorUtility.IsPersistent(m_ObjectBeingEdited))
-                    m_AllowSceneObjects = false;
-            }
+            // Do not allow to show scene objects if the object being edited is persistent
+            if (m_ObjectBeingEdited != null && EditorUtility.IsPersistent(m_ObjectBeingEdited))
+                m_AllowSceneObjects = false;
 
             // Set which tab should be visible at startup
             if (m_AllowSceneObjects)
@@ -413,8 +428,6 @@ namespace UnityEditor
 
             // Initial selection
             int initialSelection = obj != null ? obj.GetInstanceID() : 0;
-            if (property != null && property.hasMultipleDifferentValues)
-                initialSelection = 0; // don't select anything on multi selection
 
             if (initialSelection != 0)
             {
@@ -556,8 +569,7 @@ namespace UnityEditor
             }
 
             bool showingSceneTab = !m_IsShowingAssets;
-            GUIContent sceneLabel = StageNavigationManager.instance.currentStage is MainStage ? Styles.sceneTabLabel : Styles.selfTabLabel;
-            showingSceneTab = GUILayout.Toggle(showingSceneTab, sceneLabel, Styles.tab);
+            showingSceneTab = GUILayout.Toggle(showingSceneTab, Styles.sceneTabLabel, Styles.tab);
             if (m_IsShowingAssets && showingSceneTab)
                 m_IsShowingAssets = false;
 

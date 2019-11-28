@@ -61,6 +61,7 @@ namespace UnityEditor.Connect
         const string k_JsonProjectsNodeName = "projects";
         const string k_JsonArchivedNodeName = "archived";
         const string k_JsonOrgIdNodeName = "org_id";
+        const string k_JsonIdNodeName = "id";
         const string k_JsonNameNodeName = "name";
         const string k_JsonGuidNodeName = "guid";
         const string k_JsonOrgsNodeName = "orgs";
@@ -75,6 +76,8 @@ namespace UnityEditor.Connect
         string m_LastReuseBlockProject;
         UnityWebRequest m_CurrentRequest;
         int m_CreateIteration;
+
+        Dictionary<string, string> m_OrgIdByName = new Dictionary<string, string>();
 
         public CreateButtonCallback createButtonCallback { private get; set; }
         public LinkButtonCallback linkButtonCallback { private get; set; }
@@ -227,13 +230,13 @@ namespace UnityEditor.Connect
                     var abort = false;
                     var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject];
                     if (EditorUtility.DisplayDialog(L10n.Tr(k_LinkProjectWindowTitle),
-                        string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.name, projectInfo.organizationId),
+                        string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.name, projectInfo.organizationName),
                         L10n.Tr(k_Yes), L10n.Tr(k_No)))
                     {
                         try
                         {
                             UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.name, projectInfo.organizationId);
-                            EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindManager.ProjectBindState() { bound = true, projectName = projectInfo.name });
+                            EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.name });
                             NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
                         }
                         catch (Exception ex)
@@ -263,7 +266,7 @@ namespace UnityEditor.Connect
             var payload = $"{{\"name\":\"{Application.productName + GetProjectNameSuffix()}\", \"active\":true}}";
             var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
             m_CurrentRequest = new UnityWebRequest(
-                ServicesConfiguration.instance.GetOrganizationProjectsApiUrl(m_LastCreateBlockOrganization),
+                ServicesConfiguration.instance.GetOrganizationProjectsApiUrl(m_OrgIdByName[m_LastCreateBlockOrganization]),
                 UnityWebRequest.kHttpVerbPOST)
             { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler};
             m_CurrentRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
@@ -295,7 +298,7 @@ namespace UnityEditor.Connect
                     var projectInfo = ExtractProjectInfoFromJson(json);
                     try
                     {
-                        UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.name, projectInfo.organizationId);
+                        UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.projectId, projectInfo.organizationId);
                         EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindManager.ProjectBindState() { bound = true, projectName = projectInfo.name });
                         NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
                     }
@@ -365,7 +368,7 @@ namespace UnityEditor.Connect
 
         void LoadProjectField(string organizationName, PopupField<string> projectIdField)
         {
-            var getProjectsRequest = new UnityWebRequest(ServicesConfiguration.instance.GetOrganizationProjectsApiUrl(organizationName),
+            var getProjectsRequest = new UnityWebRequest(ServicesConfiguration.instance.GetOrganizationProjectsApiUrl(m_OrgIdByName[organizationName]),
                 UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
             getProjectsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
             var operation = getProjectsRequest.SendWebRequest();
@@ -446,8 +449,11 @@ namespace UnityEditor.Connect
         {
             return new ProjectInfoData(
                 jsonProject.AsDict()[k_JsonOrgIdNodeName].AsString(),
+                jsonProject.AsDict()[k_JsonOrgNameNodeName].AsString(),
                 jsonProject.AsDict()[k_JsonNameNodeName].AsString(),
-                jsonProject.AsDict()[k_JsonGuidNodeName].AsString());
+                jsonProject.AsDict()[k_JsonGuidNodeName].AsString(),
+                jsonProject.AsDict()[k_JsonIdNodeName].AsString()
+            );
         }
 
         /// <summary>
@@ -467,10 +473,11 @@ namespace UnityEditor.Connect
                 {
                     if (getOrganizationsRequest.result != UnityWebRequest.Result.ProtocolError)
                     {
-                        var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
-                        var json = jsonParser.Parse();
                         try
                         {
+                            var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
+                            var json = jsonParser.Parse();
+                            m_OrgIdByName.Clear();
                             var sortedOrganizationNames = new List<string>();
                             foreach (var rawOrg in json.AsDict()[k_JsonOrgsNodeName].AsList())
                             {
@@ -478,6 +485,7 @@ namespace UnityEditor.Connect
                                 if (k_AtLeastManagerFilter.Contains(org[k_JsonRoleNodeName].AsString()))
                                 {
                                     sortedOrganizationNames.Add(org[k_JsonNameNodeName].AsString());
+                                    m_OrgIdByName.Add(org[k_JsonNameNodeName].AsString(), org[k_JsonIdNodeName].AsString());
                                 }
                             }
                             sortedOrganizationNames.Sort();
@@ -560,14 +568,15 @@ namespace UnityEditor.Connect
                         var json = jsonParser.Parse();
                         try
                         {
+                            m_OrgIdByName.Clear();
                             var sortedOrganizationNames = new List<string>();
-
                             foreach (var rawOrg in json.AsDict()[k_JsonOrgsNodeName].AsList())
                             {
                                 var org = rawOrg.AsDict();
                                 if (k_AnyRoleFilter.Contains(org[k_JsonRoleNodeName].AsString()))
                                 {
                                     sortedOrganizationNames.Add(org[k_JsonNameNodeName].AsString());
+                                    m_OrgIdByName.Add(org[k_JsonNameNodeName].AsString(), org[k_JsonIdNodeName].AsString());
                                 }
                             }
 
@@ -578,6 +587,7 @@ namespace UnityEditor.Connect
                                     && !sortedOrganizationNames.Contains(project[k_JsonOrgNameNodeName].AsString()))
                                 {
                                     sortedOrganizationNames.Add(project[k_JsonOrgNameNodeName].AsString());
+                                    m_OrgIdByName.Add(project[k_JsonOrgNameNodeName].AsString(), project[k_JsonOrgIdNodeName].AsString());
                                 }
                             }
 
@@ -659,14 +669,19 @@ namespace UnityEditor.Connect
     internal class ProjectInfoData
     {
         public string organizationId { get; }
+        public string organizationName { get; }
         public string name { get; }
         public string guid { get; }
 
-        public ProjectInfoData(string organizationId, string name, string guid)
+        public string projectId { get; }
+
+        public ProjectInfoData(string organizationId, string organizationName, string name, string guid, string projectId)
         {
             this.guid = guid;
             this.name = name;
             this.organizationId = organizationId;
+            this.organizationName = organizationName;
+            this.projectId = projectId;
         }
     }
 }

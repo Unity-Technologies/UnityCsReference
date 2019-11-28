@@ -381,11 +381,14 @@ namespace UnityEditor.UIElements
 
         static void SetInspectorElementChildIMGUIContainerFocusable(InspectorElement ve, bool focusable)
         {
-            foreach (var child in ve.Children())
+            var childCount = ve.childCount;
+
+            for (int i = 0; i < childCount; ++i)
             {
-                var imguiContainer = child as IMGUIContainer;
-                if (imguiContainer != null)
+                var child = ve[i];
+                if (child.isIMGUIContainer)
                 {
+                    var imguiContainer = (IMGUIContainer)child;
                     imguiContainer.focusable = focusable;
                 }
             }

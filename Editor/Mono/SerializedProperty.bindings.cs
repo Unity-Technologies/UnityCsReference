@@ -641,6 +641,43 @@ namespace UnityEditor
         [NativeName("GetIsInstantiatedPrefab")]
         private extern bool GetIsInstantiatedPrefabInternal();
 
+        /// <summary>
+        /// A property can reference any element in the parent SerializedObject.
+        /// In the context of polymorphic serialization, those elements might be dynamic instances
+        /// not statically discoverable from the class type.
+        /// We need to take a very specific code path when we try to get the type of a field
+        /// inside such a dynamic instance through a SerializedProperty.
+        ///
+        /// @see UnityEditor.ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty
+        /// </summary>
+        internal bool isReferencingAManagedReferenceField
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return IsReferencingAManagedReferenceFieldInternal();
+            }
+        }
+
+        // Useful in the same context as 'isReferencingAManagedReferenceField'.
+        [NativeName("IsReferencingAManagedReferenceField")]
+        private extern bool IsReferencingAManagedReferenceFieldInternal();
+
+        /// <summary>
+        /// Returns the FQN in the format "<assembly name> <full class name>" for the current dynamic managed reference.
+        /// </summary>
+        /// <returns></returns>
+        // Useful in the same context as 'isReferencingAManagedReferenceField'.
+        [NativeName("GetFullyQualifiedTypenameForCurrentTypeTree")]
+        internal extern string GetFullyQualifiedTypenameForCurrentTypeTreeInternal();
+
+        /// <summary>
+        /// Returns the path of the current field on the dynamic reference class.
+        /// </summary>
+        // Useful in the same context as 'isReferencingAManagedReferenceField'.
+        [NativeName("GetPropertyPathInCurrentManagedTypeTree")]
+        internal extern string GetPropertyPathInCurrentManagedTypeTreeInternal();
+
         // Is property's value different from the prefab it belongs to?
         public bool prefabOverride
         {

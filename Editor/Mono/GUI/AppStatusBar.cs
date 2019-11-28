@@ -99,11 +99,11 @@ namespace UnityEditor
 
             float statusBarItemsWidth = statusWheelWidth + (AsyncProgressBar.isShowing ? (progressBarWidth + spacing) : 0) + (showBakeMode ? (lightingBakeModeBarWidth + spacing) : 0);
 
-            if (Event.current.type == EventType.MouseDown)
+            if (Event.current.type == EventType.MouseDown && showBakeMode)
             {
-                Rect rect = new Rect(position.width - statusBarItemsWidth - m_ManagedDebuggerToggle.GetWidth(), 0, lightingBakeModeBarWidth, barHeight);
+                Rect showBakeModeRect = new Rect(position.width - statusBarItemsWidth - m_ManagedDebuggerToggle.GetWidth(), 0, lightingBakeModeBarWidth, barHeight);
 
-                if (rect.Contains(Event.current.mousePosition))
+                if (showBakeModeRect.Contains(Event.current.mousePosition))
                 {
                     Event.current.Use();
                     LightingWindow.CreateLightingWindow();

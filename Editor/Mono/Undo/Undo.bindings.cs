@@ -30,6 +30,25 @@ namespace UnityEditor
         public bool keepPrefabOverride { get { return m_KeepPrefabOverride != 0; } set { m_KeepPrefabOverride = value ? 1 : 0; } }
     }
 
+    internal class AtomicUndoScope : IDisposable
+    {
+        bool m_Disposed;
+
+        public AtomicUndoScope()
+        {
+            Undo.BeginAtomicUndoGroup();
+        }
+
+        public void Dispose()
+        {
+            if (m_Disposed)
+                return;
+
+            m_Disposed = true;
+            Undo.EndAtomicUndoGroup();
+        }
+    }
+
     // Lets you register undo operations on specific objects you are about to perform changes on.
 
     [NativeHeader("Editor/Src/Undo/Undo.h")]
@@ -128,6 +147,12 @@ namespace UnityEditor
         // *undocumented*
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         public static extern void IncrementCurrentGroup();
+
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        internal static extern void BeginAtomicUndoGroup();
+
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        internal static extern void EndAtomicUndoGroup();
 
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         public static extern int GetCurrentGroup();

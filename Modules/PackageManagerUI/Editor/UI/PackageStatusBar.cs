@@ -80,7 +80,7 @@ namespace UnityEditor.PackageManager.UI
             UpdateStatusMessage();
         }
 
-        private void OnRefreshOperationError(Error error)
+        private void OnRefreshOperationError(UIError error)
         {
             UpdateStatusMessage();
         }

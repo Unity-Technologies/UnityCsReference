@@ -91,6 +91,13 @@ namespace UnityEngine
         {
             get
             {
+                int displayIndex = nativeDisplay.ToInt32();
+                if (displayIndex < HDROutputSettings.displays.Length)
+                {
+                    bool active = HDROutputSettings.displays[displayIndex].available && HDROutputSettings.displays[displayIndex].active;
+                    if (active)
+                        return true;
+                }
                 return RequiresBlitToBackbufferImpl(nativeDisplay);
             }
         }

@@ -71,6 +71,11 @@ namespace UnityEngine.UIElements
 
                 return m_Path;
             }
+            set
+            {
+                if (value != null)
+                    m_Path = PropagationPaths.Copy(value);
+            }
         }
 
         LifeCycleStatus lifeCycleStatus { get; set; }

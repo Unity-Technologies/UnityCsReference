@@ -26,6 +26,22 @@ namespace UnityEditor.Connect
     /// </summary>
     internal abstract class ServicesProjectSettings : SettingsProvider
     {
+        internal struct OpenDashboardForService
+        {
+            public string serviceName;
+            public string url;
+        }
+        internal struct ImportPackageInfo
+        {
+            public string packageName;
+            public string version;
+        }
+        internal struct OpenPackageManager
+        {
+            public string packageName;
+        }
+
+
         protected abstract string serviceUssClassName { get; }
         protected VisualElement rootVisualElement { get; private set; }
 
@@ -38,10 +54,10 @@ namespace UnityEditor.Connect
         protected virtual bool sendNotificationForNonStandardStates => true;
 
         const string k_LoggedOutMessage = "You are not currently logged in. To enable this service, please login.";
-        const string k_UnboundMessage = "Project does not have a Unity project ID. To enable this service, please create a new project Id or link to an existing one.";
+        const string k_UnboundMessage = "Project does not have a Unity project ID. To enable this service, go to Project Settings, Services and create a new project Id or link to an existing one.";
         const string k_ProjectBindingBrokenMessage = "Unity Project ID no longer exists or you no longer have permission to access the Unity Project ID. " +
             "To enable this service, please create a new project ID or link to an existing project.";
-        const string k_CoppaRequiredMessage = "COPPA compliance wasn't defined for this project. To enable this service, please configure COPPA compliance.";
+        const string k_CoppaRequiredMessage = "COPPA compliance wasn't defined for this project. To enable this service, go to Project Settings, Services and configure COPPA compliance.";
         const string k_CoppaPermissionMessage = "You do not have sufficient permissions to set COPPA Compliance.";
         const string k_UnknownRoleMessage = "Unknown role: {0}";
 
@@ -146,6 +162,11 @@ namespace UnityEditor.Connect
                 // Create a child to make sure all the style sheets are not added to the root.
                 rootVisualElement = new ScrollView();
                 rootVisualElement.AddToClassList(serviceUssClassName);
+                rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
+                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
+                rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
+                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
+
                 element.Add(rootVisualElement);
 
                 m_SearchContext = s;
@@ -920,12 +941,6 @@ namespace UnityEditor.Connect
         {
             public T provider { get; private set; }
 
-            private struct ImportPackageInfo
-            {
-                public string packageName;
-                public string version;
-            }
-
             protected const string k_NotLatestPackageInstalledInfo = "A newer version of the {0} exists and can be installed.";
             protected const string k_DuplicateInstallWarning = "Installing both Asset Store and Package Manager packages will generate duplication.\nDo you want to continue?";
             protected const string k_PackageInstallationHeadsup = "You are about to install the latest {0}.\nDo you want to continue?";
@@ -1103,7 +1118,9 @@ namespace UnityEditor.Connect
                 {
                     gotoPackManWindow.clicked += () =>
                     {
-                        PackageManagerWindow.OpenPackageManager(provider.serviceInstance.packageId);
+                        var packageId = provider.serviceInstance.packageId;
+                        EditorAnalytics.SendOpenPackManFromServiceSettings(new OpenPackageManager() { packageName = packageId });
+                        PackageManagerWindow.OpenPackageManager(packageId);
                     };
                 }
                 m_CurrentPackageVersionLabel = sectionRoot.Q<Label>(k_CurrentVersionInfo);

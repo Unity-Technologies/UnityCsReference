@@ -28,6 +28,12 @@ namespace UnityEditor.VisualStudioIntegration
             Initialize(null);
         }
 
+        [RequiredByNativeCode]
+        public static bool IsDefaultExternalCodeEditor()
+        {
+            return CodeEditor.CurrentEditor is DefaultExternalCodeEditor;
+        }
+
         public static void Initialize(string editorPath)
         {
             var externalEditor = editorPath ?? ScriptEditorUtility.GetExternalScriptEditor();

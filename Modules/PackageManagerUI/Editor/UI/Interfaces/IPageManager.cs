@@ -21,7 +21,7 @@ namespace UnityEditor.PackageManager.UI
 
         event Action onRefreshOperationStart;
         event Action onRefreshOperationFinish;
-        event Action<Error> onRefreshOperationError;
+        event Action<UIError> onRefreshOperationError;
 
         IPackageVersion GetSelectedVersion();
         void GetSelectedPackageAndVersion(out IPackage package, out IPackageVersion version);
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI
         PackageFilterTab FindTab(string packageIdOrDisplayName);
 
         long GetRefreshTimestamp(PackageFilterTab? tab = null);
-        Error GetRefreshError(PackageFilterTab? tab = null);
+        UIError GetRefreshError(PackageFilterTab? tab = null);
         bool IsRefreshInProgress(PackageFilterTab? tab = null);
 
         void LoadMore();

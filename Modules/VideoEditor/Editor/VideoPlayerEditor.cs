@@ -607,7 +607,7 @@ namespace UnityEditor
                                 rect = EditorGUI.PrefixLabel(rect, id, label);
                                 EditorGUI.BeginChangeCheck();
 
-                                var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, typeof(AudioSource), null, null, true, EditorStyles.objectField);
+                                var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, property.serializedObject.targetObject, typeof(AudioSource), null, true);
                                 if (EditorGUI.EndChangeCheck())
                                 {
                                     if (!EditorUtility.IsPersistent(result))

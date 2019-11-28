@@ -224,6 +224,7 @@ namespace UnityEditor
         const string kEditorPrefsGeometryData = "LightingWindowGlobalMapsGD";
         const string kEditorPrefsInFlight = "LightingWindowGlobalMapsIF";
         const string kEditorPrefsMaterialTextures = "LightingWindowGlobalMapsMT";
+        const string kEditorPrefsLightProbes = "LightingWindowGlobalLightProbes";
 
         private static string SizeString(float size)
         {
@@ -326,6 +327,12 @@ namespace UnityEditor
             }
 
             System.UInt64[] dummyCounts = new System.UInt64[0];
+
+            {
+                MemLabels labels = Lightmapping.GetLightProbeMemLabels();
+                ShowObjectNamesSizesAndCounts("Light Probes", kEditorPrefsLightProbes, labels.labels, labels.sizes, dummyCounts);
+            }
+
             {
                 MemLabels labels = Lightmapping.GetTransmissionTexturesMemLabels();
                 ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, labels.labels, labels.sizes, dummyCounts);

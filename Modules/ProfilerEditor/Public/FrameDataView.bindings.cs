@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Profiling;
 using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -148,6 +150,29 @@ namespace UnityEditor.Profiling
         [NativeMethod(IsThreadSafe = true)]
         public extern int GetMarkerId(string markerName);
 
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        public struct MarkerMetadataInfo
+        {
+            public ProfilerMarkerDataType type;
+            public ProfilerMarkerDataUnit unit;
+            public string name;
+        };
+
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        public struct MarkerInfo
+        {
+            public int id;
+            public ushort category;
+            public MarkerFlags flags;
+            public string name;
+            public MarkerMetadataInfo[] metadataInfo;
+        };
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void GetMarkers(List<MarkerInfo> markerInfoList);
+
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         internal static extern UnityEngine.Color32 GetMarkerCategoryColor(ushort category);
 
@@ -196,5 +221,25 @@ namespace UnityEditor.Profiling
         }
 
         public extern MethodInfo ResolveMethodInfo(ulong addr);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public unsafe extern void* GetCounterValuePtr(int markerId);
+
+        public unsafe bool HasCounterValue(int markerId)
+        {
+            return GetCounterValuePtr(markerId) != null;
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern int GetCounterValueAsInt(int markerId);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern long GetCounterValueAsLong(int markerId);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern float GetCounterValueAsFloat(int markerId);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern double GetCounterValueAsDouble(int markerId);
     }
 }

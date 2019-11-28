@@ -92,12 +92,12 @@ namespace UnityEditor
             public static string[] bakeButtonsText = {"Bake All Reflection Probes"};
 
             public static GUIContent bakeCustomButtonText = EditorGUIUtility.TrTextContent("Bake", "Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
-            public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime settings", "These settings are used by objects when they render with the cubemap of this probe");
+            public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime Settings", "These settings are used by objects when they render with the cubemap of this probe");
             public static GUIContent backgroundColorText = EditorGUIUtility.TrTextContent("Background", "Camera clears the screen to this color before rendering.");
             public static GUIContent clearFlagsText = EditorGUIUtility.TrTextContent("Clear Flags");
             public static GUIContent intensityText = EditorGUIUtility.TrTextContent("Intensity");
             public static GUIContent resolutionText = EditorGUIUtility.TrTextContent("Resolution");
-            public static GUIContent captureCubemapHeaderText = EditorGUIUtility.TrTextContent("Cubemap capture settings");
+            public static GUIContent captureCubemapHeader = EditorGUIUtility.TrTextContent("Cubemap Capture Settings");
             public static GUIContent boxProjectionText = EditorGUIUtility.TrTextContent("Box Projection", "Box projection causes reflections to appear to change based on the object's position within the probe's box, while still using a single probe as the source of the reflection. This works well for reflections on objects that are moving through enclosed spaces such as corridors and rooms. Setting box projection to False and the cubemap reflection will be treated as coming from infinitely far away. Note that this feature can be globally disabled from Graphics Settings -> Tier Settings");
             public static GUIContent blendDistanceText = EditorGUIUtility.TrTextContent("Blend Distance", "Area around the probe where it is blended with other probes. Only used in deferred probes.");
             public static GUIContent sizeText = EditorGUIUtility.TrTextContent("Box Size", "The size of the box in which the reflections will be applied to objects. The value is not affected by the Transform of the Game Object.");
@@ -146,6 +146,8 @@ namespace UnityEditor
         internal static Color kGizmoReflectionProbeDisabled = new Color(0x99 / 255f, 0x89 / 255f, 0x59 / 255f, 0x60 / 255f);
         internal static Color kGizmoHandleReflectionProbe = new Color(0xFF / 255f, 0xE5 / 255f, 0xAA / 255f, 0xFF / 255f);
 
+        private SavedBool m_ShowRuntimeSettings;
+        private SavedBool m_ShowCubemapCaptureSettings;
 
         readonly AnimBool m_ShowProbeModeRealtimeOptions = new AnimBool(); // p.mode == ReflectionProbeMode.Realtime; Will be brought back in 5.1
         readonly AnimBool m_ShowProbeModeCustomOptions = new AnimBool();
@@ -197,6 +199,9 @@ namespace UnityEditor
 
             m_BoundsHandle.handleColor = kGizmoHandleReflectionProbe;
             m_BoundsHandle.wireframeColor = Color.clear;
+
+            m_ShowRuntimeSettings = new SavedBool("ReflectionProbeEditor.ShowRuntimeSettings", true);
+            m_ShowCubemapCaptureSettings = new SavedBool("ReflectionProbeEditor.ShowCubemapCaptureSettings", true);
 
             UpdateOldLocalSpace();
             SceneView.beforeSceneGui += OnPreSceneGUICallback;
@@ -323,7 +328,6 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            GUILayout.Space(EditorGUIUtility.labelWidth);
             switch (reflectionProbeMode)
             {
                 case ReflectionProbeMode.Custom:
@@ -449,10 +453,13 @@ namespace UnityEditor
             }
 
             EditorGUILayout.Space();
-            GUILayout.Label(Styles.runtimeSettingsHeader);
 
-            EditorGUI.indentLevel++;
+            m_ShowRuntimeSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowRuntimeSettings.value, Styles.runtimeSettingsHeader);
+
+            if (m_ShowRuntimeSettings.value)
             {
+                EditorGUI.indentLevel++;
+
                 EditorGUILayout.PropertyField(m_Importance, Styles.importanceText);
                 EditorGUILayout.PropertyField(m_IntensityMultiplier, Styles.intensityText);
 
@@ -494,14 +501,17 @@ namespace UnityEditor
                     }
                 }
                 EditorGUILayout.EndFadeGroup();
+
+                EditorGUI.indentLevel--;
             }
-            EditorGUI.indentLevel--;
+            EditorGUILayout.EndFoldoutHeaderGroup();
 
-            EditorGUILayout.Space();
-            GUILayout.Label(Styles.captureCubemapHeaderText);
+            m_ShowCubemapCaptureSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowCubemapCaptureSettings.value, Styles.captureCubemapHeader);
 
-            EditorGUI.indentLevel++;
+            if (m_ShowCubemapCaptureSettings.value)
             {
+                EditorGUI.indentLevel++;
+
                 int[] reflectionResolutionValuesArray = null;
                 GUIContent[] reflectionResolutionTextArray = null;
                 GetResolutionArray(ref reflectionResolutionValuesArray, ref reflectionResolutionTextArray);
@@ -514,8 +524,10 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_CullingMask);
                 EditorGUILayout.PropertyField(m_UseOcclusionCulling);
                 EditorGUILayout.PropertiesField(EditorGUI.s_ClipingPlanesLabel, m_NearAndFarProperties, EditorGUI.s_NearAndFarLabels, EditorGUI.kNearFarLabelsWidth);
+
+                EditorGUI.indentLevel--;
             }
-            EditorGUI.indentLevel--;
+            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space();
 

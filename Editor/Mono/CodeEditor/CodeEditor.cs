@@ -2,15 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Scripting;
+using static UnityEditor.TypeCache;
 
 namespace Unity.CodeEditor
 {
@@ -98,6 +101,23 @@ namespace Unity.CodeEditor
                     return m_DefaultEditor;
                 }
 
+                if (m_ExternalCodeEditors.Count() == 0)
+                {
+                    TypeCollection collection = TypeCache.GetTypesDerivedFrom<IExternalCodeEditor>();
+                    for (int i = 0; i < collection.Count(); i++)
+                    {
+                        var codeEditorType = collection[i];
+                        if (codeEditorType == typeof(DefaultExternalCodeEditor))
+                            continue;
+
+                        if (codeEditorType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null) != null)
+                        {
+                            IExternalCodeEditor codeEditor = (IExternalCodeEditor)Activator.CreateInstance(codeEditorType);
+                            m_ExternalCodeEditors.Add(codeEditor);
+                        }
+                    }
+                }
+
                 foreach (var codeEditor in m_ExternalCodeEditors)
                 {
                     Installation installation;
@@ -114,6 +134,13 @@ namespace Unity.CodeEditor
         internal Dictionary<string, string> GetFoundScriptEditorPaths()
         {
             var result = new Dictionary<string, string>();
+
+            #pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CurrentEditorInstallation) != ScriptEditorUtility.ScriptEditor.Other && Application.platform == RuntimePlatform.OSXEditor)
+            {
+                AddIfPathExists("Visual Studio", "/Applications/Visual Studio.app", result);
+                AddIfPathExists("Visual Studio (Preview)", "/Applications/Visual Studio (Preview).app", result);
+            }
 
             foreach (var installation in m_ExternalCodeEditors.SelectMany(codeEditor => codeEditor.Installations))
             {
@@ -139,6 +166,8 @@ namespace Unity.CodeEditor
 
         public static void Register(IExternalCodeEditor externalCodeEditor)
         {
+            if (Editor.m_ExternalCodeEditors.Select(editor => editor.GetType()).Where(editorType => editorType == externalCodeEditor.GetType()).Any())
+                return;
             Editor.m_ExternalCodeEditors.Add(externalCodeEditor);
         }
 

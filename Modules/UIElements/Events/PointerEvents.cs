@@ -216,7 +216,10 @@ namespace UnityEngine.UIElements
         {
             T e = GetPooled();
 
-            Debug.Assert(IsMouse(systemEvent) || systemEvent.rawType == EventType.DragUpdated, "Unexpected event type: " + systemEvent.rawType + " (" + systemEvent.type + ")");
+            if (!(IsMouse(systemEvent) || systemEvent.rawType == EventType.DragUpdated))
+            {
+                Debug.Assert(false, "Unexpected event type: " + systemEvent.rawType + " (" + systemEvent.type + ")");
+            }
 
             switch (systemEvent.pointerType)
             {

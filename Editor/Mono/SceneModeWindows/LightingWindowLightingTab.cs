@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngineInternal;
 using Object = UnityEngine.Object;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
@@ -18,16 +20,36 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent DebugSettings = EditorGUIUtility.TrTextContent("Debug Settings");
-            public static readonly GUIContent LightProbeVisualization = EditorGUIUtility.TrTextContent("Light Probe Visualization");
-            public static readonly GUIContent NewLightingSettings = EditorGUIUtility.TrTextContent("New Lighting Settings");
+            public static readonly float buttonWidth = 200;
 
-            public static readonly GUIContent DisplayWeights = EditorGUIUtility.TrTextContent("Display Weights");
-            public static readonly GUIContent DisplayOcclusion = EditorGUIUtility.TrTextContent("Display Occlusion");
-            public static readonly GUIContent HighlightInvalidCells = EditorGUIUtility.TrTextContent("Highlight Invalid Cells", "Highlight the invalid cells that cannot be used for probe interpolation.");
+            public static readonly GUIContent newLightingSettings = EditorGUIUtility.TrTextContent("New Lighting Settings");
+
+            public static readonly GUIContent workflowSettings = EditorGUIUtility.TrTextContent("Workflow Settings");
+            public static readonly GUIContent lightProbeVisualization = EditorGUIUtility.TrTextContent("Light Probe Visualization");
+            public static readonly GUIContent displayWeights = EditorGUIUtility.TrTextContent("Display Weights");
+            public static readonly GUIContent displayOcclusion = EditorGUIUtility.TrTextContent("Display Occlusion");
+            public static readonly GUIContent highlightInvalidCells = EditorGUIUtility.TrTextContent("Highlight Invalid Cells", "Highlight the invalid cells that cannot be used for probe interpolation.");
+            public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
+            public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
+            public static readonly GUIContent concurrentJobs = EditorGUIUtility.TrTextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.");
+            public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
+
+            public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
+            public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
+            {
+                EditorGUIUtility.TrTextContent("Unknown"),
+            };
+
+            public static readonly int[] concurrentJobsTypeValues = { (int)Lightmapping.ConcurrentJobsType.Min, (int)Lightmapping.ConcurrentJobsType.Low, (int)Lightmapping.ConcurrentJobsType.High };
+            public static readonly GUIContent[] concurrentJobsTypeStrings =
+            {
+                EditorGUIUtility.TrTextContent("Min"),
+                EditorGUIUtility.TrTextContent("Low"),
+                EditorGUIUtility.TrTextContent("High")
+            };
         }
 
-        SavedBool m_ShowDebugSettings;
+        SavedBool m_ShowWorkflowSettings;
         SavedBool m_ShowProbeDebugSettings;
         Vector2 m_ScrollPosition = Vector2.zero;
 
@@ -35,6 +57,8 @@ namespace UnityEditor
 
         SerializedObject m_LightmapSettings;
         SerializedProperty m_LightingSettingsAsset;
+
+        int m_LightmapDeviceAndPlatform;
 
         SerializedObject lightmapSettings
         {
@@ -56,8 +80,14 @@ namespace UnityEditor
             m_BakeSettings = new LightingWindowBakeSettings();
             m_BakeSettings.OnEnable();
 
-            m_ShowDebugSettings = new SavedBool("LightingWindow.ShowDebugSettings", false);
+            m_ShowWorkflowSettings = new SavedBool("LightingWindow.ShowWorkflowSettings", true);
             m_ShowProbeDebugSettings = new SavedBool("LightingWindow.ShowProbeDebugSettings", false);
+
+            string configDeviceAndPlatform = EditorUserSettings.GetConfigValue("lightmappingDeviceAndPlatform");
+            if (configDeviceAndPlatform != null)
+                m_LightmapDeviceAndPlatform = Int32.Parse(configDeviceAndPlatform);
+            else
+                EditorUserSettings.SetConfigValue("lightmappingDeviceAndPlatform", "0");
         }
 
         public void OnDisable()
@@ -79,7 +109,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button(Styles.NewLightingSettings, GUILayout.Width(170)))
+            if (GUILayout.Button(Styles.newLightingSettings, GUILayout.Width(170)))
             {
                 Lightmapping.lightingSettingsInternal = new LightingSettings();
                 Lightmapping.lightingSettingsInternal.CreateAsset();
@@ -89,7 +119,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             m_BakeSettings.OnGUI();
-            DebugSettingsGUI();
+            WorkflowSettingsGUI();
 
             EditorGUILayout.EndScrollView();
             EditorGUILayout.Space();
@@ -97,15 +127,63 @@ namespace UnityEditor
             lightmapSettings.ApplyModifiedProperties();
         }
 
-        void DebugSettingsGUI()
+        void WorkflowSettingsGUI()
         {
-            m_ShowDebugSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowDebugSettings.value, Styles.DebugSettings, true);
+            m_ShowWorkflowSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowWorkflowSettings.value, Styles.workflowSettings, true);
 
-            if (m_ShowDebugSettings.value)
+            if (m_ShowWorkflowSettings.value)
             {
                 EditorGUI.indentLevel++;
 
-                m_ShowProbeDebugSettings.value = EditorGUILayout.Foldout(m_ShowProbeDebugSettings.value, Styles.LightProbeVisualization, true);
+                // GPU lightmapper device selection.
+                if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.ProgressiveGPU)
+                {
+                    DeviceAndPlatform[] devicesAndPlatforms = Lightmapping.GetLightmappingGpuDevices();
+                    if (devicesAndPlatforms.Length > 0)
+                    {
+                        int[] lightmappingDeviceIndices = Enumerable.Range(0, devicesAndPlatforms.Length).ToArray();
+                        GUIContent[] lightmappingDeviceStrings = devicesAndPlatforms.Select(x => new GUIContent(x.name)).ToArray();
+
+                        using (new EditorGUI.DisabledScope(devicesAndPlatforms.Length < 2))
+                        {
+                            m_LightmapDeviceAndPlatform = EditorGUILayout.IntPopup(Styles.progressiveGPUBakingDevice, m_LightmapDeviceAndPlatform, lightmappingDeviceStrings, lightmappingDeviceIndices);
+                        }
+
+                        string configDeviceAndPlatform = EditorUserSettings.GetConfigValue("lightmappingDeviceAndPlatform");
+                        int oldDeviceAndPlatform = 0;
+
+                        if (configDeviceAndPlatform != null)
+                            oldDeviceAndPlatform = Int32.Parse(configDeviceAndPlatform);
+
+                        if (oldDeviceAndPlatform != m_LightmapDeviceAndPlatform)
+                        {
+                            if (EditorUtility.DisplayDialog("Warning", Styles.progressiveGPUChangeWarning.text, "OK", "Cancel"))
+                            {
+                                EditorUserSettings.SetConfigValue("lightmappingDeviceAndPlatform", m_LightmapDeviceAndPlatform.ToString());
+                                DeviceAndPlatform selectedDeviceAndPlatform = devicesAndPlatforms[m_LightmapDeviceAndPlatform];
+
+                                EditorApplication.CloseAndRelaunch(new string[] { "-OpenCL-PlatformAndDeviceIndices", selectedDeviceAndPlatform.platformId.ToString(), selectedDeviceAndPlatform.deviceId.ToString() });
+                            }
+                            else
+                            {
+                                EditorUserSettings.SetConfigValue("lightmappingDeviceAndPlatform", oldDeviceAndPlatform.ToString());
+                                m_LightmapDeviceAndPlatform = oldDeviceAndPlatform;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // To show when we are still fetching info, so that the UI doesn't pop around too much for no reason
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            EditorGUILayout.IntPopup(Styles.progressiveGPUBakingDevice, 0, Styles.progressiveGPUUnknownDeviceStrings, Styles.progressiveGPUUnknownDeviceValues);
+                        }
+
+                        EditorGUILayout.HelpBox(Styles.progressiveGPUUnknownDeviceInfo.text, MessageType.Info);
+                    }
+                }
+
+                m_ShowProbeDebugSettings.value = EditorGUILayout.Foldout(m_ShowProbeDebugSettings.value, Styles.lightProbeVisualization, true);
 
                 if (m_ShowProbeDebugSettings.value)
                 {
@@ -113,15 +191,36 @@ namespace UnityEditor
 
                     EditorGUI.indentLevel++;
                     LightProbeVisualization.lightProbeVisualizationMode = (LightProbeVisualization.LightProbeVisualizationMode)EditorGUILayout.EnumPopup(LightProbeVisualization.lightProbeVisualizationMode);
-                    LightProbeVisualization.showInterpolationWeights = EditorGUILayout.Toggle(Styles.DisplayWeights, LightProbeVisualization.showInterpolationWeights);
-                    LightProbeVisualization.showOcclusions = EditorGUILayout.Toggle(Styles.DisplayOcclusion, LightProbeVisualization.showOcclusions);
-                    LightProbeVisualization.highlightInvalidCells = EditorGUILayout.Toggle(Styles.HighlightInvalidCells, LightProbeVisualization.highlightInvalidCells);
+                    LightProbeVisualization.showInterpolationWeights = EditorGUILayout.Toggle(Styles.displayWeights, LightProbeVisualization.showInterpolationWeights);
+                    LightProbeVisualization.showOcclusions = EditorGUILayout.Toggle(Styles.displayOcclusion, LightProbeVisualization.showOcclusions);
+                    LightProbeVisualization.highlightInvalidCells = EditorGUILayout.Toggle(Styles.highlightInvalidCells, LightProbeVisualization.highlightInvalidCells);
                     EditorGUI.indentLevel--;
 
                     if (EditorGUI.EndChangeCheck())
                         EditorApplication.SetSceneRepaintDirty();
                 }
-                m_BakeSettings.DeveloperBuildSettingsGUI();
+
+                if (Unsupported.IsDeveloperMode())
+                {
+                    Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.concurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.concurrentJobsTypeStrings, Styles.concurrentJobsTypeValues);
+
+                    if (GUILayout.Button("Clear disk cache", GUILayout.Width(Styles.buttonWidth)))
+                    {
+                        Lightmapping.Clear();
+                        Lightmapping.ClearDiskCache();
+                    }
+
+                    if (GUILayout.Button("Print state to console", GUILayout.Width(Styles.buttonWidth)))
+                    {
+                        Lightmapping.PrintStateToConsole();
+                    }
+
+                    if (GUILayout.Button("Reset albedo/emissive", GUILayout.Width(Styles.buttonWidth)))
+                        GIDebugVisualisation.ResetRuntimeInputTextures();
+
+                    if (GUILayout.Button("Reset environment", GUILayout.Width(Styles.buttonWidth)))
+                        DynamicGI.UpdateEnvironment();
+                }
 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();

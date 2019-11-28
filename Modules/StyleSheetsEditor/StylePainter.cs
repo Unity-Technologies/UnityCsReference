@@ -77,14 +77,15 @@ namespace UnityEditor.StyleSheets
         }
 
         private static readonly Dictionary<long, Texture2D> s_Gradients = new Dictionary<long, Texture2D>();
-        private static Texture2D GenerateGradient(Rect rect, IList<StyleSheetResolver.Value[]> args)
+        private static Texture2D GenerateGradient(int key, Rect rect, IList<StyleSheetResolver.Value[]> args)
         {
-            long key = (long)rect.width * 30 + (long)rect.height * 8;
-            foreach (var arg in args)
+            if (args.Count < 2)
             {
-                for (int i = 0; i < arg.Length; ++i)
-                    key += arg[i].GetHashCode() * i + 1;
+                Debug.LogError("Not enough linear gradient arguments.");
+                return null;
             }
+
+            key += (int)rect.width * 30 + (int)rect.height * 8;
 
             if (s_Gradients.ContainsKey(key) && s_Gradients[key] != null)
                 return s_Gradients[key];
@@ -99,15 +100,25 @@ namespace UnityEditor.StyleSheets
             var height = (int)rect.height;
             Gradient gradient = new Gradient();
             var gt = new Texture2D(width, height) {alphaIsTransparency = true};
+            float angle = 0.0f;
+            int valueStartIndex = 0;
 
-            var colorKeys = new GradientColorKey[args.Count];
-            var alphaKeys = new GradientAlphaKey[args.Count];
-
-            float increment = args.Count <= 1 ? 1f : 1f / (args.Count - 1);
-            float autoStep = 0;
-            for (int i = 0; i < args.Count; ++i)
+            if (args[0][0].IsFloat())
             {
-                var values = args[i];
+                angle = args[0][0].AsFloat();
+                valueStartIndex = 1;
+            }
+
+            var valueCount = args.Count - valueStartIndex;
+
+            var colorKeys = new GradientColorKey[valueCount];
+            var alphaKeys = new GradientAlphaKey[valueCount];
+
+            float increment = valueCount <= 1 ? 1f : 1f / (valueCount - 1);
+            float autoStep = 0;
+            for (int i = 0; i < valueCount; ++i)
+            {
+                var values = args[i + valueStartIndex];
                 if (values.Length == 1)
                 {
                     colorKeys[i].color = values[0].AsColor();
@@ -131,18 +142,85 @@ namespace UnityEditor.StyleSheets
 
             gradient.SetKeys(colorKeys, alphaKeys);
 
-            float yStep = 1F / height;
+            var ratio = height / (float)width;
+            var rad = Mathf.Deg2Rad * angle;
+            float CosRad = Mathf.Cos(rad);
+            float SinRad = Mathf.Sin(rad);
+
+            var matrix = GetGradientRotMatrix(angle);
 
             for (int y = height - 1; y >= 0; --y)
             {
-                Color color = gradient.Evaluate(1f - (y * yStep));
                 for (int x = width - 1; x >= 0; --x)
+                {
+                    var pixelPosition = new Vector2(x, y);
+                    var recenteredPos = GetGradientCenterFrame(pixelPosition, width, height);
+                    var scaleVec = GetGradientScaleVector(matrix, angle, width, height);
+                    var scaledMatrix = GetGradientScaleMatrix(matrix, scaleVec);
+                    var posInGradient = scaledMatrix.MultiplyVector(recenteredPos);
+                    Color color = gradient.Evaluate(1f - (posInGradient.y / 2 + 0.5f));
                     gt.SetPixel(x, y, color);
+                }
             }
 
             gt.Apply();
             s_Gradients[key] = gt;
             return gt;
+        }
+
+        private static Matrix4x4 GetGradientRotMatrix(float deg)
+        {
+            var radian = Mathf.Deg2Rad * deg;
+            var matrix = new Matrix4x4();
+            matrix[1, 1] = matrix[0, 0] = Mathf.Cos(radian);
+            matrix[0, 1] = Mathf.Sin(radian);
+            matrix[1, 0] = -matrix[0, 1];
+            return matrix;
+        }
+
+        private static Matrix4x4 GetGradientScaleMatrix(Matrix4x4 matrix, Vector2 scaleVec)
+        {
+            var scaledMatrix = new Matrix4x4();
+            for (var i = 0; i < 2; ++i)
+                for (var j = 0; j < 2; ++j)
+                    scaledMatrix[i, j] = matrix[i, j] * scaleVec[i];
+            return scaledMatrix;
+        }
+
+        private static Vector2 GetGradientScaleVector(Matrix4x4 matrix, float deg, float width, float height)
+        {
+            float halfHeight = height / 2f;
+            float halfWidth = width / 2f;
+            Vector2 extent1;
+            Vector2 extent2;
+            if (deg < 90)
+            {
+                extent1 = new Vector2(-halfWidth, halfHeight);
+                extent2 = new Vector2(halfWidth, halfHeight);
+            }
+            else if (deg < 180)
+            {
+                extent1 = new Vector2(-halfWidth, -halfHeight);
+                extent2 = new Vector2(-halfWidth, halfHeight);
+            }
+            else if (deg < 270)
+            {
+                extent1 = new Vector2(halfWidth, -halfHeight);
+                extent2 = new Vector2(-halfWidth, -halfHeight);
+            }
+            else
+            {
+                extent1 = new Vector2(halfWidth, halfHeight);
+                extent2 = new Vector2(halfWidth, -halfHeight);
+            }
+            var vec1 = matrix.MultiplyVector(extent1);
+            var vec2 = matrix.MultiplyVector(extent2);
+            return new Vector2(1f / Math.Abs(vec2[0]), 1f / Math.Abs(vec1[1]));
+        }
+
+        private static Vector2 GetGradientCenterFrame(Vector2 pos, float width, float height)
+        {
+            return new Vector2(pos.x - width / 2f, height / 2f - pos.y);
         }
 
         internal struct GradientParams
@@ -252,7 +330,7 @@ namespace UnityEditor.StyleSheets
             if (funcName != "linear-gradient")
                 return false;
 
-            var gradientTexture = GenerateGradient(gp.rect, args);
+            var gradientTexture = GenerateGradient(block.name, gp.rect, args);
             if (gradientTexture == null)
                 return false;
             GUI.DrawTexture(gp.rect, gradientTexture, ScaleMode.ScaleAndCrop, true, 0f, gp.colorTint, Vector4.zero, gp.radius);
@@ -318,12 +396,12 @@ namespace UnityEditor.StyleSheets
 
         private struct StyleBackgroundPosition
         {
-#pragma warning disable 0649
+            #pragma warning disable 0649
             public int xEdge;
             public float xOffset;
             public int yEdge;
             public float yOffset;
-#pragma warning restore 0649
+            #pragma warning restore 0649
         }
 
         private struct StyleBorder

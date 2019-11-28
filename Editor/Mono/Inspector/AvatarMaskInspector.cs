@@ -544,7 +544,7 @@ namespace UnityEditor
         private void ImportAvatarReference()
         {
             EditorGUI.BeginChangeCheck();
-            m_RefAvatar = EditorGUILayout.ObjectField(Styles.SelectAvatarReference, m_RefAvatar, typeof(Avatar), true) as Avatar;
+            m_RefAvatar = EditorGUILayout.ObjectField(Styles.SelectAvatarReference, m_RefAvatar, typeof(Avatar), target) as Avatar;
             if (EditorGUI.EndChangeCheck())
                 m_RefImporter = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(m_RefAvatar)) as ModelImporter;
 

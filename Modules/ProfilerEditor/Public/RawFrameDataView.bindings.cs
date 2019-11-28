@@ -5,8 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Profiling;
 using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Profiling
 {
@@ -83,6 +85,21 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(Name = "GetSampleCallstack", IsThreadSafe = true, ThrowsException = true)]
         extern void GetSampleCallstackInternal(int sampleIndex, List<ulong> outCallstack);
+
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        public struct FlowEvent
+        {
+            public int ParentSampleIndex;
+            public uint FlowId;
+            public ProfilerFlowEventType FlowEventType;
+        }
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void GetSampleFlowEvents(int sampleIndex, List<FlowEvent> outFlowEvents);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void GetFlowEvents(List<FlowEvent> outFlowEvents);
 
         public override bool Equals(object obj)
         {

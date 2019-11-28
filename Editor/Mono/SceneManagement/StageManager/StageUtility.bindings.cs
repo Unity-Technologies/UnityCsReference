@@ -48,9 +48,6 @@ namespace UnityEditor.SceneManagement
         extern private static bool IsPrefabInstanceHiddenForInContextEditingInternal(GameObject gameObject);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static bool IsGameObjectConsideredHiddenInSceneViewInternal(GameObject gameObject);
-
-        [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static void EnableHidingForInContextEditingInSceneViewInternal(bool enable);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]

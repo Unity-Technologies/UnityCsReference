@@ -145,10 +145,6 @@ namespace UnityEditor.Connect
             var newVisual = mainTemplate.CloneTree().contentContainer;
             ServicesUtils.TranslateStringsInTree(newVisual);
             rootVisualElement.Add(newVisual);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
 
             // Setup the crash reporting UI
             SetupCrashDiag();
@@ -246,7 +242,9 @@ namespace UnityEditor.Connect
                 {
                     var clickable = new Clickable(() =>
                     {
-                        Application.OpenURL(ServicesConfiguration.instance.cloudDiagCrashesDashboardUrl);
+                        var dashboardUrl = ServicesConfiguration.instance.cloudDiagCrashesDashboardUrl;
+                        EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = CrashService.instance.name, url = dashboardUrl });
+                        Application.OpenURL(dashboardUrl);
                     });
                     m_CrashServiceGoToDashboard.AddManipulator(clickable);
                 }

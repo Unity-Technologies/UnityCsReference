@@ -33,8 +33,9 @@ namespace UnityEditor.IMGUI.Controls
             get
             {
                 if (m_LineHeight < 0)
-                    return new SVC<float>("--treeview-line-height", 16f);
-                else return m_LineHeight;
+                    m_LineHeight = new SVC<float>("--treeview-line-height", 16f);
+
+                return m_LineHeight;
             }
             set { m_LineHeight = value; }
         }

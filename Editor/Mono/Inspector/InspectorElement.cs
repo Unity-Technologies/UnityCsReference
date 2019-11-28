@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -74,6 +73,9 @@ namespace UnityEditor.UIElements
                 }
             }
         }
+
+        private string m_TrackerName;
+        internal string trackerName => m_TrackerName ?? (m_TrackerName = GetInspectorTrackerName(this));
 
         internal bool ownsEditor { get; private set; } = false;
 
@@ -414,7 +416,7 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                inspector = new IMGUIContainer();
+                inspector = new IMGUIContainer() { cullingEnabled = true };
             }
 
             m_IgnoreOnInspectorGUIErrors = false;
@@ -529,10 +531,7 @@ namespace UnityEditor.UIElements
                                     else
                                     {
                                         InspectorWindowUtils.DrawAddedComponentBackground(contentRect, editor.targets);
-
-                                        var editorElementParent = parent as EditorElement;
-                                        var trackerId = editorElementParent == null ? editor.GetType().Name : editorElementParent.name;
-                                        using (new EditorPerformanceTracker($"Editor.{trackerId}.OnInspectorGUI"))
+                                        using (new EditorPerformanceTracker(trackerName))
                                             editor.OnInspectorGUI();
                                     }
                                 }
@@ -581,6 +580,15 @@ namespace UnityEditor.UIElements
             AddToClassList(iMGUIInspectorVariantUssClassName);
 
             return inspector;
+        }
+
+        internal static string GetInspectorTrackerName(VisualElement el)
+        {
+            var editorElementParent = el.parent as EditorElement;
+            if (editorElementParent == null)
+                return $"Editor.Unknown.OnInspectorGUI";
+
+            return $"Editor.{editorElementParent.name}.OnInspectorGUI";
         }
 
         private VisualElement CreateInspectorElementFromEditor(Editor editor, bool reuseIMGUIContainer = false)

@@ -4,9 +4,11 @@
 
 using System;
 using UnityEngine.Events;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Networking.PlayerConnection
+namespace UnityEngine.Networking.PlayerConnection
 {
+    [MovedFrom("UnityEngine.Experimental.Networking.PlayerConnection")]
     public enum ConnectionTarget
     {
         None, // Only to be used from player side. The editor is always connected to itself, unless connected to a player.
@@ -14,15 +16,13 @@ namespace UnityEngine.Experimental.Networking.PlayerConnection
         Editor,
     }
 
+    [MovedFrom("UnityEngine.Experimental.Networking.PlayerConnection")]
     public interface IConnectionState : IDisposable
     {
         ConnectionTarget connectedToTarget { get; }
         string connectionName { get; }
     }
-}
 
-namespace UnityEngine.Networking.PlayerConnection
-{
     [Serializable]
     public class MessageEventArgs
     {

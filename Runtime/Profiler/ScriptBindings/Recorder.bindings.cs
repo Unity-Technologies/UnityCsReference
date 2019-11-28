@@ -66,17 +66,31 @@ namespace UnityEngine.Profiling
         {
             get { return isValid ? GetElapsedNanoseconds() : 0; }
         }
+        public long gpuElapsedNanoseconds
+        {
+            get { return isValid ? GetGpuElapsedNanoseconds() : 0; }
+        }
 
         [NativeMethod(IsThreadSafe = true)]
         private extern long GetElapsedNanoseconds();
+
+        [NativeMethod(IsThreadSafe = true)]
+        private extern long GetGpuElapsedNanoseconds();
 
         public int sampleBlockCount
         {
             get { return isValid ? GetSampleBlockCount() : 0; }
         }
+        public int gpuSampleBlockCount
+        {
+            get { return isValid ? GetGpuSampleBlockCount() : 0; }
+        }
 
         [NativeMethod(IsThreadSafe = true)]
         private extern int GetSampleBlockCount();
+
+        [NativeMethod(IsThreadSafe = true)]
+        private extern int GetGpuSampleBlockCount();
 
         [ThreadSafe]
         public extern void FilterToCurrentThread();

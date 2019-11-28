@@ -481,11 +481,18 @@ namespace UnityEditor
             PlayStopGUI();
         }
 
+        OverlayWindow m_OverlayWindow;
+
         public void OnSceneViewGUI()
         {
+            if (m_OverlayWindow == null)
+            {
+                m_OverlayWindow = new OverlayWindow(ParticleSystemInspector.playBackTitle, SceneViewGUICallback, (int)SceneViewOverlay.Ordering.ParticleEffect, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTitle);
+            }
+
             ParticleSystem root = ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]);
             if (root && root.gameObject.activeInHierarchy)
-                SceneViewOverlay.Window(ParticleSystemInspector.playBackTitle, SceneViewGUICallback, (int)SceneViewOverlay.Ordering.ParticleEffect, SceneViewOverlay.WindowDisplayOption.OneWindowPerTitle);
+                SceneViewOverlay.ShowWindow(m_OverlayWindow);
 
             foreach (ParticleSystemUI e in m_Emitters)
                 e.OnSceneViewGUI();

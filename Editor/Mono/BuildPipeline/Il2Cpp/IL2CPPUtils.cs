@@ -246,6 +246,11 @@ namespace UnityEditorInternal
                     arguments.Add("--incremental-g-c-time-slice=3");
             }
 
+            if (!string.IsNullOrEmpty(il2cppPlatformProvider.baselibLibraryDirectory))
+                arguments.Add($"--baselib-directory=\"{il2cppPlatformProvider.baselibLibraryDirectory}\"");
+
+            arguments.Add("--avoid-dynamic-library-copy");
+
             arguments.Add("--profiler-report");
 
             return arguments.ToArray();
@@ -459,7 +464,11 @@ namespace UnityEditorInternal
             }
 
             arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
-            arguments.AddRange(IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
+            foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup))
+            {
+                if (!arguments.Contains(buildingArgument))
+                    arguments.Add(buildingArgument);
+            }
             arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
 
             var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
@@ -582,6 +591,7 @@ namespace UnityEditorInternal
         bool development { get; }
         bool allowDebugging { get; }
         bool scriptsOnlyBuild { get; }
+        string baselibLibraryDirectory { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -596,11 +606,15 @@ namespace UnityEditorInternal
 
     internal abstract class BaseIl2CppPlatformProvider : IIl2CppPlatformProvider
     {
-        public BaseIl2CppPlatformProvider(BuildTarget target, string libraryFolder, BuildReport buildReport)
+        private string _baselibLibraryDirectory;
+
+        public BaseIl2CppPlatformProvider(BuildTarget target, string libraryFolder, BuildReport buildReport,
+                                          string baselibLibraryDirectory)
         {
             this.target = target;
             this.libraryFolder = libraryFolder;
             this.buildReport = buildReport;
+            _baselibLibraryDirectory = baselibLibraryDirectory;
         }
 
         public virtual BuildTarget target { get; private set; }
@@ -676,6 +690,11 @@ namespace UnityEditorInternal
                     return (buildReport.summary.options & BuildOptions.BuildScriptsOnly) == BuildOptions.BuildScriptsOnly;
                 return false;
             }
+        }
+
+        public string baselibLibraryDirectory
+        {
+            get { return _baselibLibraryDirectory; }
         }
 
         public BuildReport buildReport { get; private set; }

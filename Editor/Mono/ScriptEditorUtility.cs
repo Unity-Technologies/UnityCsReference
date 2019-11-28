@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.Linq;
 using Unity.CodeEditor;
 using UnityEditor.Utils;
+using UnityEditor.VisualStudioIntegration;
 
 namespace UnityEditorInternal
 {
@@ -41,6 +42,10 @@ namespace UnityEditorInternal
 
             if (lowerCasePath == CodeEditor.SystemDefaultPath)
                 return ScriptEditor.SystemDefault;
+
+            // Disable internal Visual Studio if the package is loaded.
+            if (!UnityVSSupport.IsDefaultExternalCodeEditor())
+                return ScriptEditor.Other;
 
             if (lowerCasePath.Contains("monodevelop") || lowerCasePath.Contains("xamarinstudio") || lowerCasePath.Contains("xamarin studio"))
                 return ScriptEditor.MonoDevelop;
@@ -141,24 +146,7 @@ namespace UnityEditorInternal
         [Obsolete("This method is being internalized, please use UnityEditorInternal.CodeEditorUtility.GetFoundScriptEditorPaths", false)]
         public static Dictionary<string, string> GetFoundScriptEditorPaths(RuntimePlatform platform)
         {
-            var result = new Dictionary<string, string>();
-
-            if (platform == RuntimePlatform.OSXEditor)
-            {
-                AddIfDirectoryExists("Visual Studio", "/Applications/Visual Studio.app", result);
-                AddIfDirectoryExists("Visual Studio (Preview)", "/Applications/Visual Studio (Preview).app", result);
-            }
-
-            foreach (var callback in k_PathCallbacks)
-            {
-                var pathCallbacks = callback.Invoke();
-                foreach (var pathCallback in pathCallbacks)
-                {
-                    AddIfDirectoryExists(pathCallback.Name, pathCallback.Path, result);
-                }
-            }
-
-            return result;
+            return CodeEditor.Editor.GetFoundScriptEditorPaths();
         }
 
         static void AddIfDirectoryExists(string name, string path, Dictionary<string, string> list)

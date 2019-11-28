@@ -104,7 +104,6 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static GUIContent selectionToolsWindowTitle = EditorGUIUtility.TrTextContent("Tools");
             public static GUIContent recentTools = EditorGUIUtility.TrTextContent("Recent");
             public static GUIContent selectionTools = EditorGUIUtility.TrTextContent("Selection");
             public static GUIContent availableTools = EditorGUIUtility.TrTextContent("Available");
@@ -189,13 +188,7 @@ namespace UnityEditor
                 Tools.RepaintAllToolViews();
         }
 
-        public static void DrawSceneViewTools(SceneView sceneView)
-        {
-            SceneViewOverlay.Window(Styles.selectionToolsWindowTitle, DoContextualToolbarOverlay, int.MaxValue, null,
-                SceneViewOverlay.WindowDisplayOption.MultipleWindowsPerTarget, sceneView);
-        }
-
-        static void DoContextualToolbarOverlay(UnityEngine.Object target, SceneView sceneView)
+        static internal void DoContextualToolbarOverlay(UnityEngine.Object target, SceneView sceneView)
         {
             GUILayout.BeginHorizontal(GUIStyle.none, GUILayout.MinWidth(210), GUILayout.Height(30));
 

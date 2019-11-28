@@ -39,6 +39,7 @@ namespace UnityEngine
         public extern float radius {get; set; }
         public extern float suspensionDistance {get; set; }
         public extern JointSpring suspensionSpring {get; set; }
+        public extern bool suspensionExpansionLimited {get; set; }
         public extern float forceAppPointDistance {get; set; }
         public extern float mass {get; set; }
         public extern float wheelDampingRate {get; set; }

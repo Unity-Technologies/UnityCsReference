@@ -25,11 +25,13 @@ namespace UnityEditor.PackageManager.UI
 
             public event Action onFetchDetailsStart = delegate {};
             public event Action onFetchDetailsFinish = delegate {};
-            public event Action<Error> onFetchDetailsError = delegate {};
+            public event Action<UIError> onFetchDetailsError = delegate {};
 
             public event Action<IOperation> onListOperation = delegate {};
 
-            private Dictionary<string, AssetStoreFetchedInfo> m_FetchedInfos = new Dictionary<string, AssetStoreFetchedInfo>();
+            private Dictionary<string, AssetStorePurchaseInfo> m_PurchaseInfos = new Dictionary<string, AssetStorePurchaseInfo>();
+
+            private Dictionary<string, AssetStoreProductInfo> m_ProductInfos = new Dictionary<string, AssetStoreProductInfo>();
 
             private Dictionary<string, AssetStoreLocalInfo> m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
 
@@ -37,7 +39,10 @@ namespace UnityEditor.PackageManager.UI
             private AssetStoreListOperation m_ListOperation = new AssetStoreListOperation();
 
             [SerializeField]
-            private AssetStoreFetchedInfo[] m_SerializedFetchedInfos = new AssetStoreFetchedInfo[0];
+            private AssetStorePurchaseInfo[] m_SerializedPurchaseInfos = new AssetStorePurchaseInfo[0];
+
+            [SerializeField]
+            private AssetStoreProductInfo[] m_SerializedProductInfos = new AssetStoreProductInfo[0];
 
             [SerializeField]
             private AssetStoreLocalInfo[] m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
@@ -47,13 +52,15 @@ namespace UnityEditor.PackageManager.UI
 
             public void OnAfterDeserialize()
             {
-                m_FetchedInfos = m_SerializedFetchedInfos.ToDictionary(info => info.id, info => info);
+                m_PurchaseInfos = m_SerializedPurchaseInfos.ToDictionary(info => info.productId.ToString(), info => info);
+                m_ProductInfos = m_SerializedProductInfos.ToDictionary(info => info.id, info => info);
                 m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.id, info => info);
             }
 
             public void OnBeforeSerialize()
             {
-                m_SerializedFetchedInfos = m_FetchedInfos.Values.ToArray();
+                m_SerializedPurchaseInfos = m_PurchaseInfos.Values.ToArray();
+                m_SerializedProductInfos = m_ProductInfos.Values.ToArray();
                 m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
             }
 
@@ -61,7 +68,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (!ApplicationUtil.instance.isUserLoggedIn)
                 {
-                    onFetchDetailsError?.Invoke(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
+                    onFetchDetailsError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, L10n.Tr("User not logged in")));
                     return;
                 }
 
@@ -73,7 +80,7 @@ namespace UnityEditor.PackageManager.UI
                     RefreshProductUpdateDetails(new[] { localInfo });
 
                 // create a placeholder before fetching data from the cloud for the first time
-                if (!m_FetchedInfos.ContainsKey(productId.ToString()))
+                if (!m_ProductInfos.ContainsKey(productId.ToString()))
                     onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(productId.ToString(), string.Empty, PackageType.AssetStore) });
 
                 FetchDetails(new[] { productId });
@@ -94,8 +101,10 @@ namespace UnityEditor.PackageManager.UI
                         var placeholderPackages = new List<IPackage>();
                         foreach (var item in result.list)
                         {
+                            m_PurchaseInfos[item.productId.ToString()] = item;
+
                             // create a placeholder before fetching data from the cloud for the first time
-                            if (!m_FetchedInfos.ContainsKey(item.productId.ToString()))
+                            if (!m_ProductInfos.ContainsKey(item.productId.ToString()))
                                 placeholderPackages.Add(new PlaceholderPackage(item.productId.ToString(), item.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
                         }
 
@@ -128,24 +137,25 @@ namespace UnityEditor.PackageManager.UI
                         var error = productDetail.GetString("errorMessage");
                         if (string.IsNullOrEmpty(error))
                         {
-                            var fetchedInfo = AssetStoreFetchedInfo.ParseFetchedInfo(id.ToString(), productDetail);
-                            if (fetchedInfo == null)
-                                package = new AssetStorePackage(id.ToString(), new Error(NativeErrorCode.Unknown, "Error parsing product details."));
+                            var productInfo = AssetStoreProductInfo.ParseProductInfo(id.ToString(), productDetail);
+                            if (productInfo == null)
+                                package = new AssetStorePackage(id.ToString(), new UIError(UIErrorCode.AssetStoreClientError, "Error parsing product details."));
                             else
                             {
-                                var oldFetchedInfo = m_FetchedInfos.Get(fetchedInfo.id);
-                                if (oldFetchedInfo == null || oldFetchedInfo.versionId != fetchedInfo.versionId || oldFetchedInfo.versionString != fetchedInfo.versionString)
+                                var purchaseInfo = m_PurchaseInfos.Get(productInfo.id);
+                                var oldProductInfo = m_ProductInfos.Get(productInfo.id);
+                                if (oldProductInfo == null || oldProductInfo.versionId != productInfo.versionId || oldProductInfo.versionString != productInfo.versionString)
                                 {
-                                    if (string.IsNullOrEmpty(fetchedInfo.packageName))
-                                        package = new AssetStorePackage(fetchedInfo, m_LocalInfos.Get(fetchedInfo.id));
+                                    if (string.IsNullOrEmpty(productInfo.packageName))
+                                        package = new AssetStorePackage(purchaseInfo, productInfo, m_LocalInfos.Get(productInfo.id));
                                     else
-                                        UpmClient.instance.FetchForProduct(fetchedInfo.id, fetchedInfo.packageName);
-                                    m_FetchedInfos[fetchedInfo.id] = fetchedInfo;
+                                        UpmClient.instance.FetchForProduct(productInfo.id, productInfo.packageName);
+                                    m_ProductInfos[productInfo.id] = productInfo;
                                 }
                             }
                         }
                         else
-                            package = new AssetStorePackage(id.ToString(), new Error(NativeErrorCode.Unknown, error));
+                            package = new AssetStorePackage(id.ToString(), new UIError(UIErrorCode.AssetStoreClientError, error));
 
                         if (package != null)
                             onPackagesChanged?.Invoke(new[] { package });
@@ -167,10 +177,11 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnProductPackageChanged(string productId, IPackage package)
             {
-                var fetchedInfo = m_FetchedInfos.Get(productId);
-                if (fetchedInfo != null)
+                var purchaseInfo = m_PurchaseInfos.Get(productId);
+                var productInfo = m_ProductInfos.Get(productId);
+                if (productInfo != null)
                 {
-                    var assetStorePackage = new AssetStorePackage(fetchedInfo, package as UpmPackage);
+                    var assetStorePackage = new AssetStorePackage(purchaseInfo, productInfo, package as UpmPackage);
                     onPackagesChanged?.Invoke(new[] { assetStorePackage });
                 }
             }
@@ -178,18 +189,19 @@ namespace UnityEditor.PackageManager.UI
             private void OnProductPackageVersionUpdated(string productId, IPackageVersion version)
             {
                 var upmVersion = version as UpmPackageVersion;
-                var fetchedInfo = m_FetchedInfos.Get(productId);
-                if (upmVersion != null && fetchedInfo != null)
-                    upmVersion.UpdateFetchedInfo(fetchedInfo);
+                var productInfo = m_ProductInfos.Get(productId);
+                if (upmVersion != null && productInfo != null)
+                    upmVersion.UpdateProductInfo(productInfo);
                 onPackageVersionUpdated?.Invoke(productId, version);
             }
 
-            private void OnProductPackageFetchError(string productId, Error error)
+            private void OnProductPackageFetchError(string productId, UIError error)
             {
-                var fetchedInfo = m_FetchedInfos.Get(productId);
-                if (fetchedInfo != null)
+                var purchaseInfo = m_PurchaseInfos.Get(productId);
+                var productInfo = m_ProductInfos.Get(productId);
+                if (productInfo != null)
                 {
-                    var assetStorePackage = new AssetStorePackage(fetchedInfo);
+                    var assetStorePackage = new AssetStorePackage(purchaseInfo, productInfo);
                     var assetStorePackageVersion = assetStorePackage.versions.primary as AssetStorePackageVersion;
                     assetStorePackageVersion.SetUpmPackageFetchError(error);
                     onPackagesChanged?.Invoke(new[] { assetStorePackage });
@@ -229,10 +241,10 @@ namespace UnityEditor.PackageManager.UI
             public void ClearCache()
             {
                 m_LocalInfos.Clear();
-                m_FetchedInfos.Clear();
+                m_ProductInfos.Clear();
 
                 m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
-                m_SerializedFetchedInfos = new AssetStoreFetchedInfo[0];
+                m_SerializedProductInfos = new AssetStoreProductInfo[0];
             }
 
             private void OnUserLoginStateChange(bool loggedIn)
@@ -312,19 +324,21 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnLocalInfoChanged(AssetStoreLocalInfo localInfo)
             {
-                var fetchedInfo = m_FetchedInfos.Get(localInfo.id);
-                if (fetchedInfo == null)
+                var purchaseInfo = m_PurchaseInfos.Get(localInfo.id);
+                var productInfo = m_ProductInfos.Get(localInfo.id);
+                if (productInfo == null)
                     return;
-                var package = new AssetStorePackage(fetchedInfo, localInfo);
+                var package = new AssetStorePackage(purchaseInfo, productInfo, localInfo);
                 onPackagesChanged?.Invoke(new[] { package });
             }
 
             private void OnLocalInfoRemoved(AssetStoreLocalInfo localInfo)
             {
-                var fetchedInfo = m_FetchedInfos.Get(localInfo.id);
-                if (fetchedInfo == null)
+                var purchaseInfo = m_PurchaseInfos.Get(localInfo.id);
+                var productInfo = m_ProductInfos.Get(localInfo.id);
+                if (productInfo == null)
                     return;
-                var package = new AssetStorePackage(fetchedInfo, (AssetStoreLocalInfo)null);
+                var package = new AssetStorePackage(purchaseInfo, productInfo, (AssetStoreLocalInfo)null);
                 onPackagesChanged?.Invoke(new[] { package });
             }
         }

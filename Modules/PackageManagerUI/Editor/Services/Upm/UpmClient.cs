@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI
 
             public event Action<string, IPackageVersion> onPackageVersionUpdated = delegate {};
             public event Action<string, IPackageVersion> onProductPackageVersionUpdated = delegate {};
-            public event Action<string, Error> onProductPackageFetchError = delegate {};
+            public event Action<string, UIError> onProductPackageFetchError = delegate {};
 
             [SerializeField]
             private UpmSearchOperation m_SearchOperation;
@@ -301,7 +301,7 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            private void OnProcessExtraFetchError(Error error, string productId = null)
+            private void OnProcessExtraFetchError(UIError error, string productId = null)
             {
                 if (!string.IsNullOrEmpty(productId))
                     onProductPackageFetchError?.Invoke(productId, error);

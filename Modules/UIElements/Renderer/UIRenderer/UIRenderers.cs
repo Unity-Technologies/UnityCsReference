@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements.UIR
     internal enum CommandType
     {
         Draw,
-        Immediate,
+        ImmediateCull, Immediate,
         PushView, PopView,
         PushScissor, PopScissor
     }
@@ -95,6 +95,14 @@ namespace UnityEngine.UIElements.UIR
         {
             switch (type)
             {
+                case CommandType.ImmediateCull:
+                {
+                    if (!owner.worldBound.Overlaps(drawParams.viewport))
+                        break;
+
+                    // Element isn't culled, follow through the normal immediate callback procedure
+                    goto case CommandType.Immediate;
+                }
                 case CommandType.Immediate:
                 {
                     if (immediateException != null)

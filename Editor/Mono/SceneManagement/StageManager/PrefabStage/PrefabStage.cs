@@ -118,9 +118,7 @@ namespace UnityEditor.Experimental.SceneManagement
         void Init(string prefabAssetPath, GameObject openedFromInstanceObject, PrefabStage.Mode prefabStageMode, Stage contextStage)
         {
             m_PrefabAssetPath = prefabAssetPath;
-
-            bool isRootFolder;
-            m_IsPrefabInValidAssetFolder = AssetDatabase.GetAssetFolderInfo(m_PrefabAssetPath, out isRootFolder, out m_IsPrefabInImmutableFolder);
+            CachePrefabFolderInfo();
 
             m_OpenedFromInstanceObject = openedFromInstanceObject;
             if (openedFromInstanceObject != null)
@@ -1019,6 +1017,9 @@ namespace UnityEditor.Experimental.SceneManagement
 
         void HandleAutoSave()
         {
+            if (IsPrefabInImmutableFolder())
+                return;
+
             if (autoSave && readyToAutoSave)
             {
                 AutoSave();
@@ -1177,6 +1178,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 // Change the current open prefab and save
                 m_PrefabContentsRoot.name = Path.GetFileNameWithoutExtension(newPath);
                 m_PrefabAssetPath = newPath;
+                CachePrefabFolderInfo();
                 ClearDirtiness();
                 PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, newPath);
 
@@ -1360,6 +1362,18 @@ namespace UnityEditor.Experimental.SceneManagement
         {
             if (!hasUnsavedChanges || m_PrefabContentsRoot == null)
                 return true; // no changes to save or no root to save; continue
+
+            if (IsPrefabInImmutableFolder())
+            {
+                var header = L10n.Tr("Immutable Prefab");
+                var message = L10n.Tr("The Prefab was changed in Prefab Mode but is in a read-only folder so the changes cannot be saved.");
+                var buttonOK = L10n.Tr("OK");
+                var buttonCancel = L10n.Tr("Cancel");
+
+                if (EditorUtility.DisplayDialog(header, message, buttonOK, buttonCancel))
+                    return true; // OK: continue to close stage
+                return false; // Cancel closing stage
+            }
 
             // Rare condition. Prefab should have already been saved if auto-save is enabled,
             // but it's possible it hasn't, so save when exiting just in case.
@@ -1565,9 +1579,20 @@ namespace UnityEditor.Experimental.SceneManagement
             GUILayout.Space(10);
         }
 
+        void CachePrefabFolderInfo()
+        {
+            bool isRootFolder;
+            m_IsPrefabInValidAssetFolder = AssetDatabase.GetAssetFolderInfo(m_PrefabAssetPath, out isRootFolder, out m_IsPrefabInImmutableFolder);
+        }
+
+        bool IsPrefabInImmutableFolder()
+        {
+            return !m_IsPrefabInValidAssetFolder || m_IsPrefabInImmutableFolder;
+        }
+
         void AutoSaveButtons(SceneView sceneView)
         {
-            if (!m_IsPrefabInValidAssetFolder || m_IsPrefabInImmutableFolder)
+            if (IsPrefabInImmutableFolder())
             {
                 GUILayout.Label(Styles.immutablePrefabContent, EditorStyles.boldLabel);
                 return;

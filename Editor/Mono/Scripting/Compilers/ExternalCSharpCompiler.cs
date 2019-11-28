@@ -66,7 +66,7 @@ namespace UnityEditor.Scripting.Compilers
                 Name = scriptAssembly.Filename,
                 Files = scriptAssembly.Files.Select(Path.GetFullPath).ToArray(),
                 Defines = scriptAssembly.Defines,
-                References = scriptAssembly.GetAllReferences(),
+                References = scriptAssembly.GetAllReferences().Select(Path.GetFullPath).ToArray(),
                 OutputDirectory = Path.GetFullPath(outputDir),
                 AllowUnsafeCode = scriptAssembly.CompilerOptions.AllowUnsafeCode,
             };

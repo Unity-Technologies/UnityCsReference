@@ -213,8 +213,11 @@ namespace UnityEditor.Experimental.GraphView
             // Bring back viewport coordinates to (0,0), scale 1:1
             m_ViewportRect.x += containerInvTranslation.x;
             m_ViewportRect.y += containerInvTranslation.y;
-            m_ViewportRect.x += graphView.worldBound.x * containerInvScale.x;
-            m_ViewportRect.y += graphView.worldBound.y * containerInvScale.y;
+
+            var graphViewWB = graphView.worldBound;
+
+            m_ViewportRect.x += graphViewWB.x * containerInvScale.x;
+            m_ViewportRect.y += graphViewWB.y * containerInvScale.y;
             m_ViewportRect.width *= containerInvScale.x;
             m_ViewportRect.height *= containerInvScale.y;
 
@@ -323,7 +326,7 @@ namespace UnityEditor.Experimental.GraphView
             // mode rendering at all. It should maintain its vertex/index lists and only
             // update affected vertices when their respective elements are changed. This
             // way the cost of GenerateVisualContent becomes effectively only two memcpys.
-            mgc.painter.DrawImmediate(DrawMinimapContent);
+            mgc.painter.DrawImmediate(DrawMinimapContent, true);
         }
 
         void DrawMinimapContent()

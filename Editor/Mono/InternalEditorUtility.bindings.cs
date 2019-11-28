@@ -424,6 +424,7 @@ namespace UnityEditorInternal
         public static void ReloadWindowLayoutMenu()
         {
             WindowLayout.ReloadWindowLayoutMenu();
+            EditorUtility.Internal_UpdateAllMenus();
         }
 
         public static void RevertFactoryLayoutSettings(bool quitOnCancel)

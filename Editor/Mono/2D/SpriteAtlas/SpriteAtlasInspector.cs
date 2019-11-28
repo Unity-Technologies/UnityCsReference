@@ -256,7 +256,7 @@ namespace UnityEditor.U2D
             var controlID = EditorGUIUtility.GetControlID(styles.packableElementHash, FocusType.Passive);
             var previousObject = property.objectReferenceValue;
 
-            var changedObject = EditorGUI.DoObjectField(rect, rect, controlID, previousObject, typeof(Object), null, ValidateObjectForPackableFieldAssignment, false);
+            var changedObject = EditorGUI.DoObjectField(rect, rect, controlID, previousObject, target, typeof(Object), ValidateObjectForPackableFieldAssignment, false);
             if (changedObject != previousObject)
             {
                 // Always call Remove() on the previous object if we swapping the object field item.
@@ -643,22 +643,6 @@ namespace UnityEditor.U2D
                 else
                     EditorGUI.DrawTextureTransparent(r, t, ScaleMode.ScaleToFit, 0, bias);
             }
-        }
-
-        public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
-        {
-            var spriteAtlas = AssetDatabase.LoadMainAssetAtPath(assetPath) as SpriteAtlas;
-            if (spriteAtlas == null)
-                return null;
-
-            var previewTextures = spriteAtlas.GetPreviewTextures();
-            if (previewTextures == null || previewTextures.Length == 0)
-                return null;
-
-            var texture = previewTextures[0];
-            PreviewHelpers.AdjustWidthAndHeightForStaticPreview(texture.width, texture.height, ref width, ref height);
-
-            return SpriteUtility.CreateTemporaryDuplicate(texture, width, height);
         }
     }
 }

@@ -7,9 +7,9 @@ using System.Collections.Generic;
 using UnityEditor.Hardware;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Experimental.Networking.PlayerConnection;
+using UnityEngine.Networking.PlayerConnection;
 
-namespace UnityEditor.Experimental.Networking.PlayerConnection
+namespace UnityEditor.Networking.PlayerConnection
 {
     internal interface IConnectionStateInternal : IConnectionState
     {
@@ -27,27 +27,28 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
         // add out-off-process player/profiler here
     }
 
-    public static class EditorGUIUtility
+    public static class PlayerConnectionGUIUtility
     {
-        public static IConnectionState GetAttachToPlayerState(EditorWindow parentWindow, Action<string> connectedCallback = null)
+        public static IConnectionState GetConnectionState(EditorWindow parentWindow, Action<string> connectedCallback = null)
         {
             return new GeneralConnectionState(parentWindow, connectedCallback);
         }
 
-        internal static IConnectionState GetAttachToPlayerState(EditorWindow parentWindow, Action<EditorConnectionTarget> editorModeTargetSwitchedCallback, Func<EditorConnectionTarget, bool> editorModeTargetConnectionStatus, Action<string> connectedCallback = null)
+        internal static IConnectionState GetConnectionState(EditorWindow parentWindow, Action<EditorConnectionTarget> editorModeTargetSwitchedCallback, Func<EditorConnectionTarget, bool> editorModeTargetConnectionStatus, Action<string> connectedCallback = null)
         {
             return new GeneralConnectionState(parentWindow, connectedCallback, editorModeTargetSwitchedCallback, editorModeTargetConnectionStatus);
         }
     }
+
     static class Styles
     {
         public static readonly GUIStyle defaultDropdown = "MiniPullDown";
-        public static readonly GUIContent dropdownButton = UnityEditor.EditorGUIUtility.TrTextContent("", "Choose the target player to connect to.");
+        public static readonly GUIContent dropdownButton = UnityEditor.EditorGUIUtility.TrTextContent("", "Target Selection: Choose the target to connect to.");
     }
 
-    public static class EditorGUI
+    public static class PlayerConnectionGUI
     {
-        public static void AttachToPlayerDropdown(Rect rect, IConnectionState state, GUIStyle style = null)
+        public static void ConnectionTargetSelectionDropdown(Rect rect, IConnectionState state, GUIStyle style = null)
         {
             var internalState = state as IConnectionStateInternal;
             if (internalState?.parentWindow)
@@ -71,9 +72,10 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             menu.DropDown(rect);
         }
     }
-    public static class EditorGUILayout
+
+    public static class PlayerConnectionGUILayout
     {
-        public static void AttachToPlayerDropdown(IConnectionState state, GUIStyle style = null)
+        public static void ConnectionTargetSelectionDropdown(IConnectionState state, GUIStyle style = null)
         {
             if (style == null)
                 style = Styles.defaultDropdown;
@@ -82,7 +84,7 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
             var size = style.CalcSize(Styles.dropdownButton);
             Rect connectRect = GUILayoutUtility.GetRect(size.x, size.y);
 
-            EditorGUI.AttachToPlayerDropdown(connectRect, state, style);
+            PlayerConnectionGUI.ConnectionTargetSelectionDropdown(connectRect, state, style);
         }
     }
 

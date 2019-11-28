@@ -246,10 +246,6 @@ namespace UnityEditor.Connect
             var newVisual = mainTemplate.CloneTree().contentContainer;
             ServicesUtils.TranslateStringsInTree(newVisual);
             rootVisualElement.Add(newVisual);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
 
             // Make sure to activate the state machine to the current state...
             if (AdsService.instance.IsServiceEnabled())
@@ -270,7 +266,9 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    Application.OpenURL(ServicesConfiguration.instance.adsDashboardUrl);
+                    var adsDashboardUrl = ServicesConfiguration.instance.adsDashboardUrl;
+                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AdsService.instance.name, url = adsDashboardUrl });
+                    Application.OpenURL(adsDashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }

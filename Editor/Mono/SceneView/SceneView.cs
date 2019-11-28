@@ -100,6 +100,10 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewMaterialValidateHigh = new PrefColor("Scene/Material Validator Value Too High", 0.0f, 0.0f, 255.0f / 255.0f, 1.0f);
         static readonly PrefColor kSceneViewMaterialValidatePureMetal = new PrefColor("Scene/Material Validator Pure Metal", 255.0f / 255.0f, 255.0f / 255.0f, 0.0f, 1.0f);
 
+        static readonly PrefColor kSceneViewMaterialNoContributeGI = new PrefColor("Scene/Contribute GI Off", 229.0f / 255.0f, 203.0f / 255.0f, 132.0f / 255.0f, 1.0f);
+        static readonly PrefColor kSceneViewMaterialReceiveGILightmaps = new PrefColor("Scene/Contribute GI / Receive GI Lightmaps", 89.0f / 255.0f, 148.0f / 255.0f, 161.0f / 255.0f, 1.0f);
+        static readonly PrefColor kSceneViewMaterialReceiveGILightProbes = new PrefColor("Scene/Contribute GI / Receive GI Light Probes", 221.0f / 255.0f, 115.0f / 255.0f, 91.0f / 255.0f, 1.0f);
+
         internal static Color kSceneViewFrontLight = new Color(0.769f, 0.769f, 0.769f, 1);
         internal static Color kSceneViewUpLight = new Color(0.212f, 0.227f, 0.259f, 1);
         internal static Color kSceneViewMidLight = new Color(0.114f, 0.125f, 0.133f, 1);
@@ -282,6 +286,7 @@ namespace UnityEditor
             public bool showFlares = true;
             public bool showImageEffects = true;
             public bool showParticleSystems = true;
+            public bool showVisualEffectGraphs = true;
 
             public SceneViewState()
             {
@@ -295,6 +300,7 @@ namespace UnityEditor
                 showFlares = other.showFlares;
                 showImageEffects = other.showImageEffects;
                 showParticleSystems = other.showParticleSystems;
+                showVisualEffectGraphs = other.showVisualEffectGraphs;
             }
 
             [Obsolete("IsAllOn() has been deprecated. Use allEnabled instead (UnityUpgradable) -> allEnabled")]
@@ -305,7 +311,17 @@ namespace UnityEditor
 
             public bool allEnabled
             {
-                get { return showFog && showMaterialUpdate && showSkybox && showFlares && showImageEffects && showParticleSystems; }
+                get
+                {
+                    bool all =  showFog && showMaterialUpdate && showSkybox && showFlares && showImageEffects && showParticleSystems;
+
+                    if (UnityEngine.VFX.VFXManager.activateVFX)
+                    {
+                        all = all && showVisualEffectGraphs;
+                    }
+
+                    return all;
+                }
             }
 
             [Obsolete("Toggle() has been deprecated. Use SetAllEnabled() instead (UnityUpgradable) -> SetAllEnabled(*)")]
@@ -322,6 +338,7 @@ namespace UnityEditor
                 showFlares = value;
                 showImageEffects = value;
                 showParticleSystems = value;
+                showVisualEffectGraphs = value;
             }
         }
 
@@ -807,13 +824,15 @@ namespace UnityEditor
             public static GUIContent gridXToolbarContent = EditorGUIUtility.TrIconContent("GridAxisX", "Toggle the visibility of the grid");
             public static GUIContent gridYToolbarContent = EditorGUIUtility.TrIconContent("GridAxisY", "Toggle the visibility of the grid");
             public static GUIContent gridZToolbarContent = EditorGUIUtility.TrIconContent("GridAxisZ", "Toggle the visibility of the grid");
-            public static GUIContent isolationModeOverlayContent = EditorGUIUtility.TrTextContent("Isolation View", "");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
             public static GUIContent exposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the precomputed and baked lighting debug views.");
+            public static GUIContent contributeGIOff = EditorGUIUtility.TrTextContent("Contribute GI Off");
+            public static GUIContent receiveGILightmaps = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Lightmaps");
+            public static GUIContent receiveGILightProbes = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Light Probes");
 
             static Styles()
             {
@@ -836,6 +855,12 @@ namespace UnityEditor
         private bool m_SceneVisActive = true;
 
         private string m_SceneVisHiddenCount = "0";
+
+        OverlayWindow m_SceneVisOverlayWindow;
+        OverlayWindow m_PBRSettingsOverlayWindow;
+        OverlayWindow m_LightmapSettingsOverlayWindow;
+        OverlayWindow m_GIContributorsReceiversOverlayWindow;
+        OverlayWindow m_EditorToolsOverlayWindow;
 
         public void SetSceneViewShaderReplace(Shader shader, string replaceString)
         {
@@ -981,6 +1006,15 @@ namespace UnityEditor
             s_SceneViews.Add(this);
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
+            m_SceneVisOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Isolation View", ""),
+                OverlayWindowGUI, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
+                null,
+                SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_PBRSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_LightmapSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Lightmap Exposure"), DrawLightmapSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_GIContributorsReceiversOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("GI Contributors / Receivers"), DrawGIContributorsReceiversSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_EditorToolsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Tools"), EditorToolGUI.DoContextualToolbarOverlay, int.MaxValue, null, SceneViewOverlay.WindowDisplayOption.MultipleWindowsPerTarget);
+            m_EditorToolsOverlayWindow.editorWindow = this;
 
             UpdateHiddenObjectCount();
 
@@ -1014,6 +1048,14 @@ namespace UnityEditor
             s_ActiveEditorsDirty = true;
 
             showToolbar = ModeService.HasCapability("scene_view_toolbar", true);
+        }
+
+        void OverlayWindowGUI(Object target, SceneView view)
+        {
+            if (GUILayout.Button(Styles.isolationModeExitButton, GUILayout.MinWidth(120)))
+            {
+                SceneVisibilityManager.instance.ExitIsolation();
+            }
         }
 
         void GridOnGridVisibilityChanged(bool visible)
@@ -1328,14 +1370,7 @@ namespace UnityEditor
         {
             if (SceneVisibilityManager.instance.IsCurrentStageIsolated())
             {
-                SceneViewOverlay.Window(Styles.isolationModeOverlayContent, (target, view) =>
-                {
-                    if (GUILayout.Button(Styles.isolationModeExitButton, GUILayout.MinWidth(120)))
-                    {
-                        SceneVisibilityManager.instance.ExitIsolation();
-                    }
-                }, (int)SceneViewOverlay.Ordering.ParticleEffect + 100,
-                    SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.ShowWindow(m_SceneVisOverlayWindow);
             }
         }
 
@@ -2010,21 +2045,26 @@ namespace UnityEditor
         private float m_AlbedoSwatchSaturationTolerance = 0.2f;
         private ColorSpace m_LastKnownColorSpace = ColorSpace.Uninitialized;
 
+        private GUIStyle m_NoContributeGIStyle = null;
+        private GUIStyle m_ReceiveGILightmapsStyle = null;
+        private GUIStyle m_ReceiveGILightProbesStyle = null;
 
-        void UpdateSwatchTexture(Texture2D t, Color c)
+        void UpdateSwatchTexture(Texture2D t, Color c, bool colorCorrect = false)
         {
-            if (PlayerSettings.colorSpace == ColorSpace.Linear)
+            // Some colors were created in gamma space and should be viewed as such when in linear
+            if (PlayerSettings.colorSpace == ColorSpace.Linear && colorCorrect)
             {
                 c = c.gamma; // offset linear to gamma correction that happens in IMGUI, by doing the inverse beforehand
             }
+            c.a = 1.0f;
             t.SetPixel(0, 0, c);
             t.Apply();
         }
 
-        GUIStyle CreateSwatchStyleForColor(Color c)
+        GUIStyle CreateSwatchStyleForColor(Color c, bool colorCorrect = false)
         {
             Texture2D t = new Texture2D(1, 1);
-            UpdateSwatchTexture(t, c);
+            UpdateSwatchTexture(t, c, colorCorrect);
             return new GUIStyle {normal = {background = t}};
         }
 
@@ -2151,13 +2191,13 @@ namespace UnityEditor
             m_AlbedoSwatchDescriptions = new String[m_AlbedoSwatchInfos.Length + 1];
             m_AlbedoSwatchLuminanceStrings = new String[m_AlbedoSwatchInfos.Length + 1];
 
-            m_AlbedoSwatchColorStyles[0] = CreateSwatchStyleForColor(Color.gray);
+            m_AlbedoSwatchColorStyles[0] = CreateSwatchStyleForColor(Color.gray, true);
             m_AlbedoSwatchDescriptions[0] = "Default Luminance";
             m_AlbedoSwatchGUIContent[0] = new GUIContent(m_AlbedoSwatchDescriptions[0]);
             m_AlbedoSwatchLuminanceStrings[0] = CreateSwatchDescriptionForName(0.012f, 0.9f);
             for (int i = 1; i < m_AlbedoSwatchInfos.Length + 1; i++)
             {
-                m_AlbedoSwatchColorStyles[i] = CreateSwatchStyleForColor(m_AlbedoSwatchInfos[i - 1].color);
+                m_AlbedoSwatchColorStyles[i] = CreateSwatchStyleForColor(m_AlbedoSwatchInfos[i - 1].color, true);
                 m_AlbedoSwatchDescriptions[i] = m_AlbedoSwatchInfos[i - 1].name;
                 m_AlbedoSwatchGUIContent[i] = new GUIContent(m_AlbedoSwatchDescriptions[i]);
                 m_AlbedoSwatchLuminanceStrings[i] = CreateSwatchDescriptionForName(m_AlbedoSwatchInfos[i - 1].minLuminance, m_AlbedoSwatchInfos[i - 1].maxLuminance);
@@ -2179,9 +2219,18 @@ namespace UnityEditor
                 UpdateSwatchTexture(m_PureMetalColorStyle.normal.background, kSceneViewMaterialValidatePureMetal.Color);
             }
 
-            Shader.SetGlobalColor("unity_MaterialValidateLowColor", kSceneViewMaterialValidateLow.Color.linear);
-            Shader.SetGlobalColor("unity_MaterialValidateHighColor", kSceneViewMaterialValidateHigh.Color.linear);
-            Shader.SetGlobalColor("unity_MaterialValidatePureMetalColor", kSceneViewMaterialValidatePureMetal.Color.linear);
+            if (PlayerSettings.colorSpace == ColorSpace.Linear)
+            {
+                Shader.SetGlobalColor("unity_MaterialValidateLowColor", kSceneViewMaterialValidateLow.Color.linear);
+                Shader.SetGlobalColor("unity_MaterialValidateHighColor", kSceneViewMaterialValidateHigh.Color.linear);
+                Shader.SetGlobalColor("unity_MaterialValidatePureMetalColor", kSceneViewMaterialValidatePureMetal.Color.linear);
+            }
+            else
+            {
+                Shader.SetGlobalColor("unity_MaterialValidateLowColor", kSceneViewMaterialValidateLow.Color);
+                Shader.SetGlobalColor("unity_MaterialValidateHighColor", kSceneViewMaterialValidateHigh.Color);
+                Shader.SetGlobalColor("unity_MaterialValidatePureMetalColor", kSceneViewMaterialValidatePureMetal.Color);
+            }
         }
 
         void UpdateAlbedoSwatch()
@@ -2331,18 +2380,72 @@ namespace UnityEditor
             sceneView.DrawLightmapExposureSlider();
         }
 
+        void UpdateGIContributorsReceiversColors()
+        {
+            if (m_NoContributeGIStyle == null || m_NoContributeGIStyle.normal.background == null)
+            {
+                m_NoContributeGIStyle = CreateSwatchStyleForColor(kSceneViewMaterialNoContributeGI.Color);
+                m_ReceiveGILightmapsStyle = CreateSwatchStyleForColor(kSceneViewMaterialReceiveGILightmaps.Color);
+                m_ReceiveGILightProbesStyle = CreateSwatchStyleForColor(kSceneViewMaterialReceiveGILightProbes.Color);
+            }
+            else
+            {
+                UpdateSwatchTexture(m_NoContributeGIStyle.normal.background, kSceneViewMaterialNoContributeGI.Color);
+                UpdateSwatchTexture(m_ReceiveGILightmapsStyle.normal.background, kSceneViewMaterialReceiveGILightmaps.Color);
+                UpdateSwatchTexture(m_ReceiveGILightProbesStyle.normal.background, kSceneViewMaterialReceiveGILightProbes.Color);
+            }
+
+            Handles.SetSceneViewModeGIContributorsReceiversColors(kSceneViewMaterialNoContributeGI.Color, kSceneViewMaterialReceiveGILightmaps.Color, kSceneViewMaterialReceiveGILightProbes.Color);
+        }
+
+        internal void DrawGIContributorsReceiversSettings()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUIUtility.labelWidth = 2;
+                EditorGUILayout.LabelField("", m_NoContributeGIStyle);
+                EditorGUIUtility.labelWidth = 200;
+                EditorGUILayout.LabelField(Styles.contributeGIOff);
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUIUtility.labelWidth = 2;
+                EditorGUILayout.LabelField("", m_ReceiveGILightmapsStyle);
+                EditorGUIUtility.labelWidth = 200;
+                EditorGUILayout.LabelField(Styles.receiveGILightmaps);
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUIUtility.labelWidth = 2;
+                EditorGUILayout.LabelField("", m_ReceiveGILightProbesStyle);
+                EditorGUIUtility.labelWidth = 200;
+                EditorGUILayout.LabelField(Styles.receiveGILightProbes);
+            }
+        }
+
+        static void DrawGIContributorsReceiversSettings(Object target, SceneView sceneView)
+        {
+            sceneView.DrawGIContributorsReceiversSettings();
+        }
+
         void DrawSceneViewSwatch(SceneView sceneView)
         {
             if (sceneView.cameraMode.drawMode == DrawCameraMode.ValidateAlbedo || sceneView.cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular)
             {
                 sceneView.PrepareValidationUI();
-                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.ShowWindow(m_PBRSettingsOverlayWindow);
             }
 
             if (sceneView.cameraMode.drawMode == DrawCameraMode.BakedEmissive || sceneView.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
                 sceneView.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || sceneView.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect)
             {
-                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Lightmap Exposure"), DrawLightmapSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.ShowWindow(m_LightmapSettingsOverlayWindow);
+            }
+
+            if (this.cameraMode.drawMode == DrawCameraMode.GIContributorsReceivers)
+            {
+                UpdateGIContributorsReceiversColors();
+                SceneViewOverlay.ShowWindow(m_GIContributorsReceiversOverlayWindow);
             }
         }
 
@@ -2504,7 +2607,9 @@ namespace UnityEditor
             }
 
             if (displayToolModes)
-                EditorToolGUI.DrawSceneViewTools(this);
+            {
+                SceneViewOverlay.ShowWindow(m_EditorToolsOverlayWindow);
+            }
 
             DrawSceneViewSwatch(this);
 
@@ -2982,6 +3087,7 @@ namespace UnityEditor
 
             EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
             ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.showParticleSystems;
+            UnityEngine.VFX.VFXManager.renderInSceneView = m_SceneViewState.showVisualEffectGraphs;
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
             ResetIfNaN();
 

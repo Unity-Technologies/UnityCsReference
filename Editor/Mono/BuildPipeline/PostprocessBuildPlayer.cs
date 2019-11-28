@@ -53,14 +53,7 @@ namespace UnityEditor
 
         internal static void AddProjectBootConfigKeyValue(string key, string value)
         {
-            if (projectBootConfigEntries.ContainsKey(key))
-            {
-                projectBootConfigEntries[key] = value;
-            }
-            else
-            {
-                projectBootConfigEntries.Add(key, value);
-            }
+            projectBootConfigEntries[key] = value;
         }
 
         internal static bool RemoveProjectBootConfigKey(string key)
@@ -70,16 +63,7 @@ namespace UnityEditor
 
         internal static bool GetProjectBootConfigKeyValue(string key, out string value)
         {
-            if (projectBootConfigEntries.ContainsKey(key))
-            {
-                value = projectBootConfigEntries[key];
-                return true;
-            }
-            else
-            {
-                value = null;
-                return false;
-            }
+            return projectBootConfigEntries.TryGetValue(key, out value);
         }
 
         internal static void ClearProjectBootConfigEntries()

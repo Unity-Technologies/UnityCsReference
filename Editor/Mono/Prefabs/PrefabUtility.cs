@@ -340,32 +340,35 @@ namespace UnityEditor
 
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, true);
 
-            GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
-            var isDisconnected = GetPrefabInstanceHandle(prefabInstanceRoot) == null;
-
-            var actionName = "Apply instance to prefab";
-            Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
-
-            HashSet<int> prefabHierarchy = null;
-            if (action == InteractionMode.UserAction)
+            using (new AtomicUndoScope())
             {
-                Undo.RegisterFullObjectHierarchyUndo(correspondingSourceObject, actionName); // handles changes to existing objects and object what will be deleted but not objects that are created
-                Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
+                GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
+                var isDisconnected = GetPrefabInstanceHandle(prefabInstanceRoot) == null;
 
-                prefabHierarchy = new HashSet<int>();
-                GetObjectListFromHierarchy(prefabHierarchy, correspondingSourceObject as GameObject);
-            }
+                var actionName = "Apply instance to prefab";
+                Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
 
-            PrefabUtility.ApplyPrefabInstance(prefabInstanceRoot);
-
-            if (action == InteractionMode.UserAction)
-            {
-                RegisterNewObjects(correspondingSourceObject as GameObject, prefabHierarchy, actionName); // handles created objects
-                if (isDisconnected)
+                HashSet<int> prefabHierarchy = null;
+                if (action == InteractionMode.UserAction)
                 {
-                    var prefabInstanceHandle = GetPrefabInstanceHandle(prefabInstanceRoot);
-                    Assert.IsNotNull(prefabInstanceHandle);
-                    Undo.RegisterCreatedObjectUndo(prefabInstanceHandle, actionName);
+                    Undo.RegisterFullObjectHierarchyUndo(correspondingSourceObject, actionName); // handles changes to existing objects and object what will be deleted but not objects that are created
+                    Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
+
+                    prefabHierarchy = new HashSet<int>();
+                    GetObjectListFromHierarchy(prefabHierarchy, correspondingSourceObject as GameObject);
+                }
+
+                PrefabUtility.ApplyPrefabInstance(prefabInstanceRoot);
+
+                if (action == InteractionMode.UserAction)
+                {
+                    RegisterNewObjects(correspondingSourceObject as GameObject, prefabHierarchy, actionName); // handles created objects
+                    if (isDisconnected)
+                    {
+                        var prefabInstanceHandle = GetPrefabInstanceHandle(prefabInstanceRoot);
+                        Assert.IsNotNull(prefabInstanceHandle);
+                        Undo.RegisterCreatedObjectUndo(prefabInstanceHandle, actionName);
+                    }
                 }
             }
 
@@ -1759,6 +1762,9 @@ namespace UnityEditor
 
         public static GameObject LoadPrefabContents(string assetPath)
         {
+            if (string.IsNullOrEmpty(assetPath))
+                throw new ArgumentNullException("assetPath", "Prefab Asset path is null or empty");
+
             if (!File.Exists(assetPath))
                 throw new ArgumentException(string.Format("Path: {0}, does not exist", assetPath));
 
@@ -2272,6 +2278,24 @@ namespace UnityEditor
             var saveStartTime = DateTime.UtcNow.Subtract(duration);
 
             UsabilityAnalytics.SendEvent("prefabSave", saveStartTime, duration, true, null);
+        }
+
+        public struct EditPrefabContentsScope : IDisposable
+        {
+            public readonly string assetPath;
+            public readonly GameObject prefabContentsRoot;
+
+            public EditPrefabContentsScope(string assetPath)
+            {
+                this.assetPath = assetPath;
+                prefabContentsRoot = LoadPrefabContents(assetPath);
+            }
+
+            public void Dispose()
+            {
+                SaveAsPrefabAsset(prefabContentsRoot, assetPath);
+                UnloadPrefabContents(prefabContentsRoot);
+            }
         }
     }
 }

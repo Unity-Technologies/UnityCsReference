@@ -352,7 +352,7 @@ namespace UnityEditor
             public readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
             public readonly GUIContent psdRemoveMatte = EditorGUIUtility.TrTextContent("Remove Matte (PSD)", "Enable special processing for PSD that has transparency, as color pixels will be tweaked (blended with white color).");
-            public readonly GUIContent psdRemoveMatteWarning = EditorGUIUtility.TrTextContent("If you have PSD with transparency, colors will be tweaked by blending them with white color. Matte removal refers to our attempts to undo that, and this is deprecated.");
+            public readonly GUIContent psdRemoveMatteInfo = EditorGUIUtility.TrTextContent("If you have PSD with transparency, colors will be tweaked by blending them with white color. Matte removal refers to our attempts to undo that.");
             public readonly GUIContent psdRemoveMatteURLButton = EditorGUIUtility.TrTextContent("How to handle PSD with alpha");
             public readonly string psdRemoveMatteURL = "https://docs.unity3d.com/Manual/HOWTO-alphamaps.html";
 
@@ -936,7 +936,7 @@ namespace UnityEditor
                 if (m_PSDRemoveMatte.boolValue)
                 {
                     GUILayout.BeginVertical();
-                    EditorGUILayout.HelpBox(s_Styles.psdRemoveMatteWarning.text, MessageType.Warning, true);
+                    EditorGUILayout.HelpBox(s_Styles.psdRemoveMatteInfo.text, MessageType.Info, true);
                     if (EditorGUILayout.LinkLabel(s_Styles.psdRemoveMatteURLButton))
                         Application.OpenURL(s_Styles.psdRemoveMatteURL);
                     GUILayout.EndVertical();

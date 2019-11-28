@@ -159,7 +159,7 @@ namespace UnityEditor.Presets
             var controlID = GUIUtility.GetControlID(GUIContent.Temp(presetProperty.displayName), FocusType.Passive);
             var dropRect = rect;
             dropRect.xMax -= rect.height;
-            EditorGUI.DoObjectField(rect, dropRect, controlID, presetObject, typeof(Preset), presetProperty, (references, type, property, options) => PresetFieldDropValidator(references, keyType), false);
+            EditorGUI.DoObjectField(rect, dropRect, controlID, typeof(Preset), presetProperty, (references, type, property, options) => PresetFieldDropValidator(references, keyType), false);
         }
 
         static Object PresetFieldDropValidator(Object[] references, PresetType presetType)

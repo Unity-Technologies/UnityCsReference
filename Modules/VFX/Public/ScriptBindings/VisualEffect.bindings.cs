@@ -33,6 +33,9 @@ namespace UnityEngine.VFX
         public const string StopEventName = "OnStop";
         public static readonly int PlayEventID = Shader.PropertyToID(PlayEventName);
         public static readonly int StopEventID = Shader.PropertyToID(StopEventName);
+        internal extern uint GetCompilationVersion();
+
+        static internal extern uint currentRuntimeDataVersion { get; }
     }
 
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectBindings.h")]

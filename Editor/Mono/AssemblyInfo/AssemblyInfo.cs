@@ -56,6 +56,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.EditorTestsRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner.Tests")]
+[assembly: InternalsVisibleTo("Unity.Compiler.Client")]
 [assembly: InternalsVisibleTo("ExternalCSharpCompiler")]
 [assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.VR")]

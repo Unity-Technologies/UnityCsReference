@@ -15,6 +15,7 @@ using UnityEditor.Connect;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
 using UnityEngine.TestTools;
+using UnityEditor.VisualStudioIntegration;
 using UnityEditor.Collaboration;
 
 namespace UnityEditor
@@ -69,13 +70,12 @@ namespace UnityEditor
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
-            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage.");
+            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
         }
 
         internal class ExternalProperties
         {
-            public static readonly GUIContent addUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
             public static readonly GUIContent codeOptimizationOnStartup = EditorGUIUtility.TrTextContent("Code Optimization On Startup");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
             public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
@@ -152,7 +152,6 @@ namespace UnityEditor
         private GICacheSettings m_GICacheSettings;
 
         private RefString m_ScriptEditorPath = new RefString("");
-        private bool m_ExternalEditorSupportsUnityProj;
         private RefString m_ImageAppPath = new RefString("");
         private int m_DiffToolIndex;
 
@@ -167,6 +166,7 @@ namespace UnityEditor
 
         private bool m_AllowAlphaNumericHierarchy = false;
         private bool m_EnableCodeCoverage = false;
+        private bool m_EnableCodeCoverageChangedInThisSession = false;
         private bool m_Create3DObjectsAtOrigin = false;
 
         private string[] m_ScriptApps;
@@ -361,8 +361,6 @@ namespace UnityEditor
                 SyncVS.Synchronizer.GenerateAll(generateAll);
             }
 
-            DoUnityProjCheckbox();
-
             if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
@@ -422,28 +420,6 @@ namespace UnityEditor
             ApplyChangesToPrefs();
         }
 
-        private void DoUnityProjCheckbox()
-        {
-            bool isConfigurable = false;
-            bool value = false;
-
-            ScriptEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
-
-            if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
-            {
-                isConfigurable = true;
-                value = m_ExternalEditorSupportsUnityProj;
-            }
-
-            using (new EditorGUI.DisabledScope(!isConfigurable))
-            {
-                value = EditorGUILayout.Toggle(ExternalProperties.addUnityProjeToSln, value);
-            }
-
-            if (isConfigurable)
-                m_ExternalEditorSupportsUnityProj = value;
-        }
-
         #pragma warning disable 618
         private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
         {
@@ -458,7 +434,7 @@ namespace UnityEditor
 
         private void EnableGeneral()
         {
-            var fontNames = new List<string>(EditorResources.GetSupportedFonts());
+            var fontNames = new List<string>(EditorResources.supportedFontNames);
 
             fontNames.Sort();
 
@@ -588,7 +564,10 @@ namespace UnityEditor
 
             m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
             if (m_EnableCodeCoverage != Coverage.enabled)
+            {
                 EditorGUILayout.HelpBox((m_EnableCodeCoverage ? "Enabling " : "Disabling ") + "Code Coverage will not take effect until Unity is restarted.", MessageType.Warning);
+                m_EnableCodeCoverageChangedInThisSession = true;
+            }
 
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
 
@@ -900,7 +879,6 @@ namespace UnityEditor
         private void WritePreferences()
         {
             CodeEditor.SetExternalScriptEditor(m_ScriptEditorPath);
-            EditorPrefs.SetBool("kExternalEditorSupportsUnityProj", m_ExternalEditorSupportsUnityProj);
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
             EditorPrefs.SetString("kDiffsDefaultApp", m_DiffTools.Length == 0 ? "" : m_DiffTools[m_DiffToolIndex]);
@@ -943,6 +921,13 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
             EditorPrefs.SetBool("CodeCoverageEnabled", m_EnableCodeCoverage);
+
+            if (m_EnableCodeCoverageChangedInThisSession)
+            {
+                EditorPrefs.SetBool("CodeCoverageEnabledMessageShown", false);
+                m_EnableCodeCoverageChangedInThisSession = false;
+            }
+
             EditorPrefs.SetBool("Create3DObject.PlaceAtWorldOrigin", m_Create3DObjectsAtOrigin);
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
@@ -969,13 +954,12 @@ namespace UnityEditor
         {
             m_ScriptEditorPath.str = ScriptEditorUtility.GetExternalScriptEditor();
 
-            m_ExternalEditorSupportsUnityProj = EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false);
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
 
             m_ScriptApps = BuildAppPathList(m_ScriptEditorPath, kRecentScriptAppsKey, CodeEditor.SystemDefaultPath);
             m_ScriptAppsEditions = new string[m_ScriptApps.Length];
 
-            if (Application.platform == RuntimePlatform.WindowsEditor)
+            if (Application.platform == RuntimePlatform.WindowsEditor && UnityVSSupport.IsUnityVSEnabled())
             {
                 foreach (var vsPaths in SyncVS.InstalledVisualStudios.Values)
                     foreach (var vsPath in vsPaths)
@@ -994,11 +978,6 @@ namespace UnityEditor
             }
 
             var foundScriptEditorPaths = CodeEditor.Editor.GetFoundScriptEditorPaths();
-            if (Application.platform == RuntimePlatform.OSXEditor)
-            {
-                CodeEditor.AddIfPathExists("Visual Studio", "/Applications/Visual Studio.app", foundScriptEditorPaths);
-                CodeEditor.AddIfPathExists("Visual Studio (Preview)", "/Applications/Visual Studio (Preview).app", foundScriptEditorPaths);
-            }
 
             foreach (var scriptEditorPath in foundScriptEditorPaths.Keys)
             {

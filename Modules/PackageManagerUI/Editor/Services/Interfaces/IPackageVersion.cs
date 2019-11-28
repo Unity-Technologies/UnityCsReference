@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI
 
         string uniqueId { get; }
 
-        IEnumerable<Error> errors { get; }
+        IEnumerable<UIError> errors { get; }
 
         IEnumerable<Sample> samples { get; }
 

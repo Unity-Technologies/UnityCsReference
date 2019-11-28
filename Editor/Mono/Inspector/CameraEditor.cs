@@ -7,13 +7,11 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental;
 using UnityEngine.XR;
 using UnityEngine.Experimental.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
-using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -509,6 +507,8 @@ namespace UnityEditor
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
         }
 
+        Dictionary<Camera, OverlayWindow> m_OverlayWindows = new Dictionary<Camera, OverlayWindow>();
+
         public void OnEnable()
         {
             settings.OnEnable();
@@ -524,6 +524,15 @@ namespace UnityEditor
 
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
             SubsystemManager.reloadSubsytemsCompleted += OnReloadSubsystemsComplete;
+
+            SceneView.duringSceneGui += DuringSceneGUI;
+
+            foreach (var camera in targets)
+            {
+                m_OverlayWindows[(Camera)camera] = new OverlayWindow(new GUIContent(camera.name), OnOverlayGUI,
+                    (int)SceneViewOverlay.Ordering.Camera, camera,
+                    SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            }
         }
 
         internal void OnDisable()
@@ -531,6 +540,7 @@ namespace UnityEditor
             m_ShowBGColorOptions.valueChanged.RemoveListener(Repaint);
             m_ShowOrthoOptions.valueChanged.RemoveListener(Repaint);
             m_ShowTargetEyeOption.valueChanged.RemoveListener(Repaint);
+            SceneView.duringSceneGui -= DuringSceneGUI;
         }
 
         public void OnDestroy()
@@ -760,6 +770,17 @@ namespace UnityEditor
 
             // Get and reserve rect
             Rect cameraRect = GUILayoutUtility.GetRect(previewSize.x, previewSize.y);
+            cameraRect.width = Mathf.Floor(cameraRect.width);
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                Graphics.DrawTexture(cameraRect, Texture2D.whiteTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.black);
+            }
+
+            var properWidth = cameraRect.height * aspect;
+            cameraRect.x += (cameraRect.width - properWidth) * 0.5f;
+            cameraRect.width = properWidth;
+
 
             if (Event.current.type == EventType.Repaint)
             {
@@ -847,6 +868,7 @@ namespace UnityEditor
         }
 
         private static Vector2 s_PreviousMainPlayModeViewTargetSize;
+
         public virtual void OnSceneGUI()
         {
             if (!target)
@@ -863,9 +885,20 @@ namespace UnityEditor
                 Repaint();
                 s_PreviousMainPlayModeViewTargetSize = currentMainPlayModeViewTargetSize;
             }
-            SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 
             CameraEditorUtils.HandleFrustum(c, referenceTargetIndex);
+        }
+
+        void DuringSceneGUI(SceneView sceneView)
+        {
+            if (!target)
+                return;
+            var c = (Camera)target;
+
+            if (!CameraEditorUtils.IsViewportRectValidToRender(c.rect))
+                return;
+
+            SceneViewOverlay.ShowWindow(m_OverlayWindows[c]);
         }
     }
 }

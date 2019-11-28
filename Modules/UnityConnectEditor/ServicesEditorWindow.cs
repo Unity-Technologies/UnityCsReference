@@ -7,6 +7,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
+using UnityEditor.PackageManager.UI;
+
+using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.Connect
 {
@@ -18,17 +23,19 @@ namespace UnityEditor.Connect
 
         const string k_WindowTitle = "Services";
 
-        const string k_ServiceNameProperty = "serviceName";
-
         const string k_ScrollContainerClassName = "scroll-container";
         const string k_ServiceTitleClassName = "service-title";
         const string k_ServiceDescriptionClassName = "service-description";
         const string k_ServiceIconClassName = "service-icon";
+        const string k_ServicePackageInstallClassName = "service-package-install";
+        const string k_ServicePackageInstallContainerClassName = "service-package-install-container";
+        const string k_EntryClassName = "entry";
+        const string k_UninstalledEntryClassName = "uninstalled-entry";
 
         const string k_ServiceStatusClassName = "service-status";
         const string k_ServiceStatusCheckedClassName = "checked";
 
-        const string k_ProjectSettingsLinkName = "ProjectSettingsLink";
+        const string k_ProjectSettingsBtnName = "ProjectSettingsBtn";
         const string k_PrivacyPolicyLinkName = "PrivacyPolicyLink";
         const string k_DashboardLinkName = "DashboardLink";
         const string k_FooterName = "Footer";
@@ -36,11 +43,15 @@ namespace UnityEditor.Connect
         const string k_ProjectNotBoundMessage = "Project is not bound. Either create a new project Id or bind your project to an existing project Id for the dashboard link to become available.";
 
         Dictionary<string, Label> m_StatusLabelByServiceName = new Dictionary<string, Label>();
+        Dictionary<string, Clickable> m_ClickableByServiceName = new Dictionary<string, Clickable>();
+        // These are necessary to list project packages...
+        ListRequest m_ListRequestOfPackage;
+        SortedList<string, SingleService> m_SortedServices;
+        PackageCollection m_PackageCollection;
 
         static ServicesEditorWindow s_Instance;
 
         public static ServicesEditorWindow instance => s_Instance;
-
         public UIElementsNotificationSubscriber notificationSubscriber { get; private set; }
 
         private struct CloseServiceWindowState
@@ -84,7 +95,6 @@ namespace UnityEditor.Connect
             rootVisualElement.Clear();
 
             var mainTemplate = EditorGUIUtility.Load(k_ServicesWindowUxmlPath) as VisualTreeAsset;
-            var serviceTemplate = EditorGUIUtility.Load(k_ServiceTemplateUxmlPath) as VisualTreeAsset;
             rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
             rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
 
@@ -101,22 +111,18 @@ namespace UnityEditor.Connect
                 Notification.Topic.PurchasingService
             );
 
-            var scrollContainer = rootVisualElement.Q(className: k_ScrollContainerClassName);
-
-            var settingsClickable = new Clickable(() =>
+            rootVisualElement.Q<Button>(k_ProjectSettingsBtnName).clicked += () =>
             {
                 SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);
-            });
-            rootVisualElement.Q(k_ProjectSettingsLinkName).AddManipulator(settingsClickable);
+            };
 
             var dashboardClickable = new Clickable(() =>
             {
                 if (UnityConnect.instance.projectInfo.projectBound)
                 {
-                    Application.OpenURL(
-                        string.Format(ServicesConfiguration.instance.GetCurrentProjectDashboardUrl(),
-                            UnityConnect.instance.projectInfo.organizationId,
-                            UnityConnect.instance.projectInfo.projectGUID));
+                    var dashboardUrl = ServicesConfiguration.instance.GetCurrentProjectDashboardUrl();
+                    EditorAnalytics.SendOpenDashboardForService(new ServicesProjectSettings.OpenDashboardForService() { serviceName = k_WindowTitle, url = dashboardUrl });
+                    Application.OpenURL(dashboardUrl);
                 }
                 else
                 {
@@ -126,17 +132,55 @@ namespace UnityEditor.Connect
             });
             rootVisualElement.Q(k_DashboardLinkName).AddManipulator(dashboardClickable);
 
-            var sortedServices = new SortedList<string, SingleService>();
+            m_SortedServices = new SortedList<string, SingleService>();
+            bool needProjectListOfPackage = false;
             foreach (var service in ServicesRepository.GetServices())
             {
-                sortedServices.Add(service.title, service);
+                m_SortedServices.Add(service.title, service);
+                if (service.isPackage && service.packageId != null)
+                {
+                    needProjectListOfPackage = true;
+                }
             }
+            // Only launch the listing if a service really needs the packages list...
+            m_PackageCollection = null;
+            if (needProjectListOfPackage)
+            {
+                m_ListRequestOfPackage = Client.List();
+                EditorApplication.update += ListingCurrentPackageProgress;
+            }
+            else
+            {
+                FinalizeServiceSetup();
+            }
+        }
+
+        void ListingCurrentPackageProgress()
+        {
+            if (m_ListRequestOfPackage.IsCompleted)
+            {
+                EditorApplication.update -= ListingCurrentPackageProgress;
+                if (m_ListRequestOfPackage.Status == StatusCode.Success)
+                {
+                    m_PackageCollection = m_ListRequestOfPackage.Result;
+                }
+                FinalizeServiceSetup();
+            }
+        }
+
+        void FinalizeServiceSetup()
+        {
+            var scrollContainer = rootVisualElement.Q(className: k_ScrollContainerClassName);
+            var serviceTemplate = EditorGUIUtility.Load(k_ServiceTemplateUxmlPath) as VisualTreeAsset;
+
             var footer = scrollContainer.Q(k_FooterName);
             scrollContainer.Remove(footer);
-            foreach (var singleCloudService in sortedServices.Values)
+
+            foreach (var singleCloudService in m_SortedServices.Values)
             {
                 SetupService(scrollContainer, serviceTemplate, singleCloudService);
             }
+
             scrollContainer.Add(footer);
 
             var privacyClickable = new Clickable(() =>
@@ -162,10 +206,72 @@ namespace UnityEditor.Connect
             {
                 SettingsService.OpenProjectSettings(singleService.projectSettingsPath);
             };
-            var clickable = new Clickable(openServiceSettingsLambda);
-            serviceRoot.AddManipulator(clickable);
+            m_ClickableByServiceName.Add(singleService.name, new Clickable(openServiceSettingsLambda));
 
             SetupServiceStatusLabel(serviceRoot, singleService);
+            SetupPackageInstall(serviceRoot, singleService);
+        }
+
+        void SetupPackageInstall(VisualElement serviceRoot, SingleService singleService)
+        {
+            serviceRoot.AddManipulator(m_ClickableByServiceName[singleService.name]);
+
+            var installButton = serviceRoot.Q<Button>(className: k_ServicePackageInstallClassName);
+            var installButtonContainer = serviceRoot.Q(className: k_ServicePackageInstallContainerClassName);
+            installButtonContainer.style.display = DisplayStyle.None;
+
+            if (singleService.isPackage && (singleService.packageId != null) && (m_PackageCollection != null))
+            {
+                SetServiceToUninstalledState(installButton, serviceRoot, singleService);
+                bool packageFound = false;
+                foreach (var info in m_PackageCollection)
+                {
+                    if (info.packageId.Contains(singleService.packageId))
+                    {
+                        packageFound = true;
+                        SetServiceToInstalledState(installButton, serviceRoot, singleService);
+                        break;
+                    }
+                }
+
+                if (!packageFound)
+                {
+                    SetServiceToUninstalledState(installButton, serviceRoot, singleService);
+
+                    installButtonContainer.style.display = DisplayStyle.Flex;
+                    installButton.clicked += () =>
+                    {
+                        var packageId = singleService.packageId;
+                        EditorAnalytics.SendOpenPackManFromServiceSettings(new ServicesProjectSettings.OpenPackageManager() { packageName = packageId });
+                        PackageManagerWindow.OpenPackageManager(packageId);
+                    };
+                }
+            }
+        }
+
+        void SetServiceToUninstalledState(Button installButton, VisualElement serviceRoot, SingleService singleService)
+        {
+            installButton.style.display = DisplayStyle.Flex;
+            serviceRoot.RemoveManipulator(m_ClickableByServiceName[singleService.name]);
+            serviceRoot[0].RemoveFromClassList(k_EntryClassName);
+            serviceRoot[0].AddToClassList(k_UninstalledEntryClassName);
+            if (singleService.displayToggle)
+            {
+                m_StatusLabelByServiceName[singleService.name].style.display = DisplayStyle.None;
+            }
+        }
+
+        void SetServiceToInstalledState(Button installButton, VisualElement serviceRoot, SingleService singleService)
+        {
+            installButton.style.display = DisplayStyle.None;
+            serviceRoot.AddManipulator(m_ClickableByServiceName[singleService.name]);
+            serviceRoot[0].RemoveFromClassList(k_UninstalledEntryClassName);
+            serviceRoot[0].AddToClassList(k_EntryClassName);
+            if (singleService.displayToggle)
+            {
+                SetServiceStatusValue(singleService.name, singleService.IsServiceEnabled());
+                m_StatusLabelByServiceName[singleService.name].style.display = DisplayStyle.Flex;
+            }
         }
 
         void SetupServiceStatusLabel(VisualElement serviceRoot, SingleService singleService)

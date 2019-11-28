@@ -44,6 +44,7 @@ namespace UnityEditor
             public static Texture2D errorIcon = EditorGUIUtility.LoadIcon("console.erroricon.sml");
             public static Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon.sml");
 
+            public static GUIContent togglePreprocess = EditorGUIUtility.TrTextContent("Preprocess only", "Show preprocessor output instead of compiled shader code");
             public static GUIContent showSurface = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a surface shader");
             public static GUIContent showFF = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a fixed function shader");
             public static GUIContent showCurrent = EditorGUIUtility.TrTextContent("Compile and show code \u007C \u25BE");  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
@@ -57,6 +58,10 @@ namespace UnityEditor
             public static readonly GUIContent arrayValuePopupButton = EditorGUIUtility.TrTextContent("...");
         }
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
+
+        private bool m_PreprocessOnly = false;
+        private bool m_PreprocessOnlyAvailable = true;
+        private bool m_PreprocessOnlyAvailableInitialized = false;
 
         Vector2 m_ScrollPosition = Vector2.zero;
         private Material m_SrpCompatibilityCheckMaterial = null;
@@ -327,9 +332,32 @@ namespace UnityEditor
             ShaderErrorListUI(s, ShaderUtil.GetShaderMessages(s), ref m_ScrollPosition);
         }
 
+        private void UpdatePreprocessOnlyAvailability()
+        {
+            m_PreprocessOnlyAvailableInitialized = true;
+
+            m_PreprocessOnlyAvailable = false;
+
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "-force-new-shader-pp")
+                {
+                    m_PreprocessOnlyAvailable = true;
+                    break;
+                }
+            }
+        }
+
         // Compiled shader code button+dropdown
         private void ShowCompiledCodeButton(Shader s)
         {
+            if (!m_PreprocessOnlyAvailableInitialized)
+                UpdatePreprocessOnlyAvailability();
+
+            EditorGUILayout.BeginVertical();
+            using (new EditorGUI.DisabledScope(!m_PreprocessOnlyAvailable))
+                m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);
 
@@ -348,7 +376,7 @@ namespace UnityEditor
                 }
                 if (GUI.Button(modeRect, modeContent, EditorStyles.miniButton))
                 {
-                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0);
+                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, m_PreprocessOnly);
                     GUIUtility.ExitGUI();
                 }
             }
@@ -361,6 +389,7 @@ namespace UnityEditor
             }
 
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
         }
 
         // "show surface shader" button

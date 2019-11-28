@@ -31,13 +31,13 @@ namespace UnityEditor.PackageManager.UI
                 m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
             }
 
-            public void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<Error> errorCallbackAction)
+            public void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
             {
                 var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_PurchasesUri}{query ?? string.Empty}");
                 HandleHttpRequest(httpRequest, doneCallbackAction, errorCallbackAction);
             }
 
-            public void GetTaggings(Action<Dictionary<string, object>> doneCallbackAction, Action<Error> errorCallbackAction)
+            public void GetTaggings(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
             {
                 var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_TaggingsUri}");
                 HandleHttpRequest(httpRequest, doneCallbackAction, errorCallbackAction);
@@ -109,7 +109,7 @@ namespace UnityEditor.PackageManager.UI
                     });
             }
 
-            private void HandleHttpRequest(IAsyncHTTPClient httpRequest, Action<Dictionary<string, object>> doneCallbackAction, Action<Error> errorCallbackAction)
+            private void HandleHttpRequest(IAsyncHTTPClient httpRequest, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
             {
                 AssetStoreOAuth.instance.FetchUserInfo(
                     userInfo =>
@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI
                         {
                             var parsedResult = AssetStoreUtils.ParseResponseAsDictionary(httpRequest, errorMessage =>
                             {
-                                errorCallbackAction?.Invoke(new Error(NativeErrorCode.Unknown, errorMessage));
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, errorMessage));
                             });
                             if (parsedResult != null)
                                 doneCallbackAction?.Invoke(parsedResult);

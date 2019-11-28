@@ -15,16 +15,11 @@ namespace UnityEditor.Connect
     {
         static readonly ServicesConfiguration k_Instance;
 
-        string m_ApiUrl;
-        string m_OrganizationApiUrl;
-        string m_UsersApiUrl;
         string m_CurrentUserApiUrl;
         string m_ProjectsApiUrl;
-        string m_ProjectApiUrl;
         string m_ProjectCoppaApiUrl;
         string m_ProjectUsersApiUrl;
         string m_ProjectDashboardUrl;
-        string m_MultiplayerDashboardUrl;
         string m_CloudUsageDashboardUrl;
         string m_CloudDiagCrashesDashboardUrl;
         string m_UnityTeamUrl;
@@ -59,16 +54,15 @@ namespace UnityEditor.Connect
         ServicesConfiguration()
         {
             //todo load configurations here: from file most likely... scriptable object within asset?
-            m_ApiUrl = "https://core.cloud.unity3d.com/api";
-            m_OrganizationApiUrl = m_ApiUrl + "/orgs/{0}";
-            m_UsersApiUrl = m_ApiUrl + "/users";
-            m_CurrentUserApiUrl = m_UsersApiUrl + "/me";
-            m_ProjectsApiUrl = m_OrganizationApiUrl + "/projects";
-            m_ProjectApiUrl = m_ProjectsApiUrl + "/{1}";
-            m_ProjectCoppaApiUrl = m_ProjectApiUrl + "/coppa";
-            m_ProjectUsersApiUrl = m_ProjectApiUrl + "/users";
+            var apiUrl = "https://core.cloud.unity3d.com/api";
+            var organizationApiUrl = apiUrl + "/orgs/{0}";
+            var usersApiUrl = apiUrl + "/users";
+            m_CurrentUserApiUrl = usersApiUrl + "/me";
+            m_ProjectsApiUrl = organizationApiUrl + "/projects";
+            var projectApiUrl = m_ProjectsApiUrl + "/{1}";
+            m_ProjectCoppaApiUrl = projectApiUrl + "/coppa";
+            m_ProjectUsersApiUrl = projectApiUrl + "/users";
             m_ProjectDashboardUrl = "https://core.cloud.unity3d.com/orgs/{0}/projects/{1}";
-            m_MultiplayerDashboardUrl = "https://core.cloud.unity3d.com/multiplayer/orgs/{0}/projects/{1}";
             cloudHubServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/hub";
             m_CloudUsageDashboardUrl = "/usage";
             m_UnityTeamUrl = L10n.Tr("https://unity3d.com/teams"); // Should be https://unity3d.com/fr/teams in French !
@@ -120,58 +114,12 @@ namespace UnityEditor.Connect
         public string cloudHubServiceUrl { get; }
 
         /// <summary>
-        /// Base path to Unity services API
-        /// </summary>
-        /// <returns></returns>
-        public string GetApiUrl()
-        {
-            return m_ApiUrl;
-        }
-
-        /// <summary>
-        /// Gets the users api url
-        /// </summary>
-        /// <returns>A url to query the users data</returns>
-        public string GetUsersApiUrl()
-        {
-            return m_UsersApiUrl;
-        }
-
-        /// <summary>
         /// Gets the current user api url
         /// </summary>
         /// <returns>A url to query the current user data</returns>
         public string GetCurrentUserApiUrl()
         {
             return m_CurrentUserApiUrl;
-        }
-
-        /// <summary>
-        /// Gets the current native code organization url
-        /// </summary>
-        /// <returns>A url to reach the organization info</returns>
-        public string GetCurrentOrganizationApiUrl()
-        {
-            return GetOrganizationApiUrl(UnityConnect.instance.projectInfo.organizationId);
-        }
-
-        /// <summary>
-        /// Gets a specified organization url
-        /// </summary>
-        /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <returns>A url to reach the organization info</returns>
-        public string GetOrganizationApiUrl(string organizationId)
-        {
-            return string.Format(m_OrganizationApiUrl, organizationId);
-        }
-
-        /// <summary>
-        /// Get the endpoint to retrieve the projects of the current organization, create a new one, etc.
-        /// </summary>
-        /// <returns>A url endpoint to request projects</returns>
-        public string GetCurrentOrganizationProjectsApiUrl()
-        {
-            return GetOrganizationProjectsApiUrl(UnityConnect.instance.projectInfo.organizationId);
         }
 
         /// <summary>
@@ -185,39 +133,19 @@ namespace UnityEditor.Connect
         }
 
         /// <summary>
-        /// Gets the current native code project url
-        /// </summary>
-        /// <returns>A url to reach the project info</returns>
-        public string GetCurrentProjectApiUrl()
-        {
-            return GetProjectApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectGUID);
-        }
-
-        /// <summary>
-        /// Gets a specified project url
-        /// </summary>
-        /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <param name="projectId">A project's GUID</param>
-        /// <returns>A url to reach the project info</returns>
-        public string GetProjectApiUrl(string organizationId, string projectId)
-        {
-            return string.Format(m_ProjectApiUrl, organizationId, projectId);
-        }
-
-        /// <summary>
         /// Gets the current native code project coppa url
         /// </summary>
         /// <returns>A url to reach the project coppa info</returns>
         public string GetCurrentProjectCoppaApiUrl()
         {
-            return GetProjectCoppaApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectGUID);
+            return GetProjectCoppaApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         }
 
         /// <summary>
         /// Gets a specified project coppa url
         /// </summary>
         /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <param name="projectId">A project's GUID</param>
+        /// <param name="projectId">A project's ID</param>
         /// <returns>A url to reach the project coppa info</returns>
         public string GetProjectCoppaApiUrl(string organizationId, string projectId)
         {
@@ -230,14 +158,14 @@ namespace UnityEditor.Connect
         /// <returns>A url to reach the project users info</returns>
         public string GetCurrentProjectUsersApiUrl()
         {
-            return GetProjectUsersApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectGUID);
+            return GetProjectUsersApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         }
 
         /// <summary>
         /// Gets a specified project users api url
         /// </summary>
         /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <param name="projectId">A project's GUID</param>
+        /// <param name="projectId">A project's ID</param>
         /// <returns>A url to reach the project users info</returns>
         public string GetProjectUsersApiUrl(string organizationId, string projectId)
         {
@@ -250,38 +178,18 @@ namespace UnityEditor.Connect
         /// <returns></returns>
         public string GetCurrentProjectDashboardUrl()
         {
-            return GetProjectDashboardUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectGUID);
+            return GetProjectDashboardUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         }
 
         /// <summary>
         /// Gets a specified project dashboard url
         /// </summary>
         /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <param name="projectId">A project's GUID</param>
+        /// <param name="projectId">A project's ID</param>
         /// <returns></returns>
         public string GetProjectDashboardUrl(string organizationId, string projectId)
         {
             return string.Format(m_ProjectDashboardUrl, organizationId, projectId);
-        }
-
-        /// <summary>
-        /// Gets the current project multiplayer dashboard url
-        /// </summary>
-        /// <returns></returns>
-        public string GetCurrentMultiplayerDashboardUrl()
-        {
-            return GetMultiplayerDashboardUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectGUID);
-        }
-
-        /// <summary>
-        /// Gets a specified project dashboard url
-        /// </summary>
-        /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <param name="projectId">A project's GUID</param>
-        /// <returns></returns>
-        public string GetMultiplayerDashboardUrl(string organizationId, string projectId)
-        {
-            return string.Format(m_MultiplayerDashboardUrl, organizationId, projectId);
         }
 
         // Return the specific Cloud Usage URL for the Collab service
@@ -309,47 +217,47 @@ namespace UnityEditor.Connect
 
         public string GetCloudBuildCurrentProjectUrl()
         {
-            return GetCloudBuildProjectsUrl(UnityConnect.instance.projectInfo.organizationName, UnityConnect.instance.projectInfo.projectName);
+            return GetCloudBuildProjectsUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         }
 
-        public string GetCloudBuildProjectsUrl(string organizationName, string projectName)
+        public string GetCloudBuildProjectsUrl(string organizationId, string projectId)
         {
-            return string.Format(m_CloudBuildProjectUrl, organizationName, projectName);
+            return string.Format(m_CloudBuildProjectUrl, organizationId, projectId);
         }
 
         public string GetCurrentCloudBuildProjectDeploymentUrl()
         {
-            return GetCloudBuildProjectDeploymentUrl(UnityConnect.instance.projectInfo.organizationName, UnityConnect.instance.projectInfo.projectName);
+            return GetCloudBuildProjectDeploymentUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         }
 
-        public string GetCloudBuildProjectDeploymentUrl(string organizationName, string projectName)
+        public string GetCloudBuildProjectDeploymentUrl(string organizationId, string projectId)
         {
-            return string.Format(m_CloudBuildDeploymentUrl, organizationName, projectName);
+            return string.Format(m_CloudBuildDeploymentUrl, organizationId, projectId);
         }
 
         public string GetCurrentCloudBuildProjectTargetUrl()
         {
-            return GetCloudBuildProjectTargetUrl(UnityConnect.instance.projectInfo.organizationName, UnityConnect.instance.projectInfo.projectName);
+            return GetCloudBuildProjectTargetUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         }
 
-        public string GetCloudBuildProjectTargetUrl(string organizationName, string projectName)
+        public string GetCloudBuildProjectTargetUrl(string organizationId, string projectId)
         {
-            return string.Format(m_CloudBuildTargetUrl, organizationName, projectName);
+            return string.Format(m_CloudBuildTargetUrl, organizationId, projectId);
         }
 
         public string GetCurrentCloudBuildProjectHistoryUrl()
         {
-            return GetCloudBuildProjectHistoryUrl(UnityConnect.instance.projectInfo.organizationName, UnityConnect.instance.projectInfo.projectName);
+            return GetCloudBuildProjectHistoryUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         }
 
-        public string GetCloudBuildProjectHistoryUrl(string organizationName, string projectName)
+        public string GetCloudBuildProjectHistoryUrl(string organizationId, string projectId)
         {
-            return string.Format(m_CloudBuildProjectUrl, organizationName, projectName);
+            return string.Format(m_CloudBuildProjectUrl, organizationId, projectId);
         }
 
         public string GetCloudBuildApiCurrentProjectUrl()
         {
-            return GetCloudBuildApiProjectUrl(UnityConnect.instance.projectInfo.projectGUID);
+            return GetCloudBuildApiProjectUrl(UnityConnect.instance.projectInfo.projectId);
         }
 
         public string GetCloudBuildApiProjectUrl(string projectId)
@@ -382,8 +290,8 @@ namespace UnityEditor.Connect
         public string adsLearnMoreUrl { get; private set; }
         public string adsDashboardUrl { get; private set; }
         public string adsOperateApiUrl { get; private set; }
-        public string cloudDiagCrashesDashboardUrl => string.Format(m_CloudDiagCrashesDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectGUID);
-        public string collabDashboardUrl => string.Format(m_CollabDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectGUID);
+        public string cloudDiagCrashesDashboardUrl => string.Format(m_CloudDiagCrashesDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
+        public string collabDashboardUrl => string.Format(m_CollabDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
         public string purchasingDashboardUrl => string.Format(m_PurchasingDashboardUrl, UnityConnect.instance.projectInfo.projectGUID);
         public string analyticsDashboardUrl => string.Format(m_AnalyticsDashboardUrl, UnityConnect.instance.projectInfo.projectGUID);
     }

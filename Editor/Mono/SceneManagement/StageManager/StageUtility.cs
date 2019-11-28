@@ -133,11 +133,6 @@ namespace UnityEditor.SceneManagement
             return IsPrefabInstanceHiddenForInContextEditingInternal(gameObject);
         }
 
-        internal static bool IsGameObjectConsideredHiddenInSceneView(GameObject gameObject)
-        {
-            return IsGameObjectConsideredHiddenInSceneViewInternal(gameObject);
-        }
-
         internal static void EnableHidingForInContextEditingInSceneView(bool enable)
         {
             EnableHidingForInContextEditingInSceneViewInternal(enable);

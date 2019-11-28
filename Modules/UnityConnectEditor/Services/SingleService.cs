@@ -20,9 +20,9 @@ namespace UnityEditor.Connect
         const string k_AfterEnableExceptionMessage = "Exception occurred during service {0} after enable event and was not handled. Message: {1}";
         const string k_AfterDisableExceptionMessage = "Exception occurred during service {0} after disable event and was not handled. Message: {1}";
         const string k_NoUnityProjectIdMessage = "The {0} service cannot be enabled if the project doesn't have a Unity project ID. " +
-            "Please create a new project ID or link to an existing project and then navigate to the {0} service project settings.";
-        const string k_NoCoppaComplianceMessage = "The {0} service cannot be enabled if the project doesn't have a specified COPPA compliance setting." +
-            "Please configure COPPA compliance and then navigate to the {0} service project settings.";
+            "Please go to the {0} service project settings and either create a new project ID or reuse an existing one.";
+        const string k_NoCoppaComplianceMessage = "The {0} service cannot be enabled if the project doesn't have a specified COPPA compliance setting. " +
+            "Please go to the {0} service project settings and configure COPPA compliance.";
 
         /// <summary>
         /// The name of the service, only used internally, not displayed
@@ -61,6 +61,9 @@ namespace UnityEditor.Connect
         /// </summary>
         public abstract Notification.Topic notificationTopic { get; }
 
+        public virtual bool isPackage { get; }
+        public abstract string packageId { get; }
+
         /// <summary>
         /// True if a project needs to be bound to a Unity project ID before the service can be enabled.
         /// (Should probably always be true)
@@ -73,8 +76,11 @@ namespace UnityEditor.Connect
         /// </summary>
         public virtual bool requiresCoppaCompliance => false;
 
-        // For package driven services, this is the package id related to it...
-        public abstract string packageId { get; }
+
+        public SingleService()
+        {
+            isPackage = false;
+        }
 
         public virtual bool IsServiceEnabled()
         {

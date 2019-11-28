@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal abstract class UpmBaseOperation : IOperation
     {
-        public abstract event Action<IOperation, Error> onOperationError;
+        public abstract event Action<IOperation, UIError> onOperationError;
         public abstract event Action<IOperation> onOperationSuccess;
         public abstract event Action<IOperation> onOperationFinalized;
         public abstract event Action<IOperation> onOperationProgress;
@@ -40,9 +40,6 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual string specialUniqueId { get { return string.Empty; } }
 
-        // a timestamp is added to keep track of how `fresh` the result is
-        // in the case of an online operation, it is the time when the operation starts
-        // in the case of an offline operation, it is set to the timestamp of the last online operation
         [SerializeField]
         protected long m_Timestamp = 0;
         public long timestamp { get { return m_Timestamp; } }
@@ -61,14 +58,14 @@ namespace UnityEditor.PackageManager.UI
 
         public float progressPercentage => 0;
 
-        public Error error { get; protected set; }        // Keep last error
+        public UIError error { get; protected set; }        // Keep last error
 
         public abstract RefreshOptions refreshOptions { get; }
     }
 
     internal abstract class UpmBaseOperation<T> : UpmBaseOperation where T : Request
     {
-        public override event Action<IOperation, Error> onOperationError = delegate {};
+        public override event Action<IOperation, UIError> onOperationError = delegate {};
         public override event Action<IOperation> onOperationFinalized = delegate {};
         public override event Action<IOperation> onOperationSuccess = delegate {};
         public override event Action<IOperation> onOperationProgress = delegate {};
@@ -111,14 +108,14 @@ namespace UnityEditor.PackageManager.UI
                 if (m_Request.Status == StatusCode.Success)
                     OnSuccess();
                 else if (m_Request.Status >= StatusCode.Failure)
-                    OnError(m_Request.Error);
+                    OnError((UIError)m_Request.Error);
                 else
                     Debug.LogError("Unsupported progress state " + m_Request.Status);
                 OnFinalize();
             }
         }
 
-        private void OnError(Error error)
+        private void OnError(UIError error)
         {
             try
             {

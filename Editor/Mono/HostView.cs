@@ -340,29 +340,6 @@ namespace UnityEditor
             return null;
         }
 
-        static public void EndOffsetArea()
-        {
-            if (Event.current.type == EventType.Used)
-                return;
-            GUILayoutUtility.EndLayoutGroup();
-            GUI.EndGroup();
-        }
-
-        static public void BeginOffsetArea(Rect screenRect, GUIContent content, GUIStyle style)
-        {
-            GUILayoutGroup g = EditorGUILayoutUtilityInternal.BeginLayoutArea(style, typeof(GUILayoutGroup));
-            switch (Event.current.type)
-            {
-                case EventType.Layout:
-                    g.resetCoords = false;
-                    g.minWidth = g.maxWidth = screenRect.width;
-                    g.minHeight = g.maxHeight = screenRect.height;
-                    g.rect = Rect.MinMaxRect(0, 0, g.rect.xMax, g.rect.yMax);
-                    break;
-            }
-            GUI.BeginGroup(screenRect, content, style);
-        }
-
         static class HostViewStyles
         {
             public static readonly GUIStyle overlay = "dockareaoverlay";

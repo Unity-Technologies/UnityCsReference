@@ -50,7 +50,7 @@ namespace UnityEditor.PackageManager.UI
         IEnumerable<IPackage> assetStorePackages { get; }
         IEnumerable<IPackage> upmPackages { get; }
 
-        void AddPackageError(IPackage package, Error error);
+        void AddPackageError(IPackage package, UIError error);
         void ClearPackageErrors(IPackage package);
 
         IPackage GetPackageByDisplayName(string displayName);

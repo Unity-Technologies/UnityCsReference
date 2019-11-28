@@ -33,7 +33,6 @@ namespace UnityEditor.UIElements
                         if (!string.IsNullOrEmpty(tooltipEvent.tooltip) && !tooltipEvent.isDefaultPrevented)
                         {
                             Rect rect = tooltipEvent.rect;
-                            rect.position += view.screenPosition.position; //SetMouseTooltip expects Screen relative coordinates.
 
                             GUIStyle.SetMouseTooltip(tooltipEvent.tooltip, rect);
                         }

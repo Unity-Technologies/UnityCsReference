@@ -131,6 +131,20 @@ namespace UnityEditor.StyleSheets
             }
         }
 
+        internal static GUIStyle FromUSS(GUIStyle baseStyle, string ussStyleRuleName, string ussInPlaceStyleOverride = null, GUISkin srcSkin = null)
+        {
+            if (GUISkin.current == null)
+                return null;
+
+            // Check if the style already exists in skin
+            var blockName = RuleNameToBlockName(ussStyleRuleName);
+            var styleName = ConverterUtils.ToStyleName(ussStyleRuleName);
+            var style = new GUIStyle(baseStyle) { name = styleName };
+            PopulateFromUSS(EditorResources.styleCatalog, style, blockName, ussInPlaceStyleOverride);
+            ConvertToExtendedStyle(style);
+            return style;
+        }
+
         internal static GUIStyle FromUSS(string ussStyleRuleName, string ussInPlaceStyleOverride = null, GUISkin srcSkin = null)
         {
             if (GUISkin.current == null)
@@ -205,6 +219,29 @@ namespace UnityEditor.StyleSheets
             {
                 return defaultValue;
             }
+        }
+
+        internal static void ResetDeprecatedBackgroundImage(GUIStyleState state)
+        {
+            state.background = null;
+            if (state.scaledBackgrounds != null && state.scaledBackgrounds.Length >= 1)
+                state.scaledBackgrounds[0] = null;
+        }
+
+        internal static GUIStyle ConvertToExtendedStyle(GUIStyle style)
+        {
+            // The new style extension do not support state backgrounds anymore.
+            // Any background images needs to be defined in the uss data files.
+            ResetDeprecatedBackgroundImage(style.normal);
+            ResetDeprecatedBackgroundImage(style.hover);
+            ResetDeprecatedBackgroundImage(style.active);
+            ResetDeprecatedBackgroundImage(style.focused);
+            ResetDeprecatedBackgroundImage(style.onNormal);
+            ResetDeprecatedBackgroundImage(style.onHover);
+            ResetDeprecatedBackgroundImage(style.onActive);
+            ResetDeprecatedBackgroundImage(style.onFocused);
+
+            return style;
         }
     }
 }

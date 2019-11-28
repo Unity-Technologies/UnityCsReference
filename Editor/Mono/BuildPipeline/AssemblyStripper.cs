@@ -585,7 +585,7 @@ namespace UnityEditorInternal
         class MonoBackendIl2CppPlatformProvider : BaseIl2CppPlatformProvider
         {
             public MonoBackendIl2CppPlatformProvider(BuildTarget target, string libraryFolder, BuildReport buildReport)
-                : base(target, libraryFolder, buildReport)
+                : base(target, libraryFolder, buildReport, null)
             {
             }
 

@@ -182,6 +182,7 @@ namespace UnityEditor
         {
             public static Texture2D prefabOverlayAddedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayAdded Icon");
             public static Texture2D prefabOverlayRemovedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayRemoved Icon");
+            public static readonly GUIStyle linkButton = "FloatFieldLinkButton";
         }
 
         internal static void BeginHandleMixedValueContentColor()
@@ -3601,20 +3602,31 @@ namespace UnityEditor
                     allowSceneObjects = true;
                 }
             }
-            DoObjectField(position, position, id, null, objType, property, validator, allowSceneObjects, style);
+            DoObjectField(position, position, id, objType, property, validator, allowSceneObjects, style);
+        }
+
+        public static Object ObjectField(Rect position, Object obj, Type objType, Object targetBeingEdited)
+        {
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
+            return DoObjectField(IndentedRect(position), IndentedRect(position), id, obj, targetBeingEdited, objType, null, true);
         }
 
         public static Object ObjectField(Rect position, Object obj, Type objType, bool allowSceneObjects)
         {
             int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
-            return DoObjectField(IndentedRect(position), IndentedRect(position), id, obj, objType, null, null, allowSceneObjects);
+            return DoObjectField(IndentedRect(position), IndentedRect(position), id, obj, null, objType, null, allowSceneObjects);
         }
 
         [Obsolete("Check the docs for the usage of the new parameter 'allowSceneObjects'.")]
         public static Object ObjectField(Rect position, Object obj, Type objType)
         {
             int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
-            return DoObjectField(position, position, id, obj, objType, null, null, true);
+            return DoObjectField(position, position, id, obj, null, objType, null, true);
+        }
+
+        public static Object ObjectField(Rect position, string label, Object obj, Type objType, Object targetBeingEdited)
+        {
+            return ObjectField(position, EditorGUIUtility.TempContent(label), obj, objType, targetBeingEdited);
         }
 
         public static Object ObjectField(Rect position, string label, Object obj, Type objType, bool allowSceneObjects)
@@ -3628,11 +3640,8 @@ namespace UnityEditor
             return ObjectField(position, EditorGUIUtility.TempContent(label), obj, objType, true);
         }
 
-        // Make an object field. You can assign objects either by drag and drop objects or by selecting an object using the Object Picker.
-        public static Object ObjectField(Rect position, GUIContent label, Object obj, Type objType, bool allowSceneObjects)
+        static Rect GetObjectFieldThumbnailRect(Rect position, Type objType)
         {
-            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
-            position = PrefixLabel(position, id, label);
             if (EditorGUIUtility.HasObjectThumbnail(objType) && position.height > kSingleLineHeight)
             {
                 // Make object field with thumbnail quadratic and align to the right
@@ -3640,7 +3649,25 @@ namespace UnityEditor
                 position.height = size;
                 position.xMin = position.xMax - size;
             }
-            return DoObjectField(position, position, id, obj, objType, null, null, allowSceneObjects);
+            return position;
+        }
+
+        // Make an object field. You can assign objects either by drag and drop objects or by selecting an object using the Object Picker.
+        public static Object ObjectField(Rect position, GUIContent label, Object obj, Type objType, Object targetBeingEdited)
+        {
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
+            position = PrefixLabel(position, id, label);
+            position = GetObjectFieldThumbnailRect(position, objType);
+            return DoObjectField(position, position, id, obj, targetBeingEdited, objType, null, true);
+        }
+
+        // Make an object field. You can assign objects either by drag and drop objects or by selecting an object using the Object Picker.
+        public static Object ObjectField(Rect position, GUIContent label, Object obj, Type objType, bool allowSceneObjects)
+        {
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
+            position = PrefixLabel(position, id, label);
+            position = GetObjectFieldThumbnailRect(position, objType);
+            return DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects);
         }
 
         internal static void GetRectsForMiniThumbnailField(Rect position, out Rect thumbRect, out Rect labelRect)
@@ -3662,7 +3689,7 @@ namespace UnityEditor
             Rect thumbRect, labelRect;
             GetRectsForMiniThumbnailField(position, out thumbRect, out labelRect);
             HandlePrefixLabel(position, labelRect, label, id, EditorStyles.label);
-            return DoObjectField(thumbRect, thumbRect, id, obj, objType, null, null, false);
+            return DoObjectField(thumbRect, thumbRect, id, obj, null, objType, null, false);
         }
 
         [Obsolete("Check the docs for the usage of the new parameter 'allowSceneObjects'.")]
@@ -3840,6 +3867,42 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
             BeginChangeCheck();
             MultiFloatField(position, s_XYZLabels, s_Vector3Floats);
+            if (EndChangeCheck())
+            {
+                value.x = s_Vector3Floats[0];
+                value.y = s_Vector3Floats[1];
+                value.z = s_Vector3Floats[2];
+            }
+            return value;
+        }
+
+        internal static Vector3 LinkedVector3Field(Rect position, GUIContent label, Vector3 value, ref bool linked)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            var toggle = EditorStyles.toggle.CalcSize(GUIContent.none);
+            var toggleRect = position;
+            toggleRect.width = toggle.x;
+            BeginChangeCheck();
+            Styles.linkButton.alignment = TextAnchor.MiddleCenter;
+            linked = Toggle(toggleRect, linked, Styles.linkButton);
+            if (EndChangeCheck() && linked)
+                value = Vector3.one * value.x;
+            position.x += toggle.x + kDefaultSpacing;
+            position.width -= toggle.x + kDefaultSpacing;
+            position.height = kSingleLineHeight;
+            return LinkedVector3Field(position, value, linked);
+        }
+
+        // Make an X, Y & Z field for entering a [[Vector3]].
+        static Vector3 LinkedVector3Field(Rect position, Vector3 value, bool linked)
+        {
+            s_Vector3Floats[0] = value.x;
+            s_Vector3Floats[1] = value.y;
+            s_Vector3Floats[2] = value.z;
+            position.height = kSingleLineHeight;
+            BeginChangeCheck();
+            LockingMultiFloatFieldInternal(position, linked, s_XYZLabels, s_Vector3Floats);
             if (EndChangeCheck())
             {
                 value.x = s_Vector3Floats[0];
@@ -4284,6 +4347,33 @@ namespace UnityEditor
             }
             EditorGUIUtility.labelWidth = t;
             indentLevel = l;
+        }
+
+        static void LockingMultiFloatFieldInternal(Rect position, bool locked, GUIContent[] subLabels, float[] values, float prefixLabelWidth = -1)
+        {
+            int eCount = values.Length;
+            float w = (position.width - (eCount - 1) * EditorGUI.kSpacingSubLabel) / eCount;
+            Rect nr = new Rect(position) {width = w};
+            float t = EditorGUIUtility.labelWidth;
+            int l = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+            var guiEnabledState = GUI.enabled;
+            for (int i = 0; i < values.Length; i++)
+            {
+                EditorGUIUtility.labelWidth = prefixLabelWidth > 0 ? prefixLabelWidth : EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
+
+                if (locked && i > 0)
+                {
+                    GUI.enabled = false;
+                    values[i] = values[0];
+                }
+
+                values[i] = EditorGUI.FloatField(nr, subLabels[i], values[i]);
+                nr.x += w + EditorGUI.kSpacingSubLabel;
+            }
+            GUI.enabled = guiEnabledState;
+            EditorGUIUtility.labelWidth = t;
+            EditorGUI.indentLevel = l;
         }
 
         public static void MultiIntField(Rect position, GUIContent[] subLabels, int[] values)
@@ -8768,6 +8858,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return ObjectField(obj, objType, true, options);
         }
 
+        public static Object ObjectField(Object obj, Type objType, Object targetBeingEdited, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, options);
+            return EditorGUI.ObjectField(r, obj, objType, targetBeingEdited);
+        }
+
         public static Object ObjectField(Object obj, Type objType, bool allowSceneObjects, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, options);
@@ -8780,6 +8876,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return ObjectField(label, obj, objType, true, options);
         }
 
+        public static Object ObjectField(string label, Object obj, Type objType, Object targetBeingEdited, params GUILayoutOption[] options)
+        {
+            return ObjectField(EditorGUIUtility.TempContent(label), obj, objType, targetBeingEdited, options);
+        }
+
         public static Object ObjectField(string label, Object obj, Type objType, bool allowSceneObjects, params GUILayoutOption[] options)
         {
             return ObjectField(EditorGUIUtility.TempContent(label), obj, objType, allowSceneObjects, options);
@@ -8789,6 +8890,14 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static Object ObjectField(GUIContent label, Object obj, Type objType, params GUILayoutOption[] options)
         {
             return ObjectField(label, obj, objType, true, options);
+        }
+
+        // Make an object field. You can assign objects either by drag'n drop objects or by selecting an object using the Object Picker.
+        public static Object ObjectField(GUIContent label, Object obj, Type objType, Object targetBeingEdited, params GUILayoutOption[] options)
+        {
+            var height = EditorGUIUtility.HasObjectThumbnail(objType) ? EditorGUI.kObjectFieldThumbnailHeight : EditorGUI.kSingleLineHeight;
+            Rect r = s_LastRect = GetControlRect(true, height, options);
+            return EditorGUI.ObjectField(r, label, obj, objType, targetBeingEdited);
         }
 
         // Make an object field. You can assign objects either by drag'n drop objects or by selecting an object using the Object Picker.
@@ -8856,6 +8965,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector3, label), EditorStyles.numberField, options);
             return EditorGUI.Vector3Field(r, label, value);
+        }
+
+        // Make an X, Y & Z field for entering a [[Vector3]], with a "lock" to set all values with just the X field.
+        internal static Vector3 LinkedVector3Field(GUIContent label, Vector3 value, ref bool linked, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector3, label), EditorStyles.numberField, options);
+            return EditorGUI.LinkedVector3Field(r, label, value, ref linked);
         }
 
         // Make an X, Y, Z & W field for entering a [[Vector4]].

@@ -95,7 +95,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             if (value == -1)  // most common case
                 return false;
             if (value == 0)
-                IsUnmanagedCache<T>.value = value = IsValidNativeContainerElementType(typeof(T)) ? 1 : -1;
+                IsValidNativeContainerElementTypeCache<T>.value = value = IsValidNativeContainerElementType(typeof(T)) ? 1 : -1;
             return value == 1;
         }
     }

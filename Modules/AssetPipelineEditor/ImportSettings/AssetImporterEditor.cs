@@ -409,6 +409,8 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             if (m_AssetEditor != null)
                 m_AssetEditor.OnHeaderIconGUI(iconRect);
+            else
+                base.OnHeaderIconGUI(iconRect);
         }
 
         // Let asset importers decide if the imported object should be shown as a separate editor or not

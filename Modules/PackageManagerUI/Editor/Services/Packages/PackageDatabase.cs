@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            public void AddPackageError(IPackage package, Error error)
+            public void AddPackageError(IPackage package, UIError error)
             {
                 var packagePreUpdate = package.Clone();
                 package.AddError(error);
@@ -269,7 +269,7 @@ namespace UnityEditor.PackageManager.UI
 
                 var downloadOperation = operation as AssetStoreDownloadOperation;
                 if (downloadOperation.state == DownloadState.Error || downloadOperation.state == DownloadState.Aborted)
-                    AddPackageError(package, new Error(NativeErrorCode.Unknown, downloadOperation.errorMessage));
+                    AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage));
                 else if (downloadOperation.state == DownloadState.Completed)
                     AssetStoreClient.instance.RefreshLocal();
                 SetPackageProgress(package, PackageProgress.None);
@@ -389,7 +389,7 @@ namespace UnityEditor.PackageManager.UI
                 operation.onOperationFinalized += OnUpmOperationFinalized;
             }
 
-            private void OnUpmOperationError(IOperation operation, Error error)
+            private void OnUpmOperationError(IOperation operation, UIError error)
             {
                 var package = GetPackage(operation.packageUniqueId);
                 if (package != null)

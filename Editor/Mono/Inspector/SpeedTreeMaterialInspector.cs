@@ -153,7 +153,7 @@ namespace UnityEditor
             //---------------------------------------------------------------
             foreach (var prop in props)
             {
-                if ((prop.flags & (MaterialProperty.PropFlags.HideInInspector | MaterialProperty.PropFlags.PerRendererData)) != 0)
+                if ((prop.flags & MaterialProperty.PropFlags.HideInInspector) != 0)
                     continue;
                 ShaderProperty(prop, prop.displayName);
             }

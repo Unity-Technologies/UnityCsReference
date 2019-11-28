@@ -316,7 +316,15 @@ namespace UnityEditor
             }
 
             SetModeIndex(currentModeIndex);
-            EditorApplication.delayCall += () => RaiseModeChanged(-1, currentIndex);
+
+            EditorApplication.update -= DelayRaiseCurrentModeChanged;
+            EditorApplication.update += DelayRaiseCurrentModeChanged;
+        }
+
+        private static void DelayRaiseCurrentModeChanged()
+        {
+            EditorApplication.update -= DelayRaiseCurrentModeChanged;
+            RaiseModeChanged(-1, currentIndex);
         }
 
         private static void FillModeData(string path, Dictionary<string, object> modesData)
@@ -602,7 +610,10 @@ namespace UnityEditor
             }
 
             if (HasCapability(ModeCapability.LayoutWindowMenu, true))
+            {
                 WindowLayout.ReloadWindowLayoutMenu();
+                EditorUtility.Internal_UpdateAllMenus();
+            }
         }
 
         private static void OnModeChangeUpdate(ModeChangedArgs args)

@@ -153,7 +153,7 @@ namespace UnityEditor.PackageManager.UI
             private event Action<UserInfo> m_OnUserInfoFetched;
 
             // this onError callback is shared between all steps in this process, no matter which step has the error, we'll call this event
-            private event Action<Error> m_OnError;
+            private event Action<UIError> m_OnError;
 
             private AssetStoreOAuthInternal()
             {
@@ -207,7 +207,7 @@ namespace UnityEditor.PackageManager.UI
             // Fetching UserInfo is a 4 step process
             // GetAuthCode -> GetAccessToken -> GetTokenInfo -> GetUserInfo
             // These 4 steps are chained together by async callbacks
-            public void FetchUserInfo(Action<UserInfo> doneCallback, Action<Error> errorCallback)
+            public void FetchUserInfo(Action<UserInfo> doneCallback, Action<UIError> errorCallback)
             {
                 m_OnError += errorCallback;
                 GetUserInfo(doneCallback);
@@ -392,7 +392,7 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnOperationError(string errorMessage)
             {
-                m_OnError?.Invoke(new Error(NativeErrorCode.Unknown, errorMessage));
+                m_OnError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, errorMessage));
                 m_OnError = null;
             }
         }

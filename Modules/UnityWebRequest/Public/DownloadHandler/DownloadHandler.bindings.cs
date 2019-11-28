@@ -137,7 +137,7 @@ namespace UnityEngine.Networking
                 throw new System.NullReferenceException("Cannot get content from a null UnityWebRequest object");
             if (!www.isDone)
                 throw new System.InvalidOperationException("Cannot get content from an unfinished UnityWebRequest object");
-            if (www.isNetworkError)
+            if (www.result == UnityWebRequest.Result.ProtocolError)
                 throw new System.InvalidOperationException(www.error);
             // Invalid cast exception will be thrown if T is not a correct DLH
             return (T)www.downloadHandler;

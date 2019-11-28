@@ -39,15 +39,8 @@ namespace UnityEditor.Mono.UnityConnect.Services
         const string k_JsonKeyBasic = "basic";
         const string k_JsonKeyCustom = "custom";
         const string k_JsonKeyMonetization = "transactions";
-        const string k_JsonKeyBasicEvents = "events";
         const string k_JsonKeyAuthSignature = "auth_signature";
         const string k_JsonValueCompleted = "Completed";
-
-        //Event Types
-        const string k_JsonKeyType = "event_type";
-        const string k_JsonValueCustomType = "custom";
-        const string k_JsonValueDeviceInfoType = "deviceInfo";
-        const string k_JsonValueTransactionType = "transaction";
 
         //Notification Strings
         const string k_AuthSignatureExceptionMessage = "Exception occurred trying to obtain authentication signature for project {0} and was not handled. Message: {1}";
@@ -71,11 +64,8 @@ namespace UnityEditor.Mono.UnityConnect.Services
         bool m_BasicDataValidated;
         bool m_CustomDataIntegrated;
         bool m_MonetizationDataIntegrated;
-        DateTime m_LastEventTime;
-        List<AnalyticsValidatorEvent> m_Events;
 
         Action m_NotifyOnBasicValidate;
-        Action m_NotifyOnEventsUpdate;
 
         AnalyticsValidationPoller m_ValidationPoller;
 
@@ -105,11 +95,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
         IntegrationState m_IntegrationState;
         EnabledState m_EnabledState;
 
-        private struct ClearDataInfo
-        {
-            public int clearedEvents;
-        }
-
         public AnalyticsProjectSettings(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
             : base(path, scopes, k_ServiceName, keywords)
         {
@@ -126,8 +111,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
             m_StateMachine.AddState(m_DisabledState);
             m_StateMachine.AddState(m_IntegrationState);
             m_StateMachine.AddState(m_EnabledState);
-
-            m_Events = new List<AnalyticsValidatorEvent>();
 
             m_ValidationPoller = new AnalyticsValidationPoller();
         }
@@ -170,12 +153,7 @@ namespace UnityEditor.Mono.UnityConnect.Services
         {
             //Must reset properties every time this is activated
             var mainTemplate = EditorGUIUtility.Load(k_AnalyticsServicesTemplatePath) as VisualTreeAsset;
-
             rootVisualElement.Add(mainTemplate.CloneTree().contentContainer);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
 
             RequestDataValidation();
 
@@ -198,7 +176,9 @@ namespace UnityEditor.Mono.UnityConnect.Services
             {
                 var clickable = new Clickable(() =>
                 {
-                    Application.OpenURL(ServicesConfiguration.instance.analyticsDashboardUrl);
+                    var dashboardUrl = ServicesConfiguration.instance.analyticsDashboardUrl;
+                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AnalyticsService.instance.name, url = dashboardUrl });
+                    Application.OpenURL(dashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -263,14 +243,12 @@ namespace UnityEditor.Mono.UnityConnect.Services
                 m_DataClearRequest.Dispose();
                 m_DataClearRequest = null;
             }
-            m_LastEventTime = DateTime.MinValue;
 
             m_ValidationPoller.Shutdown();
 
             m_BasicDataValidated = false;
             m_CustomDataIntegrated = false;
             m_MonetizationDataIntegrated = false;
-            m_Events.Clear();
         }
 
         void InitializeServiceCallbacks()
@@ -323,9 +301,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
             string customStatus = null;
             string monetizationStatus = null;
 
-            List<JSONValue> basicEvents = null;
-            m_Events.Clear();
-
             var jsonParser = new JSONParser(downloadedData);
             try
             {
@@ -333,8 +308,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
                 basicStatus = json.AsDict()[k_JsonKeyBasic].AsString();
                 customStatus = json.AsDict()[k_JsonKeyCustom].AsString();
                 monetizationStatus = json.AsDict()[k_JsonKeyMonetization].AsString();
-
-                basicEvents = json.AsDict()[k_JsonKeyBasicEvents].AsList();
             }
             catch (Exception ex)
             {
@@ -348,43 +321,10 @@ namespace UnityEditor.Mono.UnityConnect.Services
             m_CustomDataIntegrated = (customStatus == k_JsonValueCompleted);
             m_MonetizationDataIntegrated = (monetizationStatus == k_JsonValueCompleted);
 
-            foreach (var jsonEvent in basicEvents)
-            {
-                AnalyticsValidatorEvent parsedEvent;
-
-                var type = jsonEvent.AsDict()[k_JsonKeyType].AsString();
-                if (type == k_JsonValueCustomType)
-                {
-                    parsedEvent = new CustomValidatorEvent(jsonEvent);
-                }
-                else if (type == k_JsonValueDeviceInfoType)
-                {
-                    parsedEvent = new DeviceInfoValidatorEvent(jsonEvent);
-                }
-                else if (type == k_JsonValueTransactionType)
-                {
-                    parsedEvent = new TransactionValidatorEvent(jsonEvent);
-                }
-                else
-                {
-                    parsedEvent = new AnalyticsValidatorEvent(jsonEvent);
-                }
-
-                if (parsedEvent.GetTimeStamp() > m_LastEventTime)
-                {
-                    m_Events.Add(parsedEvent);
-                }
-            }
-
             if (m_BasicDataValidated && m_NotifyOnBasicValidate != null)
             {
                 m_NotifyOnBasicValidate();
                 m_NotifyOnBasicValidate = null;
-            }
-
-            if (m_Events.Count > 0 && m_NotifyOnEventsUpdate != null)
-            {
-                m_NotifyOnEventsUpdate();
             }
         }
 
@@ -438,37 +378,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
             }
         }
 
-        public void RequestNotifyOnDataUpdate(Action onCheck)
-        {
-            m_NotifyOnEventsUpdate = onCheck;
-        }
-
-        void RequestDataClearing()
-        {
-            if (m_Events.Count > 0 && m_ValidationPoller.IsReady() && m_DataClearRequest == null)
-            {
-                m_LastEventTime = m_Events[0].GetTimeStamp();
-                AnalyticsService.instance.ClearValidationData(OnClearValidationData, m_ValidationPoller.projectAuthSignature, out m_DataClearRequest);
-            }
-        }
-
-        void OnClearValidationData(AsyncOperation op)
-        {
-            if (op.isDone)
-            {
-                if (m_DataClearRequest != null)
-                {
-                    if ((m_DataClearRequest.result != UnityWebRequest.Result.ProtocolError) && (m_DataClearRequest.result != UnityWebRequest.Result.ConnectionError))
-                    {
-                        m_Events.RemoveAll(x => x.GetTimeStamp() <= m_LastEventTime);
-                    }
-
-                    m_DataClearRequest.Dispose();
-                    m_DataClearRequest = null;
-                }
-            }
-        }
-
         internal enum ServiceEvent
         {
             Disabled,    //Service toggle is OFF
@@ -480,7 +389,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
         {
             //Common uss class names
             protected const string k_ScrollContainerClass = "scroll-container";
-            protected const string k_TableClass = "table";
 
             protected BaseAnalyticsState(string stateName, SimpleStateMachine<ServiceEvent> stateMachine, AnalyticsProjectSettings provider)
                 : base(stateName, stateMachine, provider)
@@ -603,7 +511,9 @@ namespace UnityEditor.Mono.UnityConnect.Services
                     {
                         var clickable = new Clickable(() =>
                         {
-                            Application.OpenURL(string.Format(AnalyticsConfiguration.instance.dashboardUrl, Connect.UnityConnect.instance.projectInfo.projectGUID));
+                            var dashboardUrl = string.Format(AnalyticsConfiguration.instance.dashboardUrl, Connect.UnityConnect.instance.projectInfo.projectGUID);
+                            EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AnalyticsService.instance.name, url = dashboardUrl });
+                            Application.OpenURL(dashboardUrl);
                         });
                         accessDashboard.AddManipulator(clickable);
                     }
@@ -661,11 +571,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
         {
             const string k_MainTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettingsStateEnabled.uxml";
             const string k_AdditionalEventsTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettingsAdditionalEventsTemplate.uxml";
-            const string k_ValidatorEventsTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettingsValidatorEventsTemplate.uxml";
-            const string k_CustomEventsTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettingsCustomEventsTemplate.uxml";
-            const string k_DeviceInfoEventsTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettingsDeviceInfoEventsTemplate.uxml";
-            const string k_TransactionEventsTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettingsTransactionEventsTemplate.uxml";
-            const string k_CustomDataExceptionMessage =  "Exception occurred trying to parse custom data event type {0} and was not handled. Message: {1}";
 
             private class AdditionalEvent
             {
@@ -685,56 +590,18 @@ namespace UnityEditor.Mono.UnityConnect.Services
             const string k_AdditionalEventTitle = "TemplateTitle";
             const string k_AdditionalEventDesc = "TemplateDesc";
             const string k_AdditionalEventLearnUrl = "TemplateLearnMoreLink";
-            const string k_ValidatorBlock = "ValidatorBlock";
-            const string k_ClearButton = "ClearBtn";
-
-            //Validator uxml names
-            const string k_ValidatorUtcTimeLabel = "UTC Time";
-            const string k_ValidatorEventTypeLabel = "Event Type";
-            const string k_ValidatorPlatformLabel = "Platform";
-            const string k_ValidatorSdkVersionLabel = "SDKVersion";
-            private const string k_SpecialTemplatePlaceholder = "SpecialTemplatePlaceholder";
-
-            //Custom Validator uxml names
-            const string k_CustomName = "EventName";
-            const string k_CustomNoParams = "has-no-params";
-            const string k_CustomParamBlock = "param-container";
-
-            //Device Info Validator uxml names
-            const string k_DeviceInfoType = "DeviceType";
-            const string k_DeviceInfoOSVersion = "OSVersion";
-            const string k_DeviceInfoAppVersion = "AppVersion";
-            const string k_DeviceInfoBundleId = "BundleID";
-            const string k_DeviceInfoProcessor = "Processor";
-            const string k_DeviceInfoSystemMemory = "SystemMemory";
-            const string k_DeviceInfoUnityEngine = "UnityEngine";
-
-            //Transaction Validator uxml names
-            const string k_TransactionAmount = "Amount";
-            const string k_TransactionProductID = "ProductID";
-            const string k_TransactionReceipt = "has-receipt";
-            const string k_TransactionNoReceipt = "has-no-receipt";
 
             //uxml classes
             const string k_CheckIconClass = "check-icon";
             const string k_PreCheckIconClass = "pre-check-icon";
-            const string k_TableHeaderClass = "table-header";
-            const string k_TableHeaderRowClass = "table-header-row";
-            const string k_BulletClass = "bullet-item";
-            const string k_TableClassSuffix = "-column";
 
             //Additional Event Dictionary Content
             const string k_CustomKey = "Custom";
             const string k_CustomTitle = "Custom Events";
             const string k_CustomDesc = "Understand player behavior and usage patterns with event data.";
 
-            const string k_MonetizaionTitleAndKey = "Monetization";
-            const string k_MonetizaionDesc = "Track in-game revenue and monitor fraudulent transactions.";
-
-            //formatting
-            const string k_CustomDataFormat = "\u2022 {0} > {1}";
-
-            VisualElement m_ValidatorTable;
+            const string k_MonetizationTitleAndKey = "Monetization";
+            const string k_MonetizationDesc = "Track in-game revenue and monitor fraudulent transactions.";
 
             public EnabledState(SimpleStateMachine<ServiceEvent> stateMachine, AnalyticsProjectSettings provider)
                 : base(k_StateNameEnabled, stateMachine, provider)
@@ -751,38 +618,28 @@ namespace UnityEditor.Mono.UnityConnect.Services
                 m_AdditionalEvents = new Dictionary<string, AdditionalEvent>()
                 {
                     [k_CustomKey] = new AdditionalEvent() { title = k_CustomTitle, description = k_CustomDesc, learnUrl = AnalyticsConfiguration.instance.customLearnUrl },
-                    [k_MonetizaionTitleAndKey] = new AdditionalEvent() { title = k_MonetizaionTitleAndKey, description = k_MonetizaionDesc, learnUrl = AnalyticsConfiguration.instance.monetizationLearnUrl } ,
+                    [k_MonetizationTitleAndKey] = new AdditionalEvent() { title = k_MonetizationTitleAndKey, description = k_MonetizationDesc, learnUrl = AnalyticsConfiguration.instance.monetizationLearnUrl } ,
                 };
             }
 
             public override void EnterState()
             {
                 m_AdditionalEvents[k_CustomKey].integrated = provider.m_CustomDataIntegrated;
-                m_AdditionalEvents[k_MonetizaionTitleAndKey].integrated = provider.m_MonetizationDataIntegrated;
+                m_AdditionalEvents[k_MonetizationTitleAndKey].integrated = provider.m_MonetizationDataIntegrated;
 
                 LoadTemplateIntoScrollContainer(k_MainTemplatePath);
                 SetupIapWarningBlock();
                 SetupWelcomeBlock();
                 SetupAdditionalEventsBlock();
                 SetupSupportedPlatformsBlock();
-                SetupValidatorBlock();
 
                 provider.m_ValidationPoller.Start();
-                provider.RequestNotifyOnDataUpdate(OnValidationDataUpdate);
 
                 provider.HandlePermissionRestrictedControls();
 
                 // Prepare the package section and update the package information
                 PreparePackageSection(provider.rootVisualElement);
                 UpdatePackageInformation();
-            }
-
-            void OnValidationDataUpdate()
-            {
-                if (stateMachine.currentState == this)
-                {
-                    SetupValidatorBlock();
-                }
             }
 
             void SetupIapWarningBlock()
@@ -801,7 +658,9 @@ namespace UnityEditor.Mono.UnityConnect.Services
                 {
                     var goToDashboard = new Clickable(() =>
                     {
-                        Application.OpenURL(string.Format(AnalyticsConfiguration.instance.dashboardUrl, Connect.UnityConnect.instance.projectInfo.projectGUID));
+                        var dashboardUrl = string.Format(AnalyticsConfiguration.instance.dashboardUrl, Connect.UnityConnect.instance.projectInfo.projectGUID);
+                        EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AnalyticsService.instance.name, url = dashboardUrl });
+                        Application.OpenURL(dashboardUrl);
                     });
 
                     welcomeBlock.Q(k_DashboardButton).AddManipulator(goToDashboard);
@@ -851,225 +710,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
                             }
                         }
                     }
-                }
-            }
-
-            void SetupValidatorBlock()
-            {
-                var validatorBlock = provider.rootVisualElement.Q(k_ValidatorBlock);
-                if (validatorBlock != null)
-                {
-                    validatorBlock.Q<Button>(k_ClearButton).clicked += ClearValidationEvents;
-
-                    m_ValidatorTable = validatorBlock.Q(className: k_TableClass);
-                    if (m_ValidatorTable != null)
-                    {
-                        ClearValidationTable();
-                        PopulateValidationTable();
-
-                        var tableHeaderRow = m_ValidatorTable.Q(className: k_TableHeaderRowClass);
-                        if (tableHeaderRow != null)
-                        {
-                            ServicesUtils.CapitalizeStringsInTree(tableHeaderRow);
-
-                            var headerElements = tableHeaderRow.Query<VisualElement>(className: k_TableHeaderClass);
-                            headerElements.ForEach((element) =>
-                            {
-                                var columnClass = element.classList.Find(s => s.Contains(k_TableClassSuffix));
-                                element.RegisterCallback<GeometryChangedEvent>((evt) =>
-                                {
-                                    float columnWidth = evt.newRect.width;
-                                    FormatValidationColumn(columnClass, columnWidth);
-                                });
-                            });
-                        }
-                    }
-                }
-            }
-
-            void PopulateValidationTable()
-            {
-                if (m_ValidatorTable != null)
-                {
-                    var scrollContainer = m_ValidatorTable.Q(className: k_ScrollContainerClass);
-                    if (scrollContainer != null)
-                    {
-                        var eventTemplate = EditorGUIUtility.Load(k_ValidatorEventsTemplatePath) as VisualTreeAsset;
-                        if (eventTemplate != null)
-                        {
-                            foreach (var validatorEvent in provider.m_Events)
-                            {
-                                PopulateAnalyticsEvent(validatorEvent, eventTemplate, scrollContainer);
-                            }
-                        }
-                    }
-                }
-            }
-
-            void FormatValidationColumn(string columnClass, float columnWidth)
-            {
-                var columnElements = m_ValidatorTable.Query<VisualElement>(className: columnClass);
-                columnElements.ForEach((element) =>
-                {
-                    element.style.width = columnWidth;
-                });
-            }
-
-            void PopulateAnalyticsEvent(AnalyticsValidatorEvent validatorEvent, VisualTreeAsset cloneableAsset, VisualElement targetContainer)
-            {
-                if (validatorEvent.GetTimeStamp() > provider.m_LastEventTime)
-                {
-                    var eventBlock = cloneableAsset.CloneTree().contentContainer;
-                    ServicesUtils.TranslateStringsInTree(eventBlock);
-                    if (eventBlock != null)
-                    {
-                        //set core text
-                        eventBlock.Q<Label>(k_ValidatorUtcTimeLabel).text = validatorEvent.GetTimeStampText();
-                        eventBlock.Q<Label>(k_ValidatorEventTypeLabel).text = validatorEvent.GetTypeText();
-                        eventBlock.Q<Label>(k_ValidatorPlatformLabel).text = validatorEvent.GetPlatformText();
-                        eventBlock.Q<Label>(k_ValidatorSdkVersionLabel).text = validatorEvent.GetSdkVersionText();
-
-                        var specialTemplateBlock = eventBlock.Q(k_SpecialTemplatePlaceholder);
-                        if (specialTemplateBlock != null)
-                        {
-                            //special case text
-                            if (validatorEvent is CustomValidatorEvent)
-                            {
-                                var eventTemplate =
-                                    EditorGUIUtility.Load(k_CustomEventsTemplatePath) as VisualTreeAsset;
-                                if (eventTemplate != null)
-                                {
-                                    PopulateCustomEvent((CustomValidatorEvent)validatorEvent, eventTemplate,
-                                        specialTemplateBlock);
-                                }
-                            }
-                            else if (validatorEvent is DeviceInfoValidatorEvent)
-                            {
-                                var eventTemplate =
-                                    EditorGUIUtility.Load(k_DeviceInfoEventsTemplatePath) as VisualTreeAsset;
-                                if (eventTemplate != null)
-                                {
-                                    PopulateDeviceInfoEvent((DeviceInfoValidatorEvent)validatorEvent, eventTemplate,
-                                        specialTemplateBlock);
-                                }
-                            }
-                            else if (validatorEvent is TransactionValidatorEvent)
-                            {
-                                var eventTemplate =
-                                    EditorGUIUtility.Load(k_TransactionEventsTemplatePath) as VisualTreeAsset;
-                                if (eventTemplate != null)
-                                {
-                                    PopulateTransactionEvent((TransactionValidatorEvent)validatorEvent, eventTemplate,
-                                        specialTemplateBlock);
-                                }
-                            }
-                            else
-                            {
-                                specialTemplateBlock.style.display = DisplayStyle.None;
-                            }
-                        }
-                    }
-
-                    targetContainer.Add(eventBlock);
-                }
-            }
-
-            void PopulateCustomEvent(CustomValidatorEvent validatorEvent, VisualTreeAsset cloneableAsset,
-                VisualElement targetContainer)
-            {
-                var eventBlock = cloneableAsset.CloneTree().contentContainer;
-                eventBlock.Q<Label>(k_CustomName).text = validatorEvent.GetNameText();
-
-                try
-                {
-                    List<string> customStrings = validatorEvent.GetCustomParamsTexts(k_CustomDataFormat);
-
-                    bool hasParams = customStrings.Count > 0;
-                    var paramsBlock = eventBlock.Q(k_CustomParamBlock);
-                    if (paramsBlock != null)
-                    {
-                        paramsBlock.style.display = hasParams ? DisplayStyle.Flex : DisplayStyle.None;
-
-                        foreach (var customString in customStrings)
-                        {
-                            var customLabel = new Label(customString);
-                            customLabel.AddToClassList(k_BulletClass);
-                            paramsBlock.Add(customLabel);
-                        }
-                    }
-
-                    var noParamsBlock = eventBlock.Q(k_CustomNoParams);
-                    if (noParamsBlock != null)
-                    {
-                        noParamsBlock.style.display = hasParams ? DisplayStyle.None : DisplayStyle.Flex;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    NotificationManager.instance.Publish(provider.serviceInstance.notificationTopic, Notification.Severity.Warning,
-                        string.Format(L10n.Tr(k_CustomDataExceptionMessage), validatorEvent.GetNameText(), ex.Message));
-
-                    Debug.LogException(ex);
-                }
-
-                targetContainer.Add(eventBlock);
-            }
-
-            void PopulateDeviceInfoEvent(DeviceInfoValidatorEvent validatorEvent, VisualTreeAsset cloneableAsset,
-                VisualElement targetContainer)
-            {
-                var eventBlock = cloneableAsset.CloneTree().contentContainer;
-
-                eventBlock.Q<Label>(k_DeviceInfoType).text = validatorEvent.GetDeviceTypeText();
-                eventBlock.Q<Label>(k_DeviceInfoOSVersion).text = validatorEvent.GetOSVersionText();
-                eventBlock.Q<Label>(k_DeviceInfoAppVersion).text = validatorEvent.GetAppVersionText();
-                eventBlock.Q<Label>(k_DeviceInfoBundleId).text = validatorEvent.GetBundleIdText();
-                eventBlock.Q<Label>(k_DeviceInfoProcessor).text = validatorEvent.GetProcessorText();
-                eventBlock.Q<Label>(k_DeviceInfoSystemMemory).text = validatorEvent.GetSystemMemoryText();
-                eventBlock.Q<Label>(k_DeviceInfoUnityEngine).text = validatorEvent.GetUnityEngineText();
-
-                targetContainer.Add(eventBlock);
-            }
-
-            void PopulateTransactionEvent(TransactionValidatorEvent validatorEvent, VisualTreeAsset cloneableAsset,
-                VisualElement targetContainer)
-            {
-                var eventBlock = cloneableAsset.CloneTree().contentContainer;
-
-                eventBlock.Q<Label>(k_TransactionAmount).text = validatorEvent.GetPriceText() + " " + validatorEvent.GetCurrencyText();
-                eventBlock.Q<Label>(k_TransactionProductID).text = validatorEvent.GetProductIdText();
-
-                bool hasReceipt = validatorEvent.HasReceipt();
-                var hasReceiptBlock = eventBlock.Q(k_TransactionReceipt);
-                if (hasReceiptBlock != null)
-                {
-                    hasReceiptBlock.style.display = hasReceipt ? DisplayStyle.Flex : DisplayStyle.None;
-                }
-
-                var noReceiptBlock = eventBlock.Q(k_TransactionNoReceipt);
-                if (noReceiptBlock != null)
-                {
-                    noReceiptBlock.style.display = hasReceipt ? DisplayStyle.None : DisplayStyle.Flex;
-                }
-
-                targetContainer.Add(eventBlock);
-            }
-
-            void ClearValidationEvents()
-            {
-                EditorAnalytics.SendClearAnalyticsDataEvent(new ClearDataInfo() { clearedEvents = provider.m_Events.Count });
-
-                provider.RequestDataClearing();
-                ClearValidationTable();
-            }
-
-            void ClearValidationTable()
-            {
-                // Don't move to callback, as we want to hide all current events
-                if (m_ValidatorTable != null)
-                {
-                    var scrollContainer = m_ValidatorTable.Q(className: k_ScrollContainerClass);
-                    scrollContainer?.Clear();
                 }
             }
 

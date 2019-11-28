@@ -699,7 +699,7 @@ namespace UnityEditor
                 });
             }
 
-            result.style.overflow = Overflow.Visible;
+            result.cullingEnabled = true;
             if (name != null)
             {
                 result.name = name;
@@ -1691,7 +1691,7 @@ namespace UnityEditor
                 var editor = editors[editorIndex];
                 Object editorTarget = editor.targets[0];
 
-                string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
+                string editorTitle = editorTarget == null ? "Nothing Selected" : $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
                 EditorElement editorContainer;
 
                 try
@@ -1862,6 +1862,13 @@ namespace UnityEditor
             // Editors that should always be hidden
             if (currentTarget is ParticleSystemRenderer)
                 return true;
+
+            // If SpriteAtlas and using the new ImporterWorkflow disable showing ImportedObject.
+            if (currentTarget is UnityEngine.U2D.SpriteAtlas)
+            {
+                if (editors.Length > 1 && editors[0].target is UnityEditor.U2D.SpriteAtlasImporter)
+                    return true;
+            }
 
             // Hide regular AssetImporters (but not inherited types)
             if (currentTarget != null && currentTarget.GetType() == typeof(AssetImporter))

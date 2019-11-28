@@ -226,14 +226,14 @@ namespace UnityEngine.UIElements
                 {
                     // Jump drag element to current mouse position when user clicks on slider and pageSize == 0
                     var x = (direction == SliderDirection.Horizontal)
-                        ? clampedDragger.startMousePosition.x - (dragElement.resolvedStyle.width / 2f) : dragElement.style.left.value.value;
+                        ? clampedDragger.startMousePosition.x - (dragElement.resolvedStyle.width / 2f) : dragElement.transform.position.x;
                     var y = (direction == SliderDirection.Horizontal) ?
-                        dragElement.style.top.value.value : clampedDragger.startMousePosition.y - (dragElement.resolvedStyle.height / 2f);
+                        dragElement.transform.position.y : clampedDragger.startMousePosition.y - (dragElement.resolvedStyle.height / 2f);
 
-                    dragElement.style.left = x;
-                    dragElement.style.top = y;
-                    dragBorderElement.style.left = x;
-                    dragBorderElement.style.top = y;
+                    var pos = new Vector3(x, y, 0);
+
+                    dragElement.transform.position = pos;
+                    dragBorderElement.transform.position = pos;
                     m_DragElementStartPos = new Rect(x, y, dragElement.resolvedStyle.width, dragElement.resolvedStyle.height);
 
                     // Manipulation becomes a free form drag
@@ -245,13 +245,13 @@ namespace UnityEngine.UIElements
                     return;
                 }
 
-                m_DragElementStartPos = new Rect(dragElement.resolvedStyle.left, dragElement.resolvedStyle.top, dragElement.resolvedStyle.width, dragElement.resolvedStyle.height);
+                m_DragElementStartPos = new Rect(dragElement.transform.position.x, dragElement.transform.position.y, dragElement.resolvedStyle.width, dragElement.resolvedStyle.height);
             }
 
             if (direction == SliderDirection.Horizontal)
-                ComputeValueAndDirectionFromClick(visualInput.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.resolvedStyle.left, clampedDragger.lastMousePosition.x);
+                ComputeValueAndDirectionFromClick(visualInput.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.transform.position.x, clampedDragger.lastMousePosition.x);
             else
-                ComputeValueAndDirectionFromClick(visualInput.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.resolvedStyle.top, clampedDragger.lastMousePosition.y);
+                ComputeValueAndDirectionFromClick(visualInput.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.transform.position.y, clampedDragger.lastMousePosition.y);
         }
 
         internal virtual void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
@@ -344,26 +344,35 @@ namespace UnityEngine.UIElements
                 float offsetForThumbFullWidth = -dragElement.resolvedStyle.marginLeft - dragElement.resolvedStyle.marginRight;
                 float totalWidth = visualInput.layout.width - dragElementWidth + offsetForThumbFullWidth;
                 float newLeft = normalizedPosition * totalWidth;
-                float currentLeft = dragElement.style.left.value.value;
+
+                if (float.IsNaN(newLeft)) //This can happen when layout is not computed yet
+                    return;
+
+                float currentLeft = dragElement.transform.position.x;
 
                 if (!SameValues(currentLeft, newLeft, halfPixel))
                 {
-                    dragElement.style.left = newLeft;
-                    dragBorderElement.style.left = newLeft;
+                    var newPos = new Vector3(newLeft, 0 , 0);
+                    dragElement.transform.position = newPos;
+                    dragElement.transform.position = newPos;
                 }
             }
             else
             {
                 float dragElementHeight = dragElement.resolvedStyle.height;
 
-                float totalHeight = visualInput.layout.height - dragElementHeight;
+                float totalHeight = visualInput.resolvedStyle.height - dragElementHeight;
                 float newTop = normalizedPosition * totalHeight;
-                float currentTop = dragElement.style.top.value.value;
 
+                if (float.IsNaN(newTop)) //This can happen when layout is not computed yet
+                    return;
+
+                float currentTop = dragElement.transform.position.y;
                 if (!SameValues(currentTop, newTop, halfPixel))
                 {
-                    dragElement.style.top = newTop;
-                    dragBorderElement.style.top = newTop;
+                    var newPos = new Vector3(0, newTop , 0);
+                    dragElement.transform.position = newPos;
+                    dragElement.transform.position = newPos;
                 }
             }
         }

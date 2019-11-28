@@ -73,6 +73,9 @@ namespace UnityEditor
         Vector3 m_GradientStartPoint;
         Vector3 m_GradientEndPoint;
 
+        OverlayWindow m_ConstraintEditingOverlayWindow;
+        OverlayWindow m_SelfAndInterCollisionEditingOverlayWindow;
+
         const float kDisabledValue = float.MaxValue;
 
         static Texture2D s_ColorTexture = null;
@@ -94,7 +97,9 @@ namespace UnityEditor
 
         int m_NumSelection = 0;
 
+        [NonSerialized]
         SkinnedMeshRenderer m_SkinnedMeshRenderer;
+        [NonSerialized]
         Transform m_RootBone;
 
         private static class Styles
@@ -520,6 +525,9 @@ namespace UnityEditor
             m_SelfCollisionStiffness = serializedObject.FindProperty("m_SelfCollisionStiffness");
 
             SceneView.beforeSceneGui += OnPreSceneGUICallback;
+
+            m_ConstraintEditingOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Cloth Constraints"), ConstraintEditing, (int)SceneViewOverlay.Ordering.ClothConstraints, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_SelfAndInterCollisionEditingOverlayWindow = new OverlayWindow(Styles.clothSelfCollisionAndInterCollision, SelfAndInterCollisionEditing, (int)SceneViewOverlay.Ordering.ClothSelfAndInterCollision, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
         public void OnDestroy()
@@ -1663,11 +1671,13 @@ namespace UnityEditor
             }
 
             Handles.BeginGUI();
-            if (m_RectSelecting && (state.ToolMode == ToolMode.Select || state.ToolMode == ToolMode.GradientTool) && Event.current.type == EventType.Repaint)
-                EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
+            if (m_RectSelecting && (state.ToolMode == ToolMode.Select || state.ToolMode == ToolMode.GradientTool) &&
+                Event.current.type == EventType.Repaint)
+                EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint),
+                    GUIContent.none, false, false, false, false);
             Handles.EndGUI();
 
-            SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Cloth Constraints"), ConstraintEditing, (int)SceneViewOverlay.Ordering.ClothConstraints, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            SceneViewOverlay.ShowWindow(m_ConstraintEditingOverlayWindow);
         }
 
         void OnSceneEditSelfAndInterCollisionParticlesGUI()
@@ -1689,7 +1699,7 @@ namespace UnityEditor
                 EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
             Handles.EndGUI();
 
-            SceneViewOverlay.Window(Styles.clothSelfCollisionAndInterCollision, SelfAndInterCollisionEditing, (int)SceneViewOverlay.Ordering.ClothSelfAndInterCollision, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            SceneViewOverlay.ShowWindow(m_SelfAndInterCollisionEditingOverlayWindow);
         }
 
         public void VisualizationMenuSetMaxDistanceMode()

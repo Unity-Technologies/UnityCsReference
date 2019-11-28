@@ -57,7 +57,7 @@ namespace UnityEditor
             }
         }
 
-        private VisualElement CreateRoot()
+        static VisualElement CreateRoot()
         {
             var name = "rootVisualContainer";
             var root = new VisualElement()
@@ -611,17 +611,25 @@ namespace UnityEditor
         }
 
         // Show modal editor window. Other windows will not be accessible until this one is closed.
-        internal void ShowModal()
+        public void ShowModal()
         {
             ShowWithMode(ShowMode.AuxWindow);
-            SavedGUIState guiState = SavedGUIState.Create();
+            try
+            {
+                ContainerWindow.s_Modal = true;
 
-            m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
-            MakeModal(m_Parent.window);
+                SavedGUIState guiState = SavedGUIState.Create();
+                m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
 
-            m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
+                MakeModal(m_Parent.window);
 
-            guiState.ApplyAndForget();
+                m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
+                guiState.ApplyAndForget();
+            }
+            finally
+            {
+                ContainerWindow.s_Modal = false;
+            }
         }
 
         // Returns the first EditorWindow of type /t/ which is currently on the screen.

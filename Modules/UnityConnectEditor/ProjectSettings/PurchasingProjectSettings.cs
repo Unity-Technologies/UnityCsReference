@@ -136,10 +136,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
             // Must reset properties every time this is activated
             var mainTemplate = EditorGUIUtility.Load(k_PurchasingServicesTemplatePath) as VisualTreeAsset;
             rootVisualElement.Add(mainTemplate.CloneTree().contentContainer);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
 
             if (!PurchasingService.instance.IsServiceEnabled())
             {
@@ -156,7 +152,9 @@ namespace UnityEditor.Mono.UnityConnect.Services
             {
                 var clickable = new Clickable(() =>
                 {
-                    Application.OpenURL(ServicesConfiguration.instance.purchasingDashboardUrl);
+                    var dashboardUrl = ServicesConfiguration.instance.purchasingDashboardUrl;
+                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = PurchasingService.instance.name, url = dashboardUrl });
+                    Application.OpenURL(dashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -255,18 +253,14 @@ namespace UnityEditor.Mono.UnityConnect.Services
         {
             readonly string[] k_PresumedSupportedStores =
             {
-                "Amazon Apps",
-                "Amazon Underground",
-                "CloudMoolah Store",
+                "Amazon Appstore",
                 "Facebook Gameroom",
                 "Google Play",
-                "iOS App Store",
+                "iOS and tvOs App Store",
                 "Mac App Store",
-                "Samsung GALAXY Apps",
-                "Tizen Store",
+                "Samsung Galaxy Apps",
                 "Unity Distribution Portal",
-                "Windows Store",
-                "Xiaomi Mi Game Pay"
+                "Windows Store"
             };
 
             //Common uss class names
@@ -428,16 +422,6 @@ namespace UnityEditor.Mono.UnityConnect.Services
                 SetupIapOptionsBlock();
                 var scrollContainer = provider.rootVisualElement.Q(className: k_ScrollContainerClass);
                 scrollContainer.Add(ServicesUtils.SetupSupportedPlatformsBlock(GetSupportedPlatforms()));
-
-                var gotoDashboard = scrollContainer.Q(k_GoToDashboardLink);
-                if (gotoDashboard != null)
-                {
-                    var clickable = new Clickable(() =>
-                    {
-                        Application.OpenURL(ServicesConfiguration.instance.purchasingDashboardUrl);
-                    });
-                    gotoDashboard.AddManipulator(clickable);
-                }
                 provider.HandlePermissionRestrictedControls();
 
                 // Prepare the package section and update the package information

@@ -35,7 +35,7 @@ namespace UnityEditor.UIElements
             // Load the stylesheet of the current font
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {
-                return sheetPath.Replace(".uss", "_" + EditorResources.GetCurrentFont().ToLower() + ".uss");
+                return sheetPath.Replace(".uss", "_" + EditorResources.currentFontName.ToLower() + ".uss");
             }
             else
             {

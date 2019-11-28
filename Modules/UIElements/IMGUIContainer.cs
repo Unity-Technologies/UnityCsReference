@@ -62,6 +62,14 @@ namespace UnityEngine.UIElements
         internal bool useOwnerObjectGUIState;
         internal Rect lastWorldClip { get; set; }
 
+        // If true, skip OnGUI() calls when outside the viewport
+        private bool m_CullingEnabled = false;
+        public bool cullingEnabled
+        {
+            get { return m_CullingEnabled; }
+            set { m_CullingEnabled = value; IncrementVersion(VersionChangeType.Repaint); }
+        }
+
         private GUILayoutUtility.LayoutCache m_Cache = null;
         private GUILayoutUtility.LayoutCache cache
         {
@@ -122,6 +130,8 @@ namespace UnityEngine.UIElements
 
         public IMGUIContainer(Action onGUIHandler)
         {
+            isIMGUIContainer = true;
+
             AddToClassList(ussClassName);
 
             this.onGUIHandler = onGUIHandler;
@@ -138,7 +148,7 @@ namespace UnityEngine.UIElements
 
             // Access to the painter is internal and is not exposed to public
             // The IStylePainter is kept as an interface rather than a concrete class for now to support tests
-            mgc.painter.DrawImmediate(DoIMGUIRepaint);
+            mgc.painter.DrawImmediate(DoIMGUIRepaint, cullingEnabled);
         }
 
         // global GUI values.

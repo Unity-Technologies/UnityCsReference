@@ -19,10 +19,14 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal void PreloadDataDontStripMe() {}
     }
+}
 
+namespace UnityEngine.LightingSettingsPrivate
+{
     // The LightingSettings native class needs to be preserved in player builds, even if no instance of the class is
     // present in the game data, as an instance needs to be created in code in that case. But the managed API representation
     // of that class only exists in UnityEditor code, so we add a dummy runtime version here to preserve the type
+    [ExcludeFromObjectFactory]
     internal class LightingSettings : Object
     {
         [RequiredByNativeCode]

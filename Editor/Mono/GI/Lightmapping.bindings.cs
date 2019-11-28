@@ -92,6 +92,14 @@ namespace UnityEditor
         public Vector4[] intensities;
     }
 
+    [NativeHeader("Editor/Src/GI/Progressive/PVRHelpers.h")]
+    internal struct DeviceAndPlatform
+    {
+        public int deviceId;
+        public int platformId;
+        public string name;
+    };
+
     [NativeHeader("Editor/Mono/GI/Lightmapping.bindings.h")]
     public static partial class Lightmapping
     {
@@ -223,6 +231,9 @@ namespace UnityEditor
         internal static extern float GetGBufferMemory(ref Hash128 gbufferHash);
 
         [FreeFunction]
+        internal static extern MemLabels GetLightProbeMemLabels();
+
+        [FreeFunction]
         internal static extern MemLabels GetTransmissionTexturesMemLabels();
 
         [FreeFunction]
@@ -262,6 +273,9 @@ namespace UnityEditor
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern string GetLightmapBakeGPUDeviceName();
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        extern internal static DeviceAndPlatform[] GetLightmappingGpuDevices();
 
         // Exports the current state of the scene to the dynamic GI workflow.
         [FreeFunction]

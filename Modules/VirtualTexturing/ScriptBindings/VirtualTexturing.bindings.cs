@@ -35,10 +35,8 @@ namespace UnityEngine.Experimental.Rendering
 
         extern public static string[] GetTexturesInTileset(string tileSetPathName);
 
-        extern public static void ShutdownTileSets_TemporaryWorflow();
-        extern public static void ReopenTileSets_TemporaryWorflow();
-
-        extern public static Color32[] GetPixels_TemporaryWorflow(Texture2D self, int miplevel);
+        [NativeConditional("UNITY_EDITOR")]
+        extern public static bool ValidateTextureStack(Texture[] textures, out string errorMessage);
     }
 
     [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]

@@ -11,7 +11,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class AssetStoreFetchedInfo
+    internal class AssetStoreProductInfo
     {
         public string id;
         public string packageName;
@@ -30,14 +30,14 @@ namespace UnityEditor.PackageManager.UI
         public List<PackageLink> links;
         public List<PackageSizeInfo> sizeInfos;
 
-        public static AssetStoreFetchedInfo ParseFetchedInfo(string productId, IDictionary<string, object> productDetail)
+        public static AssetStoreProductInfo ParseProductInfo(string productId, IDictionary<string, object> productDetail)
         {
             if (string.IsNullOrEmpty(productId) || productDetail == null || !productDetail.Any())
                 return null;
-            return new AssetStoreFetchedInfo(productId, productDetail);
+            return new AssetStoreProductInfo(productId, productDetail);
         }
 
-        private AssetStoreFetchedInfo(string productId, IDictionary<string, object> productDetail)
+        private AssetStoreProductInfo(string productId, IDictionary<string, object> productDetail)
         {
             id = productId;
             description = CleanUpHtml(productDetail.GetString("description")) ?? string.Empty;

@@ -14,7 +14,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
     [StructLayout(LayoutKind.Explicit, Size = 16)]
     public unsafe struct ProfilerMarkerData
     {
-        [FieldOffset(0)] public ProfilerMarkerDataType type;
+        [FieldOffset(0)] public byte type;
         [FieldOffset(1)] public byte reserved0;
         [FieldOffset(2)] public ushort reserved1;
         [FieldOffset(4)] public uint size;
@@ -48,7 +48,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public static extern IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount);
 
         [ThreadSafe]
-        public static extern void SetMarkerMetadata(IntPtr markerPtr, int index, ProfilerMarkerDataType type, string name);
+        public static extern void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit);
 
         [ThreadSafe]
         public static extern void BeginSample(IntPtr markerPtr);
@@ -58,6 +58,16 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
         [ThreadSafe]
         public static extern void EndSample(IntPtr markerPtr);
+
+
+        [ThreadSafe]
+        public static extern unsafe void SingleSampleWithMetadata(IntPtr markerPtr, int metadataCount, void* metadata);
+
+        [ThreadSafe]
+        public static extern unsafe void* CreateCounterValue(out IntPtr counterPtr, string name, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
+
+        [ThreadSafe]
+        public static extern unsafe void FlushCounterValue(void* counterValuePtr);
 
         [ThreadSafe]
         internal static extern void Internal_BeginWithObject(IntPtr markerPtr, UnityEngine.Object contextUnityObject);

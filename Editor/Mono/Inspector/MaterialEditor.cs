@@ -885,14 +885,12 @@ namespace UnityEditor
             bool wasEnabled = GUI.enabled;
 
             EditorGUI.BeginChangeCheck();
-            if ((prop.flags & MaterialProperty.PropFlags.PerRendererData) != 0)
-                GUI.enabled = false;
             if ((prop.flags & MaterialProperty.PropFlags.NonModifiableTextureData) != 0)
                 GUI.enabled = false;
 
             EditorGUI.showMixedValue = prop.hasMixedValue;
             int controlID = GUIUtility.GetControlID(12354, FocusType.Keyboard, position);
-            var newValue = EditorGUI.DoObjectField(position, position, controlID, prop.textureValue, t, null, TextureValidator, false) as Texture;
+            var newValue = EditorGUI.DoObjectField(position, position, controlID, prop.textureValue, target, t, TextureValidator, false) as Texture;
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 prop.textureValue = newValue;
@@ -1210,7 +1208,11 @@ namespace UnityEditor
             BeginAnimatedCheck(position, prop);
             EditorGUI.indentLevel += labelIndent;
 
-            ShaderPropertyInternal(position, prop, label);
+            // [PerRendererData] material properties are read-only as they are meant to be set in code on a per-renderer basis.
+            using (new EditorGUI.DisabledScope((prop.flags & MaterialProperty.PropFlags.PerRendererData) != 0))
+            {
+                ShaderPropertyInternal(position, prop, label);
+            }
 
             EditorGUI.indentLevel -= labelIndent;
             EndAnimatedCheck();
@@ -1740,7 +1742,7 @@ namespace UnityEditor
 
             for (var i = 0; i < props.Length; i++)
             {
-                if ((props[i].flags & (MaterialProperty.PropFlags.HideInInspector | MaterialProperty.PropFlags.PerRendererData)) != 0)
+                if ((props[i].flags & MaterialProperty.PropFlags.HideInInspector) != 0)
                     continue;
 
                 float h = GetPropertyHeight(props[i], props[i].displayName);

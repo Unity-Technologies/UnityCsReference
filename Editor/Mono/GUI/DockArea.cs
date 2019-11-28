@@ -339,7 +339,10 @@ namespace UnityEditor
             {
                 genericMenuTopOffset = Styles.genericMenuFloatingTopOffset;
             }
-            ShowGenericMenu(position.width - genericMenuLeftOffset, m_TabAreaRect.y + genericMenuTopOffset);
+            if (!ContainerWindow.s_Modal)
+            {
+                ShowGenericMenu(position.width - genericMenuLeftOffset, m_TabAreaRect.y + genericMenuTopOffset);
+            }
 
             DrawTabs(m_TabAreaRect);
             HandleSplitView(); //fogbugz 1169963: in order to easily use the splitter in the gameView, it must be prioritized over DrawView(). Side effect for touch is that splitter picking zones might overlap other controls but the tabs still have higher priority so the user can undock the window in that case
@@ -779,7 +782,7 @@ namespace UnityEditor
                     if (GUIUtility.hotControl == 0)
                     {
                         int sel = GetTabAtMousePos(tabStyle, evt.mousePosition, scrollOffset, tabAreaRect);
-                        if (sel != -1 && sel < m_Panes.Count)
+                        if (sel != -1 && sel < m_Panes.Count && !ContainerWindow.s_Modal)
                             PopupGenericMenu(m_Panes[sel], new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0));
                     }
                     break;
@@ -1067,7 +1070,7 @@ namespace UnityEditor
                 GUI.Label(backRect, actualView.titleContent, Styles.titleLabel);
             }
 
-            if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition))
+            if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition) && !ContainerWindow.s_Modal)
                 PopupGenericMenu(actualView, new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 0, 0));
 
             ShowGenericMenu(position.width - GetGenericMenuLeftOffset(true), backRect.yMin + Styles.genericMenuTopOffset);

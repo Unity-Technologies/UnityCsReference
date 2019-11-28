@@ -61,7 +61,7 @@ namespace UnityEditor.PackageManager
                 throw new ArgumentNullException(nameof(packageIdOrName));
 
             long operationId;
-            var status = NativeClient.Search(out operationId, packageIdOrName, offlineMode);
+            var status = NativeClient.GetPackageInfo(out operationId, packageIdOrName, offlineMode);
             return new SearchRequest(operationId, status, packageIdOrName);
         }
 
@@ -73,13 +73,20 @@ namespace UnityEditor.PackageManager
         public static SearchRequest SearchAll(bool offlineMode)
         {
             long operationId;
-            var status = NativeClient.SearchAll(out operationId, offlineMode);
+            var status = NativeClient.GetAllPackageInfo(out operationId, offlineMode);
             return new SearchRequest(operationId, status, string.Empty);
         }
 
         public static SearchRequest SearchAll()
         {
             return SearchAll(false);
+        }
+
+        internal static PerformSearchRequest Search(SearchOptions options)
+        {
+            long operationId;
+            var status = NativeClient.Search(out operationId, options);
+            return new PerformSearchRequest(operationId, status, options);
         }
 
         public static ResetToEditorDefaultsRequest ResetToEditorDefaults()

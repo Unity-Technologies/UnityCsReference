@@ -91,7 +91,7 @@ namespace UnityEditor
         {
             if (!m_Inspector)
                 return false;
-            if (serializedObject.hasModifiedProperties)
+            if (serializedObject != null && serializedObject.hasModifiedProperties)
                 return true;
 
             return false;
@@ -458,14 +458,14 @@ namespace UnityEditor
 
         internal void SwitchToEditMode()
         {
+            // Lock inspector
+            ChangeInspectorLock(true);
+
             string assetPath = AssetDatabase.GetAssetPath(target);
             AvatarConfigurationStage stage = AvatarConfigurationStage.CreateStage(assetPath, this);
             StageUtility.GoToStage(stage, true);
 
             m_EditMode = EditMode.Starting;
-
-            // Lock inspector
-            ChangeInspectorLock(true);
 
             // Instantiate character
             m_GameObject = stage.gameObject;

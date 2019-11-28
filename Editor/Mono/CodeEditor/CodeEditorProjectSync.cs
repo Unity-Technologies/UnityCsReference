@@ -44,7 +44,16 @@ namespace UnityEditor
         {
             // Ensure that the mono islands are up-to-date
             AssetDatabase.Refresh();
-            CodeEditor.Editor.Current.SyncAll();
+            #pragma warning disable 618
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
+            {
+                CodeEditor.Editor.Current.SyncAll();
+            }
+            else
+            {
+                SyncVS.Synchronizer.Sync();
+            }
+
             OpenProjectFileUnlessInBatchMode();
         }
 

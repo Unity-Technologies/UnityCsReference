@@ -23,6 +23,11 @@ namespace UnityEditor.Connect
 
         public static CollabService instance => k_Instance;
 
+        struct CollabServiceState
+        {
+            public bool collaborate;
+        }
+
         static CollabService()
         {
             k_Instance = new CollabService();
@@ -30,6 +35,11 @@ namespace UnityEditor.Connect
 
         protected override void InternalEnableService(bool enable)
         {
+            if (IsServiceEnabled() != enable)
+            {
+                EditorAnalytics.SendEventServiceInfo(new CollabServiceState() { collaborate = enable });
+            }
+
             base.InternalEnableService(enable);
 
             Collab.instance.SendNotification();

@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IDownloadManager
     {
-        event Action<IOperation, Error> onDownloadError;
+        event Action<IOperation, UIError> onDownloadError;
         event Action<IOperation> onDownloadFinalized;
         event Action<IOperation> onDownloadProgress;
 

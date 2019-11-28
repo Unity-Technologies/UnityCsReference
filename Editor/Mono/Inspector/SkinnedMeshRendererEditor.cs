@@ -77,7 +77,7 @@ namespace UnityEditor
 
             DrawMaterials();
             LightingSettingsGUI(false);
-            OtherSettingsGUI(false, true);
+            OtherSettingsGUI(false, true, false, true);
 
             serializedObject.ApplyModifiedProperties();
         }

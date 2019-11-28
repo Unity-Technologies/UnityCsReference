@@ -11,8 +11,6 @@ namespace UnityEditor.Experimental.GraphView
 {
     public class Blackboard : GraphElement, ISelection
     {
-        private const int k_DefaultWidth = 200;
-        private const float k_DefaultHeight = 400;
         private VisualElement m_MainContainer;
         private VisualElement m_Root;
         private Label m_TitleLabel;
@@ -82,8 +80,6 @@ namespace UnityEditor.Experimental.GraphView
                     capabilities &= ~Capabilities.Movable;
                     AddToClassList("windowed");
                     this.RemoveManipulator(m_Dragger);
-                    style.width = StyleKeyword.Null;
-                    style.height = StyleKeyword.Null;
                 }
                 else
                 {
@@ -122,13 +118,6 @@ namespace UnityEditor.Experimental.GraphView
                     m_Root.Add(m_ScrollView);
                     m_ScrollView.Add(m_ContentContainer);
                     resizeRestriction = ResizeRestriction.None; // As both the width and height can be changed by the user using a resizer
-
-                    // If the current the current geometry is invalid then set a default size
-                    if (float.IsNaN(layout.width) || float.IsNaN(layout.height))
-                    {
-                        style.width = float.IsNaN(layout.width) ? k_DefaultWidth : layout.width;
-                        style.height = float.IsNaN(layout.height) ? k_DefaultHeight : layout.height;
-                    }
 
                     AddToClassList("scrollable");
                 }

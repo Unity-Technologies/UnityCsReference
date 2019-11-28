@@ -2,15 +2,25 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEngine.Rendering
 {
     public abstract class RenderPipelineAsset : ScriptableObject
     {
         internal RenderPipeline InternalCreatePipeline()
         {
-            var pipeline = CreatePipeline();
+            RenderPipeline pipeline = null;
+            try
+            {
+                pipeline = CreatePipeline();
+            }
+            catch (System.Exception e)
+            {
+                // This can be called at a time where AssetDatabase is not available for loading.
+                // When this happens, the GUID can be get but the resource loaded will be null.
+                // In SRP using the ResourceReloader mechanism in CoreRP, it checks this and add InvalidImport data when this occurs.
+                if (!(e.Data.Contains("InvalidImport") && e.Data["InvalidImport"] is int && (int)e.Data["InvalidImport"] == 1))
+                    Debug.LogException(e);
+            }
             return pipeline;
         }
 

@@ -16,9 +16,6 @@ namespace UnityEditor.PackageManager.UI
 
         public string versionUniqueId => string.Empty;
 
-        // a timestamp is added to keep track of how `fresh` the result is
-        // in the case of an online operation, it is the time when the operation starts
-        // in the case of an offline operation, it is set to the timestamp of the last online operation
         [SerializeField]
         protected long m_Timestamp = 0;
         public long timestamp { get { return m_Timestamp; } }
@@ -37,7 +34,7 @@ namespace UnityEditor.PackageManager.UI
 
         public float progressPercentage => 0;
 
-        public event Action<IOperation, Error> onOperationError = delegate {};
+        public event Action<IOperation, UIError> onOperationError = delegate {};
         public event Action<IOperation> onOperationSuccess = delegate {};
         public event Action<IOperation> onOperationFinalized = delegate {};
         public event Action<IOperation> onOperationProgress = delegate {};
@@ -58,7 +55,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (!ApplicationUtil.instance.isUserLoggedIn)
             {
-                OnOperationError(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
+                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
                 return;
             }
 
@@ -66,7 +63,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (!ApplicationUtil.instance.isUserLoggedIn)
                 {
-                    OnOperationError(new Error(NativeErrorCode.Unknown, L10n.Tr("User not logged in")));
+                    OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
                     return;
                 }
 
@@ -78,7 +75,7 @@ namespace UnityEditor.PackageManager.UI
             }, error => OnOperationError(error));
         }
 
-        private void OnOperationError(Error error)
+        private void OnOperationError(UIError error)
         {
             onOperationError?.Invoke(this, error);
             FinalizedOperation();

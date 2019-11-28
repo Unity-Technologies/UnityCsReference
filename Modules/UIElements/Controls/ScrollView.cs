@@ -263,11 +263,13 @@ namespace UnityEngine.UIElements
         {
             float xTransform = contentContainer.transform.position.x * -1;
 
-            float viewMin = contentViewport.worldBound.xMin + xTransform;
-            float viewMax = contentViewport.worldBound.xMax + xTransform;
+            var contentWB = contentViewport.worldBound;
+            float viewMin = contentWB.xMin + xTransform;
+            float viewMax = contentWB.xMax + xTransform;
 
-            float childBoundaryMin = child.worldBound.xMin + xTransform;
-            float childBoundaryMax = child.worldBound.xMax + xTransform;
+            var childWB = child.worldBound;
+            float childBoundaryMin = childWB.xMin + xTransform;
+            float childBoundaryMax = childWB.xMax + xTransform;
 
             if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
                 return 0;
@@ -281,11 +283,13 @@ namespace UnityEngine.UIElements
         {
             float yTransform = contentContainer.transform.position.y * -1;
 
-            float viewMin = contentViewport.worldBound.yMin + yTransform;
-            float viewMax = contentViewport.worldBound.yMax + yTransform;
+            var contentWB = contentViewport.worldBound;
+            float viewMin = contentWB.yMin + yTransform;
+            float viewMax = contentWB.yMax + yTransform;
 
-            float childBoundaryMin = child.worldBound.yMin + yTransform;
-            float childBoundaryMax = child.worldBound.yMax + yTransform;
+            var childWB = child.worldBound;
+            float childBoundaryMin = childWB.yMin + yTransform;
+            float childBoundaryMax = childWB.yMax + yTransform;
 
             if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
                 return 0;
@@ -323,44 +327,28 @@ namespace UnityEngine.UIElements
         public static readonly string contentUssClassName = ussClassName + "__content-container";
         public static readonly string hScrollerUssClassName = ussClassName + "__horizontal-scroller";
         public static readonly string vScrollerUssClassName = ussClassName + "__vertical-scroller";
-        public static readonly string scrollVariantUssClassName = ussClassName + "--scroll";
-
-        [Obsolete("horizontalVariantUssClassName has been deprecated. Use hContentVariantUssClassName and hViewportVariantUssClassName instead.")]
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
-        [Obsolete("verticalVariantUssClassName has been deprecated. Use vContentVariantUssClassName and vViewportVariantUssClassName instead.")]
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
-        [Obsolete("verticalHorizontalVariantUssClassName has been deprecated. Use vhContentVariantUssClassName and vhViewportVariantUssClassName instead.")]
         public static readonly string verticalHorizontalVariantUssClassName = ussClassName + "--vertical-horizontal";
-
-        public static readonly string hContentVariantUssClassName = contentUssClassName + "--horizontal";
-        public static readonly string vContentVariantUssClassName = contentUssClassName + "--vertical";
-        public static readonly string vhContentVariantUssClassName = contentUssClassName + "--vertical-horizontal";
-
-        public static readonly string hViewportVariantUssClassName = viewportUssClassName + "--horizontal";
-        public static readonly string vViewportVariantUssClassName = viewportUssClassName + "--vertical";
-        public static readonly string vhViewportVariantUssClassName = viewportUssClassName + "--vertical-horizontal";
-
+        public static readonly string scrollVariantUssClassName = ussClassName + "--scroll";
 
         public ScrollView() : this(ScrollViewMode.Vertical) {}
 
         public ScrollView(ScrollViewMode scrollViewMode)
         {
             AddToClassList(ussClassName);
-            AddToClassList(scrollVariantUssClassName);
 
             contentViewport = new VisualElement() {name = "unity-content-viewport"};
             contentViewport.AddToClassList(viewportUssClassName);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             contentViewport.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            contentViewport.pickingMode = PickingMode.Ignore;
             hierarchy.Add(contentViewport);
 
             m_ContentContainer = new VisualElement() {name = "unity-content-container"};
             m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ContentContainer.AddToClassList(contentUssClassName);
             m_ContentContainer.usageHints = UsageHints.GroupTransform;
-            m_ContentContainer.pickingMode = PickingMode.Ignore;
             contentViewport.Add(m_ContentContainer);
 
             SetScrollViewMode(scrollViewMode);
@@ -396,27 +384,24 @@ namespace UnityEngine.UIElements
 
         internal void SetScrollViewMode(ScrollViewMode scrollViewMode)
         {
-            contentContainer.RemoveFromClassList(hContentVariantUssClassName);
-            contentContainer.RemoveFromClassList(vContentVariantUssClassName);
-            contentContainer.RemoveFromClassList(vhContentVariantUssClassName);
-
-            contentViewport.RemoveFromClassList(hViewportVariantUssClassName);
-            contentViewport.RemoveFromClassList(vViewportVariantUssClassName);
-            contentViewport.RemoveFromClassList(vhViewportVariantUssClassName);
+            RemoveFromClassList(verticalVariantUssClassName);
+            RemoveFromClassList(horizontalVariantUssClassName);
+            RemoveFromClassList(verticalHorizontalVariantUssClassName);
+            RemoveFromClassList(scrollVariantUssClassName);
 
             switch (scrollViewMode)
             {
                 case ScrollViewMode.Vertical:
-                    contentContainer.AddToClassList(vContentVariantUssClassName);
-                    contentViewport.AddToClassList(vViewportVariantUssClassName);
+                    AddToClassList(verticalVariantUssClassName);
+                    AddToClassList(scrollVariantUssClassName);
                     break;
                 case ScrollViewMode.Horizontal:
-                    contentContainer.AddToClassList(hContentVariantUssClassName);
-                    contentViewport.AddToClassList(hViewportVariantUssClassName);
+                    AddToClassList(horizontalVariantUssClassName);
+                    AddToClassList(scrollVariantUssClassName);
                     break;
                 case ScrollViewMode.VerticalAndHorizontal:
-                    contentContainer.AddToClassList(vhContentVariantUssClassName);
-                    contentViewport.AddToClassList(vhViewportVariantUssClassName);
+                    AddToClassList(scrollVariantUssClassName);
+                    AddToClassList(verticalHorizontalVariantUssClassName);
                     break;
             }
         }
@@ -430,11 +415,6 @@ namespace UnityEngine.UIElements
 
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
-                // In the editor, we need PickingMode.Ignore so users can pick IMGUI dockarea
-                // splitters behind the scroll view. In the runtime, since we support touch,
-                // we need to support picking there.
-                contentViewport.pickingMode = PickingMode.Position;
-
                 contentViewport.RegisterCallback<PointerDownEvent>(OnPointerDown);
                 contentViewport.RegisterCallback<PointerMoveEvent>(OnPointerMove);
                 contentViewport.RegisterCallback<PointerUpEvent>(OnPointerUp);
@@ -450,8 +430,6 @@ namespace UnityEngine.UIElements
 
             if (evt.originPanel.contextType == ContextType.Player)
             {
-                contentViewport.pickingMode = PickingMode.Ignore;
-
                 contentViewport.UnregisterCallback<PointerDownEvent>(OnPointerDown);
                 contentViewport.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
                 contentViewport.UnregisterCallback<PointerUpEvent>(OnPointerUp);

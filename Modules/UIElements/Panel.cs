@@ -280,16 +280,16 @@ namespace UnityEngine.UIElements
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
-        private ElementUnderPointer m_TopElementUnderPointers = new ElementUnderPointer();
+        internal ElementUnderPointer m_TopElementUnderPointers = new ElementUnderPointer();
 
         internal VisualElement GetTopElementUnderPointer(int pointerId)
         {
             return m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId);
         }
 
-        void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId)
+        void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, Vector2 pointerPos)
         {
-            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, pointerId);
+            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, pointerId, pointerPos);
         }
 
         internal void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
@@ -316,12 +316,14 @@ namespace UnityEngine.UIElements
             {
                 if (PointerDeviceState.GetPanel(pointerId) != this)
                 {
-                    SetElementUnderPointer(null, pointerId);
+                    SetElementUnderPointer(null, pointerId, new Vector2(float.MinValue, float.MinValue));
                 }
                 else
                 {
-                    VisualElement elementUnderPointer = Pick(PointerDeviceState.GetPointerPosition(pointerId));
-                    SetElementUnderPointer(elementUnderPointer, pointerId);
+                    var pointerPos = PointerDeviceState.GetPointerPosition(pointerId);
+                    // Here it's important to call PickAll instead of Pick to ensure we don't use the cached value.
+                    VisualElement elementUnderPointer = PickAll(pointerPos, null);
+                    SetElementUnderPointer(elementUnderPointer, pointerId, pointerPos);
                 }
             }
 
@@ -582,12 +584,17 @@ namespace UnityEngine.UIElements
                 return null;
             }
 
-            Vector2 localPoint = root.WorldToLocal(point);
-
-            if (!root.boundingBox.Contains(localPoint))
+            if (!root.worldBoundingBox.Contains(point))
             {
                 return null;
             }
+
+            // Problem here: everytime we pick, we need to do that expensive transformation.
+            // The default Contains() compares with rect, while we could cache the rect in world space (transform 2 points, 4 if there is rotation) and be done
+            // here we have to transform 1 point at every call.
+            // Now since this is a virtual, we can't just start to call it with global pos... we could break client code.
+            // EdgeControl and port connectors in GraphView overload this.
+            Vector2 localPoint = root.WorldToLocal(point);
 
             bool containsPoint = root.ContainsPoint(localPoint);
             // we only skip children in the case we visually clip them
@@ -598,7 +605,8 @@ namespace UnityEngine.UIElements
 
             VisualElement returnedChild = null;
             // Depth first in reverse order, do children
-            for (int i = root.hierarchy.childCount - 1; i >= 0; i--)
+            var cCount = root.hierarchy.childCount;
+            for (int i = cCount - 1; i >= 0; i--)
             {
                 var child = root.hierarchy[i];
                 var result = PerformPick(child, point, picked);
@@ -643,6 +651,16 @@ namespace UnityEngine.UIElements
         public override VisualElement Pick(Vector2 point)
         {
             ValidateLayout();
+            Vector2 mousePos;
+            var element = m_TopElementUnderPointers.GetTopElementUnderPointer(PointerId.mousePointerId, out mousePos);
+            var diff = mousePos - point;
+            // The VisualTreeTransformClipUpdater updates the ElementUnderPointer after each validate layout.
+            // small enough to be smaller than 1 pixel
+            if (diff.sqrMagnitude < 0.25f)
+            {
+                return element;
+            }
+
             return PickAll(visualTree, point);
         }
 
@@ -685,6 +703,16 @@ namespace UnityEngine.UIElements
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
         }
 
+        void UpdateForRepaint()
+        {
+            //Here we don't want to update animation and bindings which are ticked by the scheduler
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Repaint);
+        }
+
         public override void DirtyStyleSheets()
         {
             m_VisualTreeUpdater.DirtyStyleSheets();
@@ -706,7 +734,7 @@ namespace UnityEngine.UIElements
 
             using (m_MarkerUpdate.Auto())
             {
-                m_VisualTreeUpdater.UpdateVisualTree();
+                UpdateForRepaint();
             }
 
             panelDebug?.Refresh();

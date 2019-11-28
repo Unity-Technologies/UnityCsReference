@@ -16,9 +16,11 @@ using UnityEditor.Experimental;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
 using UnityEngine;
+using UnityEditor.U2D;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
+using UnityEngine.U2D;
 
 namespace UnityEditor
 {
@@ -197,6 +199,17 @@ namespace UnityEditor
                     Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(pathName);
                     SpriteUtilityWindow.ShowSpriteEditorWindow();
                 }
+            }
+        }
+
+        internal class DoCreateSpriteAtlas : EndNameEditAction
+        {
+            public int sides;
+            public override void Action(int instanceId, string pathName, string resourceFile)
+            {
+                var spriteAtlasAsset = new SpriteAtlasAsset();
+                InternalEditorUtility.SaveToSerializedFileAndForget(new Object[] { spriteAtlasAsset }, pathName, true);
+                AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
             }
         }
     }
@@ -380,6 +393,13 @@ namespace UnityEditor
         {
             var icon = EditorGUIUtility.IconContent<AudioMixerController>().image as Texture2D;
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
+        }
+
+        static private void CreateSpriteAtlas()
+        {
+            var icon = EditorGUIUtility.IconContent<SpriteAtlasAsset>().image as Texture2D;
+            DoCreateSpriteAtlas action = ScriptableObject.CreateInstance<DoCreateSpriteAtlas>();
+            StartNameEditingIfProjectWindowExists(0, action, "New Sprite Atlas.spriteatlasv2", icon, null);
         }
 
         static private void CreateSpritePolygon(int sides)

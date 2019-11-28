@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI
         event Action<string, IPackage> onProductPackageChanged;
         event Action<string, IPackageVersion> onPackageVersionUpdated;
         event Action<string, IPackageVersion> onProductPackageVersionUpdated;
-        event Action<string, Error> onProductPackageFetchError;
+        event Action<string, UIError> onProductPackageFetchError;
 
         bool isAddRemoveOrEmbedInProgress { get; }
 

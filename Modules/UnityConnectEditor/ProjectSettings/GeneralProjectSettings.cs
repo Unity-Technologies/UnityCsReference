@@ -94,15 +94,13 @@ namespace UnityEditor.Connect
         {
             // Must reset properties every time this is activated
             rootVisualElement.Add(m_GeneralTemplate.CloneTree().contentContainer);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
 
             //If we haven't received new bound info, fetch them
             var projectInfoOnBind = new ProjectInfoData(UnityConnect.instance.projectInfo.organizationId,
+                UnityConnect.instance.projectInfo.organizationName,
                 UnityConnect.instance.projectInfo.projectName,
-                UnityConnect.instance.projectInfo.projectGUID);
+                UnityConnect.instance.projectInfo.projectGUID,
+                UnityConnect.instance.projectInfo.projectId);
             var generalTemplate = EditorGUIUtility.Load(k_TemplatePath) as VisualTreeAsset;
             var scrollContainer = rootVisualElement.Q(className: k_ScrollContainerClassName);
             scrollContainer.Clear();
@@ -116,17 +114,16 @@ namespace UnityEditor.Connect
             var dashboardFieldBlock = rootVisualElement.Q(k_DashboardBlockName);
 
             InitializeFieldBlock(projectNameFieldBlock, projectInfoOnBind.name);
-            InitializeFieldBlock(organizationFieldBlock, projectInfoOnBind.organizationId);
+            InitializeFieldBlock(organizationFieldBlock, projectInfoOnBind.organizationName);
             InitializeFieldBlock(projectIdFieldBlock, projectInfoOnBind.guid);
             InitializeFieldBlock(dashboardFieldBlock);
 
             //Setup dashboard link
             var dashboardClickable = new Clickable(() =>
             {
-                Application.OpenURL(
-                    string.Format(ServicesConfiguration.instance.GetCurrentProjectDashboardUrl(),
-                        UnityConnect.instance.projectInfo.organizationId,
-                        UnityConnect.instance.projectInfo.projectGUID));
+                var dashboardUrl = ServicesConfiguration.instance.GetCurrentProjectDashboardUrl();
+                EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = (serviceInstance != null) ? serviceInstance.name : k_GeneralLabel, url = dashboardUrl });
+                Application.OpenURL(dashboardUrl);
             });
             rootVisualElement.Q(k_DashboardBlockName).AddManipulator(dashboardClickable);
 

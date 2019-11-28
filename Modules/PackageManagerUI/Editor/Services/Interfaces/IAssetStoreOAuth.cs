@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreOAuth
     {
-        void FetchUserInfo(Action<AssetStoreOAuth.UserInfo> doneCallback, Action<Error> errorCallback);
+        void FetchUserInfo(Action<AssetStoreOAuth.UserInfo> doneCallback, Action<UIError> errorCallback);
 
         void ClearCache();
     }

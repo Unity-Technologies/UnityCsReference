@@ -33,9 +33,17 @@ namespace UnityEditor.PackageManager.UI
 
         public override IEnumerable<PackageLink> links => m_Links;
 
-        public AssetStorePackage(string productId, Error error)
+        [SerializeField]
+        private List<string> m_Labels;
+        public override IEnumerable<string> labels => m_Labels;
+
+        [SerializeField]
+        protected long m_PurchasedTimeTicks;
+        public override DateTime? purchasedTime => m_PurchasedTimeTicks == 0 ? (DateTime?)null : new DateTime(m_PurchasedTimeTicks, DateTimeKind.Utc);
+
+        public AssetStorePackage(string productId, UIError error)
         {
-            m_Errors = new List<Error> { error };
+            m_Errors = new List<UIError> { error };
             m_Progress = PackageProgress.None;
             m_Type = PackageType.AssetStore;
             m_Name = string.Empty;
@@ -45,56 +53,70 @@ namespace UnityEditor.PackageManager.UI
             m_Links = new List<PackageLink>();
             m_VersionList = new AssetStoreVersionList();
             m_UpmVersionList = new UpmVersionList();
+
+            m_Labels = new List<string>();
+            m_PurchasedTimeTicks = 0;
         }
 
-        public AssetStorePackage(AssetStoreFetchedInfo fetchedInfo, AssetStoreLocalInfo localInfo = null)
+        public AssetStorePackage(AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
         {
-            m_Errors = new List<Error>();
+            m_Errors = new List<UIError>();
             m_Progress = PackageProgress.None;
             m_Type = PackageType.AssetStore;
             m_Name = string.Empty;
-            m_ProductId = fetchedInfo?.id.ToString();
-            m_Images = fetchedInfo?.images ?? new List<PackageImage>();
-            m_Links = fetchedInfo?.links ?? new List<PackageLink>();
+            m_ProductId = productInfo?.id.ToString();
+            m_Images = productInfo?.images ?? new List<PackageImage>();
+            m_Links = productInfo?.links ?? new List<PackageLink>();
             m_VersionList = new AssetStoreVersionList();
             m_UpmVersionList = new UpmVersionList();
+            m_Labels = purchaseInfo?.tags;
+            m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
-            if (string.IsNullOrEmpty(fetchedInfo?.id) || string.IsNullOrEmpty(fetchedInfo?.versionId))
+            if (purchaseInfo == null)
             {
-                AddError(new Error(NativeErrorCode.Unknown, "Invalid product details."));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid purchase details."));
+            }
+            if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
+            {
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid product details."));
             }
             else if (localInfo == null)
             {
-                m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo));
+                m_VersionList.AddVersion(new AssetStorePackageVersion(productInfo));
             }
             else
             {
-                m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo, localInfo));
-                if (localInfo.canUpdate && (localInfo.versionId != fetchedInfo.versionId || localInfo.versionString != fetchedInfo.versionString))
-                    m_VersionList.AddVersion(new AssetStorePackageVersion(fetchedInfo));
+                m_VersionList.AddVersion(new AssetStorePackageVersion(productInfo, localInfo));
+                if (localInfo.canUpdate && (localInfo.versionId != productInfo.versionId || localInfo.versionString != productInfo.versionString))
+                    m_VersionList.AddVersion(new AssetStorePackageVersion(productInfo));
             }
         }
 
-        public AssetStorePackage(AssetStoreFetchedInfo fetchedInfo, UpmPackage package)
+        public AssetStorePackage(AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, UpmPackage package)
         {
-            m_Errors = new List<Error>();
+            m_Errors = new List<UIError>();
             m_Progress = PackageProgress.None;
             m_Type = PackageType.AssetStore;
             m_Name = package?.name ?? string.Empty;
-            m_ProductId = fetchedInfo?.id.ToString();
+            m_ProductId = productInfo?.id.ToString();
 
-            m_Images = fetchedInfo?.images ?? new List<PackageImage>();
-            m_Links = fetchedInfo?.links ?? new List<PackageLink>();
+            m_Images = productInfo?.images ?? new List<PackageImage>();
+            m_Links = productInfo?.links ?? new List<PackageLink>();
             m_VersionList = new AssetStoreVersionList();
+
+            m_Labels = purchaseInfo?.tags;
+            m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
             m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList();
             foreach (var version in m_UpmVersionList.Cast<UpmPackageVersion>())
-                version.UpdateFetchedInfo(fetchedInfo);
+                version.UpdateProductInfo(productInfo);
 
-            if (string.IsNullOrEmpty(fetchedInfo?.id) || string.IsNullOrEmpty(fetchedInfo?.versionId))
-                AddError(new Error(NativeErrorCode.Unknown, "Invalid product details."));
+            if (purchaseInfo == null)
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid purchase details."));
+            if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid product details."));
             else if (string.IsNullOrEmpty(package?.name))
-                AddError(new Error(NativeErrorCode.Unknown, "Invalid package info."));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid package info."));
         }
 
         public override IPackage Clone()

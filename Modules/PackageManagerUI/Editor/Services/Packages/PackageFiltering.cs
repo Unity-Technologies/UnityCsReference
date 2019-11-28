@@ -28,8 +28,6 @@ namespace UnityEditor.PackageManager.UI
                         && (PackageManagerPrefs.instance.showPackageDependencies || package.versions.installed.isDirectDependency);
                 case PackageFilterTab.AssetStore:
                     return ApplicationUtil.instance.isUserLoggedIn && package.Is(PackageType.AssetStore);
-                case PackageFilterTab.InDevelopment:
-                    return package.versions.installed?.HasTag(PackageTag.InDevelopment) ?? false;
                 default:
                     return false;
             }

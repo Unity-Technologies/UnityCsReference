@@ -164,6 +164,7 @@ namespace UnityEngine
         public virtual int maxComputeWorkGroupSizeZ => EditorSystemInfo.maxComputeWorkGroupSizeZ;
 
         public virtual bool supportsAsyncCompute => EditorSystemInfo.supportsAsyncCompute;
+        public virtual bool supportsGpuRecorder => EditorSystemInfo.supportsGpuRecorder;
 
         public virtual bool supportsGraphicsFence => EditorSystemInfo.supportsGraphicsFence;
 
@@ -181,6 +182,8 @@ namespace UnityEngine
         public virtual bool usesLoadStoreActions => EditorSystemInfo.usesLoadStoreActions;
 
         public virtual HDRDisplaySupportFlags hdrDisplaySupportFlags => EditorSystemInfo.hdrDisplaySupportFlags;
+
+        public virtual bool supportsConservativeRaster => EditorSystemInfo.supportsConservativeRaster;
 
         public virtual bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {

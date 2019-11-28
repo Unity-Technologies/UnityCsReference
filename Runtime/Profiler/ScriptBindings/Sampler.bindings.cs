@@ -84,16 +84,16 @@ namespace UnityEngine.Profiling
         internal CustomSampler() {}
         internal CustomSampler(IntPtr ptr) { m_Ptr = ptr; }
 
-        static public CustomSampler Create(string name)
+        static public CustomSampler Create(string name, bool collectGpuData = false)
         {
-            IntPtr nativeSampler = CreateInternal(name);
+            IntPtr nativeSampler = CreateInternal(name, collectGpuData);
             if (nativeSampler == IntPtr.Zero)
                 return s_InvalidCustomSampler;
             return new CustomSampler(nativeSampler);
         }
 
         [NativeMethod(Name = "ProfilerBindings::CreateCustomSamplerInternal", IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
-        private extern static IntPtr CreateInternal([NotNull] string name);
+        private extern static IntPtr CreateInternal([NotNull] string name, bool collectGpuData);
 
         [Conditional("ENABLE_PROFILER")]
         [NativeMethod(Name = "ProfilerBindings::CustomSampler_Begin", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]

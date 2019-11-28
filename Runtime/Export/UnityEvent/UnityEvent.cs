@@ -24,6 +24,41 @@ namespace UnityEngine.Events
         Bool
     }
 
+    internal class UnityEventTools
+    {
+        // Fix for assembly type name containing version / culture. We don't care about this for UI.
+        // we need to fix this here, because there is old data in existing projects.
+        // Typically, we're looking for .net Assembly Qualified Type Names and stripping everything after '<namespaces>.<typename>, <assemblyname>'
+        // Example: System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' -> 'System.String, mscorlib'
+        internal static string TidyAssemblyTypeName(string assemblyTypeName)
+        {
+            if (string.IsNullOrEmpty(assemblyTypeName))
+                return assemblyTypeName;
+
+            int min = Int32.MaxValue;
+            int i = assemblyTypeName.IndexOf(", Version=");
+            if (i != -1)
+                min = Math.Min(i, min);
+            i = assemblyTypeName.IndexOf(", Culture=");
+            if (i != -1)
+                min = Math.Min(i, min);
+            i = assemblyTypeName.IndexOf(", PublicKeyToken=");
+            if (i != -1)
+                min = Math.Min(i, min);
+
+            if (min != Int32.MaxValue)
+                assemblyTypeName = assemblyTypeName.Substring(0, min);
+
+            // Strip module assembly name.
+            // The non-modular version will always work, due to type forwarders.
+            // This way, when a type gets moved to a differnet module, previously serialized UnityEvents still work.
+            i = assemblyTypeName.IndexOf(", UnityEngine.");
+            if (i != -1 && assemblyTypeName.EndsWith("Module"))
+                assemblyTypeName = assemblyTypeName.Substring(0, i) + ", UnityEngine";
+            return assemblyTypeName;
+        }
+    }
+
     [Serializable]
     class ArgumentCache : ISerializationCallbackReceiver
     {
@@ -59,45 +94,15 @@ namespace UnityEngine.Events
         public string stringArgument { get { return m_StringArgument; } set { m_StringArgument = value; } }
         public bool   boolArgument   { get { return m_BoolArgument;   } set { m_BoolArgument = value; } }
 
-        // Fix for assembly type name containing version / culture. We don't care about this for UI.
-        // we need to fix this here, because there is old data in existing projects.
-        // Typically, we're looking for .net Assembly Qualified Type Names and stripping everything after '<namespaces>.<typename>, <assemblyname>'
-        // Example: System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' -> 'System.String, mscorlib'
-        private void TidyAssemblyTypeName()
-        {
-            if (string.IsNullOrEmpty(m_ObjectArgumentAssemblyTypeName))
-                return;
-
-            int min = Int32.MaxValue;
-            int i = m_ObjectArgumentAssemblyTypeName.IndexOf(", Version=");
-            if (i != -1)
-                min = Math.Min(i, min);
-            i = m_ObjectArgumentAssemblyTypeName.IndexOf(", Culture=");
-            if (i != -1)
-                min = Math.Min(i, min);
-            i = m_ObjectArgumentAssemblyTypeName.IndexOf(", PublicKeyToken=");
-            if (i != -1)
-                min = Math.Min(i, min);
-
-            if (min != Int32.MaxValue)
-                m_ObjectArgumentAssemblyTypeName = m_ObjectArgumentAssemblyTypeName.Substring(0, min);
-
-            // Strip module assembly name.
-            // The non-modular version will always work, due to type forwarders.
-            // This way, when a type gets moved to a differnet module, previously serialized UnityEvents still work.
-            i = m_ObjectArgumentAssemblyTypeName.IndexOf(", UnityEngine.");
-            if (i != -1 && m_ObjectArgumentAssemblyTypeName.EndsWith("Module"))
-                m_ObjectArgumentAssemblyTypeName = m_ObjectArgumentAssemblyTypeName.Substring(0, i) + ", UnityEngine";
-        }
 
         public void OnBeforeSerialize()
         {
-            TidyAssemblyTypeName();
+            m_ObjectArgumentAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_ObjectArgumentAssemblyTypeName);
         }
 
         public void OnAfterDeserialize()
         {
-            TidyAssemblyTypeName();
+            m_ObjectArgumentAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_ObjectArgumentAssemblyTypeName);
         }
     }
 
@@ -108,8 +113,17 @@ namespace UnityEngine.Events
 
         protected BaseInvokableCall(object target, MethodInfo function)
         {
-            if (target == null)
-                throw new ArgumentNullException("target");
+            if (function.IsStatic)
+            {
+                if (target != null)
+                    throw new ArgumentException("target must be null");
+            }
+            else
+            {
+                if (target == null)
+                    throw new ArgumentNullException("target");
+            }
+
             if (function == null)
                 throw new ArgumentNullException("function");
         }
@@ -362,12 +376,15 @@ namespace UnityEngine.Events
     }
 
     [Serializable]
-    class PersistentCall
+    class PersistentCall : ISerializationCallbackReceiver
     {
         //keep the layout of this class in sync with MonoPersistentCall in PersistentCallCollection.cpp
         [FormerlySerializedAs("instance")]
         [SerializeField]
         private Object m_Target;
+
+        [SerializeField]
+        private string m_TargetAssemblyTypeName;
 
         [FormerlySerializedAs("methodName")]
         [SerializeField]
@@ -389,6 +406,11 @@ namespace UnityEngine.Events
         public Object target
         {
             get { return m_Target; }
+        }
+
+        public string targetAssemblyTypeName
+        {
+            get { return m_TargetAssemblyTypeName; }
         }
 
         public string methodName
@@ -416,7 +438,7 @@ namespace UnityEngine.Events
         public bool IsValid()
         {
             // We need to use the same logic found in PersistentCallCollection.cpp, IsPersistentCallValid
-            return target != null && !String.IsNullOrEmpty(methodName);
+            return !String.IsNullOrEmpty(targetAssemblyTypeName) && !String.IsNullOrEmpty(methodName);
         }
 
         public BaseInvokableCall GetRuntimeCall(UnityEventBase theEvent)
@@ -430,22 +452,24 @@ namespace UnityEngine.Events
             if (method == null)
                 return null;
 
+            var targetObject = method.IsStatic ? null : target;
+
             switch (m_Mode)
             {
                 case PersistentListenerMode.EventDefined:
-                    return theEvent.GetDelegate(target, method);
+                    return theEvent.GetDelegate(targetObject, method);
                 case PersistentListenerMode.Object:
-                    return GetObjectCall(target, method, m_Arguments);
+                    return GetObjectCall(targetObject, method, m_Arguments);
                 case PersistentListenerMode.Float:
-                    return new CachedInvokableCall<float>(target, method, m_Arguments.floatArgument);
+                    return new CachedInvokableCall<float>(targetObject, method, m_Arguments.floatArgument);
                 case PersistentListenerMode.Int:
-                    return new CachedInvokableCall<int>(target, method, m_Arguments.intArgument);
+                    return new CachedInvokableCall<int>(targetObject, method, m_Arguments.intArgument);
                 case PersistentListenerMode.String:
-                    return new CachedInvokableCall<string>(target, method, m_Arguments.stringArgument);
+                    return new CachedInvokableCall<string>(targetObject, method, m_Arguments.stringArgument);
                 case PersistentListenerMode.Bool:
-                    return new CachedInvokableCall<bool>(target, method, m_Arguments.boolArgument);
+                    return new CachedInvokableCall<bool>(targetObject, method, m_Arguments.boolArgument);
                 case PersistentListenerMode.Void:
-                    return new InvokableCall(target, method);
+                    return new InvokableCall(targetObject, method);
             }
             return null;
         }
@@ -471,9 +495,10 @@ namespace UnityEngine.Events
             return ci.Invoke(new object[] {target, method, castedObject}) as BaseInvokableCall;
         }
 
-        public void RegisterPersistentListener(Object ttarget, string mmethodName)
+        public void RegisterPersistentListener(Object ttarget, Type targetType, string mmethodName)
         {
             m_Target = ttarget;
+            m_TargetAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(targetType.AssemblyQualifiedName);
             m_MethodName = mmethodName;
         }
 
@@ -481,6 +506,25 @@ namespace UnityEngine.Events
         {
             m_MethodName = string.Empty;
             m_Target = null;
+            m_TargetAssemblyTypeName = string.Empty;
+        }
+
+        private void ValidateTargetAssemblyType()
+        {
+            // Reconstruct TargetAssemblyTypeName from target if it's not present, for ex., when upgrading project
+            if (string.IsNullOrEmpty(m_TargetAssemblyTypeName) && m_Target != null)
+                m_TargetAssemblyTypeName = m_Target.GetType().AssemblyQualifiedName;
+            m_TargetAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_TargetAssemblyTypeName);
+        }
+
+        public void OnBeforeSerialize()
+        {
+            ValidateTargetAssemblyType();
+        }
+
+        public void OnAfterDeserialize()
+        {
+            ValidateTargetAssemblyType();
         }
     }
 
@@ -530,56 +574,56 @@ namespace UnityEngine.Events
             m_Calls.Clear();
         }
 
-        public void RegisterEventPersistentListener(int index, Object targetObj, string methodName)
+        public void RegisterEventPersistentListener(int index, Object targetObj, Type targetObjType, string methodName)
         {
             var listener = GetListener(index);
-            listener.RegisterPersistentListener(targetObj, methodName);
+            listener.RegisterPersistentListener(targetObj, targetObjType, methodName);
             listener.mode = PersistentListenerMode.EventDefined;
         }
 
-        public void RegisterVoidPersistentListener(int index, Object targetObj, string methodName)
+        public void RegisterVoidPersistentListener(int index, Object targetObj, Type targetObjType, string methodName)
         {
             var listener = GetListener(index);
-            listener.RegisterPersistentListener(targetObj, methodName);
+            listener.RegisterPersistentListener(targetObj, targetObjType, methodName);
             listener.mode = PersistentListenerMode.Void;
         }
 
-        public void RegisterObjectPersistentListener(int index, Object targetObj, Object argument, string methodName)
+        public void RegisterObjectPersistentListener(int index, Object targetObj, Type targetObjType, Object argument, string methodName)
         {
             var listener = GetListener(index);
-            listener.RegisterPersistentListener(targetObj, methodName);
+            listener.RegisterPersistentListener(targetObj, targetObjType, methodName);
             listener.mode = PersistentListenerMode.Object;
             listener.arguments.unityObjectArgument = argument;
         }
 
-        public void RegisterIntPersistentListener(int index, Object targetObj, int argument, string methodName)
+        public void RegisterIntPersistentListener(int index, Object targetObj, Type targetObjType, int argument, string methodName)
         {
             var listener = GetListener(index);
-            listener.RegisterPersistentListener(targetObj, methodName);
+            listener.RegisterPersistentListener(targetObj, targetObjType, methodName);
             listener.mode = PersistentListenerMode.Int;
             listener.arguments.intArgument = argument;
         }
 
-        public void RegisterFloatPersistentListener(int index, Object targetObj, float argument, string methodName)
+        public void RegisterFloatPersistentListener(int index, Object targetObj, Type targetObjType, float argument, string methodName)
         {
             var listener = GetListener(index);
-            listener.RegisterPersistentListener(targetObj, methodName);
+            listener.RegisterPersistentListener(targetObj, targetObjType, methodName);
             listener.mode = PersistentListenerMode.Float;
             listener.arguments.floatArgument = argument;
         }
 
-        public void RegisterStringPersistentListener(int index, Object targetObj, string argument, string methodName)
+        public void RegisterStringPersistentListener(int index, Object targetObj, Type targetObjType, string argument, string methodName)
         {
             var listener = GetListener(index);
-            listener.RegisterPersistentListener(targetObj, methodName);
+            listener.RegisterPersistentListener(targetObj, targetObjType, methodName);
             listener.mode = PersistentListenerMode.String;
             listener.arguments.stringArgument = argument;
         }
 
-        public void RegisterBoolPersistentListener(int index, Object targetObj, bool argument, string methodName)
+        public void RegisterBoolPersistentListener(int index, Object targetObj, Type targetObjType, bool argument, string methodName)
         {
             var listener = GetListener(index);
-            listener.RegisterPersistentListener(targetObj, methodName);
+            listener.RegisterPersistentListener(targetObj, targetObjType, methodName);
             listener.mode = PersistentListenerMode.Bool;
             listener.arguments.boolArgument = argument;
         }
@@ -706,7 +750,12 @@ namespace UnityEngine.Events
             DirtyPersistentCalls();
         }
 
-        protected abstract MethodInfo FindMethod_Impl(string name, object targetObj);
+        protected MethodInfo FindMethod_Impl(string name, object targetObj)
+        {
+            return FindMethod_Impl(name, targetObj.GetType());
+        }
+
+        protected abstract MethodInfo FindMethod_Impl(string name, Type targetObjType);
         internal abstract BaseInvokableCall GetDelegate(object target, MethodInfo theFunction);
 
         internal MethodInfo FindMethod(PersistentCall call)
@@ -715,27 +764,28 @@ namespace UnityEngine.Events
             if (!string.IsNullOrEmpty(call.arguments.unityObjectArgumentAssemblyTypeName))
                 type = Type.GetType(call.arguments.unityObjectArgumentAssemblyTypeName, false) ?? typeof(Object);
 
-            return FindMethod(call.methodName, call.target, call.mode, type);
+            var targetType = call.target != null ? call.target.GetType() : Type.GetType(call.targetAssemblyTypeName, false);
+            return FindMethod(call.methodName, targetType, call.mode, type);
         }
 
-        internal MethodInfo FindMethod(string name, object listener, PersistentListenerMode mode, Type argumentType)
+        internal MethodInfo FindMethod(string name, Type listenerType, PersistentListenerMode mode, Type argumentType)
         {
             switch (mode)
             {
                 case PersistentListenerMode.EventDefined:
-                    return FindMethod_Impl(name, listener);
+                    return FindMethod_Impl(name, listenerType);
                 case PersistentListenerMode.Void:
-                    return GetValidMethodInfo(listener, name, new Type[0]);
+                    return GetValidMethodInfo(listenerType, name, new Type[0]);
                 case PersistentListenerMode.Float:
-                    return GetValidMethodInfo(listener, name, new[] { typeof(float) });
+                    return GetValidMethodInfo(listenerType, name, new[] { typeof(float) });
                 case PersistentListenerMode.Int:
-                    return GetValidMethodInfo(listener, name, new[] { typeof(int) });
+                    return GetValidMethodInfo(listenerType, name, new[] { typeof(int) });
                 case PersistentListenerMode.Bool:
-                    return GetValidMethodInfo(listener, name, new[] { typeof(bool) });
+                    return GetValidMethodInfo(listenerType, name, new[] { typeof(bool) });
                 case PersistentListenerMode.String:
-                    return GetValidMethodInfo(listener, name, new[] { typeof(string) });
+                    return GetValidMethodInfo(listenerType, name, new[] { typeof(string) });
                 case PersistentListenerMode.Object:
-                    return GetValidMethodInfo(listener, name, new[] { argumentType ?? typeof(Object) });
+                    return GetValidMethodInfo(listenerType, name, new[] { argumentType ?? typeof(Object) });
                 default:
                     return null;
             }
@@ -825,10 +875,14 @@ namespace UnityEngine.Events
         // Find a valid method that can be bound to an event with a given name
         public static MethodInfo GetValidMethodInfo(object obj, string functionName, Type[] argumentTypes)
         {
-            var type = obj.GetType();
-            while (type != typeof(object) && type != null)
+            return GetValidMethodInfo(obj.GetType(), functionName, argumentTypes);
+        }
+
+        public static MethodInfo GetValidMethodInfo(Type objectType, string functionName, Type[] argumentTypes)
+        {
+            while (objectType != typeof(object) && objectType != null)
             {
-                var method = type.GetMethod(functionName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, argumentTypes, null);
+                var method = objectType.GetMethod(functionName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static, null, argumentTypes, null);
                 if (method != null)
                 {
                     // We need to make sure the Arguments are sane. When using the Type.DefaultBinder like we are above,
@@ -853,7 +907,7 @@ namespace UnityEngine.Events
                     if (methodValid)
                         return method;
                 }
-                type = type.BaseType;
+                objectType = objectType.BaseType;
             }
             return null;
         }
@@ -868,20 +922,44 @@ namespace UnityEngine.Events
             if (method == null)
                 throw new ArgumentNullException("method", UnityString.Format("Can not register null method on {0} for callback!", targetObj));
 
-            var obj = targetObj as Object;
-            if (obj == null || obj.GetInstanceID() == 0)
+            if (method.DeclaringType == null)
             {
-                throw new ArgumentException(
-                    UnityString.Format("Could not register callback {0} on {1}. The class {2} does not derive from UnityEngine.Object",
-                        method.Name,
-                        targetObj,
-                        targetObj == null ? "null" : targetObj.GetType().ToString()));
+                throw new NullReferenceException(
+                    UnityString.Format(
+                        "Method '{0}' declaring type is null, global methods are not supported",
+                        method.Name));
             }
 
-            if (method.IsStatic)
-                throw new ArgumentException(UnityString.Format("Could not register listener {0} on {1} static functions are not supported.", method, GetType()));
+            Type targetType;
+            if (!method.IsStatic)
+            {
+                var obj = targetObj as Object;
+                if (obj == null || obj.GetInstanceID() == 0)
+                {
+                    throw new ArgumentException(
+                        UnityString.Format(
+                            "Could not register callback {0} on {1}. The class {2} does not derive from UnityEngine.Object",
+                            method.Name,
+                            targetObj,
+                            targetObj == null ? "null" : targetObj.GetType().ToString()));
+                }
 
-            if (FindMethod(method.Name, targetObj, mode, argumentType) == null)
+                targetType = obj.GetType();
+
+                if (!method.DeclaringType.IsAssignableFrom(targetType))
+                    throw new ArgumentException(
+                        UnityString.Format(
+                            "Method '{0}' declaring type '{1}' is not assignable from object type '{2}'",
+                            method.Name,
+                            method.DeclaringType.Name,
+                            obj.GetType().Name));
+            }
+            else
+            {
+                targetType = method.DeclaringType;
+            }
+
+            if (FindMethod(method.Name, targetType, mode, argumentType) == null)
             {
                 Debug.LogWarning(UnityString.Format("Could not register listener {0}.{1} on {2} the method could not be found.", targetObj, method, GetType()));
                 return false;
@@ -896,16 +974,21 @@ namespace UnityEngine.Events
 
         protected void RegisterPersistentListener(int index, object targetObj, MethodInfo method)
         {
+            RegisterPersistentListener(index, targetObj, targetObj.GetType(), method);
+        }
+
+        protected void RegisterPersistentListener(int index, object targetObj, Type targetObjType, MethodInfo method)
+        {
             if (!ValidateRegistration(method, targetObj, PersistentListenerMode.EventDefined))
                 return;
 
-            m_PersistentCalls.RegisterEventPersistentListener(index, targetObj as Object, method.Name);
+            m_PersistentCalls.RegisterEventPersistentListener(index, targetObj as Object, targetObjType, method.Name);
             DirtyPersistentCalls();
         }
 
         internal void RemovePersistentListener(Object target, MethodInfo method)
         {
-            if (method == null || method.IsStatic || target == null || target.GetInstanceID() == 0)
+            if (method == null)
                 return;
             m_PersistentCalls.RemoveListeners(target, method.Name);
             DirtyPersistentCalls();
@@ -940,13 +1023,18 @@ namespace UnityEngine.Events
             if (!ValidateRegistration(call.Method, call.Target, PersistentListenerMode.Void))
                 return;
 
-            m_PersistentCalls.RegisterVoidPersistentListener(index, call.Target as Object, call.Method.Name);
+            m_PersistentCalls.RegisterVoidPersistentListener(index, call.Target as Object, call.Method.DeclaringType, call.Method.Name);
             DirtyPersistentCalls();
         }
 
         internal void RegisterVoidPersistentListenerWithoutValidation(int index, Object target, string methodName)
         {
-            m_PersistentCalls.RegisterVoidPersistentListener(index, target, methodName);
+            RegisterVoidPersistentListenerWithoutValidation(index, target, target.GetType(), methodName);
+        }
+
+        internal void RegisterVoidPersistentListenerWithoutValidation(int index, Object target, Type targetType, string methodName)
+        {
+            m_PersistentCalls.RegisterVoidPersistentListener(index, target, targetType, methodName);
             DirtyPersistentCalls();
         }
 
@@ -967,7 +1055,7 @@ namespace UnityEngine.Events
             if (!ValidateRegistration(call.Method, call.Target, PersistentListenerMode.Int))
                 return;
 
-            m_PersistentCalls.RegisterIntPersistentListener(index, call.Target as Object, argument, call.Method.Name);
+            m_PersistentCalls.RegisterIntPersistentListener(index, call.Target as Object, call.Method.DeclaringType, argument, call.Method.Name);
             DirtyPersistentCalls();
         }
 
@@ -988,7 +1076,7 @@ namespace UnityEngine.Events
             if (!ValidateRegistration(call.Method, call.Target, PersistentListenerMode.Float))
                 return;
 
-            m_PersistentCalls.RegisterFloatPersistentListener(index, call.Target as Object, argument, call.Method.Name);
+            m_PersistentCalls.RegisterFloatPersistentListener(index, call.Target as Object, call.Method.DeclaringType, argument, call.Method.Name);
             DirtyPersistentCalls();
         }
 
@@ -1009,7 +1097,7 @@ namespace UnityEngine.Events
             if (!ValidateRegistration(call.Method, call.Target, PersistentListenerMode.Bool))
                 return;
 
-            m_PersistentCalls.RegisterBoolPersistentListener(index, call.Target as Object, argument, call.Method.Name);
+            m_PersistentCalls.RegisterBoolPersistentListener(index, call.Target as Object, call.Method.DeclaringType, argument, call.Method.Name);
             DirtyPersistentCalls();
         }
 
@@ -1030,7 +1118,7 @@ namespace UnityEngine.Events
             if (!ValidateRegistration(call.Method, call.Target, PersistentListenerMode.String))
                 return;
 
-            m_PersistentCalls.RegisterStringPersistentListener(index, call.Target as Object, argument, call.Method.Name);
+            m_PersistentCalls.RegisterStringPersistentListener(index, call.Target as Object, call.Method.DeclaringType, argument, call.Method.Name);
             DirtyPersistentCalls();
         }
 
@@ -1049,7 +1137,7 @@ namespace UnityEngine.Events
             if (!ValidateRegistration(call.Method, call.Target, PersistentListenerMode.Object, argument == null ? typeof(Object) : argument.GetType()))
                 return;
 
-            m_PersistentCalls.RegisterObjectPersistentListener(index, call.Target as Object, argument, call.Method.Name);
+            m_PersistentCalls.RegisterObjectPersistentListener(index, call.Target as Object, call.Method.DeclaringType, argument, call.Method.Name);
             DirtyPersistentCalls();
         }
 

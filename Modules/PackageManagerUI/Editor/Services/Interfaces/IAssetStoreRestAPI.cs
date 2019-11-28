@@ -9,9 +9,9 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreRestAPI
     {
-        void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<Error> errorCallbackAction);
+        void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction);
 
-        void GetTaggings(Action<Dictionary<string, object>> doneCallbackAction, Action<Error> errorCallbackAction);
+        void GetTaggings(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction);
 
         void GetProductDetail(long productID, Action<Dictionary<string, object>> doneCallbackAction);
 

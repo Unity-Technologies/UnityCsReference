@@ -20,10 +20,12 @@ namespace Unity.Profiling.LowLevel
         AvailabilityEditor = 1 << 2,
 
         Warning = 1 << 4,
+
+        Counter = 1 << 7,
     }
 
     // Supported profiler metadata types.
-    // Must be in sync with profiling::Marker::Metadata::Type!
+    // Must be in sync with profiling::Marker::MetadataDesc::Type!
     public enum ProfilerMarkerDataType : byte
     {
         Int32 = 2,
@@ -33,5 +35,6 @@ namespace Unity.Profiling.LowLevel
         Float = 6,
         Double = 7,
         String16 = 9,
-    };
+        Blob8 = 11,
+    }
 }

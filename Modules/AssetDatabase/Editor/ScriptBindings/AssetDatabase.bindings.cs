@@ -59,6 +59,7 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetDatabase/Editor/ScriptBindings/AssetDatabase.bindings.h")]
     [NativeHeader("Editor/Src/PackageUtility.h")]
     [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
+    [NativeHeader("Editor/Src/Application/ApplicationFunctions.h")]
     [StaticAccessor("AssetDatabaseBindings", StaticAccessorType.DoubleColon)]
     public partial class AssetDatabase
     {
@@ -500,6 +501,12 @@ namespace UnityEditor
         {
             return ImportPackage(packagePath, ImportPackageOptions.NoGUI);
         }
+
+        [FreeFunction("ApplicationDisallowAutoRefresh")]
+        public static extern void DisallowAutoRefresh();
+
+        [FreeFunction("ApplicationAllowAutoRefresh")]
+        public static extern void AllowAutoRefresh();
     }
 }
 

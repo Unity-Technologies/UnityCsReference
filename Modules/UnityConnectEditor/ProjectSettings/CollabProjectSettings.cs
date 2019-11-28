@@ -149,10 +149,6 @@ namespace UnityEditor.Connect
             // Must reset properties every time this is activated
             var mainTemplate = EditorGUIUtility.Load(k_CollaborateCommonUxmlPath) as VisualTreeAsset;
             rootVisualElement.Add(mainTemplate.CloneTree().contentContainer);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
-            rootVisualElement.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
-            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
 
             // Make sure to reset the state machine
             m_StateMachine.ClearCurrentState();
@@ -175,7 +171,9 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    Application.OpenURL(ServicesConfiguration.instance.collabDashboardUrl);
+                    var dashboardUrl = ServicesConfiguration.instance.collabDashboardUrl;
+                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = CollabService.instance.name, url = dashboardUrl });
+                    Application.OpenURL(dashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -366,7 +364,9 @@ namespace UnityEditor.Connect
                 {
                     var clickable = new Clickable(() =>
                     {
-                        Application.OpenURL(ServicesConfiguration.instance.GetCloudUsageDashboardUrl());
+                        var dashboardUrl = ServicesConfiguration.instance.GetCloudUsageDashboardUrl();
+                        EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = CollabService.instance.name, url = dashboardUrl });
+                        Application.OpenURL(dashboardUrl);
                     });
                     gotoWebDashboard.AddManipulator(clickable);
                 }

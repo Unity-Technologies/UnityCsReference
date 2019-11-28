@@ -403,7 +403,7 @@ namespace UnityEditor
                     int id = EditorGUIUtility.GetControlID(1235498, FocusType.Keyboard, r2);
 
                     EditorGUI.BeginProperty(r2, GUIContent.none, objectProp);
-                    EditorGUI.DoObjectField(r2, r2, id, null, null, objectProp, validator, true, ParticleSystemStyles.Get().objectField);
+                    EditorGUI.DoObjectField(r2, r2, id, null, objectProp, validator, true, ParticleSystemStyles.Get().objectField);
                     EditorGUI.EndProperty();
 
                     if (objectProp.objectReferenceValue == null)

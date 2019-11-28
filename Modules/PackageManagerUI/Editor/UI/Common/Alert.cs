@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI
             };
         }
 
-        public void SetError(Error error)
+        public void SetError(UIError error)
         {
             var message = "An error occurred.";
             if (error != null)

@@ -716,21 +716,6 @@ namespace UnityEditor.PackageManager.UI
                 RefreshPackageActionButtons();
 
                 PackageManagerWindowAnalytics.SendEvent("removeEmbedded", displayVersion.uniqueId);
-
-                EditorApplication.delayCall += () =>
-                {
-                    PackageFilterTab? newFilterTab = null;
-                    if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.InDevelopment)
-                    {
-                        var hasOtherInDevelopment = PackageDatabase.instance.allPackages.Any(p =>
-                        {
-                            var installed = p.versions.installed;
-                            return installed != null && installed.HasTag(PackageTag.InDevelopment) && p.uniqueId != package.uniqueId;
-                        });
-                        newFilterTab = hasOtherInDevelopment ? PackageFilterTab.InDevelopment : PackageFilterTab.InProject;
-                    }
-                    PackageManagerWindow.SelectPackageAndFilter(displayVersion.uniqueId, newFilterTab, true);
-                };
                 return;
             }
 
@@ -840,7 +825,7 @@ namespace UnityEditor.PackageManager.UI
             var downloadInProgress = PackageDatabase.instance.IsDownloadInProgress(displayVersion);
             if (!downloadInProgress && !ApplicationUtil.instance.isInternetReachable)
             {
-                detailError.SetError(new Error(NativeErrorCode.Unknown, "No internet connection"));
+                detailError.SetError(new UIError(UIErrorCode.NetworkError, "No internet connection"));
                 return;
             }
 

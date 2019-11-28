@@ -241,11 +241,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public VersionDefine[] VersionDefines { get; set; }
         public bool NoEngineReferences { get; set; }
 
+        private AssemblyFlags assemblyFlags = AssemblyFlags.None;
+
         public AssemblyFlags AssemblyFlags
         {
             get
             {
-                var assemblyFlags = AssemblyFlags.UserAssembly;
+                if (assemblyFlags != AssemblyFlags.None)
+                    return assemblyFlags;
+
+                assemblyFlags = AssemblyFlags.UserAssembly;
 
                 if (IncludePlatforms != null && IncludePlatforms.Length == 1 && IncludePlatforms[0].BuildTarget == BuildTarget.NoTarget)
                     assemblyFlags |= AssemblyFlags.EditorOnly;
@@ -263,6 +268,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (NoEngineReferences)
                 {
                     assemblyFlags |= AssemblyFlags.NoEngineReferences;
+                }
+
+                bool rootFolder, immutable;
+                bool imported = AssetDatabase.GetAssetFolderInfo(PathPrefix, out rootFolder, out immutable);
+
+                // Do not emit warnings for immutable (package) folders,
+                // as the user cannot do anything to fix them.
+                if (imported && immutable)
+                {
+                    assemblyFlags |= AssemblyFlags.SuppressCompilerWarnings;
                 }
 
                 return assemblyFlags;

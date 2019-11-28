@@ -90,6 +90,7 @@ namespace UnityEditor
             autoRepaintOnSceneChange = true;
             EditorApplication.searchChanged += Repaint;
             Repaint();
+            m_OverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Occlusion Culling"), DisplayControls, (int)SceneViewOverlay.Ordering.OcclusionCulling, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
         void OnDisable()
@@ -415,12 +416,14 @@ namespace UnityEditor
             SummaryGUI();
         }
 
+        OverlayWindow m_OverlayWindow;
         public void OnSceneViewGUI(SceneView sceneView)
         {
             if (!s_IsVisible)
                 return;
 
-            SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Occlusion Culling"), DisplayControls, (int)SceneViewOverlay.Ordering.OcclusionCulling, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+
+            SceneViewOverlay.ShowWindow(m_OverlayWindow);
         }
 
         void OnDidOpenScene()

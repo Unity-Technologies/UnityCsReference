@@ -128,16 +128,17 @@ namespace UnityEngine.UIElements
 
         internal static void PropagateToIMGUIContainer(VisualElement root, EventBase evt)
         {
-            if (evt.imguiEvent == null)
+            //We don't support IMGUIContainers in player
+            if (evt.imguiEvent == null || root.elementPanel.contextType == ContextType.Player)
             {
                 return;
             }
 
             // Send the event to the first IMGUIContainer that can handle it.
-
-            var imContainer = root as IMGUIContainer;
-            if (imContainer != null)
+            if (root.isIMGUIContainer)
             {
+                var imContainer = root as IMGUIContainer;
+
                 if (evt.Skip(imContainer))
                 {
                     // IMGUIContainer have no children. We can return without iterating the children list.
@@ -156,9 +157,10 @@ namespace UnityEngine.UIElements
                     Debug.Assert(evt.isPropagationStopped);
             }
 
-            if (root != null)
+            if (root.imguiContainerDescendantCount > 0)
             {
-                for (int i = 0; i < root.hierarchy.childCount; i++)
+                var childCount = root.hierarchy.childCount;
+                for (int i = 0; i < childCount; i++)
                 {
                     PropagateToIMGUIContainer(root.hierarchy[i], evt);
                     if (evt.isPropagationStopped)

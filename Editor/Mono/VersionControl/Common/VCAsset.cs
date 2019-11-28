@@ -20,9 +20,10 @@ namespace UnityEditor.VersionControl
 
         public bool IsOneOfStates(Asset.States[] states)
         {
+            var localState = this.state;
             foreach (Asset.States st in states)
             {
-                if ((this.state & st) != 0) return true;
+                if ((localState & st) != 0) return true;
             }
             return false;
         }

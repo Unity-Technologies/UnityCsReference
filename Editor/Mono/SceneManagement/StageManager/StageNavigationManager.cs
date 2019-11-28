@@ -301,21 +301,43 @@ namespace UnityEditor.SceneManagement
             return success;
         }
 
+        struct PreviewSceneLeakDetection
+        {
+            Type m_StageType;
+            Scene m_Scene;
+
+            internal void Init(PreviewSceneStage previewSceneStage)
+            {
+                m_StageType = null;
+                m_Scene = default(Scene);
+
+                if (previewSceneStage != null)
+                {
+                    m_StageType = previewSceneStage.GetType();
+                    m_Scene = previewSceneStage.scene;
+                }
+            }
+
+            internal void LogErrorIfPreviewSceneWasNotDestroyed()
+            {
+                if (m_StageType != null && m_Scene.IsValid())
+                    Debug.LogError($"Stage type '{m_StageType}' did not clean up properly: A PreviewScene was leaked. Ensure to call 'base.OnCloseStage()' from your implementation of OnCloseStage().");
+            }
+        }
+
         static void DeleteStagesInReverseOrder(List<Stage> stagesToDelete)
         {
+            var previewSceneLeakDetection = new PreviewSceneLeakDetection();
+
             // Remove in reverse order of added (simulates going back one stage at a time)
             for (int i = stagesToDelete.Count - 1; i >= 0; --i)
             {
                 var removeStage = stagesToDelete[i];
                 if (removeStage != null)
                 {
-                    Type stageType = removeStage.GetType();
-                    int numPreviewScenesBefore = EditorSceneManager.previewSceneCount;
-
+                    previewSceneLeakDetection.Init(removeStage as PreviewSceneStage);
                     DestroyImmediate(removeStage);
-
-                    if (stageType.IsSubclassOf(typeof(PreviewSceneStage)) && EditorSceneManager.previewSceneCount == numPreviewScenesBefore)
-                        Debug.LogError($"Stage type '{stageType}' did not clean up properly: A PreviewScene was leaked. Ensure to call 'base.OnCloseStage()' from your implementation of OnCloseStage().");
+                    previewSceneLeakDetection.LogErrorIfPreviewSceneWasNotDestroyed();
                 }
             }
         }

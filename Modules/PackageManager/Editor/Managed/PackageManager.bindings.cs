@@ -22,15 +22,17 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
 
-        public static extern NativeStatusCode Search([Out] out long operationId, string packageId, bool offlineMode);
+        public static extern NativeStatusCode GetPackageInfo([Out] out long operationId, string packageId, bool offlineMode);
 
-        public static extern NativeStatusCode SearchAll([Out] out long operationId, bool offlineMode);
+        public static extern NativeStatusCode GetAllPackageInfo([Out] out long operationId, bool offlineMode);
 
         public static extern NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
         public static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder);
 
         public static extern void Resolve();
+
+        public static extern NativeStatusCode Search([Out] out long operationId, SearchOptions options);
 
         public static extern NativeStatusCode GetOperationStatus(long operationId);
 
@@ -45,9 +47,11 @@ namespace UnityEditor.PackageManager
 
         extern public static PackageInfo GetEmbedOperationData(long operationId);
 
-        public static extern PackageInfo[] GetSearchOperationData(long operationId);
+        public static extern PackageInfo[] GetGetPackageInfoOperationData(long operationId);
 
         public static extern PackOperationResult GetPackOperationData(long operationId);
+
+        public static extern SearchResults GetSearchOperationData(long operationId);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
