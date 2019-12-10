@@ -209,7 +209,7 @@ namespace UnityEditor.Modules
                         if (isExtension)
                             InternalEditorUtility.RegisterExtensionDll(fullPath.Replace('\\', '/'), file.Value.guid);
                         else
-                            InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(fullPath), fullPath);
+                            InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileName(fullPath), fullPath);
                     }
                 }
                 s_PackageManager.LoadPackage(extension);
@@ -239,7 +239,7 @@ namespace UnityEditor.Modules
                 foreach (var library in module.NativeLibraries)
                     EditorUtility.LoadPlatformSupportNativeLibrary(library);
                 foreach (var fullPath in module.AssemblyReferencesForUserScripts)
-                    InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(fullPath), fullPath);
+                    InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileName(fullPath), fullPath);
 
                 EditorUtility.LoadPlatformSupportModuleNativeDllInternal(module.TargetName);
 
@@ -375,7 +375,7 @@ namespace UnityEditor.Modules
             // if we have a package, it's because it came from the locator, which means we need to setup the dll
             // for loading on the next domain reloads
             if (package != null)
-                InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(dllpath), dllpath);
+                InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileName(dllpath), dllpath);
 
             else // just set the package with the path to the loaded assembly so package manager can get its information from there
                 package = new Unity.DataContract.PackageInfo() { basePath = Path.GetDirectoryName(dllpath) };
@@ -400,7 +400,7 @@ namespace UnityEditor.Modules
                     if (!File.Exists(fullPath))
                         Debug.LogWarningFormat("Missing assembly \t{0} for {1}. Player support may be incomplete.", engine.basePath, engine.name);
                     else
-                        InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(dllpath), dllpath);
+                        InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileName(dllpath), dllpath);
                 }
                 BuildPipeline.SetPlaybackEngineDirectory(buildTargetGroup, target, BuildOptions.None /* TODO */, engine.basePath);
                 InternalEditorUtility.SetPlatformPath(engine.basePath);

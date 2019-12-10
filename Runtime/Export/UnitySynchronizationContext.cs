@@ -3,8 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -15,6 +16,7 @@ namespace UnityEngine
         private readonly List<WorkRequest> m_AsyncWorkQueue;
         private readonly List<WorkRequest> m_CurrentFrameWork = new List<WorkRequest>(kAwqInitialCapacity);
         private readonly int m_MainThreadID;
+        private int m_TrackedCount = 0;
 
         private UnitySynchronizationContext(int mainThreadID)
         {
@@ -50,6 +52,9 @@ namespace UnityEngine
             }
         }
 
+        public override void OperationStarted() { Interlocked.Increment(ref m_TrackedCount); }
+        public override void OperationCompleted() { Interlocked.Decrement(ref m_TrackedCount); }
+
         // Post will add the call to a task list to be executed later on the main thread then work will continue asynchronously
         public override void Post(SendOrPostCallback callback, object state)
         {
@@ -80,6 +85,11 @@ namespace UnityEngine
             m_CurrentFrameWork.Clear();
         }
 
+        private bool HasPendingTasks()
+        {
+            return m_AsyncWorkQueue.Count != 0 || m_TrackedCount != 0;
+        }
+
         // SynchronizationContext must be set before any user code is executed. This is done on
         // Initial domain load and domain reload at MonoManager ReloadAssembly
         [RequiredByNativeCode]
@@ -97,6 +107,34 @@ namespace UnityEngine
             var context = SynchronizationContext.Current as UnitySynchronizationContext;
             if (context != null)
                 context.Exec();
+        }
+
+        [RequiredByNativeCode]
+        private static bool ExecutePendingTasks(long millisecondsTimeout)
+        {
+            var context = SynchronizationContext.Current as UnitySynchronizationContext;
+            if (context == null)
+            {
+                return true;
+            }
+
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            while (context.HasPendingTasks())
+            {
+                if (stopwatch.ElapsedMilliseconds > millisecondsTimeout)
+                {
+                    break;
+                }
+
+                context.Exec();
+                //Sleeping/async waiting is simply not available on UWP with the version of .NET we're using on 2018.4
+                //but this new method is only used in the Editor, so we just need to make sure it compiles
+                Thread.Sleep(1);
+            }
+
+            return !context.HasPendingTasks();
         }
 
         private struct WorkRequest

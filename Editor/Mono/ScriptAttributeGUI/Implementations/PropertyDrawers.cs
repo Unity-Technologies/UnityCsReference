@@ -23,6 +23,57 @@ namespace UnityEditor
         }
     }
 
+    [CustomPropertyDrawer(typeof(MinAttribute))]
+    internal sealed class MinDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.DefaultPropertyField(position, property, label);
+            if (EditorGUI.EndChangeCheck())
+            {
+                MinAttribute minAttribute = (MinAttribute)attribute;
+                if (property.propertyType == SerializedPropertyType.Float)
+                {
+                    property.floatValue = Mathf.Max(minAttribute.min, property.floatValue);
+                }
+                else if (property.propertyType == SerializedPropertyType.Integer)
+                {
+                    property.intValue = Mathf.Max((int)minAttribute.min, property.intValue);
+                }
+                else if (property.propertyType == SerializedPropertyType.Vector2)
+                {
+                    var value = property.vector2Value;
+                    property.vector2Value = new Vector2(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y));
+                }
+                else if (property.propertyType == SerializedPropertyType.Vector2Int)
+                {
+                    var value = property.vector2IntValue;
+                    property.vector2IntValue = new Vector2Int(Mathf.Max((int)minAttribute.min, value.x), Mathf.Max((int)minAttribute.min, value.y));
+                }
+                else if (property.propertyType == SerializedPropertyType.Vector3)
+                {
+                    var value = property.vector3Value;
+                    property.vector3Value = new Vector3(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y), Mathf.Max(minAttribute.min, value.z));
+                }
+                else if (property.propertyType == SerializedPropertyType.Vector3Int)
+                {
+                    var value = property.vector3IntValue;
+                    property.vector3IntValue = new Vector3Int(Mathf.Max((int)minAttribute.min, value.x), Mathf.Max((int)minAttribute.min, value.y), Mathf.Max((int)minAttribute.min, value.z));
+                }
+                else if (property.propertyType == SerializedPropertyType.Vector4)
+                {
+                    var value = property.vector4Value;
+                    property.vector4Value = new Vector4(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y), Mathf.Max(minAttribute.min, value.z), Mathf.Max(minAttribute.min, value.w));
+                }
+                else
+                {
+                    EditorGUI.LabelField(position, label.text, "Use Min with float, int or Vector.");
+                }
+            }
+        }
+    }
+
     [CustomPropertyDrawer(typeof(MultilineAttribute))]
     internal sealed class MultilineDrawer : PropertyDrawer
     {
