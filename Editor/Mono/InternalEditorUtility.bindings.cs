@@ -177,7 +177,7 @@ namespace UnityEditorInternal
         extern internal static void RegisterExtensionDll(string dllLocation, string guid);
 
         [FreeFunction]
-        extern internal static void RegisterPrecompiledAssembly(string dllName, string dllLocation);
+        extern internal static void RegisterPlatformModuleAssembly(string dllName, string dllLocation);
 
         [FreeFunction("InternalEditorUtilityBindings::SetPlatformPath")]
         extern internal static void SetPlatformPath(string path);

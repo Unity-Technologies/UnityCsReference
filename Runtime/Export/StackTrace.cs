@@ -37,16 +37,6 @@ namespace UnityEngine
             return traceString;
         }
 
-        static bool IsSystemStacktraceType(object name)
-        {
-            string casted = (string)name;
-            return casted.StartsWith("UnityEditor.") ||
-                casted.StartsWith("UnityEngine.") ||
-                casted.StartsWith("System.") ||
-                casted.StartsWith("UnityScript.Lang.") ||
-                casted.StartsWith("Boo.Lang.");
-        }
-
         static public string ExtractStringFromException(System.Object exception)
         {
             string message, stackTrace;
@@ -95,87 +85,6 @@ namespace UnityEngine
             sb.Append(ExtractFormattedStackTrace(trace));
 
             stackTrace = sb.ToString();
-        }
-
-        [RequiredByNativeCode]
-        static internal string PostprocessStacktrace(string oldString, bool stripEngineInternalInformation)
-        {
-            if (oldString == null) return String.Empty;
-            string[] split = oldString.Split('\n');
-            StringBuilder sb = new StringBuilder(oldString.Length);
-            for (int i = 0; i < split.Length; i++)
-                split[i] = split[i].Trim();
-
-            for (int i = 0; i < split.Length; i++)
-            {
-                string newLine = split[i];
-
-                // Ignore empty lines
-                if (newLine.Length == 0 || newLine[0] == '\n')
-                    continue;
-
-                // Ignore unmanaged
-                if (newLine.StartsWith("in (unmanaged)"))
-                    continue;
-                // Make GameView GUI stack traces skip editor GUI part
-                if (stripEngineInternalInformation && newLine.StartsWith("UnityEditor.EditorGUIUtility:RenderGameViewCameras"))                     break;
-                // Ignore deep system stacktraces
-                if (stripEngineInternalInformation && i < split.Length - 1 && IsSystemStacktraceType(newLine))
-                {
-                    if (IsSystemStacktraceType(split[i + 1]))
-                        continue;
-                    int lineInfo = newLine.IndexOf(" (at");
-                    if (lineInfo != -1)
-                        newLine = newLine.Substring(0, lineInfo);
-                }
-                // Ignore wrapper managed to native
-                if (newLine.IndexOf("(wrapper managed-to-native)") != -1)
-                    continue;
-                if (newLine.IndexOf("(wrapper delegate-invoke)") != -1)
-                    continue;
-                // Ignore unknown method
-                if (newLine.IndexOf("at <0x00000> <unknown method>") != -1)
-                    continue;
-                // Ignore C++ line information
-                if (stripEngineInternalInformation && newLine.StartsWith("[") && newLine.EndsWith("]"))
-                    continue;
-                // Ignore starting at
-                if (newLine.StartsWith("at "))
-                {
-                    newLine = newLine.Remove(0, 3);
-                }
-
-                // Remove square brace [0x00001]
-                int brace = newLine.IndexOf("[0x");
-                int braceClose = -1;
-                if (brace != -1)
-                    braceClose = newLine.IndexOf("]", brace);
-                if (brace != -1 && braceClose > brace)
-                {
-                    newLine = newLine.Remove(brace, braceClose - brace + 1);
-                }
-
-                newLine = newLine.Replace("  in <filename unknown>:0", "");
-                newLine = newLine.Replace("\\", "/");
-
-                if (!string.IsNullOrEmpty(projectFolder))
-                    newLine = newLine.Replace(projectFolder, "");
-
-                // Unify path names to unix style
-                newLine = newLine.Replace('\\', '/');
-
-                int inStart = newLine.LastIndexOf("  in ");
-                if (inStart != -1)
-                {
-                    newLine = newLine.Remove(inStart, 5);
-                    newLine = newLine.Insert(inStart, " (at ");
-                    newLine = newLine.Insert(newLine.Length, ")");
-                }
-
-                sb.Append(newLine + "\n");
-            }
-
-            return sb.ToString();
         }
 
         [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)

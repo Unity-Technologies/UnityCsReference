@@ -34,7 +34,7 @@ namespace UnityEngine.XR.WSA
     };
 
     [NativeHeader("Runtime/VR/HoloLens/PerceptionRemoting.h")]
-    internal enum RemoteDeviceVersion
+    public enum RemoteDeviceVersion
     {
         V1,
         V2

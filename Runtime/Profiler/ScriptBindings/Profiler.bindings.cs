@@ -37,6 +37,7 @@ namespace UnityEngine.Profiling
     [NativeHeader("Runtime/Utilities/MemoryUtilities.h")]
     public sealed class Profiler
     {
+        internal const uint invalidProfilerArea = ~0u;
         // This class can't be explicitly created
         private Profiler() {}
 

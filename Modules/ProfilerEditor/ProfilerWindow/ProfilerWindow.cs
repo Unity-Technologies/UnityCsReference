@@ -124,7 +124,9 @@ namespace UnityEditor
         ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
 
         [SerializeField]
-        ProfilerArea? m_CurrentArea = ProfilerArea.CPU;
+        ProfilerArea m_CurrentArea = k_InvalidArea;
+
+        const ProfilerArea k_InvalidArea = unchecked((ProfilerArea)Profiler.invalidProfilerArea);
 
         ProfilerMemoryView m_ShowDetailedMemoryPane = ProfilerMemoryView.Simple;
         ProfilerAudioView m_ShowDetailedAudioPane = ProfilerAudioView.Channels;
@@ -394,6 +396,19 @@ namespace UnityEditor
                 m_Charts[(int)i] = chart;
             }
 
+
+            if (m_CurrentArea == k_InvalidArea || !m_Charts[(int)m_CurrentArea].active)
+            {
+                for (int i = 0; i < m_Charts.Length; i++)
+                {
+                    if (m_Charts[i].active)
+                    {
+                        m_CurrentArea = (ProfilerArea)i;
+                        break;
+                    }
+                }
+            }
+
             if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
                 m_VertSplit = new SplitterState(new[] { 50f, 50f }, new[] { k_VertSplitterMinSizes, k_VertSplitterMinSizes }, null);
             // 2 times the min splitter size plus one line height for the toolbar up top
@@ -470,19 +485,23 @@ namespace UnityEditor
 
         void OnChartClosed(Chart sender)
         {
-            var currentAreaChart = m_Charts[(int)m_CurrentArea];
-            if (currentAreaChart == sender)
-            {
-                m_CurrentArea = null;
-                m_UISystemProfiler.CurrentAreaChanged(m_CurrentArea);
-            }
             ProfilerChart profilerChart = (ProfilerChart)sender;
+            if (m_CurrentArea != k_InvalidArea)
+            {
+                var currentAreaChart = m_Charts[(int)m_CurrentArea];
+                if (currentAreaChart == sender)
+                {
+                    m_CurrentArea = k_InvalidArea;
+                    m_UISystemProfiler.CurrentAreaChanged(m_CurrentArea);
+                }
+            }
+            m_CurrentArea = k_InvalidArea;
             profilerChart.active = false;
         }
 
         void OnChartSelected(Chart sender)
         {
-            ProfilerArea? newArea = null;
+            ProfilerArea newArea = k_InvalidArea;
             for (int i = 0, numCharts = m_Charts.Length; i < numCharts; ++i)
             {
                 if (m_Charts[i] == sender)
@@ -736,7 +755,7 @@ namespace UnityEditor
             m_CPUOrGPUProfilerProperty = CreateProperty(sortType);
 
             m_CPUOrGPUProfilerPropertyConfig.frameIndex = GetActiveVisibleFrameIndex();
-            m_CPUOrGPUProfilerPropertyConfig.area = m_CurrentArea.Value;
+            m_CPUOrGPUProfilerPropertyConfig.area = m_CurrentArea;
             m_CPUOrGPUProfilerPropertyConfig.viewType = m_ViewType;
             m_CPUOrGPUProfilerPropertyConfig.sortType = sortType;
 
@@ -800,11 +819,11 @@ namespace UnityEditor
 
         void DrawNetworkOperationsPane()
         {
-            if (!m_CurrentArea.HasValue)
+            if (m_CurrentArea == k_InvalidArea)
                 return;
             SplitterGUILayout.BeginHorizontalSplit(m_NetworkSplit);
 
-            GUILayout.Label(ProfilerDriver.GetOverviewText(m_CurrentArea.Value, GetActiveVisibleFrameIndex()), EditorStyles.wordWrappedLabel);
+            GUILayout.Label(ProfilerDriver.GetOverviewText(m_CurrentArea, GetActiveVisibleFrameIndex()), EditorStyles.wordWrappedLabel);
 
             m_PaneScroll[(int)m_CurrentArea] = GUILayout.BeginScrollView(m_PaneScroll[(int)m_CurrentArea], Styles.background);
 
@@ -890,8 +909,10 @@ namespace UnityEditor
             var statsRect = new Rect(totalRect.x, totalRect.y, 230f, totalRect.height);
             var rightRect = new Rect(statsRect.xMax, totalRect.y, totalRect.width - statsRect.width, totalRect.height);
 
+            if (m_CurrentArea == k_InvalidArea)
+                return rightRect;
             // STATS
-            var content = ProfilerDriver.GetOverviewText(m_CurrentArea.Value, GetActiveVisibleFrameIndex());
+            var content = ProfilerDriver.GetOverviewText(m_CurrentArea, GetActiveVisibleFrameIndex());
             var textSize = EditorStyles.wordWrappedLabel.CalcSize(GUIContent.Temp(content));
             scrollPos = GUI.BeginScrollView(statsRect, scrollPos, new Rect(0, 0, textSize.x, textSize.y));
             GUI.Label(new Rect(3, 3, textSize.x, textSize.y), content, EditorStyles.wordWrappedLabel);
@@ -1453,7 +1474,7 @@ namespace UnityEditor
             }
         }
 
-        static void DrawOtherToolbar(ProfilerArea? area)
+        static void DrawOtherToolbar(ProfilerArea area)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (area == ProfilerArea.Rendering)
@@ -1470,12 +1491,12 @@ namespace UnityEditor
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawOverviewText(ProfilerArea? area)
+        private void DrawOverviewText(ProfilerArea area)
         {
-            if (!area.HasValue)
+            if (area == k_InvalidArea)
                 return;
 
-            string activeText = ProfilerDriver.GetOverviewText(area.Value, GetActiveVisibleFrameIndex());
+            string activeText = ProfilerDriver.GetOverviewText(area, GetActiveVisibleFrameIndex());
             float height = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(activeText), position.width);
 
             m_PaneScroll[(int)area] = GUILayout.BeginScrollView(m_PaneScroll[(int)area], Styles.background);
@@ -1483,7 +1504,7 @@ namespace UnityEditor
             GUILayout.EndScrollView();
         }
 
-        private void DrawPane(ProfilerArea? area)
+        private void DrawPane(ProfilerArea area)
         {
             DrawOtherToolbar(area);
             DrawOverviewText(area);
@@ -1559,17 +1580,17 @@ namespace UnityEditor
                     DrawAudioPane();
                     break;
                 case ProfilerArea.NetworkMessages:
-                    DrawPane(m_CurrentArea.Value);
+                    DrawPane(m_CurrentArea);
                     break;
                 case ProfilerArea.NetworkOperations:
                     DrawNetworkOperationsPane();
                     break;
                 case ProfilerArea.UI:
                 case ProfilerArea.UIDetails:
-                    m_UISystemProfiler.DrawUIPane(this, m_CurrentArea.Value, (UISystemProfilerChart)m_Charts[(int)ProfilerArea.UIDetails]);
+                    m_UISystemProfiler.DrawUIPane(this, m_CurrentArea, (UISystemProfilerChart)m_Charts[(int)ProfilerArea.UIDetails]);
                     break;
 
-                case null:
+                case k_InvalidArea:
                 default:
                     DrawPane(m_CurrentArea);
                     break;
