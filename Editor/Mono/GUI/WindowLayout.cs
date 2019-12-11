@@ -172,14 +172,18 @@ namespace UnityEditor
 
         static WindowLayout()
         {
-            EditorApplication.delayCall += () =>
+            EditorApplication.update -= DelayReloadWindowLayoutMenu;
+            EditorApplication.update += DelayReloadWindowLayoutMenu;
+        }
+
+        internal static void DelayReloadWindowLayoutMenu()
+        {
+            EditorApplication.update -= DelayReloadWindowLayoutMenu;
+            if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
             {
-                if (ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true))
-                {
-                    ReloadWindowLayoutMenu();
-                    EditorUtility.Internal_UpdateAllMenus();
-                }
-            };
+                ReloadWindowLayoutMenu();
+                EditorUtility.Internal_UpdateAllMenus();
+            }
         }
 
         internal static void ReloadWindowLayoutMenu()

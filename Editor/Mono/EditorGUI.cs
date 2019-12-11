@@ -1382,7 +1382,7 @@ namespace UnityEditor
 
         internal static Rect GetInspectorTitleBarObjectFoldoutRenderRect(Rect rect, GUIStyle baseStyle)
         {
-            return new Rect(rect.x + EditorStyles.foldout.margin.left + 1f, rect.y + (rect.height - kInspTitlebarFoldoutIconWidth) / 2 + (baseStyle != null ? baseStyle.padding.top : 0), kInspTitlebarFoldoutIconWidth, kInspTitlebarFoldoutIconWidth);
+            return new Rect(rect.x + EditorStyles.titlebarFoldout.margin.left + 1f, rect.y + (rect.height - kInspTitlebarFoldoutIconWidth) / 2 + (baseStyle != null ? baseStyle.padding.top : 0), kInspTitlebarFoldoutIconWidth, kInspTitlebarFoldoutIconWidth);
         }
 
         [SuppressMessage("ReSharper", "RedundantCast.0")]
@@ -1551,7 +1551,7 @@ namespace UnityEditor
             {
                 case EventType.Repaint:
                     bool isPressed = GUIUtility.hotControl == id;
-                    EditorStyles.foldout.Draw(renderRect, isPressed, isPressed, foldout, false);
+                    EditorStyles.titlebarFoldout.Draw(renderRect, isPressed, isPressed, foldout, false);
                     break;
             }
 
@@ -5200,7 +5200,7 @@ namespace UnityEditor
 
             GUIStyle baseStyle = EditorStyles.inspectorTitlebar;
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
-            GUIStyle foldoutStyle = EditorStyles.foldout;
+            GUIStyle foldoutStyle = EditorStyles.titlebarFoldout;
 
             Rect toggleRect = new Rect(position.x + baseStyle.padding.left, position.y + baseStyle.padding.top, kInspTitlebarIconWidth, kInspTitlebarIconWidth);
             Rect textRect = new Rect(toggleRect.xMax + kInspTitlebarSpacing, toggleRect.y, 200, kInspTitlebarIconWidth);
@@ -5248,7 +5248,7 @@ namespace UnityEditor
 
                     break;
                 case EventType.Repaint:
-                    GUIStyle foldoutStyle = EditorStyles.foldout;
+                    GUIStyle foldoutStyle = EditorStyles.titlebarFoldout;
                     Rect textRect =
                         new Rect(
                             position.x + baseStyle.padding.left +

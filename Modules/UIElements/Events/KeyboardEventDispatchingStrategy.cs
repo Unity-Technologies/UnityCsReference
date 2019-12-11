@@ -15,12 +15,13 @@ namespace UnityEngine.UIElements
         {
             if (panel != null)
             {
-                if (panel.focusController.GetLeafFocusedElement() != null)
-                {
-                    IMGUIContainer imguiContainer = panel.focusController.GetLeafFocusedElement() as IMGUIContainer;
+                var leafFocusElement = panel.focusController.GetLeafFocusedElement();
 
-                    if (imguiContainer != null)
+                if (leafFocusElement != null)
+                {
+                    if (leafFocusElement.isIMGUIContainer)
                     {
+                        IMGUIContainer imguiContainer =  (IMGUIContainer)leafFocusElement;
                         if (!evt.Skip(imguiContainer) && imguiContainer.SendEventToIMGUI(evt))
                         {
                             evt.StopPropagation();
@@ -29,7 +30,7 @@ namespace UnityEngine.UIElements
                     }
                     else
                     {
-                        evt.target = panel.focusController.GetLeafFocusedElement();
+                        evt.target = leafFocusElement;
                         EventDispatchUtilities.PropagateEvent(evt);
                     }
                 }

@@ -598,8 +598,10 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Other"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(skinWeightsProperty);
             EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
-            EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
-            EditorGUILayout.PropertyField(maximumLODLevelProperty);
+            if (!SupportedRenderingFeatures.active.overridesLODBias)
+                EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
+            if (!SupportedRenderingFeatures.active.overridesMaximumLODLevel)
+                EditorGUILayout.PropertyField(maximumLODLevelProperty);
             EditorGUILayout.PropertyField(particleRaycastBudgetProperty);
             EditorGUILayout.PropertyField(asyncUploadTimeSliceProperty);
             EditorGUILayout.PropertyField(asyncUploadBufferSizeProperty);

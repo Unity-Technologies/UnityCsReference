@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             int i = 0;
 
-            while (i < element.hierarchy.childCount)
+            while (i < element.hierarchy.childCount) //here we can't cache childCount as user code could change the hierarchy
             {
                 var child = element.hierarchy[i];
                 TraverseRecursive(child, depth + 1);

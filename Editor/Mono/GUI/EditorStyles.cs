@@ -150,6 +150,9 @@ namespace UnityEditor
         public static GUIStyle foldout { get { return s_Current.m_Foldout; } }
         private GUIStyle m_Foldout;
 
+        internal static GUIStyle titlebarFoldout { get { return s_Current.m_TitlebarFoldout; } }
+        private GUIStyle m_TitlebarFoldout;
+
         // Style used for headings for EditorGUI::ref::Foldout.
         public static GUIStyle foldoutPreDrop { get { return s_Current.m_FoldoutPreDrop; } }
         private GUIStyle m_FoldoutPreDrop;
@@ -477,6 +480,7 @@ namespace UnityEditor
             m_ToggleMixed = GetStyle("ToggleMixed");
             m_ColorField = GetStyle("ColorField");
             m_Foldout = GetStyle("Foldout");
+            m_TitlebarFoldout = GetStyle("Titlebar Foldout");
             m_FoldoutSelected = GUIStyle.none;
             m_IconButton = GetStyle("IconButton");
             m_TextFieldDropDown = GetStyle("TextFieldDropDown");

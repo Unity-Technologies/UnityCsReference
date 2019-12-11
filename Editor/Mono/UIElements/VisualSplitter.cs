@@ -155,7 +155,8 @@ namespace UnityEditor.UIElements
         public List<VisualElement> GetAffectedVisualElements()
         {
             List<VisualElement> elements = VisualElementListPool.Get();
-            for (int i = 0; i < hierarchy.childCount; ++i)
+            var count = hierarchy.childCount;
+            for (int i = 0; i < count; ++i)
             {
                 VisualElement element = hierarchy[i];
                 if (element.resolvedStyle.position == Position.Relative)
@@ -172,7 +173,8 @@ namespace UnityEditor.UIElements
 
         void UpdateCursorRects()
         {
-            for (int i = 0; i < hierarchy.childCount - 1; ++i)
+            var count = hierarchy.childCount;
+            for (int i = 0; i < count - 1; ++i)
             {
                 VisualElement visualElement = hierarchy[i];
                 bool isVertical = resolvedStyle.flexDirection == FlexDirection.Column || resolvedStyle.flexDirection == FlexDirection.ColumnReverse;

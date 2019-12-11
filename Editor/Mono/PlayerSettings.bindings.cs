@@ -496,6 +496,7 @@ namespace UnityEditor
         [NativeProperty("FullscreenMode")]
         public static extern FullScreenMode fullScreenMode { get; set; }
 
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRManagerSettings in the XR Management package instead.")]
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern bool virtualRealitySupported { get; set; }
 

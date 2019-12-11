@@ -248,7 +248,8 @@ namespace UnityEditor.Experimental.GraphView
         {
             parent.MarkDirtyRepaint();
 
-            for (int i = 0; i < parent.hierarchy.childCount; ++i)
+            var childCount = parent.hierarchy.childCount;
+            for (int i = 0; i < childCount; ++i)
             {
                 MarkChildrenDirtyRepaint(parent.hierarchy[i]);
             }
@@ -266,13 +267,14 @@ namespace UnityEditor.Experimental.GraphView
             MarkChildrenBoundingBoxesDirty(ve);
         }
 
-        void MarkChildrenBoundingBoxesDirty(VisualElement parent)
+        void MarkChildrenBoundingBoxesDirty(VisualElement element)
         {
-            parent.isBoundingBoxDirty = true;
+            element.isBoundingBoxDirty = true;
 
-            for (int i = 0; i < parent.hierarchy.childCount; ++i)
+            var count = element.hierarchy.childCount;
+            for (int i = 0; i < count; ++i)
             {
-                MarkChildrenBoundingBoxesDirty(parent.hierarchy[i]);
+                MarkChildrenBoundingBoxesDirty(element.hierarchy[i]);
             }
         }
 

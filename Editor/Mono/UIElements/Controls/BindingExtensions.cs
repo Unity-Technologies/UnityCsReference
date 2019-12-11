@@ -107,7 +107,8 @@ namespace UnityEditor.UIElements
 
             RemoveBinding(element as IBindable);
 
-            for (int i = 0; i < element.hierarchy.childCount; ++i)
+            var childCount = element.hierarchy.childCount;
+            for (int i = 0; i < childCount; ++i)
             {
                 Unbind(element.hierarchy[i]);
             }
@@ -186,7 +187,8 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            for (int i = 0; i < element.hierarchy.childCount; ++i)
+            var childCount = element.hierarchy.childCount;
+            for (int i = 0; i < childCount; ++i)
             {
                 Bind(element.hierarchy[i], objWrapper, parentProperty);
             }

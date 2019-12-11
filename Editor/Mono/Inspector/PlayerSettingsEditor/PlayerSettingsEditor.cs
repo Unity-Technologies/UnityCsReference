@@ -879,7 +879,7 @@ namespace UnityEditor
 
                         EditorGUILayout.PropertyField(m_DefaultScreenOrientation, SettingsContent.defaultScreenOrientation);
 
-                        if (PlayerSettings.virtualRealitySupported)
+                        if (VR.VREditor.GetVREnabledOnTargetGroup(targetGroup))
                         {
                             EditorGUILayout.HelpBox(SettingsContent.vrOrientationInfo.text, MessageType.Warning);
                         }

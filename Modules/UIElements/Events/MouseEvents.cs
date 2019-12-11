@@ -246,6 +246,9 @@ namespace UnityEngine.UIElements
             e.target = (pointerEvent as EventBase)?.target;
             e.imguiEvent = (pointerEvent as EventBase)?.imguiEvent;
 
+            if ((pointerEvent as EventBase)?.path != null)
+                e.path = (pointerEvent as EventBase).path;
+
             e.modifiers = pointerEvent.modifiers;
             e.mousePosition = pointerEvent.position;
             e.localMousePosition = pointerEvent.position;

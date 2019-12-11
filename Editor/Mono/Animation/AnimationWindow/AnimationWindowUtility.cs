@@ -13,7 +13,6 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
-using CurveModifiedType = UnityEditor.AnimationUtility.CurveModifiedType;
 
 namespace UnityEditorInternal
 {
@@ -859,10 +858,14 @@ namespace UnityEditorInternal
             {
                 foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                 {
-                    if (keyframe.time > candidate && keyframe.time <= previousTime.time)
+                    AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
+                    if (keyTime.frame == previousTime.frame)
                     {
-                        candidate = keyframe.time;
-                        found = true;
+                        if (keyTime.time > candidate)
+                        {
+                            candidate = keyTime.time;
+                            found = true;
+                        }
                     }
                 }
             }

@@ -27,6 +27,22 @@ namespace UnityEditor
 
         private int currentFrame = 0;
 
+        private Material previewTextureMaterial;
+
+        public UISystemProfiler()
+        {
+            setupPreviewTextureMaterial();
+        }
+
+        internal void setupPreviewTextureMaterial()
+        {
+            if (previewTextureMaterial != null)
+                return;
+
+            previewTextureMaterial = new Material(EditorGUI.transparentMaterial);
+            previewTextureMaterial.SetColor("_ColorMask", new Color(1, 1, 1, 1));
+        }
+
         internal void DrawUIPane(IProfilerWindowController win)
         {
             InitIfNeeded(win);
@@ -195,8 +211,9 @@ namespace UnityEditor
                                     EditorGUI.DrawRect(m_ZoomablePreview.drawRect,
                                         previewBackground == Styles.PreviewBackgroundType.Black ? Color.black : Color.white);
                             }
+
                             Graphics.DrawTexture(m_ZoomablePreview.drawRect, image, m_ZoomablePreview.shownArea, 0, 0, 0, 0,
-                                previewRenderMode == Styles.RenderMode.CompositeOverdraw ? m_CompositeOverdrawMaterial : EditorGUI.transparentMaterial);
+                                previewRenderMode == Styles.RenderMode.CompositeOverdraw ? m_CompositeOverdrawMaterial : previewTextureMaterial);
                         }
                         if (previewRenderMode != Styles.RenderMode.Standard)
                             break;

@@ -15,26 +15,30 @@ namespace UnityEngine.UIElements
         {
             if (panel != null)
             {
-                IMGUIContainer imguiContainer = panel.focusController.GetLeafFocusedElement() as IMGUIContainer;
+                var leafFocusElement = panel.focusController.GetLeafFocusedElement();
 
-                if (imguiContainer != null)
+                if (leafFocusElement != null)
                 {
-                    if (!evt.Skip(imguiContainer) && imguiContainer.SendEventToIMGUI(evt))
+                    if (leafFocusElement.isIMGUIContainer)
                     {
-                        evt.StopPropagation();
-                        evt.PreventDefault();
-                    }
+                        IMGUIContainer imguiContainer = (IMGUIContainer)leafFocusElement;
+                        if (!evt.Skip(imguiContainer) && imguiContainer.SendEventToIMGUI(evt))
+                        {
+                            evt.StopPropagation();
+                            evt.PreventDefault();
+                        }
 
-                    if (!evt.isPropagationStopped && evt.propagateToIMGUI)
-                    {
-                        evt.skipElements.Add(imguiContainer);
-                        EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
+                        if (!evt.isPropagationStopped && evt.propagateToIMGUI)
+                        {
+                            evt.skipElements.Add(imguiContainer);
+                            EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
+                        }
                     }
-                }
-                else if (panel.focusController.GetLeafFocusedElement() != null)
-                {
-                    evt.target = panel.focusController.GetLeafFocusedElement();
-                    EventDispatchUtilities.PropagateEvent(evt);
+                    else
+                    {
+                        evt.target = panel.focusController.GetLeafFocusedElement();
+                        EventDispatchUtilities.PropagateEvent(evt);
+                    }
                 }
                 else
                 {

@@ -179,13 +179,14 @@ namespace UnityEditor
                 s_Styles.iconDropShadow.Draw(dropShadowRect, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
             }
 
-            protected void DrawHeaderBackground(Rect rect, bool firstHeader)
+            protected void DrawHeaderBackground(Rect rect, bool firstHeader, bool expanded)
             {
                 if (Event.current.type != EventType.Repaint)
                     return;
 
                 // Draw the group bar background
-                GUI.Label(rect, GUIContent.none, firstHeader ? s_Styles.groupHeaderTop : s_Styles.groupHeaderMiddle);
+                (firstHeader ? s_Styles.groupHeaderTop : s_Styles.groupHeaderMiddle)?.Draw(rect, GUIContent.none,
+                    rect.Contains(Event.current.mousePosition), false, expanded, false);
             }
 
             protected float GetHeaderYPosInScrollArea(float yOffset)
@@ -204,7 +205,7 @@ namespace UnityEditor
                 const int foldoutSpacing = 3;
                 Rect rect = new Rect(0, GetHeaderYPosInScrollArea(yOffset), m_Owner.GetVisibleWidth(), kGroupSeparatorHeight - 1);
 
-                DrawHeaderBackground(rect, yOffset == 0);
+                DrawHeaderBackground(rect, yOffset == 0, Visible);
 
                 // Draw the group toggle
                 rect.x += 7;

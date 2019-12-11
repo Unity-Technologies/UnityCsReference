@@ -43,10 +43,14 @@ namespace UnityEditor.PackageManager.UI
             if (target == null || container == null)
                 return;
 
-            var minY = container.worldBound.yMin;
-            var maxY = container.worldBound.yMax;
-            var itemMinY = target.worldBound.yMin;
-            var itemMaxY = target.worldBound.yMax;
+            var containerWorldBound = container.worldBound;
+            var targetWorldBound = target.worldBound;
+
+            var minY = containerWorldBound.yMin;
+            var maxY = containerWorldBound.yMax;
+            var itemMinY = targetWorldBound.yMin;
+            var itemMaxY = targetWorldBound.yMax;
+
             var scroll = container.scrollOffset;
 
             if (itemMinY < minY)

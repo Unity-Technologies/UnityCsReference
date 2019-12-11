@@ -40,6 +40,16 @@ namespace UnityEngine.UIElements
             bubbleUpPath = new List<VisualElement>(paths.bubbleUpPath);
         }
 
+        internal static PropagationPaths Copy(PropagationPaths paths)
+        {
+            PropagationPaths copyPaths = s_Pool.Get();
+            copyPaths.trickleDownPath.AddRange(paths.trickleDownPath);
+            copyPaths.targetElements.AddRange(paths.targetElements);
+            copyPaths.bubbleUpPath.AddRange(paths.bubbleUpPath);
+
+            return copyPaths;
+        }
+
         public static PropagationPaths Build(VisualElement elem, Type pathTypesRequested)
         {
             if (elem == null || pathTypesRequested == Type.None)

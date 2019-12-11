@@ -53,6 +53,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // IMGUIContainers are special snowflakes that need custom treatment regarding events.
+        // This enables early outs in some dispatching strategies.
+        internal bool isIMGUIContainer = false;
+
         public virtual bool canGrabFocus => focusable;
 
         public virtual void Focus()

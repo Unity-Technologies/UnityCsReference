@@ -10,6 +10,7 @@ using System.Globalization;
 using UnityEngine.Rendering;
 using System.Linq;
 using JetBrains.Annotations;
+using UnityEditorInternal.VR;
 
 /*
 The main GameView can be in the following states when entering playmode.
@@ -541,7 +542,7 @@ namespace UnityEditor
                 }
 
                 // Allow the user to select how the XR device will be rendered during "Play In Editor"
-                if (PlayerSettings.virtualRealitySupported)
+                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)))
                 {
                     int selectedRenderMode = EditorGUILayout.Popup(m_XRRenderMode, Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
                     SetXRRenderMode(selectedRenderMode);

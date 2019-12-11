@@ -14,6 +14,7 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class NetworkingOperationsProfilerModule : ProfilerModuleBase
     {
+        [SerializeField]
         SplitterState m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
         static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
 
@@ -27,6 +28,7 @@ namespace UnityEditorInternal.Profiling
             DrawNetworkOperationsPane(position);
         }
 
+        [SerializeField]
         private String[] msgNames =
         {
             "UserMessage", "ObjectDestroy", "ClientRpc", "ObjectSpawn", "Owner", "Command", "LocalPlayerTransform", "SyncEvent", "SyncVars", "SyncList", "ObjectSpawnScene", "NetworkInfo", "SpawnFinished", "ObjectHide", "CRC", "ClientAuthority"

@@ -294,7 +294,15 @@ namespace UnityEditor
             }
 
             SetModeIndex(currentModeIndex);
-            EditorApplication.delayCall += () => RaiseModeChanged(-1, currentIndex);
+
+            EditorApplication.update -= DelayRaiseCurrentModeChanged;
+            EditorApplication.update += DelayRaiseCurrentModeChanged;
+        }
+
+        private static void DelayRaiseCurrentModeChanged()
+        {
+            EditorApplication.update -= DelayRaiseCurrentModeChanged;
+            RaiseModeChanged(-1, currentIndex);
         }
 
         private static void FillModeData(string path, Dictionary<string, object> modesData)
@@ -336,9 +344,9 @@ namespace UnityEditor
             {
                 searchArea = SearchFilter.SearchArea.InPackagesOnly,
                 classNames = new[] { nameof(ModeDescriptor) },
-                skipHidden = true,
                 showAllHits = true
             });
+
             while (modeDescriptors.MoveNext())
             {
                 var md = modeDescriptors.Current.pptrValue as ModeDescriptor;
@@ -360,6 +368,15 @@ namespace UnityEditor
                 hasSwitchableModes |= !JsonUtils.JsonReadBoolean(modeFields, "builtin");
                 modeIndex++;
             }
+
+            Array.Sort(modes, (m1, m2) =>
+            {
+                if (m1.id == "default")
+                    return -1;
+                if (m2.id == "default")
+                    return 1;
+                return m1.id.CompareTo(m2.id);
+            });
         }
 
         private static ModeEntry CreateEntry(string modeId, JSONObject data)

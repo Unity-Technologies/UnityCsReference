@@ -183,11 +183,13 @@ namespace UnityEngine.UIElements
         {
             float xTransform = contentContainer.transform.position.x * -1;
 
-            float viewMin = contentViewport.worldBound.xMin + xTransform;
-            float viewMax = contentViewport.worldBound.xMax + xTransform;
+            var contentWB = contentViewport.worldBound;
+            float viewMin = contentWB.xMin + xTransform;
+            float viewMax = contentWB.xMax + xTransform;
 
-            float childBoundaryMin = child.worldBound.xMin + xTransform;
-            float childBoundaryMax = child.worldBound.xMax + xTransform;
+            var childWB = child.worldBound;
+            float childBoundaryMin = childWB.xMin + xTransform;
+            float childBoundaryMax = childWB.xMax + xTransform;
 
             if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
                 return 0;
@@ -201,11 +203,13 @@ namespace UnityEngine.UIElements
         {
             float yTransform = contentContainer.transform.position.y * -1;
 
-            float viewMin = contentViewport.worldBound.yMin + yTransform;
-            float viewMax = contentViewport.worldBound.yMax + yTransform;
+            var contentWB = contentViewport.worldBound;
+            float viewMin = contentWB.yMin + yTransform;
+            float viewMax = contentWB.yMax + yTransform;
 
-            float childBoundaryMin = child.worldBound.yMin + yTransform;
-            float childBoundaryMax = child.worldBound.yMax + yTransform;
+            var childWB = child.worldBound;
+            float childBoundaryMin = childWB.yMin + yTransform;
+            float childBoundaryMax = childWB.yMax + yTransform;
 
             if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
                 return 0;

@@ -351,7 +351,7 @@ namespace UnityEditor
             public readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
             public readonly GUIContent psdRemoveMatte = EditorGUIUtility.TrTextContent("Remove Matte (PSD)", "Enable special processing for PSD that has transparency, as color pixels will be tweaked (blended with white color).");
-            public readonly GUIContent psdRemoveMatteWarning = EditorGUIUtility.TrTextContent("If you have PSD with transparency, colors will be tweaked by blending them with white color. Matte removal refers to our attempts to undo that, and this is deprecated.");
+            public readonly GUIContent psdRemoveMatteInfo = EditorGUIUtility.TrTextContent("If you have PSD with transparency, colors will be tweaked by blending them with white color. Matte removal refers to our attempts to undo that.");
             public readonly GUIContent psdRemoveMatteURLButton = EditorGUIUtility.TrTextContent("How to handle PSD with alpha");
             public readonly string psdRemoveMatteURL = "https://docs.unity3d.com/Manual/HOWTO-alphamaps.html";
 
@@ -916,7 +916,7 @@ namespace UnityEditor
                 if (m_PSDRemoveMatte.boolValue)
                 {
                     GUILayout.BeginVertical();
-                    EditorGUILayout.HelpBox(s_Styles.psdRemoveMatteWarning.text, MessageType.Warning, true);
+                    EditorGUILayout.HelpBox(s_Styles.psdRemoveMatteInfo.text, MessageType.Info, true);
                     if (EditorGUILayout.LinkLabel(s_Styles.psdRemoveMatteURLButton))
                         Application.OpenURL(s_Styles.psdRemoveMatteURL);
                     GUILayout.EndVertical();
@@ -1459,20 +1459,6 @@ namespace UnityEditor
             return false;
         }
 
-        public static void SelectMainAssets(Object[] targets)
-        {
-            ArrayList newSelection = new ArrayList();
-            foreach (AssetImporter importer in targets)
-            {
-                Texture tex = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as Texture;
-                if (tex)
-                    newSelection.Add(tex);
-            }
-            // The selection can be empty if for some reason the asset import failed. In this case, we don't want to cancel out the original selection so that user can correct its settings.
-            if (newSelection.Count > 0)
-                Selection.objects = newSelection.ToArray(typeof(Object)) as Object[];
-        }
-
         protected override void ResetValues()
         {
             base.ResetValues();
@@ -1482,11 +1468,6 @@ namespace UnityEditor
             BuildTargetList();
             System.Diagnostics.Debug.Assert(!HasModified(), "TextureImporter settings are marked as modified after calling Reset.");
             ApplySettingsToTexture();
-
-            // since some texture types (like Cubemaps) might add/remove new assets during import
-            //  and main asset of these textures might change,
-            // update selection to include main assets (case 561340)
-            SelectMainAssets(targets);
         }
 
         protected override void Apply()
