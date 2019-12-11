@@ -299,12 +299,18 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
                         renderChain.shaderInfoAllocator.FreeClipRect(ve.renderChainData.clipRectID);
 
-                    // Inherit parent's clipRectID if possible
-                    newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
-                    newClipRectID.owned = 0;
+                    // Inherit parent's clipRectID if possible.
+                    // Group transforms shouldn't inherit the clipRectID since they have a new frame of reference,
+                    // they provide a new baseline with the _PixelClipRect instead.
+                    if ((ve.renderHints & RenderHints.GroupTransform) == 0)
+                    {
+                        newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
+                        newClipRectID.owned = 0;
+                    }
                 }
 
                 clipRectIDChanged = !ve.renderChainData.clipRectID.Equals(newClipRectID);
+                Debug.Assert((ve.renderHints & RenderHints.GroupTransform) == 0 || !clipRectIDChanged);
                 ve.renderChainData.clipRectID = newClipRectID;
             }
 
@@ -799,7 +805,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     cmdPrev = ve.renderChainData.lastCommand;
                     cmdNext = cmdPrev.next;
                 }
-                else if (oldCmdPrev == null && oldCmdNext == null)
+                else if (cmdPrev == null && cmdNext == null)
                     FindClosingCommandInsertionPoint(ve, out cmdPrev, out cmdNext);
 
                 if (painter.closingInfo.clipperRegisterIndices.Length > 0)

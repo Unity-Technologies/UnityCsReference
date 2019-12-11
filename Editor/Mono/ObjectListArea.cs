@@ -144,7 +144,7 @@ namespace UnityEditor
         int m_MinGridSize = 16;
         int m_MaxGridSize = 96;
         bool m_AllowThumbnails = true;
-        const int kSpaceForScrollBar = 16;
+        const int kSpaceForScrollBar = 13;
         int m_LeftPaddingForPinging = 0;
         bool m_FrameLastClickedItem = false;
 

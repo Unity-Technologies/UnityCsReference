@@ -259,7 +259,11 @@ namespace Unity.SerializationLogic
                 return IsValueTypeSerializable(typeReference);
 
             if (typeReference is ArrayType || CecilUtils.IsGenericList(typeReference))
-                return IsSupportedCollection(typeReference);
+            {
+                if (!HasSerializeReferenceAttribute(fieldDefinition))
+                    return IsSupportedCollection(typeReference);
+            }
+
 
             if (!IsReferenceTypeSerializable(typeReference) && !HasSerializeReferenceAttribute(fieldDefinition))
                 return false;

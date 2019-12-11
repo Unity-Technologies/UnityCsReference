@@ -383,6 +383,7 @@ namespace UnityEngine.XR.WSA.Input
         /// <summary>
         /// Sets the current recognizable gestures to the specified set.  Returns
         /// the previous value.
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public GestureSettings SetRecognizableGestures(GestureSettings newMaskValue)
         {
             return (GestureSettings)SetRecognizableGestures_Internal((int)newMaskValue);
@@ -395,6 +396,7 @@ namespace UnityEngine.XR.WSA.Input
         /// <summary>
         /// Retrieves the current recognizable gestures.
         /// </summary>
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public GestureSettings GetRecognizableGestures()
         {
             return (GestureSettings)GetRecognizableGestures_Internal();
@@ -408,21 +410,25 @@ namespace UnityEngine.XR.WSA.Input
         /// Enables this recognizer to start receiving interaction events
         /// </summary>
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern void StartCapturingGestures();
 
         /// <summary>
         /// Disabled this recognizer to stop receiving interaction events
         /// </summary>
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern void StopCapturingGestures();
 
         /// <summary>
         /// Returns the enabled state of the gesture recognizer.
         /// </summary>
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern bool IsCapturingGestures();
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern void CancelGestures();
 
 #pragma warning disable 0618

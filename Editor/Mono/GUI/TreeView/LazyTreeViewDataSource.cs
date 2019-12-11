@@ -18,6 +18,8 @@ namespace UnityEditor.IMGUI.Controls
 
     internal abstract class LazyTreeViewDataSource : TreeViewDataSource
     {
+        static readonly List<TreeViewItem> s_ChildListForCollapsedParent = new List<TreeViewItem>();
+
         public LazyTreeViewDataSource(TreeViewController treeView)
             : base(treeView)
         {
@@ -27,7 +29,13 @@ namespace UnityEditor.IMGUI.Controls
         {
             // To mark a collapsed parent we use a list with one element that is null.
             // The null element in the children list ensures we show the collapse arrow.
-            return new List<TreeViewItem>() { null };
+            // Reuse read-only list to prevent allocations.
+            if (s_ChildListForCollapsedParent.Count != 1 || s_ChildListForCollapsedParent[0] != null)
+            {
+                s_ChildListForCollapsedParent.Clear();
+                s_ChildListForCollapsedParent.Add(null);
+            }
+            return s_ChildListForCollapsedParent;
         }
 
         public static bool IsChildListForACollapsedParent(IList<TreeViewItem> childList)

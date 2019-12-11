@@ -235,6 +235,23 @@ namespace UnityEngine.UIElements
             public Material material;
             public Color playmodeTintColor;
 
+            public override int GetHashCode()
+            {
+                var hashCode = rect.GetHashCode();
+                hashCode = (hashCode * 397) ^ (text != null ? text.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (font != null ? font.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ fontSize;
+                hashCode = (hashCode * 397) ^ (int)fontStyle;
+                hashCode = (hashCode * 397) ^ fontColor.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)anchor;
+                hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
+                hashCode = (hashCode * 397) ^ wordWrapWidth.GetHashCode();
+                hashCode = (hashCode * 397) ^ richText.GetHashCode();
+                hashCode = (hashCode * 397) ^ (material != null ? material.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ playmodeTintColor.GetHashCode();
+                return hashCode;
+            }
+
             internal static TextParams MakeStyleBased(VisualElement ve, string text)
             {
                 ComputedStyle style = ve.computedStyle;

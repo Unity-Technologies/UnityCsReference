@@ -17,8 +17,12 @@ namespace UnityEngine.XR.WSA
                 return HolographicStreamerConnectionState.Disconnected;
             }
         }
-
         public static void Connect(string clientName, int maxBitRate = 9999)
+        {
+            Connect(clientName, maxBitRate, RemoteDeviceVersion.V1);
+        }
+
+        public static void Connect(string clientName, int maxBitRate, RemoteDeviceVersion deviceVersion)
         {
         }
 

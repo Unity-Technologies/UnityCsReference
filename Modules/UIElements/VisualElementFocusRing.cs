@@ -170,7 +170,8 @@ namespace UnityEngine.UIElements
 
         void BuildRingForScopeRecursive(VisualElement ve, ref int scopeIndex, List<FocusRingRecord> scopeList)
         {
-            for (int i = 0; i < ve.hierarchy.childCount; i++)
+            var veChildCount = ve.hierarchy.childCount;
+            for (int i = 0; i < veChildCount; i++)
             {
                 var child = ve.hierarchy[i];
 

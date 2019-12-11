@@ -213,8 +213,11 @@ namespace UnityEditor.Experimental.GraphView
             // Bring back viewport coordinates to (0,0), scale 1:1
             m_ViewportRect.x += containerInvTranslation.x;
             m_ViewportRect.y += containerInvTranslation.y;
-            m_ViewportRect.x += graphView.worldBound.x * containerInvScale.x;
-            m_ViewportRect.y += graphView.worldBound.y * containerInvScale.y;
+
+            var graphViewWB = graphView.worldBound;
+
+            m_ViewportRect.x += graphViewWB.x * containerInvScale.x;
+            m_ViewportRect.y += graphViewWB.y * containerInvScale.y;
             m_ViewportRect.width *= containerInvScale.x;
             m_ViewportRect.height *= containerInvScale.y;
 

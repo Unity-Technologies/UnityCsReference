@@ -122,6 +122,8 @@ namespace UnityEngine.UIElements
 
         public IMGUIContainer(Action onGUIHandler)
         {
+            isIMGUIContainer = true;
+
             AddToClassList(ussClassName);
 
             this.onGUIHandler = onGUIHandler;

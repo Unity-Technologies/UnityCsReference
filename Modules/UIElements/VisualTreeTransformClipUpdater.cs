@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow)) == 0)
+            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy)) == 0)
                 return;
 
             // According to the flags, what operations must be done?
@@ -41,7 +41,10 @@ namespace UnityEngine.UIElements
         static void DirtyHierarchy(VisualElement ve, bool mustDirtyWorldTransform, bool mustDirtyWorldClip)
         {
             if (mustDirtyWorldTransform)
+            {
                 ve.isWorldTransformDirty = true;
+                ve.isWorldBoundingBoxDirty = true;
+            }
 
             if (mustDirtyWorldClip)
                 ve.isWorldClipDirty = true;
@@ -60,10 +63,12 @@ namespace UnityEngine.UIElements
         static void DirtyBoundingBoxHierarchy(VisualElement ve)
         {
             ve.isBoundingBoxDirty = true;
+            ve.isWorldBoundingBoxDirty = true;
             var parent = ve.hierarchy.parent;
             while (parent != null && !parent.isBoundingBoxDirty)
             {
                 parent.isBoundingBoxDirty = true;
+                parent.isWorldBoundingBoxDirty = true;
                 parent = parent.hierarchy.parent;
             }
         }

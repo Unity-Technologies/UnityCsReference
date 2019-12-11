@@ -114,7 +114,7 @@ namespace UnityEngine.XR.WSA
 
         private void OnEnable()
         {
-            titleContent = EditorGUIUtility.TrTextContent("Holographic");
+            titleContent = EditorGUIUtility.TrTextContent("Holographic (Deprecated)");
             m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
 
             m_RemoteMachineHistory = EditorPrefs.GetString("HolographicRemoting.RemoteMachineHistory").Split(',');
@@ -131,6 +131,8 @@ namespace UnityEngine.XR.WSA
 
         private void Connect()
         {
+            HolographicAutomation.SetEmulationMode(m_Mode);
+            PerceptionRemoting.SetRemoteDeviceVersion(m_DeviceVersion);
             PerceptionRemoting.SetVideoEncodingParameters(m_MaxBitrateKbps);
             PerceptionRemoting.SetEnableVideo(m_EnableVideo);
             PerceptionRemoting.SetEnableAudio(m_EnableAudio);
@@ -206,7 +208,6 @@ namespace UnityEngine.XR.WSA
         private void RemotingPreferencesOnGUI()
         {
             m_DeviceVersion = (RemoteDeviceVersion)EditorGUILayout.Popup(s_DeviceVersionText, (int)m_DeviceVersion, s_DeviceVersionStrings);
-            PerceptionRemoting.SetRemoteDeviceVersion(m_DeviceVersion);
 
             EditorGUI.BeginChangeCheck();
             m_RemoteMachineAddress = EditorGUILayout.DelayedTextFieldDropDown(s_RemoteMachineText, m_RemoteMachineAddress, m_RemoteMachineHistory);
@@ -303,7 +304,6 @@ namespace UnityEngine.XR.WSA
             {
                 if (previousMode == EmulationMode.RemoteDevice)
                     Disconnect();
-                HolographicAutomation.SetEmulationMode(m_Mode);
             }
         }
 
@@ -319,6 +319,8 @@ namespace UnityEngine.XR.WSA
 
         void OnGUI()
         {
+            EditorGUILayout.HelpBox("Support for built-in XR is deprecated and will be retired in a future version of Unity. We recommend you use the Unity XR Plugin System, which you can install from Project Settings > XR Plugin Manager.", MessageType.Info);
+
             if (!CheckOperatingSystem())
             {
                 EditorGUILayout.HelpBox("You must be running Windows build 14318 or later to use Holographic Simulation or Remoting.", MessageType.Warning);

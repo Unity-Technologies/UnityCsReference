@@ -33,8 +33,9 @@ namespace UnityEditor.IMGUI.Controls
             get
             {
                 if (m_LineHeight < 0)
-                    return new SVC<float>("--treeview-line-height", 16f);
-                else return m_LineHeight;
+                    m_LineHeight = new SVC<float>("--treeview-line-height", 16f);
+
+                return m_LineHeight;
             }
             set { m_LineHeight = value; }
         }
@@ -409,7 +410,7 @@ namespace UnityEditor.IMGUI.Controls
         protected virtual Rect DoFoldout(Rect rect, TreeViewItem item, int row)
         {
             float indent = GetFoldoutIndent(item);
-            Rect foldoutRect = new Rect(rect.x + indent, GetFoldoutYPosition(rect.y), foldoutStyleWidth, EditorGUIUtility.singleLineHeight);
+            Rect foldoutRect = new Rect(rect.x + indent, GetFoldoutYPosition(rect.y), foldoutStyleWidth, k_LineHeight);
             FoldoutButton(foldoutRect, item, row, foldoutStyle);
             return foldoutRect;
         }

@@ -28,6 +28,7 @@ namespace UnityEngine.XR.WSA.Persistence
             m_NativePtr = nativePtr;
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public static void GetAsync(GetAsyncDelegate onCompleted)
         {
         }
@@ -40,6 +41,7 @@ namespace UnityEngine.XR.WSA.Persistence
             handler(s_Instance);
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool Save(string id, WorldAnchor anchor)
         {
             if (string.IsNullOrEmpty(id))
@@ -58,6 +60,7 @@ namespace UnityEngine.XR.WSA.Persistence
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private extern bool Save_Interal(string id, WorldAnchor anchor);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public WorldAnchor Load(string id, GameObject go)
         {
             if (string.IsNullOrEmpty(id))
@@ -76,6 +79,7 @@ namespace UnityEngine.XR.WSA.Persistence
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         private extern bool Load_Internal(string id, WorldAnchor anchor);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public bool Delete(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -87,19 +91,24 @@ namespace UnityEngine.XR.WSA.Persistence
 
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern void Clear();
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern int anchorCount { get; }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public extern int GetAllIds([NotNull] string[] ids);
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public string[] GetAllIds()
         {
             return new string[0];
         }
 
+        [System.Obsolete("Support for built-in VR will be removed in Unity 2020.1. Please update to the new Unity XR Plugin System. More information about the new XR Plugin System can be found at https://docs.unity3d.com/2019.3/Documentation/Manual/XR.html.", false)]
         public void Dispose()
         {
             if (m_NativePtr != IntPtr.Zero)

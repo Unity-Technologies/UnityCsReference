@@ -51,6 +51,8 @@ namespace UnityEditor.UIElements
         internal InspectorElement m_InspectorElement { get; private set; }
         IMGUIContainer m_Footer;
 
+        private bool m_WasVisible = false;
+
         static class Styles
         {
             public static GUIStyle importedObjectsHeaderStyle = new GUIStyle("IN BigTitle");
@@ -134,7 +136,7 @@ namespace UnityEditor.UIElements
         {
             if (editor.CanBeExpandedViaAFoldout())
             {
-                m_Footer.style.marginTop = 0;
+                m_Footer.style.marginTop = m_WasVisible ? 0 : -kFooterDefaultHeight;
                 m_InspectorElement.style.paddingBottom = InspectorWindow.kEditorElementPaddingBottom;
             }
             else
@@ -202,7 +204,7 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            bool wasVisible = inspectorWindow.WasEditorVisible(m_Editors, m_EditorIndex, target);
+            m_WasVisible = inspectorWindow.WasEditorVisible(m_Editors, m_EditorIndex, target);
 
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
@@ -214,7 +216,7 @@ namespace UnityEditor.UIElements
             ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
             using (new InspectorWindowUtils.LayoutGroupChecker())
             {
-                m_DragRect = DrawEditorHeader(target, ref wasVisible);
+                m_DragRect = DrawEditorHeader(target, ref m_WasVisible);
             }
 
             if (GUI.changed)
@@ -224,16 +226,16 @@ namespace UnityEditor.UIElements
                 InvalidateIMGUILayouts(this);
             }
 
-            if (wasVisible != IsElementVisible(m_InspectorElement))
+            if (m_WasVisible != IsElementVisible(m_InspectorElement))
             {
-                SetElementVisible(m_InspectorElement, wasVisible);
+                SetElementVisible(m_InspectorElement, m_WasVisible);
             }
 
             UpdateInspectorVisibility();
 
             var multiEditingSupported = inspectorWindow.IsMultiEditingSupported(editor, target);
 
-            if (!multiEditingSupported && wasVisible)
+            if (!multiEditingSupported && m_WasVisible)
             {
                 GUILayout.Label("Multi-object editing not supported.", EditorStyles.helpBox);
                 return;
@@ -382,11 +384,14 @@ namespace UnityEditor.UIElements
 
         static void SetInspectorElementChildIMGUIContainerFocusable(InspectorElement ve, bool focusable)
         {
-            foreach (var child in ve.Children())
+            var childCount = ve.childCount;
+
+            for (int i = 0; i < childCount; ++i)
             {
-                var imguiContainer = child as IMGUIContainer;
-                if (imguiContainer != null)
+                var child = ve[i];
+                if (child.isIMGUIContainer)
                 {
+                    var imguiContainer = (IMGUIContainer)child;
                     imguiContainer.focusable = focusable;
                 }
             }

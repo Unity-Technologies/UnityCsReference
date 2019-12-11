@@ -1121,6 +1121,11 @@ namespace UnityEditor.StyleSheets
         private static StyleValue[] MergeValues(IEnumerable<StyleValue> values, IEnumerable<StyleValue> newValues)
         {
             var mergedBlockValues = new List<StyleValue>(values);
+            return MergeListValues(mergedBlockValues, newValues).ToArray();
+        }
+
+        private static List<StyleValue> MergeListValues(List<StyleValue> mergedBlockValues, IEnumerable<StyleValue> newValues)
+        {
             foreach (var newValue in newValues)
             {
                 bool valueMerged = false;
@@ -1141,7 +1146,7 @@ namespace UnityEditor.StyleSheets
                     mergedBlockValues.Add(newValue);
             }
 
-            return mergedBlockValues.ToArray();
+            return mergedBlockValues;
         }
 
         private bool CompileElement(string name, IList<StyleBlock> blocks, StyleValue[] values)
@@ -1205,31 +1210,31 @@ namespace UnityEditor.StyleSheets
         private List<StyleValue> ExpandValues(List<StyleValue> values,
             List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups)
         {
+            var states = values.Select(v => v.state).Distinct().ToArray();
+
             // Rects
-            values = ExpandRect(values, numbers, rects, StyleCatalogKeyword.margin, StyleCatalogKeyword.marginTop, StyleCatalogKeyword.marginRight, StyleCatalogKeyword.marginBottom, StyleCatalogKeyword.marginLeft);
-            values = ExpandRect(values, numbers, rects, StyleCatalogKeyword.padding, StyleCatalogKeyword.paddingTop, StyleCatalogKeyword.paddingRight, StyleCatalogKeyword.paddingBottom, StyleCatalogKeyword.paddingLeft);
-            values = ExpandRect(values, numbers, rects, "-unity-overflow".GetHashCode(), "-unity-overflow-top".GetHashCode(), "-unity-overflow-right".GetHashCode(), "-unity-overflow-bottom".GetHashCode(), "-unity-overflow-left".GetHashCode());
-            values = ExpandRect(values, numbers, rects, "-unity-slice".GetHashCode(), "-unity-slice-top".GetHashCode(), "-unity-slice-right".GetHashCode(), "-unity-slice-bottom".GetHashCode(), "-unity-slice-left".GetHashCode());
+            values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.margin, StyleCatalogKeyword.marginTop, StyleCatalogKeyword.marginRight, StyleCatalogKeyword.marginBottom, StyleCatalogKeyword.marginLeft);
+            values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.padding, StyleCatalogKeyword.paddingTop, StyleCatalogKeyword.paddingRight, StyleCatalogKeyword.paddingBottom, StyleCatalogKeyword.paddingLeft);
+            values = ExpandRect(states, values, numbers, rects, "-unity-overflow".GetHashCode(), "-unity-overflow-top".GetHashCode(), "-unity-overflow-right".GetHashCode(), "-unity-overflow-bottom".GetHashCode(), "-unity-overflow-left".GetHashCode());
+            values = ExpandRect(states, values, numbers, rects, "-unity-slice".GetHashCode(), "-unity-slice-top".GetHashCode(), "-unity-slice-right".GetHashCode(), "-unity-slice-bottom".GetHashCode(), "-unity-slice-left".GetHashCode());
 
             // Lines
-            values = ExpandLine(values, numbers, colors, strings, rects, groups, StyleCatalogKeyword.border, StyleCatalogKeyword.borderWidth, StyleCatalogKeyword.borderStyle, StyleCatalogKeyword.borderColor);
+            values = ExpandLine(states, values, numbers, colors, strings, rects, groups, StyleCatalogKeyword.border, StyleCatalogKeyword.borderWidth, StyleCatalogKeyword.borderStyle, StyleCatalogKeyword.borderColor);
 
             return values;
         }
 
-        private List<StyleValue> ExpandLine(List<StyleValue> values, List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups,
+        private List<StyleValue> ExpandLine(StyleState[] states, List<StyleValue> values, List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups,
             int borderKey, int borderWidthKey, int borderStyleKey, int borderColorKey)
         {
-            var states = values.Select(v => v.state).Distinct().ToArray();
+            if (!ExpandHasMembers(values, borderKey, borderWidthKey, borderStyleKey, borderColorKey))
+                return values;
+
             for (int stateIndex = 0; stateIndex < states.Length; ++stateIndex)
             {
                 var currentState = states[stateIndex];
-                var rectValues = new List<StyleValue>();
+                var lineValues = new List<StyleValue>();
                 var line = new StyleLine();
-
-                if (!ExpandHasMembers(values, borderKey, borderWidthKey, borderStyleKey, borderColorKey))
-                    continue;
-
                 for (int i = 0; i < values.Count; ++i)
                 {
                     var value = values[i];
@@ -1246,6 +1251,11 @@ namespace UnityEditor.StyleSheets
                     else if (value.key == borderWidthKey && value.type == StyleValue.Type.Number) line.width = numbers[value.index];
                     else if (value.key == borderStyleKey && value.type == StyleValue.Type.Text) line.style = strings[value.index];
                     else if (value.key == borderColorKey && value.type == StyleValue.Type.Color) line.color = colors[value.index];
+                    else
+                    {
+                        // No match
+                        continue;
+                    }
 
                     StyleValueGroup vg = new StyleValueGroup(borderKey, 3)
                     {
@@ -1254,30 +1264,30 @@ namespace UnityEditor.StyleSheets
                         v3 = new StyleValue {key = borderColorKey, state = currentState, type = StyleValue.Type.Color, index = SetIndex(colors, line.color)}
                     };
 
-                    rectValues.Add(new StyleValue { key = borderKey, state = currentState, type = StyleValue.Type.Group, index = SetIndex(groups, vg) });
-                    rectValues.Add(vg.v1);
-                    rectValues.Add(vg.v2);
-                    rectValues.Add(vg.v3);
+                    lineValues.Add(new StyleValue { key = borderKey, state = currentState, type = StyleValue.Type.Group, index = SetIndex(groups, vg) });
+                    lineValues.Add(vg.v1);
+                    lineValues.Add(vg.v2);
+                    lineValues.Add(vg.v3);
                 }
 
-                values = MergeValues(values, rectValues).ToList();
+                if (lineValues.Count > 0)
+                    values = MergeListValues(values, lineValues);
             }
 
             return values;
         }
 
-        private List<StyleValue> ExpandRect(List<StyleValue> values, List<float> numbers, List<StyleRect> rects, int rectKey, int topKey, int rightKey, int bottomKey, int leftKey)
+        private List<StyleValue> ExpandRect(StyleState[] states, List<StyleValue> values, List<float> numbers, List<StyleRect> rects,
+            int rectKey, int topKey, int rightKey, int bottomKey, int leftKey)
         {
-            var states = values.Select(v => v.state).Distinct().ToArray();
+            if (!ExpandHasMembers(values, rectKey, topKey, rightKey, bottomKey, leftKey))
+                return values;
+
             for (int stateIndex = 0; stateIndex < states.Length; ++stateIndex)
             {
                 var currentState = states[stateIndex];
                 var rectValues = new List<StyleValue>();
                 var rect = new StyleRect { top = float.MaxValue, right = float.MaxValue, bottom = float.MaxValue, left = float.MaxValue };
-
-                if (!ExpandHasMembers(values, rectKey, topKey, rightKey, bottomKey, leftKey))
-                    continue;
-
                 for (int i = 0; i < values.Count; ++i)
                 {
                     var value = values[i];
@@ -1289,6 +1299,11 @@ namespace UnityEditor.StyleSheets
                     else if (value.key == rightKey && value.type == StyleValue.Type.Number) rect.right = numbers[value.index];
                     else if (value.key == bottomKey && value.type == StyleValue.Type.Number) rect.bottom = numbers[value.index];
                     else if (value.key == leftKey && value.type == StyleValue.Type.Number) rect.left = numbers[value.index];
+                    else
+                    {
+                        // No match
+                        continue;
+                    }
 
                     if (rect.left != float.MaxValue || rect.right != float.MaxValue || rect.top != float.MaxValue || rect.bottom != float.MaxValue)
                     {
@@ -1315,27 +1330,35 @@ namespace UnityEditor.StyleSheets
                         rectValues.Add(new StyleValue { key = leftKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.left) });
                 }
 
-                values = MergeValues(values, rectValues).ToList();
+                if (rectValues.Count > 0)
+                    values = MergeListValues(values, rectValues);
             }
 
             return values;
         }
 
-        private static bool ExpandHasMembers(List<StyleValue> values, params int[] keys)
+        private static bool ExpandHasMembers(List<StyleValue> values, int k1, int k2, int k3, int k4)
         {
-            bool hasMembers = false;
-
             for (int i = 0; i < values.Count; ++i)
             {
-                var value = values[i];
-                if (keys.Contains(value.key))
-                {
-                    hasMembers = true;
-                    break;
-                }
+                var k = values[i].key;
+                if (k == k1 || k == k2 || k == k3 || k == k4)
+                    return true;
             }
 
-            return hasMembers;
+            return false;
+        }
+
+        private static bool ExpandHasMembers(List<StyleValue> values, int k1, int k2, int k3, int k4, int k5)
+        {
+            for (int i = 0; i < values.Count; ++i)
+            {
+                var k = values[i].key;
+                if (k == k1 || k == k2 || k == k3 || k == k4 || k == k5)
+                    return true;
+            }
+
+            return false;
         }
 
         private StyleValue CompileValue(StyleSheetResolver.Property property, StyleState stateFlags,

@@ -139,9 +139,8 @@ namespace UnityEditor.Experimental
 
         private static bool IsEditorStyleSheet(string path)
         {
-            var pathLowerCased = path.ToLower();
-            return pathLowerCased.Contains("/stylesheets/extensions/") && (pathLowerCased.EndsWith("common.uss") ||
-                pathLowerCased.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss"));
+            return path.IndexOf("/stylesheets/extensions/", StringComparison.OrdinalIgnoreCase) != -1 &&
+                (path.EndsWith("common.uss", StringComparison.OrdinalIgnoreCase) || path.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss", StringComparison.OrdinalIgnoreCase));
         }
 
         internal static string GetDefaultFont()
@@ -275,7 +274,7 @@ namespace UnityEditor.Experimental
                 s_RefreshGlobalStyleCatalog = false;
 
                 var paths = GetDefaultStyleCatalogPaths();
-                foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
+                foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
                     paths.Add(editorUssPath);
 
                 Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");

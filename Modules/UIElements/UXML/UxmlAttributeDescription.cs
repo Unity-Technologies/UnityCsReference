@@ -196,17 +196,12 @@ namespace UnityEngine.UIElements
 
         public override string GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToString, defaultValue);
+            return GetValueFromBag(bag, cc, (s, t) => s, defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref string value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToString, defaultValue, ref value);
-        }
-
-        static string ConvertValueToString(string v, string defaultValue)
-        {
-            return v;
+            return TryGetValueFromBag(bag, cc, (s, t) => s , defaultValue, ref value);
         }
     }
 
@@ -223,12 +218,12 @@ namespace UnityEngine.UIElements
 
         public override float GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToFloat, defaultValue);
+            return GetValueFromBag(bag, cc, (s, f) => ConvertValueToFloat(s, f), defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref float value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToFloat, defaultValue, ref value);
+            return TryGetValueFromBag(bag, cc, (s, f) => ConvertValueToFloat(s, f), defaultValue, ref value);
         }
 
         static float ConvertValueToFloat(string v, float defaultValue)
@@ -253,12 +248,12 @@ namespace UnityEngine.UIElements
 
         public override double GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToDouble, defaultValue);
+            return GetValueFromBag(bag, cc, (s, d) => ConvertValueToDouble(s, d), defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref double value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToDouble, defaultValue, ref value);
+            return TryGetValueFromBag(bag, cc, (s, d) => ConvertValueToDouble(s, d), defaultValue, ref value);
         }
 
         static double ConvertValueToDouble(string v, double defaultValue)
@@ -283,12 +278,12 @@ namespace UnityEngine.UIElements
 
         public override int GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToInt, defaultValue);
+            return GetValueFromBag(bag, cc, (s, i) => ConvertValueToInt(s, i), defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref int value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToInt, defaultValue, ref value);
+            return TryGetValueFromBag(bag, cc, (s, i) => ConvertValueToInt(s, i), defaultValue, ref value);
         }
 
         static int ConvertValueToInt(string v, int defaultValue)
@@ -314,12 +309,12 @@ namespace UnityEngine.UIElements
 
         public override long GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToLong, defaultValue);
+            return GetValueFromBag(bag, cc, (s, l) => ConvertValueToLong(s, l), defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref long value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToLong, defaultValue, ref value);
+            return TryGetValueFromBag(bag, cc, (s, l) => ConvertValueToLong(s, l), defaultValue, ref value);
         }
 
         static long ConvertValueToLong(string v, long defaultValue)
@@ -344,12 +339,12 @@ namespace UnityEngine.UIElements
 
         public override bool GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToBool, defaultValue);
+            return GetValueFromBag(bag, cc, (s, b) => ConvertValueToBool(s, b), defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref bool value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToBool, defaultValue, ref value);
+            return TryGetValueFromBag(bag, cc, (s, b) => ConvertValueToBool(s, b), defaultValue, ref value);
         }
 
         static bool ConvertValueToBool(string v, bool defaultValue)
@@ -375,12 +370,12 @@ namespace UnityEngine.UIElements
 
         public override Color GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToColor, defaultValue);
+            return GetValueFromBag(bag, cc, (s, color) => ConvertValueToColor(s, color), defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Color value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToColor, defaultValue, ref value);
+            return TryGetValueFromBag(bag, cc, (s, color) => ConvertValueToColor(s, color), defaultValue, ref value);
         }
 
         static Color ConvertValueToColor(string v, Color defaultValue)
@@ -421,12 +416,12 @@ namespace UnityEngine.UIElements
 
         public override T GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
-            return GetValueFromBag(bag, cc, ConvertValueToEnum, defaultValue);
+            return GetValueFromBag(bag, cc, (s, convertible) => ConvertValueToEnum(s, convertible), defaultValue);
         }
 
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref T value)
         {
-            return TryGetValueFromBag(bag, cc, ConvertValueToEnum, defaultValue, ref value);
+            return TryGetValueFromBag(bag, cc, (s, convertible) => ConvertValueToEnum(s, convertible), defaultValue, ref value);
         }
 
         static U ConvertValueToEnum<U>(string v, U defaultValue)

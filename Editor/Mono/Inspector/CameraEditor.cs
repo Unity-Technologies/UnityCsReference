@@ -14,6 +14,7 @@ using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal.VR;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -407,7 +408,7 @@ namespace UnityEditor
 
             public void DrawVR()
             {
-                if (PlayerSettings.virtualRealitySupported)
+                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)))
                 {
                     EditorGUILayout.PropertyField(stereoSeparation);
                     EditorGUILayout.PropertyField(stereoConvergence);
@@ -440,7 +441,6 @@ namespace UnityEditor
 
         readonly AnimatedBool m_ShowBGColorOptions = new AnimatedBool();
         readonly AnimatedBool m_ShowOrthoOptions = new AnimatedBool();
-        readonly AnimatedBool m_ShowTargetEyeOption = new AnimatedBool();
 
         private Camera camera { get { return target as Camera; } }
 
@@ -516,11 +516,9 @@ namespace UnityEditor
             var c = (Camera)target;
             m_ShowBGColorOptions.value = !clearFlagsHasMultipleValues && (c.clearFlags == CameraClearFlags.SolidColor || c.clearFlags == CameraClearFlags.Skybox);
             m_ShowOrthoOptions.value = c.orthographic;
-            m_ShowTargetEyeOption.value = targetEyeValue != (int)StereoTargetEyeMask.Both || PlayerSettings.virtualRealitySupported;
 
             m_ShowBGColorOptions.valueChanged.AddListener(Repaint);
             m_ShowOrthoOptions.valueChanged.AddListener(Repaint);
-            m_ShowTargetEyeOption.valueChanged.AddListener(Repaint);
 
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
             SubsystemManager.reloadSubsytemsCompleted += OnReloadSubsystemsComplete;
@@ -530,7 +528,6 @@ namespace UnityEditor
         {
             m_ShowBGColorOptions.valueChanged.RemoveListener(Repaint);
             m_ShowOrthoOptions.valueChanged.RemoveListener(Repaint);
-            m_ShowTargetEyeOption.valueChanged.RemoveListener(Repaint);
         }
 
         public void OnDestroy()
@@ -655,7 +652,6 @@ namespace UnityEditor
             m_ShowOrthoOptions.target = !orthographicHasMultipleValues && c.orthographic;
 
             bool displaySubsystemPresent = displayDescriptors.Count > 0;
-            m_ShowTargetEyeOption.target = targetEyeValue != (int)StereoTargetEyeMask.Both || PlayerSettings.virtualRealitySupported || displaySubsystemPresent;
 
             settings.DrawClearFlags();
 
@@ -698,9 +694,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
             settings.DrawMultiDisplay();
 
-            if (EditorGUILayout.BeginFadeGroup(m_ShowTargetEyeOption.faded))
-                settings.DrawTargetEye();
-            EditorGUILayout.EndFadeGroup();
+            settings.DrawTargetEye();
 
             DepthTextureModeGUI();
             CommandBufferGUI();

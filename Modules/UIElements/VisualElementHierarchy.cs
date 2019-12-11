@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static readonly VisualElement[] s_EmptyList = new VisualElement[0];
+        static readonly List<VisualElement> s_EmptyList = new List<VisualElement>();
         private List<VisualElement> m_Children;
 
         // each element has a ref to the root panel for internal bookkeeping
@@ -132,17 +132,20 @@ namespace UnityEngine.UIElements
 
         public VisualElement ElementAt(int index)
         {
-            if (contentContainer == this)
-            {
-                return hierarchy.ElementAt(index);
-            }
-
-            return contentContainer?.ElementAt(index);
+            return this[index];
         }
 
         public VisualElement this[int key]
         {
-            get { return ElementAt(key); }
+            get
+            {
+                if (contentContainer == this)
+                {
+                    return hierarchy[key];
+                }
+
+                return contentContainer ? [key];
+            }
         }
 
         public int childCount
@@ -172,7 +175,7 @@ namespace UnityEngine.UIElements
             {
                 return hierarchy.Children();
             }
-            return contentContainer?.Children() ?? s_EmptyList;
+            return contentContainer?.Children();
         }
 
         public void Sort(Comparison<VisualElement> comp)
@@ -268,7 +271,7 @@ namespace UnityEngine.UIElements
 
                 child.RemoveFromHierarchy();
 
-                if (m_Owner.m_Children == null)
+                if (ReferenceEquals(m_Owner.m_Children, s_EmptyList))
                 {
                     //TODO: Trigger a release on finalizer or something, this means we'll need to make the pool thread-safe as well
                     m_Owner.m_Children = VisualElementListPool.Get();
@@ -276,10 +279,16 @@ namespace UnityEngine.UIElements
 
                 if (m_Owner.yogaNode.IsMeasureDefined)
                 {
-                    m_Owner.yogaNode.SetMeasureFunction(null);
+                    m_Owner.RemoveMeasureFunction();
                 }
 
                 PutChildAtIndex(child, index);
+
+                int imguiContainerCount = child.imguiContainerDescendantCount + (child.isIMGUIContainer ? 1 : 0);
+                if (imguiContainerCount > 0)
+                {
+                    m_Owner.ChangeIMGUIContainerCount(imguiContainerCount);
+                }
 
                 child.hierarchy.SetParent(m_Owner);
                 child.PropagateEnabledToChildren(m_Owner.enabledInHierarchy);
@@ -297,11 +306,8 @@ namespace UnityEngine.UIElements
                 if (child.hierarchy.parent != m_Owner)
                     throw new ArgumentException("This visualElement is not my child");
 
-                if (m_Owner.m_Children != null)
-                {
-                    int index = m_Owner.m_Children.IndexOf(child);
-                    RemoveAt(index);
-                }
+                int index = m_Owner.m_Children.IndexOf(child);
+                RemoveAt(index);
             }
 
             public void RemoveAt(int index)
@@ -313,15 +319,19 @@ namespace UnityEngine.UIElements
                 child.InvokeHierarchyChanged(HierarchyChangeType.Remove);
                 RemoveChildAtIndex(index);
 
+                int imguiContainerCount = child.imguiContainerDescendantCount + (child.isIMGUIContainer ? 1 : 0);
+                if (imguiContainerCount > 0)
+                {
+                    m_Owner.ChangeIMGUIContainerCount(-imguiContainerCount);
+                }
+
                 child.hierarchy.SetParent(null);
 
                 if (childCount == 0)
                 {
                     ReleaseChildList();
-                    if (m_Owner.requireMeasureFunction)
-                    {
-                        m_Owner.yogaNode.SetMeasureFunction(m_Owner.Measure);
-                    }
+
+                    m_Owner.AssignMeasureFunction();
                 }
 
                 // Child is detached from the panel, notify using the panel directly.
@@ -340,10 +350,8 @@ namespace UnityEngine.UIElements
 
                     ReleaseChildList();
                     m_Owner.yogaNode.Clear();
-                    if (m_Owner.requireMeasureFunction)
-                    {
-                        m_Owner.yogaNode.SetMeasureFunction(m_Owner.Measure);
-                    }
+
+                    m_Owner.AssignMeasureFunction();
 
                     foreach (VisualElement e in elements)
                     {
@@ -351,6 +359,18 @@ namespace UnityEngine.UIElements
                         e.hierarchy.SetParent(null);
                         e.m_LogicalParent = null;
                         m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
+                    }
+
+                    if (m_Owner.imguiContainerDescendantCount > 0)
+                    {
+                        int totalChange = m_Owner.imguiContainerDescendantCount;
+
+                        if (m_Owner.isIMGUIContainer)
+                        {
+                            totalChange--;
+                        }
+
+                        m_Owner.ChangeIMGUIContainerCount(-totalChange);
                     }
                     VisualElementListPool.Release(elements);
 
@@ -434,38 +454,31 @@ namespace UnityEngine.UIElements
             {
                 get
                 {
-                    return m_Owner.m_Children != null ? m_Owner.m_Children.Count : 0;
+                    return m_Owner.m_Children.Count;
                 }
             }
 
-            public VisualElement this[int key] { get { return ElementAt(key); } }
+            public VisualElement this[int key]
+            {
+                get
+                {
+                    return m_Owner.m_Children[key];
+                }
+            }
 
             public int IndexOf(VisualElement element)
             {
-                if (m_Owner.m_Children != null)
-                {
-                    return m_Owner.m_Children.IndexOf(element);
-                }
-                return -1;
+                return m_Owner.m_Children.IndexOf(element);
             }
 
             public VisualElement ElementAt(int index)
             {
-                if (m_Owner.m_Children != null)
-                {
-                    return m_Owner.m_Children[index];
-                }
-
-                throw new ArgumentOutOfRangeException("Index out of range: " + index);
+                return this[index];
             }
 
             public IEnumerable<VisualElement> Children()
             {
-                if (m_Owner.m_Children != null)
-                {
-                    return m_Owner.m_Children;
-                }
-                return s_EmptyList;
+                return m_Owner.m_Children;
             }
 
             private void SetParent(VisualElement value)
@@ -522,10 +535,10 @@ namespace UnityEngine.UIElements
 
             private void ReleaseChildList()
             {
-                var children = m_Owner.m_Children;
-                if (children != null)
+                if (!ReferenceEquals(m_Owner.m_Children, s_EmptyList))
                 {
-                    m_Owner.m_Children = null;
+                    var children = m_Owner.m_Children;
+                    m_Owner.m_Children = s_EmptyList;
                     VisualElementListPool.Release(children);
                 }
             }
@@ -608,7 +621,7 @@ namespace UnityEngine.UIElements
 
         private void GatherAllChildren(List<VisualElement> elements)
         {
-            if (m_Children != null && m_Children.Count > 0)
+            if (m_Children.Count > 0)
             {
                 int startIndex = elements.Count;
                 elements.AddRange(m_Children);
@@ -616,12 +629,7 @@ namespace UnityEngine.UIElements
                 while (startIndex < elements.Count)
                 {
                     var current = elements[startIndex];
-
-                    if (current.m_Children != null && current.m_Children.Count > 0)
-                    {
-                        elements.AddRange(current.m_Children);
-                    }
-
+                    elements.AddRange(current.m_Children);
                     ++startIndex;
                 }
             }
@@ -701,7 +709,7 @@ namespace UnityEngine.UIElements
 
         internal VisualElement GetNextElementDepthFirst()
         {
-            if (m_Children != null && m_Children.Count > 0)
+            if (m_Children.Count > 0)
             {
                 return m_Children[0];
             }
@@ -711,21 +719,18 @@ namespace UnityEngine.UIElements
 
             while (p != null)
             {
-                if (p.m_Children != null)
+                int i;
+                for (i = 0; i < p.m_Children.Count; i++)
                 {
-                    int i;
-                    for (i = 0; i < p.m_Children.Count; i++)
+                    if (p.m_Children[i] == c)
                     {
-                        if (p.m_Children[i] == c)
-                        {
-                            break;
-                        }
+                        break;
                     }
+                }
 
-                    if (i < p.m_Children.Count - 1)
-                    {
-                        return p.m_Children[i + 1];
-                    }
+                if (i < p.m_Children.Count - 1)
+                {
+                    return p.m_Children[i + 1];
                 }
 
                 c = p;
@@ -751,7 +756,7 @@ namespace UnityEngine.UIElements
                 if (i > 0)
                 {
                     var p = m_PhysicalParent.m_Children[i - 1];
-                    while (p.m_Children != null && p.m_Children.Count > 0)
+                    while (p.m_Children.Count > 0)
                     {
                         p = p.m_Children[p.m_Children.Count - 1];
                     }

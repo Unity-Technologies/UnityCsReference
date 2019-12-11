@@ -296,7 +296,7 @@ namespace UnityEngine.UIElements
 
         void ProcessMatchedRules(VisualElement element, List<SelectorMatchRecord> matchingSelectors)
         {
-            matchingSelectors.Sort(SelectorMatchRecord.Compare);
+            matchingSelectors.Sort((a, b) => SelectorMatchRecord.Compare(a, b));
 
             Int64 matchingRulesHash = element.fullTypeName.GetHashCode();
             // Let current DPI contribute to the hash so cache is invalidated when this changes
