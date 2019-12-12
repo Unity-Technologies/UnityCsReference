@@ -388,6 +388,17 @@ namespace UnityEditor
                     if (assemblyDefinitionNameToIndex.TryGetValue(referenceAssemblyDefinition.Name.Name,
                         out referenceAssemblyDefinitionIndex))
                     {
+                        bool isSigned = IsSigned(reference);
+                        if (isSigned)
+                        {
+                            var definition = assemblyDefinitions[referenceAssemblyDefinitionIndex];
+                            if (definition.Name.Version.ToString() != reference.Version.ToString())
+                            {
+                                errors[index].Add(ErrorFlags.UnresolvableReference,
+                                    $"{assemblyDefinition.Name.Name} references strong named {reference.Name}, versions has to match. Assembly references: {reference.Version} Found in project: {definition.Name.Version}.");
+                            }
+                        }
+
                         referenceIndieces.Add(referenceAssemblyDefinitionIndex);
                     }
                 }
@@ -400,6 +411,19 @@ namespace UnityEditor
             }
 
             assemblyAndReferences[index].referenceIndicies = referenceIndieces.ToArray();
+        }
+
+        private static bool IsSigned(AssemblyNameReference reference)
+        {
+            //Bug in Cecil where HasPublicKey is always false
+            foreach (var publicTokenByte in reference.PublicKeyToken)
+            {
+                if (publicTokenByte != 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static AssemblyNameReference[] GetAssemblyNameReferences(AssemblyDefinition assemblyDefinition)

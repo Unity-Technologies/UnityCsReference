@@ -19,10 +19,10 @@ namespace UnityEngine
         public static extern bool hasModalWindow { get; }
 
         [NativeProperty("GetGUIState().m_PixelsPerPoint", true, TargetType.Field)]
-        internal static extern float pixelsPerPoint {[VisibleToOtherModules("UnityEngine.UIElementsModule")] get; }
+        internal static extern float pixelsPerPoint { get; }
 
         [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]
-        internal static extern int guiDepth {[VisibleToOtherModules("UnityEngine.UIElementsModule")] get; }
+        internal static extern int guiDepth { get; }
 
         internal static extern Vector2 s_EditorScreenPointOffset
         {
@@ -40,8 +40,8 @@ namespace UnityEngine
 
         internal static extern bool manualTex2SRGBEnabled
         {
-            [FreeFunction("GUITexture::IsManualTex2SRGBEnabled")][VisibleToOtherModules("UnityEngine.UIElementsModule")] get;
-            [FreeFunction("GUITexture::SetManualTex2SRGBEnabled")][VisibleToOtherModules("UnityEngine.UIElementsModule")] set;
+            [FreeFunction("GUITexture::IsManualTex2SRGBEnabled")] get;
+            [FreeFunction("GUITexture::SetManualTex2SRGBEnabled")] set;
         }
 
         // Get access to the system-wide pasteboard.
@@ -54,10 +54,10 @@ namespace UnityEngine
         [StaticAccessor("GetGUIState()", StaticAccessorType.Dot)]
         public static extern int GetControlID(int hint, FocusType focusType, Rect rect);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern void BeginContainerFromOwner(ScriptableObject owner);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern void BeginContainer(ObjectGUIState objectGUIState);
 
         [NativeMethod("EndContainer")]
@@ -69,19 +69,19 @@ namespace UnityEngine
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         internal static extern void UpdateUndoName();
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern int CheckForTabEvent(Event evt);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern void SetKeyboardControlToFirstControlId();
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern void SetKeyboardControlToLastControlId();
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern bool HasFocusableControls();
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern bool OwnsId(int id);
 
         public static extern Rect AlignRectToDevice(Rect rect, out int widthInPixels, out int heightInPixels);
@@ -90,27 +90,27 @@ namespace UnityEngine
         [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]
         internal extern static string compositionString
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")] get;
+            get;
         }
 
         // Need to reverse the dependency here when moving native legacy Input code out of Core module.
         [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]
         internal extern static IMECompositionMode imeCompositionMode
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")] get;
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")] set;
+            get;
+            set;
         }
 
         // Need to reverse the dependency here when moving native legacy Input code out of Core module.
         [StaticAccessor("InputBindings", StaticAccessorType.DoubleColon)]
         internal extern static Vector2 compositionCursorPos
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")] get;
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")] set;
+            get;
+            set;
         }
 
         // This is used in sensitive alignment-related operations. Avoid calling this method if you can.
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal static extern Vector3 Internal_MultiplyPoint(Vector3 point, Matrix4x4 transform);
 
         internal static extern bool GetChanged();

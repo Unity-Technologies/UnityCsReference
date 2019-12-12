@@ -439,6 +439,9 @@
     <Compile Include="..\..\Modules\Grid\ScriptBindings\GridLayout.bindings.cs">
       <Link>Modules\Grid\ScriptBindings\GridLayout.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\IMGUI\AssemblyInfo.cs">
+      <Link>Modules\IMGUI\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\IMGUI\DrawStates.cs">
       <Link>Modules\IMGUI\DrawStates.cs</Link>
     </Compile>
@@ -1381,6 +1384,9 @@
     <Compile Include="..\..\Modules\UIElements\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElements\UIElementsUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\UIElementsUtility.cs">
+      <Link>Modules\UIElements\UIElementsUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\UQuery.cs">
       <Link>Modules\UIElements\UQuery.cs</Link>
     </Compile>
@@ -1596,12 +1602,6 @@
     </Compile>
     <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXEventAttribute.bindings.cs">
       <Link>Modules\VFX\Public\ScriptBindings\VFXEventAttribute.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXExpressionMesh.bindings.cs">
-      <Link>Modules\VFX\Public\ScriptBindings\VFXExpressionMesh.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXExpressionNoise.bindings.cs">
-      <Link>Modules\VFX\Public\ScriptBindings\VFXExpressionNoise.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXExpressionValues.bindings.cs">
       <Link>Modules\VFX\Public\ScriptBindings\VFXExpressionValues.bindings.cs</Link>
@@ -2550,6 +2550,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\TextAsset.bindings.cs">
       <Link>Runtime\Export\Scripting\TextAsset.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\TextAsset.cs">
+      <Link>Runtime\Export\Scripting\TextAsset.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\TrackedReference.cs">
       <Link>Runtime\Export\Scripting\TrackedReference.cs</Link>

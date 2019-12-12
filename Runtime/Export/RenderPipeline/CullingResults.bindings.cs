@@ -21,6 +21,8 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("FillLightAndReflectionProbeIndices")]
         static extern void FillLightAndReflectionProbeIndices(IntPtr cullingResultsPtr, ComputeBuffer computeBuffer);
+        [FreeFunction("FillLightAndReflectionProbeIndices")]
+        static extern void FillLightAndReflectionProbeIndicesGraphicsBuffer(IntPtr cullingResultsPtr, GraphicsBuffer buffer);
 
         [FreeFunction("GetLightIndexMapSize")]
         static extern int GetLightIndexMapSize(IntPtr cullingResultsPtr);

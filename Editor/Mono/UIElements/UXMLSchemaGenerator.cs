@@ -35,9 +35,14 @@ namespace UnityEditor.UIElements
         internal const string k_SchemaFolder = "UIElementsSchema";
 
         [MenuItem("Assets/Update UIElements Schema", false, 800)]
-        static void CreateTemplateMenuItem()
+        static void UpdateUXMLSchema()
         {
-            UpdateSchemaFiles();
+            if (CommandService.Exists(nameof(UpdateUXMLSchema)))
+                CommandService.Execute(nameof(UpdateUXMLSchema), CommandHint.Menu);
+            else
+            {
+                UpdateSchemaFiles();
+            }
         }
 
         public static void UpdateSchemaFiles()

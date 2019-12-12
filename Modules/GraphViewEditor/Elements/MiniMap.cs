@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -20,7 +21,8 @@ namespace UnityEditor.Experimental.GraphView
         Dragger m_Dragger;
 
         readonly Color m_ViewportColor = new Color(1.0f, 1.0f, 0.0f, 0.35f);
-        readonly Color m_SelectedChildrenColor = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+        protected readonly Color m_SelectedChildrenColor = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+        readonly Color m_PlacematBorderColor = new Color(0.23f, 0.23f, 0.23f);
 
         // Various rects used by the MiniMap
         Rect m_ViewportRect;        // Rect that represents the current viewport
@@ -265,13 +267,6 @@ namespace UnityEditor.Experimental.GraphView
 
         Rect CalculateElementRect(GraphElement elem)
         {
-            // TODO: Should Edges be displayed at all?
-            // TODO: Maybe edges need their own capabilities flag.
-            if (elem is Edge || elem is Port)
-            {
-                return new Rect(0, 0, 0, 0);
-            }
-
             Rect rect = elem.ChangeCoordinatesTo(graphView.contentViewContainer, elem.rect);
             rect.x = m_ContentRect.x + ((rect.x - m_ContentRectLocal.x) * m_ContentRect.width / m_ContentRectLocal.width);
             rect.y = m_ContentRect.y + ((rect.y - m_ContentRectLocal.y) * m_ContentRect.height / m_ContentRectLocal.height);
@@ -329,8 +324,15 @@ namespace UnityEditor.Experimental.GraphView
             mgc.painter.DrawImmediate(DrawMinimapContent, true);
         }
 
+        void DrawSolidRectangleWithOutline(ref Vector3[] cachedRect, Color faceColor, Color typeColor)
+        {
+            Handles.DrawSolidRectangleWithOutline(cachedRect, faceColor, typeColor);
+        }
+
         void DrawMinimapContent()
         {
+            Color currentColor = Handles.color;
+
             if (graphView == null)
             {
                 // Just need to draw the minimum rect.
@@ -357,31 +359,53 @@ namespace UnityEditor.Experimental.GraphView
             // Refresh MiniMap rects
             CalculateRects(container);
 
-            // Display elements in the MiniMap
-            Color darken = UIElementsUtility.editorPlayModeTintColor;
-            Color currentColor = Handles.color;
-            graphView.graphElements.ForEach(elem =>
-            {
-                if (elem is Edge || elem is Port)
-                    return;
-
-                var rect = CalculateElementRect(elem);
-                Handles.color = elem.elementTypeColor * darken;
-
-                s_CachedRect[0].Set(rect.xMin, rect.yMin, 0.0f);
-                s_CachedRect[1].Set(rect.xMax, rect.yMin, 0.0f);
-                s_CachedRect[2].Set(rect.xMax, rect.yMax, 0.0f);
-                s_CachedRect[3].Set(rect.xMin, rect.yMax, 0.0f);
-                Handles.DrawSolidRectangleWithOutline(s_CachedRect, elem.elementTypeColor, elem.elementTypeColor);
-
-                if (elem.selected)
-                    DrawRectangleOutline(rect, m_SelectedChildrenColor);
-            });
+            DrawElements();
 
             // Draw viewport outline
             DrawRectangleOutline(m_ViewportRect, m_ViewportColor);
 
             Handles.color = currentColor;
+        }
+
+        void DrawElements()
+        {
+            // Draw placemats first ...
+            var placemats = graphView.placematContainer.Placemats;
+            foreach (var placemat in placemats.Where(p => p.showInMiniMap && p.visible))
+            {
+                var elemRect = CalculateElementRect(placemat);
+
+                s_CachedRect[0].Set(elemRect.xMin, elemRect.yMin, 0.0f);
+                s_CachedRect[1].Set(elemRect.xMax, elemRect.yMin, 0.0f);
+                s_CachedRect[2].Set(elemRect.xMax, elemRect.yMax, 0.0f);
+                s_CachedRect[3].Set(elemRect.xMin, elemRect.yMax, 0.0f);
+
+                Color fillColor = placemat.resolvedStyle.backgroundColor;
+                fillColor.a = 0.15f;
+
+                DrawSolidRectangleWithOutline(ref s_CachedRect, fillColor, m_PlacematBorderColor);
+            }
+
+            // ... then the other elements
+            Color darken = UIElementsUtility.editorPlayModeTintColor;
+            graphView.graphElements.ForEach(elem =>
+            {
+                if (!elem.showInMiniMap || !elem.visible || elem is Placemat)
+                    return;
+
+                var elemRect = CalculateElementRect(elem);
+                s_CachedRect[0].Set(elemRect.xMin, elemRect.yMin, 0.0f);
+                s_CachedRect[1].Set(elemRect.xMax, elemRect.yMin, 0.0f);
+                s_CachedRect[2].Set(elemRect.xMax, elemRect.yMax, 0.0f);
+                s_CachedRect[3].Set(elemRect.xMin, elemRect.yMax, 0.0f);
+
+                Handles.color = elem.elementTypeColor * darken;
+
+                DrawSolidRectangleWithOutline(ref s_CachedRect, elem.elementTypeColor, elem.elementTypeColor);
+
+                if (elem.selected)
+                    DrawRectangleOutline(elemRect, m_SelectedChildrenColor);
+            });
         }
 
         void DrawRectangleOutline(Rect rect, Color color)

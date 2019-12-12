@@ -16,16 +16,13 @@ namespace UnityEngine
     // Utility functions for implementing and extending the GUILayout class.
     public partial class GUILayoutUtility
     {
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal sealed class LayoutCache
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             internal GUILayoutGroup topLevel = new GUILayoutGroup();
 
             internal GenericStack layoutGroups = new GenericStack();
             internal GUILayoutGroup windows = new GUILayoutGroup();
 
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             internal LayoutCache()
             {
                 layoutGroups.Push(topLevel);
@@ -56,7 +53,6 @@ namespace UnityEngine
             current = new LayoutCache();
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static LayoutCache SelectIDList(int instanceID, bool isWindow)
         {
             Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
@@ -98,7 +94,6 @@ namespace UnityEngine
             }
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void BeginContainer(LayoutCache cache)
         {
             // Make a vertical group to encompass the whole thing
@@ -187,7 +182,6 @@ namespace UnityEngine
             }
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void LayoutFromContainer(float w, float h)
         {
             if (current.topLevel != null)

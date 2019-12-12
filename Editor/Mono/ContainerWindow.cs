@@ -471,7 +471,7 @@ namespace UnityEditor
                     // If the mouse is inside the title bar rect, we say that we're the hot control
                     if (titleBarRect.Contains(evt.mousePosition) && GUIUtility.hotControl == 0 && evt.button == 0)
                     {
-                        if (Application.platform == RuntimePlatform.WindowsEditor)
+                        if (Application.platform != RuntimePlatform.LinuxEditor)
                         {
                             Event.current.Use();
                             m_DraggingNativeTitleBarCaption = true;

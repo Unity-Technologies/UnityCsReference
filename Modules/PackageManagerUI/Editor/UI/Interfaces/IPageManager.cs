@@ -42,9 +42,9 @@ namespace UnityEditor.PackageManager.UI
 
         void UnregisterEvents();
 
-        void Refresh(PackageFilterTab? tab = null);
+        void Refresh(PackageFilterTab? tab = null, int pageSize = 25);
 
-        void Refresh(RefreshOptions options);
+        void Refresh(RefreshOptions options, int pageSize = 25);
 
         void Reload();
 
@@ -60,7 +60,7 @@ namespace UnityEditor.PackageManager.UI
         UIError GetRefreshError(PackageFilterTab? tab = null);
         bool IsRefreshInProgress(PackageFilterTab? tab = null);
 
-        void LoadMore();
+        void LoadMore(int numberOfPackages);
 
         PackageSelectionObject CreatePackageSelectionObject(IPackage package, IPackageVersion version = null);
     }

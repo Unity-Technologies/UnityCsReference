@@ -12,6 +12,7 @@ using UnityEngine.Internal;
 using SerializableJsonDictionary = UnityEditor.UIElements.SerializableJsonDictionary;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using Object = System.Object;
 
 namespace UnityEditor
 {
@@ -44,34 +45,9 @@ namespace UnityEditor
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
-        private VisualElement m_RootVisualElement;
-        public VisualElement rootVisualElement
-        {
-            get
-            {
-                if (m_RootVisualElement != null)
-                    return m_RootVisualElement;
+        public VisualElement rootVisualElement => this.GetRootVisualElement();
 
-                m_RootVisualElement = CreateRoot();
-                return m_RootVisualElement;
-            }
-        }
-
-        static VisualElement CreateRoot()
-        {
-            var name = "rootVisualContainer";
-            var root = new VisualElement()
-            {
-                name = VisualElementUtils.GetUniqueName(name),
-                pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
-                viewDataKey = name,
-                renderHints = RenderHints.ClipWithScissors
-            };
-            root.pseudoStates |= PseudoStates.Root;
-            UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
-            root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
-            return root;
-        }
+        internal System.Object uiRootElement { get; set; }
 
         [HideInInspector]
         [SerializeField]
@@ -619,11 +595,12 @@ namespace UnityEditor
                 ContainerWindow.s_Modal = true;
 
                 SavedGUIState guiState = SavedGUIState.Create();
-                m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
+                // TODO need to promote this outside of UIE
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PushDispatcherContext();
 
                 MakeModal(m_Parent.window);
 
-                m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PopDispatcherContext();
                 guiState.ApplyAndForget();
             }
             finally
@@ -1073,19 +1050,6 @@ namespace UnityEditor
             }
         }
 
-        private void RefreshStylesAfterExternalEvent()
-        {
-            var panel = m_Parent.visualTree.elementPanel;
-            if (panel == null)
-                return;
-
-            var updater = panel.GetUpdater(VisualTreeUpdatePhase.Bindings) as VisualTreeBindingsUpdater;
-            if (updater == null)
-                return;
-
-            updater.PollElementsWithBindings((e, b) => BindingExtensions.HandleStyleUpdate(e));
-        }
-
         // Sends an Event to a window.
         public bool SendEvent(Event e)
         {
@@ -1106,16 +1070,11 @@ namespace UnityEditor
 
         private void OnEnableINTERNAL()
         {
-            AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;
-            AnimationMode.onAnimationRecordingStop += RefreshStylesAfterExternalEvent;
         }
 
         private void OnDisableINTERNAL()
         {
             SaveViewDataToDisk();
-
-            AnimationMode.onAnimationRecordingStart -= RefreshStylesAfterExternalEvent;
-            AnimationMode.onAnimationRecordingStop -= RefreshStylesAfterExternalEvent;
         }
 
         // Internal stuff:
@@ -1170,6 +1129,44 @@ namespace UnityEditor
             public static int GetAntiAliasing(this EditorWindow window)
             {
                 return window.antiAliasing;
+            }
+
+            internal static VisualElement GetRootVisualElement(this EditorWindow window)
+            {
+                object rootElement = window.uiRootElement;
+
+                if (rootElement == null)
+                {
+                    var root = CreateRoot();
+                    window.uiRootElement = root;
+                    return root;
+                }
+
+                var result = rootElement as VisualElement;
+
+                if (result == null)
+                {
+                    Debug.Log($"An editor window can only use one UIElements version at a time. Root element of type \"{rootElement.GetType().AssemblyQualifiedName}\" was already created and assigned to this EditorWindow.");
+                    return null;
+                }
+
+                return result;
+            }
+
+            private static VisualElement CreateRoot()
+            {
+                var name = "rootVisualContainer";
+                var root = new VisualElement()
+                {
+                    name = VisualElementUtils.GetUniqueName(name),
+                    pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
+                    viewDataKey = name,
+                    renderHints = RenderHints.ClipWithScissors
+                };
+                root.pseudoStates |= PseudoStates.Root;
+                UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+                root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
+                return root;
             }
         }
     }

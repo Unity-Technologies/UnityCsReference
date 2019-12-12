@@ -3373,6 +3373,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\EditorMenuExtensions.cs">
       <Link>Editor\Mono\UIElements\EditorMenuExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\EditorPanel.cs">
+      <Link>Editor\Mono\UIElements\EditorPanel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorWindowPersistentViewData.cs">
       <Link>Editor\Mono\UIElements\EditorWindowPersistentViewData.cs</Link>
     </Compile>
@@ -3447,6 +3450,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\VisualTreeAssetEditor.cs">
       <Link>Editor\Mono\UIElements\VisualTreeAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\WindowBackends\DefaultEditorWindowBackend.cs">
+      <Link>Editor\Mono\UIElements\WindowBackends\DefaultEditorWindowBackend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\WindowBackends\DefaultWindowBackend.cs">
+      <Link>Editor\Mono\UIElements\WindowBackends\DefaultWindowBackend.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Undo.cs">
       <Link>Editor\Mono\Undo.cs</Link>
@@ -3729,6 +3738,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\WindowAction.cs">
       <Link>Editor\Mono\WindowAction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\WindowBackendManager.cs">
+      <Link>Editor\Mono\WindowBackendManager.cs</Link>
     </Compile>
     <Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs">
       <Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
@@ -4018,6 +4030,12 @@
     <Compile Include="..\..\Modules\GraphViewEditor\Elements\Pill.cs">
       <Link>Modules\GraphViewEditor\Elements\Pill.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Elements\Placemat\Placemat.cs">
+      <Link>Modules\GraphViewEditor\Elements\Placemat\Placemat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Elements\Placemat\PlacematContainer.cs">
+      <Link>Modules\GraphViewEditor\Elements\Placemat\PlacematContainer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Elements\Port.cs">
       <Link>Modules\GraphViewEditor\Elements\Port.cs</Link>
     </Compile>
@@ -4047,6 +4065,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\ExperimentalNamespaceRelic.cs">
       <Link>Modules\GraphViewEditor\ExperimentalNamespaceRelic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\ICollectibleElement.cs">
+      <Link>Modules\GraphViewEditor\ICollectibleElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\IDroppable.cs">
       <Link>Modules\GraphViewEditor\IDroppable.cs</Link>
@@ -4450,6 +4471,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageList.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageLoadBar.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageLoadBar.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerExtensions.cs</Link>
     </Compile>
@@ -4464,6 +4488,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerWindow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSampleItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageSampleItem.cs</Link>
@@ -5613,6 +5640,12 @@
     </Compile>
     <Compile Include="..\..\Modules\VFXEditor\FriendAttributes.cs">
       <Link>Modules\VFXEditor\FriendAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VFXExpressionMesh.bindings.cs">
+      <Link>Modules\VFXEditor\Public\ScriptBindings\VFXExpressionMesh.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VFXExpressionNoise.bindings.cs">
+      <Link>Modules\VFXEditor\Public\ScriptBindings\VFXExpressionNoise.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VFXMemorySerializer.bindings.cs">
       <Link>Modules\VFXEditor\Public\ScriptBindings\VFXMemorySerializer.bindings.cs</Link>

@@ -113,6 +113,8 @@ namespace UnityEditor.PackageManager.UI
 
             m_Category = productInfo.category;
 
+            m_PublishNotes = localInfo?.publishNotes ?? productInfo.publishNotes ?? string.Empty;
+
             m_VersionString = localInfo?.versionString ?? productInfo.versionString ?? string.Empty;
             m_VersionId = localInfo?.versionId ?? productInfo.versionId ?? string.Empty;
             SemVersionParser.TryParse(m_VersionString.Trim(), out m_Version);

@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Profiling;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -54,7 +55,6 @@ namespace UnityEngine.UIElements.UIR
         {
             public UInt32 handle;
             public Page page;
-            public NativeArray<DrawBufferRange> drawRanges;
 
             public void Dispose()
             {
@@ -64,17 +64,12 @@ namespace UnityEngine.UIElements.UIR
                     page = page.next;
                     pageToDispose.Dispose();
                 }
-                if (drawRanges.IsCreated)
-                    drawRanges.Dispose();
             }
         }
 
         private const uint k_MaxQueuedFrameCount = 4; // Support drivers queuing up to 4 frames
 
         private readonly bool m_MockDevice; // Don't access GfxDevice resources nor submit commands of any sort, used for tests
-
-        // Those fields below are just for lazy creation
-        private int m_LazyCreationDrawRangeRingSize;
 
         private Shader m_DefaultMaterialShader;
         private Material m_DefaultMaterial;
@@ -86,8 +81,7 @@ namespace UnityEngine.UIElements.UIR
         private List<List<AllocToFree>> m_DeferredFrees;
         private List<List<AllocToUpdate>> m_Updates;
         private UInt32[] m_Fences;
-        private NativeArray<DrawBufferRange> m_DrawRanges; // Size is powers of 2 strictly
-        private int m_DrawRangeStart;
+        private MaterialPropertyBlock m_StandardMatProps, m_CommonMatProps;
         private uint m_FrameIndex;
         private bool m_FrameIndexIncremented;
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
@@ -102,6 +96,7 @@ namespace UnityEngine.UIElements.UIR
         private static bool m_SubscribedToNotifications; // Not thread safe for now
         private static bool m_SynchronousFree; // This is set on domain unload or app quit, so it is irreversible
 
+        static readonly int s_MainTexPropID = Shader.PropertyToID("_MainTex");
         static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
         static readonly int s_CustomTexPropID = Shader.PropertyToID("_CustomTex");
         static readonly int s_1PixelClipInvViewPropID = Shader.PropertyToID("_1PixelClipInvView");
@@ -130,18 +125,18 @@ namespace UnityEngine.UIElements.UIR
 
         public enum DrawingModes { FlipY, StraightY, DisableClipping }
 
-        public UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
-            this(defaultMaterialShader, initialVertexCapacity, initialIndexCapacity, drawingMode, drawRangeRingSize, false)
+        public UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY) :
+            this(defaultMaterialShader, initialVertexCapacity, initialIndexCapacity, drawingMode, false)
         {
         }
 
         // This protected constructor creates a "mock" render device
-        protected UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY, int drawRangeRingSize = 1024) :
-            this(null, initialVertexCapacity, initialIndexCapacity, drawingMode, drawRangeRingSize, true)
+        protected UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY) :
+            this(null, initialVertexCapacity, initialIndexCapacity, drawingMode, true)
         {
         }
 
-        private UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity, uint initialIndexCapacity, DrawingModes drawingMode, int drawRangeRingSize, bool mockDevice)
+        private UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity, uint initialIndexCapacity, DrawingModes drawingMode, bool mockDevice)
         {
             m_MockDevice = mockDevice;
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
@@ -161,7 +156,6 @@ namespace UnityEngine.UIElements.UIR
             m_LargeMeshVertexCount = m_NextPageVertexCount;
             m_IndexToVertexCountRatio = (float)initialIndexCapacity / (float)initialVertexCapacity;
             m_IndexToVertexCountRatio = Mathf.Max(m_IndexToVertexCountRatio, 2);
-            m_LazyCreationDrawRangeRingSize = Mathf.IsPowerOfTwo(drawRangeRingSize) ? drawRangeRingSize : Mathf.NextPowerOfTwo(drawRangeRingSize);
 
             m_DeferredFrees = new List<List<AllocToFree>>((int)k_MaxQueuedFrameCount);
             m_Updates = new List<List<AllocToUpdate>>((int)k_MaxQueuedFrameCount);
@@ -259,15 +253,16 @@ namespace UnityEngine.UIElements.UIR
 
         void CompleteCreation()
         {
-            if (m_DrawRanges.IsCreated)
+            if (m_MockDevice || fullyCreated)
                 return;
 
-            m_DrawRanges = new NativeArray<DrawBufferRange>(m_LazyCreationDrawRangeRingSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_Fences = m_MockDevice ? null : new uint[(int)k_MaxQueuedFrameCount];
-
-            if (!m_MockDevice)
-                UIR.Utility.EngineUpdate += OnEngineUpdate;
+            m_Fences = new uint[(int)k_MaxQueuedFrameCount];
+            m_StandardMatProps = new MaterialPropertyBlock();
+            m_CommonMatProps = new MaterialPropertyBlock();
+            UIR.Utility.EngineUpdate += OnEngineUpdate;
         }
+
+        bool fullyCreated { get { return m_Fences != null; } }
 
         #region Dispose Pattern
 
@@ -298,7 +293,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                if (m_DrawRanges.IsCreated && !m_MockDevice)
+                if (fullyCreated)
                     UIR.Utility.EngineUpdate -= OnEngineUpdate;
 
                 if (m_DefaultMaterial != null)
@@ -309,7 +304,7 @@ namespace UnityEngine.UIElements.UIR
                         Object.DestroyImmediate(m_DefaultMaterial);
                 }
                 DeviceToFree free = new DeviceToFree()
-                { handle = m_MockDevice ? 0 : Utility.InsertCPUFence(), page = m_FirstPage, drawRanges = m_DrawRanges };
+                { handle = m_MockDevice ? 0 : Utility.InsertCPUFence(), page = m_FirstPage };
                 if (free.handle == 0)
                     free.Dispose();
                 else
@@ -571,7 +566,7 @@ namespace UnityEngine.UIElements.UIR
 
         public Material GetStandardMaterial()
         {
-            if (m_DefaultMaterial == null && m_DefaultMaterialShader != null)
+            if (!m_MockDevice && m_DefaultMaterial == null && m_DefaultMaterialShader != null)
             {
                 m_DefaultMaterial = new Material(m_DefaultMaterialShader);
                 SetupStandardMaterial(m_DefaultMaterial, m_DrawingMode);
@@ -632,7 +627,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static void Set1PixelSizeOnMaterial(DrawParams drawParams, Material mat)
+        static void Set1PixelSizeParameter(DrawParams drawParams, MaterialPropertyBlock props)
         {
             Vector4 _1PixelClipInvView = new Vector4();
 
@@ -647,17 +642,16 @@ namespace UnityEngine.UIElements.UIR
             _1PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + Mathf.Epsilon);
             _1PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + Mathf.Epsilon);
 
-            mat.SetVector(s_1PixelClipInvViewPropID, _1PixelClipInvView);
+            props.SetVector(s_1PixelClipInvViewPropID, _1PixelClipInvView);
         }
 
-        void BeforeDraw()
+        public void OnFrameRenderingBegin()
         {
             if (!m_FrameIndexIncremented)
                 AdvanceFrame();
             m_FrameIndexIncremented = false;
             m_DrawStats = new DrawStatistics();
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
-            m_DrawStats.currentDrawRangeStart = m_DrawRangeStart;
 
             s_MarkerBeforeDraw.Begin();
 
@@ -672,9 +666,18 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerBeforeDraw.End();
         }
 
-        void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, PanelClearFlags clearFlags, Texture atlas, Texture gradientSettings, Texture shaderInfo,
-            float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, ref Exception immediateException)
+        unsafe static NativeSlice<T> PtrToSlice<T>(void *p, int count) where T : struct
         {
+            var slice = NativeSliceUnsafeUtility.ConvertExistingDataToNativeSlice<T>(p, UnsafeUtility.SizeOf<T>(), count);
+            NativeSliceUnsafeUtility.SetAtomicSafetyHandle(ref slice, AtomicSafetyHandle.GetTempUnsafePtrSliceHandle());
+            return slice;
+        }
+
+        public unsafe void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, Texture shaderInfo,
+            float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, MaterialPropertyBlock stateMatProps, ref Exception immediateException)
+        {
+            Utility.ProfileDrawChainBegin();
+
             var usesStraightYCoordinateSystem = m_APIUsesStraightYCoordinateSystem;
             if (Utility.GetInvertProjectionMatrix())
                 usesStraightYCoordinateSystem = !usesStraightYCoordinateSystem;
@@ -682,32 +685,28 @@ namespace UnityEngine.UIElements.UIR
             var drawParams = m_DrawParams;
             drawParams.Reset(viewport, projection);
 
-            Material standardMaterial = null;
-            if (!m_MockDevice)
+            if (fullyCreated)
             {
-                standardMaterial = GetStandardMaterial();
-                standardMaterial.mainTexture = atlas;
-                standardMaterial.SetTexture(s_GradientSettingsTexID, gradientSettings);
-                standardMaterial.SetTexture(s_ShaderInfoTexID, shaderInfo);
+                if (atlas != null)
+                    m_StandardMatProps.SetTexture(s_MainTexPropID, atlas);
+                if (gradientSettings != null)
+                    m_StandardMatProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
+                if (shaderInfo != null)
+                    m_StandardMatProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
                 if (transforms.Length > 0)
-                    UIR.Utility.SetVectorArray<Transform3x4>(standardMaterial, s_TransformsPropID, transforms);
+                    UIR.Utility.SetVectorArray<Transform3x4>(m_StandardMatProps, s_TransformsPropID, transforms);
                 if (clipRects.Length > 0)
-                    UIR.Utility.SetVectorArray<Vector4>(standardMaterial, s_ClipRectsPropID, clipRects);
-                Set1PixelSizeOnMaterial(drawParams, standardMaterial);
-                standardMaterial.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
-                if (clearFlags != PanelClearFlags.None)
-                {
-                    GL.Clear((clearFlags & PanelClearFlags.Depth) != 0, // Clearing may impact MVP
-                        (clearFlags & PanelClearFlags.Color) != 0, Color.clear, UIRUtility.k_ClearZ);
-                }
-                GL.modelview = drawParams.view.Peek().transform;
-                GL.LoadProjectionMatrix(drawParams.projection);
+                    UIR.Utility.SetVectorArray<Vector4>(m_StandardMatProps, s_ClipRectsPropID, clipRects);
+                Set1PixelSizeParameter(drawParams, m_CommonMatProps);
+                m_CommonMatProps.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                Utility.SetPropertyBlock(m_StandardMatProps);
+                Utility.SetPropertyBlock(m_CommonMatProps);
             }
 
-            NativeArray<DrawBufferRange> ranges = m_DrawRanges;
-            int rangesCount = ranges.Length;
-            int rangesCountMinus1 = ranges.Length - 1;
-            int rangesStart = m_DrawRangeStart;
+            int rangesCount = 1024; // Must be powers of two. TODO: Can be estimated better from the render chain command count
+            DrawBufferRange* ranges = stackalloc DrawBufferRange[rangesCount];
+            int rangesCountMinus1 = rangesCount - 1;
+            int rangesStart = 0;
             int rangesReady = 0;
             DrawBufferRange curDrawRange = new DrawBufferRange();
             Page curPage = null;
@@ -723,23 +722,27 @@ namespace UnityEngine.UIElements.UIR
                 bool kickRanges = (head.type != CommandType.Draw);
                 bool stashRange = true;
                 bool materialChanges = false;
+                bool stateParamsChanges = false;
                 if (!kickRanges)
                 {
-                    materialChanges = (head.state.material != curState.material);
-                    curState.material = head.state.material;
+                    Material stateMat = head.state.material != null ? head.state.material : m_DefaultMaterial;
+                    materialChanges = (stateMat != curState.material);
+                    curState.material = stateMat;
                     if (head.state.custom != null)
                     {
-                        materialChanges |= head.state.custom != curState.custom;
+                        stateParamsChanges |= head.state.custom != curState.custom;
                         curState.custom = head.state.custom;
+                        stateMatProps.SetTexture(s_CustomTexPropID, head.state.custom);
                     }
 
                     if (head.state.font != null)
                     {
-                        materialChanges |= head.state.font != curState.font;
+                        stateParamsChanges |= head.state.font != curState.font;
                         curState.font = head.state.font;
+                        stateMatProps.SetTexture(s_FontTexPropID, head.state.font);
                     }
 
-                    kickRanges = materialChanges || (head.mesh.allocPage != curPage);
+                    kickRanges = stateParamsChanges || materialChanges || (head.mesh.allocPage != curPage);
                     if (!kickRanges) // For debugging just disable those lines to get a draw call per draw command
                         stashRange = curDrawIndex != (head.mesh.allocIndices.start + head.indexOffset); // Should we stash at least?
                 }
@@ -799,7 +802,8 @@ namespace UnityEngine.UIElements.UIR
                             head.ExecuteNonDrawMesh(drawParams, usesStraightYCoordinateSystem, pixelsPerPoint, ref immediateException);
                         if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
                         {
-                            curState.material = m_DefaultMaterial; // A value that is considered unique and not null to force material reset on next draw command
+                            curState.material = null; // A value that is unique to force material reset on next draw command
+                            materialChanges = false;
                             m_DrawStats.immediateDraws++;
                         }
                     }
@@ -808,44 +812,38 @@ namespace UnityEngine.UIElements.UIR
                         curPage = head.mesh.allocPage;
                     }
 
-                    if (materialChanges)
+                    if (materialChanges || stateParamsChanges)
                     {
                         if (!m_MockDevice)
                         {
-                            var mat = curState.material != null ? curState.material : standardMaterial;
-                            if (mat != standardMaterial)
+                            if (materialChanges)
                             {
-                                mat.mainTexture = atlas;
-                                mat.SetTexture(s_GradientSettingsTexID, gradientSettings);
-                                mat.SetTexture(s_ShaderInfoTexID, shaderInfo);
-                                if (transforms.Length > 0)
-                                    UIR.Utility.SetVectorArray<Transform3x4>(mat, s_TransformsPropID, transforms);
-                                if (clipRects.Length > 0)
-                                    UIR.Utility.SetVectorArray<Vector4>(mat, s_ClipRectsPropID, clipRects);
-                                Set1PixelSizeOnMaterial(drawParams, mat);
-                                mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                                curState.material.SetPass(0); // No multipass support, should it be even considered?
+                                if (m_StandardMatProps != null)
+                                {
+                                    Utility.SetPropertyBlock(m_StandardMatProps);
+                                    Utility.SetPropertyBlock(m_CommonMatProps);
+                                }
+                                Utility.SetPropertyBlock(stateMatProps);
                             }
-                            else if (head.type == CommandType.PushView || head.type == CommandType.PopView)
+                            else if (stateParamsChanges)
+                                Utility.SetPropertyBlock(stateMatProps);
+                            else if (m_CommonMatProps != null && (head.type == CommandType.PushView || head.type == CommandType.PopView))
                             {
-                                Set1PixelSizeOnMaterial(drawParams, mat);
-                                mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                                Set1PixelSizeParameter(drawParams, m_CommonMatProps);
+                                m_CommonMatProps.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                                Utility.SetPropertyBlock(m_CommonMatProps);
                             }
-
-                            mat.SetTexture(s_CustomTexPropID, curState.custom);
-                            mat.SetTexture(s_FontTexPropID, curState.font);
-                            mat.SetPass(0); // No multipass support, should it be even considered?
                         }
-
                         m_DrawStats.materialSetCount++;
                     }
                     else if (head.type == CommandType.PushView || head.type == CommandType.PopView)
                     {
-                        var mat = curState.material != null ? curState.material : standardMaterial;
-                        if (!m_MockDevice)
+                        if (m_CommonMatProps != null)
                         {
-                            Set1PixelSizeOnMaterial(drawParams, mat);
-                            mat.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
-                            mat.SetPass(0);
+                            Set1PixelSizeParameter(drawParams, m_CommonMatProps);
+                            m_CommonMatProps.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                            Utility.SetPropertyBlock(m_CommonMatProps);
                         }
 
                         m_DrawStats.materialSetCount++;
@@ -864,28 +862,29 @@ namespace UnityEngine.UIElements.UIR
             if (rangesReady > 0)
                 KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, curPage);
 
-            m_DrawRangeStart = rangesStart;
+            Utility.ProfileDrawChainEnd();
+
         }
 
-        void KickRanges(NativeArray<DrawBufferRange> ranges, ref int rangesReady, ref int rangesStart, int rangesCount, Page curPage)
+        unsafe void KickRanges(DrawBufferRange *ranges, ref int rangesReady, ref int rangesStart, int rangesCount, Page curPage)
         {
             if (rangesReady > 0)
             {
                 if (rangesStart + rangesReady <= rangesCount)
                 {
                     if (!m_MockDevice)
-                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, new NativeSlice<DrawBufferRange>(ranges, rangesStart, rangesReady));
+                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, rangesReady));
                     m_DrawStats.drawRangeCallCount++;
                 }
                 else
                 {
                     // Less common situation, the numbers straddles the end of the ranges buffer
-                    int firstRangeCount = ranges.Length - rangesStart;
+                    int firstRangeCount = rangesCount - rangesStart;
                     int secondRangeCount = rangesReady - firstRangeCount;
                     if (!m_MockDevice)
                     {
-                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, new NativeSlice<DrawBufferRange>(ranges, rangesStart, firstRangeCount));
-                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, new NativeSlice<DrawBufferRange>(ranges, 0, secondRangeCount));
+                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, firstRangeCount));
+                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges, secondRangeCount));
                     }
 
                     m_DrawStats.drawRangeCallCount += 2;
@@ -896,23 +895,10 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        // Called every frame to draw one entire UI window
-        public void DrawChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, PanelClearFlags clearFlags, Texture atlas, Texture gradientSettings, Texture shaderInfo,
-            float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, ref Exception immediateException)
+        public void OnFrameRenderingDone()
         {
-            if (head == null)
-                return;
-
-            BeforeDraw();
-            Utility.ProfileDrawChainBegin();
-
-            EvaluateChain(head, viewport, projection, clearFlags, atlas, gradientSettings, shaderInfo, pixelsPerPoint, transforms, clipRects, ref immediateException);
-
-            Utility.ProfileDrawChainEnd();
-
             if (m_Fences != null)
                 m_Fences[(int)(m_FrameIndex % m_Fences.Length)] = Utility.InsertCPUFence();
-
         }
 
         public void AdvanceFrame()
@@ -1022,7 +1008,7 @@ namespace UnityEngine.UIElements.UIR
         internal AllocationStatistics GatherAllocationStatistics()
         {
             AllocationStatistics stats = new AllocationStatistics();
-            stats.completeInit = m_DrawRanges.IsCreated;
+            stats.completeInit = fullyCreated;
             stats.freesDeferred = new int[m_DeferredFrees.Count];
             for (int i = 0; i < m_DeferredFrees.Count; i++)
                 stats.freesDeferred[i] = m_DeferredFrees[i].Count;
@@ -1049,7 +1035,6 @@ namespace UnityEngine.UIElements.UIR
         internal struct DrawStatistics
         {
             public int currentFrameIndex;
-            public int currentDrawRangeStart;
             public uint totalIndices;
             public uint commandCount;
             public uint drawCommandCount;

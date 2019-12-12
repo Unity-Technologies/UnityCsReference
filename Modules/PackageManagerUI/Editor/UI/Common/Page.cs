@@ -237,7 +237,7 @@ namespace UnityEditor.PackageManager.UI
             FilterBySearchText();
         }
 
-        public void LoadMore()
+        public void LoadMore(int numberOfPackages)
         {
             var isSearchMode = !string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText);
             var productList = isSearchMode ? m_FilteredList.searchList : m_FilteredList.baseList;
@@ -246,7 +246,7 @@ namespace UnityEditor.PackageManager.UI
                 var queryArgs = new PurchasesQueryArgs
                 {
                     startIndex = productList.list.Count,
-                    limit = PageManager.k_DefaultPageSize,
+                    limit = numberOfPackages,
                     searchText = PackageFiltering.instance.currentSearchText
                 };
                 AssetStoreClient.instance.ListPurchases(queryArgs, false);

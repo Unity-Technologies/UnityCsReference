@@ -80,7 +80,9 @@ namespace UnityEngine
         [FreeFunction("ShaderScripting::SetGlobalTexture")] extern private static void SetGlobalTextureImpl(int name, Texture value);
         [FreeFunction("ShaderScripting::SetGlobalRenderTexture")] extern private static void SetGlobalRenderTextureImpl(int name, RenderTexture value, Rendering.RenderTextureSubElement element);
         [FreeFunction("ShaderScripting::SetGlobalBuffer")]  extern private static void SetGlobalBufferImpl(int name, ComputeBuffer value);
+        [FreeFunction("ShaderScripting::SetGlobalBuffer")]  extern private static void SetGlobalGraphicsBufferImpl(int name, GraphicsBuffer value);
         [FreeFunction("ShaderScripting::SetGlobalConstantBuffer")] extern private static void SetGlobalConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
+        [FreeFunction("ShaderScripting::SetGlobalConstantBuffer")] extern private static void SetGlobalConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
         [FreeFunction("ShaderScripting::GetGlobalFloat")]   extern private static float     GetGlobalFloatImpl(int name);
         [FreeFunction("ShaderScripting::GetGlobalVector")]  extern private static Vector4   GetGlobalVectorImpl(int name);
@@ -211,7 +213,9 @@ namespace UnityEngine
         [NativeName("SetTextureFromScript")] extern private void SetTextureImpl(int name, Texture value);
         [NativeName("SetRenderTextureFromScript")] extern private void SetRenderTextureImpl(int name, RenderTexture value, Rendering.RenderTextureSubElement element);
         [NativeName("SetBufferFromScript")]  extern private void SetBufferImpl(int name, ComputeBuffer value);
+        [NativeName("SetGraphicsBufferFromScript")]  extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
         [NativeName("SetConstantBufferFromScript")] extern private void SetConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
+        [NativeName("SetConstantGraphicsBufferFromScript")] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
         [NativeName("GetFloatFromScript")]   extern private float     GetFloatImpl(int name);
         [NativeName("GetColorFromScript")]   extern private Color     GetColorImpl(int name);
@@ -271,7 +275,9 @@ namespace UnityEngine
         [NativeName("SetTextureFromScript")] extern private void SetTextureImpl(int name, [NotNull] Texture value);
         [NativeName("SetRenderTextureFromScript")] extern private void SetRenderTextureImpl(int name, [NotNull] RenderTexture value, RenderTextureSubElement element);
         [NativeName("SetBufferFromScript")]  extern private void SetBufferImpl(int name, ComputeBuffer value);
+        [NativeName("SetGraphicsBufferFromScript")]  extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
         [NativeName("SetConstantBufferFromScript")] extern private void SetConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
+        [NativeName("SetConstantGraphicsBufferFromScript")] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
         [NativeName("SetFloatArrayFromScript")]  extern private void SetFloatArrayImpl(int name, float[] values, int count);
         [NativeName("SetVectorArrayFromScript")] extern private void SetVectorArrayImpl(int name, Vector4[] values, int count);
@@ -357,24 +363,24 @@ namespace UnityEngine
         // alas marking ONLY class as used might not work if we actually use it only in cpp land, so mark "random" method too
         [RequiredByNativeCode]
         [NativeMethod(Name = "ComputeShaderScripting::FindKernel", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
-        extern public int  FindKernel(string name);
+        extern public int FindKernel(string name);
         [FreeFunction(Name = "ComputeShaderScripting::HasKernel", HasExplicitThis = true)]
         extern public bool HasKernel(string name);
 
-        [FreeFunction(Name = "ComputeShaderScripting::SetValue<float>",      HasExplicitThis = true)]
+        [FreeFunction(Name = "ComputeShaderScripting::SetValue<float>", HasExplicitThis = true)]
         extern public void SetFloat(int nameID, float val);
-        [FreeFunction(Name = "ComputeShaderScripting::SetValue<int>",        HasExplicitThis = true)]
+        [FreeFunction(Name = "ComputeShaderScripting::SetValue<int>", HasExplicitThis = true)]
         extern public void SetInt(int nameID, int val);
-        [FreeFunction(Name = "ComputeShaderScripting::SetValue<Vector4f>",   HasExplicitThis = true)]
+        [FreeFunction(Name = "ComputeShaderScripting::SetValue<Vector4f>", HasExplicitThis = true)]
         extern public void SetVector(int nameID, Vector4 val);
         [FreeFunction(Name = "ComputeShaderScripting::SetValue<Matrix4x4f>", HasExplicitThis = true)]
         extern public void SetMatrix(int nameID, Matrix4x4 val);
 
-        [FreeFunction(Name = "ComputeShaderScripting::SetArray<float>",      HasExplicitThis = true)]
+        [FreeFunction(Name = "ComputeShaderScripting::SetArray<float>", HasExplicitThis = true)]
         extern private void SetFloatArray(int nameID, float[] values);
-        [FreeFunction(Name = "ComputeShaderScripting::SetArray<int>",        HasExplicitThis = true)]
+        [FreeFunction(Name = "ComputeShaderScripting::SetArray<int>", HasExplicitThis = true)]
         extern private void SetIntArray(int nameID, int[] values);
-        [FreeFunction(Name = "ComputeShaderScripting::SetArray<Vector4f>",   HasExplicitThis = true)]
+        [FreeFunction(Name = "ComputeShaderScripting::SetArray<Vector4f>", HasExplicitThis = true)]
         extern public void SetVectorArray(int nameID, Vector4[] values);
         [FreeFunction(Name = "ComputeShaderScripting::SetArray<Matrix4x4f>", HasExplicitThis = true)]
         extern public void SetMatrixArray(int nameID, Matrix4x4[] values);
@@ -389,7 +395,19 @@ namespace UnityEngine
         extern public void SetTextureFromGlobal(int kernelIndex, int nameID, int globalTextureNameID);
 
         [FreeFunction(Name = "ComputeShaderScripting::SetBuffer", HasExplicitThis = true)]
-        extern public void SetBuffer(int kernelIndex, int nameID, [NotNull] ComputeBuffer buffer);
+        extern private void Internal_SetBuffer(int kernelIndex, int nameID, [NotNull] ComputeBuffer buffer);
+        [FreeFunction(Name = "ComputeShaderScripting::SetBuffer", HasExplicitThis = true)]
+        extern private void Internal_SetGraphicsBuffer(int kernelIndex, int nameID, [NotNull] GraphicsBuffer buffer);
+
+        public void SetBuffer(int kernelIndex, int nameID, ComputeBuffer buffer)
+        {
+            Internal_SetBuffer(kernelIndex, nameID, buffer);
+        }
+
+        public void SetBuffer(int kernelIndex, int nameID, GraphicsBuffer buffer)
+        {
+            Internal_SetGraphicsBuffer(kernelIndex, nameID, buffer);
+        }
 
         [FreeFunction(Name = "ComputeShaderScripting::SetConstantBuffer", HasExplicitThis = true)]
         extern public void SetConstantBuffer(int nameID, [NotNull] ComputeBuffer buffer, int offset, int size);
@@ -400,6 +418,8 @@ namespace UnityEngine
         [NativeName("DispatchComputeShader")] extern public void Dispatch(int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ);
         [FreeFunction(Name = "ComputeShaderScripting::DispatchIndirect", HasExplicitThis = true)]
         extern private void Internal_DispatchIndirect(int kernelIndex, [NotNull] ComputeBuffer argsBuffer, uint argsOffset);
+        [FreeFunction(Name = "ComputeShaderScripting::DispatchIndirect", HasExplicitThis = true)]
+        extern private void Internal_DispatchIndirectGraphicsBuffer(int kernelIndex, [NotNull] GraphicsBuffer argsBuffer, uint argsOffset);
 
         [FreeFunction("ComputeShaderScripting::EnableKeyword", HasExplicitThis = true)]
         extern public void EnableKeyword(string keyword);
@@ -446,6 +466,8 @@ namespace UnityEngine.Experimental.Rendering
         extern public void SetTexture(int nameID, [NotNull] Texture texture);
         [NativeMethod(Name = "RayTracingShaderScripting::SetBuffer", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void SetBuffer(int nameID, [NotNull] ComputeBuffer buffer);
+        [NativeMethod(Name = "RayTracingShaderScripting::SetBuffer", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
+        extern private void SetGraphicsBuffer(int nameID, [NotNull] GraphicsBuffer buffer);
         [NativeMethod(Name = "RayTracingShaderScripting::SetAccelerationStructure", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void SetAccelerationStructure(int nameID, [NotNull] RayTracingAccelerationStructure accelerationStrucure);
         extern public void SetShaderPass(string passName);
@@ -453,5 +475,10 @@ namespace UnityEngine.Experimental.Rendering
         extern public void SetTextureFromGlobal(int nameID, int globalTextureNameID);
         [NativeName("DispatchRayTracingShader")]
         extern public void Dispatch(string rayGenFunctionName, int width, int height, int depth, Camera camera = null);
+
+        public void SetBuffer(int nameID, GraphicsBuffer buffer)
+        {
+            SetGraphicsBuffer(nameID, buffer);
+        }
     }
 }

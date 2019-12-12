@@ -91,6 +91,8 @@ namespace Unity.Profiling
         }
     }
 
+    // Supported profiler flow types.
+    // Must be in sync with UnityProfilerFlowEventType!
     public enum ProfilerFlowEventType : byte
     {
         Begin = 0,
@@ -99,17 +101,19 @@ namespace Unity.Profiling
     }
 
     // Supported profiler metadata units.
-    // Must be in sync with profiling::Marker::MetadataDesc::Unit!
+    // Must be in sync with UnityProfilerMarkerDataUnit!
     public enum ProfilerMarkerDataUnit : byte
     {
         Undefined = 0,
-        Time = 1,
+        TimeNanoseconds = 1,
         Bytes = 2,
         Count = 3,
         Percent = 4,
-        Frequency = 5,
+        FrequencyHz = 5,
     }
 
+    // Supported profiler metadata types.
+    // Must be in sync with profiling::CounterBase::Flags!
     [Flags]
     public enum ProfilerCounterOptions : ushort
     {

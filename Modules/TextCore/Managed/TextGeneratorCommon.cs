@@ -39,8 +39,7 @@ namespace UnityEngine.TextCore
     /// <summary>
     /// Text alignment options.
     /// </summary>
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    enum TextAlignment
+    internal enum TextAlignment
     {
         TopLeft = HorizontalAlignment.Left | VerticalAlignment.Top,
         TopCenter = HorizontalAlignment.Center | VerticalAlignment.Top,
@@ -86,7 +85,6 @@ namespace UnityEngine.TextCore
     }
 
     [Flags]
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     enum FontStyles
     {
         Normal          = 0x0,

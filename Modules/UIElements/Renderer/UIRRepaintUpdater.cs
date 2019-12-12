@@ -57,20 +57,25 @@ namespace UnityEngine.UIElements
             if (renderChain?.device == null)
                 return;
 
-            DrawChain(panel.GetViewport(), panel.GetProjection());
+            using (s_MarkerDrawChain.Auto())
+            {
+                renderChain.ProcessChanges();
+
+                PanelClearFlags clearFlags = panel.clearFlags;
+                if (clearFlags != PanelClearFlags.None)
+                {
+                    GL.Clear((clearFlags & PanelClearFlags.Depth) != 0, // Clearing may impact MVP
+                        (clearFlags & PanelClearFlags.Color) != 0, Color.clear, UIRUtility.k_ClearZ);
+                }
+
+                renderChain.Render();
+            }
         }
 
         internal RenderChain DebugGetRenderChain() { return renderChain; }
 
         // Overriden in tests
         protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel, panel.standardShader); }
-        protected virtual void DrawChain(Rect viewport, Matrix4x4 projection)
-        {
-            using (s_MarkerDrawChain.Auto())
-            {
-                renderChain.Render(viewport, projection, panel.clearFlags);
-            }
-        }
 
         static UIRRepaintUpdater()
         {

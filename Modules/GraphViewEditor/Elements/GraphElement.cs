@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -30,8 +29,10 @@ namespace UnityEditor.Experimental.GraphView
         public virtual string title
         {
             get { return name; }
-            set {}
+            set { throw new NotImplementedException(); }
         }
+
+        public virtual bool showInMiniMap { get; set; } = true;
 
         public void ResetLayer()
         {
@@ -143,7 +144,7 @@ namespace UnityEditor.Experimental.GraphView
 
         public virtual bool IsSelectable()
         {
-            return (capabilities & Capabilities.Selectable) == Capabilities.Selectable;
+            return (capabilities & Capabilities.Selectable) == Capabilities.Selectable && visible && resolvedStyle.display != DisplayStyle.None;
         }
 
         public virtual bool IsMovable()
@@ -169,6 +170,11 @@ namespace UnityEditor.Experimental.GraphView
         public virtual bool IsRenamable()
         {
             return (capabilities & Capabilities.Renamable) == Capabilities.Renamable;
+        }
+
+        public virtual bool IsCopiable()
+        {
+            return (capabilities & Capabilities.Copiable) == Capabilities.Copiable;
         }
 
         public virtual Vector3 GetGlobalCenter()

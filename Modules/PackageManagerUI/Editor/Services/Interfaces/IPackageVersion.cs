@@ -18,6 +18,8 @@ namespace UnityEditor.PackageManager.UI
 
         string authorLink { get; }
 
+        string releaseNotes { get; }
+
         string description { get; }
 
         string category { get; }

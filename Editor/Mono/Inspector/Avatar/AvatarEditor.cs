@@ -267,6 +267,8 @@ namespace UnityEditor
         void OnEnable()
         {
             EditorApplication.update += Update;
+            SceneView.duringSceneGui += OnSceneGUI;
+
             m_SwitchToEditMode = false;
             if (m_EditMode == EditMode.Editing)
             {
@@ -287,6 +289,8 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            SceneView.duringSceneGui -= OnSceneGUI;
+
             if (m_EditMode == EditMode.Editing)
                 editor.Disable();
 
@@ -450,7 +454,7 @@ namespace UnityEditor
             editor.OnInspectorGUI();
         }
 
-        public void OnSceneGUI()
+        public void OnSceneGUI(SceneView view)
         {
             if (m_EditMode == EditMode.Editing)
                 editor.OnSceneGUI();

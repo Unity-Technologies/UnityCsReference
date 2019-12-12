@@ -13,7 +13,6 @@ namespace UnityEditor.Connect
 
         readonly string m_LearnMoreUrl;
         readonly string m_ApiUrl;
-        readonly string m_DashboardUrl;
         readonly string m_SupportUrl;
         readonly string k_CustomLearnUrl;
         readonly string k_MonetizationLearnUrl;
@@ -30,7 +29,6 @@ namespace UnityEditor.Connect
         {
             m_LearnMoreUrl = "http://unity3d.com/services/analytics";
             m_ApiUrl = "https://analytics.cloud.unity3d.com";
-            m_DashboardUrl = m_ApiUrl + "/projects/{0}";
             m_SupportUrl = m_ApiUrl + "/support";
             m_ValidatorUrl = m_ApiUrl + "/api/v2/projects/{0}/validation";
             m_ClearUrl = m_ValidatorUrl + "/clearEvent";
@@ -44,11 +42,6 @@ namespace UnityEditor.Connect
         public string learnMoreUrl
         {
             get { return m_LearnMoreUrl; }
-        }
-
-        public string dashboardUrl
-        {
-            get { return m_DashboardUrl; }
         }
 
         public string supportUrl

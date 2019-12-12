@@ -630,6 +630,7 @@ namespace UnityEditor
         }
 
         // Enable debug validation of NVN drawcalls
+        [Obsolete("switchNVNDrawValidation is deprecated, use switchNVNDrawValidation_Heavy instead.")]
         public static bool switchNVNDrawValidation
         {
             get { return switchNVNDrawValidation_Heavy; }

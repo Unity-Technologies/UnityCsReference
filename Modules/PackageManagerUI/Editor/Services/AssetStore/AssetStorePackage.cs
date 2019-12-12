@@ -28,6 +28,10 @@ namespace UnityEditor.PackageManager.UI
         private List<PackageImage> m_Images;
         [SerializeField]
         private List<PackageLink> m_Links;
+        [SerializeField]
+        private string m_AssetStoreLink;
+
+        public string assetStoreLink => m_AssetStoreLink;
 
         public override IEnumerable<PackageImage> images => m_Images;
 
@@ -69,6 +73,11 @@ namespace UnityEditor.PackageManager.UI
             m_Links = productInfo?.links ?? new List<PackageLink>();
             m_VersionList = new AssetStoreVersionList();
             m_UpmVersionList = new UpmVersionList();
+            m_AssetStoreLink = productInfo?.assetStoreLink.url;
+
+            var firstPublishedDateString = productInfo?.firstPublishedDate ?? string.Empty;
+            m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
+
             m_Labels = purchaseInfo?.tags;
             m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
@@ -110,6 +119,11 @@ namespace UnityEditor.PackageManager.UI
             m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList();
             foreach (var version in m_UpmVersionList.Cast<UpmPackageVersion>())
                 version.UpdateProductInfo(productInfo);
+
+            m_AssetStoreLink = productInfo?.assetStoreLink.url;
+
+            var firstPublishedDateString = productInfo?.firstPublishedDate ?? string.Empty;
+            m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
 
             if (purchaseInfo == null)
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid purchase details."));

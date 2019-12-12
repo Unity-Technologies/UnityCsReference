@@ -249,6 +249,10 @@ namespace UnityEditor
                 // Added components and component modifications
                 foreach (var component in gameObject.GetComponents(typeof(Component)))
                 {
+                    // GetComponents will return Missing Script components as null, we will skip them here to prevent NullReferenceExceptions. (case 1197599)
+                    if (component == null)
+                        continue;
+
                     // Skip coupled components (they are merged into the display of their owning component)
                     if (component.IsCoupledComponent())
                         continue;

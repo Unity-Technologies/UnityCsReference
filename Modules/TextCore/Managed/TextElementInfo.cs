@@ -18,7 +18,6 @@ namespace UnityEngine.TextCore
     /// <summary>
     /// Structure containing information about individual text elements (character or sprites).
     /// </summary>
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     struct TextElementInfo
     {
         public char character; // Should be changed to an int to handle UTF 32

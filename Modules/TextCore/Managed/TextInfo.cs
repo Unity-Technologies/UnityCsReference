@@ -29,7 +29,6 @@ namespace UnityEngine.TextCore
     /// <summary>
     /// Class which contains information about every element contained within the text object.
     /// </summary>
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     class TextInfo
     {
         static Vector2 s_InfinityVectorPositive = new Vector2(32767, 32767);

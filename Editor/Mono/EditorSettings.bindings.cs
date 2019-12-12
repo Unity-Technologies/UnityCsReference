@@ -256,7 +256,7 @@ namespace UnityEditor
         public static extern bool serializeInlineMappingsOnOneLine { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern AssetPipelineMode assetPipelineMode { get; set; }
+        public static extern AssetPipelineMode assetPipelineMode { get; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern CacheServerMode cacheServerMode { get; set; }

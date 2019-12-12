@@ -41,7 +41,7 @@ namespace UnityEditor
                 {
                     var marker = m_Markers[index];
                     Color color = ProfilerColors.chartAreaColors[(uint)m_Series.Length % ProfilerColors.chartAreaColors.Length];
-                    Chart.DrawVerticalLine(marker.frame, m_Data, rect, color.AlphaMultiplied(0.3f), color.AlphaMultiplied(0.4f), 1.0f);
+                    Chart.DrawVerticalLine(marker.frame, m_Data, rect, color.AlphaMultiplied(0.4f), 1.0f);
                 }
                 DrawMarkerLabels(m_Data, rect, m_Markers, m_MarkerNames);
             }

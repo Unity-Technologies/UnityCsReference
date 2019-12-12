@@ -62,6 +62,7 @@ namespace UnityEngine.iOS
         iPhone11Pro     = 49,
         iPhone11ProMax  = 50,
         iPodTouch7Gen   = 51,
+        iPad7Gen        = 52,
 
         iPhoneUnknown       = 10001,
         iPadUnknown         = 10002,

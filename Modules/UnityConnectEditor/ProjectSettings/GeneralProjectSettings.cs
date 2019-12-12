@@ -121,9 +121,7 @@ namespace UnityEditor.Connect
             //Setup dashboard link
             var dashboardClickable = new Clickable(() =>
             {
-                var dashboardUrl = ServicesConfiguration.instance.GetCurrentProjectDashboardUrl();
-                EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = (serviceInstance != null) ? serviceInstance.name : k_GeneralLabel, url = dashboardUrl });
-                Application.OpenURL(dashboardUrl);
+                OpenDashboardOrgAndProjectIds(ServicesConfiguration.instance.baseDashboardUrl);
             });
             rootVisualElement.Q(k_DashboardBlockName).AddManipulator(dashboardClickable);
 

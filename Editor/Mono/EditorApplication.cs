@@ -179,7 +179,7 @@ namespace UnityEditor
 
         public static event Action quitting;
 
-        public static event Action delayCall;
+        public static CallbackFunction delayCall;
 
         // Each time an object is (or a group of objects are) created, renamed, parented, unparented or destroyed this callback is raised.
         public static event Action hierarchyChanged;
@@ -319,7 +319,7 @@ namespace UnityEditor
 
         static void Internal_CallDelayFunctions()
         {
-            var delay = delayCall;
+            CallbackFunction delay = delayCall;
             delayCall = null;
 
             if (delay != null)

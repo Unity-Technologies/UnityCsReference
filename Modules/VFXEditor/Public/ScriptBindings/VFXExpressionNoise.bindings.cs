@@ -4,10 +4,11 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.VFX
+namespace UnityEditor.VFX
 {
     [RequiredByNativeCode]
     [NativeType(Header = "Modules/VFX/Public/VFXExpressionNoiseFunctions.h")]

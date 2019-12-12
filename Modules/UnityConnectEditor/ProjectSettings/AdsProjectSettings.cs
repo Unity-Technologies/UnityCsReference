@@ -266,9 +266,7 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    var adsDashboardUrl = ServicesConfiguration.instance.adsDashboardUrl;
-                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AdsService.instance.name, url = adsDashboardUrl });
-                    Application.OpenURL(adsDashboardUrl);
+                    OpenDashboardForOrganizationForeignKey(ServicesConfiguration.instance.adsDashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }

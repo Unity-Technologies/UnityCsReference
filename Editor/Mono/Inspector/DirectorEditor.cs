@@ -233,25 +233,9 @@ namespace UnityEditor
 
         private static bool PropertyFieldAsObject(SerializedProperty property, GUIContent title, Type objType)
         {
-            bool allowSceneObjects = typeof(GameObject).IsAssignableFrom(objType) ||
-                typeof(Component).IsAssignableFrom(objType);
-
-            Rect rect = EditorGUILayout.GetControlRect();
-            var label = EditorGUI.BeginProperty(rect, title, property);
             EditorGUI.BeginChangeCheck();
-
-            int id = GUIUtility.GetControlID(Styles.ObjectFieldControlID, FocusType.Keyboard, rect);
-            rect = EditorGUI.PrefixLabel(rect, id, label);
-            var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, objType, null, null, allowSceneObjects, EditorStyles.objectField);
-
-            bool retValue = false;
-            if (EditorGUI.EndChangeCheck())
-            {
-                property.objectReferenceValue = result;
-                retValue = true;
-            }
-            EditorGUI.EndProperty();
-            return retValue;
+            EditorGUILayout.ObjectField(property, objType, title);
+            return EditorGUI.EndChangeCheck();
         }
 
         // Does not use Properties because time is not a serialized property

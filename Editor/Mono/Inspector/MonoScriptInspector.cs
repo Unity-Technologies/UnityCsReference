@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEditorInternal;
+using System.IO;
 
 namespace UnityEditor
 {
@@ -184,14 +185,14 @@ namespace UnityEditor
             TextAsset textAsset = target as TextAsset;
             if (textAsset != null)
             {
-                string text;
+                string text = string.Empty;
                 if (targets.Length > 1)
                 {
                     text = targetTitle;
                 }
-                else
+                else if (Path.GetExtension(AssetDatabase.GetAssetPath(textAsset)) != ".bytes")
                 {
-                    text = textAsset.ToString();
+                    text = textAsset.text;
                     if (text.Length > kMaxChars)
                         text = text.Substring(0, kMaxChars) + "...\n\n<...etc...>";
                 }

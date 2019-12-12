@@ -63,15 +63,19 @@ namespace UnityEditor
                 SessionState.SetBool("OOPP.Initialized", true);
                 EditorApplication.update -= InitializeProfilerSlaveProcessDomain;
                 EditorApplication.update += InitializeProfilerSlaveProcessDomain;
+
+                Console.WriteLine("[UMPE] Initialize Profiler Slave Process");
             }
 
             [UsedImplicitly, RoleProvider(k_RoleName, ProcessEvent.UMP_EVENT_AFTER_DOMAIN_RELOAD)]
             static void InitializeProfilerSlaveProcessDomain()
             {
-                EditorApplication.update -= InitializeProfilerSlaveProcessDomain;
+                Console.WriteLine("[UMPE] Initialize Profiler Slave Process Domain Triggered");
 
                 if (!SessionState.GetBool("OOPP.Initialized", false))
                     return;
+
+                EditorApplication.update -= InitializeProfilerSlaveProcessDomain;
 
                 s_SlaveProfilerWindow = EditorWindow.GetWindow<ProfilerWindow>();
                 SetupProfilerWindow(s_SlaveProfilerWindow);
@@ -87,6 +91,8 @@ namespace UnityEditor
                 EditorApplication.updateMainWindowTitle += SetProfilerWindowTitle;
                 EditorApplication.quitting -= SaveWindowLayout;
                 EditorApplication.quitting += SaveWindowLayout;
+
+                Console.WriteLine("[UMPE] Initialize Profiler Slave Process Domain Completed");
             }
 
             static void SaveWindowLayout()

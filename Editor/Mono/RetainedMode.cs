@@ -50,43 +50,23 @@ namespace UnityEditor
             HandleUtility.EndHandles();
         }
 
-        static List<Panel> panelsIteration = new List<Panel>();
-
         [RequiredByNativeCode]
         static void UpdateSchedulers()
         {
             DataWatchService.sharedInstance.PollNativeData();
 
-            UIElementsUtility.GetAllPanels(panelsIteration, ContextType.Editor);
-            foreach (var panel in panelsIteration)
-            {
-                // Dispatch all timer update messages to each scheduled item
-                panel.timerEventScheduler.UpdateScheduledEvents();
-                panel.UpdateAnimations();
-                panel.UpdateBindings();
-            }
+            UIEventRegistration.UpdateSchedulers();
         }
 
         [RequiredByNativeCode]
         static void RequestRepaintForPanels()
         {
-            var iterator = UIElementsUtility.GetPanelsIterator();
-            while (iterator.MoveNext())
+            UIEventRegistration.RequestRepaintForPanels((obj) =>
             {
-                var panel = iterator.Current.Value;
-
-                // Game panels' scheduler are ticked by the engine
-                if (panel.contextType != ContextType.Editor)
-                    continue;
-
-                // Dispatch might have triggered a repaint request.
-                if (panel.isDirty)
-                {
-                    var guiView = panel.ownerObject as GUIView;
-                    if (guiView != null)
-                        guiView.Repaint();
-                }
-            }
+                var guiView = obj as GUIView;
+                if (guiView != null)
+                    guiView.Repaint();
+            });
         }
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)

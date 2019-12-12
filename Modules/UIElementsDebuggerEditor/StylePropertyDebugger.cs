@@ -412,7 +412,15 @@ namespace UnityEditor.UIElements.Debugger
             object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
             Type type = m_PropertyInfo.type;
 
-            if (newValue == null || type == newValue.GetType())
+            if (newValue == null)
+            {
+                if (type == typeof(StyleBackground))
+                    val = new StyleBackground();
+
+                if (type == typeof(StyleFont))
+                    val = new StyleFont();
+            }
+            else if (type == newValue.GetType())
             {
                 val = newValue;
             }

@@ -67,7 +67,7 @@ namespace UnityEngine
 
         internal ColorSpace activeTextureColorSpace
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements")]
             get { return Internal_GetActiveTextureColorSpace() == 0 ? ColorSpace.Linear : ColorSpace.Gamma; }
         }
 
@@ -333,7 +333,7 @@ namespace UnityEngine
 
         extern public bool alphaIsTransparency { get; set; }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements")]
         extern internal float pixelsPerPoint { get; set; }
     }
 

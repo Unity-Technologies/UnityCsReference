@@ -396,7 +396,11 @@ namespace UnityEditorInternal.Profiling
 
                 DrawToolbar(frameDataView, showDetailedView);
 
-                if (!isDataAvailable)
+                if (!string.IsNullOrEmpty(dataAvailabilityMessage))
+                {
+                    GUILayout.Label(dataAvailabilityMessage, BaseStyles.label);
+                }
+                else if (!isDataAvailable)
                 {
                     GUILayout.Label(BaseStyles.noData, BaseStyles.label);
                 }

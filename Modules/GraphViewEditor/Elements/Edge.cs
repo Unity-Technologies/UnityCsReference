@@ -58,6 +58,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+        public override bool showInMiniMap => false;
 
         public Port input
         {
@@ -204,7 +205,7 @@ namespace UnityEditor.Experimental.GraphView
             return UpdateEdgeControl();
         }
 
-        public bool UpdateEdgeControl()
+        public virtual bool UpdateEdgeControl()
         {
             if (m_OutputPort == null && m_InputPort == null)
                 return false;

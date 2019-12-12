@@ -171,9 +171,7 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    var dashboardUrl = ServicesConfiguration.instance.collabDashboardUrl;
-                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = CollabService.instance.name, url = dashboardUrl });
-                    Application.OpenURL(dashboardUrl);
+                    OpenDashboardOrgAndProjectIds(ServicesConfiguration.instance.baseCollabDashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -364,9 +362,7 @@ namespace UnityEditor.Connect
                 {
                     var clickable = new Clickable(() =>
                     {
-                        var dashboardUrl = ServicesConfiguration.instance.GetCloudUsageDashboardUrl();
-                        EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = CollabService.instance.name, url = dashboardUrl });
-                        Application.OpenURL(dashboardUrl);
+                        provider.OpenDashboardOrgAndProjectIds(ServicesConfiguration.instance.baseCloudUsageDashboardUrl);
                     });
                     gotoWebDashboard.AddManipulator(clickable);
                 }

@@ -410,7 +410,7 @@ namespace UnityEditor.IMGUI.Controls
         protected virtual Rect DoFoldout(Rect rect, TreeViewItem item, int row)
         {
             float indent = GetFoldoutIndent(item);
-            Rect foldoutRect = new Rect(rect.x + indent, GetFoldoutYPosition(rect.y), foldoutStyleWidth, EditorGUIUtility.singleLineHeight);
+            Rect foldoutRect = new Rect(rect.x + indent, GetFoldoutYPosition(rect.y), foldoutStyleWidth, k_LineHeight);
             FoldoutButton(foldoutRect, item, row, foldoutStyle);
             return foldoutRect;
         }

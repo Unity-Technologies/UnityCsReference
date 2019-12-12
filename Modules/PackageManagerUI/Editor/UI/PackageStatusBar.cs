@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI
             UpdateStatusMessage();
 
             PageManager.instance.onRefreshOperationStart += UpdateStatusMessage;
-            PageManager.instance.onRefreshOperationFinish += UpdateStatusMessage;
+            PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
             PageManager.instance.onRefreshOperationError += OnRefreshOperationError;
 
             PackageFiltering.instance.onFilterTabChanged += OnFilterTabChanged;
@@ -38,8 +38,18 @@ namespace UnityEditor.PackageManager.UI
 
             refreshButton.clickable.clicked += () =>
             {
+                refreshButton.SetEnabled(false);
                 if (!EditorApplication.isPlaying)
-                    PageManager.instance.Refresh();
+                {
+                    var page = PackageFiltering.instance.currentFilterTab;
+                    if (page == PackageFilterTab.AssetStore)
+                    {
+                        PackageManagerWindow.instance.packageLoadBar.Reset();
+                        PageManager.instance.Refresh(page, PackageManagerWindow.instance.packageList.CalculateNumberOfPackagesToDisplay());
+                    }
+                    else
+                        PageManager.instance.Refresh();
+                }
             };
             refreshButton.SetEnabled(ApplicationUtil.instance.isInternetReachable);
         }
@@ -47,7 +57,7 @@ namespace UnityEditor.PackageManager.UI
         public void OnDisable()
         {
             PageManager.instance.onRefreshOperationStart -= UpdateStatusMessage;
-            PageManager.instance.onRefreshOperationFinish -= UpdateStatusMessage;
+            PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
             PageManager.instance.onRefreshOperationError -= OnRefreshOperationError;
 
             PackageFiltering.instance.onFilterTabChanged -= OnFilterTabChanged;
@@ -82,6 +92,12 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationError(UIError error)
         {
+            UpdateStatusMessage();
+        }
+
+        private void OnRefreshOperationFinish()
+        {
+            refreshButton.SetEnabled(true);
             UpdateStatusMessage();
         }
 

@@ -515,14 +515,13 @@ namespace UnityEngine.UIElements
 
         public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher)
         {
-            m_VisualTreeUpdater = new VisualTreeUpdater(this);
-
             this.ownerObject = ownerObject;
             this.contextType = contextType;
             this.dispatcher = dispatcher;
             repaintData = new RepaintData();
             cursorManager = new CursorManager();
             contextualMenuManager = null;
+            m_VisualTreeUpdater = new VisualTreeUpdater(this);
             m_RootContainer = new VisualElement
             {
                 name = VisualElementUtils.GetUniqueName("unity-panel-container"),

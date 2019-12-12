@@ -116,15 +116,14 @@ namespace UnityEditor
 
         private WebTemplate Load(string path)
         {
-            if (!Directory.Exists(path) || Directory.GetFiles(path, "index.*").Length < 1)
+            if (!Directory.Exists(path))
             {
                 return null;
             }
 
-            string[] splitPath = path.Split(new char[] {'/', '\\'});
-
             WebTemplate template = new WebTemplate();
 
+            string[] splitPath = path.Split(new char[] {'/', '\\'});
             template.m_Name = splitPath[splitPath.Length - 1];
             if (splitPath.Length > 3 && splitPath[splitPath.Length - 3].Equals("Assets"))
             {
@@ -135,26 +134,36 @@ namespace UnityEditor
                 template.m_Path = "APPLICATION:" + template.m_Name;
             }
 
-            string[] thumbFiles = Directory.GetFiles(path, "thumbnail.*");
-            if (thumbFiles.Length > 0)
+            string thumbnailPath = Path.Combine(path, "thumbnail.png");
+            if (File.Exists(thumbnailPath))
             {
                 template.m_Thumbnail = new Texture2D(2, 2);
-                template.m_Thumbnail.LoadImage(File.ReadAllBytes(thumbFiles[0]));
+                template.m_Thumbnail.LoadImage(File.ReadAllBytes(thumbnailPath));
             }
 
-            List<string> keys = new List<string>();
-            Regex customKeyFinder = new Regex("\\%UNITY_CUSTOM_([A-Z_]+)\\%");
-            MatchCollection matches = customKeyFinder.Matches(File.ReadAllText(Directory.GetFiles(path, "index.*")[0]));
-            foreach (Match match in matches)
+            Regex preprocessedFilenameRegex = new Regex("\\.(html|php|css|js|json)$");
+            Regex preprocessedBlockRegex = new Regex("((^|\\n)#if [^\\n]+(\\n|$))|({{{([^}]|}(?!}))+}}})");
+            Regex customKeyRegex = new Regex("(?<=[^0-9a-zA-Z_$]UNITY_CUSTOM_)[A-Z_]+(?=[^0-9a-zA-Z_$])");
+            List<string> customKeys = new List<string>();
+            foreach (var file in FileUtil.GetAllFilesRecursive(path))
             {
-                string name = match.Value.Substring("%UNITY_CUSTOM_".Length);
-                name = name.Substring(0, name.Length - 1);
-                if (!keys.Contains(name))
+                if (preprocessedFilenameRegex.IsMatch(FileUtil.UnityGetFileName(file)))
                 {
-                    keys.Add(name);
+                    MatchCollection preprocessedBlockMatches = preprocessedBlockRegex.Matches(File.ReadAllText(file));
+                    foreach (Match preprocessedBlockMatch in preprocessedBlockMatches)
+                    {
+                        MatchCollection customKeysMatches = customKeyRegex.Matches(preprocessedBlockMatch.Value);
+                        foreach (Match customKeysMatch in customKeysMatches)
+                        {
+                            if (!customKeys.Contains(customKeysMatch.Value))
+                            {
+                                customKeys.Add(customKeysMatch.Value);
+                            }
+                        }
+                    }
                 }
             }
-            template.m_CustomKeys = keys.ToArray();
+            template.m_CustomKeys = customKeys.ToArray();
 
             return template;
         }

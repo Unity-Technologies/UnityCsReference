@@ -10,11 +10,9 @@ using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    enum TextOverflowMode { Overflow = 0, Ellipsis = 1, Masking = 2, Truncate = 3, ScrollRect = 4, Page = 5, Linked = 6 }
+    internal enum TextOverflowMode { Overflow = 0, Ellipsis = 1, Masking = 2, Truncate = 3, ScrollRect = 4, Page = 5, Linked = 6 }
     enum TextureMapping { Character = 0, Line = 1, Paragraph = 2, MatchAspect = 3 }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class TextGenerationSettings
     {
         public string text = null;
@@ -220,7 +218,6 @@ namespace UnityEngine.TextCore
         }
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class TextGenerator
     {
         // Character codes

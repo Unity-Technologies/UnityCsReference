@@ -34,9 +34,10 @@ namespace UnityEditor
             public static readonly float tabWidthPadding = tab.GetFloat(StyleCatalogKeyword.paddingRight);
 
             public static GUIStyle dragtab = "dragtab";
-            public static GUIStyle background = "dockarea";
             public static GUIStyle view = "TabWindowBackground";
             public static readonly GUIStyle tabLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
+
+            public static readonly SVC<Color> backgroundColor = new SVC<Color>("--theme-background-color");
         }
 
         static public PaneDragTab get
@@ -88,10 +89,10 @@ namespace UnityEditor
                     break;
             }
 
-            m_TargetRect.x = Mathf.Round(m_TargetRect.x);
-            m_TargetRect.y = Mathf.Round(m_TargetRect.y);
-            m_TargetRect.width = Mathf.Round(m_TargetRect.width);
-            m_TargetRect.height = Mathf.Round(m_TargetRect.height);
+            m_TargetRect.x = Mathf.Floor(m_TargetRect.x);
+            m_TargetRect.y = Mathf.Floor(m_TargetRect.y);
+            m_TargetRect.width = Mathf.Floor(m_TargetRect.width);
+            m_TargetRect.height = Mathf.Floor(m_TargetRect.height);
 
             m_InFrontOfWindow = inFrontOf;
             m_Window.MoveInFrontOf(m_InFrontOfWindow);
@@ -146,25 +147,34 @@ namespace UnityEditor
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            const float dragTabOffsetX = 2f;
-            const float dragTabOffsetY = 2f;
-            const float dragTabHeight = 18f;
-
-            float minWidth, expectedWidth;
-            Styles.dragtab.CalcMinMaxWidth(m_Content, out minWidth, out expectedWidth);
-            float tabWidth = Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
             Rect windowRect = new Rect(0, 0, position.width, position.height);
-            Rect tabPositionRect = new Rect(dragTabOffsetX, dragTabOffsetY, tabWidth, dragTabHeight);
-            float roundedPosX = Mathf.Round(tabPositionRect.x);
-            float roundedWidth = Mathf.Round(tabPositionRect.x + tabPositionRect.width) - roundedPosX;
-            Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);
-            Rect viewRect = new Rect(dragTabOffsetX, tabContentRect.yMax - 2f,
-                position.width - dragTabOffsetX * 2, position.height - tabContentRect.yMax - dragTabOffsetY + 2f);
 
-            Styles.background.Draw(windowRect, GUIContent.none, false, false, true, true);
-            Styles.dragtab.Draw(tabContentRect, false, true, false, false);
-            Styles.view.Draw(viewRect, GUIContent.none, false, false, true, true);
-            GUI.Label(tabPositionRect, m_Content, Styles.tabLabel);
+            if (Event.current.type == EventType.Repaint)
+                GUI.DrawTexture(windowRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, Styles.backgroundColor, 0, 0);
+            if (m_Type == DropInfo.Type.Tab)
+            {
+                Styles.dragtab.Draw(windowRect, false, true, false, false);
+                GUI.Label(windowRect, m_Content, Styles.tabLabel);
+            }
+            else
+            {
+                const float dragTabOffsetX = 2f;
+                const float dragTabHeight = DockArea.kTabHeight;
+
+                float minWidth, expectedWidth;
+                Styles.dragtab.CalcMinMaxWidth(m_Content, out minWidth, out expectedWidth);
+                float tabWidth = Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
+                Rect tabPositionRect = new Rect(1, 2f, tabWidth, dragTabHeight);
+                float roundedPosX = Mathf.Floor(tabPositionRect.x);
+                float roundedWidth = Mathf.Ceil(tabPositionRect.x + tabPositionRect.width) - roundedPosX;
+                Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);
+                Rect viewRect = new Rect(dragTabOffsetX, tabContentRect.yMax - 2f,
+                    position.width - dragTabOffsetX * 2, position.height - tabContentRect.yMax);
+
+                Styles.dragtab.Draw(tabContentRect, false, true, false, false);
+                Styles.view.Draw(viewRect, GUIContent.none, false, false, true, true);
+                GUI.Label(tabPositionRect, m_Content, Styles.tabLabel);
+            }
 
             // We currently only support this on macOS
             m_Window.SetAlpha(m_TargetAlpha);

@@ -66,6 +66,11 @@ namespace UnityEngine
             set;
         }
 
+        public static extern float probeSize
+        {
+            get;
+        }
+
         public static extern void DrawFrustum(Vector3 center, float fov, float maxRange, float minRange, float aspect);
     }
 }

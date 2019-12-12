@@ -67,8 +67,9 @@ namespace UnityEditor
                 {
                     m_MainToolbar.m_Parent = this;
 
-                    if (m_MainToolbar.rootVisualElement != null && visualTree.Contains(m_MainToolbar.rootVisualElement))
-                        visualTree.Remove(m_MainToolbar.rootVisualElement);
+
+                    if (m_MainToolbar.rootVisualElement != null)
+                        m_MainToolbar.rootVisualElement.RemoveFromHierarchy();
                 }
 
                 m_MainToolbar = value == null ? GetSingleton(k_DefaultToolbarType) : value;
@@ -77,7 +78,17 @@ namespace UnityEditor
                 PositionChanged(this);
 
                 if (m_MainToolbar.rootVisualElement != null)
-                    visualTree.Add(m_MainToolbar.rootVisualElement);
+                {
+                    if (!EditorWindowBackendManager.IsBackendCompatible(windowBackend, this))
+                    {
+                        //We create a new compatible backend
+                        windowBackend = EditorWindowBackendManager.GetBackend(this);
+                    }
+
+                    var visualTree = windowBackend.visualTree as UnityEngine.UIElements.VisualElement;
+
+                    visualTree?.Add(m_MainToolbar.rootVisualElement);
+                }
 
                 RepaintToolbar();
             }
@@ -118,7 +129,10 @@ namespace UnityEditor
                 m_MainToolbar = CreateInstance<UnityMainToolbar>();
 
             if (m_MainToolbar.rootVisualElement != null)
-                visualTree.Add(m_MainToolbar.rootVisualElement);
+            {
+                var visualTree = windowBackend.visualTree as UnityEngine.UIElements.VisualElement;
+                visualTree?.Add(m_MainToolbar.rootVisualElement);
+            }
 
             PositionChanged(this);
         }

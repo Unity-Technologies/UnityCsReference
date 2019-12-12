@@ -46,6 +46,7 @@ namespace UnityEditorInternal
                 HierarchyFrameDataView.GetMarkerCategoryColor(28), // "VFX"
                 HierarchyFrameDataView.GetMarkerCategoryColor(29), // "Build Interface"
                 HierarchyFrameDataView.GetMarkerCategoryColor(30), // "Input"
+                HierarchyFrameDataView.GetMarkerCategoryColor(31), // "Virtual Texturing"
             };
             s_DefaultColorsLuminanceValues  = new float[s_DefaultColors.Length];
             VisionUtility.GetLuminanceValuesForPalette(s_DefaultColors, ref s_DefaultColorsLuminanceValues);
@@ -108,6 +109,7 @@ namespace UnityEditorInternal
                 s_ColorBlindSafeChartColors[8], // "VFX"
                 s_ColorBlindSafeChartColors[14], // "Build Interface"
                 s_ColorBlindSafeChartColors[15], // "Input"
+                s_ColorBlindSafeChartColors[8], // "Virtual Texturing"
             };
             s_ColorBlindSafeColorsLuminanceValues = new float[s_ColorBlindSafeColors.Length];
             VisionUtility.GetLuminanceValuesForPalette(s_ColorBlindSafeColors, ref s_ColorBlindSafeColorsLuminanceValues);

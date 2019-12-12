@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditor.Connect;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -153,6 +154,16 @@ namespace UnityEditor.PackageManager.UI
             public void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)
             {
                 UnityOAuth.GetAuthorizationCodeAsync(clientId, callback);
+            }
+
+            public int CalculateNumberOfElementsInsideContainerToDisplay(VisualElement container, float elementHeight)
+            {
+                float containerHeight = container.resolvedStyle.height;
+
+                if (elementHeight != 0 && !float.IsNaN(containerHeight))
+                    return (int)(containerHeight / elementHeight);
+
+                return 0;
             }
         }
     }

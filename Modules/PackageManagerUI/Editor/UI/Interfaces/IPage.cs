@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI
         bool morePackagesToFetch { get; }
         List<VisualState> packageVisualStates { get; }
         VisualState GetVisualState(string packageUniqueId);
-        void LoadMore();
+        void LoadMore(int numberOfPackages);
         void Load(IPackage package, IPackageVersion version = null);
         void SetSelected(IPackage package, IPackageVersion version = null);
         void SetSelected(string packageUniqueId, string versionUniqueId);

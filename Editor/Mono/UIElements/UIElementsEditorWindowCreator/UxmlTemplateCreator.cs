@@ -39,11 +39,16 @@ namespace UnityEditor.UIElements
         [MenuItem("Assets/Create/UIElements/UXML Template", false, 610, false)]
         public static void CreateUXMLTemplate()
         {
-            var folder = GetCurrentFolder();
-            var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUXMLTemplate.uxml");
-            var contents = CreateUXMLTemplate(folder);
-            var icon = EditorGUIUtility.IconContent<VisualTreeAsset>().image as Texture2D;
-            ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+            if (CommandService.Exists(nameof(CreateUXMLTemplate)))
+                CommandService.Execute(nameof(CreateUXMLTemplate), CommandHint.Menu);
+            else
+            {
+                var folder = GetCurrentFolder();
+                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUXMLTemplate.uxml");
+                var contents = CreateUXMLTemplate(folder);
+                var icon = EditorGUIUtility.IconContent<VisualTreeAsset>().image as Texture2D;
+                ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+            }
         }
 
         public static string CreateUXMLTemplate(string folder, string uxmlContent = "")

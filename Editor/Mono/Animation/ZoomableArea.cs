@@ -753,10 +753,11 @@ namespace UnityEditor
                     }
                     min = shownXMin;
                     max = shownXMin + shownXRange;
+                    float rectWidthWithinMargins = GetWidthInsideMargins(rect.width, true);
                     if (min > area.xMin)
-                        min = Mathf.Min(min, max - rect.width / m_HScaleMax);
+                        min = Mathf.Min(min, max - rectWidthWithinMargins / m_HScaleMax);
                     if (max < area.xMax)
-                        max = Mathf.Max(max, min + rect.width / m_HScaleMax);
+                        max = Mathf.Max(max, min + rectWidthWithinMargins / m_HScaleMax);
                     SetShownHRangeInsideMargins(min, max);
                 }
 
@@ -787,10 +788,11 @@ namespace UnityEditor
                         }
                         min = -(shownYMin + shownYRange);
                         max = -shownYMin;
+                        float rectHeightWithinMargins = GetHeightInsideMargins(rect.height, true);
                         if (min > area.yMin)
-                            min = Mathf.Min(min, max - rect.height / m_VScaleMax);
+                            min = Mathf.Min(min, max - rectHeightWithinMargins / m_VScaleMax);
                         if (max < area.yMax)
-                            max = Mathf.Max(max, min + rect.height / m_VScaleMax);
+                            max = Mathf.Max(max, min + rectHeightWithinMargins / m_VScaleMax);
                         SetShownVRangeInsideMargins(min, max);
                     }
                     else
@@ -816,10 +818,11 @@ namespace UnityEditor
                         }
                         min = shownYMin;
                         max = shownYMin + shownYRange;
+                        float rectHeightWithinMargins = GetHeightInsideMargins(rect.height, true);
                         if (min > area.yMin)
-                            min = Mathf.Min(min, max - rect.height / m_VScaleMax);
+                            min = Mathf.Min(min, max - rectHeightWithinMargins / m_VScaleMax);
                         if (max < area.yMax)
-                            max = Mathf.Max(max, min + rect.height / m_VScaleMax);
+                            max = Mathf.Max(max, min + rectHeightWithinMargins / m_VScaleMax);
                         SetShownVRangeInsideMargins(min, max);
                     }
                 }

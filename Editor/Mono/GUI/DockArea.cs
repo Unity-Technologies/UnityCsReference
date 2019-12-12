@@ -10,7 +10,6 @@ using System.Linq;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
-using UnityEngine.UIElements;
 using UnityEngine.XR;
 
 namespace UnityEditor
@@ -20,6 +19,7 @@ namespace UnityEditor
         private static class Styles
         {
             private static readonly StyleBlock tab = EditorResources.GetStyle("tab");
+            public static readonly GUIStyle background = "dockarea";
             public static readonly float tabMinWidth = tab.GetFloat(StyleCatalogKeyword.minWidth, 50.0f);
             public static readonly float tabMaxWidth = tab.GetFloat(StyleCatalogKeyword.maxWidth, 150.0f);
             public static readonly float tabWidthPadding = tab.GetFloat(StyleCatalogKeyword.paddingRight);
@@ -165,13 +165,6 @@ namespace UnityEditor
             }
 
             base.OnEnable();
-
-            if (imguiContainer != null)
-            {
-                imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
-                imguiContainer.tabIndex = -1;
-                imguiContainer.focusOnlyIfHasFocusableControls = false;
-            }
         }
 
         public void AddTab(EditorWindow pane, bool sendPaneEvents = true)
@@ -251,36 +244,43 @@ namespace UnityEditor
             sw.Cleanup();
         }
 
+        private int FindPaneIndex(EditorWindow window)
+        {
+            for (int i = 0; i < m_Panes.Count; ++i)
+            {
+                if (m_Panes[i] == window)
+                    return i;
+            }
+
+            return -1;
+        }
+
         public DropInfo DragOver(EditorWindow window, Vector2 mouseScreenPosition)
         {
             Rect r = screenPosition;
             r.height = kDockHeight;
-            if (r.Contains(mouseScreenPosition))
+            if (!r.Contains(mouseScreenPosition))
+                return null;
+
+            Rect scr = Styles.background.margin.Remove(screenPosition);
+            Vector2 pos = mouseScreenPosition - new Vector2(scr.x, scr.y);
+            var tabWidth = GetTabWidth(tabStyle, window);
+            int mPos = GetTabAtMousePos(tabStyle, pos);
+
+            if (s_PlaceholderPos != mPos)
             {
-                if (background == null)
-                    background = "hostview";
-                Rect scr = background.margin.Remove(screenPosition);
-                Vector2 pos = mouseScreenPosition - new Vector2(scr.x, scr.y);
-
-                Rect tr = new Rect(0, 0, m_TotalTabWidth, kTabHeight);
-                int mPos = GetTabAtMousePos(tabStyle, pos, tr);
-
-                if (s_PlaceholderPos != mPos)
-                {
-                    Repaint();
-                    s_PlaceholderPos = mPos;
-                }
-
-                var dragTopOffset = this.window.showMode != ShowMode.MainWindow ? 3 : -1;
-                DropInfo di = new DropInfo(this)
-                {
-                    type = DropInfo.Type.Tab,
-                    rect = new Rect(pos.x - Styles.tabDragWidth * .25f + scr.x, tr.y + scr.y + dragTopOffset, Styles.tabDragWidth, tr.height - 2f)
-                };
-
-                return di;
+                Repaint();
+                s_PlaceholderPos = mPos;
             }
-            return null;
+
+            var dragTopOffset = floatingWindow && isTop ? 2 : 0;
+            DropInfo di = new DropInfo(this)
+            {
+                type = DropInfo.Type.Tab,
+                rect = new Rect(pos.x - tabWidth * .25f + scr.x, scr.y + dragTopOffset, tabWidth, kTabHeight)
+            };
+
+            return di;
         }
 
         public bool PerformDrop(EditorWindow w, DropInfo info, Vector2 screenPos)
@@ -315,8 +315,6 @@ namespace UnityEditor
                 return;
 
             var borderSize = GetBorderSize();
-
-            background = "dockarea";
 
             Rect dockAreaRect = new Rect(0, 0, position.width, position.height);
             Rect containerWindowPosition = window.position;
@@ -408,7 +406,7 @@ namespace UnityEditor
             {
                 var backgroundRect = dockAreaRect;
                 backgroundRect.y = 0;
-                background.Draw(backgroundRect, GUIContent.none, 0);
+                Styles.background.Draw(backgroundRect, GUIContent.none, 0);
             }
         }
 
@@ -662,7 +660,8 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            AddUIElementsDebuggerToMenu(menu);
+
+            ((IEditorWindowModel)this).onDisplayWindowMenu?.Invoke(menu);
         }
 
         void AddTabToHere(object userData)
@@ -671,13 +670,22 @@ namespace UnityEditor
             AddTab(win);
         }
 
+        private float GetTabWidth(GUIStyle tabStyle, EditorWindow tabWindow)
+        {
+            float minWidth, expectedWidth;
+            tabStyle.CalcMinMaxWidth(tabWindow.titleContent, out minWidth, out expectedWidth);
+            return Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
+        }
+
         private float GetTabWidth(GUIStyle tabStyle, int tabIndex)
         {
             Debug.Assert(0 <= tabIndex && tabIndex < m_Panes.Count);
+            return GetTabWidth(tabStyle, m_Panes[tabIndex]);
+        }
 
-            float minWidth, expectedWidth;
-            tabStyle.CalcMinMaxWidth(m_Panes[tabIndex].titleContent, out minWidth, out expectedWidth);
-            return Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
+        private int GetTabAtMousePos(GUIStyle tabStyle, Vector2 mousePos)
+        {
+            return GetTabAtMousePos(tabStyle, mousePos, new Rect(0, 0, position.width, kTabHeight));
         }
 
         private int GetTabAtMousePos(GUIStyle tabStyle, Vector2 mousePos, Rect tabAreaRect)
@@ -700,9 +708,6 @@ namespace UnityEditor
             float xPos = tabAreaRect.xMin;
             for (int i = 0; i < m_Panes.Count; i++)
             {
-                if (s_DragPane == m_Panes[i])
-                    continue;
-
                 float tabWidth = GetTabWidth(tabStyle, i);
                 if (xPos <= mousePos.x && mousePos.x < xPos + tabWidth)
                 {
@@ -932,15 +937,11 @@ namespace UnityEditor
                             if (s_DragPane == m_Panes[i])
                                 continue;
 
-                            var style = tabStyle;
-
-                            if (i == 0)
-                                style = firstTabStyle;
-
                             // If we need space for inserting a tab here, skip some horizontal
                             if (s_DropInfo != null && ReferenceEquals(s_DropInfo.dropArea, this) && s_PlaceholderPos == drawNum)
-                                xPos += Styles.tabDragWidth;
+                                xPos += s_DropInfo.rect.width;
 
+                            var style = i == 0 ? firstTabStyle : tabStyle;
                             xPos += DrawTab(tabAreaRect, style, i, xPos);
                             drawNum++;
                         }
@@ -1127,7 +1128,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            AddUIElementsDebuggerToMenu(menu);
+            ((IEditorWindowModel)this).onDisplayWindowMenu?.Invoke(menu);
         }
     }
 }

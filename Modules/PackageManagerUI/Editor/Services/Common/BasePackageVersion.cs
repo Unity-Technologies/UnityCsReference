@@ -38,6 +38,10 @@ namespace UnityEditor.PackageManager.UI
         protected long m_PublishedDateTicks;
         public DateTime? publishedDate => m_PublishedDateTicks == 0 ? packageInfo?.datePublished : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
 
+        [SerializeField]
+        protected string m_PublishNotes;
+        public string releaseNotes => m_PublishNotes;
+
         public DependencyInfo[] dependencies => packageInfo?.dependencies;
         public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
         public EntitlementsInfo entitlements => packageInfo?.entitlements;

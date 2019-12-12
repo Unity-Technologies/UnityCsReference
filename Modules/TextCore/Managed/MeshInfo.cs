@@ -12,7 +12,6 @@ namespace UnityEngine.TextCore
     /// <summary>
     /// Structure which contains the vertex attributes (geometry) of the text object.
     /// </summary>
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     struct MeshInfo
     {
         static readonly Color32 k_DefaultColor = new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);

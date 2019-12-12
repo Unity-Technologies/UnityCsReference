@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [NativeHeader("Modules/IMGUI/GUIState.h")]
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
     internal class ObjectGUIState : IDisposable
     {
         internal IntPtr m_Ptr;

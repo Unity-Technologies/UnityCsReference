@@ -118,12 +118,16 @@ namespace UnityEngine
         public void SetMatrix(int nameID, Matrix4x4 value)      { SetMatrixImpl(nameID, value); }
         public void SetBuffer(string name, ComputeBuffer value) { SetBufferImpl(Shader.PropertyToID(name), value); }
         public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
+        public void SetBuffer(string name, GraphicsBuffer value) { SetGraphicsBufferImpl(Shader.PropertyToID(name), value); }
+        public void SetBuffer(int nameID, GraphicsBuffer value)  { SetGraphicsBufferImpl(nameID, value); }
         public void SetTexture(string name, Texture value)      { SetTextureImpl(Shader.PropertyToID(name), value); }
         public void SetTexture(int nameID, Texture value)       { SetTextureImpl(nameID, value); }
         public void SetTexture(string name, RenderTexture value, Rendering.RenderTextureSubElement element) { SetRenderTextureImpl(Shader.PropertyToID(name), value, element); }
         public void SetTexture(int nameID, RenderTexture value, Rendering.RenderTextureSubElement element) { SetRenderTextureImpl(nameID, value, element); }
         public void SetConstantBuffer(string name, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(Shader.PropertyToID(name), value, offset, size); }
         public void SetConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(nameID, value, offset, size); }
+        public void SetConstantBuffer(string name, GraphicsBuffer value, int offset, int size) { SetConstantGraphicsBufferImpl(Shader.PropertyToID(name), value, offset, size); }
+        public void SetConstantBuffer(int nameID, GraphicsBuffer value, int offset, int size) { SetConstantGraphicsBufferImpl(nameID, value, offset, size); }
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetFloatArray(int nameID,  List<float> values)  { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
@@ -340,7 +344,12 @@ namespace UnityEngine
 
         public static void SetGlobalBuffer(string name, ComputeBuffer value)    { SetGlobalBufferImpl(Shader.PropertyToID(name), value); }
         public static void SetGlobalBuffer(int nameID, ComputeBuffer value)     { SetGlobalBufferImpl(nameID, value); }
+        public static void SetGlobalBuffer(string name, GraphicsBuffer value)    { SetGlobalGraphicsBufferImpl(Shader.PropertyToID(name), value); }
+        public static void SetGlobalBuffer(int nameID, GraphicsBuffer value)     { SetGlobalGraphicsBufferImpl(nameID, value); }
+        public static void SetGlobalConstantBuffer(string name, ComputeBuffer value, int offset, int size) { SetGlobalConstantBufferImpl(Shader.PropertyToID(name), value, offset, size); }
         public static void SetGlobalConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetGlobalConstantBufferImpl(nameID, value, offset, size); }
+        public static void SetGlobalConstantBuffer(string name, GraphicsBuffer value, int offset, int size) { SetGlobalConstantGraphicsBufferImpl(Shader.PropertyToID(name), value, offset, size); }
+        public static void SetGlobalConstantBuffer(int nameID, GraphicsBuffer value, int offset, int size) { SetGlobalConstantGraphicsBufferImpl(nameID, value, offset, size); }
 
         public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
@@ -509,8 +518,12 @@ namespace UnityEngine
         public void SetTexture(int nameID, RenderTexture value, Rendering.RenderTextureSubElement element) { SetRenderTextureImpl(nameID, value, element); }
         public void SetBuffer(string name, ComputeBuffer value) { SetBufferImpl(Shader.PropertyToID(name), value); }
         public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
+        public void SetBuffer(string name, GraphicsBuffer value) { SetGraphicsBufferImpl(Shader.PropertyToID(name), value); }
+        public void SetBuffer(int nameID, GraphicsBuffer value)  { SetGraphicsBufferImpl(nameID, value); }
         public void SetConstantBuffer(string name, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(Shader.PropertyToID(name), value, offset, size); }
         public void SetConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetConstantBufferImpl(nameID, value, offset, size); }
+        public void SetConstantBuffer(string name, GraphicsBuffer value, int offset, int size) { SetConstantGraphicsBufferImpl(Shader.PropertyToID(name), value, offset, size); }
+        public void SetConstantBuffer(int nameID, GraphicsBuffer value, int offset, int size) { SetConstantGraphicsBufferImpl(nameID, value, offset, size); }
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetFloatArray(int nameID,    List<float> values) { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
@@ -672,6 +685,11 @@ namespace UnityEngine
             SetBuffer(kernelIndex, Shader.PropertyToID(name), buffer);
         }
 
+        public void SetBuffer(int kernelIndex, string name, GraphicsBuffer buffer)
+        {
+            SetBuffer(kernelIndex, Shader.PropertyToID(name), buffer);
+        }
+
         public void DispatchIndirect(int kernelIndex, ComputeBuffer argsBuffer, [uei.DefaultValue("0")] uint argsOffset)
         {
             if (argsBuffer == null) throw new ArgumentNullException("argsBuffer");
@@ -682,6 +700,20 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public void DispatchIndirect(int kernelIndex, ComputeBuffer argsBuffer)
+        {
+            DispatchIndirect(kernelIndex, argsBuffer, 0);
+        }
+
+        public void DispatchIndirect(int kernelIndex, GraphicsBuffer argsBuffer, [uei.DefaultValue("0")] uint argsOffset)
+        {
+            if (argsBuffer == null) throw new ArgumentNullException("argsBuffer");
+            if (argsBuffer.m_Ptr == IntPtr.Zero) throw new System.ObjectDisposedException("argsBuffer");
+
+            Internal_DispatchIndirectGraphicsBuffer(kernelIndex, argsBuffer, argsOffset);
+        }
+
+        [uei.ExcludeFromDocs]
+        public void DispatchIndirect(int kernelIndex, GraphicsBuffer argsBuffer)
         {
             DispatchIndirect(kernelIndex, argsBuffer, 0);
         }
@@ -716,6 +748,11 @@ namespace UnityEngine.Experimental.Rendering
         }
 
         public void SetBuffer(string resourceName, ComputeBuffer buffer)
+        {
+            SetBuffer(Shader.PropertyToID(resourceName), buffer);
+        }
+
+        public void SetBuffer(string resourceName, GraphicsBuffer buffer)
         {
             SetBuffer(Shader.PropertyToID(resourceName), buffer);
         }

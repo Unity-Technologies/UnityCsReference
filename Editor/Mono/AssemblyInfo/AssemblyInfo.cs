@@ -111,6 +111,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.PackageCleanConsoleTest.Editor")]
+[assembly: InternalsVisibleTo("Unity.UIElements")]
+[assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
+[assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 
 [assembly: AssemblyIsEditorAssembly]

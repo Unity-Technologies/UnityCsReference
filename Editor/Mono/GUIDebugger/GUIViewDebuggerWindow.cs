@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -128,7 +129,10 @@ namespace UnityEditor
 
             ClearInstructionHighlighter();
 
-            m_Highlighter.HighlightElement(view.visualTree, instructionRect, style);
+            var visualElement = view.windowBackend.visualTree as VisualElement;
+            if (visualElement == null)
+                return;
+            m_Highlighter.HighlightElement(visualElement, instructionRect, style);
         }
 
         InstructionType instructionType

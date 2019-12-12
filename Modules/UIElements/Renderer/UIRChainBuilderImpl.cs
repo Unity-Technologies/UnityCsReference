@@ -816,7 +816,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     cmd.type = CommandType.PopView;
                     cmd.closing = true;
                     cmd.owner = ve;
-                    InjectClosingCommandInBetween(cmd, ref cmdPrev, ref cmdNext);
+                    InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
                 }
                 if (painter.closingInfo.popScissorClip)
                 {
@@ -824,7 +824,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     cmd.type = CommandType.PopScissor;
                     cmd.closing = true;
                     cmd.owner = ve;
-                    InjectClosingCommandInBetween(cmd, ref cmdPrev, ref cmdNext);
+                    InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
                 }
             }
 
@@ -1043,7 +1043,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             cmd.indexOffset = indexOffset;
             cmd.indexCount = indexCount;
             cmd.owner = ve;
-            InjectClosingCommandInBetween(cmd, ref cmdPrev, ref cmdNext);
+            InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
             return cmd;
         }
 
@@ -1172,7 +1172,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             next = cmd.next;
         }
 
-        static void InjectClosingCommandInBetween(RenderChainCommand cmd, ref RenderChainCommand prev, ref RenderChainCommand next)
+        static void InjectClosingCommandInBetween(RenderChain renderChain, RenderChainCommand cmd, ref RenderChainCommand prev, ref RenderChainCommand next)
         {
             Debug.Assert(cmd.closing);
             if (prev != null)
@@ -1191,6 +1191,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (ve.renderChainData.firstClosingCommand == null)
                 ve.renderChainData.firstClosingCommand = cmd;
 
+            renderChain.OnRenderCommandAdded(cmd);
+
             // Adjust the pointers as a facility for later injections
             prev = cmd;
             next = cmd.next;
@@ -1199,7 +1201,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         static void ResetCommands(RenderChain renderChain, VisualElement ve)
         {
             if (ve.renderChainData.firstCommand != null)
-                renderChain.OnRenderCommandRemoved(ve.renderChainData.firstCommand, ve.renderChainData.lastCommand);
+                renderChain.OnRenderCommandsRemoved(ve.renderChainData.firstCommand, ve.renderChainData.lastCommand);
 
             var prev = ve.renderChainData.firstCommand != null ? ve.renderChainData.firstCommand.prev : null;
             var next = ve.renderChainData.lastCommand != null ? ve.renderChainData.lastCommand.next : null;
@@ -1229,7 +1231,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             if (ve.renderChainData.firstClosingCommand != null)
             {
-                renderChain.OnRenderCommandRemoved(ve.renderChainData.firstClosingCommand, ve.renderChainData.lastClosingCommand);
+                renderChain.OnRenderCommandsRemoved(ve.renderChainData.firstClosingCommand, ve.renderChainData.lastClosingCommand);
 
                 var c = ve.renderChainData.firstClosingCommand;
                 while (c != ve.renderChainData.lastClosingCommand)

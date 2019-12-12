@@ -1235,7 +1235,7 @@ namespace UnityEditor
             {
                 if (m_PreviousPreviewExpandedState)
                 {
-                    UIElementsUtility.MakeCurrentIMGUIContainerDirty();
+                    UIEventRegistration.MakeCurrentIMGUIContainerDirty();
                     m_PreviousPreviewExpandedState = false;
                 }
                 m_PreviousFooterHeight = previewSize;
@@ -1274,7 +1274,7 @@ namespace UnityEditor
 
             if (m_PreviousFooterHeight >= 0f && !FloatComparer.s_ComparerWithDefaultTolerance.Equals(previewSize, m_PreviousFooterHeight))
             {
-                UIElementsUtility.MakeCurrentIMGUIContainerDirty();
+                UIEventRegistration.MakeCurrentIMGUIContainerDirty();
             }
 
             m_PreviousFooterHeight = previewSize;
@@ -1311,7 +1311,7 @@ namespace UnityEditor
             m_PreviewWindow.SetParentInspector(this);
             m_PreviewWindow.Show();
             Repaint();
-            UIElementsUtility.MakeCurrentIMGUIContainerDirty();
+            UIEventRegistration.MakeCurrentIMGUIContainerDirty();
             if (exitGUI)
                 GUIUtility.ExitGUI();
         }

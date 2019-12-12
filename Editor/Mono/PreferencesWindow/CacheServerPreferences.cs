@@ -24,12 +24,10 @@ namespace UnityEditor
             public static readonly GUIContent cleanCache = EditorGUIUtility.TrTextContent("Clean Cache");
             public static readonly GUIContent enumerateCache = EditorGUIUtility.TrTextContent("Check Cache Size", "Check the size of the local asset cache server - can take a while");
             public static readonly GUIContent browseCacheLocation = EditorGUIUtility.TrTextContent("Browse for local asset cache server location");
-            public static readonly GUIContent assetPipelineVersion1 = EditorGUIUtility.TrTextContent("Asset pipeline v1 (deprecated)");
             public static readonly GUIContent assetPipelineVersion2 = EditorGUIUtility.TrTextContent("Asset pipeline v2");
-            public static readonly GUIContent newProjectsAssetPipeline = EditorGUIUtility.TrTextContent("New Projects default asset pipeline", "The default asset pipeline used when creating a new project. Note that this default can be overridden by using a -adb1 or -adb2 command line argument.");
-            public static readonly GUIContent activeAssetPipelineVersionLabel = EditorGUIUtility.TrTextContent("Active version", activeAssetPipelineVersionTooltip);
-            public static readonly GUIContent activeAssetPipelineVersion = new GUIContent(AssetDatabase.IsV1Enabled() ? "1" : "2", activeAssetPipelineVersionTooltip);
-            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources by priority: Environment variable, command line argument (-adb1 or -adb2), local per project editor settings, builtin default. In the case of creating a new project, the default pipeline is selected by the dropdown above and will have a priority one higher than the builtin default.";
+            public static readonly GUIContent activeAssetPipelineVersionLabel = EditorGUIUtility.TrTextContent("Asset Pipeline active version", activeAssetPipelineVersionTooltip);
+            public static readonly GUIContent activeAssetPipelineVersion = new GUIContent("2", activeAssetPipelineVersionTooltip);
+            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources by priority: Environment variable, command line argument (-adb2), local per project editor settings, builtin default. In the case of creating a new project, the default pipeline is selected by the dropdown above and will have a priority one higher than the builtin default.";
             public static readonly GUIContent cacheServerDefaultMode = new GUIContent("Cache Server Default Mode", "Specifies if cache server should be enabled or disabled by default. This can be overridden per project in editor settings.");
             public static readonly GUIContent cacheServerIPLabel = new GUIContent("Default IP address", "This IP address is used for the cache server if not overridden in the editor settings per project.");
         }
@@ -66,7 +64,6 @@ namespace UnityEditor
         private static CacheServerMode s_CacheServerMode;
         private static string s_CacheServerIPAddress;
         private static int s_LocalCacheServerSize;
-        private static long s_LocalCacheServerUsedSize = -1;
         private static bool s_EnableCustomPath;
         private static string s_CachePath;
 
@@ -118,7 +115,6 @@ namespace UnityEditor
                 changedDir = true;
             if (changedDir)
             {
-                s_LocalCacheServerUsedSize = -1;
                 var message = s_CacheServerMode == CacheServerMode.Local ?
                     "You have changed the location of the local cache storage." :
                     "You have disabled the local cache.";
@@ -126,7 +122,6 @@ namespace UnityEditor
                 if (EditorUtility.DisplayDialog("Delete old Cache", message, "Delete", "Don't Delete"))
                 {
                     LocalCacheServer.Clear();
-                    s_LocalCacheServerUsedSize = -1;
                 }
             }
 
@@ -188,11 +183,7 @@ namespace UnityEditor
         public static int GetCommandLineAssetPipelineOverride()
         {
             var argv = System.Environment.GetCommandLineArgs();
-            var index = System.Array.IndexOf(argv, "-adb1");
-            if (index >= 0 && argv.Length > index + 1)
-                return 1;
-
-            index = System.Array.IndexOf(argv, "-adb2");
+            var index = System.Array.IndexOf(argv, "-adb2");
             if (index >= 0 && argv.Length > index + 1)
                 return 2;
 
@@ -224,8 +215,6 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
 
-                s_AssetPipelineVersionForNewProjects = (AssetPipelineVersion)EditorGUILayout.EnumPopup(Properties.newProjectsAssetPipeline, s_AssetPipelineVersionForNewProjects);
-
                 EditorGUILayout.LabelField(Properties.activeAssetPipelineVersionLabel, Properties.activeAssetPipelineVersion);
                 var overrideAddress = GetCommandLineRemoteAddressOverride();
                 bool allowCacheServerChanges = overrideAddress == null;
@@ -236,10 +225,6 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox("Asset pipeline currently forced by command line argument", MessageType.Info, true);
                 else if (GetMagicFileAssetPipelineOverride())
                     EditorGUILayout.HelpBox("Asset pipeline currently forced by magic adb2.txt file", MessageType.Info, true);
-
-                GUILayout.Space(5);
-
-                CacheServerVersion1GUI(allowCacheServerChanges, overrideAddress);
 
                 GUILayout.Space(5);
 
@@ -261,146 +246,6 @@ namespace UnityEditor
                 }
             }
 
-        }
-
-        static void CacheServerVersion1GUI(bool allowCacheServerChanges, string overrideAddress)
-        {
-            GUILayout.Label(Properties.assetPipelineVersion1, EditorStyles.boldLabel);
-
-            GUILayout.Space(5);
-
-            if (!allowCacheServerChanges)
-                EditorGUILayout.HelpBox("Cache Server preferences cannot be modified because a remote address was specified via command line argument. To modify Cache Server preferences, restart Unity without the " + kIpAddressKeyArgs + " command line argument.", MessageType.Info, true);
-
-            using (new EditorGUI.DisabledScope(!allowCacheServerChanges))
-            {
-                var displayMode = !allowCacheServerChanges ? CacheServerMode.Remote : s_CacheServerMode;
-                s_CacheServerMode = (CacheServerMode)EditorGUILayout.EnumPopup("Cache Server Mode", displayMode);
-            }
-
-            if (s_CacheServerMode == CacheServerMode.Remote)
-            {
-                using (new EditorGUI.DisabledScope(!allowCacheServerChanges))
-                {
-                    var displayAddress = overrideAddress != null ? overrideAddress : s_CacheServerIPAddress;
-                    s_CacheServerIPAddress = EditorGUILayout.TextField("IP Address", displayAddress);
-
-                    if (GUI.changed)
-                    {
-                        s_ConnectionState = ConnectionState.Unknown;
-                    }
-                }
-
-                GUILayout.Space(5);
-
-                using (new EditorGUI.DisabledScope(AssetDatabase.IsV2Enabled()))
-                {
-                    if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
-                    {
-                        if (InternalEditorUtility.CanConnectToCacheServer())
-                            s_ConnectionState = ConnectionState.Success;
-                        else
-                            s_ConnectionState = ConnectionState.Failure;
-                    }
-                }
-
-                GUILayout.Space(-25);
-
-                var s = AssetDatabase.IsV1Enabled() ? s_ConnectionState : ConnectionState.Unknown;
-
-                switch (s)
-                {
-                    case ConnectionState.Success:
-                        EditorGUILayout.HelpBox("Connection successful.", MessageType.Info, false);
-                        break;
-
-                    case ConnectionState.Failure:
-                        EditorGUILayout.HelpBox("Connection failed.", MessageType.Warning, false);
-                        break;
-
-                    case ConnectionState.Unknown:
-                        GUILayout.Space(44);
-                        break;
-                }
-            }
-            else if (s_CacheServerMode == CacheServerMode.Local)
-            {
-                const int kMinSizeInGigabytes = 1;
-                const int kMaxSizeInGigabytes = 200;
-
-                // Write size in GigaBytes.
-                s_LocalCacheServerSize = EditorGUILayout.IntSlider(Properties.maxCacheSize, s_LocalCacheServerSize, kMinSizeInGigabytes, kMaxSizeInGigabytes);
-
-                s_EnableCustomPath = EditorGUILayout.Toggle(Properties.customCacheLocation, s_EnableCustomPath);
-                // browse for cache folder if not per project
-                if (s_EnableCustomPath)
-                {
-                    GUIStyle style = EditorStyles.miniButton;
-                    GUILayout.BeginHorizontal();
-                    EditorGUILayout.PrefixLabel(Properties.cacheFolderLocation, style);
-                    Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);
-                    GUIContent guiText = string.IsNullOrEmpty(s_CachePath) ? Properties.browse : new GUIContent(s_CachePath);
-                    if (EditorGUI.DropdownButton(r, guiText, FocusType.Passive, style))
-                    {
-                        string pathToOpen = s_CachePath;
-                        string path = EditorUtility.OpenFolderPanel(Properties.browseCacheLocation.text, pathToOpen, "");
-                        if (!string.IsNullOrEmpty(path))
-                        {
-                            if (LocalCacheServer.CheckValidCacheLocation(path))
-                            {
-                                s_CachePath = path;
-                                WritePreferences();
-                            }
-                            else
-                                EditorUtility.DisplayDialog("Invalid Cache Location", string.Format("The directory {0} contains some files which don't look like Unity Cache server files. Please delete the directory contents or choose another directory.", path), "OK");
-                            EditorGUIUtility.ExitGUI();
-                        }
-                    }
-                    GUILayout.EndHorizontal();
-                }
-                else
-                    s_CachePath = "";
-
-                bool locationExists = LocalCacheServer.CheckCacheLocationExists();
-                if (locationExists == true)
-                {
-                    GUIContent cacheSizeIs = EditorGUIUtility.TrTextContent("Cache size is unknown");
-                    if (s_LocalCacheServerUsedSize != -1)
-                    {
-                        cacheSizeIs = EditorGUIUtility.TextContent("Cache size is " + EditorUtility.FormatBytes(s_LocalCacheServerUsedSize));
-                    }
-
-                    GUILayout.BeginHorizontal();
-                    GUIStyle style = EditorStyles.miniButton;
-                    EditorGUILayout.PrefixLabel(cacheSizeIs, style);
-                    Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);
-                    if (EditorGUI.Button(r, Properties.enumerateCache, style))
-                    {
-                        s_LocalCacheServerUsedSize = LocalCacheServer.CheckCacheLocationExists() ? FileUtil.GetDirectorySize(LocalCacheServer.GetCacheLocation()) : 0;
-                    }
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.BeginHorizontal();
-                    GUIContent spacerContent = EditorGUIUtility.blankContent;
-                    EditorGUILayout.PrefixLabel(spacerContent, style);
-                    Rect r2 = GUILayoutUtility.GetRect(GUIContent.none, style);
-                    if (EditorGUI.Button(r2, Properties.cleanCache, style))
-                    {
-                        LocalCacheServer.Clear();
-                        s_LocalCacheServerUsedSize = 0;
-                    }
-                    GUILayout.EndHorizontal();
-                }
-                else
-                {
-                    EditorGUILayout.HelpBox("Local cache directory does not exist - please check that you can access the cache folder and are able to write to it", MessageType.Warning, false);
-                    //If the cache server was on an external HDD or on a temporarily unavailable network drive, set the size to unknown so that the user re-queries it when they've reconnected
-                    s_LocalCacheServerUsedSize = -1;
-                }
-
-                GUILayout.Label(Properties.cacheFolderLocation.text + ":");
-                GUILayout.Label(LocalCacheServer.GetCacheLocation(), Styles.cacheFolderLocation);
-            }
         }
 
         static void CacheServerVersion2GUI(bool allowCacheServerChanges, string overrideAddress)

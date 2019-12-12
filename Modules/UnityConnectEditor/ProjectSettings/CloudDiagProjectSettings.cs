@@ -242,9 +242,7 @@ namespace UnityEditor.Connect
                 {
                     var clickable = new Clickable(() =>
                     {
-                        var dashboardUrl = ServicesConfiguration.instance.cloudDiagCrashesDashboardUrl;
-                        EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = CrashService.instance.name, url = dashboardUrl });
-                        Application.OpenURL(dashboardUrl);
+                        OpenDashboardOrgAndProjectIds(ServicesConfiguration.instance.baseCloudDiagCrashesDashboardUrl);
                     });
                     m_CrashServiceGoToDashboard.AddManipulator(clickable);
                 }

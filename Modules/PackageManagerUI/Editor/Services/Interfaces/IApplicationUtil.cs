@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Connect;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -34,5 +35,7 @@ namespace UnityEditor.PackageManager.UI
         IAsyncHTTPClient GetASyncHTTPClient(string url, string method = null);
 
         void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback);
+
+        int CalculateNumberOfElementsInsideContainerToDisplay(VisualElement container, float elementHeight);
     }
 }

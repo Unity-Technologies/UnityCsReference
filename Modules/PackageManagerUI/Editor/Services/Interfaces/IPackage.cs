@@ -41,5 +41,7 @@ namespace UnityEditor.PackageManager.UI
         void ClearErrors();
 
         IPackage Clone();
+
+        DateTime? firstPublishedDate { get; }
     }
 }

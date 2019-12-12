@@ -143,7 +143,6 @@ namespace UnityEngine
             return s_TextImage;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void ClearStaticCache()
         {
             s_Text.m_Text = null;

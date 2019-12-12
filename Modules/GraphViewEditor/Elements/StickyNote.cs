@@ -102,7 +102,7 @@ namespace UnityEditor.Experimental.GraphView
 
             tpl.CloneTree(this);
 
-            capabilities = Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable | Capabilities.Selectable;
+            capabilities = Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable | Capabilities.Selectable | Capabilities.Copiable;
 
             m_Title = this.Q<Label>(name: "title");
             if (m_Title != null)
@@ -284,7 +284,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        public new string title
+        public override string title
         {
             get {return m_Title.text; }
             set

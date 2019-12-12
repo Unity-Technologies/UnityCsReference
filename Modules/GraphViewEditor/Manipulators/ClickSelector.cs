@@ -39,7 +39,13 @@ namespace UnityEditor.Experimental.GraphView
         public ClickSelector()
         {
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Alt});
+
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse, modifiers = EventModifiers.Shift});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse, modifiers = EventModifiers.Alt});
+
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
             {
                 activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });

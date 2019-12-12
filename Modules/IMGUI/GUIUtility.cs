@@ -27,23 +27,15 @@ namespace UnityEngine
     // Utility class for making new GUI controls.
     public partial class GUIUtility
     {
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static int s_SkinMode;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static int s_OriginalID;
 
         // IoC callbacks for UIElements
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action takeCapture;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action releaseCapture;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Func<int, IntPtr, bool> processEvent;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action cleanupRoots;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Func<Exception, bool> endContainerGUIFromException;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action guiChanged;
 
         [RequiredByNativeCode]
@@ -162,7 +154,6 @@ namespace UnityEngine
             return false;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void EndContainer()
         {
             Internal_EndContainer();
@@ -242,7 +233,6 @@ namespace UnityEngine
             return false;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void ResetGlobalState()
         {
             GUI.skin = null;
@@ -251,7 +241,6 @@ namespace UnityEngine
             GUI.scrollViewStates.Clear();
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static bool IsExitGUIException(Exception exception)
         {
             while (exception is TargetInvocationException && exception.InnerException != null)
@@ -260,7 +249,6 @@ namespace UnityEngine
             return exception is ExitGUIException;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static bool ShouldRethrowException(Exception exception)
         {
             return IsExitGUIException(exception);
@@ -273,7 +261,6 @@ namespace UnityEngine
                 throw new ArgumentException("You can only call GUI functions from inside OnGUI.");
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static float RoundToPixelGrid(float v)
         {
             // Using same rounding constant as GUITexture::AlignPointToDevice
@@ -353,10 +340,9 @@ namespace UnityEngine
         }
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
     internal sealed partial class GUIClip
     {
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal struct ParentClipScope : IDisposable
         {
             private bool m_Disposed;

@@ -14,11 +14,11 @@ namespace Unity.Profiling.LowLevel.Unsafe
     [StructLayout(LayoutKind.Explicit, Size = 16)]
     public unsafe struct ProfilerMarkerData
     {
-        [FieldOffset(0)] public byte type;
-        [FieldOffset(1)] public byte reserved0;
-        [FieldOffset(2)] public ushort reserved1;
-        [FieldOffset(4)] public uint size;
-        [FieldOffset(8)] public void* ptr;
+        [FieldOffset(0)] public byte Type;
+        [FieldOffset(1)] readonly byte reserved0;
+        [FieldOffset(2)] readonly ushort reserved1;
+        [FieldOffset(4)] public uint Size;
+        [FieldOffset(8)] public void* Ptr;
     };
 
     [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerMarker.bindings.h")]

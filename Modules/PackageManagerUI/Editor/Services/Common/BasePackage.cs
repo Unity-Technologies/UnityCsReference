@@ -86,6 +86,10 @@ namespace UnityEditor.PackageManager.UI
             return (m_Type & type) != 0;
         }
 
+        [SerializeField]
+        protected long m_FirstPublishedDateTicks;
+        public DateTime? firstPublishedDate => m_FirstPublishedDateTicks == 0 ? null : (DateTime?)new DateTime(m_FirstPublishedDateTicks, DateTimeKind.Utc);
+
         public virtual bool isDiscoverable => true;
 
         public virtual IEnumerable<PackageImage> images => Enumerable.Empty<PackageImage>();

@@ -18,6 +18,8 @@ namespace UnityEngine
     // Data buffer to hold data for vertex/index buffers.
     [UsedByNativeCode]
     [NativeHeader("Runtime/GfxDevice/GfxBuffer.h")]
+    [NativeHeader("Runtime/Shaders/ComputeShader.h")]
+    [NativeHeader("Runtime/Shaders/GraphicsBuffer.h")]
     [NativeHeader("Runtime/Export/Graphics/GraphicsBuffer.bindings.h")]
     public sealed class GraphicsBuffer : IDisposable
     {
@@ -30,8 +32,14 @@ namespace UnityEngine
         [Flags]
         public enum Target
         {
-            //Vertex = 1 << 0,
-            Index = 1 << 1
+            Vertex            = 1 << 0,
+            Index             = 1 << 1,
+            Structured        = 1 << 4,
+            Raw               = 1 << 5,
+            Append            = 1 << 6,
+            Counter           = 1 << 7,
+            IndirectArguments = 1 << 8,
+            Constant          = 1 << 9,
         }
 
         ~GraphicsBuffer()
@@ -62,6 +70,15 @@ namespace UnityEngine
             m_Ptr = IntPtr.Zero;
         }
 
+        private static bool RequiresCompute(Target target)
+        {
+            int iTarget = (int)target;
+            int vbIbMask = (int)(Target.Vertex | Target.Index);
+
+            // Compute support is required if target contains any flag that is not Vertex or Index
+            return (iTarget & vbIbMask) != iTarget;
+        }
+
         [FreeFunction("GraphicsBuffer_Bindings::InitBuffer")]
         extern private static IntPtr InitBuffer(Target target, int count, int stride);
 
@@ -71,6 +88,11 @@ namespace UnityEngine
         // Create a Graphics Buffer.
         public GraphicsBuffer(Target target, int count, int stride)
         {
+            if (RequiresCompute(target) && !SystemInfo.supportsComputeShaders)
+            {
+                throw new ArgumentException("Attempting to create a graphics buffer that requires compute shader support, but compute shaders are not supported on this platform. Target: " + target);
+            }
+
             if (count <= 0)
             {
                 throw new ArgumentException("Attempting to create a zero length graphics buffer", "count");
@@ -84,6 +106,10 @@ namespace UnityEngine
             if ((target & Target.Index) != 0 && stride != 2 && stride != 4)
             {
                 throw new ArgumentException("Attempting to create an index buffer with an invalid stride: " + stride, "stride");
+            }
+            else if (RequiresCompute(target) && stride % 4 != 0)
+            {
+                throw new ArgumentException("Stride must be a multiple of 4 unless the buffer is only used as a vertex buffer and/or index buffer ", "stride");
             }
 
             m_Ptr = InitBuffer(target, count, stride);
@@ -205,7 +231,83 @@ namespace UnityEngine
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
         extern private void InternalSetData(System.Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
+        [System.Security.SecurityCritical] // due to Marshal.SizeOf
+        public void GetData(System.Array data)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to GraphicsBuffer.GetData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
+
+            InternalGetData(data, 0, 0, data.Length, Marshal.SizeOf(data.GetType().GetElementType()));
+        }
+
+        // Read partial buffer data.
+        [System.Security.SecurityCritical] // due to Marshal.SizeOf
+        public void GetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to GraphicsBuffer.GetData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
+
+            if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count argument (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
+
+            InternalGetData(data, managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
+        }
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetData", HasExplicitThis = true, ThrowsException = true)]
+        extern private void InternalGetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetNativeBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeBufferPtr();
+
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::SetName", HasExplicitThis = true)]
+        extern private void SetName(string name);
+
+        // Set counter value of append/consume buffer.
+        extern public void SetCounterValue(uint counterValue);
+
+        // Copy counter value of append/consume buffer into another buffer.
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::CopyCount")]
+        extern private static void CopyCountCC(ComputeBuffer src, ComputeBuffer dst, int dstOffsetBytes);
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::CopyCount")]
+        extern private static void CopyCountGC(GraphicsBuffer src, ComputeBuffer dst, int dstOffsetBytes);
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::CopyCount")]
+        extern private static void CopyCountCG(ComputeBuffer src, GraphicsBuffer dst, int dstOffsetBytes);
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::CopyCount")]
+        extern private static void CopyCountGG(GraphicsBuffer src, GraphicsBuffer dst, int dstOffsetBytes);
+
+        public static void CopyCount(ComputeBuffer src, ComputeBuffer dst, int dstOffsetBytes)
+        {
+            CopyCountCC(src, dst, dstOffsetBytes);
+        }
+
+        public static void CopyCount(GraphicsBuffer src, ComputeBuffer dst, int dstOffsetBytes)
+        {
+            CopyCountGC(src, dst, dstOffsetBytes);
+        }
+
+        public static void CopyCount(ComputeBuffer src, GraphicsBuffer dst, int dstOffsetBytes)
+        {
+            CopyCountCG(src, dst, dstOffsetBytes);
+        }
+
+        public static void CopyCount(GraphicsBuffer src, GraphicsBuffer dst, int dstOffsetBytes)
+        {
+            CopyCountGG(src, dst, dstOffsetBytes);
+        }
     }
 }

@@ -33,6 +33,9 @@ namespace UnityEngine.Experimental.Rendering
 
         extern public static void UpdateSystem();
 
+        public const int AllMips = int.MaxValue;
+        extern public static void RequestRegion(Material mat, int stackNameId, Rect r, int mipMap, int numMips);
+
         extern public static string[] GetTexturesInTileset(string tileSetPathName);
 
         [NativeConditional("UNITY_EDITOR")]
@@ -189,6 +192,9 @@ namespace UnityEngine.Experimental.Rendering
 
         extern internal static void BindToMaterialPropertyBlock(ulong handle, MaterialPropertyBlock material, string name);
         extern internal static void BindToMaterial(ulong handle, Material material, string name);
+
+        extern public static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
+        extern public static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
     }
 
     [UsedByNativeCode]
@@ -276,15 +282,12 @@ namespace UnityEngine.Experimental.Rendering
 
     public sealed class ProceduralTextureStack : IDisposable
     {
-        ProceduralRequestList _requests;
-        public ProceduralRequestList requests
+        ProceduralRequestList requests;
+
+        public ProceduralRequestList GetActiveRequests()
         {
-            get
-            {
-                _requests.Sync();
-                return _requests;
-            }
-            private set { _requests = value; }
+            requests.Sync();
+            return requests;
         }
 
         internal readonly ulong handle;
@@ -324,5 +327,24 @@ namespace UnityEngine.Experimental.Rendering
             }
             ProceduralVirtualTexturing.BindToMaterial(handle, mat, name);
         }
+
+        public const int AllMips = int.MaxValue;
+
+        public void RequestRegion(Rect r, int mipMap, int numMips)
+        {
+            ProceduralVirtualTexturing.RequestRegion(handle, r, mipMap, numMips);
+        }
+
+        public void InvalidateRegion(Rect r, int mipMap, int numMips)
+        {
+            ProceduralVirtualTexturing.InvalidateRegion(handle, r, mipMap, numMips);
+        }
+    }
+
+    [StaticAccessor("VirtualTexturing::Procedural", StaticAccessorType.DoubleColon)]
+    public static class ProceduralTextureStackRequestLayerUtil
+    {
+        public extern static int GetWidth(this ProceduralTextureStackRequestLayer layer);
+        public extern static int GetHeight(this ProceduralTextureStackRequestLayer layer);
     }
 }

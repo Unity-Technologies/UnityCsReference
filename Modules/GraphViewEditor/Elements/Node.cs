@@ -4,12 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public class Node : GraphElement
+    public class Node : GraphElement, ICollectibleElement
     {
         public VisualElement mainContainer { get; private set; }
         public VisualElement titleContainer { get; private set; }
@@ -71,7 +72,6 @@ namespace UnityEditor.Experimental.GraphView
             {
                 SetElementVisible(divider, hasPorts);
             }
-
 
             UpdateCollapsibleAreaVisibility();
         }
@@ -154,13 +154,16 @@ namespace UnityEditor.Experimental.GraphView
         {
             const string k_HiddenClassList = "hidden";
 
-            element.visible = isVisible;
             if (isVisible)
             {
+                // Restore default value for visibility by setting it to StyleKeyword.Null.
+                // Setting it to Visibility.Visible would make it visible even if parent is hidden.
+                element.style.visibility = StyleKeyword.Null;
                 element.RemoveFromClassList(k_HiddenClassList);
             }
             else
             {
+                element.style.visibility = Visibility.Hidden;
                 element.AddToClassList(k_HiddenClassList);
             }
         }
@@ -378,7 +381,7 @@ namespace UnityEditor.Experimental.GraphView
 
             AddToClassList("node");
 
-            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable;
+            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable | Capabilities.Copiable;
             usageHints = UsageHints.DynamicTransform;
 
             m_Expanded = true;
@@ -457,6 +460,21 @@ namespace UnityEditor.Experimental.GraphView
                 evt.menu.AppendAction("Disconnect all", DisconnectAll, DisconnectAllStatus);
                 evt.menu.AppendSeparator();
             }
+        }
+
+        void CollectConnectedEdges(HashSet<GraphElement> edgeSet)
+        {
+            edgeSet.UnionWith(inputContainer.Children().OfType<Port>().SelectMany(c => c.connections)
+                .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
+                .Cast<GraphElement>());
+            edgeSet.UnionWith(outputContainer.Children().OfType<Port>().SelectMany(c => c.connections)
+                .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
+                .Cast<GraphElement>());
+        }
+
+        public virtual void CollectElements(HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
+        {
+            CollectConnectedEdges(collectedElementSet);
         }
     }
 }

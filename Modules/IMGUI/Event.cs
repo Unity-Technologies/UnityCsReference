@@ -49,7 +49,6 @@ namespace UnityEngine
         [NonSerialized]
         internal IntPtr m_Ptr;
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void CopyFrom(Event e)
         {
             // Copies the event data without allocating a new event on the native side.
@@ -164,7 +163,6 @@ namespace UnityEngine
         // (like a touch screen), without any cursor acting as an intermediate.
         internal bool isDirectManipulationDevice
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
                 return pointerType == PointerType.Pen

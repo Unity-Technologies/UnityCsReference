@@ -117,6 +117,7 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand firstCommand { get { return m_FirstCommand; } }
 
         // Profiling
+        static ProfilerMarker s_MarkerProcess = new ProfilerMarker("RenderChain.Process");
         static ProfilerMarker s_MarkerRender = new ProfilerMarker("RenderChain.Draw");
         static ProfilerMarker s_MarkerClipProcessing = new ProfilerMarker("RenderChain.UpdateClips");
         static ProfilerMarker s_MarkerOpacityProcessing = new ProfilerMarker("RenderChain.UpdateOpacity");
@@ -205,9 +206,9 @@ namespace UnityEngine.UIElements.UIR
 
         internal static Action OnPreRender = null;
 
-        public void Render(Rect viewport, Matrix4x4 projection, PanelClearFlags clearFlags)
+        public void ProcessChanges()
         {
-            s_MarkerRender.Begin();
+            s_MarkerProcess.Begin();
             m_Stats = new ChainBuilderStats();
             m_Stats.elementsAdded += m_StatsElementsAdded;
             m_Stats.elementsRemoved += m_StatsElementsRemoved;
@@ -353,13 +354,35 @@ namespace UnityEngine.UIElements.UIR
             vectorImageManager?.Commit();
             shaderInfoAllocator.IssuePendingAtlasBlits();
 
+            s_MarkerProcess.End();
+        }
+
+        public void Render()
+        {
+            s_MarkerRender.Begin();
+
             if (BeforeDrawChain != null)
                 BeforeDrawChain(device);
 
             Exception immediateException = null;
-            device.DrawChain(m_FirstCommand, viewport, projection, clearFlags, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
-                (panel as BaseVisualElementPanel).scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
-                ref immediateException);
+            if (m_FirstCommand != null)
+            {
+                device.OnFrameRenderingBegin();
+
+                var viewport = panel.visualTree.layout;
+
+                device.GetStandardMaterial()?.SetPass(0);
+                GL.modelview = Matrix4x4.identity;
+                var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -1, 1);
+                GL.LoadProjectionMatrix(projection);
+
+                MaterialPropertyBlock stateMatProps = new MaterialPropertyBlock();
+                device.EvaluateChain(m_FirstCommand, viewport, projection, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
+                    (panel as BaseVisualElementPanel).scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
+                    stateMatProps, ref immediateException);
+
+                device?.OnFrameRenderingDone();
+            }
 
             s_MarkerRender.End();
 
@@ -550,7 +573,7 @@ namespace UnityEngine.UIElements.UIR
                 m_FirstCommand = firstCommand;
         }
 
-        internal void OnRenderCommandRemoved(RenderChainCommand firstCommand, RenderChainCommand lastCommand)
+        internal void OnRenderCommandsRemoved(RenderChainCommand firstCommand, RenderChainCommand lastCommand)
         {
             if (firstCommand.prev == null)
                 m_FirstCommand = lastCommand.next;
@@ -659,7 +682,7 @@ namespace UnityEngine.UIElements.UIR
             bool realDevice = device as UIRenderDevice != null;
             float y_off = 12;
             var rc = new Rect(30, 60, 1000, 100);
-            GUI.Box(new Rect(20, 40, 200, realDevice ? 380 : 256), "UIElements Draw Stats");
+            GUI.Box(new Rect(20, 40, 200, realDevice ? 368 : 256), "UIElements Draw Stats");
             GUI.Label(rc, "Elements added\t: " + m_Stats.elementsAdded); rc.y += y_off;
             GUI.Label(rc, "Elements removed\t: " + m_Stats.elementsRemoved); rc.y += y_off;
             GUI.Label(rc, "Mesh allocs allocated\t: " + m_Stats.newMeshAllocations); rc.y += y_off;
@@ -688,7 +711,6 @@ namespace UnityEngine.UIElements.UIR
             GUI.Label(rc, "Frame index\t: " + drawStats.currentFrameIndex); rc.y += y_off;
             GUI.Label(rc, "Command count\t: " + drawStats.commandCount); rc.y += y_off;
             GUI.Label(rc, "Draw commands\t: " + drawStats.drawCommandCount); rc.y += y_off;
-            GUI.Label(rc, "Draw range start\t: " + drawStats.currentDrawRangeStart); rc.y += y_off;
             GUI.Label(rc, "Draw ranges\t: " + drawStats.drawRangeCount); rc.y += y_off;
             GUI.Label(rc, "Draw range calls\t: " + drawStats.drawRangeCallCount); rc.y += y_off;
             GUI.Label(rc, "Material sets\t: " + drawStats.materialSetCount); rc.y += y_off;

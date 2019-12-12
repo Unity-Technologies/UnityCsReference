@@ -109,7 +109,7 @@ namespace UnityEditor
                 {
                     Rect rect = new Rect(0, GetHeaderYPosInScrollArea(yOffset), m_Owner.GetVisibleWidth(), kGroupSeparatorHeight);
 
-                    base.DrawHeaderBackground(rect, true);
+                    base.DrawHeaderBackground(rect, true, Visible);
 
                     // Draw the group toggle
                     if (collapsable)

@@ -716,6 +716,11 @@ namespace UnityEditorInternal
                         m_NonDragTargetIndices = new List<int>();
                     }
                     GrabKeyboardFocus();
+
+                    // Prevent consuming the right mouse event in order to enable the context menu
+                    if (Event.current.button == 1)
+                        break;
+
                     evt.Use();
                     clicked = true;
                     break;

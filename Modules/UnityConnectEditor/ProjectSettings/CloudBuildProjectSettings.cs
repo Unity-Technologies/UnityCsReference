@@ -266,9 +266,7 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    var dashboardUrl = ServicesConfiguration.instance.GetCloudBuildCurrentProjectUrl();
-                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = BuildService.instance.name, url = dashboardUrl });
-                    Application.OpenURL(dashboardUrl);
+                    OpenDashboardOrgAndProjectIds(ServicesConfiguration.instance.baseCloudBuildDashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }

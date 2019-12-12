@@ -113,7 +113,6 @@ namespace UnityEngine.TextCore
         public bool isNonBreakingSpace;
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class TextGeneratorUtilities
     {
         public static readonly Vector2 largePositiveVector2 = new Vector2(2147483647, 2147483647);

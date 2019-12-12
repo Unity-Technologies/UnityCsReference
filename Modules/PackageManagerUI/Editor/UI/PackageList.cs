@@ -37,10 +37,8 @@ namespace UnityEditor.PackageManager.UI
             scrollView.viewDataKey = "package-list-scrollview-key";
 
             SetEmptyAreaDisplay(false);
-            UIUtils.SetElementDisplay(loadMoreContainer, false);
 
             loginButton.clickable.clicked += OnLoginClicked;
-            loadMoreLabel.OnLeftClick(LoadMoreItemsClicked);
 
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
@@ -58,7 +56,6 @@ namespace UnityEditor.PackageManager.UI
 
             PageManager.instance.onRefreshOperationStart += OnRefreshOperationStart;
             PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
-            PageManager.instance.onRefreshOperationError += OnRefreshOperationError;
 
             PageManager.instance.onVisualStateChange += OnVisualStateChange;
             PageManager.instance.onPageRebuild += OnPageRebuild;
@@ -76,7 +73,6 @@ namespace UnityEditor.PackageManager.UI
 
             PageManager.instance.onRefreshOperationStart -= OnRefreshOperationStart;
             PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
-            PageManager.instance.onRefreshOperationError -= OnRefreshOperationError;
 
             PageManager.instance.onVisualStateChange -= OnVisualStateChange;
             PageManager.instance.onPageRebuild -= OnPageRebuild;
@@ -106,13 +102,6 @@ namespace UnityEditor.PackageManager.UI
                 return packageItem;
 
             return packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
-        }
-
-        public void LoadMoreItemsClicked()
-        {
-            UIUtils.SetElementDisplay(loadMoreContainer, false);
-
-            PageManager.instance.LoadMore();
         }
 
         private void UpdateNoPackagesLabel()
@@ -190,12 +179,6 @@ namespace UnityEditor.PackageManager.UI
         {
             m_RefreshInProgress = true;
             UpdateNoPackagesLabel();
-        }
-
-        private void OnRefreshOperationError(UIError error)
-        {
-            // if Load More operation fails, check if the Load More label should be displayed again
-            UIUtils.SetElementDisplay(loadMoreContainer, PageManager.instance.GetCurrentPage().morePackagesToFetch);
         }
 
         private void OnRefreshOperationFinish()
@@ -302,8 +285,6 @@ namespace UnityEditor.PackageManager.UI
         {
             ClearAll();
 
-            UIUtils.SetElementDisplay(loadMoreContainer, page.morePackagesToFetch);
-
             foreach (var state in page.packageVisualStates)
             {
                 var package = PackageDatabase.instance.GetPackage(state.packageUniqueId);
@@ -324,8 +305,6 @@ namespace UnityEditor.PackageManager.UI
         {
             foreach (var package in removed)
                 RemovePackageItem(package);
-
-            UIUtils.SetElementDisplay(loadMoreContainer, page.morePackagesToFetch);
 
             foreach (var package in addedOrUpated)
             {
@@ -418,14 +397,15 @@ namespace UnityEditor.PackageManager.UI
                 Selection.activeObject = packageSelectionObject;
         }
 
+        internal int CalculateNumberOfPackagesToDisplay()
+        {
+            return ApplicationUtil.instance.CalculateNumberOfElementsInsideContainerToDisplay(this, 24);
+        }
+
         private VisualElementCache cache { get; set; }
 
         private ScrollView scrollView { get { return cache.Get<ScrollView>("scrollView"); } }
         private VisualElement itemsList { get { return cache.Get<VisualElement>("itemsList"); } }
-
-        private VisualElement loadMoreContainer { get { return cache.Get<VisualElement>("loadMoreContainer"); } }
-        private Label loadMoreLabel { get { return cache.Get<Label>("loadMore"); } }
-
         private VisualElement emptyArea { get { return cache.Get<VisualElement>("emptyArea"); } }
         private Label noPackagesLabel { get { return cache.Get<Label>("noPackagesLabel"); } }
         private VisualElement loginContainer { get { return cache.Get<VisualElement>("loginContainer"); } }

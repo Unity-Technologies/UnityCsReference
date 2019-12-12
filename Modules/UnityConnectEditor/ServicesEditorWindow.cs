@@ -120,9 +120,13 @@ namespace UnityEditor.Connect
             {
                 if (UnityConnect.instance.projectInfo.projectBound)
                 {
-                    var dashboardUrl = ServicesConfiguration.instance.GetCurrentProjectDashboardUrl();
-                    EditorAnalytics.SendOpenDashboardForService(new ServicesProjectSettings.OpenDashboardForService() { serviceName = k_WindowTitle, url = dashboardUrl });
-                    Application.OpenURL(dashboardUrl);
+                    EditorAnalytics.SendOpenDashboardForService(new ServicesProjectSettings.OpenDashboardForService() {
+                        serviceName = k_WindowTitle,
+                        url = ServicesConfiguration.instance.baseDashboardUrl,
+                        organizationId = UnityConnect.instance.projectInfo.organizationId,
+                        projectId = UnityConnect.instance.projectInfo.projectId
+                    });
+                    Application.OpenURL(ServicesConfiguration.instance.GetCurrentProjectDashboardUrl());
                 }
                 else
                 {

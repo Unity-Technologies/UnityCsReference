@@ -32,12 +32,17 @@ namespace UnityEditor.UIElements
         bool m_IsUxmlEnable = true;
 
         [MenuItem("Assets/Create/UIElements/Editor Window", false, 701, false)]
-        public static void CreateTemplateMenuItem()
+        public static void CreateTemplateEditorWindow()
         {
-            UIElementsEditorWindowCreator editorWindow = GetWindow<UIElementsEditorWindowCreator>(true, "UIElements Editor Window Creator");
-            editorWindow.maxSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
-            editorWindow.minSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
-            editorWindow.init();
+            if (CommandService.Exists(nameof(CreateTemplateEditorWindow)))
+                CommandService.Execute(nameof(CreateTemplateEditorWindow), CommandHint.Menu);
+            else
+            {
+                UIElementsEditorWindowCreator editorWindow = GetWindow<UIElementsEditorWindowCreator>(true, "UIElements Editor Window Creator");
+                editorWindow.maxSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
+                editorWindow.minSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
+                editorWindow.init();
+            }
         }
 
         public void init()

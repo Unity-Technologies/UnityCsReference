@@ -6,8 +6,6 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using UnityEditor.UIElements.Debugger;
-using UnityEngine.UIElements;
 using UnityEditor.Profiling;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
@@ -15,21 +13,26 @@ using UnityEditor.StyleSheets;
 
 namespace UnityEditor
 {
-    internal class HostView : GUIView
+    internal class HostView : GUIView, IEditorWindowModel
     {
+        static class Styles
+        {
+            public static readonly GUIStyle background = new GUIStyle("hostview");
+
+            static Styles()
+            {
+                // Fix annoying GUILayout issue: When using GUILayout in Utility windows there
+                // was always padded 10 px at the top! Todo: Fix this in EditorResources
+                background.padding.top = 0;
+            }
+        }
+
         static string kPlayModeDarkenKey = "Playmode tint";
         internal static PrefColor kPlayModeDarken = new PrefColor(kPlayModeDarkenKey, .8f, .8f, .8f, 1);
         internal static event Action<HostView> actualViewChanged;
 
-        internal GUIStyle background;
         [SerializeField] private EditorWindow m_ActualView;
-
-        [System.NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
-
-        // Cached version of the static color for the actual object instance...
-        Color m_PlayModeDarkenColor;
-
-        private IMGUIContainer m_NotificationContainer;
+        [NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
 
         internal EditorWindow actualView
         {
@@ -61,19 +64,16 @@ namespace UnityEditor
             UpdateViewMargins(window);
         }
 
+        RectOffset IEditorWindowModel.viewMargins => GetBorderSize();
+
+        Action IEditorWindowModel.viewMarginsChanged { get; set; }
+
         protected void UpdateViewMargins(EditorWindow view)
         {
             if (view == null)
                 return;
 
-            RectOffset margins = GetBorderSize();
-
-            IStyle style = view.rootVisualElement.style;
-            style.top = margins.top;
-            style.bottom = margins.bottom;
-            style.left = margins.left;
-            style.right = margins.right;
-            style.position = Position.Absolute;
+            ((IEditorWindowModel)this).viewMarginsChanged?.Invoke();
         }
 
         protected override void SetPosition(Rect newPos)
@@ -103,20 +103,13 @@ namespace UnityEditor
 
         protected override void OnEnable()
         {
-            m_PlayModeDarkenColor = UIElementsUtility.editorPlayModeTintColor = EditorApplication.isPlayingOrWillChangePlaymode ? kPlayModeDarken.Color : Color.white;
-            EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
             EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
-            background = null;
-            m_NotificationContainer = new IMGUIContainer();
-            m_NotificationContainer.StretchToParentSize();
-            m_NotificationContainer.pickingMode = PickingMode.Ignore;
             RegisterSelectedPane(sendEvents: true);
         }
 
         protected override void OnDisable()
         {
-            EditorApplication.playModeStateChanged -= PlayModeStateChangedCallback;
             EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
@@ -173,14 +166,8 @@ namespace UnityEditor
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
             DoWindowDecorationStart();
-            if (background == null)
-            {
-                background = "hostview";
-                // Fix annoying GUILayout issue: When using guilayout in Utility windows there was always padded 10 px at the top! Todo: Fix this in EditorResources
-                background.padding.top = 0;
-            }
 
-            using (new GUILayout.VerticalScope(background))
+            using (new GUILayout.VerticalScope(Styles.background))
             {
                 if (actualView)
                     actualView.m_Pos = screenPosition;
@@ -200,6 +187,9 @@ namespace UnityEditor
             }
         }
 
+        Action IEditorWindowModel.focused { get; set; }
+        Action IEditorWindowModel.blurred { get; set; }
+
         protected override bool OnFocus()
         {
             Invoke("OnFocus");
@@ -208,10 +198,7 @@ namespace UnityEditor
             if (!this)
                 return false;
 
-            if (panel != null)
-            {
-                panel.Focus();
-            }
+            ((IEditorWindowModel)this).focused?.Invoke();
 
             Repaint();
             return true;
@@ -226,10 +213,7 @@ namespace UnityEditor
             if (!this)
                 return;
 
-            if (panel != null)
-            {
-                panel.Blur();
-            }
+            ((IEditorWindowModel)this).blurred?.Invoke();
 
             Repaint();
         }
@@ -399,6 +383,11 @@ namespace UnityEditor
             mi?.Invoke(obj, null);
         }
 
+        EditorWindow IEditorWindowModel.window => m_ActualView;
+
+        Action IEditorWindowModel.onRegisterWindow { get; set; }
+        Action IEditorWindowModel.onUnegisterWindow { get; set; }
+
         protected void RegisterSelectedPane(bool sendEvents)
         {
             if (!m_ActualView)
@@ -406,10 +395,13 @@ namespace UnityEditor
 
             m_ActualView.m_Parent = this;
 
-            visualTree.Add(m_ActualView.rootVisualElement);
-            panel.getViewDataDictionary = m_ActualView.GetViewDataDictionary;
-            panel.saveViewData = m_ActualView.SaveViewData;
-            panel.name = m_ActualView.GetType().Name;
+            if (!EditorWindowBackendManager.IsBackendCompatible(windowBackend, this))
+            {
+                //We create a new compatible backend
+                windowBackend = EditorWindowBackendManager.GetBackend(this);
+            }
+
+            ((IEditorWindowModel)this).onRegisterWindow?.Invoke();
 
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update += SendUpdate;
@@ -447,13 +439,7 @@ namespace UnityEditor
             if (!m_ActualView)
                 return;
 
-            var root = m_ActualView.rootVisualElement;
-            if (root.hierarchy.parent == visualTree)
-            {
-                root.RemoveFromHierarchy();
-                panel.getViewDataDictionary = null;
-                panel.saveViewData = null;
-            }
+            ((IEditorWindowModel)this).onUnegisterWindow?.Invoke();
 
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update -= SendUpdate;
@@ -465,9 +451,6 @@ namespace UnityEditor
             {
                 EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
             }
-
-            m_NotificationContainer.onGUIHandler = null;
-            m_NotificationContainer.RemoveFromHierarchy();
 
             if (clearActualView)
             {
@@ -481,22 +464,26 @@ namespace UnityEditor
             }
         }
 
+        private bool m_NotificationIsVisible;
+
+        bool IEditorWindowModel.notificationVisible => m_NotificationIsVisible;
+
+        Action IEditorWindowModel.notificationVisibilityChanged { get; set; }
+
         protected void CheckNotificationStatus()
         {
             if (m_ActualView != null && m_ActualView.m_FadeoutTime != 0)
             {
-                if (m_NotificationContainer.parent == null)
+                if (!m_NotificationIsVisible)
                 {
-                    m_NotificationContainer.onGUIHandler = m_ActualView.DrawNotification;
-                    visualTree.Add(m_NotificationContainer);
-
-                    m_NotificationContainer.StretchToParentSize();
+                    m_NotificationIsVisible = true;
+                    ((IEditorWindowModel)this).notificationVisibilityChanged?.Invoke();
                 }
             }
-            else
+            else if (m_NotificationIsVisible)
             {
-                m_NotificationContainer.onGUIHandler = null;
-                m_NotificationContainer.RemoveFromHierarchy();
+                m_NotificationIsVisible = false;
+                ((IEditorWindowModel)this).notificationVisibilityChanged?.Invoke();
             }
         }
 
@@ -704,74 +691,17 @@ namespace UnityEditor
             }
         }
 
+        Color IEditorWindowModel.playModeTintColor => kPlayModeDarken.Color;
+        Action IEditorWindowModel.playModeTintColorChanged { get; set; }
+
         private void PlayModeTintColorChangedCallback(string key)
         {
             if (key == kPlayModeDarkenKey)
             {
-                Color currentPlayModeColor = EditorApplication.isPlayingOrWillChangePlaymode ? kPlayModeDarken.Color : Color.white;
-                UpdatePlayModeColor(currentPlayModeColor);
+                ((IEditorWindowModel)this).playModeTintColorChanged?.Invoke();
             }
         }
 
-        private void PlayModeStateChangedCallback(PlayModeStateChange state)
-        {
-            Color newColorToUse = Color.white;
-            if ((state == PlayModeStateChange.ExitingEditMode) ||
-                (state == PlayModeStateChange.EnteredPlayMode))
-            {
-                newColorToUse = kPlayModeDarken.Color;
-            }
-            else if ((state == PlayModeStateChange.ExitingPlayMode) || (state == PlayModeStateChange.EnteredEditMode))
-            {
-                newColorToUse = Color.white;
-            }
-            UpdatePlayModeColor(newColorToUse);
-        }
-
-        void UpdatePlayModeColor(Color newColorToUse)
-        {
-            // Check the cached color to dirty only if needed !
-            if (m_PlayModeDarkenColor != newColorToUse)
-            {
-                m_PlayModeDarkenColor = newColorToUse;
-                UIElementsUtility.editorPlayModeTintColor = newColorToUse;
-
-                // Make sure to dirty the right imgui container in this HostView (and all its children / parents)
-                // The MarkDirtyRepaint() function is dirtying the element itself and its parent, but not the children explicitly.
-                // ... and in the repaint function, it check for the current rendered element, not the parent.
-                // Since the HostView "hosts" an IMGUIContainer or any VisualElement, we have to make sure to dirty everything here.
-                PropagateDirtyRepaint(visualTree);
-            }
-        }
-
-        static void PropagateDirtyRepaint(VisualElement ve)
-        {
-            ve.MarkDirtyRepaint();
-            var count = ve.hierarchy.childCount;
-            for (var i = 0; i < count; i++)
-            {
-                var child = ve.hierarchy[i];
-                PropagateDirtyRepaint(child);
-            }
-        }
-
-        protected void AddUIElementsDebuggerToMenu(GenericMenu menu)
-        {
-            var itemContent = UIElementsDebugger.WindowName;
-            var shortcut = ShortcutIntegration.instance.directory.FindShortcutEntry(UIElementsDebugger.k_WindowPath);
-            if (shortcut != null && shortcut.combinations.Any())
-                itemContent += $" {KeyCombination.SequenceToMenuString(shortcut.combinations)}";
-
-            menu.AddItem(EditorGUIUtility.TextContent(itemContent), false, DebugWindow, actualView);
-        }
-
-        private void DebugWindow(object userData)
-        {
-            EditorWindow window = userData as EditorWindow;
-            if (window == null)
-                return;
-
-            UIElementsDebugger.OpenAndInspectWindow(window);
-        }
+        Action<GenericMenu> IEditorWindowModel.onDisplayWindowMenu { get; set; }
     }
 }

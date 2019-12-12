@@ -90,7 +90,7 @@ namespace UnityEditor.Connect
         {
             adsGettingStartedUrl = "https://unityads.unity3d.com/help/index";
             adsLearnMoreUrl = "https://unityads.unity3d.com/help/monetization/getting-started";
-            adsDashboardUrl = $"https://operate.dashboard.unity3d.com/organizations/{UnityConnect.instance.GetOrganizationForeignKey()}/overview/revenue";
+            adsDashboardUrl = "https://operate.dashboard.unity3d.com/organizations/{0}/overview/revenue";
 
             switch (environmentType)
             {
@@ -286,13 +286,17 @@ namespace UnityEditor.Connect
             return m_CloudDiagUserReportingSdkUrl;
         }
 
+        internal string baseDashboardUrl { get { return m_ProjectDashboardUrl; } }
+        public string baseAnalyticsDashboardUrl { get { return m_AnalyticsDashboardUrl; } }
+        public string baseCloudBuildDashboardUrl { get { return m_CloudBuildProjectUrl; } }
+        public string baseCloudUsageDashboardUrl { get { return baseDashboardUrl + m_CloudUsageDashboardUrl; } }
+        public string baseCloudDiagCrashesDashboardUrl { get { return m_CloudDiagCrashesDashboardUrl; } }
+        public string baseCollabDashboardUrl { get { return m_CollabDashboardUrl; } }
+        public string basePurchasingDashboardUrl { get { return m_PurchasingDashboardUrl; } }
+
         public string adsGettingStartedUrl { get; private set; }
         public string adsLearnMoreUrl { get; private set; }
         public string adsDashboardUrl { get; private set; }
         public string adsOperateApiUrl { get; private set; }
-        public string cloudDiagCrashesDashboardUrl => string.Format(m_CloudDiagCrashesDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
-        public string collabDashboardUrl => string.Format(m_CollabDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
-        public string purchasingDashboardUrl => string.Format(m_PurchasingDashboardUrl, UnityConnect.instance.projectInfo.projectGUID);
-        public string analyticsDashboardUrl => string.Format(m_AnalyticsDashboardUrl, UnityConnect.instance.projectInfo.projectGUID);
     }
 }

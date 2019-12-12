@@ -5,87 +5,23 @@
 using UnityEngine;
 using System.Runtime.InteropServices;
 using System;
-using UnityEditor.StyleSheets;
 using UnityEditor.UIElements;
-using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
     // This is what we (not users) derive from to create various views. (Main Toolbar, etc.)
     [StructLayout(LayoutKind.Sequential)]
-    internal partial class GUIView : View
+    internal partial class GUIView : View, IWindowModel
     {
-        // Case 1183719 - The delegate getEditorShader is being reset upon domain reload and InitializeOnLoad is not rerun
-        // Hence a static constructor to Initialize the Delegate. EditorShaderLoader is still needed for Batch mode where GUIView may not be created
-        static GUIView()
-        {
-            // TODO: Remove this once case 1148851 has been fixed.
-            UnityEngine.UIElements.UIR.UIRenderDevice.getEditorShader = () => EditorShader;
-        }
-
-        [InitializeOnLoad]
-        static class EditorShaderLoader
-        {
-            static EditorShaderLoader()
-            {
-                // TODO: Remove this once case 1148851 has been fixed.
-                UnityEngine.UIElements.UIR.UIRenderDevice.getEditorShader = () => EditorShader;
-            }
-        }
-
         internal static event Action<GUIView> positionChanged = null;
-
-        Panel m_Panel = null;
-        readonly EditorCursorManager m_CursorManager = new EditorCursorManager();
-        static EditorContextualMenuManager s_ContextualMenuManager = new EditorContextualMenuManager();
-
-        static Shader s_EditorShader = null;
-
-        static Shader EditorShader
-        {
-            get
-            {
-                if (s_EditorShader == null)
-                {
-                    s_EditorShader = EditorGUIUtility.LoadRequired("Shaders/UIElements/EditorUIE.shader") as Shader;
-                }
-
-                return s_EditorShader;
-            }
-        }
-
-        protected Panel panel
-        {
-            get
-            {
-                if (m_Panel == null)
-                {
-                    m_Panel = UIElementsUtility.FindOrCreateEditorPanel(this);
-                    m_Panel.name = GetType().Name;
-                    m_Panel.cursorManager = m_CursorManager;
-                    m_Panel.contextualMenuManager = s_ContextualMenuManager;
-                    m_Panel.panelDebug = new PanelDebug(m_Panel);
-                    m_Panel.standardShader = EditorShader;
-                    UpdateDrawChainRegistration(true);
-                    if (imguiContainer != null)
-                        m_Panel.visualTree.Insert(0, imguiContainer);
-
-                    panel.visualTree.SetSize(windowPosition.size);
-                }
-
-                return m_Panel;
-            }
-        }
-
-        public VisualElement visualTree => panel.visualTree;
-        protected IMGUIContainer imguiContainer { get; private set; }
 
         int m_DepthBufferBits = 0;
         int m_AntiAliasing = 1;
         EventInterests m_EventInterests;
         bool m_AutoRepaintOnSceneChange = false;
+        private IWindowBackend m_WindowBackend;
 
         internal bool SendEvent(Event e)
         {
@@ -113,7 +49,7 @@ namespace UnityEditor
             Internal_SetWantsMouseMove(m_EventInterests.wantsMouseMove);
             Internal_SetWantsMouseEnterLeaveWindow(m_EventInterests.wantsMouseMove);
 
-            panel.visualTree.SetSize(windowPosition.size);
+            ((IWindowModel)this).sizeChanged?.Invoke();
         }
 
         internal void RecreateContext()
@@ -121,18 +57,27 @@ namespace UnityEditor
             Internal_Recreate(m_DepthBufferBits, m_AntiAliasing);
         }
 
+        Vector2 IWindowModel.size => windowPosition.size;
+
+        Action IWindowModel.sizeChanged { get; set; }
+
         public EventInterests eventInterests
         {
             get { return m_EventInterests; }
             set
             {
                 m_EventInterests = value;
-                panel.IMGUIEventInterests = m_EventInterests;
+
+                ((IWindowModel)this).eventInterestsChanged?.Invoke();
 
                 Internal_SetWantsMouseMove(wantsMouseMove);
                 Internal_SetWantsMouseEnterLeaveWindow(wantsMouseEnterLeaveWindow);
             }
         }
+
+        Action IWindowModel.eventInterestsChanged { get; set; }
+
+        Action IWindowModel.onGUIHandler => OldOnGUI;
 
         public bool wantsMouseMove
         {
@@ -140,7 +85,7 @@ namespace UnityEditor
             set
             {
                 m_EventInterests.wantsMouseMove = value;
-                panel.IMGUIEventInterests = m_EventInterests;
+                ((IWindowModel)this).eventInterestsChanged?.Invoke();
 
                 Internal_SetWantsMouseMove(wantsMouseMove);
             }
@@ -152,7 +97,7 @@ namespace UnityEditor
             set
             {
                 m_EventInterests.wantsMouseEnterLeaveWindow = value;
-                panel.IMGUIEventInterests = m_EventInterests;
+                ((IWindowModel)this).eventInterestsChanged?.Invoke();
 
                 Internal_SetWantsMouseEnterLeaveWindow(wantsMouseEnterLeaveWindow);
             }
@@ -183,70 +128,29 @@ namespace UnityEditor
             set { throw new NotSupportedException("AA is not supported on GUIViews"); }
         }
 
+        internal IWindowBackend windowBackend
+        {
+            get { return m_WindowBackend; }
+            set
+            {
+                if (m_WindowBackend != null)
+                {
+                    m_WindowBackend.OnDestroy(this);
+                }
+
+                m_WindowBackend = value;
+                m_WindowBackend?.OnCreate(this);
+            }
+        }
+
         protected virtual void OnEnable()
         {
-            {
-                imguiContainer = new IMGUIContainer(OldOnGUI) { useOwnerObjectGUIState = true };
-                imguiContainer.StretchToParentSize();
-                imguiContainer.viewDataKey = "Dockarea";
-
-                if (m_Panel != null)
-                    m_Panel.visualTree.Insert(0, imguiContainer);
-            }
-
-            Panel.BeforeUpdaterChange += OnBeforeUpdaterChange;
-            Panel.AfterUpdaterChange += OnAfterUpdaterChange;
+            windowBackend = EditorWindowBackendManager.GetBackend(this);
         }
 
         protected virtual void OnDisable()
         {
-            if (imguiContainer.HasMouseCapture())
-                imguiContainer.ReleaseMouse();
-            imguiContainer.RemoveFromHierarchy();
-            imguiContainer = null;
-
-            if (m_Panel != null)
-            {
-                UpdateDrawChainRegistration(false);
-                m_Panel.Dispose();
-                /// We don't set <c>m_Panel</c> to null to prevent it from being re-created from <c>panel</c>.
-            }
-
-            Panel.BeforeUpdaterChange -= OnBeforeUpdaterChange;
-            Panel.AfterUpdaterChange -= OnAfterUpdaterChange;
-        }
-
-        private void OnBeforeUpdaterChange()
-        {
-            UpdateDrawChainRegistration(false);
-        }
-
-        private void OnAfterUpdaterChange()
-        {
-            UpdateDrawChainRegistration(true);
-        }
-
-        private void UpdateDrawChainRegistration(bool register)
-        {
-            var p = panel as BaseVisualElementPanel;
-            if (p != null)
-            {
-                var updater = p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-                if (updater != null)
-                {
-                    if (register)
-                        updater.BeforeDrawChain += OnBeforeDrawChain;
-                    else updater.BeforeDrawChain -= OnBeforeDrawChain;
-                }
-            }
-        }
-
-        static readonly int s_EditorColorSpaceID = Shader.PropertyToID("_EditorColorSpace");
-
-        void OnBeforeDrawChain(UnityEngine.UIElements.UIR.UIRenderDevice device)
-        {
-            Material mat = device.GetStandardMaterial();
-            mat.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
+            windowBackend = null;
         }
 
         protected virtual void OldOnGUI() {}
@@ -268,7 +172,7 @@ namespace UnityEditor
 
             Internal_SetPosition(windowPosition);
 
-            panel.visualTree.SetSize(windowPosition.size);
+            ((IWindowModel)this).sizeChanged?.Invoke();
 
             positionChanged?.Invoke(this);
 

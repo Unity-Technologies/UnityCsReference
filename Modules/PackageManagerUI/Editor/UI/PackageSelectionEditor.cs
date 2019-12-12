@@ -194,6 +194,13 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        private void DoPackageDescriptionLabel()
+        {
+            var descriptionStyle = EditorStyles.textArea;
+            var descriptionRect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(m_Version.description), descriptionStyle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+            EditorGUI.SelectableLabel(descriptionRect, m_Version.description, descriptionStyle);
+        }
+
         private void DoPackageDescriptionLayout()
         {
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
@@ -202,7 +209,7 @@ namespace UnityEditor.PackageManager.UI
                     GUILayout.MinHeight(m_Package.Is(PackageType.AssetStore) ? kMinHeightForAssetStore : kMinHeightForOther)))
                 {
                     m_ScrollPosition = scrollView.scrollPosition;
-                    EditorGUILayout.SelectableLabel(m_Version.description, EditorStyles.textArea, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+                    DoPackageDescriptionLabel();
                 }
             }
         }

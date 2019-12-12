@@ -178,6 +178,7 @@ namespace UnityEditor.PackageManager.UI
         internal void UpdateProductInfo(AssetStoreProductInfo productInfo)
         {
             m_PackageUniqueId = productInfo.id;
+            m_PublishNotes = productInfo.publishNotes;
 
             // override version info with product info
             m_DisplayName = productInfo.displayName;

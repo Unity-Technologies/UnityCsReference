@@ -213,9 +213,14 @@ namespace UnityEditor.Experimental.GraphView
 
                 m_OriginalPos = new Dictionary<GraphElement, OriginalPos>();
 
-                foreach (ISelectable s in m_GraphView.selection)
+                HashSet<GraphElement> elementsToMove = new HashSet<GraphElement>(m_GraphView.selection.OfType<GraphElement>());
+
+                var selectedPlacemats = new HashSet<Placemat>(elementsToMove.OfType<Placemat>());
+                foreach (var placemat in selectedPlacemats)
+                    placemat.GetElementsToMove(e.shiftKey, elementsToMove);
+
+                foreach (GraphElement ce in elementsToMove)
                 {
-                    GraphElement ce = s as GraphElement;
                     if (ce == null || !ce.IsMovable())
                         continue;
 
@@ -404,13 +409,13 @@ namespace UnityEditor.Experimental.GraphView
             Matrix4x4 g = element.worldTransform;
             var scale = new Vector3(g.m00, g.m11, g.m22);
 
-            Rect newPost = new Rect(0, 0, originalPos.width, originalPos.height);
+            Rect newPos = new Rect(0, 0, originalPos.width, originalPos.height);
 
             // Compute the new position of the selected element using the mouse delta position and panning info
-            newPost.x = originalPos.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x * element.transform.scale.x;
-            newPost.y = originalPos.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y * element.transform.scale.y;
+            newPos.x = originalPos.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x * element.transform.scale.x;
+            newPos.y = originalPos.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y * element.transform.scale.y;
 
-            element.SetPosition(m_GraphView.contentViewContainer.ChangeCoordinatesTo(element.hierarchy.parent, newPost));
+            element.SetPosition(m_GraphView.contentViewContainer.ChangeCoordinatesTo(element.hierarchy.parent, newPos));
         }
 
         protected new void OnMouseUp(MouseUpEvent evt)

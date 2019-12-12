@@ -800,6 +800,11 @@ namespace UnityEditor
         // Return a GUIContent object with the name and icon of an Object.
         public static GUIContent ObjectContent(UnityObject obj, Type type)
         {
+            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID());
+        }
+
+        internal static GUIContent ObjectContent(UnityObject obj, Type type, int instanceID)
+        {
             if (obj)
             {
                 s_ObjectContent.text = GetObjectNameWithInfo(obj);
@@ -807,7 +812,7 @@ namespace UnityEditor
             }
             else if (type != null)
             {
-                s_ObjectContent.text = GetTypeNameWithInfo(type.Name);
+                s_ObjectContent.text = GetTypeNameWithInfo(type.Name, instanceID);
                 s_ObjectContent.image = AssetPreview.GetMiniTypeThumbnail(type);
             }
             else

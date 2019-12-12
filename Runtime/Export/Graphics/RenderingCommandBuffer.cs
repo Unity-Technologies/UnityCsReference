@@ -184,9 +184,24 @@ namespace UnityEngine.Rendering
             Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, mipLevel, element);
         }
 
+        public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, int nameID, ComputeBuffer buffer)
+        {
+            Internal_SetComputeBufferParam(computeShader, kernelIndex, nameID, buffer);
+        }
+
         public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, string name, ComputeBuffer buffer)
         {
-            SetComputeBufferParam(computeShader, kernelIndex, Shader.PropertyToID(name), buffer);
+            Internal_SetComputeBufferParam(computeShader, kernelIndex, Shader.PropertyToID(name), buffer);
+        }
+
+        public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, int nameID, GraphicsBuffer buffer)
+        {
+            Internal_SetComputeGraphicsBufferParam(computeShader, kernelIndex, nameID, buffer);
+        }
+
+        public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, string name, GraphicsBuffer buffer)
+        {
+            Internal_SetComputeGraphicsBufferParam(computeShader, kernelIndex, Shader.PropertyToID(name), buffer);
         }
 
         // Execute a compute shader.
@@ -198,6 +213,11 @@ namespace UnityEngine.Rendering
         public void DispatchCompute(ComputeShader computeShader, int kernelIndex, ComputeBuffer indirectBuffer, uint argsOffset)
         {
             Internal_DispatchComputeIndirect(computeShader, kernelIndex, indirectBuffer, argsOffset);
+        }
+
+        public void DispatchCompute(ComputeShader computeShader, int kernelIndex, GraphicsBuffer indirectBuffer, uint argsOffset)
+        {
+            Internal_DispatchComputeIndirectGraphicsBuffer(computeShader, kernelIndex, indirectBuffer, argsOffset);
         }
 
         public void BuildRayTracingAccelerationStructure(RayTracingAccelerationStructure accelerationStructure)
@@ -496,6 +516,49 @@ namespace UnityEngine.Rendering
             DrawProceduralIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, 0);
         }
 
+        public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
+        {
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            Internal_DrawProceduralIndirectGraphicsBuffer(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
+        }
+
+        public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset)
+        {
+            DrawProceduralIndirect(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, null);
+        }
+
+        public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs)
+        {
+            DrawProceduralIndirect(matrix, material, shaderPass, topology, bufferWithArgs, 0);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+            Internal_DrawProceduralIndexedIndirectGraphicsBuffer(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset)
+        {
+            DrawProceduralIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, null);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs)
+        {
+            DrawProceduralIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, 0);
+        }
+
         public void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, int shaderPass, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties)
         {
             if (!SystemInfo.supportsInstancing)
@@ -571,6 +634,31 @@ namespace UnityEngine.Rendering
             DrawMeshInstancedIndirect(mesh, submeshIndex, material, shaderPass, bufferWithArgs, 0, null);
         }
 
+        public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, int shaderPass, GraphicsBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+            Internal_DrawMeshInstancedIndirectGraphicsBuffer(mesh, submeshIndex, material, shaderPass, bufferWithArgs, argsOffset, properties);
+        }
+
+        public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, int shaderPass, GraphicsBuffer bufferWithArgs, int argsOffset)
+        {
+            DrawMeshInstancedIndirect(mesh, submeshIndex, material, shaderPass, bufferWithArgs, argsOffset, null);
+        }
+
+        public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, int shaderPass, GraphicsBuffer bufferWithArgs)
+        {
+            DrawMeshInstancedIndirect(mesh, submeshIndex, material, shaderPass, bufferWithArgs, 0, null);
+        }
+
         public void DrawOcclusionMesh(RectInt normalizedCamViewport)
         {
             Internal_DrawOcclusionMesh(normalizedCamViewport);
@@ -593,6 +681,38 @@ namespace UnityEngine.Rendering
         public void SetRandomWriteTarget(int index, ComputeBuffer buffer)
         {
             SetRandomWriteTarget(index, buffer, false);
+        }
+
+        public void SetRandomWriteTarget(int index, GraphicsBuffer buffer, bool preserveCounterValue)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            SetRandomWriteTarget_GraphicsBuffer(index, buffer, preserveCounterValue);
+        }
+
+        public void SetRandomWriteTarget(int index, GraphicsBuffer buffer)
+        {
+            SetRandomWriteTarget(index, buffer, false);
+        }
+
+        public void CopyCounterValue(ComputeBuffer src, ComputeBuffer dst, uint dstOffsetBytes)
+        {
+            CopyCounterValueCC(src, dst, dstOffsetBytes);
+        }
+
+        public void CopyCounterValue(GraphicsBuffer src, ComputeBuffer dst, uint dstOffsetBytes)
+        {
+            CopyCounterValueGC(src, dst, dstOffsetBytes);
+        }
+
+        public void CopyCounterValue(ComputeBuffer src, GraphicsBuffer dst, uint dstOffsetBytes)
+        {
+            CopyCounterValueCG(src, dst, dstOffsetBytes);
+        }
+
+        public void CopyCounterValue(GraphicsBuffer src, GraphicsBuffer dst, uint dstOffsetBytes)
+        {
+            CopyCounterValueGG(src, dst, dstOffsetBytes);
         }
 
         public void CopyTexture(RenderTargetIdentifier src, RenderTargetIdentifier dst)
@@ -803,7 +923,42 @@ namespace UnityEngine.Rendering
 
         public void SetGlobalBuffer(string name, ComputeBuffer value)
         {
-            SetGlobalBuffer(Shader.PropertyToID(name), value);
+            SetGlobalBufferInternal(Shader.PropertyToID(name), value);
+        }
+
+        public void SetGlobalBuffer(int nameID, ComputeBuffer value)
+        {
+            SetGlobalBufferInternal(nameID, value);
+        }
+
+        public void SetGlobalBuffer(string name, GraphicsBuffer value)
+        {
+            SetGlobalGraphicsBufferInternal(Shader.PropertyToID(name), value);
+        }
+
+        public void SetGlobalBuffer(int nameID, GraphicsBuffer value)
+        {
+            SetGlobalGraphicsBufferInternal(nameID, value);
+        }
+
+        public void SetGlobalConstantBuffer(ComputeBuffer buffer, int nameID, int offset, int size)
+        {
+            SetGlobalConstantBufferInternal(buffer, nameID, offset, size);
+        }
+
+        public void SetGlobalConstantBuffer(ComputeBuffer buffer, string name, int offset, int size)
+        {
+            SetGlobalConstantBufferInternal(buffer, Shader.PropertyToID(name), offset, size);
+        }
+
+        public void SetGlobalConstantBuffer(GraphicsBuffer buffer, int nameID, int offset, int size)
+        {
+            SetGlobalConstantGraphicsBufferInternal(buffer, nameID, offset, size);
+        }
+
+        public void SetGlobalConstantBuffer(GraphicsBuffer buffer, string name, int offset, int size)
+        {
+            SetGlobalConstantGraphicsBufferInternal(buffer, Shader.PropertyToID(name), offset, size);
         }
 
         public void SetShadowSamplingMode(UnityEngine.Rendering.RenderTargetIdentifier shadowmap, ShadowSamplingMode mode)

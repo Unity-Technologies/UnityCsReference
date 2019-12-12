@@ -17,7 +17,7 @@ namespace UnityEngine
         public bool multiline = false;
         public bool hasHorizontalCursorPos = false;
         public bool isPasswordField = false;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
         internal bool m_HasFocus;
         public Vector2 scrollOffset = Vector2.zero; // The text field can have a scroll offset in order to display its contents
 
@@ -64,7 +64,6 @@ namespace UnityEngine
 
         internal virtual Rect localPosition
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get { return position; }
         }
 

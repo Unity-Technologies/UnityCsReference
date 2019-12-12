@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements.UIR
     }
 
     [NativeHeader("Modules/UIElements/UIRendererUtility.h")]
+    [VisibleToOtherModules("Unity.UIElements")]
     internal partial class Utility
     {
         internal enum GPUBufferType { Vertex, Index }
@@ -67,10 +68,10 @@ namespace UnityEngine.UIElements.UIR
             DrawRanges(ib.BufferPointer, vb.BufferPointer, vb.ElementStride, new IntPtr(ranges.GetUnsafePtr()), ranges.Length);
         }
 
-        unsafe public static void SetVectorArray<T>(Material mat, int name, NativeSlice<T> vector4s) where T : struct
+        unsafe public static void SetVectorArray<T>(MaterialPropertyBlock props, int name, NativeSlice<T> vector4s) where T : struct
         {
             int vector4Count = (vector4s.Length * vector4s.Stride) / (sizeof(float) * 4);
-            SetVectorArray(mat, name, new IntPtr(vector4s.GetUnsafePtr()), vector4Count);
+            SetVectorArray(props, name, new IntPtr(vector4s.GetUnsafePtr()), vector4Count);
         }
 
         public static event Action<bool> GraphicsResourcesRecreate;
@@ -106,8 +107,9 @@ namespace UnityEngine.UIElements.UIR
         extern static void FreeBuffer(IntPtr buffer);
         extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
         extern static void DrawRanges(IntPtr ib, IntPtr vb, int vbElemStride, IntPtr ranges, int rangeCount);
-        extern static void SetVectorArray(Material mat, int name, IntPtr vector4s, int count);
+        extern static void SetVectorArray(MaterialPropertyBlock props, int name, IntPtr vector4s, int count);
 
+        public extern static void SetPropertyBlock(MaterialPropertyBlock props);
         public extern static void SetScissorRect(RectInt scissorRect);
         public extern static void DisableScissor();
         public extern static bool IsScissorEnabled();

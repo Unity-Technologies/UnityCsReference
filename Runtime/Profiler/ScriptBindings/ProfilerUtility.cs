@@ -7,7 +7,7 @@ using System;
 namespace Unity.Profiling.LowLevel
 {
     // Profiler marker usage flags.
-    // Must be in sync with profiling::Marker::Flags!
+    // Must be in sync with UnityProfilerMarkerFlags!
     [Flags]
     public enum MarkerFlags : ushort
     {
@@ -25,7 +25,7 @@ namespace Unity.Profiling.LowLevel
     }
 
     // Supported profiler metadata types.
-    // Must be in sync with profiling::Marker::MetadataDesc::Type!
+    // Must be in sync with UnityProfilerMarkerDataType!
     public enum ProfilerMarkerDataType : byte
     {
         Int32 = 2,

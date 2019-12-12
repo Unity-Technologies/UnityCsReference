@@ -44,6 +44,9 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private float m_SplitPaneLeftWidth;
 
+        [NonSerialized]
+        private int m_NumberOfPackages;
+
         internal static PackageManagerWindow instance { get; private set; }
 
         public void OnEnable()
@@ -66,6 +69,7 @@ namespace UnityEditor.PackageManager.UI
 
                 packageDetails.OnEnable();
                 packageList.OnEnable();
+                packageLoadBar.OnEnable();
                 packageManagerToolbar.OnEnable();
                 packageStatusbar.OnEnable();
 
@@ -75,6 +79,7 @@ namespace UnityEditor.PackageManager.UI
                 PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
                 PageManager.instance.onRefreshOperationStart += OnRefreshOperationStart;
                 PageManager.instance.onRefreshOperationError += OnRefreshOperationError;
+                PackageFiltering.instance.onFilterTabChanged += OnFilterChanged;
 
                 PackageManagerWindowAnalytics.Setup();
 
@@ -84,11 +89,14 @@ namespace UnityEditor.PackageManager.UI
                 var newTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFiltering.instance.defaultFilterTab;
                 PackageFiltering.instance.currentFilterTab = newTab;
 
+                if (newTab != PackageFilterTab.AssetStore)
+                    UIUtils.SetElementDisplay(packageLoadBar, false);
+
                 if (PageManager.instance.GetRefreshTimestamp(newTab) == 0)
-                    PageManager.instance.Refresh(newTab);
+                    DelayRefresh(newTab);
 
                 if (newTab != PackageFilterTab.All && PageManager.instance.GetRefreshTimestamp(PackageFilterTab.All) == 0)
-                    PageManager.instance.Refresh(PackageFilterTab.All);
+                    DelayRefresh(PackageFilterTab.All);
 
                 mainContainer.leftWidth = m_SplitPaneLeftWidth;
                 mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
@@ -100,6 +108,18 @@ namespace UnityEditor.PackageManager.UI
                 rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
                 rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             }
+        }
+
+        private void DelayRefresh(PackageFilterTab tab)
+        {
+            m_NumberOfPackages = packageList.CalculateNumberOfPackagesToDisplay();
+            if (m_NumberOfPackages == 0)
+            {
+                EditorApplication.delayCall += () => DelayRefresh(tab);
+                return;
+            }
+
+            PageManager.instance.Refresh(tab, m_NumberOfPackages);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -148,9 +168,11 @@ namespace UnityEditor.PackageManager.UI
             PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
             PageManager.instance.onRefreshOperationStart -= OnRefreshOperationStart;
             PageManager.instance.onRefreshOperationError -= OnRefreshOperationError;
+            PackageFiltering.instance.onFilterTabChanged -= OnFilterChanged;
 
             packageDetails.OnDisable();
             packageList.OnDisable();
+            packageLoadBar.OnDisable();
             packageManagerToolbar.OnDisable();
             packageStatusbar.OnDisable();
 
@@ -173,6 +195,14 @@ namespace UnityEditor.PackageManager.UI
 
             if (m_FilterToSelectAfterLoad != null && PageManager.instance.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
                 SelectPackageAndFilter();
+        }
+
+        private void OnFilterChanged(PackageFilterTab filterTab)
+        {
+            if (!filterTab.Equals(PackageFilterTab.AssetStore))
+                UIUtils.SetElementDisplay(packageLoadBar, false);
+            else
+                UIUtils.SetElementDisplay(packageLoadBar, true);
         }
 
         private void SelectPackageAndFilter()
@@ -296,8 +326,8 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         internal static void OpenPackageManager(string packageNameOrDisplayName)
         {
-            var windows = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
-            var isWindowAlreadyVisible = windows != null;
+            var window = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault();
+            var isWindowAlreadyVisible = window != null;
             if (!isWindowAlreadyVisible)
             {
                 string packageId = null;
@@ -350,9 +380,12 @@ namespace UnityEditor.PackageManager.UI
                 window.Close();
         }
 
+        public int NumberOfPackages => m_NumberOfPackages;
+
         private VisualElementCache cache;
 
         internal PackageList packageList { get { return cache.Get<PackageList>("packageList"); } }
+        internal PackageLoadBar packageLoadBar { get { return cache.Get<PackageLoadBar>("packageLoadBar"); } }
         private PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
         private PackageManagerToolbar packageManagerToolbar { get {return cache.Get<PackageManagerToolbar>("topMenuToolbar");} }
         private PackageStatusBar packageStatusbar { get {return cache.Get<PackageStatusBar>("packageStatusBar");} }

@@ -82,7 +82,7 @@ namespace UnityEditor.Experimental.GraphView
     public abstract class GraphView : VisualElement, ISelection
     {
         // Layer class. Used for queries below.
-        internal class Layer : VisualElement {}
+        public class Layer : VisualElement {}
 
         // Delegates and Callbacks
         public Action<NodeCreationContext> nodeCreationRequest { get; set; }
@@ -224,6 +224,31 @@ namespace UnityEditor.Experimental.GraphView
         public override VisualElement contentContainer // Contains full content, potentially partially visible
         {
             get { return graphViewContainer; }
+        }
+
+        PlacematContainer m_PlacematContainer;
+
+        public PlacematContainer placematContainer
+        {
+            get
+            {
+                if (m_PlacematContainer == null)
+                {
+                    m_PlacematContainer = CreatePlacematContainer();
+                    AddLayer(m_PlacematContainer, PlacematContainer.PlacematsLayer);
+                }
+
+                return m_PlacematContainer;
+            }
+        }
+
+        public bool GetPortCenterOverride(Port port, out Vector2 overriddenPosition)
+        {
+            if (placematContainer.GetPortCenterOverride(port, out overriddenPosition))
+                return true;
+
+            overriddenPosition = Vector3.zero;
+            return false;
         }
 
         protected GraphView()
@@ -393,6 +418,15 @@ namespace UnityEditor.Experimental.GraphView
         {
             m_OnTimerTicker = null;
             SaveViewData();
+        }
+
+        void AddLayer(Layer layer, int index)
+        {
+            m_ContainerLayers.Add(index, layer);
+
+            int indexOfLayer = m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value).ToList().IndexOf(layer);
+
+            contentViewContainer.Insert(indexOfLayer, layer);
         }
 
         public void AddLayer(int index)
@@ -1023,46 +1057,36 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        protected internal virtual bool canCopySelection
-        {
-            get { return selection.OfType<Node>().Any() || selection.OfType<Group>().Any(); }
-        }
+        protected internal virtual bool canCopySelection =>
+            selection.Any(s => s is Node || s is Group || s is Placemat);
 
-        private void CollectElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
+        public static void CollectElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
         {
             foreach (var element in elements.Where(e => e != null && !collectedElementSet.Contains(e) && conditionFunc(e)))
             {
-                var node = element as Node;
-
-                if (node != null)
-                {
-                    CollectConnectedEgdes(collectedElementSet, node);
-
-                    StackNode stackNode = node as StackNode;
-
-                    if (stackNode != null)
-                    {
-                        CollectElements(stackNode.Children().OfType<GraphElement>(), collectedElementSet, conditionFunc);
-                    }
-                }
-                else
-                {
-                    var groupNode = element as Group;
-
-                    // If the selected element is a group then visit its contained element
-                    if (groupNode != null)
-                    {
-                        CollectElements(groupNode.containedElements, collectedElementSet, conditionFunc);
-                    }
-                }
-
+                var collectibleElement = element as ICollectibleElement;
+                collectibleElement?.CollectElements(collectedElementSet, conditionFunc);
                 collectedElementSet.Add(element);
             }
         }
 
         protected internal virtual void CollectCopyableGraphElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> elementsToCopySet)
         {
-            CollectElements(elements, elementsToCopySet, e => (e is Node || e is Group));
+            CollectElements(elements, elementsToCopySet, e => e.IsCopiable());
+
+            // Also collect hovering list of nodes
+            foreach (var placemat in elements.OfType<Placemat>())
+            {
+                placemat.ActOnGraphElementsOver(
+                    el =>
+                    {
+                        CollectElements(new[] { el },
+                            elementsToCopySet,
+                            e => e.IsCopiable());
+                        return false;
+                    },
+                    true);
+            }
         }
 
         protected internal void CopySelectionCallback()
@@ -1079,10 +1103,8 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        protected internal virtual bool canCutSelection
-        {
-            get { return selection.OfType<Node>().Any() || selection.OfType<Group>().Any(); }
-        }
+        protected internal virtual bool canCutSelection =>
+            selection.Any(s => s is Node || s is Group || s is Placemat);
 
         protected internal void CutSelectionCallback()
         {
@@ -1120,7 +1142,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             get
             {
-                return selection.Cast<GraphElement>().Where(e => e != null && (e.capabilities & Capabilities.Deletable) != 0).Any();
+                return selection.Cast<GraphElement>().Any(e => e != null && (e.capabilities & Capabilities.Deletable) != 0);
             }
         }
 
@@ -1256,16 +1278,6 @@ namespace UnityEditor.Experimental.GraphView
             graphElement.RemoveFromHierarchy();
         }
 
-        private void CollectConnectedEgdes(HashSet<GraphElement> elementsToRemoveSet, Node node)
-        {
-            elementsToRemoveSet.UnionWith(node.inputContainer.Children().OfType<Port>().SelectMany(c => c.connections)
-                .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
-                .Cast<GraphElement>());
-            elementsToRemoveSet.UnionWith(node.outputContainer.Children().OfType<Port>().SelectMany(c => c.connections)
-                .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
-                .Cast<GraphElement>());
-        }
-
         private void CollectDeletableGraphElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> elementsToRemoveSet)
         {
             CollectElements(elements, elementsToRemoveSet, e => (e.capabilities & Capabilities.Deletable) == Capabilities.Deletable);
@@ -1277,9 +1289,21 @@ namespace UnityEditor.Experimental.GraphView
 
             CollectDeletableGraphElements(selection.OfType<GraphElement>(), elementsToRemoveSet);
 
+            var previouslyCollapsedElements = new HashSet<GraphElement>();
+            // For each collapsed placemat, expand and keep list of elements over the expanded placemat
+            foreach (var placemat in elementsToRemoveSet.OfType<Placemat>().Where(p => p.Collapsed))
+            {
+                previouslyCollapsedElements.UnionWith(placemat.CollapsedElements);
+                placemat.Collapsed = false;
+            }
+
             DeleteElements(elementsToRemoveSet);
 
             selection.Clear();
+
+            // Add "expanded placemats" elements to selection now.
+            foreach (var ge in previouslyCollapsedElements)
+                AddToSelection(ge);
 
             return (elementsToRemoveSet.Count > 0) ? EventPropagation.Stop : EventPropagation.Continue;
         }
@@ -1537,6 +1561,11 @@ namespace UnityEditor.Experimental.GraphView
 
         public virtual void ReleaseBlackboard(Blackboard toRelease)
         {
+        }
+
+        protected virtual PlacematContainer CreatePlacematContainer()
+        {
+            return new PlacematContainer(this);
         }
     }
 }

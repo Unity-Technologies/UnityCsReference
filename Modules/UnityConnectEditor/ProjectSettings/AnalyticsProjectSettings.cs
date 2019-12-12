@@ -176,9 +176,7 @@ namespace UnityEditor.Mono.UnityConnect.Services
             {
                 var clickable = new Clickable(() =>
                 {
-                    var dashboardUrl = ServicesConfiguration.instance.analyticsDashboardUrl;
-                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AnalyticsService.instance.name, url = dashboardUrl });
-                    Application.OpenURL(dashboardUrl);
+                    OpenDashboardForProjectGuid(ServicesConfiguration.instance.baseAnalyticsDashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -511,9 +509,7 @@ namespace UnityEditor.Mono.UnityConnect.Services
                     {
                         var clickable = new Clickable(() =>
                         {
-                            var dashboardUrl = string.Format(AnalyticsConfiguration.instance.dashboardUrl, Connect.UnityConnect.instance.projectInfo.projectGUID);
-                            EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AnalyticsService.instance.name, url = dashboardUrl });
-                            Application.OpenURL(dashboardUrl);
+                            provider.OpenDashboardForProjectGuid(ServicesConfiguration.instance.baseAnalyticsDashboardUrl);
                         });
                         accessDashboard.AddManipulator(clickable);
                     }
@@ -658,9 +654,7 @@ namespace UnityEditor.Mono.UnityConnect.Services
                 {
                     var goToDashboard = new Clickable(() =>
                     {
-                        var dashboardUrl = string.Format(AnalyticsConfiguration.instance.dashboardUrl, Connect.UnityConnect.instance.projectInfo.projectGUID);
-                        EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = AnalyticsService.instance.name, url = dashboardUrl });
-                        Application.OpenURL(dashboardUrl);
+                        provider.OpenDashboardForProjectGuid(ServicesConfiguration.instance.baseAnalyticsDashboardUrl);
                     });
 
                     welcomeBlock.Q(k_DashboardButton).AddManipulator(goToDashboard);

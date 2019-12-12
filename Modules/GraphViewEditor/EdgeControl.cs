@@ -819,7 +819,6 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-
         void DrawEdge(MeshGenerationContext mgc)
         {
             if (edgeWidth <= 0)

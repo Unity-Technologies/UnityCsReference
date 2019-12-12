@@ -312,6 +312,8 @@ namespace UnityEngine
         extern private static void Internal_SetRandomWriteTargetRT(int index, RenderTexture uav);
         [FreeFunction("GraphicsScripting::SetRandomWriteTargetBuffer")]
         extern private static void Internal_SetRandomWriteTargetBuffer(int index, ComputeBuffer uav, bool preserveCounterValue);
+        [FreeFunction("GraphicsScripting::SetRandomWriteTargetBuffer")]
+        extern private static void Internal_SetRandomWriteTargetGraphicsBuffer(int index, GraphicsBuffer uav, bool preserveCounterValue);
 
         [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)] extern public static void ClearRandomWriteTargets();
 
@@ -339,6 +341,8 @@ namespace UnityEngine
 
         [FreeFunction("GraphicsScripting::DrawMeshInstancedIndirect")]
         extern private static void Internal_DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
+        [FreeFunction("GraphicsScripting::DrawMeshInstancedIndirect")]
+        extern private static void Internal_DrawMeshInstancedIndirectGraphicsBuffer(Mesh mesh, int submeshIndex, Material material, Bounds bounds, GraphicsBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 
         [FreeFunction("GraphicsScripting::DrawProceduralNow")]
         extern private static void Internal_DrawProceduralNow(MeshTopology topology, int vertexCount, int instanceCount);
@@ -351,6 +355,12 @@ namespace UnityEngine
 
         [FreeFunction("GraphicsScripting::DrawProceduralIndexedIndirectNow")]
         extern private static void Internal_DrawProceduralIndexedIndirectNow(MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndirectNow")]
+        extern private static void Internal_DrawProceduralIndirectNowGraphicsBuffer(MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndexedIndirectNow")]
+        extern private static void Internal_DrawProceduralIndexedIndirectNowGraphicsBuffer(MeshTopology topology, GraphicsBuffer indexBuffer, GraphicsBuffer bufferWithArgs, int argsOffset);
 
         [FreeFunction("GraphicsScripting::DrawProcedural")]
         extern private static void Internal_DrawProcedural(Material material, Bounds bounds, MeshTopology topology, int vertexCount, int instanceCount, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
@@ -693,6 +703,10 @@ namespace UnityEngine
             [FreeFunction(HasExplicitThis = true)]
             [NativeName("GetTetrahedraSize")] get;
         }
+
+        [FreeFunction]
+        [NativeName("GetLightProbeCount")]
+        internal static extern int GetCount();
     }
 }
 

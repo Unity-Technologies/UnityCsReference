@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.Remoting.Messaging;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -132,8 +133,12 @@ namespace UnityEditor
 
                 if (Highlighter != null && mouseUnderStyle != null)
                 {
-                    // Debug.Log(GetViewName(m_ExploredView) + " - Highlight Style: " + mouseUnderStyle.name);
-                    Highlighter.HighlightElement(m_ExploredView.visualTree, styleRect, mouseUnderStyle);
+                    var visualElement = m_ExploredView.windowBackend.visualTree as VisualElement;
+                    if (visualElement != null)
+                    {
+                        // Debug.Log(GetViewName(m_ExploredView) + " - Highlight Style: " + mouseUnderStyle.name);
+                        Highlighter.HighlightElement(visualElement, styleRect, mouseUnderStyle);
+                    }
                 }
 
                 ExploredStyle = mouseUnderStyle;

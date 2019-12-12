@@ -269,9 +269,8 @@ namespace UnityEngine.UIElements.UIR
         uint m_HighWatermark;
     }
 
-    // The GPU buffer allocator supports allocations with 3 different types of lifetimes: permanent, temp and 1-frame
-    // Permanent allocations grow from bottom to top, while temp grow from top to bottom, and 1-frame grow from the middle
-    // towards both sides
+    // The GPU buffer allocator supports allocations with 2 different types of lifetimes: permanent and temp
+    // Permanent allocations grow from bottom to top, while temp grow from top to bottom
     class GPUBufferAllocator
     {
         BestFitAllocator m_Low, m_High;

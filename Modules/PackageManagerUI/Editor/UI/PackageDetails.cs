@@ -79,6 +79,10 @@ namespace UnityEditor.PackageManager.UI
         // The relevance of results beyond this limit is also questionable.
         private const int MaxDependentList = 10;
 
+        // Keep track of the width breakpoints at which images were hidden so we know
+        //  when to add them back in
+        private Stack<float> detailImagesWidthsWhenImagesRemoved;
+
         public PackageDetails()
         {
             var root = Resources.GetTemplate("PackageDetails.uxml");
@@ -109,6 +113,7 @@ namespace UnityEditor.PackageManager.UI
             detailDescLess.clickable.clicked += DescLessClick;
 
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
+            detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
             GetTagLabel(PackageTag.Verified.ToString()).text = ApplicationUtil.instance.shortUnityVersion + " verified";
         }
@@ -123,6 +128,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnEnable()
         {
+            detailImagesWidthsWhenImagesRemoved = new Stack<float>();
             ApplicationUtil.instance.onFinishCompiling += RefreshPackageActionButtons;
 
             PackageDatabase.instance.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
@@ -239,8 +245,6 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshDescription();
 
-                RefreshCategories();
-
                 string versionString = displayVersion.version?.StripTag() ?? displayVersion.versionString;
                 detailVersion.text = $"Version {versionString}";
                 UIUtils.SetElementDisplay(detailVersion, !isBuiltIn && !String.IsNullOrEmpty(versionString));
@@ -253,16 +257,14 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshAuthor();
 
-                RefreshPublishedDate();
+                RefreshReleaseDetails();
 
                 UIUtils.SetElementDisplay(customContainer, true);
                 RefreshExtensions(displayVersion);
 
                 RefreshDependencies();
 
-                RefreshSupportedUnityVersions();
-
-                RefreshSizeInfo();
+                RefreshSizeAndSupportedUnityVersions();
 
                 RefreshSupportingImages();
 
@@ -288,6 +290,31 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(detailDescMore, true);
                 UIUtils.SetElementDisplay(detailDescLess, false);
                 detailDesc.style.maxHeight = lineHeight * 3;
+            }
+        }
+
+        private void ImagesGeometryChangeEvent(GeometryChangedEvent evt)
+        {
+            // hide or show the last image depending on whether it fits on the screen
+            IEnumerable<VisualElement> images = detailImages.Children();
+            IEnumerable<VisualElement> visibleImages = images.Where(elem => UIUtils.IsElementVisible(elem));
+
+            VisualElement firstInvisibleImage = images.FirstOrDefault(elem => !UIUtils.IsElementVisible(elem));
+            float visibleImagesWidth = visibleImages.Sum(elem => elem.rect.width);
+            VisualElement lastVisibleImage = visibleImages.LastOrDefault();
+
+            float widthWhenLastImageRemoved = detailImagesWidthsWhenImagesRemoved.Any() ? detailImagesWidthsWhenImagesRemoved.Peek() : float.MaxValue;
+
+            // if the container approximately doubles in height, that indicates the last image was wrapped around to another row
+            if (lastVisibleImage != null && (evt.newRect.height >= 2 * lastVisibleImage.rect.height || visibleImagesWidth >= evt.newRect.width))
+            {
+                UIUtils.SetElementDisplay(lastVisibleImage, false);
+                detailImagesWidthsWhenImagesRemoved.Push(evt.newRect.width);
+            }
+            else if (firstInvisibleImage != null && evt.newRect.width > widthWhenLastImageRemoved)
+            {
+                UIUtils.SetElementDisplay(firstInvisibleImage, true);
+                detailImagesWidthsWhenImagesRemoved.Pop();
             }
         }
 
@@ -321,34 +348,43 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private void RefreshPublishedDate()
+        private void RefreshLabels()
         {
+            detailLabels.Clear();
+
+            if (enabledSelf && m_Package?.labels != null)
+            {
+                foreach (string label in m_Package.labels)
+                {
+                    detailLabels.Add(new Label(label));
+                }
+            }
+            UIUtils.SetElementDisplay(detailLabelsContainer, detailLabels.Children().Any());
+        }
+
+        private void RefreshPurchasedDate()
+        {
+            if (enabledSelf)
+            {
+                detailPurchasedDate.text = m_Package?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty;
+            }
+            UIUtils.SetElementDisplay(detailPurchasedDateContainer, !string.IsNullOrEmpty(detailPurchasedDate.text));
+        }
+
+        private void RefreshReleaseDetails()
+        {
+            detailReleaseDetails.Clear();
+
             // If the package details is not enabled, don't update the date yet as we are fetching new information
             if (enabledSelf)
             {
-                var dt = displayVersion.publishedDate ?? DateTime.Now;
-                detailDate.text = displayVersion.publishedDate != null ? dt.ToString("MMMM dd,  yyyy", CultureInfo.CreateSpecificCulture("en-US")) : string.Empty;
+                detailReleaseDetails.Add(new PackageReleaseDetailsItem($"{displayVersion.versionString} (Current)", displayVersion.publishedDate, displayVersion.releaseNotes));
+
+                if (m_Package.firstPublishedDate != null)
+                    detailReleaseDetails.Add(new PackageReleaseDetailsItem("Original", m_Package.firstPublishedDate, string.Empty));
             }
 
-            UIUtils.SetElementDisplay(detailDateContainer, !string.IsNullOrEmpty(detailDate.text));
-        }
-
-        private void RefreshCategories()
-        {
-            var categoryLinks = displayVersion?.categoryLinks;
-            UIUtils.SetElementDisplay(detailCategories, categoryLinks != null);
-
-            detailCategories.Clear();
-            if (categoryLinks != null)
-            {
-                foreach (var item in categoryLinks)
-                {
-                    var category = item.Key;
-                    var url = item.Value;
-                    detailCategories.Add(new Button(() => { ApplicationUtil.instance.OpenURL(url); })
-                        { text = category, classList = { "category", "unity-button", "link" } });
-                }
-            }
+            UIUtils.SetElementDisplay(detailReleaseDetailsContainer, detailReleaseDetails.Children().Any());
         }
 
         private void RefreshLinks()
@@ -378,7 +414,14 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(detailLinksContainer, detailLinks.childCount != 0);
         }
 
-        private void RefreshSupportedUnityVersions()
+        private void RefreshSizeAndSupportedUnityVersions()
+        {
+            bool showSupportedUnityVersions = RefreshSupportedUnityVersions();
+            bool showSize = RefreshSizeInfo();
+            UIUtils.SetElementDisplay(detailSizesAndSupportedVersionsContainer, showSize || showSupportedUnityVersions);
+        }
+
+        private bool RefreshSupportedUnityVersions()
         {
             bool hasSupportedVersions = (displayVersion.supportedVersions?.Any() == true);
             var supportedVersion = displayVersion.supportedVersions?.FirstOrDefault();
@@ -407,11 +450,14 @@ namespace UnityEditor.PackageManager.UI
                 detailUnityVersions.text = string.Empty;
                 detailUnityVersions.tooltip = string.Empty;
             }
+
+            return hasSupportedVersions;
         }
 
-        private void RefreshSizeInfo()
+        private bool RefreshSizeInfo()
         {
-            UIUtils.SetElementDisplay(detailSizesContainer, displayVersion.sizes.Any());
+            var showSizes = displayVersion.sizes.Any();
+            UIUtils.SetElementDisplay(detailSizesContainer, showSizes);
             detailSizes.Clear();
 
             var sizeInfo = displayVersion.sizes.FirstOrDefault(info => info.supportedUnityVersion == displayVersion.supportedVersion);
@@ -420,6 +466,8 @@ namespace UnityEditor.PackageManager.UI
 
             if (sizeInfo != null)
                 detailSizes.Add(new Label($"Size: {UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize)} (Number of files: {sizeInfo.assetCount})"));
+
+            return showSizes;
         }
 
         private void ClearSupportingImages()
@@ -434,6 +482,7 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
             detailImages.Clear();
+            detailImagesMoreLink.clicked -= OnMoreImagesClicked;
         }
 
         private void RefreshSupportingImages()
@@ -449,14 +498,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 foreach (var packageImage in package.images)
                 {
-                    var image = new Label {classList = {"image"}};
-
-                    if (packageImage.type == PackageImage.ImageType.Youtube || packageImage.type == PackageImage.ImageType.Sketchfab)
-                    {
-                        image.AddToClassList("url");
-                        image.OnLeftClick(() => { ApplicationUtil.instance.OpenURL(packageImage.url); });
-                    }
-
+                    var image = new Label { classList = { "image" } };
+                    image.OnLeftClick(() => { ApplicationUtil.instance.OpenURL(packageImage.url); });
                     image.style.backgroundImage = s_LoadingTexture;
                     detailImages.Add(image);
 
@@ -470,6 +513,13 @@ namespace UnityEditor.PackageManager.UI
                     });
                 }
             }
+
+            detailImagesMoreLink.clicked += OnMoreImagesClicked;
+        }
+
+        private void OnMoreImagesClicked()
+        {
+            ApplicationUtil.instance.OpenURL((package as AssetStorePackage).assetStoreLink);
         }
 
         public void SetPackage(IPackage package, IPackageVersion version = null)
@@ -486,6 +536,8 @@ namespace UnityEditor.PackageManager.UI
             }
 
             SetDisplayVersion(version);
+            RefreshPurchasedDate();
+            RefreshLabels();
         }
 
         internal void OnPackagesUpdated(IEnumerable<IPackage> updatedPackages)
@@ -671,7 +723,7 @@ namespace UnityEditor.PackageManager.UI
 
             var packageType = version.HasTag(PackageTag.BuiltIn) ? "built-in package" : "package";
             var prefix = $"This {packageType} is a dependency of the following ";
-            var message = string.Format("{0}{1}:\n\n", prefix,  dependentPackages.Any() ? "packages" : "built-in packages");
+            var message = string.Format("{0}{1}:\n\n", prefix, dependentPackages.Any() ? "packages" : "built-in packages");
 
             if (dependentPackages.Any())
                 message += GetPackageDashList(dependentPackages, maxListCount);
@@ -818,6 +870,8 @@ namespace UnityEditor.PackageManager.UI
         {
             PackageDatabase.instance.Import(package);
             RefreshImportAndDownloadButtons();
+
+            PackageManagerWindowAnalytics.SendEvent("import", package.uniqueId);
         }
 
         private void DownloadOrCancelClick()
@@ -836,6 +890,9 @@ namespace UnityEditor.PackageManager.UI
                 PackageDatabase.instance.Download(package);
 
             RefreshImportAndDownloadButtons();
+
+            var eventName = downloadInProgress ? "abortDownload" : "startDownload";
+            PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
         }
 
         private VisualElementCache cache { get; set; }
@@ -853,28 +910,33 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
         private Label detailTitle { get { return cache.Get<Label>("detailTitle"); } }
         private Label detailVersion { get { return cache.Get<Label>("detailVersion"); } }
-        private VisualElement detailDateContainer { get { return cache.Get<VisualElement>("detailDateContainer"); } }
-        private Label detailDate { get { return cache.Get<Label>("detailDate"); } }
+        private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
+        private Label detailPurchasedDate { get { return cache.Get<Label>("detailPurchasedDate"); } }
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
         private Label detailAuthorText { get { return cache.Get<Label>("detailAuthorText"); } }
         private Button detailAuthorLink { get { return cache.Get<Button>("detailAuthorLink"); } }
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
-        private PackageDependencies dependencies { get {return cache.Get<PackageDependencies>("detailDependencies");} }
-        internal VisualElement packageToolbarContainer { get {return cache.Get<VisualElement>("toolbarContainer");} }
-        private VisualElement packageToolbarLeftArea { get {return cache.Get<VisualElement>("leftItems");} }
+        private PackageDependencies dependencies { get { return cache.Get<PackageDependencies>("detailDependencies"); } }
+        internal VisualElement packageToolbarContainer { get { return cache.Get<VisualElement>("toolbarContainer"); } }
+        private VisualElement packageToolbarLeftArea { get { return cache.Get<VisualElement>("leftItems"); } }
         internal Button updateButton { get { return cache.Get<Button>("update"); } }
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
         private Button importButton { get { return cache.Get<Button>("import"); } }
         private Button downloadButton { get { return cache.Get<Button>("download"); } }
         private ProgressBar downloadProgress { get { return cache.Get<ProgressBar>("downloadProgress"); } }
-        private VisualElement detailCategories { get { return cache.Get<VisualElement>("detailCategories"); } }
+        private VisualElement detailSizesAndSupportedVersionsContainer { get { return cache.Get<VisualElement>("detailSizesAndSupportedVersionsContainer"); } }
         private VisualElement detailUnityVersionsContainer { get { return cache.Get<VisualElement>("detailUnityVersionsContainer"); } }
         private Label detailUnityVersions { get { return cache.Get<Label>("detailUnityVersions"); } }
         private VisualElement detailSizesContainer { get { return cache.Get<VisualElement>("detailSizesContainer"); } }
         private VisualElement detailSizes { get { return cache.Get<VisualElement>("detailSizes"); } }
         private VisualElement detailImagesContainer { get { return cache.Get<VisualElement>("detailImagesContainer"); } }
         private VisualElement detailImages { get { return cache.Get<VisualElement>("detailImages"); } }
+        private VisualElement detailReleaseDetailsContainer { get { return cache.Get<VisualElement>("detailReleaseDetailsContainer"); } }
+        private VisualElement detailReleaseDetails { get { return cache.Get<VisualElement>("detailReleaseDetails"); } }
+        private Button detailImagesMoreLink { get { return cache.Get<Button>("detailImagesMoreLink"); } }
+        private VisualElement detailLabelsContainer { get { return cache.Get<VisualElement>("detailLabelsContainer"); } }
+        private VisualElement detailLabels { get { return cache.Get<VisualElement>("detailLabels"); } }
         internal Label GetTagLabel(string tag) { return cache.Get<Label>("tag" + tag); }
     }
 }

@@ -16,6 +16,8 @@ namespace UnityEditor.PackageManager.UI
         public string publishedDate;
         public string supportedVersion;
         public string packagePath;
+        public string publishNotes;
+        public string firstPublishedDate;
 
         public bool updateInfoFetched;
         public bool canUpdate;
@@ -40,6 +42,7 @@ namespace UnityEditor.PackageManager.UI
                     versionId = jsonInfo.GetString("version_id") ?? string.Empty,
                     publishedDate = jsonInfo.GetString("pubdate") ?? string.Empty,
                     supportedVersion = jsonInfo.GetString("unity_version") ?? string.Empty,
+                    publishNotes = jsonInfo.GetString("publishnotes") ?? string.Empty,
                     updateInfoFetched = false,
                     canUpdate = false
                 };

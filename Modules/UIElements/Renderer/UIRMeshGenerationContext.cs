@@ -40,7 +40,27 @@ namespace UnityEngine.UIElements
             else throw new InvalidOperationException("SetAllVertices may not be called after using SetNextVertex");
         }
 
+        public void SetAllVertices(NativeSlice<Vertex> vertices)
+        {
+            if (currentVertex == 0)
+            {
+                m_Vertices.CopyFrom(vertices);
+                currentVertex = m_Vertices.Length;
+            }
+            else throw new InvalidOperationException("SetAllVertices may not be called after using SetNextVertex");
+        }
+
         public void SetAllIndices(UInt16[] indices)
+        {
+            if (currentIndex == 0)
+            {
+                m_Indices.CopyFrom(indices);
+                currentIndex = m_Indices.Length;
+            }
+            else throw new InvalidOperationException("SetAllIndices may not be called after using SetNextIndex");
+        }
+
+        public void SetAllIndices(NativeSlice<UInt16> indices)
         {
             if (currentIndex == 0)
             {

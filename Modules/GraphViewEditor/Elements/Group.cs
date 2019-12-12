@@ -2,16 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-using UnityEngine.Internal;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public class Group : Scope
+    public class Group : Scope, ICollectibleElement
     {
         private Label m_TitleItem;
         private TextField m_TitleEditor;
@@ -68,7 +66,7 @@ namespace UnityEditor.Experimental.GraphView
 
             AddToClassList("group");
 
-            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable;
+            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Copiable;
 
             RegisterCallback<MouseDownEvent>(OnMouseDownEvent);
         }
@@ -167,6 +165,11 @@ namespace UnityEditor.Experimental.GraphView
         internal void OnStartDragging(IMouseEvent evt, IEnumerable<GraphElement> elements)
         {
             m_DropArea.OnStartDragging(evt, elements);
+        }
+
+        public void CollectElements(HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
+        {
+            GraphView.CollectElements(containedElements, collectedElementSet, conditionFunc);
         }
     }
 }

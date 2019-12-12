@@ -10,6 +10,9 @@ using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using UnityEngineInternal;
 using Scene = UnityEngine.SceneManagement.Scene;
+using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
+using Unity.Collections;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -332,6 +335,22 @@ namespace UnityEditor
                 lightingDataUpdated();
         }
 
+        public static event Action lightingDataCleared;
+
+        internal static void Internal_CallLightingDataCleared()
+        {
+            if (lightingDataCleared != null)
+                lightingDataCleared();
+        }
+
+        public static event Action lightingDataAssetCleared;
+
+        internal static void Internal_CallLightingDataAssetCleared()
+        {
+            if (lightingDataAssetCleared != null)
+                lightingDataAssetCleared();
+        }
+
         internal static event Action wroteLightingDataAsset;
 
         internal static void Internal_CallOnWroteLightingDataAsset()
@@ -629,5 +648,40 @@ namespace UnityEditor.Experimental
         [NativeThrows]
         [FreeFunction]
         public static extern bool Bake(Scene scene);
+
+        public static event Action additionalBakedProbesCompleted;
+
+        internal static void Internal_CallAdditionalBakedProbesCompleted()
+        {
+            if (additionalBakedProbesCompleted != null)
+                additionalBakedProbesCompleted();
+        }
+
+        [FreeFunction]
+        internal unsafe static extern bool GetAdditionalBakedProbes(int id, void* outBakedProbeSH, void* outBakedProbeValidity, int outBakedProbeCount);
+
+        public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity)
+        {
+            if (outBakedProbeSH == null || !outBakedProbeSH.IsCreated ||
+                outBakedProbeValidity == null || !outBakedProbeValidity.IsCreated)
+            {
+                Debug.LogError("Output arrays need to be properly initialized.");
+                return false;
+            }
+
+            if (outBakedProbeSH.Length != outBakedProbeValidity.Length)
+            {
+                Debug.LogError("Both output arrays must have equal size.");
+                return false;
+            }
+
+            void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeSH);
+            void* validityPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeValidity);
+
+            return GetAdditionalBakedProbes(id, shPtr, validityPtr, outBakedProbeSH.Length);
+        }
+
+        [FreeFunction]
+        public static extern void SetAdditionalBakedProbes(int id, Vector3[] positions);
     }
 }

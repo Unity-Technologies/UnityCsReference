@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI
             Screenshot,
             Sketchfab,
             Youtube,
+            Vimeo
         }
 
         public ImageType type;

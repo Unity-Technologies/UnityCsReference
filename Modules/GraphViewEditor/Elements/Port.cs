@@ -25,6 +25,10 @@ namespace UnityEditor.Experimental.GraphView
 
         protected VisualElement m_ConnectorBoxCap;
 
+        protected GraphView m_GraphView;
+
+        public override bool showInMiniMap => false;
+
         internal Color capColor
         {
             get
@@ -380,6 +384,16 @@ namespace UnityEditor.Experimental.GraphView
 
         public override Vector3 GetGlobalCenter()
         {
+            if (m_GraphView == null)
+                m_GraphView = GetFirstAncestorOfType<GraphView>();
+
+            Vector2 overriddenPosition;
+
+            if (m_GraphView != null && m_GraphView.GetPortCenterOverride(this, out overriddenPosition))
+            {
+                return overriddenPosition;
+            }
+
             return m_ConnectorBox.LocalToWorld(m_ConnectorBox.rect.center);
         }
 

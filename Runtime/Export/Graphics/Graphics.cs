@@ -251,6 +251,16 @@ namespace UnityEngine
             Internal_SetRandomWriteTargetBuffer(index, uav, preserveCounterValue);
         }
 
+        public static void SetRandomWriteTarget(int index, GraphicsBuffer uav, [uei.DefaultValue("false")] bool preserveCounterValue)
+        {
+            if (uav == null) throw new ArgumentNullException("uav");
+            if (uav.m_Ptr == IntPtr.Zero) throw new System.ObjectDisposedException("uav");
+            if (index < 0 || index >= SystemInfo.supportedRandomWriteTargetCount)
+                throw new ArgumentOutOfRangeException("index", string.Format("must be non-negative less than {0}.", SystemInfo.supportedRandomWriteTargetCount));
+
+            Internal_SetRandomWriteTargetGraphicsBuffer(index, uav, preserveCounterValue);
+        }
+
         public static void CopyTexture(Texture src, Texture dst)
         {
             CopyTexture_Full(src, dst);
@@ -492,6 +502,24 @@ namespace UnityEngine
             Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
+        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, GraphicsBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+            if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
+                throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
+
+            Internal_DrawMeshInstancedIndirectGraphicsBuffer(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
+        }
+
         public static void DrawProceduralNow(MeshTopology topology, int vertexCount, int instanceCount = 1)
         {
             Internal_DrawProceduralNow(topology, vertexCount, instanceCount);
@@ -520,6 +548,24 @@ namespace UnityEngine
                 throw new ArgumentNullException("bufferWithArgs");
 
             Internal_DrawProceduralIndexedIndirectNow(topology, indexBuffer, bufferWithArgs, argsOffset);
+        }
+
+        public static void DrawProceduralIndirectNow(MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset = 0)
+        {
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndirectNowGraphicsBuffer(topology, bufferWithArgs, argsOffset);
+        }
+
+        public static void DrawProceduralIndirectNow(MeshTopology topology, GraphicsBuffer indexBuffer, GraphicsBuffer bufferWithArgs, int argsOffset = 0)
+        {
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndexedIndirectNowGraphicsBuffer(topology, indexBuffer, bufferWithArgs, argsOffset);
         }
 
         public static void DrawProcedural(Material material, Bounds bounds, MeshTopology topology, int vertexCount, int instanceCount = 1, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)

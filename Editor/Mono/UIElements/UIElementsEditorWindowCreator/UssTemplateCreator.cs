@@ -13,11 +13,16 @@ namespace UnityEditor.UIElements
         [MenuItem("Assets/Create/UIElements/USS File", false, 603, false)]
         public static void CreateUSSFile()
         {
-            var folder = GetCurrentFolder();
-            var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUSSFile.uss");
-            var contents = "VisualElement {}";
-            var icon = EditorGUIUtility.IconContent<StyleSheet>().image as Texture2D;
-            ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+            if (CommandService.Exists(nameof(CreateUSSFile)))
+                CommandService.Execute(nameof(CreateUSSFile), CommandHint.Menu);
+            else
+            {
+                var folder = GetCurrentFolder();
+                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUSSFile.uss");
+                var contents = "VisualElement {}";
+                var icon = EditorGUIUtility.IconContent<StyleSheet>().image as Texture2D;
+                ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+            }
         }
     }
 }

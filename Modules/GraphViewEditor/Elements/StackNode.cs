@@ -2,10 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -78,8 +79,10 @@ namespace UnityEditor.Experimental.GraphView
 
         private bool AcceptsElementInternal(GraphElement element, ref int proposedIndex, int maxIndex)
         {
+            // TODO: we probably need a "Stackable" capability
             return element != null && !(element is Scope)
                 && !(element is StackNode) && !(element is TokenNode)
+                && !(element is Placemat)
                 && (element.GetContainingScope() as Group) == null
                 && AcceptsElement(element, ref proposedIndex, maxIndex);
         }
@@ -279,6 +282,12 @@ namespace UnityEditor.Experimental.GraphView
                 // Reselect it because RemoveFromHierarchy unselected it
                 ge.Select(graphView, true);
             }
+        }
+
+        public override void CollectElements(HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
+        {
+            base.CollectElements(collectedElementSet, conditionFunc);
+            GraphView.CollectElements(Children().OfType<GraphElement>(), collectedElementSet, conditionFunc);
         }
     }
 }

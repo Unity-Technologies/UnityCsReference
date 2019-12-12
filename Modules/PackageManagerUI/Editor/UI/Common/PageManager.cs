@@ -14,8 +14,6 @@ namespace UnityEditor.PackageManager.UI
         static IPageManager s_Instance = null;
         public static IPageManager instance { get { return s_Instance ?? PageManagerInternal.instance; } }
 
-        public const int k_DefaultPageSize = 25;
-
         internal class PageManagerInternal : ScriptableSingleton<PageManagerInternal>, IPageManager, ISerializationCallbackReceiver
         {
             private static readonly RefreshOptions[] k_RefreshOptionsByTab =
@@ -39,6 +37,8 @@ namespace UnityEditor.PackageManager.UI
 
             private Dictionary<RefreshOptions, long> m_RefreshTimestamps = new Dictionary<RefreshOptions, long>();
             private Dictionary<RefreshOptions, UIError> m_RefreshErrors = new Dictionary<RefreshOptions, UIError>();
+
+            const int k_DefaultPageSize = 25;
 
             [NonSerialized]
             private List<IOperation> m_RefreshOperationsInProgress = new List<IOperation>();
@@ -269,7 +269,7 @@ namespace UnityEditor.PackageManager.UI
                         var queryArgs = new PurchasesQueryArgs
                         {
                             startIndex = 0,
-                            limit = k_DefaultPageSize,
+                            limit = PackageManagerWindow.instance.NumberOfPackages,
                             searchText = searchText
                         };
                         AssetStoreClient.instance.ListPurchases(queryArgs, false);
@@ -282,8 +282,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var page = GetPageFromFilterTab(filterTab);
                 if (GetRefreshTimestamp(page.tab) == 0)
-                    Refresh(filterTab);
-
+                    Refresh(filterTab, PackageManagerWindow.instance?.NumberOfPackages ?? k_DefaultPageSize);
                 page.RebuildList();
                 onPageRebuild?.Invoke(page);
                 onSelectionChanged?.Invoke(GetSelectedVersion());
@@ -325,13 +324,16 @@ namespace UnityEditor.PackageManager.UI
                 return index >= k_RefreshOptionsByTab.Length ? RefreshOptions.None : k_RefreshOptionsByTab[index];
             }
 
-            public void Refresh(PackageFilterTab? tab = null)
+            public void Refresh(PackageFilterTab? tab = null, int pageSize = 25)
             {
-                Refresh(GetRefreshOptionsByTab(tab ?? PackageFiltering.instance.currentFilterTab));
+                Refresh(GetRefreshOptionsByTab(tab ?? PackageFiltering.instance.currentFilterTab), pageSize);
             }
 
-            public void Refresh(RefreshOptions options)
+            public void Refresh(RefreshOptions options, int pageSize = 25)
             {
+                if (pageSize == 0)
+                    return;
+
                 // make sure the events are registered before actually calling the actual refresh functions
                 // such that we don't lose any callbacks events
                 RegisterEvents();
@@ -348,7 +350,7 @@ namespace UnityEditor.PackageManager.UI
                     var queryArgs = new PurchasesQueryArgs
                     {
                         startIndex = 0,
-                        limit = k_DefaultPageSize,
+                        limit = pageSize,
                         searchText = string.Empty
                     };
                     AssetStoreClient.instance.ListPurchases(queryArgs, false);
@@ -366,9 +368,9 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            public void LoadMore()
+            public void LoadMore(int numberOfPackages)
             {
-                GetPageFromFilterTab().LoadMore();
+                GetPageFromFilterTab().LoadMore(numberOfPackages);
             }
 
             private void OnUserLoginStateChange(bool loggedIn)

@@ -152,9 +152,7 @@ namespace UnityEditor.Mono.UnityConnect.Services
             {
                 var clickable = new Clickable(() =>
                 {
-                    var dashboardUrl = ServicesConfiguration.instance.purchasingDashboardUrl;
-                    EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService() { serviceName = PurchasingService.instance.name, url = dashboardUrl });
-                    Application.OpenURL(dashboardUrl);
+                    OpenDashboardForProjectGuid(ServicesConfiguration.instance.basePurchasingDashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }

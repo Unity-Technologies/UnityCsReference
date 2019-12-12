@@ -23,6 +23,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 using UnityEditor.EditorTools;
 using UnityEditor.Profiling;
 using UnityEditor.Snap;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -395,12 +396,15 @@ namespace UnityEditor
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void OnSceneFunc(SceneView sceneView);
 
+        // Marked obsolete 2018-11-28
         [Obsolete("onSceneGUIDelegate has been deprecated. Use duringSceneGui instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static OnSceneFunc onSceneGUIDelegate;
 
         public static event Action<SceneView> beforeSceneGui;
         public static event Action<SceneView> duringSceneGui;
+
+        internal static event Func<SceneView, VisualElement> addCustomVisualElementToSceneView;
 
         [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode m_RenderMode = 0;
@@ -507,6 +511,11 @@ namespace UnityEditor
 
         [NonSerialized]
         Camera m_Camera;
+
+        VisualElement m_CameraViewVisualElement;
+
+        static readonly string s_CameraRectVisualElementName = "unity-scene-view-camera-rect";
+        internal VisualElement cameraViewVisualElement => m_CameraViewVisualElement;
 
         [Serializable]
         public class CameraSettings
@@ -1048,6 +1057,34 @@ namespace UnityEditor
             s_ActiveEditorsDirty = true;
 
             showToolbar = ModeService.HasCapability("scene_view_toolbar", true);
+
+            m_CameraViewVisualElement = CreateCameraRectVisualElement();
+
+            rootVisualElement.Add(m_CameraViewVisualElement);
+        }
+
+        VisualElement CreateCameraRectVisualElement()
+        {
+            var root = new VisualElement()
+            {
+                name = VisualElementUtils.GetUniqueName(s_CameraRectVisualElementName),
+                pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
+                viewDataKey = name,
+                renderHints = RenderHints.ClipWithScissors
+            };
+            root.pseudoStates |= PseudoStates.Root;
+            UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
+            root.style.position = Position.Absolute;
+
+            if (addCustomVisualElementToSceneView != null)
+            {
+                foreach (var del in addCustomVisualElementToSceneView.GetInvocationList())
+                {
+                    root.Add((VisualElement)del.DynamicInvoke(this));
+                }
+            }
+            return root;
         }
 
         void OverlayWindowGUI(Object target, SceneView view)
@@ -1206,6 +1243,14 @@ namespace UnityEditor
             // is entirely disabled in that case.
             if (!EditorApplication.isPlaying)
                 RefreshAudioPlay();
+
+            RefreshToolbarHeight();
+        }
+
+        void RefreshToolbarHeight()
+        {
+            if (m_CameraViewVisualElement != null)
+                m_CameraViewVisualElement.style.top = toolbarHeight;
         }
 
         void ToolbarDisplayStateGUI()
@@ -1459,8 +1504,7 @@ namespace UnityEditor
         {
             if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
-                RenderDoc.Load();
-                ShaderUtil.RecreateGfxDevice();
+                ShaderUtil.RequestLoadRenderDoc();
             }
         }
 
@@ -2670,6 +2714,15 @@ namespace UnityEditor
 
             if (m_StageHandling != null)
                 m_StageHandling.EndOnGUI();
+
+            if (m_CameraViewVisualElement != null && m_Parent != null)
+            {
+                var margins = m_Parent.borderSize;
+                m_CameraViewVisualElement.style.bottom = margins.bottom;
+                m_CameraViewVisualElement.style.left = margins.left;
+                m_CameraViewVisualElement.style.right = margins.right;
+            }
+            RefreshToolbarHeight();
         }
 
         [Shortcut("Scene View/Toggle 2D Mode", typeof(SceneView), KeyCode.Alpha2)]
@@ -3645,7 +3698,12 @@ namespace UnityEditor
                 if (!drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
                     continue;
 
-                MethodInfo method = editor.GetType().GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+                MethodInfo method = editor.GetType().GetMethod(
+                    "OnSceneGUI",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
+                    null,
+                    Type.EmptyTypes,
+                    null);
 
                 if (method != null)
                 {

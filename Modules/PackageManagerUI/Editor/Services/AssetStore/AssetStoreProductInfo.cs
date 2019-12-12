@@ -24,6 +24,9 @@ namespace UnityEditor.PackageManager.UI
         public string publishedDate;
         public string displayName;
         public string state;
+        public string publishNotes;
+        public string firstPublishedDate;
+        public PackageLink assetStoreLink;
 
         public List<string> supportedVersions;
         public List<PackageImage> images;
@@ -59,6 +62,8 @@ namespace UnityEditor.PackageManager.UI
 
             packageName = productDetail.GetString("packageName") ?? string.Empty;
             category = productDetail.GetDictionary("category")?.GetString("name") ?? string.Empty;
+            publishNotes = productDetail.GetString("publishNotes") ?? string.Empty;
+            firstPublishedDate = productDetail.GetDictionary("properties")?.GetString("firstPublishedDate");
 
             var versionInfo = productDetail.GetDictionary("version");
             if (versionInfo != null)
@@ -77,6 +82,8 @@ namespace UnityEditor.PackageManager.UI
             images = GetImagesFromProductDetails(productDetail);
             links = GetLinksFromProductDetails(productDetail);
             sizeInfos = GetSizeInfoFromProductDetails(productDetail);
+
+            assetStoreLink = GetAssetStoreLinkFromProductDetails(productDetail);
         }
 
         private static string CleanUpHtml(string source)
@@ -119,22 +126,35 @@ namespace UnityEditor.PackageManager.UI
 
         private static List<PackageImage> GetImagesFromProductDetails(IDictionary<string, object> productDetail)
         {
+            int imageLimit = 3;
+            int imagesLoaded = 0;
+
             var result = new List<PackageImage>();
-            var mainImageThumbnailUrl = productDetail.GetDictionary("mainImage")?.GetString("url");
+            var mainImageDictionary = productDetail.GetDictionary("mainImage");
+            var mainImageThumbnailUrl = mainImageDictionary?.GetString("url");
+
             if (!string.IsNullOrEmpty(mainImageThumbnailUrl))
             {
                 mainImageThumbnailUrl = mainImageThumbnailUrl.Replace("//d2ujflorbtfzji.cloudfront.net/", "//assetstorev1-prd-cdn.unity3d.com/");
+
+                var imageUrl = "http:" +  mainImageDictionary.GetString("big");
+
                 result.Add(new PackageImage
                 {
                     type = PackageImage.ImageType.Main,
                     thumbnailUrl = "http:" + mainImageThumbnailUrl,
-                    url = string.Empty
+                    url = imageUrl
                 });
+                ++imagesLoaded;
             }
 
             var images = productDetail.GetList<IDictionary<string, object>>("images") ?? Enumerable.Empty<IDictionary<string, object>>();
+
             foreach (var image in images)
             {
+                if (imagesLoaded >= imageLimit)
+                    break;
+
                 var type = image?.GetString("type");
                 if (string.IsNullOrEmpty(type))
                     continue;
@@ -147,6 +167,8 @@ namespace UnityEditor.PackageManager.UI
                     imageType = PackageImage.ImageType.Sketchfab;
                 else if (type == "youtube")
                     imageType = PackageImage.ImageType.Youtube;
+                else if (type == "vimeo")
+                    imageType = PackageImage.ImageType.Vimeo;
 
                 var imageUrl = image.GetString("imageUrl");
                 if (imageType == PackageImage.ImageType.Screenshot)
@@ -158,6 +180,7 @@ namespace UnityEditor.PackageManager.UI
                     thumbnailUrl = "http:" + thumbnailUrl,
                     url = imageUrl
                 });
+                ++imagesLoaded;
             }
             return result;
         }
@@ -166,8 +189,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var result = new List<PackageLink>();
 
-            var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
-            result.Add(GetPackageLink("View in the Asset Store", $"/packages/p/{slug}"));
+            result.Add(GetAssetStoreLinkFromProductDetails(productDetail));
 
             var publisher = productDetail.GetDictionary("productPublisher");
             if (publisher != null)
@@ -181,6 +203,14 @@ namespace UnityEditor.PackageManager.UI
                     result.Add(GetPackageLink("Publisher Support", supportUrl));
             }
             return result;
+        }
+
+        private static PackageLink GetAssetStoreLinkFromProductDetails(IDictionary<string, object> productDetail)
+        {
+            var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
+            var packagePath = $"/packages/p/{slug}";
+
+            return GetPackageLink("View in the Asset Store", packagePath);
         }
 
         private static List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)

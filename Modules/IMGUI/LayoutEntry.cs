@@ -12,7 +12,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     // Basic layout element
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+
     internal class GUILayoutEntry
     {
         // The min and max sizes. Used during calculations...

@@ -56,6 +56,7 @@ namespace UnityEditor.UIElements.Debugger
         const string k_DefaultLightStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerLight.uss";
         public const string k_WindowPath = "Window/Analysis/UIElements Debugger";
         public static readonly string WindowName = L10n.Tr("UIElements Debugger");
+        public static readonly string OpenWindowCommand = nameof(OpenUIElementsDebugger);
 
         private ToolbarToggle m_PickToggle;
         private ToolbarToggle m_ShowLayoutToggle;
@@ -78,23 +79,34 @@ namespace UnityEditor.UIElements.Debugger
         private bool m_ShowRepaintOverlay = false;
 
         [MenuItem(k_WindowPath, false, 101, false)]
-        private static void Open()
+        private static void OpenUIElementsDebugger()
         {
-            var window = CreateDebuggerWindow();
-            window.Show();
+            if (CommandService.Exists(OpenWindowCommand))
+                CommandService.Execute(OpenWindowCommand, CommandHint.Menu);
+            else
+            {
+                OpenAndInspectWindow(null);
+            }
         }
 
         [Shortcut(k_WindowPath, KeyCode.F5, ShortcutModifiers.Action)]
         private static void DebugWindowShortcut()
         {
-            OpenAndInspectWindow(EditorWindow.focusedWindow);
+            if (CommandService.Exists(OpenWindowCommand))
+                CommandService.Execute(OpenWindowCommand, CommandHint.Shortcut, EditorWindow.focusedWindow);
+            else
+            {
+                OpenAndInspectWindow(EditorWindow.focusedWindow);
+            }
         }
 
         public static void OpenAndInspectWindow(EditorWindow window)
         {
             var debuggerWindow = CreateDebuggerWindow();
             debuggerWindow.Show();
-            debuggerWindow.ScheduleWindowToDebug(window);
+
+            if (window != null)
+                debuggerWindow.ScheduleWindowToDebug(window);
         }
 
         private static UIElementsDebugger CreateDebuggerWindow()

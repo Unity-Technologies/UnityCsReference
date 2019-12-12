@@ -6,7 +6,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct EventInterests
     {
         public bool wantsMouseMove { get; set; }

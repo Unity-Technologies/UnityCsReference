@@ -74,9 +74,9 @@ namespace UnityEditor
             public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
             public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode");
 
-            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources in order: Environment variable, command line argument (-adb1 or -adb2), local per project editor settings (the dropdown above)";
+            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources in order: Environment variable, command line argument (-adb2), local per project editor settings (the dropdown above)";
             public static readonly GUIContent activeAssetPipelineVersionLabel = EditorGUIUtility.TrTextContent("Active version", activeAssetPipelineVersionTooltip);
-            public static readonly GUIContent activeAssetPipelineVersion = new GUIContent(AssetDatabase.IsV1Enabled() ? "1" : "2", activeAssetPipelineVersionTooltip);
+            public static readonly GUIContent activeAssetPipelineVersion = new GUIContent("2", activeAssetPipelineVersionTooltip);
 
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
@@ -676,7 +676,7 @@ namespace UnityEditor
                 if (CacheServerPreferences.GetEnvironmentAssetPipelineOverride())
                     s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via the UNITY_ASSETS_V2_KATANA_TESTS environment variable. The above setting is not in effect before restarting without the environment variable set.";
                 else if (CacheServerPreferences.GetCommandLineAssetPipelineOverride() != 0)
-                    s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via command line argument using the -adb1 or -adb2 command line argument. The above setting is not in effect before restarting without the command line argument.";
+                    s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via command line argument using -adb2 command line argument. The above setting is not in effect before restarting without the command line argument.";
                 else if (CacheServerPreferences.GetMagicFileAssetPipelineOverride())
                     s_ForcedAssetPipelineWarning = "Asset pipeline mode was forced via via magic adb2.txt file in project root. The above setting is not in effect before restarting without the magic file.";
                 else
@@ -692,24 +692,7 @@ namespace UnityEditor
 
             var assetPipelineWarning = GetForcedAssetPipelineWarning();
 
-            int index = Mathf.Clamp((int)EditorSettings.assetPipelineMode, 0, assetPipelineModePopupList.Length - 1);
-            CreatePopupMenu(Content.mode.text, assetPipelineModePopupList, index, SetAssetPipelineMode);
-
             EditorGUILayout.LabelField(Content.activeAssetPipelineVersionLabel, Content.activeAssetPipelineVersion);
-
-            bool isAssetPipelineVersion1 = EditorSettings.assetPipelineMode == AssetPipelineMode.Version1;
-
-            if (!string.IsNullOrEmpty(assetPipelineWarning))
-                EditorGUILayout.HelpBox(assetPipelineWarning, MessageType.Info, true);
-            else if (isAssetPipelineVersion1 != AssetDatabase.IsV1Enabled())
-            {
-                var message = "Changes in Asset Pipeline Version will take effect after saving and restarting the project.";
-
-                if (isAssetPipelineVersion1)
-                    message += "\nPlease note that Asset Pipeline Version 1 is now deprecated.";
-
-                EditorGUILayout.HelpBox(message, MessageType.Info, true);
-            }
         }
 
         private void DoCacheServerSettings()
@@ -1088,10 +1071,8 @@ namespace UnityEditor
             EditorSettings.spritePackerPaddingPower = popupIndex + 1;
         }
 
-        private void SetAssetPipelineMode(object data)
-        {
-            EditorSettings.assetPipelineMode = (AssetPipelineMode)data;
-        }
+        [Obsolete("SetAssetPipelineMode is deprecated, as Asset Pipeline V2 is the only mode available.")]
+        private void SetAssetPipelineMode(object data) {}
 
         private void SetCacheServerMode(object data)
         {

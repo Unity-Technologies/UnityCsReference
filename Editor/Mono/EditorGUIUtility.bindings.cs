@@ -156,7 +156,7 @@ namespace UnityEditor
         private static extern Texture2D FindTextureByName(string name);
         private static extern Texture2D FindTextureByType([NotNull] Type type);
         private static extern string GetObjectNameWithInfo(Object obj);
-        private static extern string GetTypeNameWithInfo(string typeName);
+        private static extern string GetTypeNameWithInfo(string typeName, int instanceID);
         private static extern void Internal_SetupEventValues(object evt);
         private static extern Vector2 Internal_GetIconSize();
         private static extern bool Internal_GetKeyboardRect(int id, out Rect rect);

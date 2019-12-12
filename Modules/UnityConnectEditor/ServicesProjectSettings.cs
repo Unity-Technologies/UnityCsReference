@@ -30,6 +30,8 @@ namespace UnityEditor.Connect
         {
             public string serviceName;
             public string url;
+            public string organizationId;
+            public string projectId;
         }
         internal struct ImportPackageInfo
         {
@@ -125,6 +127,11 @@ namespace UnityEditor.Connect
             m_CachedOnlineState = UnityConnect.instance.online;
         }
 
+        string GetServiceInstanceName()
+        {
+            return (serviceInstance != null) ? serviceInstance.name : "General";
+        }
+
         protected ServicesProjectSettings(string path, SettingsScope scopes, string label, IEnumerable<string> keywords = null)
             : base(path, scopes, keywords)
         {
@@ -182,7 +189,7 @@ namespace UnityEditor.Connect
                 if (settingsWindow.GetCurrentProvider() != this)
                 {
                     EditorAnalytics.SendEventShowService(new ServicesProjectSettings.ShowServiceState() {
-                        service = (serviceInstance != null) ? serviceInstance.name : "General",
+                        service = GetServiceInstanceName(),
                         page = "",
                         referrer = "show_service_method"
                     });
@@ -354,6 +361,45 @@ namespace UnityEditor.Connect
         protected void HandlePermissionRestrictedControls()
         {
             RefreshCurrentUserRole();
+        }
+
+        protected void OpenDashboardForOrganizationForeignKey(string dashboardUrl)
+        {
+            string orgForeignKey = UnityConnect.instance.GetOrganizationForeignKey();
+
+            EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService()
+            {
+                serviceName = GetServiceInstanceName(),
+                url = dashboardUrl,
+                organizationId = orgForeignKey
+            });
+            Application.OpenURL(String.Format(dashboardUrl, orgForeignKey));
+        }
+
+        protected void OpenDashboardForProjectGuid(string dashboardUrl)
+        {
+            string projectGuid = UnityConnect.instance.projectInfo.projectGUID;
+            EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService()
+            {
+                serviceName = GetServiceInstanceName(),
+                url = dashboardUrl,
+                projectId = projectGuid
+            });
+            Application.OpenURL(String.Format(dashboardUrl, projectGuid));
+        }
+
+        protected void OpenDashboardOrgAndProjectIds(string dashboardUrl)
+        {
+            string orgSubUrl = UnityConnect.instance.projectInfo.organizationId;
+            string projectSubUrl = UnityConnect.instance.projectInfo.projectId;
+            EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService()
+            {
+                serviceName = GetServiceInstanceName(),
+                url = dashboardUrl,
+                organizationId = orgSubUrl,
+                projectId = projectSubUrl
+            });
+            Application.OpenURL(String.Format(dashboardUrl, orgSubUrl, projectSubUrl));
         }
 
         void RefreshCurrentUserRole()

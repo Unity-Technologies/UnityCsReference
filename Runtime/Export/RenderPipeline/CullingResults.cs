@@ -80,6 +80,12 @@ namespace UnityEngine.Rendering
             FillLightAndReflectionProbeIndices(ptr, computeBuffer);
         }
 
+        public void FillLightAndReflectionProbeIndices(GraphicsBuffer buffer)
+        {
+            Validate();
+            FillLightAndReflectionProbeIndicesGraphicsBuffer(ptr, buffer);
+        }
+
         public unsafe NativeArray<int> GetLightIndexMap(Allocator allocator)
         {
             Validate();
