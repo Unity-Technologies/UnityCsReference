@@ -88,6 +88,7 @@ namespace UnityEditor
 
         int m_NumSelection = 0;
 
+        [NonSerialized]
         SkinnedMeshRenderer m_SkinnedMeshRenderer;
         const HideFlags kMeshColliderHideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector | HideFlags.DontSaveInEditor | HideFlags.NotEditable;
         const HideFlags kRequiredHideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
