@@ -19,10 +19,20 @@ namespace UnityEditor
             if (editor.targets.Length == 1)
             {
                 var joint = editor.target as Joint;
-                if (joint.connectedBody != null &&
-                    joint.gameObject.scene.GetPhysicsScene() != joint.connectedBody.gameObject.scene.GetPhysicsScene())
+
+                if (joint.connectedBody != null)
                 {
-                    EditorGUILayout.HelpBox("This joint will not function because it is connected to a Rigidbody in a different physics scene. This is not supported.", MessageType.Warning);
+                    var bodyScene = joint.gameObject.scene;
+                    var connectedBodyScene = joint.connectedBody.gameObject.scene;
+
+                    // scenes can be invalid when the joint belongs to a prefab
+                    if (bodyScene.IsValid() && connectedBodyScene.IsValid())
+                    {
+                        if (bodyScene.GetPhysicsScene() != connectedBodyScene.GetPhysicsScene())
+                        {
+                            EditorGUILayout.HelpBox("This joint will not function because it is connected to a Rigidbody in a different physics scene. This is not supported.", MessageType.Warning);
+                        }
+                    }
                 }
             }
         }

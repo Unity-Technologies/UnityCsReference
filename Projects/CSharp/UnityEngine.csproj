@@ -1111,6 +1111,9 @@
     <Compile Include="..\..\Runtime\Jobs\Managed\IJob.cs">
       <Link>Runtime\Jobs\Managed\IJob.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Jobs\Managed\IJobFor.cs">
+      <Link>Runtime\Jobs\Managed\IJobFor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Jobs\Managed\IJobParallelFor.cs">
       <Link>Runtime\Jobs\Managed\IJobParallelFor.cs</Link>
     </Compile>

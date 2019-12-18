@@ -37,6 +37,9 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        [NonSerialized]
+        public string dataAvailabilityMessage = null;
+
         static readonly GUIContent[] kCPUProfilerViewTypeNames = new GUIContent[]
         {
             EditorGUIUtility.TrTextContent("Timeline"),

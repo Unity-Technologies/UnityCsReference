@@ -6,6 +6,7 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngineInternal.Video;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Object = UnityEngine.Object;
@@ -103,12 +104,13 @@ namespace UnityEditor.Media
 
     public struct VideoTrackAttributes
     {
-        public MediaRational frameRate;
-        public uint          width;
-        public uint          height;
-        public bool          includeAlpha; // For webm only; not applicable to mp4.
-        public VideoBitrateMode bitRateMode;
-        internal VideoCodec codec;
+        public MediaRational      frameRate;
+        public uint               width;
+        public uint               height;
+        public bool               includeAlpha; // For webm only; not applicable to mp4.
+        public VideoBitrateMode   bitRateMode;
+        internal VideoCodec       codec;
+        internal VideoAlphaLayout alphaLayout;
     }
 
     public struct AudioTrackAttributes

@@ -520,19 +520,6 @@ namespace UnityEditor
                 alignment = TextAnchor.MiddleCenter,
                 normal = {textColor = Color.grey}
             };
-
-            Font.findClosestMatchingFontCallback = (ref Font font, ref FontStyle fontStyle) =>
-            {
-                // Only works with Inter font
-                if (fontStyle == FontStyle.Normal)
-                    return;
-
-                if (EditorResources.currentFontName == FontDef.k_Inter && EditorResources.GetFont(FontDef.Style.Normal) == font)
-                {
-                    font = EditorResources.GetFont((FontDef.Style)fontStyle);
-                    fontStyle = FontStyle.Normal;
-                }
-            };
         }
 
         internal GUIStyle GetStyle(string styleName)

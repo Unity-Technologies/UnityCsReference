@@ -159,29 +159,32 @@ namespace UnityEditor.Experimental
 
         internal static IEnumerable<string> supportedFontNames => EditorResources.supportedFonts.Keys;
 
+        private static string s_CurrentFontName = null;
+
         internal static string currentFontName
         {
             get
             {
-                string currentFont = null;
-
-                if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
+                if (s_CurrentFontName == null)
                 {
-                    currentFont = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
-
-                    // If the current is not available then fallback to the default font
-                    if (!supportedFontNames.Contains(currentFont))
+                    if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
                     {
-                        currentFont = GetDefaultFont();
-                        EditorPrefs.DeleteKey(k_PrefsUserFontKey);
+                        s_CurrentFontName = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
+
+                        // If the current is not available then fallback to the default font
+                        if (!supportedFontNames.Contains(s_CurrentFontName))
+                        {
+                            s_CurrentFontName = GetDefaultFont();
+                            EditorPrefs.DeleteKey(k_PrefsUserFontKey);
+                        }
+                    }
+                    else
+                    {
+                        s_CurrentFontName = GetDefaultFont();
                     }
                 }
-                else
-                {
-                    currentFont = GetDefaultFont();
-                }
 
-                return currentFont;
+                return s_CurrentFontName;
             }
         }
 

@@ -1200,6 +1200,11 @@ namespace UnityEditorInternal
 
             using (m_DoGUIMarker.Auto())
             {
+                if (!string.IsNullOrEmpty(dataAvailabilityMessage))
+                {
+                    GUILayout.Label(dataAvailabilityMessage, BaseStyles.label);
+                    return;
+                }
                 if (threadCount == 0)
                 {
                     GUILayout.Label(BaseStyles.noData, BaseStyles.label);

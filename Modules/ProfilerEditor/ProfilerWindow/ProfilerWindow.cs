@@ -294,6 +294,11 @@ namespace UnityEditor
                     chart.SetOnSeriesToggleCallback(OnToggleCPUChartSeries);
                 }
 
+                if (chart.m_Area == ProfilerArea.GPU)
+                {
+                    chart.statisticsAvailabilityMessage = GPUProfilerModule.GetStatisticsAvailabilityStateReason;
+                }
+
                 for (int s = 0; s < length; s++)
                 {
                     chart.m_Series[s] = new ChartSeriesViewData(statisticsNames[s], historySize, chartAreaColors[s % chartAreaColors.Length]);
@@ -712,22 +717,6 @@ namespace UnityEditor
             // CPU, GPU & UI chart scale value
             for (int i = 0; i < ms_StackedAreas.Length; i++)
                 ComputeChartScaleValue(ms_StackedAreas[i], historyLength, firstEmptyFrame, firstFrame);
-
-            // Is GPU Profiling supported warning
-            string warning = null;
-            if (!ProfilerDriver.isGPUProfilerSupported)
-            {
-                warning = "GPU profiling is not supported by the graphics card driver. Please update to a newer version if available.";
-
-                if (Application.platform == RuntimePlatform.OSXEditor)
-                {
-                    if (!ProfilerDriver.isGPUProfilerSupportedByOS)
-                        warning = "GPU profiling requires Mac OS X 10.7 (Lion) and a capable video card. GPU profiling is currently not supported on mobile.";
-                    else
-                        warning = "GPU profiling is not supported by the graphics card driver (or it was disabled because of driver bugs).";
-                }
-            }
-            m_Charts[(int)ProfilerArea.GPU].m_NotSupportedWarning = warning;
         }
 
         private void ComputeChartScaleValue(ProfilerArea i, int historyLength, int firstEmptyFrame, int firstFrame)
@@ -765,7 +754,7 @@ namespace UnityEditor
             UpdateChartGrid(timeMax, chart.m_Data);
         }
 
-        internal static void UpdateSingleChart(ProfilerChart chart, int firstEmptyFrame, int firstFrame)
+        internal void UpdateSingleChart(ProfilerChart chart, int firstEmptyFrame, int firstFrame)
         {
             float totalMaxValue = 1;
             var maxValues = new float[chart.m_Series.Length];
@@ -802,7 +791,8 @@ namespace UnityEditor
                 chart.m_Data.maxValue = totalMaxValue;
             }
             chart.m_Data.Assign(chart.m_Series, firstEmptyFrame, firstFrame);
-            ProfilerDriver.GetStatisticsAvailable(chart.m_Area, firstEmptyFrame, chart.m_Data.dataAvailable);
+
+            ProfilerDriver.GetStatisticsAvailabilityStates(chart.m_Area, firstEmptyFrame, chart.m_Data.dataAvailable);
 
             if (chart is UISystemProfilerChart)
                 ((UISystemProfilerChart)chart).Update(firstFrame, ProfilerUserSettings.frameCount);

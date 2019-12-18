@@ -857,6 +857,8 @@ namespace UnityEditor.PackageManager.UI
         {
             PackageDatabase.instance.Import(package);
             RefreshImportAndDownloadButtons();
+
+            PackageManagerWindowAnalytics.SendEvent("import", package.uniqueId);
         }
 
         private void DownloadOrCancelClick()
@@ -875,6 +877,9 @@ namespace UnityEditor.PackageManager.UI
                 PackageDatabase.instance.Download(package);
 
             RefreshImportAndDownloadButtons();
+
+            var eventName = downloadInProgress ? "abortDownload" : "startDownload";
+            PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
         }
 
         private VisualElementCache cache { get; set; }

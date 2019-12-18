@@ -256,8 +256,8 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         internal static void OpenPackageManager(string packageNameOrDisplayName)
         {
-            var windows = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
-            var isWindowAlreadyVisible = windows != null;
+            var window = UnityEngine.Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault();
+            var isWindowAlreadyVisible = window != null;
             if (!isWindowAlreadyVisible)
             {
                 string packageId = null;
