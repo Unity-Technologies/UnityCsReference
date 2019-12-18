@@ -131,6 +131,8 @@ namespace UnityEngine.XR.WSA
 
         private void Connect()
         {
+            HolographicAutomation.SetEmulationMode(m_Mode);
+            PerceptionRemoting.SetRemoteDeviceVersion(m_DeviceVersion);
             PerceptionRemoting.SetVideoEncodingParameters(m_MaxBitrateKbps);
             PerceptionRemoting.SetEnableVideo(m_EnableVideo);
             PerceptionRemoting.SetEnableAudio(m_EnableAudio);
@@ -206,7 +208,6 @@ namespace UnityEngine.XR.WSA
         private void RemotingPreferencesOnGUI()
         {
             m_DeviceVersion = (RemoteDeviceVersion)EditorGUILayout.Popup(s_DeviceVersionText, (int)m_DeviceVersion, s_DeviceVersionStrings);
-            PerceptionRemoting.SetRemoteDeviceVersion(m_DeviceVersion);
 
             EditorGUI.BeginChangeCheck();
             m_RemoteMachineAddress = EditorGUILayout.DelayedTextFieldDropDown(s_RemoteMachineText, m_RemoteMachineAddress, m_RemoteMachineHistory);
@@ -303,7 +304,6 @@ namespace UnityEngine.XR.WSA
             {
                 if (previousMode == EmulationMode.RemoteDevice)
                     Disconnect();
-                HolographicAutomation.SetEmulationMode(m_Mode);
             }
         }
 
