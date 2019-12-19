@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI
             private void SetupAddOperation()
             {
                 m_AddOperation.onProcessResult += OnProcessAddResult;
-                m_AddOperation.onOperationError += (op, error) => Debug.LogError($"Error adding package: {m_AddOperation.packageId}.");
+                m_AddOperation.onOperationError += (op, error) => Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Error adding package: {0}."), m_AddOperation.packageId));
                 onAddOperation(m_AddOperation);
             }
 
@@ -155,7 +155,7 @@ namespace UnityEditor.PackageManager.UI
                 var operation = offlineMode ? m_ListOfflineOperation : m_ListOperation;
                 if (operation.isInProgress)
                     operation.Cancel();
-                var errorMessage = offlineMode ? "Error fetching package list." : "Error fetching package list offline.";
+                var errorMessage = offlineMode ? ApplicationUtil.instance.GetTranslationForText("Error fetching package list.") : ApplicationUtil.instance.GetTranslationForText("Error fetching package list offline.");
                 if (offlineMode)
                     operation.ListOffline(m_ListOperation.lastSuccessTimestamp);
                 else
@@ -180,7 +180,7 @@ namespace UnityEditor.PackageManager.UI
                     return;
                 m_EmbedOperation.Embed(packageName, UpmCache.instance.GetProductId(packageName));
                 m_EmbedOperation.onProcessResult += OnProcessAddResult;
-                m_EmbedOperation.onOperationError += (op, error) => Debug.LogError($"Error embedding package: {m_EmbedOperation.packageName}.");
+                m_EmbedOperation.onOperationError += (op, error) => Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Error embedding package: {0}."), m_EmbedOperation.packageName));
                 onEmbedOperation(m_EmbedOperation);
             }
 
@@ -208,7 +208,7 @@ namespace UnityEditor.PackageManager.UI
             private void SetupRemoveOperation()
             {
                 m_RemoveOperation.onProcessResult += OnProcessRemoveResult;
-                m_RemoveOperation.onOperationError += (op, error) => Debug.LogError($"Error removing package: {m_RemoveOperation.packageName}.");
+                m_RemoveOperation.onOperationError += (op, error) => Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Error removing package: {0}."), m_RemoveOperation.packageName));
                 onRemoveOperation(m_RemoveOperation);
             }
 
@@ -234,7 +234,7 @@ namespace UnityEditor.PackageManager.UI
                 var operation = offlineMode ? m_SearchOfflineOperation : m_SearchOperation;
                 if (operation.isInProgress)
                     operation.Cancel();
-                var errorMessage = offlineMode ? "Error searching for packages." : "Error searching for packages offline.";
+                var errorMessage = offlineMode ? ApplicationUtil.instance.GetTranslationForText("Error searching for packages.") : ApplicationUtil.instance.GetTranslationForText("Error searching for packages offline.");
                 if (offlineMode)
                     operation.SearchAllOffline(m_SearchOperation.lastSuccessTimestamp);
                 else

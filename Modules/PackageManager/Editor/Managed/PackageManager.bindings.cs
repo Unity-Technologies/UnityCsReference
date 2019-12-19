@@ -36,6 +36,8 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode GetOperationStatus(long operationId);
 
+        public static extern NativeStatusCode GetRegistries([Out] out long operationId);
+
         [ThreadAndSerializationSafe]
         public static extern void ReleaseCompletedOperation(long operationId);
 
@@ -52,6 +54,8 @@ namespace UnityEditor.PackageManager
         public static extern PackOperationResult GetPackOperationData(long operationId);
 
         public static extern SearchResults GetSearchOperationData(long operationId);
+
+        public static extern RegistryInfo[] GetGetRegistriesOperationData(long operationId);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]

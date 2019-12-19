@@ -114,6 +114,12 @@ namespace UnityEditor
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max Sprite Atlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart");
         }
 
+        internal class SceneViewProperties
+        {
+            public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
+            public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
+        }
+
         internal class LanguageProperties
         {
             public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language (Experimental)");
@@ -266,6 +272,14 @@ namespace UnityEditor
         {
             var settings = new PreferencesProvider("Preferences/2D", GetSearchKeywordsFromGUIContentProperties<TwoDProperties>());
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.Show2D); };
+            return settings;
+        }
+
+        [UsedImplicitly, SettingsProvider]
+        internal static SettingsProvider CreateSceneViewProvider()
+        {
+            var settings = new PreferencesProvider("Preferences/Scene View", GetSearchKeywordsFromGUIContentProperties<SceneViewProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowSceneView); };
             return settings;
         }
 
@@ -678,6 +692,16 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             m_SpriteAtlasCacheSize = EditorGUILayout.IntSlider(TwoDProperties.spriteMaxCacheSize, m_SpriteAtlasCacheSize, kMinSpriteCacheSizeInGigabytes, kMaxSpriteCacheSizeInGigabytes);
+            if (EditorGUI.EndChangeCheck())
+                WritePreferences();
+        }
+
+        private void ShowSceneView(string searchContext)
+        {
+            EditorGUI.BeginChangeCheck();
+
+            SceneView.s_PreferenceEnableFilteringWhileSearching.value = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileSearching, SceneView.s_PreferenceEnableFilteringWhileSearching);
+            SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing.value  = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileLodGroupEditing, SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing);
             if (EditorGUI.EndChangeCheck())
                 WritePreferences();
         }

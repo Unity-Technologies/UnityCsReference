@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI
         public override string category => m_PackageInfo.category;
 
         UIError entitlementsError => !entitlements.isAllowed && isInstalled ?
-        new UIError(UIErrorCode.UpmError, L10n.Tr("You do not have entitlements for this package.")) : null;
+        new UIError(UIErrorCode.UpmError, ApplicationUtil.instance.GetTranslationForText("You do not have entitlements for this package.")) : null;
         public override IEnumerable<UIError> errors =>
             m_PackageInfo.errors.Select(e => (UIError)e).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
@@ -111,6 +111,8 @@ namespace UnityEditor.PackageManager.UI
         public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_PackageInfo.resolvedPath);
 
         public string shortVersionId => FormatPackageId(name, version?.ShortVersion());
+
+        public string documentationUrl => packageInfo?.documentationUrl;
 
         public override string localPath => packageInfo?.resolvedPath;
 

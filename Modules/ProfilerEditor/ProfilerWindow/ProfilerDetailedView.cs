@@ -43,10 +43,6 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         protected int m_SelectedID = -1;
 
-        protected ProfilerDetailedView()
-        {
-        }
-
         protected void DrawEmptyPane(GUIStyle headerStyle)
         {
             GUILayout.Box(Styles.emptyText, headerStyle);

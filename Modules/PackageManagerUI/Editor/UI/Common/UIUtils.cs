@@ -98,5 +98,48 @@ namespace UnityEditor.PackageManager.UI
             }
             return $"{len:0.##} {s_SizeUnits[order]}";
         }
+
+        public static void ShowTextTooltipOnSizeChange<T>(this T element, int deltaWidth = 0) where T : TextElement
+        {
+            InternalShowTextTooltipOnSizeChange(element, deltaWidth);
+        }
+
+        private static void InternalShowTextTooltipOnSizeChange(TextElement element, int deltaWidth)
+        {
+            element.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                if (evt.newRect.width == evt.oldRect.width)
+                    return;
+
+                var target = evt.target as TextElement;
+                if (target == null)
+                    return;
+
+                var size = target.MeasureTextSize(target.text, float.MaxValue, VisualElement.MeasureMode.AtMost, evt.newRect.height, VisualElement.MeasureMode.Undefined);
+                var width = evt.newRect.width + deltaWidth;
+                target.tooltip = width < size.x ? target.text : string.Empty;
+            });
+
+            element.RegisterValueChangedCallback(evt =>
+            {
+                if (evt.newValue == evt.previousValue)
+                    return;
+
+                var target = evt.target as TextElement;
+                if (target == null)
+                    return;
+
+                var size = target.MeasureTextSize(evt.newValue, float.MaxValue, VisualElement.MeasureMode.AtMost, target.contentRect.height, VisualElement.MeasureMode.Undefined);
+                var width = target.contentRect.width + deltaWidth;
+                target.tooltip = width < size.x ? target.text : string.Empty;
+            });
+        }
+
+        private static void ActionShowTextTooltipOnSizeChange(TextElement element)
+        {
+            InternalShowTextTooltipOnSizeChange(element, 0);
+        }
+
+        public static Action<Label> TextTooltipOnSizeChange = ActionShowTextTooltipOnSizeChange;
     }
 }

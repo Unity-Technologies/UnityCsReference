@@ -823,7 +823,7 @@ namespace UnityEditorInternal.VersionControl
                 if (item.Asset != null)
                 {
                     bool drawOverlay = true;
-                    string vcsType = EditorSettings.externalVersionControl;
+                    string vcsType = VersionControlSettings.mode;
                     if (vcsType == ExternalVersionControl.Disabled ||
                         vcsType == ExternalVersionControl.AutoDetect ||
                         vcsType == ExternalVersionControl.Generic)

@@ -15,6 +15,10 @@ namespace UnityEditor
         private const float kSpace = 5f;
         Vector2 m_ScrollPosition = Vector2.zero;
 
+        private bool m_PreprocessOnly = false;
+        private bool m_PreprocessOnlyAvailable = true;
+        private bool m_PreprocessOnlyAvailableInitialized = false;
+
         // Compute kernel information is stored split by platform, then by kernels;
         // but for the inspector we want to show kernels, then platforms they are in.
         class KernelInfo
@@ -25,6 +29,7 @@ namespace UnityEditor
 
         internal class Styles
         {
+            public static GUIContent togglePreprocess = EditorGUIUtility.TrTextContent("Preprocess only", "Show preprocessor output instead of compiled shader code");
             public static GUIContent showCompiled = EditorGUIUtility.TrTextContent("Show compiled code");
             public static GUIContent kernelsHeading = EditorGUIUtility.TrTextContent("Kernels:");
         }
@@ -87,12 +92,34 @@ namespace UnityEditor
             }
         }
 
+        private void UpdatePreprocessOnlyAvailability()
+        {
+            m_PreprocessOnlyAvailableInitialized = true;
+
+            m_PreprocessOnlyAvailable = false;
+
+            string[] args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "-force-new-shader-pp")
+                {
+                    m_PreprocessOnlyAvailable = true;
+                    break;
+                }
+            }
+        }
+
         private void ShowCompiledCodeSection(ComputeShader cs)
         {
+            if (!m_PreprocessOnlyAvailableInitialized)
+                UpdatePreprocessOnlyAvailability();
+
+            using (new EditorGUI.DisabledScope(!m_PreprocessOnlyAvailable))
+                m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
             GUILayout.Space(kSpace);
             if (GUILayout.Button(Styles.showCompiled, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
             {
-                ShaderUtil.OpenCompiledComputeShader(cs, true);
+                ShaderUtil.OpenCompiledComputeShader(cs, true, m_PreprocessOnly);
                 GUIUtility.ExitGUI();
             }
         }

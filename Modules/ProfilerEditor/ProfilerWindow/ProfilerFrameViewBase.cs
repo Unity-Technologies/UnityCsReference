@@ -64,13 +64,17 @@ namespace UnityEditorInternal.Profiling
             (int)ProfilerViewType.RawHierarchy
         };
 
-        public bool gpuView { get; set; }
+        public bool gpuView { get; private set; }
+
+        public CPUorGPUProfilerModule cpuModule { get; private set; }
 
         public delegate void ViewTypeChangedCallback(ProfilerViewType viewType);
         public event ViewTypeChangedCallback viewTypeChanged;
 
-        protected ProfilerFrameDataViewBase()
+        public virtual void OnEnable(CPUorGPUProfilerModule cpuOrGpuModule, bool isGpuView)
         {
+            cpuModule = cpuOrGpuModule;
+            gpuView = isGpuView;
         }
 
         protected void DrawViewTypePopup(ProfilerViewType viewType)
@@ -149,11 +153,6 @@ namespace UnityEditorInternal.Profiling
 
         public virtual void Clear()
         {
-        }
-
-        public virtual HierarchyFrameDataView.ViewModes GetFilteringMode()
-        {
-            return HierarchyFrameDataView.ViewModes.Default;
         }
     }
 }

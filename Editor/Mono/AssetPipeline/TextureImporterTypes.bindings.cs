@@ -64,6 +64,7 @@ namespace UnityEditor
         [SerializeField]
         int  m_StreamingMipmapsPriority;
 
+
         [SerializeField]
         int    m_NPOTScale;
         [SerializeField]
@@ -276,6 +277,7 @@ namespace UnityEditor
             get {return m_StreamingMipmapsPriority; }
             set { m_StreamingMipmapsPriority = value; }
         }
+
 
         public TextureImporterNPOTScale npotScale
         {

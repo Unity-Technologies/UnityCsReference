@@ -130,7 +130,7 @@ namespace UnityEditor
 
             // Mono compiler generates internal types with names such as  "<byteArray>__FixedBuffer0" and "<OnFinishSubmit>c__Iterator0"
             // so we only replace angle brackets with square brackets if the type is a generic instance or has generic parameters.
-            if (type.HasGenericParameters || type.IsGenericInstance)
+            if (type.HasGenericParameters || type.IsGenericInstance || (type.IsArray && (type.GetElementType().IsGenericInstance || type.GetElementType().HasGenericParameters)))
                 typeName = typeName.Replace('<', '[').Replace('>', ']');
 
             return typeName.Replace('/', '+');

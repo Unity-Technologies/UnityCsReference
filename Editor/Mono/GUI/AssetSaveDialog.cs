@@ -18,6 +18,7 @@ namespace UnityEditor
             public GUIStyle selected = "OL SelectedRow";
             public GUIStyle box = "OL Box";
             public GUIStyle button = "LargeButton";
+            public GUIStyle labelHeight = "Label";
             public GUIContent saveSelected = EditorGUIUtility.TrTextContent("Save Selected");
             public GUIContent saveAll = EditorGUIUtility.TrTextContent("Save All");
             public GUIContent dontSave = EditorGUIUtility.TrTextContent("Don't Save");
@@ -25,6 +26,8 @@ namespace UnityEditor
             public float buttonWidth;
             public Styles()
             {
+                labelHeight = new GUIStyle(GUI.skin.label);
+                labelHeight.fixedHeight = 64;
                 buttonWidth = Mathf.Max(Mathf.Max(button.CalcSize(saveSelected).x, button.CalcSize(saveAll).x), button.CalcSize(dontSave).x);
             }
         }
@@ -135,7 +138,7 @@ namespace UnityEditor
                     s_Styles.selected.Draw(box, false, false, false, false);
                 }
 
-                GUILayout.Label(m_Content[el.row]);
+                GUILayout.Label(m_Content[el.row], s_Styles.labelHeight);
 
                 if (ListViewGUILayout.HasMouseUp(el.position))
                 {

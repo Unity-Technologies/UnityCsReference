@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI
     {
         public static readonly string k_ResetPackagesMenuName = "Reset Packages to defaults";
         public static readonly string k_ResetPackagesMenuPath = "Help/" + k_ResetPackagesMenuName;
+        public static readonly string k_IsTranslatedFlag = "textIsTranslated";
 
         static IApplicationUtil s_Instance = null;
         public static IApplicationUtil instance => s_Instance ?? ApplicationUtilInternal.instance;
@@ -154,6 +155,28 @@ namespace UnityEditor.PackageManager.UI
             public void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)
             {
                 UnityOAuth.GetAuthorizationCodeAsync(clientId, callback);
+            }
+
+            public string GetTranslationForText(string text)
+            {
+                return L10n.Tr(text);
+            }
+
+            public void TranslateTextElement(TextElement textElement)
+            {
+                if (textElement.userData as string != k_IsTranslatedFlag)
+                {
+                    if (!string.IsNullOrEmpty(textElement.text))
+                    {
+                        textElement.text = GetTranslationForText(textElement.text);
+                        textElement.userData = k_IsTranslatedFlag;
+                    }
+                    if (!string.IsNullOrEmpty(textElement.tooltip))
+                    {
+                        textElement.tooltip = GetTranslationForText(textElement.tooltip);
+                        textElement.userData = k_IsTranslatedFlag;
+                    }
+                }
             }
 
             public int CalculateNumberOfElementsInsideContainerToDisplay(VisualElement container, float elementHeight)

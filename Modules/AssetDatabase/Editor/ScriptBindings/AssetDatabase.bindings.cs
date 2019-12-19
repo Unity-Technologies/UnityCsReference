@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -127,7 +128,28 @@ namespace UnityEditor
         extern public static string ExtractAsset(Object asset, string newPath);
         extern public static string RenameAsset(string pathName, string newName);
         extern public static bool MoveAssetToTrash(string path);
+
+        extern private static bool DeleteAssetsCommon(string[] paths, object outFailedPaths, bool moveAssetsToTrash);
+
+        public static bool MoveAssetsToTrash(string[] paths, List<string> outFailedPaths)
+        {
+            if (paths == null)
+                throw new ArgumentNullException(nameof(paths));
+            if (outFailedPaths == null)
+                throw new ArgumentNullException(nameof(outFailedPaths));
+            return DeleteAssetsCommon(paths, outFailedPaths, true);
+        }
+
         extern public static bool DeleteAsset(string path);
+
+        public static bool DeleteAssets(string[] paths, List<string> outFailedPaths)
+        {
+            if (paths == null)
+                throw new ArgumentNullException(nameof(paths));
+            if (outFailedPaths == null)
+                throw new ArgumentNullException(nameof(outFailedPaths));
+            return DeleteAssetsCommon(paths, outFailedPaths, false);
+        }
 
         [uei.ExcludeFromDocs] public static void ImportAsset(string path) { ImportAsset(path, ImportAssetOptions.Default); }
         extern public static void ImportAsset(string path, [uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);

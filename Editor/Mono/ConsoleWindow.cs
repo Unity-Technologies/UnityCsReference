@@ -304,6 +304,8 @@ namespace UnityEditor
             if (m_ConsoleAttachToPlayerState == null)
                 m_ConsoleAttachToPlayerState = new ConsoleAttachToPlayerState(this);
 
+            SetFilter(null);
+
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;
             m_DevBuild = Unsupported.IsDeveloperMode();
@@ -754,10 +756,7 @@ namespace UnityEditor
             var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
             if (m_SearchText != filteringText)
             {
-                m_SearchText = filteringText;
-                LogEntries.SetFilteringText(filteringText);
-                // Reset the active entry when we change the filtering text
-                SetActiveEntry(null);
+                SetFilter(filteringText);
             }
         }
 
@@ -913,6 +912,21 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Stack Trace Logging/All/" + stackTraceLogType), (StackTraceLogType)stackTraceLogTypeForAll == stackTraceLogType,
                     ToggleLogStackTracesForAll, stackTraceLogType);
             }
+        }
+
+        private void SetFilter(string filteringText)
+        {
+            if (filteringText == null)
+            {
+                m_SearchText = "";
+                LogEntries.SetFilteringText("");
+            }
+            else
+            {
+                m_SearchText = filteringText;
+                LogEntries.SetFilteringText(filteringText); // Reset the active entry when we change the filtering text
+            }
+            SetActiveEntry(null);
         }
 
         [UsedImplicitly] private static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;

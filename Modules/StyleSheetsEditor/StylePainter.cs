@@ -77,15 +77,15 @@ namespace UnityEditor.StyleSheets
         }
 
         private static readonly Dictionary<long, Texture2D> s_Gradients = new Dictionary<long, Texture2D>();
-        private static Texture2D GenerateGradient(int key, Rect rect, IList<StyleSheetResolver.Value[]> args)
+        private static Texture2D GenerateGradient(StyleFunctionCall call, Rect rect)
         {
-            if (args.Count < 2)
+            if (call.args.Count < 2)
             {
                 Debug.LogError("Not enough linear gradient arguments.");
                 return null;
             }
 
-            key += (int)rect.width * 30 + (int)rect.height * 8;
+            int key = call.blockKey ^ call.valueKey ^ ((int)rect.width * 30 + (int)rect.height * 8);
 
             if (s_Gradients.ContainsKey(key) && s_Gradients[key] != null)
                 return s_Gradients[key];
@@ -103,13 +103,13 @@ namespace UnityEditor.StyleSheets
             float angle = 0.0f;
             int valueStartIndex = 0;
 
-            if (args[0][0].IsFloat())
+            if (call.GetValueType(0, 0) == StyleValue.Type.Number)
             {
-                angle = args[0][0].AsFloat();
+                angle = call.GetNumber(0, 0);
                 valueStartIndex = 1;
             }
 
-            var valueCount = args.Count - valueStartIndex;
+            var valueCount = call.args.Count - valueStartIndex;
 
             var colorKeys = new GradientColorKey[valueCount];
             var alphaKeys = new GradientAlphaKey[valueCount];
@@ -118,16 +118,17 @@ namespace UnityEditor.StyleSheets
             float autoStep = 0;
             for (int i = 0; i < valueCount; ++i)
             {
-                var values = args[i + valueStartIndex];
-                if (values.Length == 1)
+                var valueIndex = valueStartIndex + i;
+                var values = call.args[valueIndex];
+                if (values.Length == 1 && values[0].type == StyleValue.Type.Color)
                 {
-                    colorKeys[i].color = values[0].AsColor();
+                    colorKeys[i].color = call.GetColor(valueIndex, 0);
                     colorKeys[i].time = autoStep;
                 }
-                else if (values.Length == 2)
+                else if (values.Length == 2 && values[0].type == StyleValue.Type.Color && values[1].type == StyleValue.Type.Number)
                 {
-                    colorKeys[i].color = values[0].AsColor();
-                    colorKeys[i].time = values[1].AsFloat();
+                    colorKeys[i].color = call.GetColor(valueIndex, 0);
+                    colorKeys[i].time = call.GetNumber(valueIndex, 1);
                 }
                 else
                 {
@@ -325,12 +326,12 @@ namespace UnityEditor.StyleSheets
         }
 
         // Note: Assign lambda to local variable to avoid the allocation caused by method group.
-        private static readonly Func<StyleBlock, string, List<StyleSheetResolver.Value[]>, GradientParams, bool> DrawGradient = (block, funcName, args, gp) =>
+        private static readonly Func<StyleFunctionCall, GradientParams, bool> DrawGradient = (call, gp) =>
         {
-            if (funcName != "linear-gradient")
+            if (call.name != "linear-gradient")
                 return false;
 
-            var gradientTexture = GenerateGradient(block.name, gp.rect, args);
+            var gradientTexture = GenerateGradient(call, gp.rect);
             if (gradientTexture == null)
                 return false;
             GUI.DrawTexture(gp.rect, gradientTexture, ScaleMode.ScaleAndCrop, true, 0f, gp.colorTint, Vector4.zero, gp.radius);

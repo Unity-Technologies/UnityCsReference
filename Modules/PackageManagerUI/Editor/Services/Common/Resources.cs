@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI
     {
         private const string k_TemplateRoot = "UXML/PackageManager/";
 
+        private const string k_PackageManagerFiltersStyleSheetPath = "StyleSheets/PackageManager/Filters.uss";
         private const string k_PackageManagerCommonStyleSheetPath = "StyleSheets/PackageManager/Common.uss";
         private const string k_PackageManagerDarkVariablesSheetPath = "StyleSheets/PackageManager/Dark.uss";
         private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
@@ -40,6 +41,28 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        private static StyleSheet m_DarkFilterStyleSheet;
+        private static StyleSheet darkFilterStyleSheet
+        {
+            get
+            {
+                if (m_DarkFilterStyleSheet == null)
+                    m_DarkFilterStyleSheet = LoadAndResolveFilterStyleSheet(true);
+                return m_DarkFilterStyleSheet;
+            }
+        }
+
+        private static StyleSheet m_LightFilterStyleSheet;
+        private static StyleSheet lightFilterStyleSheet
+        {
+            get
+            {
+                if (m_LightFilterStyleSheet == null)
+                    m_LightFilterStyleSheet = LoadAndResolveFilterStyleSheet(false);
+                return m_LightFilterStyleSheet;
+            }
+        }
+
         private static StyleSheet LoadAndResolveStyleSheet(bool isDarkTheme)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
@@ -63,6 +86,23 @@ namespace UnityEditor.PackageManager.UI
             return styleSheet;
         }
 
+        private static StyleSheet LoadAndResolveFilterStyleSheet(bool isDarkTheme)
+        {
+            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
+            styleSheet.hideFlags = HideFlags.HideAndDontSave;
+            styleSheet.isUnityStyleSheet = true;
+
+            var packageManagerThemeVariablesSheetPath = EditorGUIUtility.isProSkin ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
+            var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
+            var packageManagerFilterCommon = EditorGUIUtility.Load(k_PackageManagerFiltersStyleSheetPath) as StyleSheet;
+
+            var resolver = new StyleSheets.StyleSheetResolver();
+            resolver.AddStyleSheets(packageManagerFilterCommon, packageManagerTheme);
+            resolver.ResolveTo(styleSheet);
+
+            return styleSheet;
+        }
+
         private static string TemplatePath(string filename)
         {
             return k_TemplateRoot + filename;
@@ -78,9 +118,14 @@ namespace UnityEditor.PackageManager.UI
             return GetVisualTreeAsset(templateFilename)?.Instantiate();
         }
 
-        public static StyleSheet GetStyleSheet()
+        public static StyleSheet GetMainWindowStyleSheet()
         {
             return EditorGUIUtility.isProSkin ? darkStyleSheet : lightStyleSheet;
+        }
+
+        public static StyleSheet GetFiltersWindowStyleSheet()
+        {
+            return EditorGUIUtility.isProSkin ? darkFilterStyleSheet : lightFilterStyleSheet;
         }
     }
 }

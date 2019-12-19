@@ -398,7 +398,7 @@ namespace UnityEditor
             GUI.backgroundColor = Color.white;
             if (GUI.changed)
             {
-                TogglePlaying();
+                EditorApplication.TogglePlaying();
                 GUIUtility.ExitGUI();
             }
 
@@ -447,13 +447,6 @@ namespace UnityEditor
                 rect.y = temp.y;
                 EditorUtility.Internal_DisplayPopupMenu(rect, "Window/Layouts", this, 0);
             }
-        }
-
-        static void TogglePlaying()
-        {
-            bool willPlay = !EditorApplication.isPlaying;
-            EditorApplication.isPlaying = willPlay;
-            InternalEditorUtility.RepaintAllViews();
         }
 
         internal static void AddSubToolbar(SubToolbar subToolbar)

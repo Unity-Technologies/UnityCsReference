@@ -21,6 +21,8 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/ObjectIdentifier.h")]
+    [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public struct ObjectIdentifier : IEquatable<ObjectIdentifier>
     {
         [NativeName("guid")]
@@ -98,5 +100,25 @@ namespace UnityEditor.Build.Content
                 return hashCode;
             }
         }
+
+        [FreeFunction("GetObjectFromObjectIdentifier")]
+        public static extern UnityEngine.Object ToObject(ObjectIdentifier objectId);
+
+        [FreeFunction("GetInstanceIDFromObjectIdentifier")]
+        public static extern int ToInstanceID(ObjectIdentifier objectId);
+
+        public static bool TryGetObjectIdentifier(UnityEngine.Object targetObject, out ObjectIdentifier objectId)
+        {
+            return GetObjectIdentifierFromObject(targetObject, out objectId);
+        }
+
+        public static bool TryGetObjectIdentifier(int instanceID, out ObjectIdentifier objectId)
+        {
+            return GetObjectIdentifierFromInstanceID(instanceID, out objectId);
+        }
+
+        internal static extern bool GetObjectIdentifierFromObject(UnityEngine.Object targetObject, out ObjectIdentifier objectId);
+
+        internal static extern bool GetObjectIdentifierFromInstanceID(int instanceID, out ObjectIdentifier objectId);
     }
 }

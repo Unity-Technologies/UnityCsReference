@@ -50,26 +50,12 @@ namespace UnityEditor.PackageManager.UI
             itemLabel.OnLeftClick(SelectMainItem);
             seeAllVersionsLabel.OnLeftClick(SeeAllVersionsClick);
             expander.OnLeftClick(ToggleExpansion);
-            nameLabel.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
+            nameLabel.ShowTextTooltipOnSizeChange();
 
             UpdateExpanderUI(false);
 
             SetPackage(package);
             UpdateVisualState();
-        }
-
-        private void OnSizeChange(GeometryChangedEvent evt)
-        {
-            if (evt.newRect.width == evt.oldRect.width)
-                return;
-
-            var target = evt.target as TextElement;
-            if (target == null)
-                return;
-
-            var size = target.MeasureTextSize(target.text, float.MaxValue, MeasureMode.AtMost, evt.newRect.height, MeasureMode.Undefined);
-            var width = evt.newRect.width - target.resolvedStyle.paddingRight;
-            target.tooltip = width < size.x ? target.text : string.Empty;
         }
 
         public void UpdateVisualState(VisualState newVisualState = null)
@@ -136,7 +122,10 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(versionList, showVersionLabel);
             UIUtils.SetElementDisplay(versionLabel, showVersionLabel);
             if (showVersionLabel)
-                versionLabel.text = GetVersionText(displayVersion, true);
+            {
+                var text = GetVersionText(displayVersion, true);
+                versionLabel.text = text == "0.0.0" ? string.Empty : text;
+            }
 
             UpdateStatusIcon();
             RefreshVersions();
@@ -290,43 +279,43 @@ namespace UnityEditor.PackageManager.UI
 
         public static string GetTooltipByState(PackageState state)
         {
-            return L10n.Tr(k_TooltipsByState[(int)state]);
+            return ApplicationUtil.instance.GetTranslationForText(k_TooltipsByState[(int)state]);
         }
 
         private static readonly string[] k_TooltipsByProgress =
         {
             "",
-            "Package refreshing in progress.",
-            "Package downloading in progress.",
-            "Package installing in progress.",
-            "Package removing in progress."
+            ApplicationUtil.instance.GetTranslationForText("Package refreshing in progress."),
+            ApplicationUtil.instance.GetTranslationForText("Package downloading in progress."),
+            ApplicationUtil.instance.GetTranslationForText("Package installing in progress."),
+            ApplicationUtil.instance.GetTranslationForText("Package removing in progress.")
         };
 
         public static string GetTooltipByProgress(PackageProgress progress)
         {
-            return L10n.Tr(k_TooltipsByProgress[(int)progress]);
+            return ApplicationUtil.instance.GetTranslationForText(k_TooltipsByProgress[(int)progress]);
         }
 
         public static string GetVersionText(IPackageVersion version, bool simplified = false)
         {
-            if (version == null || version.version == null)
+            if (version?.version == null)
                 return version?.versionString;
 
             var label = version.version?.StripTag();
             if (!simplified)
             {
                 if (version.HasTag(PackageTag.Local))
-                    label = "local - " + label;
+                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("local - {0}"), label);
                 if (version.HasTag(PackageTag.Git))
-                    label = "git - " + label;
+                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("git - {0}"), label);
                 if (version.HasTag(PackageTag.Verified))
-                    label = "verified - " + label;
+                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("verified - {0}"), label);
                 if (version.isInstalled)
-                    label = "current - " + label;
+                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("current - {0}"), label);
             }
             if (version.HasTag(PackageTag.Preview))
             {
-                var previewLabel = string.IsNullOrEmpty(version.version?.Prerelease) ? "preview" : version.version?.Prerelease;
+                var previewLabel = string.IsNullOrEmpty(version.version?.Prerelease) ? ApplicationUtil.instance.GetTranslationForText("preview") : version.version?.Prerelease;
                 label = $"{previewLabel} - {label}";
             }
             return label;

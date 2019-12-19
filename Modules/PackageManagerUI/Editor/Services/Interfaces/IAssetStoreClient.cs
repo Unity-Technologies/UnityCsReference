@@ -22,6 +22,10 @@ namespace UnityEditor.PackageManager.UI
         event Action onFetchDetailsFinish;
         event Action<UIError> onFetchDetailsError;
 
+        void ListCategories(Action<List<string>> callback);
+
+        void ListLabels(Action<List<string>> callback);
+
         void ListPurchases(PurchasesQueryArgs queryArgs, bool fetchDetails = true);
 
         void Fetch(long productId);

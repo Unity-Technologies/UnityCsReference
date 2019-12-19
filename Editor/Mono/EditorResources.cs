@@ -117,6 +117,11 @@ namespace UnityEditor.Experimental
         private static StyleCatalog s_StyleCatalog;
         private static bool s_RefreshGlobalStyleCatalog = false;
 
+        static class Constants
+        {
+            public static bool isDarkTheme = EditorGUIUtility.isProSkin;
+        }
+
         // Global editor styles
         internal static StyleCatalog styleCatalog
         {
@@ -140,7 +145,8 @@ namespace UnityEditor.Experimental
         private static bool IsEditorStyleSheet(string path)
         {
             return path.IndexOf("/stylesheets/extensions/", StringComparison.OrdinalIgnoreCase) != -1 &&
-                (path.EndsWith("common.uss", StringComparison.OrdinalIgnoreCase) || path.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss", StringComparison.OrdinalIgnoreCase));
+                (path.EndsWith("common.uss", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(Constants.isDarkTheme ? "dark.uss" : "light.uss", StringComparison.OrdinalIgnoreCase));
         }
 
         internal static string GetDefaultFont()
@@ -159,29 +165,32 @@ namespace UnityEditor.Experimental
 
         internal static IEnumerable<string> supportedFontNames => EditorResources.supportedFonts.Keys;
 
+        private static string s_CurrentFontName = null;
+
         internal static string currentFontName
         {
             get
             {
-                string currentFont = null;
-
-                if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
+                if (s_CurrentFontName == null)
                 {
-                    currentFont = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
-
-                    // If the current is not available then fallback to the default font
-                    if (!supportedFontNames.Contains(currentFont))
+                    if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
                     {
-                        currentFont = GetDefaultFont();
-                        EditorPrefs.DeleteKey(k_PrefsUserFontKey);
+                        s_CurrentFontName = EditorPrefs.GetString(k_PrefsUserFontKey, GetDefaultFont());
+
+                        // If the current is not available then fallback to the default font
+                        if (!supportedFontNames.Contains(s_CurrentFontName))
+                        {
+                            s_CurrentFontName = GetDefaultFont();
+                            EditorPrefs.DeleteKey(k_PrefsUserFontKey);
+                        }
+                    }
+                    else
+                    {
+                        s_CurrentFontName = GetDefaultFont();
                     }
                 }
-                else
-                {
-                    currentFont = GetDefaultFont();
-                }
 
-                return currentFont;
+                return s_CurrentFontName;
             }
         }
 
@@ -247,7 +256,7 @@ namespace UnityEditor.Experimental
 
         private static List<string> GetDefaultStyleCatalogPaths()
         {
-            bool useDarkTheme = EditorGUIUtility.isProSkin;
+            bool useDarkTheme = Constants.isDarkTheme;
             var catalogFiles = new List<string>
             {
                 "StyleSheets/Extensions/base/common.uss",
@@ -266,6 +275,29 @@ namespace UnityEditor.Experimental
             return catalogFiles;
         }
 
+        static string ComputeCatalogHash(List<string> paths)
+        {
+            var hash = $"__StyleCatalog_Hash_{Application.unityVersion}_";
+            foreach (var path in paths)
+            {
+                hash += path.GetHashCode().ToString("X2");
+                var fi = new FileInfo(path);
+                if (fi.Exists)
+                    hash += fi.Length.ToString("X2");
+            }
+            return hash;
+        }
+
+        static void SaveCatalogToDisk(StyleCatalog catalog, string hash, string savePath)
+        {
+            using (var stream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (BinaryWriter writer = new BinaryWriter(stream))
+            {
+                writer.Write(hash);
+                catalog.Save(writer);
+            }
+        }
+
         internal static void BuildCatalog()
         {
             using (new EditorPerformanceTracker(nameof(BuildCatalog)))
@@ -277,8 +309,29 @@ namespace UnityEditor.Experimental
                 foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
                     paths.Add(editorUssPath);
 
-                Console.WriteLine($"Building style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
-                styleCatalog.Load(paths);
+                bool rebuildCatalog = true;
+                string catalogHash = ComputeCatalogHash(paths);
+                const string k_GlobalStyleCatalogCacheFilePath = "Library/Style.catalog";
+                if (File.Exists(k_GlobalStyleCatalogCacheFilePath))
+                {
+                    using (var cacheCatalogStream = new FileStream(k_GlobalStyleCatalogCacheFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        using (var ccReader = new BinaryReader(cacheCatalogStream))
+                        {
+                            string cacheHash = ccReader.ReadString();
+                            if (cacheHash == catalogHash)
+                                rebuildCatalog = !styleCatalog.Load(ccReader);
+                        }
+                    }
+                }
+
+                if (rebuildCatalog)
+                {
+                    Console.WriteLine($"Loading style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
+
+                    styleCatalog.Load(paths);
+                    SaveCatalogToDisk(styleCatalog, catalogHash, k_GlobalStyleCatalogCacheFilePath);
+                }
             }
         }
 
@@ -297,7 +350,7 @@ namespace UnityEditor.Experimental
                 {
                     // TODO: Emit OnStyleCatalogLoaded
                     if (Path.GetFileName(Path.GetDirectoryName(Application.dataPath)) == "editor_resources")
-                        ConverterUtils.ResetSkinToPristine(skin, EditorGUIUtility.isProSkin ? SkinTarget.Dark : SkinTarget.Light);
+                        ConverterUtils.ResetSkinToPristine(skin, Constants.isDarkTheme ? SkinTarget.Dark : SkinTarget.Light);
                     skin.font = GetFont(FontDef.Style.Normal);
                     UpdateGUIStyleProperties(skin);
                 }

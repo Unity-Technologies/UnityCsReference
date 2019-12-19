@@ -62,44 +62,8 @@ namespace UnityEditor
         DisableSceneReload  = 1 << 1
     }
 
-    // Must be a struct in order to have correct comparison behaviour
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ExternalVersionControl
-    {
-        private readonly string m_Value;
-
-        public static readonly string Disabled = "Hidden Meta Files";
-        public static readonly string AutoDetect = "Auto detect";
-        public static readonly string Generic = "Visible Meta Files";
-
-
-        [Obsolete("Asset Server VCS support has been removed.")]
-        public static readonly string AssetServer = "Asset Server";
-
-        public ExternalVersionControl(string value)
-        {
-            m_Value = value;
-        }
-
-        // User-defined conversion
-        public static implicit operator string(ExternalVersionControl d)
-        {
-            return d.ToString();
-        }
-
-        // User-defined conversion
-        public static implicit operator ExternalVersionControl(string d)
-        {
-            return new ExternalVersionControl(d);
-        }
-
-        public override string ToString()
-        {
-            return m_Value;
-        }
-    }
-
     [NativeHeader("Editor/Src/EditorSettings.h")]
+    [NativeHeader("Editor/Src/VersionControlSettings.h")]
     [NativeHeader("Editor/Src/EditorUserSettings.h")]
     public sealed class EditorSettings : Object
     {
@@ -135,12 +99,13 @@ namespace UnityEditor
             set { SetConfigValue("UnityRemoteJoystickSource", value); }
         }
 
-        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        [System.Obsolete(@"Use VersionControlSettings.mode instead.")]
+        [StaticAccessor("GetVersionControlSettings()", StaticAccessorType.Dot)]
         public static extern string externalVersionControl
         {
-            [NativeMethod("GetExternalVersionControlSupport")]
+            [NativeMethod("GetMode")]
             get;
-            [NativeMethod("SetExternalVersionControlSupport")]
+            [NativeMethod("SetMode")]
             set;
         }
 
@@ -272,5 +237,11 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableUpload { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool cacheServerEnableAuth { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool cacheServerEnableTls { get; set; }
     }
 }

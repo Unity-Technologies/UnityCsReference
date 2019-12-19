@@ -8,9 +8,11 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IAssetStoreCache
     {
-        string GetLastETag(long productId);
+        string GetLastETag(string key);
 
-        void SetLastETag(long productId, string etag);
+        void SetLastETag(string key, string etag);
+
+        void SetCategory(string category, long count);
 
         Texture2D LoadImage(long productId, string url);
 

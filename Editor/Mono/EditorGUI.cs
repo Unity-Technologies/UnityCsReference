@@ -2978,10 +2978,11 @@ namespace UnityEditor
         }
 
         // Called from PropertyField
+
         private static void Popup(Rect position, SerializedProperty property, GUIContent label)
         {
             BeginChangeCheck();
-            int idx = Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames));
+            int idx = Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EnumNamesCache.GetEnumLocalizedGUIContents(property));
             if (EndChangeCheck())
             {
                 property.enumValueIndex = idx;
@@ -3024,11 +3025,8 @@ namespace UnityEditor
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.values, selected);
-            GUIContent[] options;
-            using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
-            {
-                options = EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip);
-            }
+            var options = EnumNamesCache.GetEnumTypeLocalizedGUIContents(enumType, enumData);
+
             s_CurrentCheckEnumEnabled = checkEnabled;
             s_CurrentEnumData = enumData;
             i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
@@ -3045,11 +3043,8 @@ namespace UnityEditor
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.flagValues, flagValue);
-            GUIContent[] options;
-            using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
-            {
-                options = EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip);
-            }
+            var options = EnumNamesCache.GetEnumTypeLocalizedGUIContents(enumType, enumData);
+
             s_CurrentCheckEnumEnabled = checkEnabled;
             s_CurrentEnumData = enumData;
             i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
@@ -5398,23 +5393,15 @@ namespace UnityEditor
         {
             var obj = objs[0];
             bool isDevBuild = Unsupported.IsSourceBuild();
+
             // For efficiency, only check in development builds if this script is a user script.
             bool monoBehaviourFallback = !isDevBuild;
             if (!monoBehaviourFallback)
             {
-                EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblies();
-
-                string assemblyName = obj.GetType().Assembly.ToString();
-                for (int i = 0; i < allTargetAssemblies.Length; ++i)
-                {
-                    if (assemblyName == allTargetAssemblies[i].Name)
-                    {
-                        monoBehaviourFallback = true;
-                        break;
-                    }
-                }
+                monoBehaviourFallback = HelpButtonCache.IsObjectPartOfTargetAssemblies(obj);
             }
-            bool hasHelp = Help.HasHelpForObject(obj, monoBehaviourFallback);
+
+            bool hasHelp = HelpButtonCache.HasHelpForObject(obj, monoBehaviourFallback);
             if (hasHelp || isDevBuild)
             {
                 // Help button should not be disabled at any time. For example VCS system disables
@@ -5423,24 +5410,27 @@ namespace UnityEditor
                 bool wasEditorDisabled = GUI.enabled;
                 GUI.enabled = true;
 
-                Color oldColor = GUI.color;
-                GUIContent content = new GUIContent(GUIContents.helpIcon);
-                string helpTopic = Help.GetNiceHelpNameForObject(obj, monoBehaviourFallback);
-                if (isDevBuild && !hasHelp)
-                {
-                    GUI.color = Color.yellow;
-                    bool isScript = obj is MonoBehaviour;
-                    string pageName = (isScript ? "script-" : "sealed partial class-") + helpTopic;
+                GUIContent content = GUIContent.Temp(GUIContents.helpIcon.image);
 
-                    content.tooltip = string.Format(
-@"Could not find Reference page for {0} ({1}).
-Docs for this object is missing or all docs are missing.
-This warning only shows up in development builds.", helpTopic, pageName);
-                }
-                else
+                // Only build the tooltip string if the cursor is over our help button rect
+                if (position.Contains(Event.current.mousePosition))
                 {
-                    content.tooltip = string.Format("Open Reference for {0}.", helpTopic);
+                    string helpTopic = Help.GetNiceHelpNameForObject(obj, monoBehaviourFallback);
+                    if (isDevBuild && !hasHelp)
+                    {
+                        bool isScript = obj is MonoBehaviour;
+                        string pageName = (isScript ? "script-" : "sealed partial class-") + helpTopic;
+                        content.tooltip = string.Format(@"Could not find Reference page for {0} ({1}).\nDocs for this object is missing or all docs are missing.\nThis warning only shows up in development builds.", helpTopic, pageName);
+                    }
+                    else
+                    {
+                        content.tooltip = string.Format("Open Reference for {0}.", helpTopic);
+                    }
                 }
+
+                Color oldColor = GUI.color;
+                if (isDevBuild && !hasHelp)
+                    GUI.color = Color.yellow;
 
                 GUIStyle helpIconStyle = EditorStyles.iconButton;
                 if (GUI.Button(position, content, helpIconStyle))
@@ -5898,24 +5888,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
                 animatedColor.a *= GUI.backgroundColor.a;
                 GUI.backgroundColor = animatedColor;
-            }
-            else
-            {
-                Object target = property.serializedObject.targetObject;
-                GameObject go = PrefabUtility.GetGameObject(target);
-                if (go != null && go.scene.IsValid() && EditorSceneManager.IsPreviewScene(go.scene))
-                {
-                    ScriptableObject driver = Experimental.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
-                    if (
-                        (DrivenPropertyManagerInternal.IsDriving(driver, target, property.propertyPath))
-                        ||
-                        ((target is Transform || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, property.propertyPath)))
-                    {
-                        GUI.enabled = false;
-                        if (isCollectingTooltips)
-                            s_PropertyFieldTempContent.tooltip = s_PrefabInContextPreviewValuesTooltip;
-                    }
-                }
             }
 
             GUI.enabled &= property.editable;
@@ -7386,7 +7358,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             if (type != null && type.IsEnum)
             {
                 BeginChangeCheck();
-                int value = type.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0
+                int value = EnumNamesCache.IsEnumTypeUsingFlagsAttribute(type)
                     ? EnumFlagsField(position, label, property.intValue, type, false, EditorStyles.popup)
                     : EnumPopupInternal(position, label, property.intValue, type, null, false, EditorStyles.popup);
                 if (EndChangeCheck())
@@ -7397,7 +7369,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             else
             {
                 BeginChangeCheck();
-                int idx = Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames));
+                int idx = Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EnumNamesCache.GetEnumLocalizedGUIContents(property));
                 if (EndChangeCheck())
                 {
                     property.enumValueIndex = idx;
@@ -7669,6 +7641,115 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static bool PropertyField(Rect position, SerializedProperty property, GUIContent label, [DefaultValue("false")] bool includeChildren)
         {
             return PropertyFieldInternal(position, property, label, includeChildren);
+        }
+
+        static class EnumNamesCache
+        {
+            static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new Dictionary<Type, GUIContent[]>();
+            static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
+            static Dictionary<Type, bool> s_IsEnumTypeUsingFlagsAttribute = new Dictionary<Type, bool>();
+
+            internal static GUIContent[] GetEnumTypeLocalizedGUIContents(Type enumType, EnumData enumData)
+            {
+                GUIContent[] result;
+                if (s_EnumTypeLocalizedGUIContents.TryGetValue(enumType, out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    // Build localized data and add to cache
+                    using (new Localization.Editor.LocalizationGroup(enumType))
+                    {
+                        result = EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip);
+                        s_EnumTypeLocalizedGUIContents[enumType] = result;
+                        return result;
+                    }
+                }
+            }
+
+            internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
+            {
+                var propertyHash = property.hashCodeForPropertyPath;
+                GUIContent[] result;
+                if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(propertyHash, out result))
+                {
+                    return result;
+                }
+
+                result = EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
+                s_SerializedPropertyEnumLocalizedGUIContents[propertyHash] = result;
+                return result;
+            }
+
+            internal static bool IsEnumTypeUsingFlagsAttribute(Type type)
+            {
+                bool result;
+                if (s_IsEnumTypeUsingFlagsAttribute.TryGetValue(type, out result))
+                    return result;
+
+                // GetCustomAttributes allocates a new List on every call so we cache the result
+                result = type.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
+                s_IsEnumTypeUsingFlagsAttribute[type] = result;
+                return result;
+            }
+        }
+
+        static class HelpButtonCache
+        {
+            static Dictionary<Type, bool> s_TypeIsPartOfTargetAssembliesMap = new Dictionary<Type, bool>();
+            static Dictionary<Type, bool> s_ObjectHasHelp = new Dictionary<Type, bool>();
+
+            internal static bool HasHelpForObject(Object obj, bool monoBehaviourFallback)
+            {
+                if (obj == null)
+                    return false;
+
+                bool result;
+                if (s_ObjectHasHelp.TryGetValue(obj.GetType(), out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    // Calc result and cache it
+                    result = Help.HasHelpForObject(obj, monoBehaviourFallback);
+                    s_ObjectHasHelp[obj.GetType()] = result;
+                    return result;
+                }
+            }
+
+            internal static bool IsObjectPartOfTargetAssemblies(Object obj)
+            {
+                if (obj == null)
+                    return false;
+
+                var type = obj.GetType();
+                bool result;
+                if (s_TypeIsPartOfTargetAssembliesMap.TryGetValue(type, out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    // Calc result and cache it
+                    result = false;
+                    EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblies();
+
+                    string assemblyName = obj.GetType().Assembly.ManifestModule.Name;
+                    for (int i = 0; i < allTargetAssemblies.Length; ++i)
+                    {
+                        if (assemblyName == allTargetAssemblies[i].Name)
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
+
+                    s_TypeIsPartOfTargetAssembliesMap[type] = result;
+                    return result;
+                }
+            }
         }
     }
 

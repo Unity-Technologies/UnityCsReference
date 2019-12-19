@@ -38,21 +38,6 @@ namespace UnityEditorInternal.Profiling
             (int)DetailedViewType.CallersAndCallees,
         };
 
-        [Flags]
-        public enum CpuProfilerOptions
-        {
-            None = 0,
-            CollapseEditorBoundarySamples = 1 << 0, // Session based override, default to off
-        }
-
-        static readonly GUIContent[] k_CpuProfilerOptions =
-        {
-            EditorGUIUtility.TrTextContent("Collapse EditorOnly Samples", "Samples that are only created due to profiling the editor are collapsed by default, renamed to EditorOnly [<FunctionName>] and any GC Alloc incurred by them will not be accumulated."),
-        };
-
-        private const string k_CpuProfilerHierarchyViewOptionsPrefKey = "CPUHierarchyView." + nameof(m_CpuProfilerOptions);
-
-
         [NonSerialized]
         bool m_Initialized;
         [SerializeField]
@@ -104,9 +89,6 @@ namespace UnityEditorInternal.Profiling
 
         [SerializeField]
         ProfilerDetailedCallsView m_DetailedCallsView;
-
-        [SerializeField]
-        int m_CpuProfilerOptions = (int)CpuProfilerOptions.CollapseEditorBoundarySamples;
 
         public ProfilerFrameDataTreeView treeView
         {
@@ -234,12 +216,10 @@ namespace UnityEditorInternal.Profiling
             // Check if it already exists (deserialized from window layout file or scriptable object)
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
-            m_TreeView = new ProfilerFrameDataTreeView(m_TreeViewState, multiColumnHeader);
+            m_TreeView = new ProfilerFrameDataTreeView(m_TreeViewState, multiColumnHeader, cpuModule);
             m_TreeView.selectionChanged += OnMainTreeViewSelectionChanged;
             m_TreeView.searchChanged += OnMainTreeViewSearchChanged;
             m_TreeView.Reload();
-
-            m_CpuProfilerOptions = SessionState.GetInt(k_CpuProfilerHierarchyViewOptionsPrefKey, m_CpuProfilerOptions);
 
             m_SearchField = new SearchField();
             m_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
@@ -249,7 +229,10 @@ namespace UnityEditorInternal.Profiling
             m_DetailedObjectsView.gpuView = gpuView;
             m_DetailedObjectsView.frameItemEvent += FrameItem;
             if (m_DetailedCallsView == null)
+            {
                 m_DetailedCallsView = new ProfilerDetailedCallsView(detailedCallsViewPrefKeyPrefix);
+                m_DetailedCallsView.profilerSampleNameProvider = cpuModule;
+            }
             m_DetailedCallsView.frameItemEvent += FrameItem;
             if (m_DetailedViewSpliterState == null || m_DetailedViewSpliterState.relativeSizes == null || m_DetailedViewSpliterState.relativeSizes.Length == 0)
                 m_DetailedViewSpliterState = new SplitterState(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450, 50 }, null);
@@ -258,6 +241,13 @@ namespace UnityEditorInternal.Profiling
 
             m_Serialized = true;
             m_Initialized = true;
+        }
+
+        public override void OnEnable(CPUorGPUProfilerModule cpuModule, bool isGpuView)
+        {
+            base.OnEnable(cpuModule, isGpuView);
+            if (m_DetailedCallsView != null)
+                m_DetailedCallsView.profilerSampleNameProvider = cpuModule;
         }
 
         void OnMultiColumnHeaderChanged(MultiColumnHeader header)
@@ -427,7 +417,7 @@ namespace UnityEditorInternal.Profiling
                     DrawDetailedViewPopup();
                     GUILayout.FlexibleSpace();
 
-                    DrawOptionsMenuPopup();
+                    cpuModule.DrawOptionsMenuPopup();
                     EditorGUILayout.EndHorizontal();
 
                     switch (m_DetailedViewType)
@@ -484,7 +474,7 @@ namespace UnityEditorInternal.Profiling
             {
                 DrawDetailedViewPopup();
                 EditorGUILayout.Space(); // workaround: Remove double lines
-                DrawOptionsMenuPopup();
+                cpuModule?.DrawOptionsMenuPopup();
             }
 
             EditorGUILayout.EndHorizontal();
@@ -716,40 +706,6 @@ namespace UnityEditorInternal.Profiling
                 m_DetailedObjectsView.OnDisable();
             if (m_DetailedCallsView != null)
                 m_DetailedCallsView.OnDisable();
-        }
-
-        public override HierarchyFrameDataView.ViewModes GetFilteringMode()
-        {
-            if (gpuView)
-                return base.GetFilteringMode();
-            return base.GetFilteringMode() | (OptionEnabled(CpuProfilerOptions.CollapseEditorBoundarySamples) ? HierarchyFrameDataView.ViewModes.HideEditorOnlySamples : 0);
-        }
-
-        void DrawOptionsMenuPopup()
-        {
-            var position = GUILayoutUtility.GetRect(ProfilerWindow.Styles.optionsButtonContent, EditorStyles.toolbarButton);
-            if (GUI.Button(position, ProfilerWindow.Styles.optionsButtonContent, EditorStyles.toolbarButton))
-            {
-                var pm = new GenericMenu();
-                for (int i = 0; i < k_CpuProfilerOptions.Length; i++)
-                {
-                    CpuProfilerOptions option = (CpuProfilerOptions)(1 << i);
-                    pm.AddItem(k_CpuProfilerOptions[i], OptionEnabled(option), () => ToggleOption(option));
-                }
-                pm.Popup(position, -1);
-            }
-        }
-
-        bool OptionEnabled(CpuProfilerOptions option)
-        {
-            return (option & (CpuProfilerOptions)m_CpuProfilerOptions) != CpuProfilerOptions.None;
-        }
-
-        void ToggleOption(CpuProfilerOptions option)
-        {
-            m_CpuProfilerOptions = (int)((CpuProfilerOptions)m_CpuProfilerOptions ^ option);
-            SessionState.SetInt(k_CpuProfilerHierarchyViewOptionsPrefKey, m_CpuProfilerOptions);
-            treeView.Clear();
         }
     }
 }

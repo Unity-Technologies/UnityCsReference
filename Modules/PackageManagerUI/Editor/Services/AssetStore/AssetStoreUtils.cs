@@ -27,16 +27,22 @@ namespace UnityEditor.PackageManager.UI
                     if (response != null)
                         return response;
 
-                    errorMessage = L10n.Tr("Failed to parse JSON.");
+                    errorMessage = ApplicationUtil.instance.GetTranslationForText("Failed to parse JSON.");
                 }
                 catch (Exception e)
                 {
-                    errorMessage = string.Format(L10n.Tr("Failed to parse JSON: {0}"), e.Message);
+                    errorMessage = string.Format(ApplicationUtil.instance.GetTranslationForText("Failed to parse JSON: {0}"), e.Message);
                 }
             }
             else
             {
-                errorMessage = request.text;
+                if (request.responseCode == 0)
+                    errorMessage = L10n.Tr("Failed to parse response.");
+                else
+                {
+                    var text = request.text.Length <= 128 ? request.text : request.text.Substring(0, 128) + "...";
+                    errorMessage = string.Format(L10n.Tr("Failed to parse response: Code {0} \"{1}\""), request.responseCode, text);
+                }
             }
             errorMessageCallback?.Invoke(errorMessage);
             return null;

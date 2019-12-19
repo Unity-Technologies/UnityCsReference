@@ -315,13 +315,11 @@ namespace UnityEditor.Connect
         [Obsolete]
         public void GoToHub(string page)
         {
-            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, page, true, "goto_hub_method_OLD");
         }
 
         public void UnbindProject()
         {
             UnbindCloudProject();
-            UnityConnectServiceCollection.instance.UnbindAllServices();
         }
 
         // For Javascript Only

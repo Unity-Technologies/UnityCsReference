@@ -58,7 +58,7 @@ namespace UnityEditor
             CubeMapping = 1 << 9,
             StreamingMipmaps = 1 << 10,
             SingleChannelComponent = 1 << 11,
-            PngGamma = 1 << 12
+            PngGamma = 1 << 12,
         }
 
         private struct TextureInspectorTypeGUIProperties
@@ -387,12 +387,15 @@ namespace UnityEditor
 
         void ToggleFromInt(SerializedProperty property, GUIContent label)
         {
+            var content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), label, property);
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
-            int value = EditorGUILayout.Toggle(label, property.intValue > 0) ? 1 : 0;
+            int value = EditorGUILayout.Toggle(content, property.intValue > 0) ? 1 : 0;
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 property.intValue = value;
+            EditorGUILayout.EndHorizontal();
+            EditorGUI.EndProperty();
         }
 
         void EnumPopup(SerializedProperty property, System.Type type, GUIContent label)
@@ -417,6 +420,7 @@ namespace UnityEditor
         SerializedProperty m_IsReadable;
         SerializedProperty m_StreamingMipmaps;
         SerializedProperty m_StreamingMipmapsPriority;
+
         SerializedProperty m_sRGBTexture;
         SerializedProperty m_EnableMipMap;
         SerializedProperty m_MipMapMode;
@@ -655,7 +659,7 @@ namespace UnityEditor
             m_Aniso.intValue = settings.aniso;
 
             m_AlphaIsTransparency.intValue = settings.alphaIsTransparency ? 1 : 0;
-            m_IgnorePngGamma.boolValue = settings.ignorePngGamma;
+            m_IgnorePngGamma.intValue = settings.ignorePngGamma ? 1 : 0;
 
             m_TextureType.intValue = (int)settings.textureType;
             m_TextureShape.intValue = (int)settings.textureShape;
@@ -710,6 +714,7 @@ namespace UnityEditor
                 settings.streamingMipmaps = m_StreamingMipmaps.intValue > 0;
             if (!m_StreamingMipmapsPriority.hasMultipleDifferentValues)
                 settings.streamingMipmapsPriority = m_StreamingMipmapsPriority.intValue;
+
 
             if (!m_sRGBTexture.hasMultipleDifferentValues)
                 settings.sRGBTexture = m_sRGBTexture.intValue > 0;
@@ -777,7 +782,7 @@ namespace UnityEditor
                 settings.singleChannelComponent = (TextureImporterSingleChannelComponent)m_SingleChannelComponent.intValue;
 
             if (!m_IgnorePngGamma.hasMultipleDifferentValues)
-                settings.ignorePngGamma = m_IgnorePngGamma.boolValue;
+                settings.ignorePngGamma = m_IgnorePngGamma.intValue > 0;
 
             return settings;
         }
@@ -883,6 +888,7 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
         }
+
 
 
         void AlphaHandlingGUI(TextureInspectorGUIElement guiElements)
@@ -1077,7 +1083,7 @@ namespace UnityEditor
 
         void PngGammaGUI(TextureInspectorGUIElement guiElements)
         {
-            EditorGUILayout.PropertyField(m_IgnorePngGamma, s_Styles.ignorePngGamma);
+            ToggleFromInt(m_IgnorePngGamma, s_Styles.ignorePngGamma);
         }
 
         void BumpGUI(TextureInspectorGUIElement guiElements)

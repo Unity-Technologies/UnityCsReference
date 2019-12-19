@@ -77,6 +77,7 @@ namespace UnityEditor
         SerializedProperty m_PVRSampleCount;
         SerializedProperty m_PVRDirectSampleCount;
         SerializedProperty m_PVRBounces;
+        SerializedProperty m_PVRRussianRouletteStartBounce;
         SerializedProperty m_PVRCulling;
         SerializedProperty m_PVRFilteringMode;
         SerializedProperty m_PVRFilterTypeDirect;
@@ -159,6 +160,15 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("4")
             };
 
+            public static readonly int[] russianRouletteStartBounceValues = { -1, 2, 3, 4 };
+            public static readonly GUIContent[] russianRouletteStartBounceStrings =
+            {
+                EditorGUIUtility.TrTextContent("Never"),
+                EditorGUIUtility.TextContent("2"),
+                EditorGUIUtility.TextContent("3"),
+                EditorGUIUtility.TextContent("4")
+            };
+
             public static readonly GUIContent[] helpStringsMixed =
             {
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting while indirect light is baked into lightmaps and light probes."),
@@ -210,6 +220,7 @@ namespace UnityEditor
             //public static readonly GUIContent PVRSampleCountAdaptive = EditorGUIUtility.TrTextContent("Max Indirect Samples", "Maximum number of samples to use for indirect lighting.");
             public static readonly GUIContent indirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent bounces = EditorGUIUtility.TrTextContent("Bounces", "Controls the maximum number of bounces the lightmapper will compute for indirect light.");
+            public static readonly GUIContent russianRouletteStartBounce = EditorGUIUtility.TrTextContent("Russian Roulette Start Bounce", "The first bounce that Russian Roulette path termination can disable. Russian roulette decreases the bake time by stochastically terminating the light path, but shorter paths may increase lightmap noise. Choose 2 to ensure at least 1 bounce, and so on. Choose Never to disable Russian roulette.");
             public static readonly GUIContent denoisingWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware doesn't support denoising. To see minimum requirements, read the documentation.");
             public static readonly GUIContent denoisingWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware doesn't support denoising. To see minimum requirements, read the documentation.");
             public static readonly GUIContent denoisingWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware doesn't support denoising. To see minimum requirements, read the documentation.");
@@ -302,6 +313,7 @@ namespace UnityEditor
                 m_PVRSampleCount = lso.FindProperty("m_PVRSampleCount");
                 m_PVRDirectSampleCount = lso.FindProperty("m_PVRDirectSampleCount");
                 m_PVRBounces = lso.FindProperty("m_PVRBounces");
+                m_PVRRussianRouletteStartBounce = lso.FindProperty("m_PVRRussianRouletteStartBounce");
                 m_PVRCulling = lso.FindProperty("m_PVRCulling");
                 m_PVRFilteringMode = lso.FindProperty("m_PVRFilteringMode");
                 m_PVRFilterTypeDirect = lso.FindProperty("m_PVRFilterTypeDirect");
@@ -594,6 +606,7 @@ namespace UnityEditor
                                     }
 
                                     EditorGUILayout.IntPopup(m_PVRBounces, Styles.bouncesStrings, Styles.bouncesValues, Styles.bounces);
+                                    EditorGUILayout.IntPopup(m_PVRRussianRouletteStartBounce, Styles.russianRouletteStartBounceStrings, Styles.russianRouletteStartBounceValues, Styles.russianRouletteStartBounce);
 
                                     // Filtering
                                     EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);

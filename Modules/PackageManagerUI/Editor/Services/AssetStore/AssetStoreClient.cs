@@ -64,11 +64,40 @@ namespace UnityEditor.PackageManager.UI
                 m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
             }
 
+            public void ListCategories(Action<List<string>> callback)
+            {
+                AssetStoreRestAPI.instance.GetCategories(result =>
+                {
+                    var results = result.Get("results");
+                    var categories = new List<string>(results as IList<string>);
+                    callback?.Invoke(categories);
+                }, error =>
+                    {
+                        Debug.LogWarning("[PackageManagerUI] error while fetching categories: " + error.message);
+                        callback?.Invoke(new List<string>());
+                    });
+            }
+
+            public void ListLabels(Action<List<string>> callback)
+            {
+                AssetStoreRestAPI.instance.GetTaggings(result =>
+                {
+                    var labels = new List<string>(result.GetList<string>("results").ToList());
+                    labels.Remove("#BIN");
+                    labels.Sort();
+                    callback?.Invoke(labels);
+                }, error =>
+                    {
+                        Debug.LogWarning("[PackageManagerUI] error while fetching labels: " + error.message);
+                        callback?.Invoke(new List<string>());
+                    });
+            }
+
             public void Fetch(long productId)
             {
                 if (!ApplicationUtil.instance.isUserLoggedIn)
                 {
-                    onFetchDetailsError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, L10n.Tr("User not logged in")));
+                    onFetchDetailsError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, ApplicationUtil.instance.GetTranslationForText("User not logged in")));
                     return;
                 }
 
@@ -98,22 +127,37 @@ namespace UnityEditor.PackageManager.UI
                     var result = m_ListOperation.result;
                     if (result.list.Count > 0)
                     {
-                        var placeholderPackages = new List<IPackage>();
-                        foreach (var item in result.list)
+                        var updatedPackages = new List<IPackage>();
+                        foreach (var purchaseInfo in result.list)
                         {
-                            m_PurchaseInfos[item.productId.ToString()] = item;
+                            var productIdString = purchaseInfo.productId.ToString();
+                            var oldPurchaseInfo = m_PurchaseInfos.Get(productIdString);
+                            m_PurchaseInfos[productIdString] = purchaseInfo;
 
                             // create a placeholder before fetching data from the cloud for the first time
-                            if (!m_ProductInfos.ContainsKey(item.productId.ToString()))
-                                placeholderPackages.Add(new PlaceholderPackage(item.productId.ToString(), item.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
+                            var productInfo = m_ProductInfos.Get(productIdString);
+                            if (productInfo == null)
+                                updatedPackages.Add(new PlaceholderPackage(productIdString, purchaseInfo.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
+                            else if (oldPurchaseInfo != null)
+                            {
+                                // for now, `tags` is the only component in `purchase info` that can be updated over time, so we only check for changes there
+                                var oldTags = oldPurchaseInfo.tags ?? Enumerable.Empty<string>();
+                                var newTags = purchaseInfo.tags ?? Enumerable.Empty<string>();
+                                if (!oldTags.SequenceEqual(newTags))
+                                    updatedPackages.Add(new AssetStorePackage(purchaseInfo, productInfo, m_LocalInfos.Get(productInfo.id)));
+                            }
                         }
 
-                        if (placeholderPackages.Any())
-                            onPackagesChanged?.Invoke(placeholderPackages);
+                        if (updatedPackages.Any())
+                            onPackagesChanged?.Invoke(updatedPackages);
 
                         if (fetchDetails)
                             FetchDetails(result.productIds);
                     }
+
+                    foreach (var cat in result.categories)
+                        AssetStoreCache.instance.SetCategory(cat.name, cat.count);
+
                     onProductListFetched?.Invoke(result, fetchDetails);
                 };
 
@@ -139,23 +183,33 @@ namespace UnityEditor.PackageManager.UI
                         {
                             var productInfo = AssetStoreProductInfo.ParseProductInfo(id.ToString(), productDetail);
                             if (productInfo == null)
-                                package = new AssetStorePackage(id.ToString(), new UIError(UIErrorCode.AssetStoreClientError, "Error parsing product details."));
+                                package = new AssetStorePackage(id.ToString(), new UIError(UIErrorCode.AssetStoreClientError, ApplicationUtil.instance.GetTranslationForText("Error parsing product details.")));
                             else
                             {
                                 var purchaseInfo = m_PurchaseInfos.Get(productInfo.id);
-                                var oldProductInfo = m_ProductInfos.Get(productInfo.id);
-                                if (oldProductInfo == null || oldProductInfo.versionId != productInfo.versionId || oldProductInfo.versionString != productInfo.versionString)
+                                if (purchaseInfo == null)
                                 {
-                                    if (string.IsNullOrEmpty(productInfo.packageName))
-                                        package = new AssetStorePackage(purchaseInfo, productInfo, m_LocalInfos.Get(productInfo.id));
-                                    else
-                                        UpmClient.instance.FetchForProduct(productInfo.id, productInfo.packageName);
-                                    m_ProductInfos[productInfo.id] = productInfo;
+                                    m_ProductInfos.Remove(id.ToString());
+                                }
+                                else
+                                {
+                                    var oldProductInfo = m_ProductInfos.Get(productInfo.id);
+                                    if (oldProductInfo == null || oldProductInfo.versionId != productInfo.versionId || oldProductInfo.versionString != productInfo.versionString)
+                                    {
+                                        if (string.IsNullOrEmpty(productInfo.packageName))
+                                            package = new AssetStorePackage(purchaseInfo, productInfo, m_LocalInfos.Get(productInfo.id));
+                                        else
+                                            UpmClient.instance.FetchForProduct(productInfo.id, productInfo.packageName);
+                                        m_ProductInfos[productInfo.id] = productInfo;
+                                    }
                                 }
                             }
                         }
                         else
+                        {
+                            m_ProductInfos.Remove(id.ToString());
                             package = new AssetStorePackage(id.ToString(), new UIError(UIErrorCode.AssetStoreClientError, error));
+                        }
 
                         if (package != null)
                             onPackagesChanged?.Invoke(new[] { package });
@@ -240,9 +294,11 @@ namespace UnityEditor.PackageManager.UI
 
             public void ClearCache()
             {
+                m_PurchaseInfos.Clear();
                 m_LocalInfos.Clear();
                 m_ProductInfos.Clear();
 
+                m_SerializedPurchaseInfos = new AssetStorePurchaseInfo[0];
                 m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
                 m_SerializedProductInfos = new AssetStoreProductInfo[0];
             }
@@ -251,6 +307,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (!loggedIn)
                 {
+                    ClearCache();
                     UpmClient.instance.ClearProductCache();
                 }
             }

@@ -12,12 +12,11 @@ namespace UnityEditor.PackageManager.UI
         bool isInitialized { get; }
 
         event Action<IPackageVersion> onSelectionChanged;
+        event Action<IEnumerable<VisualState>> onVisualStateChange;
 
         // arg1: the updated page, arg2: packages added/updated in the page, arg3: packages removed from the page
-        event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>> onPageUpdate;
-        event Action<IPage> onPageRebuild;
-
-        event Action<IEnumerable<VisualState>> onVisualStateChange;
+        event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate;
+        event Action<IPage> onListRebuild;
 
         event Action onRefreshOperationStart;
         event Action onRefreshOperationFinish;

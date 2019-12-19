@@ -24,6 +24,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var label = new Label(text);
             label.AddToClassList(clazz);
+            label.tooltip = text;
             return label;
         }
 
@@ -40,13 +41,13 @@ namespace UnityEditor.PackageManager.UI
                 return string.Empty;
 
             if (installedVersion.HasTag(PackageTag.InDevelopment))
-                return "(in development)";
+                return ApplicationUtil.instance.GetTranslationForText("(in development)");
 
             if (installedVersion.HasTag(PackageTag.Local))
-                return "(local)";
+                return ApplicationUtil.instance.GetTranslationForText("(local)");
 
             return installedVersion.version?.ToString() == dependency.version
-                ? "(installed \u2714)" : $"({installedVersion.version} installed \u2714)";
+                ? ApplicationUtil.instance.GetTranslationForText("(installed \u2714)") : string.Format(ApplicationUtil.instance.GetTranslationForText("({0} installed \u2714)"), installedVersion.version);
         }
 
         public void SetPackageVersion(IPackageVersion version)

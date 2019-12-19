@@ -810,11 +810,15 @@ namespace UnityEditor
             bool success = true;
 
             AssetDatabase.StartAssetEditing();
-            foreach (string path in paths)
-            {
-                if (!AssetDatabase.MoveAssetToTrash(path))
-                    success = false;
-            }
+
+            string[] pathArray = new string[paths.Count];
+            for (int i = 0; i < pathArray.Length; i++)
+                pathArray[i] = paths[i];
+
+            List<string> failedPaths = new List<string>();
+            if (!AssetDatabase.MoveAssetsToTrash(pathArray, failedPaths))
+                success = false;
+
             AssetDatabase.StopAssetEditing();
             if (!success)
             {

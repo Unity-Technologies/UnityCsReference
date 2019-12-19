@@ -48,6 +48,13 @@ namespace UnityEditor.PackageManager
             return new EmbedRequest(operationId, status);
         }
 
+        internal static GetRegistriesRequest GetRegistries()
+        {
+            long operationId;
+            var status = NativeClient.GetRegistries(out operationId);
+            return new GetRegistriesRequest(operationId, status);
+        }
+
         public static RemoveRequest Remove(string packageName)
         {
             long operationId;

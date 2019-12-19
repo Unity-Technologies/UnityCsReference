@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI
                 if (publisher.GetString("url") == "http://unity3d.com")
                     author = "Unity Technologies Inc.";
                 else
-                    author = publisher.GetString("name") ?? L10n.Tr("Unknown publisher");
+                    author = publisher.GetString("name") ?? ApplicationUtil.instance.GetTranslationForText("Unknown publisher");
                 publisherId = publisher.GetString("externalRef") ?? string.Empty;
             }
             else

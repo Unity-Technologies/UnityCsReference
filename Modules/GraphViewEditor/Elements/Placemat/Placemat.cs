@@ -117,8 +117,6 @@ namespace UnityEditor.Experimental.GraphView
             base.SetPosition(newPos);
         }
 
-        internal Action<ContextualMenuPopulateEvent> m_BuildContextualMenuDelegate;
-
         PlacematContainer m_PlacematContainer;
 
         PlacematContainer Container =>
@@ -136,6 +134,9 @@ namespace UnityEditor.Experimental.GraphView
                 collapsedElement.style.visibility = StyleKeyword.Null;
 
             m_CollapsedElements.Clear();
+
+            if (collapsedElements == null)
+                return;
 
             foreach (var collapsedElement in collapsedElements)
             {
@@ -215,7 +216,7 @@ namespace UnityEditor.Experimental.GraphView
             m_CollapsedElements.Clear();
 
             var graphElements = m_GraphView.graphElements.ToList()
-                .Where(e => !(e is Edge) && !(e is Port) && (e.capabilities & Capabilities.Selectable) != 0)
+                .Where(e => !(e is Edge) && (e.parent is GraphView.Layer) && (e.capabilities & Capabilities.Selectable) != 0)
                 .ToList();
 
             var collapsedElementsElsewhere = new List<GraphElement>();
@@ -336,7 +337,7 @@ namespace UnityEditor.Experimental.GraphView
         void ActOnGraphElementsOver(Action<GraphElement> act)
         {
             var graphElements = m_GraphView.graphElements.ToList()
-                .Where(e => !(e is Placemat) && !(e is Edge) && !(e is Port) && (e.capabilities & Capabilities.Selectable) != 0);
+                .Where(e => !(e is Edge) && (e.parent is GraphView.Layer) && (e.capabilities & Capabilities.Selectable) != 0);
 
             foreach (var elem in graphElements)
             {
@@ -348,7 +349,7 @@ namespace UnityEditor.Experimental.GraphView
         internal bool ActOnGraphElementsOver(Func<GraphElement, bool> act, bool includePlacemats)
         {
             var graphElements = m_GraphView.graphElements.ToList()
-                .Where(e => !(e is Edge) && !(e is Port) && (e.capabilities & Capabilities.Selectable) != 0).ToList();
+                .Where(e => !(e is Edge) && e.parent is GraphView.Layer && (e.capabilities & Capabilities.Selectable) != 0).ToList();
 
             return RecurseActOnGraphElementsOver_LocalFunc(this, graphElements, act, includePlacemats);
         }
@@ -412,13 +413,13 @@ namespace UnityEditor.Experimental.GraphView
             return ActOnGraphElementsOver(t => node == t, true);
         }
 
-        internal void ResizeToFitContainingNodes(List<Node> nodes)
+        internal void GrowToFitElements(List<GraphElement> elements)
         {
-            if (nodes == null)
-                nodes = GetHoveringNodes();
+            if (elements == null)
+                elements = GetHoveringNodes();
 
             var pos = new Rect();
-            if (nodes.Count > 0 && CalculateSelectedNodeBounds(ref pos, nodes, MinSizePolicy.DoNotEnsureMinSize))
+            if (elements.Count > 0 && ComputeElementBounds(ref pos, elements, MinSizePolicy.DoNotEnsureMinSize))
             {
                 // We don't resize to be snug. In other words: we don't ever decrease in size.
                 Rect currentRect = GetPosition();
@@ -439,23 +440,23 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        internal void ResizeToSnugFitContainingNodes(List<Node> nodes)
+        internal void ShrinkToFitElements(List<GraphElement> elements)
         {
-            if (nodes == null)
-                nodes = GetHoveringNodes();
+            if (elements == null)
+                elements = GetHoveringNodes();
 
             var pos = new Rect();
-            if (nodes.Count > 0 && CalculateSelectedNodeBounds(ref pos, nodes))
+            if (elements.Count > 0 && ComputeElementBounds(ref pos, elements))
                 SetPosition(pos);
         }
 
-        internal void ResizeToIncludeSelectedNodes()
+        void ResizeToIncludeSelectedNodes()
         {
-            List<Node> nodes = m_GraphView.selection.OfType<Node>().ToList();
+            List<GraphElement> nodes = m_GraphView.selection.OfType<GraphElement>().Where(e => e is Node).ToList();
 
             // Now include the selected nodes
             var pos = new Rect();
-            if (CalculateSelectedNodeBounds(ref pos, nodes, MinSizePolicy.DoNotEnsureMinSize))
+            if (ComputeElementBounds(ref pos, nodes, MinSizePolicy.DoNotEnsureMinSize))
             {
                 // We don't resize to be snug: we only resize enough to contain the selected nodes.
                 var currentRect = GetPosition();
@@ -497,36 +498,40 @@ namespace UnityEditor.Experimental.GraphView
 
         protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            if (evt.leafTarget is Placemat)
+            var placemat = evt.target as Placemat;
+
+            if (placemat != null)
             {
-                evt.menu.AppendAction("Edit Title", a => StartEditTitle(), DropdownMenuAction.AlwaysEnabled);
+                evt.menu.AppendAction("Edit Title", a => placemat.StartEditTitle());
 
                 evt.menu.AppendSeparator();
 
                 evt.menu.AppendAction("Change Color...", a =>
                 {
-                    ColorPicker.Show(c => Color = c, Color, showAlpha: false);
-                }, DropdownMenuAction.AlwaysEnabled);
+                    ColorPicker.Show(c => placemat.Color = c, placemat.Color, showAlpha: false);
+                });
 
                 // Resizing section
                 evt.menu.AppendSeparator();
 
+                evt.menu.AppendAction(placemat.Collapsed ? "Expand" : "Collapse", a => placemat.Collapsed = !placemat.Collapsed);
+
                 // Gather nodes here so that we don't recycle this code in the resize functions.
-                List<Node> hoveringNodes = GetHoveringNodes();
+                List<GraphElement> hoveringNodes = placemat.GetHoveringNodes();
 
                 evt.menu.AppendAction("Resize/Grow To Fit",
-                    a => ResizeToFitContainingNodes(hoveringNodes),
+                    a => placemat.GrowToFitElements(hoveringNodes),
                     hoveringNodes.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
-                evt.menu.AppendAction("Resize/Snug Fit",
-                    a => ResizeToSnugFitContainingNodes(hoveringNodes),
+                evt.menu.AppendAction("Resize/Shrink To Fit",
+                    a => placemat.ShrinkToFitElements(hoveringNodes),
                     hoveringNodes.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
                 evt.menu.AppendAction("Resize/Grow To Fit Selection",
-                    a => ResizeToIncludeSelectedNodes(),
+                    a => placemat.ResizeToIncludeSelectedNodes(),
                     s =>
                     {
-                        foreach (ISelectable sel in m_GraphView.selection)
+                        foreach (ISelectable sel in placemat.m_GraphView.selection)
                         {
                             var node = sel as Node;
                             if (node != null && !hoveringNodes.Contains(node))
@@ -536,26 +541,21 @@ namespace UnityEditor.Experimental.GraphView
                         return DropdownMenuAction.Status.Disabled;
                     });
 
-                // Collapsing / Expanding Options
-                evt.menu.AppendSeparator();
+                var status = placemat.Container.Placemats.Any() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
 
-                evt.menu.AppendAction("Collapse", a => Collapsed = true,
-                    !Collapsed ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-                evt.menu.AppendAction("Expand", a => Collapsed = false,
-                    Collapsed ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                evt.menu.AppendAction("Order/Bring To Front", a => Container.BringToFront(placemat), status);
+                evt.menu.AppendAction("Order/Bring Forward", a => Container.CyclePlacemat(placemat, PlacematContainer.CycleDirection.Up), status);
+                evt.menu.AppendAction("Order/Send Backward", a => Container.CyclePlacemat(placemat, PlacematContainer.CycleDirection.Down), status);
+                evt.menu.AppendAction("Order/Send To Back", a => Container.SendToBack(placemat), status);
             }
-
-            // Let placemat container deal with contextual menu events (although we are the target)
-            m_BuildContextualMenuDelegate?.Invoke(evt);
         }
 
-        List<Node> GetHoveringNodes()
+        List<GraphElement> GetHoveringNodes()
         {
             var potentialElements = new List<GraphElement>();
             ActOnGraphElementsOver(e => potentialElements.Add(e));
 
-            return potentialElements.OfType<Node>().ToList();
+            return potentialElements.Where(e => e is Node).ToList();
         }
 
         public void StartEditTitle()
@@ -603,10 +603,10 @@ namespace UnityEditor.Experimental.GraphView
             DoNotEnsureMinSize
         }
 
-        // Returns false if the selection is not applicable.
-        public static bool CalculateSelectedNodeBounds(ref Rect pos, List<Node> nodes, MinSizePolicy ensureMinSize = MinSizePolicy.EnsureMinSize)
+        // Returns false if bounds could not be computed.
+        public static bool ComputeElementBounds(ref Rect pos, List<GraphElement> elements, MinSizePolicy ensureMinSize = MinSizePolicy.EnsureMinSize)
         {
-            if (nodes == null || nodes.Count == 0)
+            if (elements == null || elements.Count == 0)
                 return false;
 
             float minX =  Mathf.Infinity;
@@ -614,7 +614,7 @@ namespace UnityEditor.Experimental.GraphView
             float minY =  Mathf.Infinity;
             float maxY = -Mathf.Infinity;
 
-            foreach (var r in nodes.Select(n => n.GetPosition()))
+            foreach (var r in elements.Select(n => n.GetPosition()))
             {
                 if (r.xMin < minX)
                     minX = r.xMin;

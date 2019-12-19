@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI
     [CustomEditor(typeof(PackageSelectionObject))]
     internal sealed class PackageEditor : Editor
     {
-        private static readonly string s_LocalizedTitle = L10n.Tr("Package '{0}' Manifest");
+        private static readonly string s_LocalizedTitle = ApplicationUtil.instance.GetTranslationForText("Package '{0}' Manifest");
         private const float kMinHeightForAssetStore = 192f;
         private const float kMinHeightForOther = 96f;
         private const float kLabelMinWidth = 64f;
@@ -64,7 +64,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (packageSelectionObject == null)
             {
-                EditorGUILayout.HelpBox(L10n.Tr("This package is not accessible anymore."), MessageType.Error);
+                EditorGUILayout.HelpBox(ApplicationUtil.instance.GetTranslationForText("This package is not accessible anymore."), MessageType.Error);
                 return;
             }
 
@@ -73,7 +73,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageDatabase.instance.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
                 if (m_Package == null || m_Version == null)
                 {
-                    EditorGUILayout.HelpBox(L10n.Tr("This package is not accessible anymore."), MessageType.Error);
+                    EditorGUILayout.HelpBox(ApplicationUtil.instance.GetTranslationForText("This package is not accessible anymore."), MessageType.Error);
                     return;
                 }
             }

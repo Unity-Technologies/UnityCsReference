@@ -42,7 +42,7 @@ namespace UnityEditor.Connect
         const string k_LearnMoreLink = "LearnMore";
         const string k_StartUsingCloudBuildLink = "StartUsingCloudBuild";
         const string k_HistoryButtonName = "HistoryButton";
-        const string k_DeployButtonName = "DeployButton";
+        const string k_UploadButtonName = "UploadButton";
         const string k_ManageTargetButton = "ManageTargetButton";
         const string k_AddTargetButton = "AddTargetButton";
         const string k_NoTargetContainer = "NoTargetContainer";
@@ -76,24 +76,12 @@ namespace UnityEditor.Connect
         const string k_JsonNodeNameLabel = "label";
         const string k_JsonNodeNameName = "name";
         const string k_JsonNodeNameBuildTargetId = "buildtargetid";
-        const string k_JsonNodeNameBuildTargetName = "buildTargetName";
         const string k_JsonNodeNameEnabled = "enabled";
         const string k_JsonNodeNameStartBuilds = "start_builds";
         const string k_JsonNodeNameText = "text";
         const string k_JsonNodeNameBillingPlan = "billingPlan";
         const string k_JsonNodeNameAlertType = "alertType";
         const string k_JsonNodeNameBuild = "build";
-        const string k_JsonNodeNameBuildStatus = "buildStatus";
-
-        const string k_BuildStatusCanceled = "canceled";
-        const string k_BuildStatusFailure = "failure";
-        const string k_BuildStatusQueued = "queued";
-        const string k_BuildStatusSentToBuilder = "sentToBuilder";
-        const string k_BuildStatusSentRestarted = "restarted";
-        const string k_BuildStatusSuccess = "success";
-        const string k_BuildStatusStarted = "started";
-        const string k_BuildStatusStartedMessage = "building";
-        const string k_BuildStatusUnknown = "unknown";
 
         const string k_UrlSuffixBillingPlan = "/billingplan";
 
@@ -111,17 +99,12 @@ namespace UnityEditor.Connect
         const string k_MessageLaunchedBuildSuccess = "Build #{0} {1} added to queue";
         const string k_MessageLaunchedBuildFailure = "Unable to build project";
 
-        const string k_BuildFinishedWithStatusMsg = "Build #{0} {1} {2}.";
-
         const string k_BuildButtonNamePrefix = "BuildBtn_";
         const string k_LabelBuildButton = "Build";
         const string k_LabelConfiguredTargets = "Build targets";
 
         const string k_NumberOfBuildsToQuery = "25";
         const long k_HttpResponseCodeAccepted = 202L;
-
-        static CloudBuildPoller s_CloudBuildPoller;
-        bool m_PollerWasEnabledAtLaunch;
 
         internal enum CloudBuildEvent
         {
@@ -154,11 +137,6 @@ namespace UnityEditor.Connect
             m_StateMachine.AddState(m_EnabledState);
             m_DisabledState = new DisabledState(m_StateMachine, this);
             m_StateMachine.AddState(m_DisabledState);
-
-            if (s_CloudBuildPoller == null)
-            {
-                s_CloudBuildPoller = new CloudBuildPoller();
-            }
         }
 
         void OnDestroy()
@@ -381,7 +359,7 @@ namespace UnityEditor.Connect
 
             public override void EnterState()
             {
-                s_CloudBuildPoller?.Disable();
+                CloudBuildPoller.instance.Disable();
                 var generalTemplate = EditorGUIUtility.Load(k_CloudBuildDisabledUxmlPath) as VisualTreeAsset;
                 var scrollContainer = m_Provider.rootVisualElement.Q(className: k_ServiceScrollContainerClassName);
                 scrollContainer.Clear();
@@ -407,7 +385,6 @@ namespace UnityEditor.Connect
 
             SimpleStateMachine<CloudBuildEvent>.State HandleBinding(CloudBuildEvent raisedEvent)
             {
-                m_Provider.m_PollerWasEnabledAtLaunch = true;
                 return stateMachine.GetStateByName(k_StateNameEnabled);
             }
         }
@@ -431,9 +408,6 @@ namespace UnityEditor.Connect
 
             public override void EnterState()
             {
-                // This is a temporary measure to make sure the polling is effective.
-                m_Provider.m_PollerWasEnabledAtLaunch = true;
-
                 // If we haven't received new bound info, fetch them
                 var generalTemplate = EditorGUIUtility.Load(k_CloudBuildEnabledUxmlPath) as VisualTreeAsset;
                 var scrollContainer = m_Provider.rootVisualElement.Q(className: k_ServiceScrollContainerClassName);
@@ -454,12 +428,12 @@ namespace UnityEditor.Connect
                     };
                 }
 
-                var deployButton = m_Provider.rootVisualElement.Q<Button>(k_DeployButtonName);
-                if (deployButton != null)
+                var uploadButton = m_Provider.rootVisualElement.Q<Button>(k_UploadButtonName);
+                if (uploadButton != null)
                 {
-                    deployButton.clicked += () =>
+                    uploadButton.clicked += () =>
                     {
-                        Application.OpenURL(ServicesConfiguration.instance.GetCurrentCloudBuildProjectDeploymentUrl());
+                        Application.OpenURL(ServicesConfiguration.instance.GetCurrentCloudBuildProjectUploadUrl());
                     };
                 }
 
@@ -492,7 +466,7 @@ namespace UnityEditor.Connect
                 m_CloudBuildApiOrgProjectUrl = null;
                 m_CloudBuildApiOrgProjectBillingPlanUrl = null;
                 m_CloudBuildApiOrgProjectBuildTargetsUrl = null;
-                m_BillingPlanLabel = "";
+                m_BillingPlanLabel = string.Empty;
             }
 
             void GetProjectInfo()
@@ -521,7 +495,7 @@ namespace UnityEditor.Connect
 
                 try
                 {
-                    if (IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetProjectRequest))
+                    if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetProjectRequest))
                     {
                         try
                         {
@@ -589,7 +563,7 @@ namespace UnityEditor.Connect
 
                 try
                 {
-                    if (IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetProjectBillingPlanRequest))
+                    if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetProjectBillingPlanRequest))
                     {
                         try
                         {
@@ -642,7 +616,7 @@ namespace UnityEditor.Connect
 
                 try
                 {
-                    if (IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetProjectBuildTargetsRequest))
+                    if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetProjectBuildTargetsRequest))
                     {
                         try
                         {
@@ -651,7 +625,7 @@ namespace UnityEditor.Connect
                             var buildEntryList = json.AsList();
                             if (buildEntryList.Count <= 0)
                             {
-                                s_CloudBuildPoller.Disable();
+                                CloudBuildPoller.instance.Disable();
                             }
                             else
                             {
@@ -662,18 +636,17 @@ namespace UnityEditor.Connect
                                 m_Provider.rootVisualElement.Q(k_PollFooterSectionName).style.display = DisplayStyle.Flex;
 
                                 var pollerToggle = m_Provider.rootVisualElement.Q<Toggle>(k_PollToggleName);
-                                pollerToggle.SetEnabled(false);
+                                pollerToggle.SetValueWithoutNotify(true);
                                 pollerToggle.RegisterValueChangedCallback(evt =>
                                 {
                                     if (evt.newValue)
                                     {
-                                        s_CloudBuildPoller.Enable(m_CloudBuildApiOrgLatestBuilds);
+                                        CloudBuildPoller.instance.Enable(m_CloudBuildApiOrgLatestBuilds);
                                     }
                                     else
                                     {
-                                        s_CloudBuildPoller.Disable();
+                                        CloudBuildPoller.instance.Disable();
                                     }
-                                    m_Provider.m_PollerWasEnabledAtLaunch = s_CloudBuildPoller.IsEnabled();
                                 });
 
                                 m_Provider.rootVisualElement.Q<TextElement>(className: k_ServiceTargetContainerTitleClassName).text = L10n.Tr(k_LabelConfiguredTargets);
@@ -684,27 +657,7 @@ namespace UnityEditor.Connect
                                     AddBuildTarget(targetsContainer, buildEntry);
                                 }
 
-                                if (m_Provider.m_PollerWasEnabledAtLaunch)
-                                {
-                                    s_CloudBuildPoller.Enable(m_CloudBuildApiOrgLatestBuilds);
-                                    pollerToggle.SetValueWithoutNotify(m_Provider.m_PollerWasEnabledAtLaunch);
-                                    m_Provider.m_PollerWasEnabledAtLaunch = false;
-                                }
-                                else
-                                {
-                                    // Synchronize the actual poller with the toggle value...
-                                    if (s_CloudBuildPoller.IsEnabled() != pollerToggle.value)
-                                    {
-                                        if (pollerToggle.value)
-                                        {
-                                            s_CloudBuildPoller.Enable(m_CloudBuildApiOrgLatestBuilds);
-                                        }
-                                        else
-                                        {
-                                            s_CloudBuildPoller.Disable();
-                                        }
-                                    }
-                                }
+                                CloudBuildPoller.instance.Enable(m_CloudBuildApiOrgLatestBuilds);
                             }
                             m_Provider.rootVisualElement.Q(className: k_ServiceCloudBuildContainerClassName).style.display = DisplayStyle.Flex;
                             m_Provider.rootVisualElement.Q(className: k_ServiceCloudProgressClassName).style.display = DisplayStyle.None;
@@ -773,7 +726,7 @@ namespace UnityEditor.Connect
                         {
                             try
                             {
-                                if (IsUnityWebRequestReadyForJsonExtract(launchBuildPostRequest))
+                                if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(launchBuildPostRequest))
                                 {
                                     try
                                     {
@@ -858,7 +811,7 @@ namespace UnityEditor.Connect
 
                 try
                 {
-                    if (IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetApiStatusRequest))
+                    if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_Provider.m_GetApiStatusRequest))
                     {
                         try
                         {
@@ -916,167 +869,6 @@ namespace UnityEditor.Connect
             SimpleStateMachine<CloudBuildEvent>.State HandleUnbinding(CloudBuildEvent raisedEvent)
             {
                 return stateMachine.GetStateByName(k_StateNameDisabled);
-            }
-
-            internal static bool IsUnityWebRequestReadyForJsonExtract(UnityWebRequest unityWebRequest)
-            {
-                return (unityWebRequest.result != UnityWebRequest.Result.ProtocolError) && !string.IsNullOrEmpty(unityWebRequest.downloadHandler.text);
-            }
-        }
-
-        class CloudBuildPoller
-        {
-            const int k_IntervalSeconds = 15;
-            bool m_Enabled;
-            TickTimerHelper m_Timer = new TickTimerHelper(k_IntervalSeconds);
-            string m_PollingUrl;
-            List<string> m_BuildsToReportOn = new List<string>();
-
-            internal bool IsEnabled()
-            {
-                return m_Enabled;
-            }
-
-            internal void Enable(string pollingUrl)
-            {
-                if (!m_Enabled)
-                {
-                    m_PollingUrl = pollingUrl;
-                    m_Enabled = true;
-                    EditorApplication.update += Update;
-                    m_Timer.Reset();
-                }
-            }
-
-            internal void Disable()
-            {
-                if (m_Enabled)
-                {
-                    m_Enabled = false;
-                    EditorApplication.update -= Update;
-                }
-            }
-
-            void Update()
-            {
-                if (m_Timer.DoTick())
-                {
-                    var getCurrentBuildTargetStatusRequest = new UnityWebRequest(m_PollingUrl,
-                        UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-                    getCurrentBuildTargetStatusRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-                    var operation = getCurrentBuildTargetStatusRequest.SendWebRequest();
-                    operation.completed += asyncOperation =>
-                    {
-                        try
-                        {
-                            if (EnabledState.IsUnityWebRequestReadyForJsonExtract(getCurrentBuildTargetStatusRequest))
-                            {
-                                try
-                                {
-                                    var jsonParser = new JSONParser(getCurrentBuildTargetStatusRequest.downloadHandler.text);
-                                    var json = jsonParser.Parse();
-                                    var buildList = json.AsList();
-                                    var trackedBuilds = new List<string>(m_BuildsToReportOn);
-                                    if (buildList.Count > 0)
-                                    {
-                                        foreach (var rawBuild in buildList)
-                                        {
-                                            var build = rawBuild.AsDict();
-                                            var buildNumber = build[k_JsonNodeNameBuild].AsFloat().ToString();
-                                            var buildId = build[k_JsonNodeNameBuildTargetId].AsString() + "_" + buildNumber;
-                                            var buildStatus = build[k_JsonNodeNameBuildStatus].AsString().ToLower();
-
-                                            if (trackedBuilds.Contains(buildId))
-                                            {
-                                                trackedBuilds.Remove(buildId);
-                                            }
-
-                                            if (m_BuildsToReportOn.Contains(buildId)
-                                                && (k_BuildStatusCanceled.Equals(buildStatus)
-                                                    || k_BuildStatusFailure.Equals(buildStatus)
-                                                    || k_BuildStatusSuccess.Equals(buildStatus)
-                                                    || k_BuildStatusStarted.Equals(buildStatus)
-                                                    || k_BuildStatusUnknown.Equals(buildStatus)
-                                                )
-                                            )
-                                            {
-                                                m_BuildsToReportOn.Remove(buildId);
-                                                var buildTargetName = build[k_JsonNodeNameBuildTargetName].AsString();
-
-                                                var severity = Notification.Severity.Info;
-                                                string message;
-                                                switch (buildStatus)
-                                                {
-                                                    case k_BuildStatusCanceled:
-                                                        severity = Notification.Severity.Warning;
-                                                        message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusCanceled);
-                                                        Debug.LogWarning(message);
-                                                        break;
-                                                    case k_BuildStatusFailure:
-                                                        severity = Notification.Severity.Error;
-                                                        message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusFailure);
-                                                        Debug.LogError(message);
-                                                        break;
-                                                    case k_BuildStatusStarted:
-                                                        message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusStartedMessage);
-                                                        Debug.Log(message);
-                                                        break;
-                                                    case k_BuildStatusSuccess:
-                                                        message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusSuccess);
-                                                        Debug.Log(message);
-                                                        break;
-                                                    default:
-                                                    {
-                                                        message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusUnknown);
-                                                        Debug.LogWarning(message);
-                                                        break;
-                                                    }
-                                                }
-
-                                                NotificationManager.instance.Publish(Notification.Topic.BuildService, severity, message);
-                                            }
-                                            else if (!m_BuildsToReportOn.Contains(buildId)
-                                                     && (k_BuildStatusQueued.Equals(buildStatus)
-                                                         || k_BuildStatusSentToBuilder.Equals(buildStatus)
-                                                         || k_BuildStatusSentRestarted.Equals(buildStatus)
-                                                     )
-                                            )
-                                            {
-                                                if (k_BuildStatusSentRestarted.Equals(buildStatus))
-                                                {
-                                                    var buildTargetName = build[k_JsonNodeNameBuildTargetName].AsString();
-                                                    var message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusSentRestarted);
-                                                    Debug.Log(message);
-                                                    NotificationManager.instance.Publish(Notification.Topic.BuildService, Notification.Severity.Info, message);
-                                                }
-
-                                                m_BuildsToReportOn.Add(buildId);
-                                            }
-                                        }
-
-                                        //If a build vanishes, we don't want to keep investigating it
-                                        foreach (var missingTrackedBuild in trackedBuilds)
-                                        {
-                                            m_BuildsToReportOn.Remove(missingTrackedBuild);
-                                        }
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    NotificationManager.instance.Publish(
-                                        Notification.Topic.BuildService,
-                                        Notification.Severity.Error,
-                                        L10n.Tr(k_MessageErrorForApiStatusData));
-                                    Debug.LogException(ex);
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            getCurrentBuildTargetStatusRequest.Dispose();
-                        }
-                    };
-                }
             }
         }
     }

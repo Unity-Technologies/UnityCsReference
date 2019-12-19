@@ -117,49 +117,17 @@ namespace UnityEngine
 
         extern public void ClearTransformMotion();
 
-        extern private UInt32[] GetSelfAndInterCollisionIndices();
+        extern public void GetSelfAndInterCollisionIndices([NotNull] List<UInt32> indices);
 
-        internal void Internal_GetSelfAndInterCollisionIndices(List<UInt32> indicesOutList)
-        {
-            UInt32[] indices = GetSelfAndInterCollisionIndices();
-            indicesOutList.Clear();
-            indicesOutList.AddRange(indices);
-        }
+        extern public void SetSelfAndInterCollisionIndices([NotNull] List<UInt32> indices);
 
-        extern private void SetSelfAndInterCollisionIndices(UInt32[] indicesIn);
+        extern public void GetVirtualParticleIndices([NotNull] List<UInt32> indicesOutList);
 
-        internal void Internal_SetSelfAndInterCollisionIndices(List<UInt32> indicesInList)
-        {
-            SetSelfAndInterCollisionIndices(indicesInList.ToArray());
-        }
+        extern public void SetVirtualParticleIndices([NotNull] List<UInt32> indicesIn);
 
-        extern private UInt32[] GetVirtualParticleIndices();
-        internal void Internal_GetVirtualParticleIndices(List<UInt32> indicesOutList)
-        {
-            UInt32[] indices = GetVirtualParticleIndices();
-            indicesOutList.Clear();
-            indicesOutList.AddRange(indices);
-        }
+        extern public void GetVirtualParticleWeights([NotNull] List<Vector3> weightsOutList);
 
-        extern private void SetVirtualParticleIndices(UInt32[] indicesIn);
-        internal void Internal_SetVirtualParticleIndices(List<UInt32> indicesInList)
-        {
-            SetVirtualParticleIndices(indicesInList.ToArray());
-        }
-
-        extern private Vector3[] GetVirtualParticleWeights();
-        internal void Internal_GetVirtualParticleWeights(List<Vector3> weightsOutList)
-        {
-            Vector3[] weights = GetVirtualParticleWeights();
-            weightsOutList.Clear();
-            weightsOutList.AddRange(weights);
-        }
-
-        extern private void SetVirtualParticleWeights(Vector3[] weightsIn);
-        internal void Internal_SetVirtualParticleWeights(List<Vector3> weightsInList)
-        {
-            SetVirtualParticleWeights(weightsInList.ToArray());
-        }
+        extern public void SetVirtualParticleWeights([NotNull] List<Vector3> weights);
 
         [Obsolete("useContinuousCollision is no longer supported, use enableContinuousCollision instead")]
         public float useContinuousCollision { get; set; }

@@ -507,9 +507,18 @@ namespace Unity.Collections
             var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<U>(m_Buffer, length, m_AllocatorLabel);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
-            result.m_DisposeSentinel = m_DisposeSentinel;
+            SetDisposeSentinel(ref result);
             return result;
         }
+
+        // DisposeSentinel is a class so that's not supported in Burst. However, in Burst it's guaranteed
+        // that the sentinel is null anyway, so we can just use BurstDiscard on the place that works on it.
+        [BurstDiscard]
+        void SetDisposeSentinel<U>(ref NativeArray<U> result) where U : struct
+        {
+            result.m_DisposeSentinel = m_DisposeSentinel;
+        }
+
 
         public NativeArray<U> Reinterpret<U>() where U : struct
         {

@@ -34,9 +34,10 @@ namespace UnityEngine
         [SerializeField]
         private int m_InstanceID;
 
-        internal int instanceID
+        public int instanceID
         {
             get { return m_InstanceID; }
+            set { m_InstanceID = value; }
         }
 
         // Determines if the reference is linked to an object, loaded or not, valid or not.

@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -199,11 +200,11 @@ namespace UnityEditor
         // 4.0 interface (made internal for now)
         internal void SetSearchFilter(SearchFilter filter)
         {
-            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.sceneHandles, filter.showAllHits);
+            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex().ToArray(), filter.showAllHits);
         }
 
         [FreeFunction("HierarchyPropertyBindings::SetSearchFilterImpl", HasExplicitThis = true)]
-        extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, int[] sceneHandles, bool showAllHits);
+        extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, int[] sceneHandles, string[] regex, bool showAllHits);
         [FreeFunction("HierarchyPropertyBindings::FindAllAncestors", HasExplicitThis = true)]
         public extern int[] FindAllAncestors(int[] instanceIDs);
         [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilter")]

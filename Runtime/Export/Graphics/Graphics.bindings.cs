@@ -819,6 +819,22 @@ namespace UnityEngine
     }
 }
 
+namespace UnityEngine.Rendering
+{
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public class PIX
+    {
+        [FreeFunction("PIX::BeginGPUCapture")]
+        public static extern void BeginGPUCapture();
+
+        [FreeFunction("PIX::EndGPUCapture")]
+        public static extern void EndGPUCapture();
+
+        [FreeFunction("PIX::IsAttached")]
+        public static extern bool IsAttached();
+    }
+}
+
 namespace UnityEngine.Experimental.Rendering
 {
     public enum WaitForPresentSyncPoint

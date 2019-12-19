@@ -165,7 +165,8 @@ namespace UnityEditor
                     }
                 }
 
-                var tree = renderer.GetComponent<Tree>();
+                Tree tree;
+                renderer.TryGetComponent(out tree);
                 if ((tree != null) && (m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume))
                 {
                     EditorGUI.indentLevel++;

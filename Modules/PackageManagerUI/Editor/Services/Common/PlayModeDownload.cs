@@ -32,9 +32,9 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (AssetStoreDownloadManager.instance.IsAnyDownloadInProgress())
                 {
-                    var accept = EditorUtility.DisplayDialog(L10n.Tr("Package download in progress"),
-                        L10n.Tr("Please note that entering Play Mode while Unity is downloading a package may impact performance"),
-                        L10n.Tr("Got it"), L10n.Tr("Cancel"));
+                    var accept = EditorUtility.DisplayDialog(ApplicationUtil.instance.GetTranslationForText("Package download in progress"),
+                        ApplicationUtil.instance.GetTranslationForText("Please note that entering Play Mode while Unity is downloading a package may impact performance"),
+                        ApplicationUtil.instance.GetTranslationForText("Got it"), ApplicationUtil.instance.GetTranslationForText("Cancel"));
 
                     if (accept)
                     {
@@ -60,9 +60,9 @@ namespace UnityEditor.PackageManager.UI
             if (!EditorApplication.isPlaying || PlayModeDownloadState.instance.skipShowDialog)
                 return true;
 
-            var accept = EditorUtility.DisplayDialog(L10n.Tr("Play Mode in progress"),
-                L10n.Tr("Please note that making changes in the Package Manager while in Play Mode may impact performance."),
-                L10n.Tr("Got it"), L10n.Tr("Cancel"));
+            var accept = EditorUtility.DisplayDialog(ApplicationUtil.instance.GetTranslationForText("Play Mode in progress"),
+                ApplicationUtil.instance.GetTranslationForText("Please note that making changes in the Package Manager while in Play Mode may impact performance."),
+                ApplicationUtil.instance.GetTranslationForText("Got it"), ApplicationUtil.instance.GetTranslationForText("Cancel"));
 
             if (accept)
                 SetSkipDialog();

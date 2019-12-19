@@ -49,34 +49,112 @@ namespace UnityEditor.UIElements.Debugger
         public Action<VisualElement> onSelectedElementChanged;
     }
 
-    internal class UIElementsDebugger : PanelDebugger, IGlobalPanelDebugger
+    [Serializable]
+    internal class DebuggerContext
     {
-        const string k_DefaultStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebugger.uss";
-        const string k_DefaultDarkStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerDark.uss";
-        const string k_DefaultLightStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerLight.uss";
+        [SerializeField]
+        private int m_SelectedElementIndex = -1;
+        private bool m_PickElement = false;
+
+        [SerializeField]
+        private bool m_ShowLayoutBound = false;
+
+        [SerializeField]
+        private bool m_ShowRepaintOverlay = false;
+
+        [SerializeField]
+        private bool m_ShowDrawStats = false;
+
+        public DebuggerSelection selection { get; } = new DebuggerSelection();
+        public VisualElement selectedElement => selection.element;
+        public IPanelDebug panelDebug => selection.panelDebug;
+
+        public event Action onStateChange;
+
+        public int selectedElementIndex
+        {
+            get { return m_SelectedElementIndex; }
+            set
+            {
+                if (m_SelectedElementIndex == value)
+                    return;
+                m_SelectedElementIndex = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool pickElement
+        {
+            get { return m_PickElement; }
+            set
+            {
+                if (m_PickElement == value)
+                    return;
+                m_PickElement = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool showLayoutBound
+        {
+            get { return m_ShowLayoutBound; }
+            set
+            {
+                if (m_ShowLayoutBound == value)
+                    return;
+                m_ShowLayoutBound = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool showRepaintOverlay
+        {
+            get { return m_ShowRepaintOverlay; }
+            set
+            {
+                if (m_ShowRepaintOverlay == value)
+                    return;
+                m_ShowRepaintOverlay = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool showDrawStats
+        {
+            get { return m_ShowDrawStats; }
+            set
+            {
+                if (m_ShowDrawStats == value)
+                    return;
+                m_ShowDrawStats = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool uxmlLiveReload
+        {
+            get { return RetainedMode.UxmlLiveReloadIsEnabled; }
+            set
+            {
+                if (RetainedMode.UxmlLiveReloadIsEnabled == value)
+                    return;
+                RetainedMode.UxmlLiveReloadIsEnabled = value;
+                onStateChange?.Invoke();
+            }
+        }
+    }
+
+    internal class UIElementsDebugger : EditorWindow
+    {
         public const string k_WindowPath = "Window/Analysis/UIElements Debugger";
         public static readonly string WindowName = L10n.Tr("UIElements Debugger");
         public static readonly string OpenWindowCommand = nameof(OpenUIElementsDebugger);
 
-        private ToolbarToggle m_PickToggle;
-        private ToolbarToggle m_ShowLayoutToggle;
-        private ToolbarToggle m_RepaintOverlayToggle;
-        private ToolbarToggle m_UXMLLiveReloadToggle;
-        private ToolbarToggle m_ShowDrawStatsToggle;
-
-        private DebuggerSelection m_DebuggerSelection;
-        private RepaintOverlayPainter m_RepaintOverlay;
-        private HighlightOverlayPainter m_PickOverlay;
-        private LayoutOverlayPainter m_LayoutOverlay;
-
-        private DebuggerTreeView m_TreeViewContainer;
-        private StylesDebugger m_StylesDebuggerContainer;
+        [SerializeField]
+        private UIElementsDebuggerImpl m_DebuggerImpl;
 
         [SerializeField]
-        private int m_SelectedElementIndex = -1;
-        private bool m_PickElement = false;
-        private bool m_ShowLayoutBound = false;
-        private bool m_ShowRepaintOverlay = false;
+        private DebuggerContext m_DebuggerContext;
 
         [MenuItem(k_WindowPath, false, 101, false)]
         private static void OpenUIElementsDebugger()
@@ -106,7 +184,7 @@ namespace UnityEditor.UIElements.Debugger
             debuggerWindow.Show();
 
             if (window != null)
-                debuggerWindow.ScheduleWindowToDebug(window);
+                debuggerWindow.m_DebuggerImpl.ScheduleWindowToDebug(window);
         }
 
         private static UIElementsDebugger CreateDebuggerWindow()
@@ -116,20 +194,60 @@ namespace UnityEditor.UIElements.Debugger
             return window;
         }
 
-        public new void OnEnable()
+        public void OnEnable()
         {
-            base.OnEnable();
+            if (m_DebuggerContext == null)
+                m_DebuggerContext = new DebuggerContext();
 
-            DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
+            if (m_DebuggerImpl == null)
+                m_DebuggerImpl = new UIElementsDebuggerImpl();
 
-            m_DebuggerSelection = new DebuggerSelection();
-            m_RepaintOverlay = new RepaintOverlayPainter();
-            m_PickOverlay = new HighlightOverlayPainter();
-            m_LayoutOverlay = new LayoutOverlayPainter();
+            m_DebuggerImpl.Initialize(this, rootVisualElement, m_DebuggerContext);
+        }
 
-            var root = this.rootVisualElement;
+        public void OnDisable()
+        {
+            m_DebuggerImpl.OnDisable();
+        }
+
+        public void OnFocus()
+        {
+            m_DebuggerImpl.OnFocus();
+        }
+    }
+
+    [Serializable]
+    internal class UIElementsDebuggerImpl : PanelDebugger, IGlobalPanelDebugger
+    {
+        const string k_DefaultStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebugger.uss";
+        const string k_DefaultDarkStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerDark.uss";
+        const string k_DefaultLightStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerLight.uss";
+
+        private VisualElement m_Root;
+        private ToolbarToggle m_PickToggle;
+        private ToolbarToggle m_ShowLayoutToggle;
+        private ToolbarToggle m_RepaintOverlayToggle;
+        private ToolbarToggle m_UXMLLiveReloadToggle;
+        private ToolbarToggle m_ShowDrawStatsToggle;
+
+        private DebuggerTreeView m_TreeViewContainer;
+        private StylesDebugger m_StylesDebuggerContainer;
+
+        private DebuggerContext m_Context;
+        private RepaintOverlayPainter m_RepaintOverlay;
+        private HighlightOverlayPainter m_PickOverlay;
+        private LayoutOverlayPainter m_LayoutOverlay;
+
+        public void Initialize(EditorWindow debuggerWindow, VisualElement root, DebuggerContext context)
+        {
+            base.Initialize(debuggerWindow);
+
+            m_Root = root;
+            m_Context = context;
+            m_Context.onStateChange += OnContextChange;
+
             var sheet = EditorGUIUtility.Load(k_DefaultStyleSheetPath) as StyleSheet;
-            root.styleSheets.Add(sheet);
+            m_Root.styleSheets.Add(sheet);
 
             StyleSheet colorSheet;
             if (EditorGUIUtility.isProSkin)
@@ -137,22 +255,23 @@ namespace UnityEditor.UIElements.Debugger
             else
                 colorSheet = EditorGUIUtility.Load(k_DefaultLightStyleSheetPath) as StyleSheet;
 
-            root.styleSheets.Add(colorSheet);
-            root.Add(m_Toolbar);
+            m_Root.styleSheets.Add(colorSheet);
+
+            m_Root.Add(m_Toolbar);
 
             m_PickToggle = new ToolbarToggle() { name = "pickToggle" };
             m_PickToggle.text = "Pick Element";
             m_PickToggle.RegisterValueChangedCallback((e) =>
             {
-                m_PickElement = e.newValue;
+                m_Context.pickElement = e.newValue;
                 // On OSX, as focus-follow-mouse is not supported,
                 // we explicitly focus the EditorWindow when enabling picking
                 if (Application.platform == RuntimePlatform.OSXEditor)
                 {
-                    Panel p = m_DebuggerSelection.panel as Panel;
+                    Panel p = m_Context.selection.panel as Panel;
                     if (p != null)
                     {
-                        TryFocusCorrespondingWindow(p);
+                        TryFocusCorrespondingWindow(p.ownerObject);
                     }
                 }
             });
@@ -160,14 +279,8 @@ namespace UnityEditor.UIElements.Debugger
             m_Toolbar.Add(m_PickToggle);
 
             m_ShowLayoutToggle = new ToolbarToggle() { name = "layoutToggle" };
-            m_ShowLayoutToggle.SetValueWithoutNotify(m_ShowLayoutBound);
             m_ShowLayoutToggle.text = "Show Layout";
-            m_ShowLayoutToggle.RegisterValueChangedCallback((e) =>
-            {
-                m_ShowLayoutBound = e.newValue;
-                panelDebug?.MarkDirtyRepaint();
-                panelDebug?.MarkDebugContainerDirtyRepaint();
-            });
+            m_ShowLayoutToggle.RegisterValueChangedCallback((e) => { m_Context.showLayoutBound = e.newValue; });
 
             m_Toolbar.Add(m_ShowLayoutToggle);
 
@@ -175,94 +288,116 @@ namespace UnityEditor.UIElements.Debugger
             {
                 m_RepaintOverlayToggle = new ToolbarToggle() { name = "repaintOverlayToggle" };
                 m_RepaintOverlayToggle.text = "Repaint Overlay";
-                m_RepaintOverlayToggle.RegisterValueChangedCallback((e) => m_ShowRepaintOverlay = e.newValue);
+                m_RepaintOverlayToggle.RegisterValueChangedCallback((e) => m_Context.showRepaintOverlay = e.newValue);
                 m_Toolbar.Add(m_RepaintOverlayToggle);
 
                 m_UXMLLiveReloadToggle = new ToolbarToggle() { name = "UXMLReloadToggle" };
-                m_UXMLLiveReloadToggle.SetValueWithoutNotify(RetainedMode.UxmlLiveReloadIsEnabled);
                 m_UXMLLiveReloadToggle.text = "UXML Live Reload";
-                m_UXMLLiveReloadToggle.RegisterValueChangedCallback((e) => RetainedMode.UxmlLiveReloadIsEnabled = e.newValue);
+                m_UXMLLiveReloadToggle.RegisterValueChangedCallback((e) => m_Context.uxmlLiveReload = e.newValue);
                 m_Toolbar.Add(m_UXMLLiveReloadToggle);
 
                 m_ShowDrawStatsToggle = new ToolbarToggle() { name = "drawStatsToggle" };
                 m_ShowDrawStatsToggle.text = "Draw Stats";
-                m_ShowDrawStatsToggle.RegisterValueChangedCallback((e) =>
-                {
-                    var updater = (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-                    if (updater != null)
-                        updater.DebugGetRenderChain().drawStats = e.newValue;
-                    panelDebug?.MarkDirtyRepaint();
-                });
+                m_ShowDrawStatsToggle.RegisterValueChangedCallback((e) => { m_Context.showDrawStats = e.newValue; });
                 m_Toolbar.Add(m_ShowDrawStatsToggle);
             }
 
             var splitter = new DebuggerSplitter();
-            root.Add(splitter);
+            m_Root.Add(splitter);
 
-            m_TreeViewContainer = new DebuggerTreeView(m_DebuggerSelection, SelectElement);
+            m_TreeViewContainer = new DebuggerTreeView(m_Context.selection, SelectElement);
             m_TreeViewContainer.style.flexGrow = 1f;
             splitter.leftPane.Add(m_TreeViewContainer);
 
-            m_StylesDebuggerContainer = new StylesDebugger(m_DebuggerSelection);
+            m_StylesDebuggerContainer = new StylesDebugger(m_Context.selection);
             splitter.rightPane.Add(m_StylesDebuggerContainer);
+
+            DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
+
+            m_RepaintOverlay = new RepaintOverlayPainter();
+            m_PickOverlay = new HighlightOverlayPainter();
+            m_LayoutOverlay = new LayoutOverlayPainter();
+
+            OnContextChange();
         }
 
         public new void OnDisable()
         {
             base.OnDisable();
 
-            if (DebuggerEventDispatchingStrategy.s_GlobalPanelDebug == (IGlobalPanelDebugger)this)
+            if (DebuggerEventDispatchingStrategy.s_GlobalPanelDebug == this)
                 DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = null;
         }
 
         public void OnFocus()
         {
             // Avoid taking focus in case of another debugger picking on this one
-            var globalPanelDebugger = DebuggerEventDispatchingStrategy.s_GlobalPanelDebug as UIElementsDebugger;
-            if (globalPanelDebugger == null || !globalPanelDebugger.m_PickElement)
+            var globalPanelDebugger = DebuggerEventDispatchingStrategy.s_GlobalPanelDebug as UIElementsDebuggerImpl;
+            if (globalPanelDebugger == null || !globalPanelDebugger.m_Context.pickElement)
                 DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
         }
 
         public override void Refresh()
         {
-            if (!m_PickElement)
+            if (!m_Context.pickElement)
             {
-                var selectedElement = m_DebuggerSelection.element;
+                var selectedElement = m_Context.selectedElement;
                 m_TreeViewContainer.RebuildTree(panelDebug);
 
                 //we should not lose the selection when the tree has changed.
-                if (selectedElement != m_DebuggerSelection.element)
+                if (selectedElement != m_Context.selectedElement)
                 {
-                    if (m_DebuggerSelection.element == null && selectedElement.panel == panelDebug.panel)
+                    if (m_Context.selectedElement == null && selectedElement.panel == panelDebug.panel)
                         SelectElement(selectedElement);
                 }
 
                 m_StylesDebuggerContainer.RefreshStylePropertyDebugger();
-                Repaint();
+                m_DebuggerWindow.Repaint();
             }
+            panelDebug?.MarkDebugContainerDirtyRepaint();
+        }
+
+        void OnContextChange()
+        {
+            // Sync the toolbar
+            m_PickToggle.SetValueWithoutNotify(m_Context.pickElement);
+            m_ShowLayoutToggle.SetValueWithoutNotify(m_Context.showLayoutBound);
+
+            if (Unsupported.IsDeveloperBuild())
+            {
+                m_RepaintOverlayToggle.SetValueWithoutNotify(m_Context.showRepaintOverlay);
+                m_UXMLLiveReloadToggle.SetValueWithoutNotify(m_Context.uxmlLiveReload);
+                m_ShowDrawStatsToggle.SetValueWithoutNotify(m_Context.showDrawStats);
+
+                var updater = (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+                if (updater != null)
+                    updater.DebugGetRenderChain().drawStats = m_Context.showDrawStats;
+            }
+
+            panelDebug?.MarkDirtyRepaint();
             panelDebug?.MarkDebugContainerDirtyRepaint();
         }
 
         void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            if (m_PickElement)
+            if (m_Context.pickElement)
                 m_PickOverlay.Draw(mgc);
             else
             {
                 m_TreeViewContainer.DrawOverlay(mgc);
                 m_StylesDebuggerContainer.RefreshBoxModelView(mgc);
 
-                if (m_ShowRepaintOverlay)
+                if (m_Context.showRepaintOverlay)
                     m_RepaintOverlay.Draw(mgc);
             }
 
-            if (m_ShowLayoutBound)
+            if (m_Context.showLayoutBound)
                 DrawLayoutBounds(mgc);
         }
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag)
         {
-            if ((changeTypeFlag & VersionChangeType.Repaint) == VersionChangeType.Repaint && m_ShowRepaintOverlay)
+            if ((changeTypeFlag & VersionChangeType.Repaint) == VersionChangeType.Repaint && m_Context.showRepaintOverlay)
             {
                 var visible = ve.resolvedStyle.visibility == Visibility.Visible &&
                     ve.resolvedStyle.opacity > Mathf.Epsilon;
@@ -282,10 +417,10 @@ namespace UnityEditor.UIElements.Debugger
             m_RepaintOverlay.ClearOverlay();
 
             m_TreeViewContainer.hierarchyHasChanged = true;
-            if (m_DebuggerSelection.panelDebug?.debugContainer != null)
-                m_DebuggerSelection.panelDebug.debugContainer.generateVisualContent -= OnGenerateVisualContent;
+            if (m_Context.panelDebug?.debugContainer != null)
+                m_Context.panelDebug.debugContainer.generateVisualContent -= OnGenerateVisualContent;
 
-            m_DebuggerSelection.panelDebug = pdbg;
+            m_Context.selection.panelDebug = pdbg;
 
             if (panelDebug?.debugContainer != null)
                 panelDebug.debugContainer.generateVisualContent += OnGenerateVisualContent;
@@ -295,22 +430,22 @@ namespace UnityEditor.UIElements.Debugger
 
         protected override void OnRestorePanelSelection()
         {
-            var restoredElement = panel.FindVisualElementByIndex(m_SelectedElementIndex);
+            var restoredElement = panel.FindVisualElementByIndex(m_Context.selectedElementIndex);
             SelectElement(restoredElement);
         }
 
         protected override bool ValidateDebuggerConnection(IPanel panelConnection)
         {
-            var p = rootVisualElement.panel as Panel;
+            var p = m_Root.panel as Panel;
             var debuggers = p.panelDebug.GetAttachedDebuggers();
 
             foreach (var dbg in debuggers)
             {
-                var uielementsDbg = dbg as UIElementsDebugger;
-                if (uielementsDbg != null && uielementsDbg.panel == p && uielementsDbg.rootVisualElement.panel == panelConnection)
+                var uielementsDbg = dbg as UIElementsDebuggerImpl;
+                if (uielementsDbg != null && uielementsDbg.panel == p && uielementsDbg.m_Root.panel == panelConnection)
                 {
                     // Avoid spamming the console if picking
-                    if (!m_PickElement)
+                    if (!m_Context.pickElement)
                         Debug.LogWarning("Cross UIElements debugger debugging is not supported");
                     return false;
                 }
@@ -319,18 +454,9 @@ namespace UnityEditor.UIElements.Debugger
             return true;
         }
 
-        public override bool InterceptEvent(EventBase ev)
-        {
-            return false;
-        }
-
-        public override void PostProcessEvent(EventBase ev)
-        {
-        }
-
         public bool InterceptMouseEvent(IPanel panel, IMouseEvent ev)
         {
-            if (!m_PickElement)
+            if (!m_Context.pickElement)
                 return false;
 
             var evtBase = ev as EventBase;
@@ -354,7 +480,7 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             // Ignore these events if on this debugger
-            if (panel != rootVisualElement.panel)
+            if (panel != m_Root.panel)
             {
                 if (evtType == MouseOverEvent.TypeId())
                 {
@@ -375,11 +501,11 @@ namespace UnityEditor.UIElements.Debugger
         public void OnPostMouseEvent(IPanel panel, IMouseEvent ev)
         {
             var isRightClick = (ev as MouseUpEvent)?.button == (int)MouseButton.RightMouse;
-            if (!isRightClick || m_PickElement)
+            if (!isRightClick || m_Context.pickElement)
                 return;
 
             // Ignore events on detached elements and on this debugger
-            if (panel == null || panel == rootVisualElement.panel)
+            if (panel == null || panel == m_Root.panel)
                 return;
 
             var evtBase = ev as EventBase;
@@ -433,7 +559,7 @@ namespace UnityEditor.UIElements.Debugger
             if (panelDebug != null)
             {
                 panelDebug?.MarkDirtyRepaint();
-                this.rootVisualElement.MarkDirtyRepaint();
+                this.m_Root.MarkDirtyRepaint();
                 panelDebug?.MarkDebugContainerDirtyRepaint();
 
                 m_TreeViewContainer.RebuildTree(panelDebug);
@@ -443,32 +569,28 @@ namespace UnityEditor.UIElements.Debugger
 
         private void StopPicking()
         {
-            m_PickElement = false;
-            m_PickToggle.SetValueWithoutNotify(false);
+            m_Context.pickElement = false;
             m_PickOverlay.ClearOverlay();
 
-            panelDebug?.MarkDebugContainerDirtyRepaint();
-            panelDebug?.MarkDirtyRepaint();
-
-            Focus();
+            m_DebuggerWindow.Focus();
         }
 
         private void SelectElement(VisualElement ve)
         {
-            if (m_DebuggerSelection.element != ve)
+            if (m_Context.selectedElement != ve)
             {
                 if (ve != null)
                     SelectPanelToDebug(ve.panel);
 
-                m_DebuggerSelection.element = ve;
-                m_SelectedElementIndex = panel.FindVisualElementIndex(ve);
+                m_Context.selection.element = ve;
+                m_Context.selectedElementIndex = panel.FindVisualElementIndex(ve);
             }
         }
 
         private void DrawLayoutBounds(MeshGenerationContext mgc)
         {
             m_LayoutOverlay.ClearOverlay();
-            m_LayoutOverlay.selectedElement = m_DebuggerSelection.element;
+            m_LayoutOverlay.selectedElement = m_Context.selectedElement;
             AddLayoutBoundOverlayRecursive(visualTree);
 
             m_LayoutOverlay.Draw(mgc);

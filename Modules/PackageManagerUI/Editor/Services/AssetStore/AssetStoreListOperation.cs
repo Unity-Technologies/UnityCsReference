@@ -55,7 +55,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (!ApplicationUtil.instance.isUserLoggedIn)
             {
-                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
+                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, ApplicationUtil.instance.GetTranslationForText("User not logged in")));
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (!ApplicationUtil.instance.isUserLoggedIn)
                 {
-                    OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
+                    OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, ApplicationUtil.instance.GetTranslationForText("User not logged in")));
                     return;
                 }
 

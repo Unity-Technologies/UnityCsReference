@@ -2,53 +2,57 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine.Serialization;
 
 namespace UnityEditor.UIElements.Debugger
 {
-    internal abstract class PanelDebugger : EditorWindow, IPanelDebugger
+    internal interface IPanelChoice
     {
-        protected class PanelChoice
+        Panel panel { get; }
+    }
+
+    internal class PanelChoice : IPanelChoice
+    {
+        public Panel panel { get; }
+
+        public PanelChoice(Panel p)
         {
-            public Panel panel { get; }
-
-            public PanelChoice(Panel p)
-            {
-                panel = p;
-            }
-
-            public override string ToString()
-            {
-                return panel.name ?? panel.visualTree.name;
-            }
+            panel = p;
         }
 
+        public override string ToString()
+        {
+            return panel.name ?? panel.visualTree.name;
+        }
+    }
 
+    [Serializable]
+    internal class PanelDebugger : IPanelDebugger
+    {
         [SerializeField]
         private string m_LastVisualTreeName;
 
+        protected EditorWindow m_DebuggerWindow;
         private EditorWindow m_WindowToDebug;
 
-        private PanelChoice m_SelectedPanel;
+        private IPanelChoice m_SelectedPanel;
         protected VisualElement m_Toolbar;
-        private ToolbarMenu m_PanelSelect;
-        private List<PanelChoice> m_PanelChoices;
+        protected ToolbarMenu m_PanelSelect;
+        private List<IPanelChoice> m_PanelChoices;
         private IVisualElementScheduledItem m_ConnectWindowScheduledItem;
         private IVisualElementScheduledItem m_RestoreSelectionScheduledItem;
 
-        private Dictionary<Panel, EditorWindow> m_PanelToEditorWindow;
-
-        protected void TryFocusCorrespondingWindow(Panel panel)
+        protected void TryFocusCorrespondingWindow(ScriptableObject panelOwner)
         {
-            EditorWindow window;
-            if (m_PanelToEditorWindow.TryGetValue(panel, out window))
-            {
-                window.Focus();
-            }
+            var hostView = panelOwner as HostView;
+            if (hostView != null && hostView.actualView != null)
+                hostView.actualView.Focus();
         }
 
         public IPanelDebug panelDebug { get; set; }
@@ -63,16 +67,12 @@ namespace UnityEditor.UIElements.Debugger
             get { return panelDebug?.visualTree; }
         }
 
-        public bool showOverlay => false;
-
-        public void OnEnable()
+        public void Initialize(EditorWindow debuggerWindow)
         {
-            OnEnable(null);
-        }
+            m_DebuggerWindow = debuggerWindow;
 
-        protected void OnEnable(VisualElement toolbar)
-        {
-            m_Toolbar = toolbar ?? new Toolbar();
+            if (m_Toolbar == null)
+                m_Toolbar = new Toolbar();
 
             // Register panel choice refresh on the toolbar so the event
             // is received before the ToolbarPopup clickable handle it.
@@ -82,8 +82,7 @@ namespace UnityEditor.UIElements.Debugger
                     RefreshPanelChoices();
             }, TrickleDown.TrickleDown);
 
-            m_PanelToEditorWindow = new Dictionary<Panel, EditorWindow>();
-            m_PanelChoices = new List<PanelChoice>();
+            m_PanelChoices = new List<IPanelChoice>();
             m_PanelSelect = new ToolbarMenu() { name = "panelSelectPopup", variant = ToolbarMenu.Variant.Popup};
             m_PanelSelect.text = "Select a panel";
 
@@ -97,7 +96,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             var lastTreeName = m_LastVisualTreeName;
             panelDebug?.DetachDebugger(this);
-            SelectPanelToDebug((PanelChoice)null);
+            SelectPanelToDebug((IPanelChoice)null);
 
             m_LastVisualTreeName = lastTreeName;
         }
@@ -106,7 +105,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             var lastTreeName = m_LastVisualTreeName;
             m_SelectedPanel = null;
-            SelectPanelToDebug((PanelChoice)null);
+            SelectPanelToDebug((IPanelChoice)null);
 
             m_LastVisualTreeName = lastTreeName;
         }
@@ -137,7 +136,8 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        public abstract void Refresh();
+        public virtual void Refresh()
+        {}
 
         protected virtual bool ValidateDebuggerConnection(IPanel panelConnection)
         {
@@ -147,26 +147,28 @@ namespace UnityEditor.UIElements.Debugger
         protected virtual void OnSelectPanelDebug(IPanelDebug pdbg) {}
         protected virtual void OnRestorePanelSelection() {}
 
-        private void RefreshPanelChoices()
+        protected virtual void PopulatePanelChoices(List<IPanelChoice> panelChoices)
         {
-            m_PanelChoices.Clear();
-            m_PanelToEditorWindow.Clear();
             List<GUIView> guiViews = new List<GUIView>();
             GUIViewDebuggerHelper.GetViews(guiViews);
             var it = UIElementsUtility.GetPanelsIterator();
             while (it.MoveNext())
             {
-                // Skip this window
+                // Skip this debugger window
                 GUIView view = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key);
                 HostView hostView = view as HostView;
-                if (hostView != null && hostView.actualView == this)
+                if (hostView != null && hostView.actualView == m_DebuggerWindow)
                     continue;
 
                 var p = it.Current.Value;
-                m_PanelChoices.Add(new PanelChoice(p));
-                if (hostView != null && hostView.actualView != null)
-                    m_PanelToEditorWindow.Add(p, hostView.actualView);
+                panelChoices.Add(new PanelChoice(p));
             }
+        }
+
+        private void RefreshPanelChoices()
+        {
+            m_PanelChoices.Clear();
+            PopulatePanelChoices(m_PanelChoices);
 
             var menu = m_PanelSelect.menu;
             var menuItemsCount = menu.MenuItems().Count;
@@ -188,7 +190,7 @@ namespace UnityEditor.UIElements.Debugger
             if (m_RestoreSelectionScheduledItem != null && m_RestoreSelectionScheduledItem.isActive)
                 m_RestoreSelectionScheduledItem.Pause();
 
-            SelectPanelToDebug(action.userData as PanelChoice);
+            SelectPanelToDebug(action.userData as IPanelChoice);
         }
 
         private void RestorePanelSelection()
@@ -204,7 +206,7 @@ namespace UnityEditor.UIElements.Debugger
                         var vt = m_PanelChoices[i];
                         if (vt.ToString() == m_LastVisualTreeName)
                         {
-                            SelectPanelToDebug((PanelChoice)vt);
+                            SelectPanelToDebug((IPanelChoice)vt);
                             break;
                         }
                     }
@@ -213,13 +215,13 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_SelectedPanel != null)
                     OnRestorePanelSelection();
                 else
-                    SelectPanelToDebug((PanelChoice)null);
+                    SelectPanelToDebug((IPanelChoice)null);
 
                 m_RestoreSelectionScheduledItem.Pause();
             }
         }
 
-        private void SelectPanelToDebug(PanelChoice pc)
+        protected virtual void SelectPanelToDebug(IPanelChoice pc)
         {
             // Detach debugger from current panel
             if (m_SelectedPanel != null)
@@ -255,24 +257,30 @@ namespace UnityEditor.UIElements.Debugger
             // Select new tree
             if (m_SelectedPanel?.panel != panel)
             {
-                SelectPanelToDebug((PanelChoice)null);
+                SelectPanelToDebug((IPanelChoice)null);
                 RefreshPanelChoices();
                 for (int i = 0; i < m_PanelChoices.Count; i++)
                 {
-                    var vt = m_PanelChoices[i];
-                    if (vt.panel == panel)
+                    var pc = m_PanelChoices[i];
+                    if (pc.panel == panel)
                     {
-                        SelectPanelToDebug((PanelChoice)vt);
+                        SelectPanelToDebug((IPanelChoice)pc);
                         break;
                     }
                 }
             }
         }
 
-        public abstract void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag);
+        public virtual void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag)
+        {}
 
-        public abstract bool InterceptEvent(EventBase ev);
-        public abstract void PostProcessEvent(EventBase ev);
+        public virtual bool InterceptEvent(EventBase ev)
+        {
+            return false;
+        }
+
+        public virtual void PostProcessEvent(EventBase ev)
+        {}
     }
 
     internal static class UIElementsDebuggerExtension

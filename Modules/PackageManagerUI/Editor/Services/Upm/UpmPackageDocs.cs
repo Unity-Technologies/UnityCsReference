@@ -63,7 +63,7 @@ namespace UnityEditor.PackageManager.UI
         public static string[] SplitBuiltinDescription(UpmPackageVersion version)
         {
             if (string.IsNullOrEmpty(version?.packageInfo?.description))
-                return new string[] { $"This built in package controls the presence of the {version.displayName} module." };
+                return new string[] { string.Format(ApplicationUtil.instance.GetTranslationForText("This built in package controls the presence of the {0} module."), version.displayName) };
             else
                 return version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
         }
@@ -95,6 +95,11 @@ namespace UnityEditor.PackageManager.UI
 
             if (offline)
                 return GetOfflineDocumentationUrl(upmVersion);
+
+            if (!string.IsNullOrEmpty(upmVersion.documentationUrl))
+            {
+                return upmVersion.documentationUrl;
+            }
 
             if (upmVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(upmVersion.description))
             {

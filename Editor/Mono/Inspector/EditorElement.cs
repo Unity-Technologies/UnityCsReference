@@ -134,7 +134,7 @@ namespace UnityEditor.UIElements
 
         private void UpdateInspectorVisibility()
         {
-            if (editor.CanBeExpandedViaAFoldout())
+            if (editor.CanBeExpandedViaAFoldoutWithoutUpdate())
             {
                 m_Footer.style.marginTop = m_WasVisible ? 0 : -kFooterDefaultHeight;
                 m_InspectorElement.style.paddingBottom = InspectorWindow.kEditorElementPaddingBottom;

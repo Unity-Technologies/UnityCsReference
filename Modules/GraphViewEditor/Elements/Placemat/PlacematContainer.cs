@@ -47,22 +47,6 @@ namespace UnityEditor.Experimental.GraphView
             m_GraphView.graphViewChanged -= OnGraphViewChange;
         }
 
-        void BuildContextualMenu(ContextualMenuPopulateEvent evt)
-        {
-            var placemat = evt.target as Placemat;
-            if (placemat != null)
-            {
-                evt.menu.AppendSeparator();
-
-                var status = m_Placemats.Any() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-
-                evt.menu.AppendAction("Cycle Up", a => CyclePlacemat(placemat, CycleDirection.Up), status);
-                evt.menu.AppendAction("Cycle Down", a => CyclePlacemat(placemat, CycleDirection.Down), status);
-                evt.menu.AppendAction("Bring To Front", a => BringToFront(placemat), status);
-                evt.menu.AppendAction("Send To Back", a => SendToBack(placemat), status);
-            }
-        }
-
         GraphViewChange OnGraphViewChange(GraphViewChange graphViewChange)
         {
             if (graphViewChange.elementsToRemove != null)
@@ -78,7 +62,6 @@ namespace UnityEditor.Experimental.GraphView
         {
             m_Placemats.AddLast(placemat);
             Add(placemat);
-            placemat.ZOrder = m_Placemats.Count;
         }
 
         void RemovePlacemat(Placemat placemat)
@@ -107,22 +90,22 @@ namespace UnityEditor.Experimental.GraphView
             return false;
         }
 
-        public T CreatePlacemat<T>(Rect placematPosition, string placematTitle) where T : Placemat, new()
+        public T CreatePlacemat<T>(Rect placematPosition, int zOrder, string placematTitle) where T : Placemat, new()
         {
-            return InitAndAddPlacemat(new T(), placematPosition, placematTitle);
+            return InitAndAddPlacemat(new T(), placematPosition, zOrder, placematTitle);
         }
 
-        public T CreatePlacemat<T>(Func<T> creator, Rect placematPosition, string placematTitle) where T : Placemat
+        public T CreatePlacemat<T>(Func<T> creator, Rect placematPosition, int zOrder, string placematTitle) where T : Placemat
         {
-            return InitAndAddPlacemat(creator(), placematPosition, placematTitle);
+            return InitAndAddPlacemat(creator(), placematPosition, zOrder, placematTitle);
         }
 
-        T InitAndAddPlacemat<T>(T placemat, Rect placematPosition, string placematTitle) where T : Placemat
+        T InitAndAddPlacemat<T>(T placemat, Rect placematPosition, int zOrder, string placematTitle) where T : Placemat
         {
             placemat.Init(m_GraphView);
             placemat.title = placematTitle;
             placemat.SetPosition(placematPosition);
-            placemat.m_BuildContextualMenuDelegate = BuildContextualMenu;
+            placemat.ZOrder = zOrder;
             AddPlacemat(placemat);
             return placemat;
         }
@@ -131,6 +114,11 @@ namespace UnityEditor.Experimental.GraphView
         {
             Clear();
             m_Placemats.Clear();
+        }
+
+        public int GetTopZOrder()
+        {
+            return m_Placemats.Last?.Value.ZOrder + 1 ?? 1;
         }
 
         internal void CyclePlacemat(Placemat placemat, CycleDirection direction)

@@ -19,34 +19,78 @@ namespace UnityEditor.PackageManager.UI
             private static AssetStoreRestAPIInternal s_Instance;
             public static AssetStoreRestAPIInternal instance => s_Instance ?? (s_Instance = new AssetStoreRestAPIInternal());
 
-            private readonly string m_Host;
             private const string k_PurchasesUri = "/-/api/purchases";
             private const string k_TaggingsUri = "/-/api/taggings";
             private const string k_ProductInfoUri = "/-/api/product";
             private const string k_UpdateInfoUri = "/-/api/legacy-package-update-info";
             private const string k_DownloadInfoUri = "/-/api/legacy-package-download-info";
 
+            private static readonly string[] k_Categories =
+            {
+                "3D",
+                "Add-Ons",
+                "2D",
+                "Audio",
+                "Essentials",
+                "Templates",
+                "Tools",
+                "VFX"
+            };
+
+            private string m_Host;
+            private string host
+            {
+                get
+                {
+                    if (string.IsNullOrEmpty(m_Host))
+                        m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
+                    return m_Host;
+                }
+            }
+
             private AssetStoreRestAPIInternal()
             {
-                m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
             }
 
             public void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
             {
-                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_PurchasesUri}{query ?? string.Empty}");
+                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_PurchasesUri}{query ?? string.Empty}");
                 HandleHttpRequest(httpRequest, doneCallbackAction, errorCallbackAction);
+            }
+
+            public void GetCategories(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
+            {
+                IList<string> categories = k_Categories.ToList();
+                var result = new Dictionary<string, object>
+                {
+                    ["total"] = categories.Count,
+                    ["results"] = categories
+                };
+
+                doneCallbackAction?.Invoke(result);
             }
 
             public void GetTaggings(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
             {
-                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_TaggingsUri}");
-                HandleHttpRequest(httpRequest, doneCallbackAction, errorCallbackAction);
+                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_TaggingsUri}");
+                var etag = AssetStoreCache.instance.GetLastETag(k_TaggingsUri);
+                httpRequest.header["If-None-Match"] = etag.Replace("\"", "\\\"");
+                HandleHttpRequest(httpRequest,
+                    result =>
+                    {
+                        if (httpRequest.responseHeader.ContainsKey("ETag"))
+                            etag = httpRequest.responseHeader["ETag"];
+                        AssetStoreCache.instance.SetLastETag(k_TaggingsUri, etag);
+
+                        doneCallbackAction?.Invoke(result);
+                    },
+                    errorCallbackAction);
             }
 
             public void GetProductDetail(long productID, Action<Dictionary<string, object>> doneCallbackAction)
             {
-                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_ProductInfoUri}/{productID}");
-                var etag = AssetStoreCache.instance.GetLastETag(productID);
+                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_ProductInfoUri}/{productID}");
+                var etag = AssetStoreCache.instance.GetLastETag($"{k_ProductInfoUri}/{productID}");
                 httpRequest.header["If-None-Match"] = etag.Replace("\"", "\\\"");
 
                 HandleHttpRequest(httpRequest,
@@ -54,7 +98,7 @@ namespace UnityEditor.PackageManager.UI
                     {
                         if (httpRequest.responseHeader.ContainsKey("ETag"))
                             etag = httpRequest.responseHeader["ETag"];
-                        AssetStoreCache.instance.SetLastETag(productID, etag);
+                        AssetStoreCache.instance.SetLastETag($"{k_ProductInfoUri}/{productID}", etag);
 
                         doneCallbackAction?.Invoke(result);
                     },
@@ -67,7 +111,7 @@ namespace UnityEditor.PackageManager.UI
 
             public void GetDownloadDetail(long productID, Action<AssetStoreDownloadInfo> doneCallbackAction)
             {
-                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_DownloadInfoUri}/{productID}");
+                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_DownloadInfoUri}/{productID}");
                 HandleHttpRequest(httpRequest,
                     result =>
                     {
@@ -94,7 +138,7 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 var localInfosJsonData = Json.Serialize(localInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
-                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_UpdateInfoUri}", "POST");
+                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_UpdateInfoUri}", "POST");
 
                 HandleHttpRequest(httpRequest,
                     result =>

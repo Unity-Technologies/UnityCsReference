@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
+using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -44,9 +45,6 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private float m_SplitPaneLeftWidth;
 
-        [NonSerialized]
-        private int m_NumberOfPackages;
-
         internal static PackageManagerWindow instance { get; private set; }
 
         public void OnEnable()
@@ -62,8 +60,11 @@ namespace UnityEditor.PackageManager.UI
             if (windowResource != null)
             {
                 var root = windowResource.Instantiate();
-                root.styleSheets.Add(Resources.GetStyleSheet());
+                root.styleSheets.Add(Resources.GetMainWindowStyleSheet());
                 cache = new VisualElementCache(root);
+
+                rootVisualElement.Add(root);
+                LocalizeVisualElementAndAllChildrenText(rootVisualElement);
 
                 PageManager.instance.Setup();
 
@@ -83,7 +84,6 @@ namespace UnityEditor.PackageManager.UI
 
                 PackageManagerWindowAnalytics.Setup();
 
-                rootVisualElement.Add(root);
                 root.StretchToParentSize();
 
                 var newTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFiltering.instance.defaultFilterTab;
@@ -112,14 +112,14 @@ namespace UnityEditor.PackageManager.UI
 
         private void DelayRefresh(PackageFilterTab tab)
         {
-            m_NumberOfPackages = packageList.CalculateNumberOfPackagesToDisplay();
-            if (m_NumberOfPackages == 0)
+            var numberOfPackages = packageList.CalculateNumberOfPackagesToDisplay();
+            if (numberOfPackages == 0)
             {
                 EditorApplication.delayCall += () => DelayRefresh(tab);
                 return;
             }
 
-            PageManager.instance.Refresh(tab, m_NumberOfPackages);
+            PageManager.instance.Refresh(tab, numberOfPackages);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -154,7 +154,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var canRefresh = !EditorApplication.isPlaying && !EditorApplication.isCompiling;
             if (focus && canRefresh && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
-                PageManager.instance.Refresh(RefreshOptions.PurchasedOffline);
+                PageManager.instance.Refresh(RefreshOptions.PurchasedOffline, packageList?.CalculateNumberOfPackagesToDisplay() ?? PageManager.k_DefaultPageSize);
         }
 
         public void OnDisable()
@@ -202,7 +202,10 @@ namespace UnityEditor.PackageManager.UI
             if (!filterTab.Equals(PackageFilterTab.AssetStore))
                 UIUtils.SetElementDisplay(packageLoadBar, false);
             else
+            {
+                packageLoadBar.Refresh();
                 UIUtils.SetElementDisplay(packageLoadBar, true);
+            }
         }
 
         private void SelectPackageAndFilter()
@@ -258,8 +261,9 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnFocus()
         {
-            if (cache == null || focusedWindow != this)
+            if (cache == null)
                 return;
+
             packageList.AddToClassList("focus");
             packageDetails.AddToClassList("focus");
             packageList.OnFocus();
@@ -267,6 +271,9 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnLostFocus()
         {
+            if (cache == null)
+                return;
+
             packageList.RemoveFromClassList("focus");
             packageDetails.RemoveFromClassList("focus");
         }
@@ -300,10 +307,23 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationError(UIError error)
         {
-            Debug.Log("[PackageManager] Error " + error.message);
+            Debug.Log(string.Format(ApplicationUtil.instance.GetTranslationForText("[PackageManager] Error {0}"), error.message));
 
             packageManagerToolbar.SetEnabled(true);
             packageDetails.packageToolbarContainer.SetEnabled(true);
+        }
+
+        /// <summary>
+        /// Traverses the entire VisualElement tree from the specified root and localizes any text found to
+        ///  be part of Labels or Buttons.
+        /// Do not call this function at any point after the list of packages is loaded, as we do not
+        ///  want the dynamic text in the loaded package names/info to be localized by this mechanism.
+        /// </summary>
+        private void LocalizeVisualElementAndAllChildrenText(VisualElement root)
+        {
+            root.Query<TextElement>().ForEach((textElement) => {
+                ApplicationUtil.instance.TranslateTextElement(textElement);
+            });
         }
 
         [UsedByNativeCode]
@@ -341,7 +361,7 @@ namespace UnityEditor.PackageManager.UI
                     if (package == null)
                         package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName) ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
 
-                    packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? $"{packageNameOrDisplayName}@primary";
+                    packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? string.Format(ApplicationUtil.instance.GetTranslationForText("{0}@primary"), packageNameOrDisplayName);
                 }
                 PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
             }
@@ -380,7 +400,12 @@ namespace UnityEditor.PackageManager.UI
                 window.Close();
         }
 
-        public int NumberOfPackages => m_NumberOfPackages;
+        [MenuItem("internal:Packages/Reset Package Database")]
+        public static void ResetPackageDatabase()
+        {
+            PageManager.instance.Reload();
+            PageManager.instance.Refresh(PackageFiltering.instance.currentFilterTab, instance?.packageList?.CalculateNumberOfPackagesToDisplay() ?? PageManager.k_DefaultPageSize);
+        }
 
         private VisualElementCache cache;
 

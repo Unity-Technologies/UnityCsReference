@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using Unity.Profiling;
 using UnityEngine.Scripting;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -62,12 +63,6 @@ namespace UnityEngine.UIElements.UIR
             internal IntPtr BufferPointer { get { return buffer; } }
         }
 
-        unsafe public static void DrawRanges<I, T>(GPUBuffer<I> ib, GPUBuffer<T> vb, NativeSlice<DrawBufferRange> ranges) where T : struct where I : struct
-        {
-            Debug.Assert(ib.ElementStride == 2);
-            DrawRanges(ib.BufferPointer, vb.BufferPointer, vb.ElementStride, new IntPtr(ranges.GetUnsafePtr()), ranges.Length);
-        }
-
         unsafe public static void SetVectorArray<T>(MaterialPropertyBlock props, int name, NativeSlice<T> vector4s) where T : struct
         {
             int vector4Count = (vector4s.Length * vector4s.Stride) / (sizeof(float) * 4);
@@ -106,9 +101,10 @@ namespace UnityEngine.UIElements.UIR
         extern static IntPtr AllocateBuffer(int elementCount, int elementStride, bool vertexBuffer);
         extern static void FreeBuffer(IntPtr buffer);
         extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
-        extern static void DrawRanges(IntPtr ib, IntPtr vb, int vbElemStride, IntPtr ranges, int rangeCount);
         extern static void SetVectorArray(MaterialPropertyBlock props, int name, IntPtr vector4s, int count);
 
+        public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
+        public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
         public extern static void SetPropertyBlock(MaterialPropertyBlock props);
         public extern static void SetScissorRect(RectInt scissorRect);
         public extern static void DisableScissor();

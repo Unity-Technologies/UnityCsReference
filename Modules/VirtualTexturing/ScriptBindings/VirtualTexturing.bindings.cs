@@ -143,7 +143,7 @@ namespace UnityEngine.Experimental.Rendering
         public uint width, height;
         public uint maxRequestsPerFrame;
         public uint tilesize;
-        public TextureFormat[] layers;
+        public GraphicsFormat[] layers;
         internal uint borderSize;
 
         internal void Validate()
@@ -156,7 +156,14 @@ namespace UnityEngine.Experimental.Rendering
             {
                 throw new ArgumentException($"layers is either invalid or has to many layers (maxNumLayers: {MaxNumLayers})");
             }
-            TextureFormat[] supportedFormats = { TextureFormat.RGBA32, TextureFormat.RGBAFloat, TextureFormat.RG16 };
+            GraphicsFormat[] supportedFormats =
+            {
+                GraphicsFormat.R8G8B8A8_SRGB,
+                GraphicsFormat.R8G8B8A8_UNorm,
+                GraphicsFormat.R32G32B32A32_SFloat,
+                GraphicsFormat.R8G8_SRGB,
+                GraphicsFormat.R8G8_UNorm
+            };
             for (int i = 0; i < layers.Length; ++i)
             {
                 bool valid = false;

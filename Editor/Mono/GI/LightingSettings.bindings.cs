@@ -195,6 +195,10 @@ namespace UnityEditor
         [NativeName("PVRBounces")]
         public extern int bounces { get; set; }
 
+        // Choose at which bounce we start to apply russian roulette to the ray
+        [NativeName("PVRRussianRouletteStartBounce")]
+        public extern int russianRouletteStartBounce { get; set; }
+
         // Is view prioritisation enabled?
         [NativeName("PVRCulling")]
         public extern bool prioritizeView { get; set; }

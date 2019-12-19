@@ -1809,7 +1809,12 @@ namespace UnityEditor
             {
                 string label = "Use display in HDR mode";
                 string tooltip = "Switch the display to HDR output (on supported displays)" + ((targetGroup == BuildTargetGroup.XboxOne) ? " at start of application." : ".");
-                PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent(label, tooltip), PlayerSettings.useHDRDisplay);
+                bool oldUseHDRDisplay = PlayerSettings.useHDRDisplay;
+                PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent(label, tooltip), oldUseHDRDisplay);
+                bool requestRepaint = false;
+
+                if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
+                    requestRepaint = true;
 
                 if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA)
                 {
@@ -1818,19 +1823,24 @@ namespace UnityEditor
                         using (new EditorGUI.IndentLevelScope())
                         {
                             EditorGUI.BeginChangeCheck();
-                            D3DHDRDisplayBitDepth bitDepth = PlayerSettings.D3DHDRBitDepth;
+                            D3DHDRDisplayBitDepth oldBitDepth = PlayerSettings.D3DHDRBitDepth;
                             D3DHDRDisplayBitDepth[] bitDepthValues = { D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth10, D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth16 };
                             GUIContent HDRBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
                             GUIContent[] HDRBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"),  EditorGUIUtility.TrTextContent("Bit Depth 16")};
 
-                            bitDepth = BuildEnumPopup(HDRBitDepthLabel, bitDepth, bitDepthValues, HDRBitDepthNames);
+                            D3DHDRDisplayBitDepth bitDepth = BuildEnumPopup(HDRBitDepthLabel, oldBitDepth, bitDepthValues, HDRBitDepthNames);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 PlayerSettings.D3DHDRBitDepth = bitDepth;
+                                if (oldBitDepth != bitDepth)
+                                    requestRepaint = true;
                             }
                         }
                     }
                 }
+
+                if (requestRepaint)
+                    EditorApplication.RequestRepaintAllViews();
             }
 
             EditorGUILayout.Space();

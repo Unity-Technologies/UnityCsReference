@@ -74,15 +74,15 @@ namespace UnityEditor.VersionControl
                 return desc;
 
             // The format of the desc is "327: on 2013/02/03 by foo@bar *pending* 'The real description'"
-            // Extract the part between ' and '
-            int idx = desc.IndexOf('\'');
+            // Extract the part after *pending*
+            int idx = desc.IndexOf('*');
             if (idx == -1)
                 return desc;
             idx++;
-            int idx2 = desc.IndexOf('\'', idx);
+            int idx2 = desc.IndexOf('*', idx);
             if (idx2 == -1)
                 return desc;
-            return desc.Substring(idx, idx2 - idx).Trim(' ', '\t');
+            return desc.Substring(idx2 + 1, desc.Length - idx2 - 1).TrimStart(' ').Trim(' ', '\t');
         }
 
         // Open the change list window for one of 2 modes.  File list or exisiting change list.
@@ -244,7 +244,8 @@ namespace UnityEditor.VersionControl
 
             GUI.enabled = (taskDesc == null || taskDesc.resultCode != 0) && submitResultCode == kSubmitNotStartedResultCode;
             {
-                description = EditorGUILayout.TextArea(description, GUILayout.Height(150)).Trim();
+                description = EditorGUILayout.TextArea(description, EditorStyles.textArea, GUILayout.Height(150)).Trim();
+
                 if (m_TextAreaControlID == 0)
                     m_TextAreaControlID = EditorGUIUtility.s_LastControlID;
                 if (m_TextAreaControlID != 0)
@@ -447,8 +448,8 @@ namespace UnityEditor.VersionControl
                 return;
             }
 
-            bool cancelSubmit = HandleActiveScenes();
-            if (cancelSubmit)
+            bool success = PromptUserToSaveDirtyScenes(assetList);
+            if (!success)
                 return;
             UnityEditor.AssetDatabase.SaveAssets();
 
@@ -468,7 +469,7 @@ namespace UnityEditor.VersionControl
                 window.Save(true);
         }
 
-        private bool HandleActiveScenes()
+        public static bool PromptUserToSaveDirtyScenes(AssetList assetList)
         {
             List<Scene> scenes = new List<Scene>();
             for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -500,11 +501,11 @@ namespace UnityEditor.VersionControl
                 {
                     if (!EditorSceneManager.SaveModifiedScenesIfUserWantsTo(filteredScenes.ToArray()))
                     {
-                        return true;
+                        return false;
                     }
                 }
             }
-            return false;
+            return true;
         }
     }
 }

@@ -283,11 +283,26 @@ namespace UnityEngine.Tilemaps
         public extern void ClearAllEditorPreviewTiles();
 
         [RequiredByNativeCode]
-        internal struct SyncTile
+        public struct SyncTile
         {
-            public Vector3Int m_Position;
-            public TileBase m_Tile;
-            public TileData m_TileData;
+            internal Vector3Int m_Position;
+            internal TileBase m_Tile;
+            internal TileData m_TileData;
+
+            public Vector3Int position
+            {
+                get { return m_Position; }
+            }
+
+            public TileBase tile
+            {
+                get { return m_Tile; }
+            }
+
+            public TileData tileData
+            {
+                get { return m_TileData; }
+            }
         }
 
         [RequiredByNativeCode]

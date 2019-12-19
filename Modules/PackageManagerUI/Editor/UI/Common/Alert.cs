@@ -34,9 +34,9 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetError(UIError error)
         {
-            var message = "An error occurred.";
+            var message = ApplicationUtil.instance.GetTranslationForText("An error occurred.");
             if (error != null)
-                message = error.message ?? $"An error occurred ({error.errorCode.ToString()})";
+                message = error.message ?? string.Format(ApplicationUtil.instance.GetTranslationForText("An error occurred ({0})"), error.errorCode.ToString());
 
             alertMessage.text = message;
             UIUtils.SetElementDisplay(this, true);

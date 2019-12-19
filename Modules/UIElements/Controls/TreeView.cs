@@ -97,6 +97,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public Action<VisualElement, ITreeViewItem> unbindItem { get; set; }
+
         IList<ITreeViewItem> m_RootItems;
         public IList<ITreeViewItem> rootItems
         {
@@ -169,6 +171,7 @@ namespace UnityEngine.UIElements
 
             m_ListView.makeItem = MakeTreeItem;
             m_ListView.bindItem = BindTreeItem;
+            m_ListView.unbindItem = UnbindTreeItem;
             m_ListView.getItemId = GetItemId;
             m_ListView.onItemsChosen += OnItemsChosen;
             m_ListView.onSelectionChange += OnSelectionChange;
@@ -536,6 +539,16 @@ namespace UnityEngine.UIElements
                 userContentContainer.Add(m_MakeItem());
 
             return itemContainer;
+        }
+
+        private void UnbindTreeItem(VisualElement element, int index)
+        {
+            if (unbindItem == null)
+                return;
+
+            var item = m_ItemWrappers[index].item;
+            var userContentContainer = element.Q(s_ItemContentContainerName).ElementAt(0);
+            unbindItem(userContentContainer, item);
         }
 
         private void BindTreeItem(VisualElement element, int index)

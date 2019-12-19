@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Linq;
 using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
@@ -30,12 +31,12 @@ namespace UnityEditor.UIElements
         internal static readonly StyleSheet s_DefaultCommonDarkStyleSheet;
         internal static readonly StyleSheet s_DefaultCommonLightStyleSheet;
 
-        internal static string GetStyleSheetPathForCurrentFont(string sheetPath)
+        internal static string GetStyleSheetPathForFont(string sheetPath, string fontName)
         {
             // Load the stylesheet of the current font
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {
-                return sheetPath.Replace(".uss", "_" + EditorResources.currentFontName.ToLower() + ".uss");
+                return sheetPath.Replace(".uss", "_" + fontName.ToLowerInvariant() + ".uss");
             }
             else
             {
@@ -43,13 +44,23 @@ namespace UnityEditor.UIElements
             }
         }
 
+        internal static string GetStyleSheetPathForCurrentFont(string sheetPath)
+        {
+            return GetStyleSheetPathForFont(sheetPath, EditorResources.currentFontName);
+        }
+
+        internal static StyleSheet LoadSKinnedStyleSheetForFont(int skin, string fontName)
+        {
+            return EditorGUIUtility.Load(GetStyleSheetPathForFont(skin == EditorResources.darkSkinIndex ? s_DefaultCommonDarkStyleSheetPath : s_DefaultCommonLightStyleSheetPath, fontName)) as StyleSheet;
+        }
+
         static UIElementsEditorUtility()
         {
             // Load the stylesheet of the current font
-            s_DefaultCommonDarkStyleSheet = EditorGUIUtility.Load(GetStyleSheetPathForCurrentFont(s_DefaultCommonDarkStyleSheetPath)) as StyleSheet;
+            s_DefaultCommonDarkStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.darkSkinIndex, EditorResources.currentFontName);
             s_DefaultCommonDarkStyleSheet.isUnityStyleSheet = true;
 
-            s_DefaultCommonLightStyleSheet = EditorGUIUtility.Load(GetStyleSheetPathForCurrentFont(s_DefaultCommonLightStyleSheetPath)) as StyleSheet;
+            s_DefaultCommonLightStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.normalSkinIndex, EditorResources.currentFontName);
             s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
         }
 

@@ -193,6 +193,7 @@ namespace UnityEngine
         }
 
         extern override public bool isReadable { get; }
+        [NativeConditional("ENABLE_VIRTUALTEXTURING && UNITY_EDITOR")][NativeName("VTOnly")] extern public bool vtOnly { get; }
         [NativeName("Apply")] extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
         [NativeName("Resize")] extern private bool ResizeImpl(int width, int height);
         [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, Color color);

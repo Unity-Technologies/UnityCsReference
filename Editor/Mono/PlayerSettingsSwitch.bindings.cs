@@ -136,6 +136,10 @@ namespace UnityEditor
             [NativeProperty("switchUseCPUProfiler", TargetType.Field)]
             extern public static bool useSwitchCPUProfiler { get; set; }
 
+            // Whether to enable use of the old Nintendo GOLD linker.
+            [NativeProperty("switchUseGOLDLinker", TargetType.Field)]
+            extern public static bool useSwitchGOLDLinker { get; set; }
+
             // System Memory (used for virtual memory mapping).
             [NativeProperty("switchSystemResourceMemory", TargetType.Field)]
             extern public static int systemResourceMemory { get; set; }

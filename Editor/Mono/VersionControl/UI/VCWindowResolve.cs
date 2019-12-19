@@ -140,56 +140,69 @@ namespace UnityEditor.VersionControl
 
             using (new EditorGUI.DisabledScope(resolveList.SelectedAssets.Count == 0))
             {
+                bool methodWasSelected = false;
+                ResolveMethod resolveMethod = ResolveMethod.UseMine;
+
                 if (GUILayout.Button("using local version"))
                 {
-                    SimpleMerge(ResolveMethod.UseMine);
+                    methodWasSelected = true;
+                    resolveMethod = ResolveMethod.UseMine;
                 }
 
                 if (GUILayout.Button("using incoming version"))
                 {
-                    SimpleMerge(ResolveMethod.UseTheirs);
+                    methodWasSelected = true;
+                    resolveMethod = ResolveMethod.UseTheirs;
                 }
 
-                bool willMergeAll = false;
                 if (GUILayout.Button("merging"))
                 {
-                    willMergeAll = true;
+                    methodWasSelected = true;
+                    resolveMethod = ResolveMethod.UseMerged;
                 }
 
-                if (willMergeAll == true)
+                //                        We don't want to prompt the user about saving the current scene when using the local or incoming versions
+                if (methodWasSelected && ((resolveMethod != ResolveMethod.UseMerged) || WindowChange.PromptUserToSaveDirtyScenes(assetList)))
                 {
-                    Task t = Provider.Merge(resolveList.SelectedAssets);
-                    t.Wait();
-
-                    if (t.success)
+                    if (resolveMethod == ResolveMethod.UseMerged)
                     {
-                        t = Provider.Resolve(t.assetList, ResolveMethod.UseMerged);
+                        Task t = Provider.Merge(resolveList.SelectedAssets);
                         t.Wait();
+
                         if (t.success)
                         {
-                            // Check that there are not more conflicts for the specified
-                            // asset. This is possible in e.g. perforce where you handle
-                            // one version conflict at a time.
-                            t = Provider.Status(assetList);
+                            t = Provider.Resolve(t.assetList, ResolveMethod.UseMerged);
                             t.Wait();
+                            if (t.success)
+                            {
+                                // Check that there are not more conflicts for the specified
+                                // asset. This is possible in e.g. perforce where you handle
+                                // one version conflict at a time.
+                                t = Provider.Status(assetList);
+                                t.Wait();
 
-                            DoOpen(t.assetList);
+                                DoOpen(t.assetList);
 
-                            if (t.success && assetList.Count == 0)
-                                Close();
+                                if (t.success && assetList.Count == 0)
+                                    Close();
 
-                            // The view will be updated with the new conflicts
+                                // The view will be updated with the new conflicts
+                            }
+                            else
+                            {
+                                EditorUtility.DisplayDialog("Error resolving", "Error during resolve of files. Inspect log for details", "Close");
+                                AssetDatabase.Refresh();
+                            }
                         }
                         else
                         {
-                            EditorUtility.DisplayDialog("Error resolving", "Error during resolve of files. Inspect log for details", "Close");
+                            EditorUtility.DisplayDialog("Error merging", "Error during merge of files. Inspect log for details", "Close");
                             AssetDatabase.Refresh();
                         }
                     }
                     else
                     {
-                        EditorUtility.DisplayDialog("Error merging", "Error during merge of files. Inspect log for details", "Close");
-                        AssetDatabase.Refresh();
+                        SimpleMerge(resolveMethod);
                     }
                 }
             }

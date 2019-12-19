@@ -383,15 +383,6 @@ namespace UnityEditor
                         GUI.Label(labelRect, Constants.badgeNew, Constants.paddinglessStyle);
                     }
 
-                    // 5. Optional badge ("Delete")
-                    if (repainting && projectAsset)
-                    {
-                        // FIXME: Need to enable tooltips here.
-                        Texture badge = Constants.badgeDelete.image;
-                        Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y + (rowRect.height - badge.height) / 2, badge.width, badge.height);
-                        GUI.Label(labelRect, Constants.badgeDelete, Constants.paddinglessStyle);
-                    }
-
                     // 7. Show what stuff has changed
                     if (repainting && validItem && (exists || pathConflict) && assetChanged)
                     {

@@ -37,5 +37,8 @@ namespace UnityEditor.PackageManager.UI
         void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback);
 
         int CalculateNumberOfElementsInsideContainerToDisplay(VisualElement container, float elementHeight);
+        string GetTranslationForText(string text);
+
+        void TranslateTextElement(TextElement textElement);
     }
 }

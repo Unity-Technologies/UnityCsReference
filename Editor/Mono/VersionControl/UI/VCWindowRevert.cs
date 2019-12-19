@@ -132,8 +132,8 @@ namespace UnityEditor.VersionControl
                 }
 
                 Provider.Revert(assetList, RevertMode.Normal).Wait();
-                WindowPending.UpdateAllWindows();
                 AssetDatabase.Refresh();
+                WindowPending.UpdateAllWindows();
                 InspectorWindow.RefreshInspectors();
                 Close();
             }

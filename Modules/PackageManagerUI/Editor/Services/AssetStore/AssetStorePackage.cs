@@ -87,7 +87,7 @@ namespace UnityEditor.PackageManager.UI
             }
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
             {
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid product details."));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, ApplicationUtil.instance.GetTranslationForText("Invalid product details.")));
             }
             else if (localInfo == null)
             {
@@ -126,11 +126,11 @@ namespace UnityEditor.PackageManager.UI
             m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
 
             if (purchaseInfo == null)
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid purchase details."));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, ApplicationUtil.instance.GetTranslationForText("Invalid purchase details.")));
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid product details."));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, ApplicationUtil.instance.GetTranslationForText("Invalid product details.")));
             else if (string.IsNullOrEmpty(package?.name))
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid package info."));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, ApplicationUtil.instance.GetTranslationForText("Invalid package info.")));
         }
 
         public override IPackage Clone()

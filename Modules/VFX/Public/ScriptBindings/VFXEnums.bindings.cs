@@ -164,6 +164,8 @@ namespace UnityEngine.VFX
         MeshVertexCount,
         MeshChannelOffset,
         MeshVertexStride,
+
+        BufferCount,
     }
 
     internal enum VFXValueType
@@ -185,7 +187,8 @@ namespace UnityEngine.VFX
         ColorGradient,
         Mesh,
         Spline,
-        Boolean
+        Boolean,
+        Buffer,
     }
 
     internal enum VFXTaskType

@@ -7,6 +7,7 @@ using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
+using AssetImporterEditor = UnityEditor.Experimental.AssetImporters.AssetImporterEditor;
 
 namespace UnityEditor.UIElements
 {
@@ -382,7 +383,7 @@ namespace UnityEditor.UIElements
             if ((mode & Mode.IMGUICustom) > 0 && (mode & Mode.IMGUIDefault) == 0 && editor is GenericInspector)
                 return null;
 
-            if ((mode & Mode.IMGUICustom) == 0 && (mode & Mode.IMGUIDefault) > 0 && !(editor is GenericInspector))
+            if ((mode & Mode.IMGUICustom) == 0 && (mode & Mode.IMGUIDefault) > 0 && !(editor is GenericInspector) && !(editor is AssetImporterEditor) && !(editor is GameObjectInspector))
             {
                 editor = ScriptableObject.CreateInstance<GenericInspector>();
                 editor.hideFlags = HideFlags.HideAndDontSave;
@@ -486,7 +487,7 @@ namespace UnityEditor.UIElements
 
                     var originalWideMode = SetWideModeForWidth(inspector);
 
-                    GUIStyle editorWrapper = (editor.UseDefaultMargins() && editor.CanBeExpandedViaAFoldout()
+                    GUIStyle editorWrapper = (editor.UseDefaultMargins() && editor.CanBeExpandedViaAFoldoutWithoutUpdate()
                         ? EditorStyles.inspectorDefaultMargins
                         : GUIStyle.none);
                     try

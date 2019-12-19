@@ -17,7 +17,7 @@ namespace UnityEditorInternal.VersionControl
             if (!Provider.isActive)
                 return;
 
-            string vcsType = EditorSettings.externalVersionControl;
+            string vcsType = VersionControlSettings.mode;
             if (vcsType == ExternalVersionControl.Disabled ||
                 vcsType == ExternalVersionControl.AutoDetect ||
                 vcsType == ExternalVersionControl.Generic)

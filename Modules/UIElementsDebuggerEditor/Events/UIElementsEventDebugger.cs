@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,17 +11,37 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Debugger
 {
-    class UIElementsEventsDebugger : PanelDebugger
+    class UIElementsEventsDebugger : EditorWindow
     {
+        [SerializeField]
+        UIElementsEventsDebuggerImpl m_DebuggerImpl;
+
         [MenuItem("Window/Analysis/UIElements Events Debugger", false, 102, true)]
         public static void ShowUIElementsEventDebugger()
         {
-            var window = GetWindow<UIElementsEventsDebugger>();
+            var window = EditorWindow.GetWindow<UIElementsEventsDebugger>();
             window.minSize = new Vector2(640, 480);
             window.titleContent = new GUIContent("UIElements Event Debugger");
-            window.ClearLogs();
+            window.m_DebuggerImpl.ClearLogs();
         }
 
+        void OnEnable()
+        {
+            if (m_DebuggerImpl == null)
+                m_DebuggerImpl = new UIElementsEventsDebuggerImpl();
+
+            m_DebuggerImpl.Initialize(this, rootVisualElement);
+        }
+
+        void OnDisable()
+        {
+            m_DebuggerImpl.OnDisable();
+        }
+    }
+
+    [Serializable]
+    class UIElementsEventsDebuggerImpl : PanelDebugger
+    {
         Label m_EventPropagationPaths;
         Label m_EventbaseInfo;
         ListView m_EventsLog;
@@ -52,6 +73,8 @@ namespace UnityEditor.UIElements.Debugger
         const string k_EventsDurationLengthName = "eventsHistogramDurationLength";
 
         VisualElement m_LegendContainer;
+
+        VisualElement rootVisualElement;
 
         private readonly EventDebugger m_Debugger = new EventDebugger();
 
@@ -226,10 +249,17 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        new void OnEnable()
+        public void Initialize(EditorWindow debuggerWindow, VisualElement root)
         {
+            rootVisualElement = root;
+
             VisualTreeAsset template = EditorGUIUtility.Load("UXML/UIElementsDebugger/UIElementsEventsDebugger.uxml") as VisualTreeAsset;
             template.CloneTree(rootVisualElement);
+
+            var toolbar = rootVisualElement.MandatoryQ("toolbar");
+            m_Toolbar = toolbar;
+
+            base.Initialize(debuggerWindow);
 
             rootVisualElement.AddStyleSheetPath("StyleSheets/UIElementsDebugger/UIElementsEventsDebugger.uss");
 
@@ -237,10 +267,6 @@ namespace UnityEditor.UIElements.Debugger
             eventsDebugger.StretchToParentSize();
 
             m_EventCallbacksScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventCallbacksScrollView");
-
-            var toolbar = rootVisualElement.MandatoryQ("toolbar");
-
-            OnEnable(toolbar);
 
             m_EventTypeFilter = toolbar.MandatoryQ<EventTypeSelectField>("filter-event-type");
             m_EventTypeFilter.RegisterCallback<ChangeEvent<ulong>>(OnFilterChange);
@@ -842,7 +868,7 @@ namespace UnityEditor.UIElements.Debugger
             return m_Log.lines.ToList();
         }
 
-        void ClearLogs()
+        public void ClearLogs()
         {
             m_Debugger.ClearLogs();
             m_SelectedEvents?.Clear();

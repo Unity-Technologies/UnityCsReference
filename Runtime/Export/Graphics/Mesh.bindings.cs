@@ -57,7 +57,6 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetVertexAttributeByIndex", HasExplicitThis = true)]
         extern public UnityEngine.Rendering.VertexAttributeDescriptor GetVertexAttribute(int index);
 
-
         [FreeFunction(Name = "MeshScripting::GetIndexStart", HasExplicitThis = true)]
         extern private UInt32 GetIndexStartImpl(int submesh);
 
@@ -212,7 +211,7 @@ namespace UnityEngine
 
         private enum SafetyHandleIndex
         {
-            // Keep in sync with SafetyHandleIndex in C++ Mesh class
+            // Keep in sync with C++ Mesh::SafetyHandleIndex class
             BonesPerVertexArray,
             BonesWeightsArray,
         }

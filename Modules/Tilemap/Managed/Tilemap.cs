@@ -10,7 +10,7 @@ namespace UnityEngine.Tilemaps
 {
     public partial class Tilemap
     {
-        internal static event Action<Tilemap, SyncTile[]> tilemapTileChanged;
+        public static event Action<Tilemap, SyncTile[]> tilemapTileChanged;
 
         private Dictionary<Vector3Int, SyncTile> m_SyncTileBuffer;
         private Dictionary<Vector3Int, SyncTile> syncTileBuffer

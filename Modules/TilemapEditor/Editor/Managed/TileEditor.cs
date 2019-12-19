@@ -30,7 +30,7 @@ namespace UnityEditor
             public static readonly GUIContent previewLabel = EditorGUIUtility.TrTextContent("Preview", "Preview of tile with attributes set");
 
             public static readonly GUIContent spriteEditorLabel = EditorGUIUtility.TrTextContent("Sprite Editor");
-            public static readonly GUIContent positionLabel = EditorGUIUtility.TrTextContent("Position");
+            public static readonly GUIContent offsetLabel = EditorGUIUtility.TrTextContent("Offset");
             public static readonly GUIContent rotationLabel = EditorGUIUtility.TrTextContent("Rotation");
             public static readonly GUIContent scaleLabel = EditorGUIUtility.TrTextContent("Scale");
         }
@@ -95,7 +95,7 @@ namespace UnityEditor
                 Vector3 pos = Round(matrix.GetColumn(3), 3);
                 Vector3 euler = Round(matrix.rotation.eulerAngles, 3);
                 Vector3 scale = Round(matrix.lossyScale, 3);
-                pos = EditorGUILayout.Vector3Field(Styles.positionLabel, pos);
+                pos = EditorGUILayout.Vector3Field(Styles.offsetLabel, pos);
                 euler = EditorGUILayout.Vector3Field(Styles.rotationLabel, euler);
                 scale = EditorGUILayout.Vector3Field(Styles.scaleLabel, scale);
 

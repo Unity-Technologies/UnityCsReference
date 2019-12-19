@@ -18,7 +18,7 @@ namespace UnityEngine
     [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
     public sealed partial class Mesh : Object
     {
-        internal VertexAttribute GetUVChannel(int uvIndex)
+        internal static VertexAttribute GetUVChannel(int uvIndex)
         {
             if (uvIndex < 0 || uvIndex > 7)
                 throw new ArgumentException("GetUVChannel called for bad uvIndex", "uvIndex");
@@ -569,6 +569,57 @@ namespace UnityEngine
             if (dataStart < 0 || meshBufferStart < 0 || count < 0 || dataStart + count > data.Count)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (dataStart:{dataStart} meshBufferStart:{meshBufferStart} count:{count})");
             InternalSetVertexBufferDataFromArray(stream, NoAllocHelpers.ExtractArrayFromList(data), dataStart, meshBufferStart, count, UnsafeUtility.SizeOf<T>(), flags);
+        }
+
+        public static MeshDataArray AcquireReadOnlyMeshData(Mesh mesh)
+        {
+            return new MeshDataArray(mesh);
+        }
+
+        public static MeshDataArray AcquireReadOnlyMeshData(Mesh[] meshes)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh array is null");
+            return new MeshDataArray(meshes, meshes.Length);
+        }
+
+        public static MeshDataArray AcquireReadOnlyMeshData(List<Mesh> meshes)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh list is null");
+            return new MeshDataArray(NoAllocHelpers.ExtractArrayFromListT(meshes), meshes.Count);
+        }
+
+        public static MeshDataArray AllocateWritableMeshData(int meshCount)
+        {
+            return new MeshDataArray(meshCount);
+        }
+
+        public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, Mesh mesh, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+        {
+            if (mesh == null)
+                throw new ArgumentNullException(nameof(mesh), "Mesh is null");
+            if (data.Length != 1)
+                throw new InvalidOperationException($"{nameof(MeshDataArray)} length must be 1 to apply to one mesh, was {data.Length}");
+            data.ApplyToMeshAndDispose(mesh, flags);
+        }
+
+        public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, Mesh[] meshes, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh array is null");
+            if (data.Length != meshes.Length)
+                throw new InvalidOperationException($"{nameof(MeshDataArray)} length ({data.Length}) must match destination meshes array length ({meshes.Length})");
+            data.ApplyToMeshesAndDispose(meshes, flags);
+        }
+
+        public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, List<Mesh> meshes, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh list is null");
+            if (data.Length != meshes.Count)
+                throw new InvalidOperationException($"{nameof(MeshDataArray)} length ({data.Length}) must match destination meshes list length ({meshes.Count})");
+            data.ApplyToMeshesAndDispose(NoAllocHelpers.ExtractArrayFromListT(meshes), flags);
         }
 
         //

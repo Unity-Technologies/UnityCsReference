@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             cache = new VisualElementCache(root);
 
-            statusLabel.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
+            statusLabel.ShowTextTooltipOnSizeChange();
         }
 
         public void OnEnable()
@@ -40,16 +40,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 refreshButton.SetEnabled(false);
                 if (!EditorApplication.isPlaying)
-                {
-                    var page = PackageFiltering.instance.currentFilterTab;
-                    if (page == PackageFilterTab.AssetStore)
-                    {
-                        PackageManagerWindow.instance.packageLoadBar.Reset();
-                        PageManager.instance.Refresh(page, PackageManagerWindow.instance.packageList.CalculateNumberOfPackagesToDisplay());
-                    }
-                    else
-                        PageManager.instance.Refresh();
-                }
+                    PageManager.instance.Refresh(PackageFiltering.instance.currentFilterTab, PackageManagerWindow.instance.packageList.CalculateNumberOfPackagesToDisplay());
             };
             refreshButton.SetEnabled(ApplicationUtil.instance.isInternetReachable);
         }
@@ -62,21 +53,6 @@ namespace UnityEditor.PackageManager.UI
 
             PackageFiltering.instance.onFilterTabChanged -= OnFilterTabChanged;
             ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
-        }
-
-        private void OnSizeChange(GeometryChangedEvent evt)
-        {
-            if (evt.newRect.width == evt.oldRect.width)
-                return;
-
-            var target = evt.target as TextElement;
-            if (target == null)
-                return;
-
-            var size = target.MeasureTextSize(target.text, float.MaxValue, MeasureMode.AtMost, evt.newRect.height, MeasureMode.Undefined);
-            var width = evt.newRect.width + (target.resolvedStyle.paddingRight / 2);
-
-            target.tooltip = width < size.x ? target.text : string.Empty;
         }
 
         private void OnInternetReachabilityChange(bool value)
@@ -107,15 +83,15 @@ namespace UnityEditor.PackageManager.UI
 
             if (PageManager.instance.IsRefreshInProgress(tab))
             {
-                SetStatusMessage(StatusType.Loading, L10n.Tr("Refreshing packages..."));
+                SetStatusMessage(StatusType.Loading, ApplicationUtil.instance.GetTranslationForText("Refreshing packages..."));
                 return;
             }
 
             var errorMessage = string.Empty;
             if (!ApplicationUtil.instance.isInternetReachable)
-                errorMessage = L10n.Tr(k_OfflineErrorMessage);
+                errorMessage = ApplicationUtil.instance.GetTranslationForText(k_OfflineErrorMessage);
             else if (PageManager.instance.GetRefreshError(tab) != null)
-                errorMessage = L10n.Tr("Error refreshing packages, see console");
+                errorMessage = ApplicationUtil.instance.GetTranslationForText("Error refreshing packages, see console");
 
             if (!string.IsNullOrEmpty(errorMessage))
             {
@@ -125,7 +101,7 @@ namespace UnityEditor.PackageManager.UI
 
             var timestamp = PageManager.instance.GetRefreshTimestamp(tab);
             var dt = new DateTime(timestamp);
-            var label = timestamp == 0L ? string.Empty : L10n.Tr($"Last update {dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"))}");
+            var label = timestamp == 0L ? string.Empty : ApplicationUtil.instance.GetTranslationForText($"Last update {dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"))}");
             SetStatusMessage(StatusType.Normal, label);
         }
 

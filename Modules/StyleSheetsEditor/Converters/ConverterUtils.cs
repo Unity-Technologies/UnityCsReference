@@ -824,11 +824,17 @@ namespace UnityEditor.StyleSheets
             return resolver;
         }
 
-        internal static StyleSheet CompileStyleSheetContent(string styleSheetContent)
+        internal static StyleSheet CompileStyleSheetContent(string styleSheetContent, bool disableValidation = true, bool reportErrors = false)
         {
             var importer = new StyleSheetImporterImpl();
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
+            importer.disableValidation = disableValidation;
             importer.Import(styleSheet, styleSheetContent);
+            if (reportErrors)
+            {
+                foreach (var err in importer.importErrors)
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, styleSheet, err.ToString());
+            }
             return styleSheet;
         }
     }

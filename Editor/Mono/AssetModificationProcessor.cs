@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
@@ -241,6 +240,65 @@ namespace UnityEditor
             finalResult = AssetModificationHook.OnWillDeleteAsset(assetPath, options);
 
             return finalResult;
+        }
+
+        static void OnWillDeleteAssets(string[] assetPaths, AssetDeleteResult[] outPathDeletionResults, RemoveAssetOptions options)
+        {
+            for (int i = 0; i < outPathDeletionResults.Length; i++)
+                outPathDeletionResults[i] = (int)AssetDeleteResult.DidNotDelete;
+
+            List<string> nonDeletedPaths    = new List<string>();
+            List<int> nonDeletedPathIndices = new List<int>();
+            foreach (var assetModificationProcessorClass in AssetModificationProcessors)
+            {
+                MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillDeleteAsset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (method == null)
+                    continue;
+
+                for (int i = 0; i < assetPaths.Length; i++)
+                {
+                    object[] args = { assetPaths[i], options };
+                    if (!CheckArgumentsAndReturnType(args, method, typeof(AssetDeleteResult)))
+                        continue;
+
+                    AssetDeleteResult callbackResult = (AssetDeleteResult)method.Invoke(null, args);
+                    outPathDeletionResults[i] |= callbackResult;
+                }
+            }
+
+            for (int i = 0; i < assetPaths.Length; i++)
+            {
+                if (outPathDeletionResults[i] == (int)AssetDeleteResult.DidNotDelete)
+                {
+                    nonDeletedPaths.Add(assetPaths[i]);
+                    nonDeletedPathIndices.Add(i);
+                }
+            }
+
+            if (nonDeletedPaths.Count > 0)
+            {
+                if (!Provider.enabled || EditorUserSettings.WorkOffline)
+                    return;
+
+                for (int i = 0; i < nonDeletedPaths.Count; i++)
+                {
+                    if (!Provider.PathIsVersioned(nonDeletedPaths[i]))
+                    {
+                        nonDeletedPaths.RemoveAt(i);
+                        nonDeletedPathIndices.RemoveAt(i);
+                        i--;
+                    }
+                }
+
+                var nonDeletedPathDeletionResults = new AssetDeleteResult[nonDeletedPaths.Count];
+
+                AssetModificationHook.OnWillDeleteAssets(nonDeletedPaths.ToArray(), nonDeletedPathDeletionResults, options);
+
+                for (int i = 0; i < nonDeletedPathIndices.Count; i++)
+                {
+                    outPathDeletionResults[nonDeletedPathIndices[i]] = nonDeletedPathDeletionResults[i];
+                }
+            }
         }
 
         static MethodInfo[] isOpenForEditMethods = null;

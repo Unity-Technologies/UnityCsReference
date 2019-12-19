@@ -45,13 +45,18 @@ namespace UnityEditor.PackageManager
         [NativeName("order")]
         private SearchOrder m_Order;
 
+        [SerializeField]
+        [NativeName("registry")]
+        private string m_Registry = "";
+
         internal SearchOptions(string query = "",
                                string type = "",
                                SearchEntitlement entitlement = default(SearchEntitlement),
                                long offset = -1,
                                long limit = -1,
                                SearchOrderBy orderBy = default(SearchOrderBy),
-                               SearchOrder order = default(SearchOrder))
+                               SearchOrder order = default(SearchOrder),
+                               string registry = "")
         {
             m_Query = query;
             m_Type = type;
@@ -60,6 +65,7 @@ namespace UnityEditor.PackageManager
             m_Limit = limit;
             m_OrderBy = orderBy;
             m_Order = order;
+            m_Registry = registry;
         }
 
         public string query { get { return m_Query; } }
@@ -69,5 +75,6 @@ namespace UnityEditor.PackageManager
         public long limit { get { return m_Limit; } }
         public SearchOrderBy orderBy { get { return m_OrderBy; } }
         public SearchOrder order { get { return m_Order; } }
+        public string registry { get { return m_Registry; } }
     }
 }

@@ -559,6 +559,11 @@ namespace UnityEditorInternal
             }
         }
 
+        public override void Clear()
+        {
+            InitializeNativeTimeline();
+        }
+
         private void ClearSelection()
         {
             m_Window.ClearSelectedPropertyPath();
@@ -1253,24 +1258,7 @@ namespace UnityEditorInternal
 
                 if (initializing)
                 {
-                    var args = new NativeProfilerTimeline_InitializeArgs();
-                    args.Reset();
-                    args.ghostAlpha = 0.3f;
-                    args.nonSelectedAlpha = 0.75f;
-                    args.guiStyle = styles.bar.m_Ptr;
-                    args.lineHeight = k_LineHeight;
-                    args.textFadeOutWidth = k_TextFadeOutWidth;
-                    args.textFadeStartWidth = k_TextFadeStartWidth;
-
-                    var timelineColors = ProfilerColors.timelineColors;
-                    args.profilerColorDescriptors = new ProfilerColorDescriptor[timelineColors.Length];
-
-                    for (int i = 0; i < timelineColors.Length; ++i)
-                    {
-                        args.profilerColorDescriptors[i] = new ProfilerColorDescriptor(timelineColors[i]);
-                    }
-
-                    NativeProfilerTimeline.Initialize(ref args);
+                    InitializeNativeTimeline();
                 }
                 // Prepare group and Thread Info
                 UpdateGroupAndThreadInfo(ref iter, frameIndex);
@@ -1415,6 +1403,30 @@ namespace UnityEditorInternal
             }
         }
 
+        void InitializeNativeTimeline()
+        {
+            var args = new NativeProfilerTimeline_InitializeArgs();
+            args.Reset();
+            args.ghostAlpha = 0.3f;
+            args.nonSelectedAlpha = 0.75f;
+            args.guiStyle = styles.bar.m_Ptr;
+            args.lineHeight = k_LineHeight;
+            args.textFadeOutWidth = k_TextFadeOutWidth;
+            args.textFadeStartWidth = k_TextFadeStartWidth;
+
+            var timelineColors = ProfilerColors.timelineColors;
+            args.profilerColorDescriptors = new ProfilerColorDescriptor[timelineColors.Length];
+
+            for (int i = 0; i < timelineColors.Length; ++i)
+            {
+                args.profilerColorDescriptors[i] = new ProfilerColorDescriptor(timelineColors[i]);
+            }
+
+            args.showFullScriptingMethodNames = ((cpuModule.ViewOptions & CPUorGPUProfilerModule.ProfilerViewFilteringOptions.ShowFullScriptingMethodNames) != 0) ? 1 : 0;
+
+            NativeProfilerTimeline.Initialize(ref args);
+        }
+
         void DoRangeSelection(Rect rect)
         {
             var controlID = EditorGUIUtility.GetControlID(RangeSelectionInfo.controlIDHint, FocusType.Passive);
@@ -1503,6 +1515,8 @@ namespace UnityEditorInternal
                 DrawCPUGPUTime(frameDataIterator.frameTimeMS, frameDataIterator.frameGpuTimeMS);
 
             GUILayout.FlexibleSpace();
+
+            cpuModule?.DrawOptionsMenuPopup();
         }
     }
 }

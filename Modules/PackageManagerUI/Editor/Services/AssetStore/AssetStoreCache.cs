@@ -19,34 +19,53 @@ namespace UnityEditor.PackageManager.UI
         [Serializable]
         internal class AssetStoreCacheInternal : ScriptableSingleton<AssetStoreCacheInternal>, IAssetStoreCache, ISerializationCallbackReceiver
         {
-            private Dictionary<long, string> m_ProductETags = new Dictionary<long, string>();
+            private Dictionary<string, string> m_ETags = new Dictionary<string, string>();
+
+            private Dictionary<string, long> m_Categories = new Dictionary<string, long>();
 
             [SerializeField]
-            private long[] m_SerializedIds = new long[0];
+            private string[] m_SerializedKeys = new string[0];
 
             [SerializeField]
             private string[] m_SerializedETags = new string[0];
 
+            [SerializeField]
+            private string[] m_SerializedCategories = new string[0];
+
+            [SerializeField]
+            private long[] m_SerializedCategoryCounts = new long[0];
+
             public void OnBeforeSerialize()
             {
-                m_SerializedIds = m_ProductETags.Keys.ToArray();
-                m_SerializedETags = m_ProductETags.Values.ToArray();
+                m_SerializedKeys = m_ETags.Keys.ToArray();
+                m_SerializedETags = m_ETags.Values.ToArray();
+
+                m_SerializedCategories = m_Categories.Keys.ToArray();
+                m_SerializedCategoryCounts = m_Categories.Values.ToArray();
             }
 
             public void OnAfterDeserialize()
             {
-                for (var i = 0; i < m_SerializedIds.Length; i++)
-                    m_ProductETags[m_SerializedIds[i]] = m_SerializedETags[i];
+                for (var i = 0; i < m_SerializedKeys.Length; i++)
+                    m_ETags[m_SerializedKeys[i]] = m_SerializedETags[i];
+
+                for (var i = 0; i < m_SerializedCategories.Length; i++)
+                    m_Categories[m_SerializedCategories[i]] = m_SerializedCategoryCounts[i];
             }
 
-            public string GetLastETag(long productId)
+            public string GetLastETag(string key)
             {
-                return m_ProductETags.ContainsKey(productId) ? m_ProductETags[productId] : string.Empty;
+                return m_ETags.ContainsKey(key) ? m_ETags[key] : string.Empty;
             }
 
-            public void SetLastETag(long productId, string etag)
+            public void SetLastETag(string key, string etag)
             {
-                m_ProductETags[productId] = etag;
+                m_ETags[key] = etag;
+            }
+
+            public void SetCategory(string category, long count)
+            {
+                m_Categories[category] = count;
             }
 
             public Texture2D LoadImage(long productId, string url)
@@ -82,7 +101,8 @@ namespace UnityEditor.PackageManager.UI
 
             public void ClearCache()
             {
-                m_ProductETags.Clear();
+                m_ETags.Clear();
+                m_Categories.Clear();
             }
         }
     }

@@ -117,10 +117,6 @@ namespace UnityEditor.PackageManager.UI
         [Serializable]
         private class AssetStoreOAuthInternal : ScriptableSingleton<AssetStoreOAuthInternal>, IAssetStoreOAuth
         {
-            [SerializeField]
-            private string m_Host = "";
-            [SerializeField]
-            private string m_Secret = "";
             private const string k_OAuthUri = "/v1/oauth2/token";
             private const string k_TokenInfoUri = "/v1/oauth2/tokeninfo";
             private const string k_UserInfoUri = "/v1/users";
@@ -155,22 +151,23 @@ namespace UnityEditor.PackageManager.UI
             // this onError callback is shared between all steps in this process, no matter which step has the error, we'll call this event
             private event Action<UIError> m_OnError;
 
+            private string m_Host;
+            private string host
+            {
+                get
+                {
+                    if (string.IsNullOrEmpty(m_Host))
+                        m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudIdentity);
+                    return m_Host;
+                }
+            }
+
             private AssetStoreOAuthInternal()
             {
             }
 
             public void OnEnable()
             {
-                if (string.IsNullOrEmpty(m_Secret))
-                {
-                    m_Secret = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
-                }
-
-                if (string.IsNullOrEmpty(m_Host))
-                {
-                    m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudIdentity);
-                }
-
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
             }
 
@@ -272,8 +269,10 @@ namespace UnityEditor.PackageManager.UI
                     if (m_AccessTokenRequest != null)
                         return;
 
-                    m_AccessTokenRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_OAuthUri}", "POST");
-                    m_AccessTokenRequest.postData = $"grant_type=authorization_code&code={authCode}&client_id=packman&client_secret={m_Secret}&redirect_uri=packman://unity";
+                    var secret = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
+
+                    m_AccessTokenRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_OAuthUri}", "POST");
+                    m_AccessTokenRequest.postData = $"grant_type=authorization_code&code={authCode}&client_id=packman&client_secret={secret}&redirect_uri=packman://unity";
                     m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
                     m_AccessTokenRequest.doneCallback = httpClient =>
                     {
@@ -292,7 +291,7 @@ namespace UnityEditor.PackageManager.UI
                                 return;
                             }
                             else
-                                OnGetAccessTokenError("Access token invalid");
+                                OnGetAccessTokenError(ApplicationUtil.instance.GetTranslationForText("Access token invalid"));
                         }
                     };
                     m_AccessTokenRequest.Begin();
@@ -314,7 +313,7 @@ namespace UnityEditor.PackageManager.UI
                     if (m_TokenRequest != null)
                         return;
 
-                    m_TokenRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_TokenInfoUri}?access_token={accessToken.accessToken}");
+                    m_TokenRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_TokenInfoUri}?access_token={accessToken.accessToken}");
                     m_TokenRequest.doneCallback = httpClient =>
                     {
                         m_TokenRequest = null;
@@ -331,7 +330,7 @@ namespace UnityEditor.PackageManager.UI
                                 m_OnTokenInfoFetched = null;
                             }
                             else
-                                OnOperationError("TokenInfo invalid");
+                                OnOperationError(ApplicationUtil.instance.GetTranslationForText("TokenInfo invalid"));
                         }
                     };
                     m_TokenRequest.Begin();
@@ -354,7 +353,7 @@ namespace UnityEditor.PackageManager.UI
                     if (m_UserInfoRequest != null)
                         return;
 
-                    m_UserInfoRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{m_Host}{k_UserInfoUri}/{tokenInfo.sub}");
+                    m_UserInfoRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_UserInfoUri}/{tokenInfo.sub}");
                     m_UserInfoRequest.header["Authorization"] = "Bearer " + tokenInfo.accessToken;
                     m_UserInfoRequest.doneCallback = httpClient =>
                     {
@@ -375,7 +374,7 @@ namespace UnityEditor.PackageManager.UI
                                 m_OnError = null;
                             }
                             else
-                                OnOperationError("UserInfo invalid");
+                                OnOperationError(ApplicationUtil.instance.GetTranslationForText("UserInfo invalid"));
                         }
                     };
                     m_UserInfoRequest.Begin();

@@ -463,5 +463,11 @@ namespace UnityEditor
             if (!ModeService.Execute("file_new_scene"))
                 FileMenuNewScene();
         }
+
+        internal static void TogglePlaying()
+        {
+            isPlaying = !isPlaying;
+            InternalEditorUtility.RepaintAllViews();
+        }
     }
 }

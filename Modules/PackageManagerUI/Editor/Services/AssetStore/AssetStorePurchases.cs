@@ -10,34 +10,30 @@ using System.Text;
 namespace UnityEditor.PackageManager.UI
 {
     [Serializable]
-    internal class PurchasesQueryArgs
+    internal class PurchasesQueryArgs : PageFilters
     {
-        private const int k_DefaultLimit = 100;
-
         public int startIndex;
         public int limit;
-        public string searchText;
-        public string status;
-        public List<string> tags;
         public List<long> productIds;
-        public string orderBy;
-        public bool isReverseOrder;
 
         public override string ToString()
         {
-            var limit = this.limit > 0 ? this.limit : k_DefaultLimit;
+            var limit = this.limit;
             var startIndex = this.startIndex > 0 ? this.startIndex : 0;
             var stringBuilder = new StringBuilder($"?offset={startIndex}&limit={limit}", 512);
             if (!string.IsNullOrEmpty(searchText))
                 stringBuilder.Append($"&query={Uri.EscapeDataString(searchText)}");
-            if (!string.IsNullOrEmpty(status))
-                stringBuilder.Append($"&status={status}");
+            if (statuses?.Any() ?? false)
+                stringBuilder.Append($"&status={statuses.FirstOrDefault()}");
             if (!string.IsNullOrEmpty(orderBy))
+            {
                 stringBuilder.Append($"&orderBy={orderBy}");
-            if (isReverseOrder)
-                stringBuilder.Append("&order=desc");
-            if (tags?.Any() ?? false)
-                stringBuilder.Append($"&tagging={string.Join(",", tags.Select(tag => Uri.EscapeDataString(tag)).ToArray())}");
+                stringBuilder.Append(isReverseOrder ? "&order=desc" : "&order=asc");
+            }
+            if (labels?.Any() ?? false)
+                stringBuilder.Append($"&tagging={string.Join(",", labels.Select(label => Uri.EscapeDataString(label)).ToArray())}");
+            if (categories?.Any() ?? false)
+                stringBuilder.Append($"&categories={string.Join(",", categories.Select(cat => Uri.EscapeDataString(cat)).ToArray())}");
             if (productIds?.Any() ?? false)
                 stringBuilder.Append($"&ids={string.Join(",", productIds.Select(id => id.ToString()).ToArray())}");
             return stringBuilder.ToString();

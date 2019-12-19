@@ -82,8 +82,8 @@ namespace UnityEditor.PackageManager.UI
         {
             if (isInProgress)
             {
-                Debug.LogError("Unable to start the operation again while it's in progress. " +
-                    "Please cancel the operation before re-start or wait until the operation is completed.");
+                Debug.LogError(ApplicationUtil.instance.GetTranslationForText("Unable to start the operation again while it's in progress. " +
+                    "Please cancel the operation before re-start or wait until the operation is completed."));
                 return;
             }
 
@@ -110,7 +110,7 @@ namespace UnityEditor.PackageManager.UI
                 else if (m_Request.Status >= StatusCode.Failure)
                     OnError((UIError)m_Request.Error);
                 else
-                    Debug.LogError("Unsupported progress state " + m_Request.Status);
+                    Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Unsupported progress state {0}"), m_Request.Status));
                 OnFinalize();
             }
         }
@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI
             try
             {
                 this.error = error;
-                var message = "Cannot perform upm operation";
+                var message = ApplicationUtil.instance.GetTranslationForText("Cannot perform upm operation");
                 message += error == null ? "." : $": {error.message} [{error.errorCode}]";
 
                 Debug.LogError(message);
@@ -128,7 +128,7 @@ namespace UnityEditor.PackageManager.UI
             }
             catch (Exception exception)
             {
-                Debug.LogError($"Package Manager Window had an error while reporting an error in an operation: {exception}");
+                Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Package Manager Window had an error while reporting an error in an operation: {0}"), exception));
             }
         }
 
@@ -142,7 +142,7 @@ namespace UnityEditor.PackageManager.UI
             }
             catch (Exception exception)
             {
-                Debug.LogError($"Package Manager Window had an error while completing an operation: {exception}");
+                Debug.LogError(string.Format("Package Manager Window had an error while completing an operation: {0}", exception));
             }
         }
 

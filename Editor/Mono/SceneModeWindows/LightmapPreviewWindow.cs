@@ -25,8 +25,8 @@ namespace UnityEditor
         int m_SelectedPreviewTextureOptionIndex = 0;
         [SerializeField]
         float m_ExposureSliderValue = 0.0f;
-        [SerializeField]
-        float m_ExposureSliderMax = 10f; // this value can be altered by the user
+        // this value can be altered by the user
+        float m_ExposureSliderMax = 10f;
         // no point of allowing the user to go over this
         const float kExposureSliderAbsoluteMax = 23.0f;
 

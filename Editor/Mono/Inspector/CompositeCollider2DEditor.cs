@@ -57,8 +57,14 @@ namespace UnityEditor
             if (EditorGUILayout.BeginFadeGroup(m_ShowManualGenerationButton.faded))
             {
                 if (GUILayout.Button("Regenerate Collider"))
+                {
                     foreach (var composite in targets)
+                    {
                         (composite as CompositeCollider2D).GenerateGeometry();
+                        // Case 1189438: Set dirty for each composite to register a change in target's scene
+                        EditorUtility.SetDirty(composite);
+                    }
+                }
             }
             EditorGUILayout.EndFadeGroup();
 

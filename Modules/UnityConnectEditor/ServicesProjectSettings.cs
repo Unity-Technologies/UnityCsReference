@@ -80,6 +80,7 @@ namespace UnityEditor.Connect
 
         SimpleStateMachine<Event> m_StateMachine;
         OfflineState m_OfflineState;
+        ConnectingServicesState m_ConnectingServicesState;
         UnboundState m_UnboundState;
         InitialState m_InitialState;
         StandardState m_StandardState;
@@ -97,6 +98,7 @@ namespace UnityEditor.Connect
         const string k_StateNameCoppa = "CoppaState";
         const string k_StateNameBrokenBinding = "BrokenBindingState";
         const string k_StateNameOffline = "OfflineState";
+        const string k_StateNameConnectingServices = "ConnectingServicesState";
         const string k_StateNameLoggedOut = "LoggedOutState";
         const string k_StateNameDeactivate = "DeactivateState";
 
@@ -143,6 +145,7 @@ namespace UnityEditor.Connect
             m_StateMachine.AddEvent(Event.SettingCoppa);
             m_StateMachine.AddEvent(Event.GoingToOffline);
             m_StateMachine.AddEvent(Event.GoingToLoggedOut);
+            m_StateMachine.AddEvent(Event.GoingToConnectingServices);
             m_StateMachine.AddEvent(Event.GoingToDeactivate);
             m_UnboundState = new UnboundState(m_StateMachine, this);
             m_StateMachine.AddState(m_UnboundState);
@@ -156,6 +159,8 @@ namespace UnityEditor.Connect
             m_StateMachine.AddState(m_CoppaState);
             m_OfflineState = new OfflineState(m_StateMachine, this);
             m_StateMachine.AddState(m_OfflineState);
+            m_ConnectingServicesState = new ConnectingServicesState(m_StateMachine, this);
+            m_StateMachine.AddState(m_ConnectingServicesState);
             m_LoggedOutState = new LoggedOutState(m_StateMachine, this);
             m_StateMachine.AddState(m_LoggedOutState);
             m_DeactivateState = new DeactivateState(m_StateMachine, this);
@@ -514,6 +519,7 @@ namespace UnityEditor.Connect
             GoingToStandard,
             GoingToOffline,
             GoingToLoggedOut,
+            GoingToConnectingServices,
             GoingToDeactivate,
         }
 
@@ -560,6 +566,7 @@ namespace UnityEditor.Connect
                 ModifyActionForEvent(Event.BreakBinding, HandleBreakBinding);
                 ModifyActionForEvent(Event.GoingToOffline, HandleGoingToOffline);
                 ModifyActionForEvent(Event.GoingToLoggedOut, HandleGoingToLoggedOut);
+                ModifyActionForEvent(Event.GoingToConnectingServices, HandleGoingToConnectingServices);
                 ModifyActionForEvent(Event.GoingToDeactivate, HandleGoingToDeactivate);
             }
 
@@ -570,6 +577,12 @@ namespace UnityEditor.Connect
                 if (!UnityConnect.instance.online)
                 {
                     stateMachine.ProcessEvent(Event.GoingToOffline);
+                    return;
+                }
+
+                if (!ServicesConfiguration.instance.pathsReady)
+                {
+                    stateMachine.ProcessEvent(Event.GoingToConnectingServices);
                     return;
                 }
 
@@ -612,6 +625,11 @@ namespace UnityEditor.Connect
             SimpleStateMachine<Event>.State HandleGoingToLoggedOut(Event arg)
             {
                 return provider.m_LoggedOutState;
+            }
+
+            SimpleStateMachine<Event>.State HandleGoingToConnectingServices(Event arg)
+            {
+                return provider.m_ConnectingServicesState;
             }
 
             SimpleStateMachine<Event>.State HandleGoingToOffline(Event arg)
@@ -905,6 +923,105 @@ namespace UnityEditor.Connect
                         NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ConnectionRefreshedMessage));
                         UnityConnect.instance.RefreshProject();
                     };
+                }
+            }
+
+            SimpleStateMachine<Event>.State HandleInitializing(Event raisedEvent)
+            {
+                return provider.m_InitialState;
+            }
+
+            SimpleStateMachine<Event>.State HandleGoingToDeactivate(Event arg)
+            {
+                return provider.m_DeactivateState;
+            }
+        }
+
+        sealed class ConnectingServicesState : BaseState
+        {
+            const string k_TemplatePath = "UXML/ServicesWindow/ConnectingServices.uxml";
+
+            const string k_ConnectingServicesContainerName = "ConnectingServicesContainer";
+            const string k_RefreshButtonName = "RefreshBtn";
+
+            const string k_ConnectionRefreshedMessage = "Attempting connection refresh...";
+            const string k_ConnectionFailedMessage = "Failed to connect to Services. Services are not reachable right now.";
+            const short k_MaxVerifyRetries = 50;
+            const short k_VerifyDelay = 500;
+
+            IVisualElementScheduledItem m_ScheduledVerify;
+            short m_VerifyRetries;
+
+            public ConnectingServicesState(SimpleStateMachine<Event> simpleStateMachine, ServicesProjectSettings provider)
+                : base(simpleStateMachine, k_StateNameConnectingServices, provider)
+            {
+                ModifyActionForEvent(Event.Initializing, HandleInitializing);
+                ModifyActionForEvent(Event.GoingToDeactivate, HandleGoingToDeactivate);
+            }
+
+            public override void EnterState()
+            {
+                provider.rootVisualElement.Clear();
+                var contentContainer = provider.m_GeneralTemplate.CloneTree().contentContainer;
+                ServicesUtils.TranslateStringsInTree(contentContainer);
+                provider.rootVisualElement.Add(contentContainer);
+                contentContainer.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesWindowCommon);
+                contentContainer.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesWindowDark : ServicesUtils.StylesheetPath.servicesWindowLight);
+                contentContainer.AddStyleSheetPath(ServicesUtils.StylesheetPath.servicesCommon);
+                contentContainer.AddStyleSheetPath(EditorGUIUtility.isProSkin ? ServicesUtils.StylesheetPath.servicesDark : ServicesUtils.StylesheetPath.servicesLight);
+
+                var connectingServicesTemplate = EditorGUIUtility.Load(k_TemplatePath) as VisualTreeAsset;
+                var scrollContainer = provider.rootVisualElement.Q(null, k_ScrollContainerClassName);
+                scrollContainer.Clear();
+                provider.ConfigureNotificationSubscriberForNonStandardStates();
+                var connectingServicesTemplateContainer = connectingServicesTemplate.CloneTree().contentContainer;
+                ServicesUtils.TranslateStringsInTree(connectingServicesTemplateContainer);
+                scrollContainer.Add(connectingServicesTemplateContainer);
+
+                var connectingServicesContainer = provider.rootVisualElement.Q(k_ConnectingServicesContainerName);
+
+                var refreshAccessButton = connectingServicesContainer.Q<Button>(k_RefreshButtonName);
+                if (refreshAccessButton != null)
+                {
+                    refreshAccessButton.clicked += () =>
+                    {
+                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ConnectionRefreshedMessage));
+                        stateMachine.ProcessEvent(Event.Initializing);
+                    };
+                }
+
+                if (m_ScheduledVerify != null)
+                {
+                    ClearScheduledVerify();
+                }
+                //Rerun every half second and delay first call for a second.
+                //It will probably never come to this since fetching URLs is very fast, but...
+                m_ScheduledVerify = contentContainer.schedule.Execute(VerifyPaths).Every(k_VerifyDelay).StartingIn(k_VerifyDelay);
+            }
+
+            void ClearScheduledVerify()
+            {
+                m_VerifyRetries = 0;
+                m_ScheduledVerify.Pause();
+                m_ScheduledVerify = null;
+            }
+
+            void VerifyPaths()
+            {
+                if (ServicesConfiguration.instance.pathsReady)
+                {
+                    ClearScheduledVerify();
+                    stateMachine.ProcessEvent(Event.Initializing);
+                    return;
+                }
+
+                m_VerifyRetries++;
+                if (m_VerifyRetries > k_MaxVerifyRetries)
+                {
+                    //That is enough, message and stop
+                    //Using the refresh btn will relaunch the verif for another k_MaxVerifyRetries attempts
+                    NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Error, L10n.Tr(k_ConnectionFailedMessage));
+                    ClearScheduledVerify();
                 }
             }
 

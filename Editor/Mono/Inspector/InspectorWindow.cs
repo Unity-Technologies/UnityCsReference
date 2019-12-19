@@ -1281,22 +1281,6 @@ namespace UnityEditor
             m_PreviousPreviewExpandedState = m_PreviewResizer.GetExpanded();
         }
 
-        internal Object[] GetTargetsForPreview(IPreviewable previewEditor)
-        {
-            Editor editorForType = null;
-            foreach (var editor in tracker.activeEditors)
-            {
-                if (editor.target.GetType() != previewEditor.target.GetType())
-                {
-                    continue;
-                }
-
-                editorForType = editor;
-                break;
-            }
-            return editorForType.targets;
-        }
-
         private void OnPreviewSelected(object userData, string[] options, int selected)
         {
             IPreviewable[] availablePreviews = userData as IPreviewable[];
@@ -1320,11 +1304,12 @@ namespace UnityEditor
         {
             if (!Provider.enabled)
                 return;
-            var vcsMode = EditorSettings.externalVersionControl;
+            var vcsMode = VersionControlSettings.mode;
             if (vcsMode == ExternalVersionControl.Generic || vcsMode == ExternalVersionControl.Disabled || vcsMode == ExternalVersionControl.AutoDetect)
                 return;
 
             var assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
+
             Asset asset = Provider.GetAssetByPath(assetPath);
             if (asset == null)
                 return;
@@ -1519,7 +1504,7 @@ namespace UnityEditor
                 if (presence.settings)
                 {
                     if (VersionControlActionButton(buttonRect, ref buttonX, Styles.vcsSettings))
-                        SettingsService.OpenProjectSettings("Project/Editor");
+                        SettingsService.OpenProjectSettings("Project/Version Control");
                 }
                 return buttonX;
             }

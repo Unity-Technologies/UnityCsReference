@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Networking;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Connect
@@ -173,6 +174,11 @@ namespace UnityEditor.Connect
         {
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+        public static bool IsUnityWebRequestReadyForJsonExtract(UnityWebRequest unityWebRequest)
+        {
+            return (unityWebRequest.result != UnityWebRequest.Result.ProtocolError) && !string.IsNullOrEmpty(unityWebRequest.downloadHandler.text);
         }
     }
 }

@@ -73,6 +73,7 @@ namespace UnityEngine.UIElements.UIR
 
         private Shader m_DefaultMaterialShader;
         private Material m_DefaultMaterial;
+        private IntPtr m_VertexDecl;
         private DrawingModes m_DrawingMode;
         private Page m_FirstPage;
         private uint m_NextPageVertexCount;
@@ -251,10 +252,37 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        void InitVertexDeclaration()
+        {
+            var vertexDecl = new VertexAttributeDescriptor[]
+            {
+                // Vertex position first
+                new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
+
+                // Then UINT32 color
+                new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
+
+                // Then UV
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
+
+                // TransformID page coordinate (XY), ClipRectID page coordinate (ZW), packed into a Color32
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4),
+
+                // In-page index for (TransformID, ClipRectID, OpacityID), Flags (vertex type), all packed into a Color32
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.UNorm8, 4),
+
+                // OpacityID page coordinate (XY), SVG SettingIndex (16-bit encoded in ZW), packed into a Color32
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord3, VertexAttributeFormat.UNorm8, 4)
+            };
+            m_VertexDecl = Utility.GetVertexDeclaration(vertexDecl);
+        }
+
         void CompleteCreation()
         {
             if (m_MockDevice || fullyCreated)
                 return;
+
+            InitVertexDeclaration();
 
             m_Fences = new uint[(int)k_MaxQueuedFrameCount];
             m_StandardMatProps = new MaterialPropertyBlock();
@@ -873,7 +901,7 @@ namespace UnityEngine.UIElements.UIR
                 if (rangesStart + rangesReady <= rangesCount)
                 {
                     if (!m_MockDevice)
-                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, rangesReady));
+                        DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, rangesReady));
                     m_DrawStats.drawRangeCallCount++;
                 }
                 else
@@ -883,8 +911,8 @@ namespace UnityEngine.UIElements.UIR
                     int secondRangeCount = rangesReady - firstRangeCount;
                     if (!m_MockDevice)
                     {
-                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, firstRangeCount));
-                        Utility.DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges, secondRangeCount));
+                        DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, firstRangeCount));
+                        DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges, secondRangeCount));
                     }
 
                     m_DrawStats.drawRangeCallCount += 2;
@@ -893,6 +921,13 @@ namespace UnityEngine.UIElements.UIR
                 rangesStart = (rangesStart + rangesReady) & (rangesCount - 1);
                 rangesReady = 0;
             }
+        }
+
+        unsafe void DrawRanges<I, T>(Utility.GPUBuffer<I> ib, Utility.GPUBuffer<T> vb, NativeSlice<DrawBufferRange> ranges) where T : struct where I : struct
+        {
+            IntPtr *vStream = stackalloc IntPtr[1];
+            vStream[0] = vb.BufferPointer;
+            Utility.DrawRanges(ib.BufferPointer, vStream, 1, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, m_VertexDecl);
         }
 
         public void OnFrameRenderingDone()

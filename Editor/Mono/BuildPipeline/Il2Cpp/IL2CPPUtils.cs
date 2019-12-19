@@ -539,7 +539,7 @@ namespace UnityEditorInternal
 
         private string GetIl2CppCoreExe()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/il2cppcore/il2cppcore.dll";
+            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/netcoreapp2.1/publish/il2cppcore.dll";
         }
 
         private bool ShouldUseIl2CppCore()

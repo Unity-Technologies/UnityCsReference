@@ -1029,7 +1029,7 @@ namespace UnityEditor
 
             UpdateCamera(desiredPercentage, group);
             SceneView.lastActiveSceneView.ClearSearchFilter();
-            SceneView.lastActiveSceneView.SetSceneViewFiltering(true);
+            SceneView.lastActiveSceneView.SetSceneViewFilteringForLODGroups(true);
             HierarchyProperty.FilterSingleSceneObject(group.gameObject.GetInstanceID(), false);
             SceneView.RepaintAll();
         }
@@ -1048,7 +1048,7 @@ namespace UnityEditor
             if (SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.camera == null || m_IsPrefab)
                 return;
 
-            SceneView.lastActiveSceneView.SetSceneViewFiltering(false);
+            SceneView.lastActiveSceneView.SetSceneViewFilteringForLODGroups(false);
             SceneView.lastActiveSceneView.ClearSearchFilter();
             // Clearing the search filter of a SceneView will not actually reset the visibility values
             // of the GameObjects in the scene so we have to explicitly do that  (case 770915).

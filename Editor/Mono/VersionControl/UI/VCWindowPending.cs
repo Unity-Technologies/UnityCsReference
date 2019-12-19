@@ -23,9 +23,9 @@ namespace UnityEditor.VersionControl
             public GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
             public static readonly GUIContent connectingLabel = EditorGUIUtility.TrTextContent("CONNECTING...");
             public static readonly GUIContent offlineLabel = EditorGUIUtility.TrTextContent("OFFLINE");
-            public static readonly GUIContent workOfflineLabel = EditorGUIUtility.TrTextContent("WORK OFFLINE is enabled in Editor Settings. Unity will behave as if version control is disabled.");
+            public static readonly GUIContent workOfflineLabel = EditorGUIUtility.TrTextContent("WORK OFFLINE is enabled in Version Control Settings. Unity will behave as if version control is disabled.");
             public static readonly GUIContent disabledLabel = EditorGUIUtility.TrTextContent("Disabled");
-            public static readonly GUIContent editorSettingsLabel = EditorGUIUtility.TrTextContent("Editor Settings");
+            public static readonly GUIContent editorSettingsLabel = EditorGUIUtility.TrTextContent("Version Control Settings");
         }
         static Styles s_Styles = null;
 
@@ -296,10 +296,16 @@ namespace UnityEditor.VersionControl
 
         internal string FormatChangeSetDescription(ChangeSet changeSet)
         {
-            switch (EditorSettings.externalVersionControl)
+            string formattedDescription;
+
+            string[] description = changeSet.description.Split(new char[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
+            formattedDescription = description.Length > 1 ? description[0] + description[1] : description[0];
+            formattedDescription = formattedDescription.Replace('\t', ' ');
+
+            switch (VersionControlSettings.mode)
             {
                 case "Perforce":
-                    return changeSet.id + ": " + changeSet.description.Trim(' ');
+                    return changeSet.id + ": " + formattedDescription;
 
                 default:
                     return changeSet.description;
@@ -524,7 +530,7 @@ namespace UnityEditor.VersionControl
 
             if (showSettingsButton && GUILayout.Button(Styles.editorSettingsLabel, EditorStyles.toolbarButton))
             {
-                SettingsService.OpenProjectSettings("Project/Editor");
+                SettingsService.OpenProjectSettings("Project/Version Control");
                 EditorWindow.FocusWindowIfItsOpen<InspectorWindow>();
                 GUIUtility.ExitGUI();
             }

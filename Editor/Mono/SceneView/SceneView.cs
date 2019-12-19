@@ -115,6 +115,10 @@ namespace UnityEditor
         [SerializeField]
         bool m_ShowContextualTools;
 
+
+        internal static SavedBool s_PreferenceEnableFilteringWhileSearching = new SavedBool("SceneView.enableFilteringWhileSearching", true);
+        internal static SavedBool s_PreferenceEnableFilteringWhileLodGroupEditing = new SavedBool("SceneView.enableFilteringWhileLodGroupEditing", true);
+
         internal bool displayToolModes
         {
             get { return m_ShowContextualTools; }
@@ -473,10 +477,22 @@ namespace UnityEditor
 
         [SerializeField]
         float m_ExposureSliderValue = 0.0f;
-        [SerializeField]
-        float m_ExposureSliderMax = 10f; // this value can be altered by the user
+        // this value can be altered by the user
+        float m_ExposureSliderMax = 10f;
         // no point of allowing the user to go over this
         const float kExposureSliderAbsoluteMax = 23.0f;
+
+        Texture2D m_ExposureTexture = null;
+        Texture2D m_EmptyExposureTexture = null;
+
+        internal bool showExposureSettings
+        {
+            get
+            {
+                return (this.cameraMode.drawMode == DrawCameraMode.BakedEmissive || this.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
+                    this.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || this.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect);
+            }
+        }
 
         [SerializeField]
         private SceneViewState m_SceneViewState;
@@ -867,7 +883,7 @@ namespace UnityEditor
 
         OverlayWindow m_SceneVisOverlayWindow;
         OverlayWindow m_PBRSettingsOverlayWindow;
-        OverlayWindow m_LightmapSettingsOverlayWindow;
+        OverlayWindow m_LightingExposureSettingsOverlayWindow;
         OverlayWindow m_GIContributorsReceiversOverlayWindow;
         OverlayWindow m_EditorToolsOverlayWindow;
 
@@ -1020,7 +1036,7 @@ namespace UnityEditor
                 null,
                 SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             m_PBRSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            m_LightmapSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Lightmap Exposure"), DrawLightmapSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            m_LightingExposureSettingsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Lighting Exposure"), DrawLightingExposureSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             m_GIContributorsReceiversOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("GI Contributors / Receivers"), DrawGIContributorsReceiversSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, this, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             m_EditorToolsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Tools"), EditorToolGUI.DoContextualToolbarOverlay, int.MaxValue, null, SceneViewOverlay.WindowDisplayOption.MultipleWindowsPerTarget);
             m_EditorToolsOverlayWindow.editorWindow = this;
@@ -1201,6 +1217,12 @@ namespace UnityEditor
 
             if (s_MipColorsTexture)
                 DestroyImmediate(s_MipColorsTexture, true);
+
+            if (m_ExposureTexture)
+                DestroyImmediate(m_ExposureTexture, true);
+
+            if (m_EmptyExposureTexture)
+                DestroyImmediate(m_EmptyExposureTexture, true);
 
             s_SceneViews.Remove(this);
             if (s_LastActiveSceneView == this)
@@ -1616,7 +1638,7 @@ namespace UnityEditor
             return (Selection.activeTransform != null);
         }
 
-        static private void CreateMipColorsTexture()
+        private static void CreateMipColorsTexture()
         {
             if (s_MipColorsTexture)
                 return;
@@ -1644,6 +1666,8 @@ namespace UnityEditor
         }
 
         private bool m_ForceSceneViewFiltering;
+        private bool m_ForceSceneViewFilteringForLodGroupEditing;
+        private bool m_ForceSceneViewFilteringForStageHandling;
         private double m_lastRenderedTime;
 
         internal void SetSceneViewFiltering(bool enable)
@@ -1651,9 +1675,21 @@ namespace UnityEditor
             m_ForceSceneViewFiltering = enable;
         }
 
-        private bool UseSceneFiltering()
+        internal void SetSceneViewFilteringForLODGroups(bool enable)
         {
-            return !string.IsNullOrEmpty(m_SearchFilter) || m_ForceSceneViewFiltering;
+            m_ForceSceneViewFilteringForLodGroupEditing = enable;
+        }
+
+        internal void SetSceneViewFilteringForStages(bool enable)
+        {
+            m_ForceSceneViewFilteringForStageHandling = enable;
+        }
+
+        bool forceSceneViewFilteringForLodGroupEditing => m_ForceSceneViewFilteringForLodGroupEditing && s_PreferenceEnableFilteringWhileLodGroupEditing;
+
+        bool UseSceneFiltering()
+        {
+            return (!string.IsNullOrEmpty(m_SearchFilter) && s_PreferenceEnableFilteringWhileSearching) || forceSceneViewFilteringForLodGroupEditing || m_ForceSceneViewFilteringForStageHandling || m_ForceSceneViewFiltering;
         }
 
         internal bool SceneViewIsRenderingHDR()
@@ -1934,7 +1970,7 @@ namespace UnityEditor
             Graphics.Blit(m_SceneTargetTexture, colorRT);
 
             // Second pass: Blit the scene faded out in the scene target texture
-            float fade = m_ForceSceneViewFiltering ? 1f : Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
+            float fade = UseSceneFiltering() ? 1f : Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
             if (!s_FadeMaterial)
                 s_FadeMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewGrayscaleEffectFade.mat") as Material;
             s_FadeMaterial.SetFloat("_Fade", fade);
@@ -2380,7 +2416,7 @@ namespace UnityEditor
             }
         }
 
-        internal void PrepareValidationUI()
+        void PrepareValidationUI()
         {
             if (m_AlbedoSwatchInfos == null)
             {
@@ -2402,7 +2438,7 @@ namespace UnityEditor
             sceneView.DrawPBRSettingsForScene();
         }
 
-        internal void DrawLightmapExposureSlider()
+        internal void DrawLightingExposureSlider()
         {
             float labelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 20;
@@ -2419,9 +2455,9 @@ namespace UnityEditor
             Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
         }
 
-        static void DrawLightmapSettings(Object target, SceneView sceneView)
+        static void DrawLightingExposureSettings(Object target, SceneView sceneView)
         {
-            sceneView.DrawLightmapExposureSlider();
+            sceneView.DrawLightingExposureSlider();
         }
 
         void UpdateGIContributorsReceiversColors()
@@ -2472,24 +2508,48 @@ namespace UnityEditor
             sceneView.DrawGIContributorsReceiversSettings();
         }
 
-        void DrawSceneViewSwatch(SceneView sceneView)
+        void DrawSceneViewSwatch()
         {
-            if (sceneView.cameraMode.drawMode == DrawCameraMode.ValidateAlbedo || sceneView.cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular)
+            if (this.cameraMode.drawMode == DrawCameraMode.ValidateAlbedo || this.cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular)
             {
-                sceneView.PrepareValidationUI();
+                PrepareValidationUI();
                 SceneViewOverlay.ShowWindow(m_PBRSettingsOverlayWindow);
             }
 
-            if (sceneView.cameraMode.drawMode == DrawCameraMode.BakedEmissive || sceneView.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
-                sceneView.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || sceneView.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect)
+            if (this.showExposureSettings)
             {
-                SceneViewOverlay.ShowWindow(m_LightmapSettingsOverlayWindow);
+                SceneViewOverlay.ShowWindow(m_LightingExposureSettingsOverlayWindow);
             }
 
             if (this.cameraMode.drawMode == DrawCameraMode.GIContributorsReceivers)
             {
                 UpdateGIContributorsReceiversColors();
                 SceneViewOverlay.ShowWindow(m_GIContributorsReceiversOverlayWindow);
+            }
+        }
+
+        void UpdateGizmoExposure()
+        {
+            if (this.showExposureSettings)
+            {
+                if (m_ExposureTexture == null)
+                    m_ExposureTexture = new Texture2D(1, 1, GraphicsFormat.R32G32_SFloat, TextureCreationFlags.None);
+
+                m_ExposureTexture.SetPixel(0, 0, new Color(Mathf.Pow(2.0f, m_ExposureSliderValue), 0.0f, 0.0f));
+                m_ExposureTexture.Apply();
+
+                Gizmos.exposure = m_ExposureTexture;
+            }
+            else
+            {
+                if (m_EmptyExposureTexture == null)
+                {
+                    m_EmptyExposureTexture = new Texture2D(1, 1, GraphicsFormat.R32G32_SFloat, TextureCreationFlags.None);
+                    m_EmptyExposureTexture.SetPixel(0, 0, new Color(1.0f, 0.0f, 0.0f));
+                    m_EmptyExposureTexture.Apply();
+                }
+
+                Gizmos.exposure = m_EmptyExposureTexture;
             }
         }
 
@@ -2655,7 +2715,8 @@ namespace UnityEditor
                 SceneViewOverlay.ShowWindow(m_EditorToolsOverlayWindow);
             }
 
-            DrawSceneViewSwatch(this);
+            DrawSceneViewSwatch();
+            UpdateGizmoExposure();
 
             // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
             HandleSelectionAndOnSceneGUI();
@@ -3049,7 +3110,7 @@ namespace UnityEditor
                 m_Rotation.value = Quaternion.identity;
         }
 
-        static internal Camera GetMainCamera()
+        internal static Camera GetMainCamera()
         {
             // main camera, if we have any
             var mainCamera = Camera.main;
@@ -3067,7 +3128,7 @@ namespace UnityEditor
 
         // Note: this can return "use player settings" value too!
         // In order to check things like "is using deferred", use IsUsingDeferredRenderingPath
-        static internal RenderingPath GetSceneViewRenderingPath()
+        internal static RenderingPath GetSceneViewRenderingPath()
         {
             var mainCamera = GetMainCamera();
             if (mainCamera != null)
@@ -3075,7 +3136,7 @@ namespace UnityEditor
             return RenderingPath.UsePlayerSettings;
         }
 
-        static internal bool IsUsingDeferredRenderingPath()
+        internal static bool IsUsingDeferredRenderingPath()
         {
             RenderingPath renderingPath = GetSceneViewRenderingPath();
             return (renderingPath == RenderingPath.DeferredShading) ||

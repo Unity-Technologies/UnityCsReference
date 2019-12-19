@@ -23,8 +23,8 @@ namespace UnityEditor.Experimental.AssetImporters
 
         public void OnPreprocessMaterialDescription(MaterialDescription description, Material material, AnimationClip[] clips)
         {
-            var lowerCasePath = Path.GetExtension(assetPath).ToLower();
-            if (lowerCasePath == ".fbx")
+            var lowerCaseExtension = Path.GetExtension(assetPath).ToLower();
+            if (lowerCaseExtension == ".fbx" || lowerCaseExtension == ".dae" || lowerCaseExtension == ".obj" || lowerCaseExtension == ".blend" || lowerCaseExtension == ".mb" || lowerCaseExtension == ".ma" || lowerCaseExtension == ".max")
             {
                 if (IsAutodeskInteractiveMaterial(description))
                     CreateFromAutodeskInteractiveMaterial(description, material, clips);
@@ -76,7 +76,7 @@ namespace UnityEditor.Experimental.AssetImporters
             var shader = Shader.Find("Autodesk Interactive");
             if (shader == null)
             {
-                context.LogImportError("ThreeDSMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
+                context.LogImportError("FBXMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
                 return;
             }
             material.shader = shader;
@@ -172,7 +172,7 @@ namespace UnityEditor.Experimental.AssetImporters
             var shader = Shader.Find("Autodesk Interactive");
             if (shader == null)
             {
-                context.LogImportError("ThreeDSMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
+                context.LogImportError("FBXMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
                 return;
             }
             material.shader = shader;
@@ -342,7 +342,7 @@ namespace UnityEditor.Experimental.AssetImporters
             var shader = Shader.Find("Autodesk Interactive");
             if (shader == null)
             {
-                context.LogImportError("ThreeDSMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
+                context.LogImportError("FBXMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
                 return;
             }
             material.shader = shader;
@@ -423,7 +423,7 @@ namespace UnityEditor.Experimental.AssetImporters
             var shader = Shader.Find("Autodesk Interactive");
             if (shader == null)
             {
-                context.LogImportError("ThreeDSMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
+                context.LogImportError("FBXMaterialDescriptionPreprocessor cannot find a shader named 'Autodesk Interactive'.");
                 return;
             }
             material.shader = shader;
@@ -729,7 +729,7 @@ namespace UnityEditor.Experimental.AssetImporters
             var shader = Shader.Find("Standard");
             if (shader == null)
             {
-                context.LogImportError("ThreeDSMaterialDescriptionPreprocessor cannot find a shader named 'Standard'.");
+                context.LogImportError("FBXMaterialDescriptionPreprocessor cannot find a shader named 'Standard'.");
                 return;
             }
             material.shader = shader;

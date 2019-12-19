@@ -29,6 +29,24 @@ namespace UnityEditor
         [FreeFunction]
         extern public static void GetGlobalObjectIdsSlow(UnityEngine.Object[] objects, [Out] GlobalObjectId[] outputIdentifiers);
 
+        // Converts an Object reference to a global unique ID
+        public static GlobalObjectId GetGlobalObjectIdSlow(int instanceId)
+        {
+            return GetGlobalObjectIdFromInstanceIdSlow(instanceId);
+        }
+
+        public static void GetGlobalObjectIdsSlow(int[] instanceIds, [Out] GlobalObjectId[] outputIdentifiers)
+        {
+            GetGlobalObjectIdsFromInstanceIdsSlow(instanceIds, outputIdentifiers);
+        }
+
+        // Converts an Object reference to a global unique ID
+        [FreeFunction]
+        extern static GlobalObjectId GetGlobalObjectIdFromInstanceIdSlow(int instanceId);
+
+        [FreeFunction]
+        extern static void GetGlobalObjectIdsFromInstanceIdsSlow(int[] instanceIds, [Out] GlobalObjectId[] outputIdentifiers);
+
         override public string ToString()
         {
             return string.Format("GlobalObjectId_V1-{0}-{1}-{2}-{3}", m_IdentifierType, m_AssetGUID, m_SceneObjectIdentifier.TargetObject, m_SceneObjectIdentifier.TargetPrefab);
@@ -77,5 +95,12 @@ namespace UnityEditor
         extern public static UnityEngine.Object GlobalObjectIdentifierToObjectSlow(GlobalObjectId id);
         [FreeFunction]
         extern public static void GlobalObjectIdentifiersToObjectsSlow(GlobalObjectId[] identifiers, [Out] UnityEngine.Object[] outputObjects);
+
+        // Converting one object at a time is incredibly slow. (Have to iterate whole scene to grab one object...)
+        // Always prefer using batch API when multiple objects need to be looked up.
+        [FreeFunction]
+        extern public static int GlobalObjectIdentifierToInstanceIDSlow(GlobalObjectId id);
+        [FreeFunction]
+        extern public static void GlobalObjectIdentifiersToInstanceIDsSlow(GlobalObjectId[] identifiers, [Out] int[] outputInstanceIDs);
     }
 }

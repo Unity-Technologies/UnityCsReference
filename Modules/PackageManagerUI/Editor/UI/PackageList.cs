@@ -58,13 +58,13 @@ namespace UnityEditor.PackageManager.UI
             PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
 
             PageManager.instance.onVisualStateChange += OnVisualStateChange;
-            PageManager.instance.onPageRebuild += OnPageRebuild;
-            PageManager.instance.onPageUpdate += OnPageUpdate;
+            PageManager.instance.onListRebuild += OnListRebuild;
+            PageManager.instance.onListUpdate += OnListUpdate;
 
             ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
 
             // manually build the items on initialization to refresh the UI
-            OnPageRebuild(PageManager.instance.GetCurrentPage());
+            OnListRebuild(PageManager.instance.GetCurrentPage());
         }
 
         public void OnDisable()
@@ -75,8 +75,8 @@ namespace UnityEditor.PackageManager.UI
             PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
 
             PageManager.instance.onVisualStateChange -= OnVisualStateChange;
-            PageManager.instance.onPageRebuild -= OnPageRebuild;
-            PageManager.instance.onPageUpdate -= OnPageUpdate;
+            PageManager.instance.onListRebuild -= OnListRebuild;
+            PageManager.instance.onListUpdate -= OnListUpdate;
 
             ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
         }
@@ -110,11 +110,11 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             if (m_RefreshInProgress && PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
-                noPackagesLabel.text = L10n.Tr("Fetching packages...");
+                noPackagesLabel.text = ApplicationUtil.instance.GetTranslationForText("Fetching packages...");
             else if (string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText))
-                noPackagesLabel.text = L10n.Tr("There are no packages.");
+                noPackagesLabel.text = ApplicationUtil.instance.GetTranslationForText("There are no packages.");
             else
-                noPackagesLabel.text = string.Format(L10n.Tr("No results for \"{0}\""), PackageFiltering.instance.currentSearchText);
+                noPackagesLabel.text = string.Format(ApplicationUtil.instance.GetTranslationForText("No results for \"{0}\""), PackageFiltering.instance.currentSearchText);
         }
 
         public void ShowEmptyResults(bool value)
@@ -281,18 +281,18 @@ namespace UnityEditor.PackageManager.UI
             ShowResults();
         }
 
-        private void OnPageRebuild(IPage page)
+        private void OnListRebuild(IPage page)
         {
             ClearAll();
 
-            foreach (var state in page.packageVisualStates)
+            foreach (var id in page.items)
             {
-                var package = PackageDatabase.instance.GetPackage(state.packageUniqueId);
+                var package = PackageDatabase.instance.GetPackage(id);
                 var packageItem = AddOrUpdatePackageItem(package);
-                packageItem?.UpdateVisualState(state);
+                packageItem?.UpdateVisualState(page.GetVisualState(id));
             }
 
-            if (!m_PackageListLoaded && page.packageVisualStates.Any())
+            if (!m_PackageListLoaded && page.items.Any())
             {
                 m_PackageListLoaded = true;
                 onPackageListLoaded?.Invoke();
@@ -301,8 +301,11 @@ namespace UnityEditor.PackageManager.UI
             ShowResults();
         }
 
-        private void OnPageUpdate(IPage page, IEnumerable<IPackage> addedOrUpated, IEnumerable<IPackage> removed)
+        private void OnListUpdate(IPage page, IEnumerable<IPackage> addedOrUpated, IEnumerable<IPackage> removed, bool reorder)
         {
+            addedOrUpated = addedOrUpated ?? Enumerable.Empty<IPackage>();
+            removed = removed ?? Enumerable.Empty<IPackage>();
+
             foreach (var package in removed)
                 RemovePackageItem(package);
 
@@ -313,18 +316,18 @@ namespace UnityEditor.PackageManager.UI
                 packageItem.UpdateVisualState(visualState);
             }
 
-            if (addedOrUpated.Any())
+            if (addedOrUpated.Any() && !m_PackageListLoaded)
             {
-                if (!m_PackageListLoaded)
-                {
-                    m_PackageListLoaded = true;
-                    onPackageListLoaded?.Invoke();
-                }
+                m_PackageListLoaded = true;
+                onPackageListLoaded?.Invoke();
+            }
 
+            if (reorder)
+            {
                 // re-order if there are any added or updated items
                 itemsList.Clear();
-                foreach (var state in page.packageVisualStates)
-                    itemsList.Add(GetPackageItem(state.packageUniqueId));
+                foreach (var id in page.items)
+                    itemsList.Add(GetPackageItem(id));
                 m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
             }
 
@@ -383,6 +386,8 @@ namespace UnityEditor.PackageManager.UI
             var visiblePackageItems = packageItems.Where(UIUtils.IsElementVisible);
             var showEmptyResults = !visiblePackageItems.Any();
             ShowEmptyResults(showEmptyResults);
+            if (!showEmptyResults)
+                ScrollIfNeeded();
             UpdateActiveSelection();
         }
 

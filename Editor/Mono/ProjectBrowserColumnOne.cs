@@ -346,7 +346,7 @@ namespace UnityEditor
             {
                 if (property.isFolder)
                 {
-                    AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, !property.hasChildren, property.instanceID, baseDepth + property.depth, null, property.name);
+                    AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, !property.hasChildren, property.GetInstanceIDIfImported(), baseDepth + property.depth, null, property.name);
                     folderItem.icon = folderIcon;
                     allFolders.Add(folderItem);
                 }

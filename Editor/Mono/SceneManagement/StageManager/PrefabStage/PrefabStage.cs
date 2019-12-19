@@ -1449,7 +1449,7 @@ namespace UnityEditor.Experimental.SceneManagement
             StageUtility.EnableHidingForInContextEditingInSceneView(true);
             StageUtility.SetFocusedScene(scene);
             StageUtility.SetFocusedSceneContextRenderMode(StageNavigationManager.instance.contextRenderMode);
-            sceneView.SetSceneViewFiltering(StageNavigationManager.instance.contextRenderMode == StageUtility.ContextRenderMode.GreyedOut);
+            sceneView.SetSceneViewFilteringForStages(StageNavigationManager.instance.contextRenderMode == StageUtility.ContextRenderMode.GreyedOut);
         }
 
         // This method is not called from the SceneView if the SceneView does not support stage handling
@@ -1461,7 +1461,7 @@ namespace UnityEditor.Experimental.SceneManagement
             StageUtility.EnableHidingForInContextEditingInSceneView(false);
             StageUtility.SetFocusedScene(default(Scene));
             StageUtility.SetFocusedSceneContextRenderMode(StageUtility.ContextRenderMode.Normal);
-            sceneView.SetSceneViewFiltering(false);
+            sceneView.SetSceneViewFilteringForStages(false);
         }
 
         Texture2D DeterminePrefabFileIconFromInstanceRootGameObject()

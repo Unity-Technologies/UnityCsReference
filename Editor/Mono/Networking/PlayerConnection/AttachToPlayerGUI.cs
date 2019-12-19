@@ -213,8 +213,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
         internal static void DirectIPConnect(string ip)
         {
-            // Profiler.DirectIPConnect is a blocking call, so a notification message and the console are used to show progress
-            ConsoleWindow.ShowConsoleWindow(true);
+            // Profiler.DirectIPConnect is a blocking call, so a notification message is used to show the progress
             s_NotificationMessage = Content.ConnectingToPlayerMessage;
             ProfilerDriver.DirectIPConnect(ip);
             s_NotificationMessage = null;
@@ -223,8 +222,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
         internal static void DirectURLConnect(string url)
         {
-            // Profiler.DirectURLConnect is a blocking call, so a notification message and the console are used to show progress
-            ConsoleWindow.ShowConsoleWindow(true);
+            // Profiler.DirectURLConnect is a blocking call, so a notification message is used to show the progress
             s_NotificationMessage = Content.ConnectingToPlayerMessage;
             ProfilerDriver.DirectURLConnect(url);
             s_NotificationMessage = null;

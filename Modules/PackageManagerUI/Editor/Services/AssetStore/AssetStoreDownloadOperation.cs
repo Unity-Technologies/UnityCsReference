@@ -12,8 +12,8 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class AssetStoreDownloadOperation : IOperation
     {
-        internal static readonly string k_LocalizedDownloadErrorMessage = L10n.Tr("The download could not be completed. Please try again. See console for more details.");
-        internal static readonly string k_LocalizedAbortErrorMessage = L10n.Tr("The download could not be aborted. Please try again.");
+        internal static readonly string k_LocalizedDownloadErrorMessage = ApplicationUtil.instance.GetTranslationForText("The download could not be completed. Please try again. See console for more details.");
+        internal static readonly string k_LocalizedAbortErrorMessage = ApplicationUtil.instance.GetTranslationForText("The download could not be aborted. Please try again.");
         internal static readonly string k_AssetStoreDownloadPrefix = "content__";
 
         [SerializeField]
@@ -84,7 +84,7 @@ namespace UnityEditor.PackageManager.UI
                 case "aborted":
                     m_DownloadedBytes = 0;
                     m_State = DownloadState.Aborted;
-                    m_ErrorMessage = L10n.Tr("Download aborted");
+                    m_ErrorMessage = ApplicationUtil.instance.GetTranslationForText("Download aborted");
                     onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
                     onOperationFinalized?.Invoke(this);
                     break;

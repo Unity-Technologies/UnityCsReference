@@ -26,6 +26,10 @@ namespace UnityEditor.Build.Content
         internal ObjectIdentifier[] m_ReferencedObjects;
         public ReadOnlyCollection<ObjectIdentifier> referencedObjects { get { return Array.AsReadOnly(m_ReferencedObjects); } }
 
+        [NativeName("includedTypes")]
+        internal Type[] m_IncludedTypes;
+        public ReadOnlyCollection<Type> includedTypes { get { return Array.AsReadOnly(m_IncludedTypes); } }
+
         [NativeName("globalUsage")]
         internal BuildUsageTagGlobal m_GlobalUsage;
         public BuildUsageTagGlobal globalUsage { get { return m_GlobalUsage; } }

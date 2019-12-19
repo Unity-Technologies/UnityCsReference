@@ -24,6 +24,7 @@ namespace UnityEditor
         // 'v:versionState' syntax (e.g 'v:modified' will show objects that are modified locally)
         // 's:softLockState' syntax (e.g 's:inprogress' will show objects that are modified by anyone (except you))
         // 'a:area' syntax (e.g 'a:all' will s search in all assets, 'a:assets' will s search in assets folder only and 'a:packages' will s search in packages folder only)
+        // 'glob:path' syntax (e.g 'glob:Assets/**/*.{png|PNG}' will show objects in any subfolder with name ending by .png or .PNG)
         internal static bool ParseSearchString(string searchText, SearchFilter filter)
         {
             if (string.IsNullOrEmpty(searchText))
@@ -47,27 +48,28 @@ namespace UnityEditor
             {
                 int endpos = searchString.IndexOfAny(kFilterSeparator.ToCharArray(), pos);
 
+                if (endpos == -1)
+                    endpos = searchString.Length;
+
                 // Check if we have quotes (may be used for pathnames) inbetween start and a /filter-separator/
                 int q1 = searchString.IndexOf('"', pos);
                 int q2 = -1;
-                if (q1 != -1)
+                if (q1 != -1 && q1 < endpos)
                 {
                     q2 = searchString.IndexOf('"', q1 + 1);
-                    if (q2 != -1)
+                    if (q2 != -1 && q2 > endpos - 1)
+                    {
                         // Advance to a /filter-separator/ after the quote
                         endpos = searchString.IndexOfAny(kFilterSeparator.ToCharArray(), q2);
-                    else
-                        // In case we can't find another quote, consume the rest of the string
-                        endpos = -1;
+                        if (endpos == -1)
+                            endpos = searchString.Length;
+                    }
                 }
-
-                if (endpos == -1)
-                    endpos = searchString.Length;
 
                 if (endpos > pos)
                 {
                     string token = searchString.Substring(pos, endpos - pos);
-                    if (CheckForKeyWords(token, filter, q1, q2))
+                    if (CheckForKeyWords(token, filter, q1 - pos, q2 - pos))
                         parsed = true;
                     else
                         filter.nameFilter += (string.IsNullOrEmpty(filter.nameFilter) ? "" : " ") + token; // force single space between name tokens
@@ -206,6 +208,25 @@ namespace UnityEditor
                 }
 
                 filter.referencingInstanceIDs = new[] { instanceID };
+                parsed = true;
+            }
+
+            // Support: 'glob:path' syntax (e.g 'glob:Assets/**/*.{png|PNG}' will show objects in any subfolder with name ending by .png or .PNG)
+            index = searchString.IndexOf("glob:");
+            if (index == 0)
+            {
+                string globValue = searchString.Substring(5);
+                if (quote1 != -1 && quote2 != -1)
+                {
+                    int startIndex = quote1 + 1;
+                    int count = quote2 - quote1 - 1;
+                    if (count < 0 || quote2 == -1)
+                        count = searchString.Length - startIndex;
+                    globValue = searchString.Substring(startIndex, count);
+                }
+                var globs = new List<string>(filter.globs);
+                globs.Add(globValue);
+                filter.globs = globs.ToArray();
                 parsed = true;
             }
 

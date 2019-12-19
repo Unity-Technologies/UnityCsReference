@@ -11,18 +11,19 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageLoadBar> {}
 
-        private int m_Total;
-        private int m_NumberOfPackagesShown;
-        private const int k_Min = 25;
-        private const int k_Max = 100;
-        private const int k_MinMaxDifference = 25;
+        private long m_Total;
+        private long m_NumberOfPackagesShown;
+        private const long k_Min = 25;
+        private const long k_Max = 100;
+        private const long k_MinMaxDifference = 25;
 
-        private int m_Min;
-        private int m_Max;
+        private long m_Min;
+        private long m_Max;
         private string m_LoadedText;
         private bool m_DoShowMinLabel;
         private bool m_DoShowMaxLabel;
         private bool m_DoShowLoadMoreLabel;
+        private bool m_LoadMoreInProgress;
 
         public PackageLoadBar()
         {
@@ -30,75 +31,84 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             cache = new VisualElementCache(root);
 
-            m_DoShowMinLabel = true;
-            m_DoShowMaxLabel = true;
-            m_DoShowLoadMoreLabel = true;
-
             loadMinLabel.OnLeftClick(LoadMinItemsClicked);
             loadMaxLabel.OnLeftClick(LoadMaxItemsClicked);
         }
 
         public void OnEnable()
         {
-            PageManager.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
-            AssetStoreClient.instance.onProductListFetched += OnProductListFetched;
-        }
+            ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
+            ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
+            PageManager.instance.onRefreshOperationFinish += Refresh;
+            Refresh();
 
-        private void OnRefreshOperationFinish()
-        {
-            loadMinLabel.SetEnabled(true);
-            loadMaxLabel.SetEnabled(true);
-            UpdateLoadBarMessage();
+            loadMinLabel.SetEnabled(ApplicationUtil.instance.isInternetReachable);
+            loadMaxLabel.SetEnabled(ApplicationUtil.instance.isInternetReachable);
         }
 
         public void OnDisable()
         {
-            PageManager.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
-            AssetStoreClient.instance.onProductListFetched -= OnProductListFetched;
+            ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
+            ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
+
+            PageManager.instance.onRefreshOperationFinish -= Refresh;
+        }
+
+        private void OnUserLoginStateChange(bool value)
+        {
+            UpdateLoadBarMessage();
+        }
+
+        private void OnInternetReachabilityChange(bool value)
+        {
+            loadMinLabel.SetEnabled(value && !m_LoadMoreInProgress);
+            loadMaxLabel.SetEnabled(value && !m_LoadMoreInProgress);
+        }
+
+        public void Refresh()
+        {
+            var page = PageManager.instance.GetCurrentPage();
+            Set(page?.numTotalItems ?? 0, page?.numCurrentItems ?? 0);
+        }
+
+        internal void Set(long total, long current)
+        {
+            Reset();
+            m_Total = total;
+            m_NumberOfPackagesShown = current;
+
+            loadMinLabel.SetEnabled(true);
+            loadMaxLabel.SetEnabled(true);
+            m_LoadMoreInProgress = false;
+            UpdateLoadBarMessage();
         }
 
         internal void Reset()
         {
-            m_NumberOfPackagesShown = 0;
-            m_Total = 0;
             m_DoShowMinLabel = true;
             m_DoShowMaxLabel = true;
             m_DoShowLoadMoreLabel = true;
-        }
-
-        public void OnProductListFetched(AssetStorePurchases assetStorePurchases, bool fetchDetailsCalled)
-        {
-            if (m_Total != (int)assetStorePurchases.total)
-                m_Total = (int)assetStorePurchases.total;
-
-            // This is a tweak, waiting for the filter to get the value from page
-            if (m_NumberOfPackagesShown == 0)
-                m_NumberOfPackagesShown = assetStorePurchases.list.Count();
-            else if (m_NumberOfPackagesShown != 0 && m_NumberOfPackagesShown != m_Total)
-                m_NumberOfPackagesShown += assetStorePurchases.list.Count();
-
-            UpdateLoadBarMessage();
         }
 
         public void LoadMinItemsClicked()
         {
             loadMinLabel.SetEnabled(false);
             loadMaxLabel.SetEnabled(false);
-            PageManager.instance.LoadMore(m_Min);
-            UpdateLoadBarMessage();
+            m_LoadMoreInProgress = true;
+            PageManager.instance.LoadMore((int)m_Min);
         }
 
         public void LoadMaxItemsClicked()
         {
             loadMinLabel.SetEnabled(false);
             loadMaxLabel.SetEnabled(false);
-            PageManager.instance.LoadMore(m_Max);
-            UpdateLoadBarMessage();
+            m_LoadMoreInProgress = true;
+            PageManager.instance.LoadMore((int)m_Max);
         }
 
         private void UpdateLoadBarMessage()
         {
-            if (m_Total == 0 || m_NumberOfPackagesShown == 0)
+            if (!ApplicationUtil.instance.isUserLoggedIn || m_Total == 0 || m_NumberOfPackagesShown == 0)
             {
                 UIUtils.SetElementDisplay(loadBarContainer, false);
                 return;
@@ -109,11 +119,11 @@ namespace UnityEditor.PackageManager.UI
                 m_DoShowMinLabel = false;
                 m_DoShowMaxLabel = false;
                 m_DoShowLoadMoreLabel = false;
-                m_LoadedText = string.Format(L10n.Tr("All {0} packages shown"), m_NumberOfPackagesShown);
+                m_LoadedText = m_Total == 1 ? L10n.Tr("One package shown") : string.Format(L10n.Tr("All {0} packages shown"), m_NumberOfPackagesShown);
             }
             else
             {
-                int diff = m_Total - m_NumberOfPackagesShown;
+                var diff = m_Total - m_NumberOfPackagesShown;
 
                 if (diff >= k_Max)
                 {

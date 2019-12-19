@@ -41,6 +41,7 @@ namespace UnityEditor.Connect
         const string k_FooterName = "Footer";
 
         const string k_ProjectNotBoundMessage = "Project is not bound. Either create a new project Id or bind your project to an existing project Id for the dashboard link to become available.";
+        const string k_ConnectionFailedMessage = "Failed to connect to Services. Services are not reachable right now. Please try again later.";
 
         Dictionary<string, Label> m_StatusLabelByServiceName = new Dictionary<string, Label>();
         Dictionary<string, Clickable> m_ClickableByServiceName = new Dictionary<string, Clickable>();
@@ -118,7 +119,11 @@ namespace UnityEditor.Connect
 
             var dashboardClickable = new Clickable(() =>
             {
-                if (UnityConnect.instance.projectInfo.projectBound)
+                if (!ServicesConfiguration.instance.pathsReady)
+                {
+                    NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Error, L10n.Tr(k_ConnectionFailedMessage));
+                }
+                else if (UnityConnect.instance.projectInfo.projectBound)
                 {
                     EditorAnalytics.SendOpenDashboardForService(new ServicesProjectSettings.OpenDashboardForService() {
                         serviceName = k_WindowTitle,

@@ -30,6 +30,7 @@ namespace UnityEditorInternal.Profiling
                 return m_CalleesData;
             }
         }
+        internal IProfilerSampleNameProvider profilerSampleNameProvider { get; set; }
 
         CallsData m_CallersData = new CallsData() {calls = new List<CallInformation>(), totalSelectedPropertyTime = 0 };
         CallsData m_CalleesData = new CallsData() {calls = new List<CallInformation>(), totalSelectedPropertyTime = 0 };
@@ -97,7 +98,7 @@ namespace UnityEditorInternal.Profiling
                                 m_Callers.Add(markerId, new CallInformation()
                                 {
                                     id = current,
-                                    name = frameDataView.GetItemName(current),
+                                    name = profilerSampleNameProvider.GetItemName(frameDataView, current),
                                     callsCount = calls,
                                     gcAllocBytes = gcAlloc,
                                     totalCallTimeMs = totalTime,
@@ -126,7 +127,7 @@ namespace UnityEditorInternal.Profiling
                             m_Callees.Add(childMarkerId, new CallInformation()
                             {
                                 id = childId,
-                                name = frameDataView.GetItemName(childId),
+                                name = profilerSampleNameProvider.GetItemName(frameDataView, childId),
                                 callsCount = calls,
                                 gcAllocBytes = gcAlloc,
                                 totalCallTimeMs = totalTime,
@@ -167,6 +168,8 @@ namespace UnityEditorInternal.Profiling
 
         [NonSerialized]
         bool m_Initialized = false;
+
+        internal IProfilerSampleNameProvider profilerSampleNameProvider { get; set; }
 
         [NonSerialized]
         GUIContent m_TotalSelectedPropertyTimeLabel;
@@ -577,6 +580,7 @@ namespace UnityEditorInternal.Profiling
             m_CallersTreeView.frameItemEvent += frameItemEvent;
 
             callersAndCalleeData = new ProfilerCallersAndCalleeData();
+            callersAndCalleeData.profilerSampleNameProvider = profilerSampleNameProvider;
 
             m_TotalSelectedPropertyTimeLabel = new GUIContent(Content.totalSelectedPropertyTimeLabel);
 
@@ -626,7 +630,7 @@ namespace UnityEditorInternal.Profiling
             m_CallersTreeView.SetCallsData(callersAndCalleeData.callersData);
             m_CalleesTreeView.SetCallsData(callersAndCalleeData.calleesData);
 
-            m_TotalSelectedPropertyTimeLabel.text = m_FrameDataView.GetItemName(selectedId) + UnityString.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
+            m_TotalSelectedPropertyTimeLabel.text = profilerSampleNameProvider.GetItemName(m_FrameDataView, selectedId) + UnityString.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
         }
 
         public void Clear()
