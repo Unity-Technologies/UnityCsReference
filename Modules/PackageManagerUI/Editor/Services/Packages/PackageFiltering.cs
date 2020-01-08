@@ -131,6 +131,11 @@ namespace UnityEditor.PackageManager.UI
             {
                 return FilterByTab(package, currentFilterTab);
             }
+
+            public void SetCurrentFilterTabWithoutNotify(PackageFilterTab tab)
+            {
+                m_CurrentFilterTab = tab;
+            }
         }
     }
 }

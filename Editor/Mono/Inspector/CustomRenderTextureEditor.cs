@@ -17,8 +17,6 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public readonly GUIStyle    separator           = "sv_iconselector_sep";
-            public readonly GUIContent  materials           = EditorGUIUtility.TrTextContent("Materials");
             public readonly GUIContent  shaderPass          = EditorGUIUtility.TrTextContent("Shader Pass", "Shader Pass used to update the Custom Render Texture.");
             public readonly GUIContent  needSwap            = EditorGUIUtility.TrTextContent("Swap (Double Buffer)", "If ticked, and if the texture is double buffered, a request is made to swap the buffers before the next update. If this is not ticked, the buffers will not be swapped.");
             public readonly GUIContent  updateMode          = EditorGUIUtility.TrTextContent("Update Mode", "Specify how the texture should be updated.");
@@ -36,7 +34,6 @@ namespace UnityEditor
             public readonly GUIContent  updateZoneSize      = EditorGUIUtility.TrTextContent("Size", "Size of the partial update zone.");
             public readonly GUIContent  updateZoneRotation  = EditorGUIUtility.TrTextContent("Rotation", "Rotation of the update zone.");
             public readonly GUIContent  wrapUpdateZones     = EditorGUIUtility.TrTextContent("Wrap Update Zones", "If ticked, Update zones will wrap around the border of the Custom Render Texture. If unticked, Update zones will be clamped at the border of the Custom Render Texture.");
-            public readonly GUIContent  saveButton          = EditorGUIUtility.TrTextContent("Save Texture", "Save the content of the Custom Render Texture to an EXR or PNG file.");
 
             public readonly GUIContent[] updateModeStrings = { EditorGUIUtility.TextContent("OnLoad"), EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("OnDemand") };
             public readonly int[] updateModeValues = { (int)CustomRenderTextureUpdateMode.OnLoad, (int)CustomRenderTextureUpdateMode.Realtime, (int)CustomRenderTextureUpdateMode.OnDemand };

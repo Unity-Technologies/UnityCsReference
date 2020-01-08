@@ -201,7 +201,7 @@ namespace UnityEditor.SceneManagement
                 for (int i = 0; i < components.Length; i++)
                 {
                     T obj = components[i];
-                    if (!EditorSceneManager.IsPreviewScene(obj.gameObject.scene))
+                    if (!EditorUtility.IsPersistent(obj) && !EditorSceneManager.IsPreviewScene(obj.gameObject.scene))
                         return obj;
                 }
             }
@@ -229,7 +229,7 @@ namespace UnityEditor.SceneManagement
                 for (int i = 0; i < components.Length; i++)
                 {
                     T obj = components[i];
-                    if (!EditorSceneManager.IsPreviewScene(obj.gameObject.scene))
+                    if (!EditorUtility.IsPersistent(obj) && !EditorSceneManager.IsPreviewScene(obj.gameObject.scene))
                         componentList.Add(obj);
                 }
             }

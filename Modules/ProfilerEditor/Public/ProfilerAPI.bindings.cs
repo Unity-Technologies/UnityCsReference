@@ -295,14 +295,20 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static public extern void GetStatisticsAvailable(ProfilerArea profilerArea, int firstFrame, [Out] int[] buffer);
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        static extern void GetStatisticsAvailableInternal(ProfilerArea profilerArea, int firstFrame, IntPtr buffer, int size);
+
         [Obsolete("GetStatisticsAvailable with bool buffer is obsolete, use with int array instead. (x & 1) == 1 is the same as true")]
         static public void GetStatisticsAvailable(ProfilerArea profilerArea, int firstFrame, [Out] bool[] buffer)
         {
-            int[] intBuffer = new int[buffer.Length];
-            GetStatisticsAvailable(profilerArea, firstFrame, intBuffer);
-            for (int i = 0; i < buffer.Length; i++)
+            unsafe
             {
-                buffer[i] = (intBuffer[i] & 1) == 1;
+                var intBuffer = stackalloc int[buffer.Length];
+                GetStatisticsAvailableInternal(profilerArea, firstFrame, new IntPtr(intBuffer), buffer.Length);
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = (intBuffer[i] & 1) == 1;
+                }
             }
         }
 

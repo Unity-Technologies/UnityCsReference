@@ -46,6 +46,12 @@ namespace UnityEditor
                 return;
             DeregisterSelectedPane(clearActualView: true, sendEvents: true);
             m_ActualView = value;
+
+            if (m_ActualView != null)
+            {
+                m_ActualView.uiRootElementCreated = ValidateWindowBackendForCurrentView;
+            }
+
             name = GetViewName();
             SetActualViewName(name);
             RegisterSelectedPane(sendEvents);
@@ -67,6 +73,8 @@ namespace UnityEditor
         RectOffset IEditorWindowModel.viewMargins => GetBorderSize();
 
         Action IEditorWindowModel.viewMarginsChanged { get; set; }
+
+        Action IEditorWindowModel.rootVisualElementCreated { get; set; }
 
         protected void UpdateViewMargins(EditorWindow view)
         {
@@ -105,6 +113,12 @@ namespace UnityEditor
         {
             EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
+
+            if (m_ActualView != null)
+            {
+                m_ActualView.uiRootElementCreated = ValidateWindowBackendForCurrentView;
+            }
+
             RegisterSelectedPane(sendEvents: true);
         }
 
@@ -388,6 +402,17 @@ namespace UnityEditor
         Action IEditorWindowModel.onRegisterWindow { get; set; }
         Action IEditorWindowModel.onUnegisterWindow { get; set; }
 
+        private void ValidateWindowBackendForCurrentView()
+        {
+            if (!EditorWindowBackendManager.IsBackendCompatible(windowBackend, this))
+            {
+                //We create a new compatible backend
+                windowBackend = EditorWindowBackendManager.GetBackend(this);
+            }
+
+            ((IEditorWindowModel)this).rootVisualElementCreated?.Invoke();
+        }
+
         protected void RegisterSelectedPane(bool sendEvents)
         {
             if (!m_ActualView)
@@ -455,6 +480,12 @@ namespace UnityEditor
             if (clearActualView)
             {
                 EditorWindow oldActualView = m_ActualView;
+
+                if (oldActualView.uiRootElementCreated == ValidateWindowBackendForCurrentView)
+                {
+                    oldActualView.uiRootElementCreated = null;
+                }
+
                 m_ActualView = null;
                 if (sendEvents)
                 {

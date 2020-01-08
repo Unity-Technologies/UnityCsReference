@@ -31,6 +31,7 @@ namespace UnityEngine
         // Keyboard optimized for search terms, features the space and "."
         Search = 10,
         // Keyboard with numbers and a decimal point.
-        DecimalPad = 11
+        DecimalPad = 11,
+        OneTimeCode = 12
     }
 }

@@ -40,6 +40,13 @@ namespace UnityEngineInternal.Video
     }
 
     [UsedByNativeCode]
+    internal enum VideoAlphaLayout
+    {
+        Native,
+        Split
+    }
+
+    [UsedByNativeCode]
     [NativeHeader("Modules/Video/Public/Base/MediaComponent.h")]
     internal class VideoPlayback
     {

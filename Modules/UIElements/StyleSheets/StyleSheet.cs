@@ -63,6 +63,9 @@ namespace UnityEngine.UIElements
             set { m_ContentHash = value; }
         }
 
+        [SerializeField]
+        internal ScalableImage[] scalableImages;
+
         [NonSerialized]
         internal TableType orderedNameSelectors;
 
@@ -334,6 +337,11 @@ namespace UnityEngine.UIElements
 
             var svf = (StyleValueFunction)handle.valueIndex;
             return svf.ToUssString();
+        }
+
+        internal ScalableImage ReadScalableImage(StyleValueHandle handle)
+        {
+            return CheckAccess(scalableImages, StyleValueType.ScalableImage, handle);
         }
 
         private static bool CustomStartsWith(string originalString, string pattern)

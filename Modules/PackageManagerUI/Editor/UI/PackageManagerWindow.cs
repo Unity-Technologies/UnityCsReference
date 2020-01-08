@@ -87,7 +87,8 @@ namespace UnityEditor.PackageManager.UI
                 root.StretchToParentSize();
 
                 var newTab = PackageManagerPrefs.instance.lastUsedPackageFilter ?? PackageFiltering.instance.defaultFilterTab;
-                PackageFiltering.instance.currentFilterTab = newTab;
+                PackageFiltering.instance.SetCurrentFilterTabWithoutNotify(newTab);
+                packageManagerToolbar.SetFilter(newTab);
 
                 if (newTab != PackageFilterTab.AssetStore)
                     UIUtils.SetElementDisplay(packageLoadBar, false);
@@ -383,7 +384,7 @@ namespace UnityEditor.PackageManager.UI
                 instance.packageManagerToolbar.SetCurrentSearch(searchText);
 
                 if (refresh || PackageDatabase.instance.isEmpty)
-                    PageManager.instance.Refresh(filterTab);
+                    instance.DelayRefresh((PackageFilterTab)filterTab);
                 else
                     instance.SelectPackageAndFilter();
             }

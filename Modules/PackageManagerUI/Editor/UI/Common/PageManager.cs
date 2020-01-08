@@ -398,7 +398,9 @@ namespace UnityEditor.PackageManager.UI
 
                 // make sure the events are registered before actually calling the actual refresh functions
                 // such that we don't lose any callbacks events
+                UnregisterEvents();
                 RegisterEvents();
+
                 if ((options & RefreshOptions.UpmSearchOffline) != 0)
                     UpmClient.instance.SearchAll(true);
                 if ((options & RefreshOptions.UpmSearch) != 0)

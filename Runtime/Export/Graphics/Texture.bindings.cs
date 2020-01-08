@@ -201,7 +201,7 @@ namespace UnityEngine
         [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float u, float v);
 
         [FreeFunction(Name = "Texture2DScripting::ResizeWithFormat", HasExplicitThis = true)]
-        extern private bool ResizeWithFormatImpl(int width, int height, TextureFormat format, bool hasMipMap);
+        extern private bool ResizeWithFormatImpl(int width, int height, GraphicsFormat format, bool hasMipMap);
 
         [FreeFunction(Name = "Texture2DScripting::ReadPixels", HasExplicitThis = true)]
         extern private void ReadPixelsImpl(Rect source, int destX, int destY, bool recalculateMipMaps);

@@ -172,7 +172,9 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Vector4 fullOpacityValue = new Vector4(1, 1, 1, 1);
 
         // Default allocations. All their members are 0 including "owned"
+#pragma warning disable 649
         public static readonly BMPAlloc identityTransform, infiniteClipRect, fullOpacity;
+#pragma warning restore 649
 
         static Vector2Int AllocToTexelCoord(ref BitmapAllocator32 allocator, BMPAlloc alloc)
         {

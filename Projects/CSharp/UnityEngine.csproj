@@ -1201,6 +1201,9 @@
     <Compile Include="..\..\Modules\UIElements\StyleSheets\Dimension.cs">
       <Link>Modules\UIElements\StyleSheets\Dimension.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\ScalableImage.cs">
+      <Link>Modules\UIElements\StyleSheets\ScalableImage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleComplexSelector.cs">
       <Link>Modules\UIElements\StyleSheets\StyleComplexSelector.cs</Link>
     </Compile>

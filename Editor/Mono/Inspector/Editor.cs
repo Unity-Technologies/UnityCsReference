@@ -39,7 +39,6 @@ namespace UnityEditor
             public static readonly GUIStyle preBackgroundSolid = "PreBackgroundSolid";
             public static readonly GUIStyle previewMiniLabel = "PreMiniLabel";
             public static readonly GUIStyle dropShadowLabelStyle = "PreOverlayLabel";
-            public static readonly GUIStyle preOverlayLabel = "PreOverlayLabel";
         }
 
         const int kPreviewLabelHeight = 12;
@@ -393,7 +392,6 @@ namespace UnityEditor
         {
             public static readonly GUIContent open = EditorGUIUtility.TrTextContent("Open");
             public static readonly GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
-            public static readonly GUIStyle inspectorBigInner = "IN BigTitle inner";
             public static readonly GUIStyle centerStyle = new GUIStyle();
             public static readonly GUIStyle postLargeHeaderBackground = "IN BigTitle Post";
 

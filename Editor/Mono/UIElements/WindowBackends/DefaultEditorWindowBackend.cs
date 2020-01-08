@@ -48,25 +48,53 @@ namespace UnityEditor.UIElements
             editorWindowModel.onUnegisterWindow = OnUnegisterWindow;
             editorWindowModel.onDisplayWindowMenu = AddUIElementsDebuggerToMenu;
             editorWindowModel.viewMarginsChanged = ViewMarginsChanged;
+            editorWindowModel.rootVisualElementCreated = RootVisualElementCreated;
+        }
+
+        bool CurrentWindowHasCompatibleTree()
+        {
+            return editorWindowModel.window.uiRootElement is VisualElement;
+        }
+
+        void RootVisualElementCreated()
+        {
+            if (CurrentWindowHasCompatibleTree())
+            {
+                EditorWindow window = editorWindowModel.window;
+
+                var root = window.GetRootVisualElement();
+
+                if (root.hierarchy.parent != m_Panel.visualTree)
+                    m_Panel.visualTree.Add(root);
+
+                ViewMarginsChanged();
+            }
         }
 
         private void ViewMarginsChanged()
         {
-            RectOffset margins = editorWindowModel.viewMargins;
+            if (CurrentWindowHasCompatibleTree())
+            {
+                RectOffset margins = editorWindowModel.viewMargins;
 
-            IStyle style = editorWindowModel.window.rootVisualElement.style;
-            style.top = margins.top;
-            style.bottom = margins.bottom;
-            style.left = margins.left;
-            style.right = margins.right;
-            style.position = Position.Absolute;
+                IStyle style = editorWindowModel.window.rootVisualElement.style;
+                style.top = margins.top;
+                style.bottom = margins.bottom;
+                style.left = margins.left;
+                style.right = margins.right;
+                style.position = Position.Absolute;
+            }
         }
 
         private void OnRegisterWindow()
         {
             EditorWindow window = editorWindowModel.window;
-            // TODO delay this until root is first accessed
-            m_Panel.visualTree.Add(window.rootVisualElement);
+
+            // we may delay this until root is first created
+            if (CurrentWindowHasCompatibleTree())
+            {
+                m_Panel.visualTree.Add(window.rootVisualElement);
+            }
             m_Panel.getViewDataDictionary = window.GetViewDataDictionary;
             m_Panel.saveViewData = window.SaveViewData;
             m_Panel.name = window.GetType().Name;
@@ -77,13 +105,17 @@ namespace UnityEditor.UIElements
         private void OnUnegisterWindow()
         {
             EditorWindow window = editorWindowModel.window;
-            var root = window.rootVisualElement;
-            if (root.hierarchy.parent == m_Panel.visualTree)
+            if (CurrentWindowHasCompatibleTree())
             {
-                root.RemoveFromHierarchy();
-                m_Panel.getViewDataDictionary = null;
-                m_Panel.saveViewData = null;
+                var root = window.rootVisualElement;
+                if (root.hierarchy.parent == m_Panel.visualTree)
+                {
+                    root.RemoveFromHierarchy();
+                    m_Panel.getViewDataDictionary = null;
+                    m_Panel.saveViewData = null;
+                }
             }
+
             m_NotificationContainer.onGUIHandler = null;
         }
 

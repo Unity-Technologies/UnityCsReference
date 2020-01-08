@@ -42,6 +42,8 @@ namespace UnityEditor
         Action blurred { get; set; }
 
         Action<GenericMenu> onDisplayWindowMenu { get; set; }
+
+        Action rootVisualElementCreated { get; set;   }
     }
 
     internal interface IWindowBackend

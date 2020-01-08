@@ -218,6 +218,38 @@ namespace UnityEditor
             [NativeProperty("switchScreenResolutionBehavior", TargetType.Field)]
             extern public static ScreenResolutionBehavior screenResolutionBehavior { get; set; }
 
+            [NativeProperty("switchNMETAOverride", TargetType.Function)]
+            extern static private string NMETAOverrideInternal { get; set; }
+
+            public static string NMETAOverride
+            {
+                get
+                {
+                    string path = NMETAOverrideInternal;
+
+                    if (string.IsNullOrEmpty(path))
+                        return "";
+
+                    return path;
+                }
+            }
+
+            public static string NMETAOverrideFullPath
+            {
+                get
+                {
+                    string path = NMETAOverrideInternal;
+
+                    if (string.IsNullOrEmpty(path))
+                        return "";
+
+                    if (!Path.IsPathRooted(path))
+                        path = Path.GetFullPath(path);
+
+                    return path;
+                }
+            }
+
             //Application ID (shows up in Application meta file)
             [NativeProperty("switchApplicationID", TargetType.Function)]
             extern public static string applicationID { get; set; }

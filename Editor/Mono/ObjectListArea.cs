@@ -50,15 +50,11 @@ namespace UnityEditor
             public GUIStyle resultsLabel = GetStyle("OL ResultLabel");
             public GUIStyle resultsGridLabel = GetStyle("ProjectBrowserGridLabel");
             public GUIStyle resultsGrid = GetStyle("ObjectPickerResultsGrid");
-            public GUIStyle background = GetStyle("ObjectPickerBackground");
-            public GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground";
             public GUIStyle groupHeaderMiddle = GetStyle("ProjectBrowserHeaderBgMiddle");
             public GUIStyle groupHeaderTop = GetStyle("ProjectBrowserHeaderBgTop");
             public GUIStyle groupHeaderLabel = GetStyle("Label");
             public GUIStyle groupHeaderLabelCount = GetStyle("MiniLabel");
             public GUIStyle groupFoldout = GetStyle("IN Foldout");
-            public GUIStyle toolbarBack = GetStyle("ObjectPickerToolbar");
-            public GUIStyle resultsFocusMarker = GetStyle("OL ResultFocusMarker");
             public GUIStyle miniRenameField = GetStyle("OL MiniRenameField");
             public GUIStyle ping = GetStyle("OL Ping");
             public GUIStyle miniPing = GetStyle("OL MiniPing");
@@ -70,7 +66,6 @@ namespace UnityEditor
             public GUIStyle subAssetBgOpenEnded = GetStyle("ProjectBrowserSubAssetBgOpenEnded");
             public GUIStyle subAssetBgCloseEnded = GetStyle("ProjectBrowserSubAssetBgCloseEnded");
             public GUIStyle subAssetBgMiddle = GetStyle("ProjectBrowserSubAssetBgMiddle");
-            public GUIStyle subAssetBgDivider = GetStyle("ProjectBrowserSubAssetBgDivider");
             public GUIStyle subAssetExpandButton = GetStyle("ProjectBrowserSubAssetExpandBtn");
             public GUIStyle subAssetExpandButtonMedium = GetStyle("ProjectBrowserSubAssetExpandBtnMedium");
             public GUIStyle subAssetExpandButtonSmall = GetStyle("ProjectBrowserSubAssetExpandBtnSmall");

@@ -16,8 +16,6 @@ namespace UnityEditor
         Vector2 m_ScrollPosition = Vector2.zero;
 
         private bool m_PreprocessOnly = false;
-        private bool m_PreprocessOnlyAvailable = true;
-        private bool m_PreprocessOnlyAvailableInitialized = false;
 
         // Compute kernel information is stored split by platform, then by kernels;
         // but for the inspector we want to show kernels, then platforms they are in.
@@ -92,29 +90,9 @@ namespace UnityEditor
             }
         }
 
-        private void UpdatePreprocessOnlyAvailability()
-        {
-            m_PreprocessOnlyAvailableInitialized = true;
-
-            m_PreprocessOnlyAvailable = false;
-
-            string[] args = System.Environment.GetCommandLineArgs();
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i] == "-force-new-shader-pp")
-                {
-                    m_PreprocessOnlyAvailable = true;
-                    break;
-                }
-            }
-        }
-
         private void ShowCompiledCodeSection(ComputeShader cs)
         {
-            if (!m_PreprocessOnlyAvailableInitialized)
-                UpdatePreprocessOnlyAvailability();
-
-            using (new EditorGUI.DisabledScope(!m_PreprocessOnlyAvailable))
+            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor))
                 m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
             GUILayout.Space(kSpace);
             if (GUILayout.Button(Styles.showCompiled, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))

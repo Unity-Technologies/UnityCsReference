@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
             get
             {
                 var dpiScaling = scaledPixelsPerPoint;
-                return Mathf.Round(itemHeight * dpiScaling) / dpiScaling;;
+                return Mathf.Round(itemHeight * dpiScaling) / dpiScaling;
             }
         }
 
@@ -407,7 +407,9 @@ namespace UnityEngine.UIElements
                     selectedIndex = itemsSource.Count - 1;
                     break;
                 case KeyCode.Return:
+#pragma warning disable 618
                     onItemChosen?.Invoke(m_ItemsSource[selectedIndex]);
+#pragma warning restore 618
                     onItemsChosen?.Invoke(m_SelectedItems);
                     break;
                 case KeyCode.PageDown:
@@ -764,7 +766,9 @@ namespace UnityEngine.UIElements
                 return;
 
             onSelectionChange?.Invoke(m_SelectedItems);
+#pragma warning disable 618
             onSelectionChanged?.Invoke(m_SelectedItems);
+#pragma warning restore 618
         }
 
         public void ClearSelection()

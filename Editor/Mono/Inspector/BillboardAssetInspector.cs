@@ -25,13 +25,14 @@ namespace UnityEditor
         private SerializedProperty m_Material;
 
         private bool m_PreviewShaded = true;
-        private Vector2 m_PreviewDir = new Vector2(-120, 20);
         private PreviewRenderUtility m_PreviewUtility;
         private Mesh m_ShadedMesh;
         private Mesh m_GeometryMesh;
         private MaterialPropertyBlock m_ShadedMaterialProperties;
         private Material m_GeometryMaterial;
         private Material m_WireframeMaterial;
+
+        ModelInspector.PreviewSettings m_Settings;
 
         private class GUIStyles
         {
@@ -60,6 +61,12 @@ namespace UnityEditor
             m_Vertices = serializedObject.FindProperty("vertices");
             m_Indices = serializedObject.FindProperty("indices");
             m_Material = serializedObject.FindProperty("material");
+
+            if (m_Settings == null)
+            {
+                m_Settings = new ModelInspector.PreviewSettings();
+                m_Settings.previewDir = new Vector2(-120, 20);
+            }
         }
 
         private void OnDisable()
@@ -161,7 +168,7 @@ namespace UnityEditor
 
             InitPreview();
 
-            m_PreviewDir = PreviewGUI.Drag2D(m_PreviewDir, r);
+            m_Settings.previewDir = PreviewGUI.Drag2D(m_Settings.previewDir, r);
 
             if (Event.current.type != EventType.Repaint)
                 return;
@@ -239,7 +246,7 @@ namespace UnityEditor
             float halfSize = bounds.extents.magnitude;
             float distance = 8.0f * halfSize;
 
-            var rotation = Quaternion.Euler(-m_PreviewDir.y, -m_PreviewDir.x, 0);
+            var rotation = Quaternion.Euler(-m_Settings.previewDir.y, -m_Settings.previewDir.x, 0);
             m_PreviewUtility.camera.transform.rotation = rotation;
             m_PreviewUtility.camera.transform.position = rotation * (-Vector3.forward * distance);
             m_PreviewUtility.camera.nearClipPlane = distance - halfSize * 1.1f;
@@ -249,17 +256,23 @@ namespace UnityEditor
             m_PreviewUtility.lights[0].transform.rotation = rotation * Quaternion.Euler(40f, 40f, 0);
             m_PreviewUtility.lights[1].intensity = 1.4f;
             m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
+
+            var tempPreviewDir = m_Settings.previewDir;
+            m_Settings.previewDir = new Vector2(0, 0);
             if (shaded)
             {
                 MakeRenderMesh(m_ShadedMesh, billboard);
                 billboard.MakeMaterialProperties(m_ShadedMaterialProperties, m_PreviewUtility.camera);
-                ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_ShadedMesh, bounds, m_PreviewUtility, billboard.material, null, m_ShadedMaterialProperties, new Vector2(0, 0), -1);
+                m_Settings.activeMaterial = billboard.material;
+                ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_ShadedMesh, bounds, m_PreviewUtility, m_Settings, m_ShadedMaterialProperties, -1);
             }
             else
             {
                 MakePreviewMesh(m_GeometryMesh, billboard);
-                ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_GeometryMesh, bounds, m_PreviewUtility, m_GeometryMaterial, m_WireframeMaterial, null, new Vector2(0, 0), -1);
+                m_Settings.activeMaterial = m_GeometryMaterial;
+                ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_GeometryMesh, bounds, m_PreviewUtility, m_Settings, null, -1);
             }
+            m_Settings.previewDir = tempPreviewDir;
         }
     }
 }

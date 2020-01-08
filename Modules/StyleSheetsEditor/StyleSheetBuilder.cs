@@ -42,6 +42,7 @@ namespace UnityEditor.StyleSheets
         List<string> m_Strings = new List<string>();
         List<StyleRule> m_Rules = new List<StyleRule>();
         List<Object> m_Assets = new List<Object>();
+        List<ScalableImage> m_ScalableImages = new List<ScalableImage>();
         List<StyleComplexSelector> m_ComplexSelectors = new List<StyleComplexSelector>();
 
         List<StyleProperty> m_CurrentProperties = new List<StyleProperty>();
@@ -160,6 +161,11 @@ namespace UnityEditor.StyleSheets
             RegisterValue(m_Assets, StyleValueType.AssetReference, value);
         }
 
+        public void AddValue(ScalableImage value)
+        {
+            RegisterValue(m_ScalableImages, StyleValueType.ScalableImage, value);
+        }
+
         public void EndProperty()
         {
             Log("Ending property");
@@ -196,6 +202,7 @@ namespace UnityEditor.StyleSheets
             writeTo.strings = m_Strings.ToArray();
             writeTo.rules = m_Rules.ToArray();
             writeTo.assets = m_Assets.ToArray();
+            writeTo.scalableImages = m_ScalableImages.ToArray();
             writeTo.complexSelectors = m_ComplexSelectors.ToArray();
         }
 

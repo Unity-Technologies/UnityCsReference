@@ -16,6 +16,30 @@ namespace UnityEngine.UIElements
     {
         static EventDispatcher s_RuntimeDispatcher = new EventDispatcher();
 
+        private static event Action s_onRepaintOverlayPanels;
+        internal static event Action onRepaintOverlayPanels
+        {
+            add
+            {
+                if (s_onRepaintOverlayPanels == null)
+                {
+                    RegisterPlayerloopCallback();
+                }
+
+                s_onRepaintOverlayPanels += value;
+            }
+
+            remove
+            {
+                s_onRepaintOverlayPanels -= value;
+
+                if (s_onRepaintOverlayPanels == null)
+                {
+                    UnregisterPlayerloopCallback();
+                }
+            }
+        }
+
         static UIElementsRuntimeUtility()
         {
         }

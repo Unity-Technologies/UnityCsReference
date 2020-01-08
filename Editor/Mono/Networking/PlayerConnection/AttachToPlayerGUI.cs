@@ -279,7 +279,10 @@ namespace UnityEditor.Networking.PlayerConnection
                         menuOptions.AddItem(new GUIContent(name), isConnected, () =>
                         {
                             ProfilerDriver.connectedProfiler = guid;
-                            SuccessfullyConnectedToPlayer(connectionName);
+                            if (ProfilerDriver.connectedProfiler == guid)
+                            {
+                                SuccessfullyConnectedToPlayer(connectionName);
+                            }
                         });
                     }
                 }

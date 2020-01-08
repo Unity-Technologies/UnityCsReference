@@ -19,14 +19,7 @@ namespace UnityEditor
 
         static class Styles
         {
-            const string kCustomSorting = "CustomSorting";
-            const string kWarningSymbol = "console.warnicon.sml";
-            const string kWarningMessage = "The current sorting method is taking a lot of time. Consider using 'Transform Sort' in playmode for better performance.";
             public const float kStageHeaderHeight = 25f;
-
-            public static GUIStyle lockButton = "IN LockButton";
-
-            public static GUIContent fetchWarning = new GUIContent("", EditorGUIUtility.FindTexture(kWarningSymbol), kWarningMessage);
         }
 
         [SerializeField]

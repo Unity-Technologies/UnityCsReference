@@ -38,7 +38,6 @@ namespace UnityEditor.U2D
 
         class Styles
         {
-            public readonly GUIStyle dropzoneStyle = "DropzoneStyle";
             public readonly GUIStyle preDropDown = "preDropDown";
             public readonly GUIStyle previewButton = "preButton";
             public readonly GUIStyle previewSlider = "preSlider";
@@ -60,7 +59,6 @@ namespace UnityEditor.U2D
             public readonly GUIContent sRGBLabel = EditorGUIUtility.TrTextContent("sRGB", "Texture content is stored in gamma space.");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
-            public readonly GUIContent copyMasterButton = EditorGUIUtility.TrTextContent("Copy Master's Settings", "Copy all master's settings into this variant.");
             public readonly GUIContent packButton = EditorGUIUtility.TrTextContent("Pack Preview", "Pack this atlas.");
 
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));

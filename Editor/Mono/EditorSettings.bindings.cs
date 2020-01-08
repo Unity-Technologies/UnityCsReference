@@ -167,6 +167,9 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool asyncShaderCompilation { get; set; }
 
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool cachingShaderPreprocessor { get; set; }
+
         public static string[] projectGenerationUserExtensions
         {
             get

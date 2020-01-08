@@ -19,5 +19,7 @@ namespace UnityEditor.PackageManager.UI
 
         bool FilterByCurrentSearchText(IPackage package);
         bool FilterByCurrentTab(IPackage package);
+
+        void SetCurrentFilterTabWithoutNotify(PackageFilterTab tab);
     }
 }

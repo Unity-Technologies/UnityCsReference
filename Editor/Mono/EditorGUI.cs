@@ -5580,19 +5580,52 @@ namespace UnityEditor
         // Make a progress bar.
         public static void ProgressBar(Rect position, float value, string text)
         {
+            ProgressBar(position, value, GUIContent.Temp(text), false, EditorStyles.progressBarBack, EditorStyles.progressBarBar, EditorStyles.progressBarText);
+        }
+
+        internal static bool ProgressBar(Rect position, float value, GUIContent content, bool textOnBar,
+            GUIStyle progressBarBackgroundStyle, GUIStyle progressBarStyle, GUIStyle progressBarTextStyle)
+        {
+            bool mouseHover = position.Contains(Event.current.mousePosition);
             int id = GUIUtility.GetControlID(s_ProgressBarHash, FocusType.Keyboard, position);
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
+                case EventType.MouseDown:
+                    if (mouseHover)
+                    {
+                        Event.current.Use();
+                        return true;
+                    }
+                    break;
                 case EventType.Repaint:
-                    EditorStyles.progressBarBack.Draw(position, false, false, false, false);
-                    Rect barRect = new Rect(position);
-                    value = Mathf.Clamp01(value);
-                    barRect.width *= value;
-                    EditorStyles.progressBarBar.Draw(barRect, false, false, false, false);
-                    EditorStyles.progressBarText.Draw(position, text, false, false, false, false);
+                    progressBarBackgroundStyle.Draw(position, mouseHover, false, false, false);
+                    if (value > 0.0f)
+                    {
+                        value = Mathf.Clamp01(value);
+                        var barRect = new Rect(position);
+                        barRect.width *= value;
+                        if (barRect.width >= 1f)
+                            progressBarStyle.Draw(barRect, textOnBar ? content : GUIContent.none, mouseHover, false, false, false);
+                    }
+                    else if (value == -1.0f)
+                    {
+                        float barWidth = position.width * 0.2f;
+                        float halfBarWidth = barWidth / 2.0f;
+                        float cos = Mathf.Cos((float)EditorApplication.timeSinceStartup * 2f);
+                        float rb = position.x + halfBarWidth;
+                        float re = position.xMax - halfBarWidth;
+                        float scale = (re - rb) / 2f;
+                        float cursor = scale * cos;
+                        var barRect = new Rect(position.x + cursor + scale, position.y, barWidth, position.height);
+                        progressBarStyle.Draw(barRect, GUIContent.none, mouseHover, false, false, false);
+                    }
+
+                    progressBarTextStyle.Draw(position, !textOnBar ? content : GUIContent.none, mouseHover, false, false, false);
                     break;
             }
+
+            return false;
         }
 
         // Make a help box with a message to the user.

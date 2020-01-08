@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
-using UnityEditor.Experimental.AssetImporters;
 using UnityEngine.U2D;
 using UnityEditor.Build;
 using UnityEditor.U2D.Common;
@@ -39,7 +37,6 @@ namespace UnityEditor.U2D
 
         class Styles
         {
-            public readonly GUIStyle dropzoneStyle = "DropzoneStyle";
             public readonly GUIStyle preDropDown = "preDropDown";
             public readonly GUIStyle previewButton = "preButton";
             public readonly GUIStyle previewSlider = "preSlider";

@@ -48,6 +48,7 @@ namespace UnityEditor
         public VisualElement rootVisualElement => this.GetRootVisualElement();
 
         internal System.Object uiRootElement { get; set; }
+        internal Action uiRootElementCreated { get; set; }
 
         [HideInInspector]
         [SerializeField]
@@ -1139,6 +1140,7 @@ namespace UnityEditor
                 {
                     var root = CreateRoot();
                     window.uiRootElement = root;
+                    window.uiRootElementCreated?.Invoke();
                     return root;
                 }
 

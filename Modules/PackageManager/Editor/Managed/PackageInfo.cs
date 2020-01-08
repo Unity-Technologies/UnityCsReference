@@ -126,6 +126,14 @@ namespace UnityEditor.PackageManager
         [NativeName("documentationUrl")]
         private string m_DocumentationUrl = "";
 
+        [SerializeField]
+        [NativeName("hasRepository")]
+        private bool m_HasRepository;
+
+        [SerializeField]
+        [NativeName("repository")]
+        private RepositoryInfo m_Repository = new RepositoryInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -172,6 +180,14 @@ namespace UnityEditor.PackageManager
             get
             {
                 return m_Source  == PackageSource.Git ? m_Git : null;
+            }
+        }
+
+        public RepositoryInfo repository
+        {
+            get
+            {
+                return m_HasRepository ? m_Repository : null;
             }
         }
 

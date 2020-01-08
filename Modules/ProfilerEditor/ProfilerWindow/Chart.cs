@@ -17,10 +17,7 @@ namespace UnityEditorInternal
         public const float kSideWidth = 180.0f;
         private const int kDistFromTopToFirstLabel = 38;
         private const int kLabelHeight = 14;
-        private const int kCloseButtonSize = 13;
-        private const int kCloseButtonXOffset = 4;
         private const float kLabelOffset = 5f;
-        private const float kWarningLabelHeightOffset = 43f;
         private const float kChartMinHeight = 130;
         private const float k_LineWidth = 2f;
         private const int k_LabelLayoutMaxIterations = 5;
@@ -51,7 +48,6 @@ namespace UnityEditorInternal
             public static readonly GUIStyle rightPane = "ProfilerRightPane";
             public static readonly GUIStyle seriesLabel = "ProfilerPaneSubLabel";
             public static readonly GUIStyle seriesDragHandle = "RL DragHandle";
-            public static readonly GUIStyle closeButton = "WinBtnClose";
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
             public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
             public static readonly GUIStyle noDataOverlayBox = "ProfilerNoDataAvailable";

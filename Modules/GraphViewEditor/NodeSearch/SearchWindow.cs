@@ -42,9 +42,6 @@ namespace UnityEditor.Experimental.GraphView
             public GUIStyle componentButton = "AC ComponentButton";
             public GUIStyle groupButton = "AC GroupButton";
             public GUIStyle background = "grey_border";
-            public GUIStyle previewBackground = "PopupCurveSwatchBackground";
-            public GUIStyle previewHeader = "AC PreviewHeader";
-            public GUIStyle previewText = "AC PreviewText";
             public GUIStyle rightArrow = "ArrowNavigationRight";
             public GUIStyle leftArrow = "ArrowNavigationLeft";
         }

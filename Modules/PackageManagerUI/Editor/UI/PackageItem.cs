@@ -269,7 +269,8 @@ namespace UnityEditor.PackageManager.UI
         {
             "",
             "This package is installed.",
-            "This package is installed as dependency.",
+            // Keep the error message for `installed` and `installedAsDependency` the same for now as requested by the designer
+            "This package is installed.",
             "This package is available for import.",
             "This package is in development.",
             "A newer version of this package is available.",

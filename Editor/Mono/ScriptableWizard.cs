@@ -36,7 +36,6 @@ namespace UnityEditor
         private class Styles
         {
             public static string errorText = "Wizard Error";
-            public static string box = "Wizard Box";
         }
 
         //@TODO: Force repaint if scripts recompile

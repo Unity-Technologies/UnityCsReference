@@ -12,12 +12,13 @@ namespace UnityEditor.StyleSheets
 {
     // Make sure style sheets importer after allowed dependent assets: textures, fonts and json
     // Has to be higher then AssetImportOrder.kImportOrderLate
-    [ScriptedImporter(version: 9, ext: "uss", importQueueOffset: 1100)]
+    [ScriptedImporter(version: 10, ext: "uss", importQueueOffset: 1100)]
     [ExcludeFromPreset]
     class StyleSheetImporter : ScriptedImporter
     {
         #pragma warning disable 649
         public bool disableValidation;
+        internal bool isWhitelisted;
         #pragma warning restore 649
 
         private static readonly List<string> s_ValidationPathWhitelist = new List<string>()
@@ -28,19 +29,7 @@ namespace UnityEditor.StyleSheets
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
-            bool isWhitelisted = false;
-            if (!disableValidation)
-            {
-                foreach (var path in s_ValidationPathWhitelist)
-                {
-                    if (ctx.assetPath.StartsWith(path))
-                    {
-                        isWhitelisted = true;
-                        break;
-                    }
-                }
-            }
-
+            isWhitelisted = IsWhiteListed(ctx);
             string contents = string.Empty;
 
             try
@@ -67,6 +56,15 @@ namespace UnityEditor.StyleSheets
                 ctx.AddObjectToAsset("stylesheet", asset);
                 ctx.SetMainObject(asset);
             }
+        }
+
+        internal bool IsWhiteListed(AssetImportContext ctx)
+        {
+            if (!disableValidation)
+                foreach (var path in s_ValidationPathWhitelist)
+                    if (ctx.assetPath.StartsWith(path))
+                        return true;
+            return false;
         }
     }
 

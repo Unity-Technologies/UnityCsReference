@@ -29,19 +29,11 @@ namespace UnityEditor
             public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the selected Lightmap Encoding and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIContent compilingMessage = EditorGUIUtility.TrTextContent("Cannot build player while editor is importing assets or compiling scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            public GUIStyle selected = "OL SelectedRow";
-            public GUIStyle box = "OL Box";
             public GUIStyle title = EditorStyles.boldLabel;
             public GUIStyle evenRow = "CN EntryBackEven";
             public GUIStyle oddRow = "CN EntryBackOdd";
             public GUIStyle platformSelector = "PlayerSettingsPlatform";
-            public GUIStyle toggle = "Toggle";
-            public GUIStyle levelString = "PlayerSettingsLevel";
-            public GUIStyle levelStringCounter = "RightAlignedLabel";
-            public Vector2 toggleSize;
 
-            public GUIContent becauseYouAreNot = EditorGUIUtility.TrTextContent("Because you are not a member of this project this build will not access Unity services.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            public GUIContent noSessionDialogText = EditorGUIUtility.TrTextContent("In order to publish your build to UDN, you need to sign in via the AssetStore and tick the 'Stay signed in' checkbox.");
             public GUIContent platformTitle = EditorGUIUtility.TrTextContent("Platform", "Which platform to build for");
             public GUIContent switchPlatform = EditorGUIUtility.TrTextContent("Switch Platform");
             public GUIContent build = EditorGUIUtility.TrTextContent("Build");
@@ -54,16 +46,12 @@ namespace UnityEditor
             public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.");
             public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
             public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
-            public GUIContent useNativeCompilation = EditorGUIUtility.TrTextContent("Use native compilation (no Mono runtime)");
 
             public Texture2D activePlatformIcon = EditorGUIUtility.IconContent("BuildSettings.SelectedIcon").image as Texture2D;
 
             public const float kButtonWidth = 110;
 
             public string shopURL = "https://store.unity3d.com/shop/";
-            const string kDownloadURL = "http://unity3d.com/unity/download/";
-            const string kMailURL = "http://unity3d.com/company/sales?type=sales";
-            const string kPlatformInstallationURL = "https://unity3d.com/platform-installation";
 
             public GUIContent GetDownloadErrorForTarget(BuildTarget target)
             {
@@ -76,7 +64,6 @@ namespace UnityEditor
             public GUIContent autoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
             public GUIContent buildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
             public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling", "Profiling is only enabled in a Development Player.");
-            public GUIContent vrRemoteStremaing = EditorGUIUtility.TrTextContent("VR Remote Streaming");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");
             public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution.");
             public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
@@ -328,7 +315,6 @@ namespace UnityEditor
             if (styles == null)
             {
                 styles = new Styles();
-                styles.toggleSize = styles.toggle.CalcSize(new GUIContent("X"));
             }
 
             if (!UnityConnect.instance.canBuildWithUPID)

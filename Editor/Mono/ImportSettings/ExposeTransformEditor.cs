@@ -170,14 +170,6 @@ namespace UnityEditor
 
     internal class OptimizeGameObjectTreeView : ToggleTreeView<SerializedNodeInfo>
     {
-        static class Styles
-        {
-            public static GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to list");
-            public static GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from list");
-            public static GUIStyle footerBackground = "RL Footer";
-            public static GUIStyle preButton = "RL FooterButton";
-        }
-
         public OptimizeGameObjectTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader, Func<SerializedNodeInfo> rebuildRoot)
             : base(state, multiColumnHeader, rebuildRoot)
         {

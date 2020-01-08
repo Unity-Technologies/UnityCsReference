@@ -60,8 +60,6 @@ namespace UnityEditor
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
         private bool m_PreprocessOnly = false;
-        private bool m_PreprocessOnlyAvailable = true;
-        private bool m_PreprocessOnlyAvailableInitialized = false;
 
         Vector2 m_ScrollPosition = Vector2.zero;
         private Material m_SrpCompatibilityCheckMaterial = null;
@@ -332,31 +330,11 @@ namespace UnityEditor
             ShaderErrorListUI(s, ShaderUtil.GetShaderMessages(s), ref m_ScrollPosition);
         }
 
-        private void UpdatePreprocessOnlyAvailability()
-        {
-            m_PreprocessOnlyAvailableInitialized = true;
-
-            m_PreprocessOnlyAvailable = false;
-
-            string[] args = Environment.GetCommandLineArgs();
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i] == "-force-new-shader-pp")
-                {
-                    m_PreprocessOnlyAvailable = true;
-                    break;
-                }
-            }
-        }
-
         // Compiled shader code button+dropdown
         private void ShowCompiledCodeButton(Shader s)
         {
-            if (!m_PreprocessOnlyAvailableInitialized)
-                UpdatePreprocessOnlyAvailability();
-
             EditorGUILayout.BeginVertical();
-            using (new EditorGUI.DisabledScope(!m_PreprocessOnlyAvailable))
+            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor))
                 m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);

@@ -180,7 +180,16 @@ namespace UnityEditorInternal
                 // Only expand whole events tree if it was empty before.
                 // If we already had something in there, we want to preserve user's expanded items.
                 if (wasEmpty)
-                    SetExpandedWithChildren(m_RootItem, true);
+                {
+                    SetExpanded(m_RootItem, true);
+
+                    // Expand root's children only
+                    foreach (var treeViewItem in m_RootItem.children)
+                    {
+                        if (treeViewItem != null)
+                            SetExpanded(treeViewItem, true);
+                    }
+                }
             }
 
             public override bool IsRenamingItemAllowed(TreeViewItem item)

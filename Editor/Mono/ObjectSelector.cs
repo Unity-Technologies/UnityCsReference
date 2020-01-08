@@ -30,7 +30,6 @@ namespace UnityEditor
         {
             public static GUIStyle smallStatus = "ObjectPickerSmallStatus";
             public static GUIStyle largeStatus = "ObjectPickerLargeStatus";
-            public static GUIStyle toolbarBack = "ObjectPickerToolbar";
             public static GUIStyle tab = "ObjectPickerTab";
             public static GUIStyle bottomResize = "WindowBottomResize";
             public static GUIStyle previewBackground = "PopupCurveSwatchBackground"; // TODO: Make dedicated style

@@ -49,6 +49,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.FunctionSeparator:
                     value = ",";
                     break;
+                case StyleValueType.ScalableImage:
+                    value = sheet.ReadScalableImage(handle).ToString();
+                    break;
                 default:
                     value = "Error reading value type (" + handle.valueType + ") at index " + handle.valueIndex;
                     break;

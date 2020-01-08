@@ -42,7 +42,6 @@ namespace UnityEditor.Connect
 
             base.InternalEnableService(enable);
 
-            Collab.instance.SendNotification();
             Collab.instance.SetCollabEnabledForCurrentProject(enable);
 
             AssetDatabase.Refresh();                    // If auto-refresh was off, make sure we refresh when setting it back on

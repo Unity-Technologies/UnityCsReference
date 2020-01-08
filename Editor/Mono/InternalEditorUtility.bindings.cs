@@ -331,6 +331,9 @@ namespace UnityEditorInternal
         [FreeFunction("TryOpenErrorFileFromConsole")]
         public extern static bool TryOpenErrorFileFromConsole(string path, int line, int column);
 
+        [FreeFunction("TryOpenErrorFileFromConsoleInternal")]
+        internal extern static bool TryOpenErrorFileFromConsoleInternal(string path, int line, int column, bool isDryRun);
+
         public static bool TryOpenErrorFileFromConsole(string path, int line)
         {
             return TryOpenErrorFileFromConsole(path, line, 0);

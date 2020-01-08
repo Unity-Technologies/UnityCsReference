@@ -410,7 +410,16 @@ namespace UnityEngine.Events
 
         public string targetAssemblyTypeName
         {
-            get { return m_TargetAssemblyTypeName; }
+            get
+            {
+                // Reconstruct TargetAssemblyTypeName from target if it's not present, for ex., when upgrading project
+                if (string.IsNullOrEmpty(m_TargetAssemblyTypeName) && m_Target != null)
+                {
+                    m_TargetAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_Target.GetType().AssemblyQualifiedName);
+                }
+
+                return m_TargetAssemblyTypeName;
+            }
         }
 
         public string methodName
@@ -509,22 +518,14 @@ namespace UnityEngine.Events
             m_TargetAssemblyTypeName = string.Empty;
         }
 
-        private void ValidateTargetAssemblyType()
-        {
-            // Reconstruct TargetAssemblyTypeName from target if it's not present, for ex., when upgrading project
-            if (string.IsNullOrEmpty(m_TargetAssemblyTypeName) && m_Target != null)
-                m_TargetAssemblyTypeName = m_Target.GetType().AssemblyQualifiedName;
-            m_TargetAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_TargetAssemblyTypeName);
-        }
-
         public void OnBeforeSerialize()
         {
-            ValidateTargetAssemblyType();
+            m_TargetAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_TargetAssemblyTypeName);
         }
 
         public void OnAfterDeserialize()
         {
-            ValidateTargetAssemblyType();
+            m_TargetAssemblyTypeName = UnityEventTools.TidyAssemblyTypeName(m_TargetAssemblyTypeName);
         }
     }
 

@@ -57,7 +57,7 @@ namespace UnityEngine
         [FreeFunction("ShaderScripting::GetPropertyTextureDefaultName")]
         extern private static string GetPropertyTextureDefaultName([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::FindTextureStack")]
-        extern private static string FindTextureStackImpl([NotNull] Shader s, int propertyIdx);
+        extern private static bool FindTextureStackImpl([NotNull] Shader s, int propertyIdx, out string stackName, out int layerIndex);
 
 
         private static void CheckPropertyIndex(Shader s, int propertyIndex)
@@ -150,13 +150,13 @@ namespace UnityEngine
             return GetPropertyTextureDefaultName(this, propertyIndex);
         }
 
-        public string FindTextureStack(int propertyIndex)
+        public bool FindTextureStack(int propertyIndex, out string stackName, out int layerIndex)
         {
             CheckPropertyIndex(this, propertyIndex);
             var propType = GetPropertyType(propertyIndex);
             if (propType != ShaderPropertyType.Texture)
                 throw new ArgumentException("Property type is not Texture.");
-            return FindTextureStackImpl(this, propertyIndex);
+            return FindTextureStackImpl(this, propertyIndex, out stackName, out layerIndex);
         }
     }
 }

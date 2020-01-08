@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -354,12 +355,19 @@ namespace UnityEditor.PackageManager.UI
 
             if (enabledSelf && m_Package?.labels != null)
             {
-                foreach (string label in m_Package.labels)
-                {
-                    detailLabels.Add(new Label(label));
-                }
+                string labels = string.Join(", ", m_Package.labels.ToArray());
+
+                if (!string.IsNullOrEmpty(labels))
+                    detailLabels.Add(new Label(labels));
             }
-            UIUtils.SetElementDisplay(detailLabelsContainer, detailLabels.Children().Any());
+
+            bool hasLabels = detailLabels.Children().Any();
+            bool isAssetStorePackage = m_Package is AssetStorePackage;
+
+            if (!hasLabels && isAssetStorePackage)
+                detailLabels.Add(new Label(ApplicationUtil.instance.GetTranslationForText("(None)")));
+
+            UIUtils.SetElementDisplay(detailLabelsContainer, hasLabels || isAssetStorePackage);
         }
 
         private void RefreshPurchasedDate()

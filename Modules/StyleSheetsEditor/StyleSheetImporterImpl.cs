@@ -111,8 +111,32 @@ namespace UnityEditor.StyleSheets
             {
                 UnityEngine.Object asset = DeclareDependencyAndLoad(projectRelativePath);
 
-                if (asset is Texture2D || asset is Font || asset is VectorImage)
+                bool isTexture = asset is Texture2D;
+
+                if (isTexture || asset is Font || asset is VectorImage)
                 {
+                    // Looking suffixed images files only
+                    if (isTexture)
+                    {
+                        string hiResImageLocation = URIHelpers.InjectFileNameSuffix(projectRelativePath, "@2x");
+
+                        if (File.Exists(hiResImageLocation))
+                        {
+                            UnityEngine.Object hiResImage = DeclareDependencyAndLoad(hiResImageLocation);
+
+                            if (hiResImage is Texture2D)
+                            {
+                                m_Builder.AddValue(new ScalableImage() { normalImage = asset as Texture2D, highResolutionImage = hiResImage as Texture2D });
+                            }
+                            else
+                            {
+                                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidHighResolutionImage, string.Format("Invalid asset type {0}, only Texture2D is supported for variants with @2x suffix", asset.GetType().Name));
+                            }
+                            return;
+                        }
+                        // If we didn't find an high res variant, tell ADB we depend on that potential file existing
+                        DeclareDependencyAndLoad(hiResImageLocation);
+                    }
                     m_Builder.AddValue(asset);
                 }
                 else

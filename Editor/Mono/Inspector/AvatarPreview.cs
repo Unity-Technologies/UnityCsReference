@@ -188,20 +188,14 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent speedScale = EditorGUIUtility.TrIconContent("SpeedScale", "Changes animation preview speed");
             public GUIContent pivot = EditorGUIUtility.TrIconContent("AvatarPivot", "Displays avatar's pivot and mass center");
             public GUIContent ik = EditorGUIUtility.TrTextContent("IK", "Toggles feet IK preview");
             public GUIContent is2D = EditorGUIUtility.TrIconContent("SceneView2D", "Toggles 2D preview mode");
             public GUIContent avatarIcon = EditorGUIUtility.TrIconContent("AvatarSelector", "Changes the model to use for previewing.");
 
-            public GUIStyle avatarDropdown = new GUIStyle(EditorStyles.toolbarButton)
-            {
-                stretchWidth = false
-            };
             public GUIStyle preButton = "toolbarbutton";
             public GUIStyle preSlider = "preSlider";
             public GUIStyle preSliderThumb = "preSliderThumb";
-            public GUIStyle preLabel = "preLabel";
         }
         private static Styles s_Styles;
 

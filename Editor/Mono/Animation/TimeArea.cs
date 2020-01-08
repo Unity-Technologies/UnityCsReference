@@ -49,7 +49,6 @@ namespace UnityEditor
         class Styles2
         {
             public GUIStyle timelineTick = "AnimationTimelineTick";
-            public GUIStyle labelTickMarks = "CurveEditorLabelTickMarks";
             public GUIStyle playhead = "AnimationPlayHead";
         }
 

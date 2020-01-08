@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
         private Panel m_Panel;
         private VisualElement m_Tree;
         private VisualTreeAsset m_LastTree;
-        private Texture2D m_FileTypeIcon;
+        protected Texture2D m_FileTypeIcon;
 
         protected void OnEnable()
         {
@@ -45,7 +45,7 @@ namespace UnityEditor.UIElements
             return true;
         }
 
-        private void RenderIcon(Rect iconRect)
+        protected void RenderIcon(Rect iconRect)
         {
             Debug.Assert(m_FileTypeIcon != null);
             GUI.DrawTexture(iconRect, m_FileTypeIcon, ScaleMode.ScaleToFit);
