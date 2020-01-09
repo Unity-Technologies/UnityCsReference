@@ -97,7 +97,8 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             PEGIBBFC = 8,
             Russian = 9,
             ACB = 10,
-            OFLC = 11
+            OFLC = 11,
+            IARCGeneric = 12
         }
 
         private enum SupportedNpadStyleBits        

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    
+    <ProjectGuid>{709222FD-15C2-497D-8B31-366ADCC074CD}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Unity.UNetWeaver</RootNamespace>
     <AssemblyName>Unity.UNetWeaver</AssemblyName>
