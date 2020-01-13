@@ -45,7 +45,7 @@ namespace UnityEditorInternal.Profiling
         public override void OnEnable(IProfilerWindowController profilerWindow)
         {
             base.OnEnable(profilerWindow);
-            m_FrameDataHierarchyView.gpuView = true;
+            m_FrameDataHierarchyView.OnEnable(this, true);
             m_FrameDataHierarchyView.dataAvailabilityMessage = null;
             if (m_ViewType == ProfilerViewType.Timeline)
                 m_ViewType = ProfilerViewType.Hierarchy;

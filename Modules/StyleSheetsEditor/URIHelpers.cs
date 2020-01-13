@@ -72,5 +72,12 @@ namespace UnityEditor.StyleSheets
 
             return URIValidationResult.OK;
         }
+
+        public static string InjectFileNameSuffix(string path, string suffix)
+        {
+            string ext = Path.GetExtension(path);
+            string fileRenamed = Path.GetFileNameWithoutExtension(path) + suffix + ext;
+            return Path.Combine(Path.GetDirectoryName(path), fileRenamed);
+        }
     }
 }

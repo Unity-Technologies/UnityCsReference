@@ -70,6 +70,11 @@ namespace UnityEditor.StyleSheets
                 return (UnityEngine.Object)Obj;
             }
 
+            public ScalableImage AsScalableImage()
+            {
+                return (ScalableImage)Obj;
+            }
+
             public override string ToString()
             {
                 return Obj.ToString();
@@ -760,6 +765,9 @@ namespace UnityEditor.StyleSheets
                     break;
                 case StyleValueType.AssetReference:
                     value = srcSheet.ReadAssetReference(valueHandle);
+                    break;
+                case StyleValueType.ScalableImage:
+                    value = srcSheet.ReadScalableImage(valueHandle);
                     break;
                 default:
                     throw new Exception("Unhandled value type: " + valueHandle.valueType);

@@ -250,7 +250,7 @@ namespace UnityEngine.UIElements.StyleSheets
             Texture2D texture = null;
 
             var valueType = GetValueType(index);
-            bool isCustom = valueType == StyleValueType.ResourcePath || valueType == StyleValueType.AssetReference;
+            bool isCustom = valueType == StyleValueType.ResourcePath || valueType == StyleValueType.AssetReference || valueType == StyleValueType.ScalableImage;
 
             if (isCustom)
             {
@@ -410,6 +410,33 @@ namespace UnityEngine.UIElements.StyleSheets
                     {
                         Debug.LogWarning("Invalid image specified");
                         return false;
+                    }
+                }
+                break;
+
+                case StyleValueType.ScalableImage:
+                {
+                    var img = propertyValue.sheet.ReadScalableImage(propertyValue.handle);
+
+                    if (img.normalImage == null && img.highResolutionImage == null)
+                    {
+                        Debug.LogWarning("Invalid scalable image specified");
+                        return false;
+                    }
+
+                    if (dpiScaling > 1.0f)
+                    {
+                        source.texture = img.highResolutionImage;
+                        source.texture.pixelsPerPoint = 2.0f;
+                    }
+                    else
+                    {
+                        source.texture = img.normalImage;
+                    }
+
+                    if (!Mathf.Approximately(dpiScaling % 1.0f, 0))
+                    {
+                        source.texture.filterMode = FilterMode.Bilinear;
                     }
                 }
                 break;

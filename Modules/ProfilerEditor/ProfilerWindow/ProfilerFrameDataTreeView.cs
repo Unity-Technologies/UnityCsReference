@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.Profiling;
 using System;
 using UnityEditor;
+using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -24,6 +25,9 @@ namespace UnityEditorInternal
         HierarchyFrameDataView m_FrameDataView;
         List<int> m_SelectedItemMarkerIdPath;
         string m_LegacySelectedItemMarkerNamePath;
+
+        [NonSerialized]
+        protected IProfilerSampleNameProvider m_ProfilerSampleNameProvider;
 
         // Tree of expanded nodes.
         // Each level has a set of expanded marker ids, which are equivalent to sample name.
@@ -108,7 +112,7 @@ namespace UnityEditorInternal
                 m_Initialized = false;
             }
 
-            public void Init(ProfilerFrameDataMultiColumnHeader.Column[] columns)
+            public void Init(ProfilerFrameDataMultiColumnHeader.Column[] columns, IProfilerSampleNameProvider profilerSampleNameProvider)
             {
                 if (m_Initialized)
                     return;
@@ -116,20 +120,30 @@ namespace UnityEditorInternal
                 m_StringProperties = new string[columns.Length];
                 for (var i = 0; i < columns.Length; i++)
                 {
-                    var data = m_FrameDataView.GetItemColumnData(id, columns[i].profilerColumn);
-                    m_StringProperties[i] = data;
+                    var profilerColumn = columns[i].profilerColumn;
+                    string data;
                     if (columns[i].profilerColumn == HierarchyFrameDataView.columnName)
+                    {
+                        data = profilerSampleNameProvider.GetItemName(m_FrameDataView, id);
                         displayName = data;
+                    }
+                    else
+                    {
+                        data = m_FrameDataView.GetItemColumnData(id, columns[i].profilerColumn);
+                    }
+                    m_StringProperties[i] = data;
                 }
 
                 m_Initialized = true;
             }
         }
 
-        public ProfilerFrameDataTreeView(TreeViewState state, ProfilerFrameDataMultiColumnHeader multicolumnHeader) : base(state, multicolumnHeader)
+        public ProfilerFrameDataTreeView(TreeViewState state, ProfilerFrameDataMultiColumnHeader multicolumnHeader, IProfilerSampleNameProvider profilerSampleNameProvider)
+            : base(state, multicolumnHeader)
         {
             Assert.IsNotNull(multicolumnHeader);
             deselectOnUnhandledMouseDown = true;
+            m_ProfilerSampleNameProvider = profilerSampleNameProvider;
             m_MultiColumnHeader = multicolumnHeader;
             m_MultiColumnHeader.sortingChanged += OnSortingChanged;
         }
@@ -399,7 +413,7 @@ namespace UnityEditorInternal
                 var current = stack.Pop();
 
                 // Matches search?
-                var functionName = m_FrameDataView.GetItemName(current);
+                var functionName = m_ProfilerSampleNameProvider.GetItemName(m_FrameDataView, current);
                 if (functionName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     var item = AcquireFrameDataTreeViewItem(m_FrameDataView, current, kItemDepth, searchFromThis);
@@ -630,7 +644,7 @@ namespace UnityEditorInternal
                 return;
 
             var item = (FrameDataTreeViewItem)args.item;
-            item.Init(m_MultiColumnHeader.columns);
+            item.Init(m_MultiColumnHeader.columns, m_ProfilerSampleNameProvider);
 
             for (var i = 0; i < args.GetNumVisibleColumns(); ++i)
             {

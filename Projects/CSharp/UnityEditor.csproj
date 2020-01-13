@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    
+    <ProjectGuid>{016C8D73-3641-47FB-8D33-7A015A7EC7DB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>UnityEditor</RootNamespace>
     <AssemblyName>UnityEditor</AssemblyName>
@@ -1191,6 +1191,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Camera\BuiltinBakedReflectionSystem.bindings.cs">
       <Link>Editor\Mono\Camera\BuiltinBakedReflectionSystem.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Camera\CameraProjectionCache.cs">
+      <Link>Editor\Mono\Camera\CameraProjectionCache.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Camera\EditorCameraUtils.bindings.cs">
       <Link>Editor\Mono\Camera\EditorCameraUtils.bindings.cs</Link>

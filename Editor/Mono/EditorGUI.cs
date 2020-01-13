@@ -1682,9 +1682,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.MouseUp && buttonRect.Contains(Event.current.mousePosition))
             {
                 s_RecycledEditor.text = text = "";
-                GUIUtility.keyboardControl = 0;
                 GUI.changed = true;
-                Event.current.Use();
             }
             text = DoTextField(s_RecycledEditor, id, textRect, text, showWithPopupArrow ? EditorStyles.toolbarSearchFieldPopup : EditorStyles.toolbarSearchField, null, out dummy, false, false, false);
             GUI.Button(buttonRect, GUIContent.none,

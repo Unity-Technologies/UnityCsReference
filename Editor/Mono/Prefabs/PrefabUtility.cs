@@ -760,6 +760,25 @@ namespace UnityEditor
                 var actionName = "Apply Added Component";
                 if (action == InteractionMode.UserAction)
                 {
+                    GameObject gameObject = component.gameObject;
+                    List<Component> addedComponentsOnGO =
+                        GetAddedComponents(gameObject)
+                            .Select(e => e.instanceComponent)
+                            .Where(e => e.gameObject == gameObject)
+                            .ToList();
+                    string dependentComponents = string.Join(
+                        ", ",
+                        GetComponentsWhichThisDependsOn(component, addedComponentsOnGO).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                    if (!string.IsNullOrEmpty(dependentComponents))
+                    {
+                        string error = String.Format(
+                            L10n.Tr("Can't apply added component {0} because it depends on {1}."),
+                            ObjectNames.GetInspectorTitle(component),
+                            dependentComponents);
+                        EditorUtility.DisplayDialog(L10n.Tr("Can't apply added component"), error, L10n.Tr("OK"));
+                        return;
+                    }
+
                     Undo.RegisterFullObjectHierarchyUndo(prefabSourceGameObject, actionName);
                     Undo.RegisterFullObjectHierarchyUndo(component, actionName);
                 }
@@ -805,13 +824,19 @@ namespace UnityEditor
 
             if (action == InteractionMode.UserAction)
             {
+                GameObject gameObject = component.gameObject;
+                List<Component> addedComponentsOnGO =
+                    GetAddedComponents(gameObject)
+                        .Select(e => e.instanceComponent)
+                        .Where(e => e.gameObject == gameObject)
+                        .ToList();
                 string dependentComponents = string.Join(
                     ", ",
-                    GetDependentComponents(component).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                    GetComponentsWhichDependOnThis(component, addedComponentsOnGO).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
                     string error = String.Format(
-                        L10n.Tr("Can't revert added component {0} because {1} depends on it"),
+                        L10n.Tr("Can't revert added component {0} because {1} depends on it."),
                         ObjectNames.GetInspectorTitle(component),
                         dependentComponents);
                     EditorUtility.DisplayDialog(L10n.Tr("Can't revert added component"), error, L10n.Tr("OK"));
@@ -866,6 +891,25 @@ namespace UnityEditor
 
             if (action == InteractionMode.UserAction)
             {
+                GameObject assetGameObject = assetComponent.gameObject;
+                List<Component> removedComponentsOnAssetGO =
+                    GetRemovedComponents(instanceGameObject)
+                        .Select(e => e.assetComponent)
+                        .Where(e => e.gameObject == assetGameObject)
+                        .ToList();
+                string dependentComponents = string.Join(
+                    ", ",
+                    GetComponentsWhichDependOnThis(assetComponent, removedComponentsOnAssetGO).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                if (!string.IsNullOrEmpty(dependentComponents))
+                {
+                    string error = String.Format(
+                        L10n.Tr("Can't apply removed component {0} because {1} component in the Prefab Asset depends on it."),
+                        ObjectNames.GetInspectorTitle(assetComponent),
+                        dependentComponents);
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't apply removed component"), error, L10n.Tr("OK"));
+                    return;
+                }
+
                 Undo.DestroyObjectUndoable(assetComponent, actionName);
                 // Undo.DestroyObjectUndoable saves prefab asset internally.
             }
@@ -920,7 +964,28 @@ namespace UnityEditor
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
             if (action == InteractionMode.UserAction)
+            {
+                GameObject assetGameObject = assetComponent.gameObject;
+                List<Component> removedComponentsOnAssetGO =
+                    GetRemovedComponents(instanceGameObject)
+                        .Select(e => e.assetComponent)
+                        .Where(e => e.gameObject == assetGameObject)
+                        .ToList();
+                string dependentComponents = string.Join(
+                    ", ",
+                    GetComponentsWhichThisDependsOn(assetComponent, removedComponentsOnAssetGO).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+                if (!string.IsNullOrEmpty(dependentComponents))
+                {
+                    string error = String.Format(
+                        L10n.Tr("Can't revert removed component {0} because it depends on {1}."),
+                        ObjectNames.GetInspectorTitle(assetComponent),
+                        dependentComponents);
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert removed component"), error, L10n.Tr("OK"));
+                    return;
+                }
+
                 Undo.RegisterCompleteObjectUndo(instanceGameObject, actionName);
+            }
 
             RemoveRemovedComponentOverride(prefabInstanceObject, assetComponent);
 
@@ -1866,27 +1931,52 @@ namespace UnityEditor
             return applyTargets;
         }
 
-        static List<Component> GetDependentComponents(Component component)
+        static List<Component> GetComponentsWhichDependOnThis(Component component, List<Component> componentsToConsider)
         {
             List<Component> dependencies = new List<Component>();
             var componentType = component.GetType();
 
-            // Iterate all components on *this* GameObject.
-            // We don't care about other components on the Prefab instance.
-            var allComponents = component.gameObject.GetComponents<Component>();
-            for (int i = 0; i < allComponents.Length; i++)
+            // Iterate all components.
+            for (int i = 0; i < componentsToConsider.Count; i++)
             {
-                var comp = allComponents[i];
+                var comp = componentsToConsider[i];
 
-                // Ignore components that are not added.
-                if (GetCorrespondingObjectFromSource(comp) != null)
-                    continue;
-
-                // Ignore component itself the user is reverting.
+                // Ignore component itself.
                 if (comp == component)
                     continue;
 
                 var requiredComps = comp.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
+                foreach (RequireComponent reqComp in requiredComps)
+                {
+                    if (reqComp.m_Type0 == componentType || reqComp.m_Type1 == componentType || reqComp.m_Type2 == componentType)
+                    {
+                        // We might get the same component type requirement from multiple sources.
+                        // Make sure we don't add the same component more than once.
+                        if (!dependencies.Contains(comp))
+                            dependencies.Add(comp);
+                    }
+                }
+            }
+            return dependencies;
+        }
+
+        static List<Component> GetComponentsWhichThisDependsOn(Component component, List<Component> componentsToConsider)
+        {
+            var requiredComps = component.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
+            List<Component> dependencies = new List<Component>();
+            if (requiredComps.Count() == 0)
+                return dependencies;
+
+            // Iterate all components.
+            for (int i = 0; i < componentsToConsider.Count; i++)
+            {
+                var comp = componentsToConsider[i];
+
+                // Ignore component itself.
+                if (comp == component)
+                    continue;
+
+                var componentType = comp.GetType();
                 foreach (RequireComponent reqComp in requiredComps)
                 {
                     if (reqComp.m_Type0 == componentType || reqComp.m_Type1 == componentType || reqComp.m_Type2 == componentType)

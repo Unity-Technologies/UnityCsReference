@@ -1066,13 +1066,17 @@ namespace UnityEditor
                 {
                     SetCurrentFrame(-1);
                     m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
+                    m_CurrentFrameEnabled = true;
                 }
-                m_CurrentFrameEnabled = true;
             }
             else if (m_CurrentFrame == -1)
             {
                 m_CurrentFrameEnabled = false;
                 PrevFrame();
+            }
+            else if (m_CurrentFrameEnabled && m_CurrentFrame >= 0)
+            {
+                m_CurrentFrameEnabled = false;
             }
 
             // Frame number
