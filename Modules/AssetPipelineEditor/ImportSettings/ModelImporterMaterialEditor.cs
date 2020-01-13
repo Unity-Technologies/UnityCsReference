@@ -362,7 +362,7 @@ namespace UnityEditor
 
         private bool MaterialRemapOptions()
         {
-            m_ShowMaterialRemapOptions = EditorGUILayout.Foldout(m_ShowMaterialRemapOptions, Styles.RemapOptions);
+            m_ShowMaterialRemapOptions = EditorGUILayout.Foldout(m_ShowMaterialRemapOptions, Styles.RemapOptions, true);
             if (m_ShowMaterialRemapOptions)
             {
                 EditorGUI.indentLevel++;

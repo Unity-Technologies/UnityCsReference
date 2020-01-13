@@ -19,7 +19,6 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private static AssetStoreRestAPIInternal s_Instance;
             public static AssetStoreRestAPIInternal instance => s_Instance ?? (s_Instance = new AssetStoreRestAPIInternal());
 
-            private string m_Host = "";
             private const int kDefaultLimit = 100;
             private const string kListUri = "/-/api/purchases";
             private const string kDetailUri = "/-/api/product";
@@ -28,10 +27,20 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             private IASyncHTTPClientFactory m_AsyncHTTPClient;
 
+            private string m_Host;
+            private string host
+            {
+                get
+                {
+                    if (string.IsNullOrEmpty(m_Host))
+                        m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
+                    return m_Host;
+                }
+            }
+
             private AssetStoreRestAPIInternal()
             {
                 m_AsyncHTTPClient = new ASyncHTTPClientFactory();
-                m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
             }
 
             public void GetProductIDList(int startIndex, int limit, string searchText, Action<ProductList> doneCallbackAction)
@@ -56,7 +65,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
                     limit = limit > 0 ? limit : kDefaultLimit;
                     searchText = string.IsNullOrEmpty(searchText) ? "" : searchText;
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kListUri}?offset={startIndex}&limit={limit}&query={System.Uri.EscapeDataString(searchText)}");
+                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{host}{kListUri}?offset={startIndex}&limit={limit}&query={System.Uri.EscapeDataString(searchText)}");
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
                     httpRequest.doneCallback = httpClient =>
                     {
@@ -119,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kDetailUri}/{productID}");
+                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{host}{kDetailUri}/{productID}");
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
 
                     var etag = AssetStoreCache.instance.GetLastETag(productID);
@@ -179,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                         return;
                     }
 
-                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kDownloadUri}/{productID}");
+                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{host}{kDownloadUri}/{productID}");
                     httpRequest.header["Content-Type"] = "application/json";
                     httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken.access_token;
                     httpRequest.doneCallback = httpClient =>
@@ -252,7 +261,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     }
 
                     var data = Json.Serialize(packageList);
-                    var url = $"{m_Host}{kUpdateUri}";
+                    var url = $"{host}{kUpdateUri}";
 
                     var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient(url, "POST");
                     httpRequest.postData = data;

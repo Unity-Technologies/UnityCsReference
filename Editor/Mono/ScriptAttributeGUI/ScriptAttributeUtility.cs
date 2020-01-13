@@ -344,11 +344,24 @@ namespace UnityEditor
             }
         }
 
-        static Dictionary<Cache, FieldInfo> s_FieldInfoFromPropertyPathCache = new Dictionary<Cache, FieldInfo>();
+        class FieldInfoCache
+        {
+            public FieldInfo fieldInfo;
+            public Type type;
+        }
+
+        static Dictionary<Cache, FieldInfoCache> s_FieldInfoFromPropertyPathCache = new Dictionary<Cache, FieldInfoCache>();
 
         private static FieldInfo GetFieldInfoFromPropertyPath(Type host, string path, out Type type)
         {
-            FieldInfo field = null;
+            Cache cache = new Cache(host, path);
+
+            FieldInfoCache fieldInfoCache = null;
+            if (s_FieldInfoFromPropertyPathCache.TryGetValue(cache, out fieldInfoCache))
+            {
+                type = fieldInfoCache?.type;
+                return fieldInfoCache?.fieldInfo;
+            }
 
             const string arrayData = @"\.Array\.data\[[0-9]+\]";
             // we are looking for array element only when the path ends with Array.data[x]
@@ -356,16 +369,7 @@ namespace UnityEditor
             // remove any Array.data[x] from the path because it is prevents cache searching.
             path = Regex.Replace(path, arrayData, ".___ArrayElement___");
 
-            Cache cache = new Cache(host, path);
-            if (s_FieldInfoFromPropertyPathCache.TryGetValue(cache, out field))
-            {
-                type = field?.FieldType;
-                // we want to get the element type if we are looking for Array.data[x]
-                if (lookingForArrayElement && type != null && type.IsArrayOrList())
-                    type = type.GetArrayOrListElementType();
-                return field;
-            }
-
+            FieldInfo fieldInfo = null;
             type = host;
             string[] parts = path.Split('.');
             for (int i = 0; i < parts.Length; i++)
@@ -386,8 +390,8 @@ namespace UnityEditor
                     return null;
                 }
 
-                field = foundField;
-                type = field.FieldType;
+                fieldInfo = foundField;
+                type = fieldInfo.FieldType;
                 // we want to get the element type if we are looking for Array.data[x]
                 if (i < parts.Length - 1 && parts[i + 1] == "___ArrayElement___" && type.IsArrayOrList())
                 {
@@ -395,8 +399,18 @@ namespace UnityEditor
                     type = type.GetArrayOrListElementType();
                 }
             }
-            s_FieldInfoFromPropertyPathCache.Add(cache, field);
-            return field;
+
+            // we want to get the element type if we are looking for Array.data[x]
+            if (lookingForArrayElement && type != null && type.IsArrayOrList())
+                type = type.GetArrayOrListElementType();
+
+            fieldInfoCache = new FieldInfoCache
+            {
+                type = type,
+                fieldInfo = fieldInfo
+            };
+            s_FieldInfoFromPropertyPathCache.Add(cache, fieldInfoCache);
+            return fieldInfo;
         }
 
         internal static PropertyHandler GetHandler(SerializedProperty property)

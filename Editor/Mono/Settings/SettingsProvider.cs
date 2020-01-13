@@ -124,7 +124,7 @@ namespace UnityEditor
 
         public void Repaint()
         {
-            settingsWindow.Repaint();
+            settingsWindow?.Repaint();
         }
 
         public void PopulateSearchKeywordsFromGUIContentProperties<T>()

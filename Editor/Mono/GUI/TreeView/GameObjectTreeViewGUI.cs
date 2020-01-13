@@ -308,7 +308,9 @@ namespace UnityEditor
                 {
                     var gameObject = (GameObject)goItem.objectPPTR;
                     if (gameObject != null && SubSceneGUI.IsSubSceneHeader(gameObject))
-                        SubSceneGUI.DrawSubSceneHeaderBackground(rect, gameObject);
+                    {
+                        SubSceneGUI.DrawSubSceneHeaderBackground(rect, k_BaseIndent, k_IndentWidth, gameObject);
+                    }
                 }
             }
 
@@ -359,7 +361,9 @@ namespace UnityEditor
             {
                 m_ContentRectRight = PrefabModeButton(goItem, rect);
                 if (SubSceneGUI.IsUsingSubScenes() && !showingSearchResults)
-                    SubSceneGUI.DrawVerticalLine(rect, (GameObject)goItem.objectPPTR);
+                {
+                    SubSceneGUI.DrawVerticalLine(rect, k_BaseIndent, k_IndentWidth, (GameObject)goItem.objectPPTR);
+                }
             }
 
             if (SceneHierarchy.s_Debug)

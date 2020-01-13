@@ -91,8 +91,6 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
         private class AssetStoreOAuthInternal : ScriptableSingleton<AssetStoreOAuthInternal>, IAssetStoreOAuth
         {
-            private string m_Host = "";
-            private string m_Secret = "";
             private const string kOAuthUri = "/v1/oauth2/token";
             private const string kTokenInfoUri = "/v1/oauth2/tokeninfo";
             private const string kUserInfoUri = "/v1/users";
@@ -107,6 +105,17 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private UserInfo m_UserInfo;
             private List<Action<UserInfo>> m_DoneCallbackList;
 
+            private string m_Host;
+            private string host
+            {
+                get
+                {
+                    if (string.IsNullOrEmpty(m_Host))
+                        m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudIdentity);
+                    return m_Host;
+                }
+            }
+
             private AssetStoreOAuthInternal()
             {
                 m_UserInfo = new UserInfo();
@@ -117,16 +126,6 @@ namespace UnityEditor.PackageManager.UI.AssetStore
 
             public void OnEnable()
             {
-                if (string.IsNullOrEmpty(m_Secret))
-                {
-                    m_Secret = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
-                }
-
-                if (string.IsNullOrEmpty(m_Host))
-                {
-                    m_Host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudIdentity);
-                }
-
                 if (ApplicationUtil.instance.isUserLoggedIn)
                     GetAuthCode();
 
@@ -233,8 +232,11 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     return;
                     // a request is already running, no need to recall
                 }
-                m_AccessTokenRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kOAuthUri}", "POST");
-                m_AccessTokenRequest.postData = $"grant_type=authorization_code&code={m_UserInfo.authCode}&client_id=packman&client_secret={m_Secret}&redirect_uri=packman://unity";
+
+                var secret = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
+
+                m_AccessTokenRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{host}{kOAuthUri}", "POST");
+                m_AccessTokenRequest.postData = $"grant_type=authorization_code&code={m_UserInfo.authCode}&client_id=packman&client_secret={secret}&redirect_uri=packman://unity";
                 m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
                 m_AccessTokenRequest.doneCallback = httpClient =>
                 {
@@ -305,7 +307,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     // a request is already running, no need to recall
                 }
 
-                m_TokenRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kTokenInfoUri}?access_token={m_UserInfo.accessToken.access_token}");
+                m_TokenRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{host}{kTokenInfoUri}?access_token={m_UserInfo.accessToken.access_token}");
                 m_TokenRequest.doneCallback = httpClient =>
                 {
                     m_TokenRequest = null;
@@ -372,7 +374,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     // a request is already running, no need to recall
                 }
 
-                m_UserInfoRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{m_Host}{kUserInfoUri}/{m_UserInfo.tokenInfo.sub}");
+                m_UserInfoRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{host}{kUserInfoUri}/{m_UserInfo.tokenInfo.sub}");
                 m_UserInfoRequest.header["Authorization"] = "Bearer " + m_UserInfo.accessToken.access_token;
                 m_UserInfoRequest.doneCallback = httpClient =>
                 {

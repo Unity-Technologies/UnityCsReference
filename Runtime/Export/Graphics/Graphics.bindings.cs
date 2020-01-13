@@ -692,6 +692,10 @@ namespace UnityEngine
             [FreeFunction(HasExplicitThis = true)]
             [NativeName("GetTetrahedraSize")] get;
         }
+
+        [FreeFunction]
+        [NativeName("GetLightProbeCount")]
+        internal static extern int GetCount();
     }
 }
 

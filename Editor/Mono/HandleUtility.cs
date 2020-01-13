@@ -334,7 +334,7 @@ namespace UnityEditor
         public static float DistanceToArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius)
         {
             Handles.SetDiscSectionPoints(m_ArcPointsBuffer, center, normal, from, angle, radius);
-            return DistanceToPolyLineOnPlane(m_ArcPointsBuffer, center, normal);
+            return DistanceToPolyLine(m_ArcPointsBuffer);
         }
 
         // Get the nearest 3D point.
@@ -347,62 +347,23 @@ namespace UnityEditor
         // Pixel distance from mouse pointer to a polyline.
         public static float DistanceToPolyLine(params Vector3[] points)
         {
-            Camera cam = Camera.current;
-            Matrix4x4 handlesMatrix = Handles.matrix;
-            float screenHeight = Screen.height;
+            Matrix4x4 handleMatrix = Handles.matrix;
+            CameraProjectionCache cam = new CameraProjectionCache(Camera.current, Screen.height);
+            Vector2 mouse = Event.current.mousePosition;
 
-            Vector2 point = Event.current.mousePosition;
-            Vector3 p1 = WorldToGUIPointWithDepth(points[0], cam, handlesMatrix, screenHeight);
-            Vector3 p2 = WorldToGUIPointWithDepth(points[1], cam, handlesMatrix, screenHeight);
-            float dist = DistanceToLineInternal(point, p1, p2);
+            Vector2 p1 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[0]));
+            Vector2 p2 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[1]));
+            float dist = DistanceToLineInternal(mouse, p1, p2);
 
             for (int i = 2; i < points.Length; i++)
             {
                 p1 = p2;
-                p2 = WorldToGUIPointWithDepth(points[i], cam, handlesMatrix, screenHeight);
-
-                float d = DistanceToLineInternal(point, p1, p2);
+                p2 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[i]));
+                float d = DistanceToLineInternal(mouse, p1, p2);
                 if (d < dist)
                     dist = d;
             }
             return dist;
-        }
-
-        // Pixel distance from mouse pointer to a polyline on a 2D plane.
-        internal static float DistanceToPolyLineOnPlane(Vector3[] points, Vector3 center, Vector3 normal)
-        {
-            Plane p = new Plane(normal, center);
-
-            Vector2 point = Event.current.mousePosition;
-            Ray r = GUIPointToWorldRay(point);
-
-            float enter;
-            if (!p.Raycast(r, out enter))
-                return DistanceToPolyLine(points);
-
-            Vector3 intersect = r.GetPoint(enter);
-
-            Vector3 p1 = points[0];
-            Vector3 p2 = points[1];
-            float dist = DistanceToLineInternal(intersect, p1, p2);
-
-            Vector3 s1 = Vector3.zero, s2 = Vector3.zero;
-
-            for (int i = 2; i < points.Length; i++)
-            {
-                p1 = p2;
-                p2 = points[i];
-
-                float d = DistanceToLineInternal(intersect, p1, p2);
-                if (d < dist)
-                {
-                    dist = d;
-                    s1 = p1;
-                    s2 = p2;
-                }
-            }
-
-            return DistanceToLineInternal(point, WorldToGUIPoint(s1), WorldToGUIPoint(s2));
         }
 
         // Get the nearest 3D point.

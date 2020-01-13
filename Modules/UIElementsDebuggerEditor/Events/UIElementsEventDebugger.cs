@@ -304,6 +304,14 @@ namespace UnityEditor.UIElements.Debugger
             CreateLegendContainer();
 
             BuildEventsLog();
+
+            GlobalCallbackRegistry.IsEventDebuggerConnected = true;
+        }
+
+        public new void OnDisable()
+        {
+            base.OnDisable();
+            GlobalCallbackRegistry.IsEventDebuggerConnected = false;
         }
 
         public override bool InterceptEvent(EventBase evt)

@@ -55,13 +55,15 @@ namespace UnityEditorInternal
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
             public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
             public static readonly GUIStyle noDataOverlayBox = "ProfilerNoDataAvailable";
-            public static readonly GUIStyle notSupportedWarningLabel = "ProfilerNotSupportedWarningLabel";
+            public static readonly GUIContent notSupportedWarningIcon =
+                new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"));
 
             public static readonly float labelDropShadowOpacity = 0.3f;
             public static readonly float labelLerpToWhiteAmount = 0.5f;
 
-            public static readonly Color selectedFrameColor1 = new Color(1, 1, 1, 0.6f);
-            public static readonly Color selectedFrameColor2 = new Color(1, 1, 1, 0.7f);
+            public static readonly Color selectedFrameColor = new Color(1, 1, 1, 0.7f);
+
+            public static readonly Color noDataSeparatorColor = new Color(.8f, .8f, .8f, 0.5f);
         }
 
         public event ChangedEventHandler closed;
@@ -74,7 +76,7 @@ namespace UnityEditorInternal
         int m_DragItemIndex = -1;
         Vector2 m_DragDownPos;
         int[] m_OldChartOrder;
-        public string m_NotSupportedWarning = null;
+        public Func<int, string> statisticsAvailabilityMessage = null;
 
         public Chart()
         {
@@ -221,21 +223,11 @@ namespace UnityEditorInternal
             {
                 Styles.rightPane.Draw(r, false, false, active, false);
 
-                if (m_NotSupportedWarning == null)
-                {
-                    r.height -= 1.0f; // do not draw the bottom pixel
-                    if (type == ChartType.StackedFill)
-                        DrawChartStacked(selectedFrame, cdata, r, active);
-                    else
-                        DrawChartLine(selectedFrame, cdata, r, active);
-                }
+                r.height -= 1.0f; // do not draw the bottom pixel
+                if (type == ChartType.StackedFill)
+                    DrawChartStacked(selectedFrame, cdata, r, active);
                 else
-                {
-                    Rect labelRect = r;
-                    labelRect.x += kSideWidth * 0.33F;
-                    labelRect.y += kWarningLabelHeightOffset;
-                    GUI.Label(labelRect, m_NotSupportedWarning, Styles.notSupportedWarningLabel);
-                }
+                    DrawChartLine(selectedFrame, cdata, r, active);
             }
 
             return selectedFrame;
@@ -249,10 +241,10 @@ namespace UnityEditorInternal
         private void DrawSelectedFrame(int selectedFrame, ChartViewData cdata, Rect r)
         {
             if (cdata.firstSelectableFrame != -1 && selectedFrame - cdata.firstSelectableFrame >= 0)
-                DrawVerticalLine(selectedFrame, cdata, r, Styles.selectedFrameColor1, Styles.selectedFrameColor2, 1.0f);
+                DrawVerticalLine(selectedFrame, cdata, r, Styles.selectedFrameColor, 1.0f);
         }
 
-        internal static void DrawVerticalLine(int frame, ChartViewData cdata, Rect r, Color color1, Color color2, float widthFactor)
+        internal static void DrawVerticalLine(int frame, ChartViewData cdata, Rect r, Color color, float minWidth, float maxWidth = 0)
         {
             if (Event.current.type != EventType.Repaint)
                 return;
@@ -264,14 +256,17 @@ namespace UnityEditorInternal
 
             Vector2 domain = cdata.GetDataDomain();
             float domainSize = domain.y - domain.x;
+            float lineWidth = Mathf.Max(minWidth, r.width / domainSize);
+            if (maxWidth > 0)
+                lineWidth = Mathf.Min(maxWidth, lineWidth);
+
             HandleUtility.ApplyWireMaterial();
             GL.Begin(GL.QUADS);
-            GL.Color(color1);
+            GL.Color(color);
             GL.Vertex3(r.x + r.width / domainSize * frame, r.y + 1, 0);
-            GL.Vertex3(r.x + r.width / domainSize * frame + r.width / domainSize, r.y + 1, 0);
+            GL.Vertex3(r.x + r.width / domainSize * frame + lineWidth, r.y + 1, 0);
 
-            GL.Color(color2);
-            GL.Vertex3(r.x + r.width / domainSize * frame + r.width / domainSize, r.yMax, 0);
+            GL.Vertex3(r.x + r.width / domainSize * frame + lineWidth, r.yMax, 0);
             GL.Vertex3(r.x + r.width / domainSize * frame, r.yMax, 0);
             GL.End();
         }
@@ -299,45 +294,85 @@ namespace UnityEditorInternal
             DrawLabels(r, cdata, selectedFrame, ChartType.Line);
         }
 
-        private void DrawOverlayBoxes(ChartViewData cdata, Rect r, bool chartActive)
+        List<int> m_cachedFramesWithSeparatorLines = new List<int>();
+        void DrawOverlayBoxes(ChartViewData cdata, Rect r, bool chartActive)
         {
+            m_cachedFramesWithSeparatorLines.Clear();
+
             if (Event.current.type == EventType.Repaint && cdata.dataAvailable != null)
             {
                 r.height += 1;
 
-                int lastFrameWithData = 0;
+                int lastFrameBeforeStatisticsAvailabilityChanged = 0;
+                int lastStatisticsState = 1;
                 int frameDataLength = cdata.dataAvailable.Length;
+
                 for (int frame = 0; frame < frameDataLength; frame++)
                 {
-                    bool hasDataForFrame = cdata.dataAvailable[frame];
+                    bool hasDataForFrame = (cdata.dataAvailable[frame] & ChartViewData.dataAvailableBit) == ChartViewData.dataAvailableBit;
                     if (hasDataForFrame)
                     {
-                        if (lastFrameWithData < frame - 1)
+                        if (lastFrameBeforeStatisticsAvailabilityChanged < frame - 1)
                         {
-                            DrawOverlayBox(r, lastFrameWithData, frame, frameDataLength, chartActive, Styles.noDataOverlayBox);
+                            DrawOverlayBox(r, lastFrameBeforeStatisticsAvailabilityChanged, frame, frameDataLength, chartActive, Styles.noDataOverlayBox, lastStatisticsState);
                         }
-                        lastFrameWithData = frame;
+                        lastStatisticsState = ChartViewData.dataAvailableBit;
+                        lastFrameBeforeStatisticsAvailabilityChanged = frame;
+                    }
+                    else if (lastStatisticsState != cdata.dataAvailable[frame])
+                    {
+                        // Not bitwise comparison because this here just checks that the previous frame didn't just contain normal available data
+                        if (lastStatisticsState != ChartViewData.dataAvailableBit)
+                        {
+                            // a new reason for missing data has started here, flush out the old one
+                            DrawOverlayBox(r, lastFrameBeforeStatisticsAvailabilityChanged, frame, frameDataLength, chartActive, Styles.noDataOverlayBox, lastStatisticsState);
+                            m_cachedFramesWithSeparatorLines.Add(frame + cdata.chartDomainOffset);
+                        }
+                        lastFrameBeforeStatisticsAvailabilityChanged = frame;
+                        lastStatisticsState = cdata.dataAvailable[frame];
                     }
                 }
-                if (lastFrameWithData < frameDataLength - 1)
+                if (lastFrameBeforeStatisticsAvailabilityChanged < frameDataLength - 1)
                 {
-                    DrawOverlayBox(r, lastFrameWithData, frameDataLength - 1, frameDataLength, chartActive, Styles.noDataOverlayBox);
+                    DrawOverlayBox(r, lastFrameBeforeStatisticsAvailabilityChanged, frameDataLength - 1, frameDataLength, chartActive, Styles.noDataOverlayBox, lastStatisticsState);
                 }
+            }
+            foreach (var frame in m_cachedFramesWithSeparatorLines)
+            {
+                DrawVerticalLine(frame, cdata, r, Styles.noDataSeparatorColor, 1f, 1f);
             }
         }
 
-        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style)
+        void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style, int statisticsAvailabilityState)
         {
             float gracePixels = -1;
             float domainSize = frameDataLength - 1;
             float startXOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
             float endXOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
             Rect noDataRect = r;
-
             noDataRect.x += Mathf.Max(startXOffest, 0);
             noDataRect.width = Mathf.Min(endXOffest - startXOffest, r.width - (noDataRect.x - r.x));
 
-            style.Draw(noDataRect, false, false, chartActive, false);
+            string message = "";
+            GUIContent content = GUIContent.none;
+            if (statisticsAvailabilityMessage != null)
+            {
+                message = statisticsAvailabilityMessage(statisticsAvailabilityState);
+                content = new GUIContent("", message);
+            }
+            // draw tooltip int
+            style.Draw(noDataRect, content, false, false, chartActive, false);
+            if (!string.IsNullOrEmpty(message))
+            {
+                var size = EditorStyles.label.CalcSize(Styles.notSupportedWarningIcon);
+                var position = new Vector2(noDataRect.width / 2 - size.x / 2, noDataRect.height / 2 - size.y / 2);
+                if (size.x <= noDataRect.width && message != null)
+                {
+                    Styles.notSupportedWarningIcon.tooltip = message;
+                    var labelRect = new Rect(noDataRect.position + position, size);
+                    GUI.Label(labelRect, Styles.notSupportedWarningIcon);
+                }
+            }
         }
 
         private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive)
@@ -1037,7 +1072,17 @@ namespace UnityEditorInternal
         public float[] grid { get; private set; }
         public string[] gridLabels { get; private set; }
         public string[] selectedLabels { get; private set; }
-        public bool[] dataAvailable { get; set; }
+
+        /// <summary>
+        /// if dataAvailable has this bit set, there is data
+        /// </summary>
+        public const int dataAvailableBit = 1;
+        /// <summary>
+        /// 0 = No Data
+        /// bit 1 set = Data available
+        /// >1 = There's a additional info that may provide a reason for missing data
+        /// </summary>
+        public int[] dataAvailable { get; set; }
         public int firstSelectableFrame { get; private set; }
         public bool hasOverlay { get; set; }
         public float maxValue { get; set; }
@@ -1061,7 +1106,7 @@ namespace UnityEditorInternal
             if (overlays == null || overlays.Length != numSeries)
                 overlays = new ChartSeriesViewData[numSeries];
             if (dataAvailable == null && series.Length > 0 && series[0].xValues != null)
-                dataAvailable = new bool[series[0].xValues.Length];
+                dataAvailable = new int[series[0].xValues.Length];
         }
 
         public void AssignSelectedLabels(string[] selectedLabels)

@@ -134,5 +134,8 @@ namespace UnityEditor
 
         [NativeMethod(Name = "GenerateGUID", IsFreeFunction = true)]
         extern private static GUID GenerateGUIDInternal();
+
+        [NativeMethod(Name = "CreateGUIDFromSInt64", IsFreeFunction = true)]
+        extern internal static GUID CreateGUIDFromSInt64(long value);
     }
 }

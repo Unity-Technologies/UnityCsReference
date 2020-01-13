@@ -208,7 +208,7 @@ namespace UnityEditor.PackageManager.UI
             filterMenu.menu.AppendSeparator();
             filterMenu.menu.AppendAction(GetFilterDisplayName(PackageFilterTab.AssetStore), a =>
             {
-                SetFilter(PackageFilterTab.AssetStore);
+                SetFilterFromMenu(PackageFilterTab.AssetStore);
             }, a => PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             filterMenu.menu.AppendSeparator();

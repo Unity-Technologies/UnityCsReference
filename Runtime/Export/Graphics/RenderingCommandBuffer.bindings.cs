@@ -32,6 +32,9 @@ namespace UnityEngine.Rendering
             ConvertTexture_Internal(src, srcElement, dst, dstElement);
         }
 
+        [NativeMethod("AddWaitAllAsyncReadbackRequests")]
+        public extern void WaitAllAsyncReadbackRequests();
+
         public void RequestAsyncReadback(ComputeBuffer src, Action<AsyncGPUReadbackRequest> callback)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);

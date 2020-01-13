@@ -287,8 +287,13 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         var dataBackupFolder = Path.Combine(args.stagingArea, GetIl2CppDataBackupFolderName(args));
         FileUtil.CreateOrCleanDirectory(dataBackupFolder);
 
+        var il2cppOutputFolder = Path.Combine(args.stagingAreaData, "il2cppOutput");
+
+        // Delete duplicate il2cpp_data that was created in il2cppOutput directory (case 1198179)
+        FileUtil.DeleteFileOrDirectory(Path.Combine(il2cppOutputFolder, "Data"));
+
         // Move generated C++ code out of Data directory
-        FileUtil.MoveFileOrDirectory(Path.Combine(args.stagingAreaData, "il2cppOutput"), Path.Combine(dataBackupFolder, "il2cppOutput"));
+        FileUtil.MoveFileOrDirectory(il2cppOutputFolder, Path.Combine(dataBackupFolder, "il2cppOutput"));
 
         if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(args.target)))
         {

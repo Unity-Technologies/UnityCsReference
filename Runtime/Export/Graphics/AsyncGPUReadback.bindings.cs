@@ -79,6 +79,8 @@ namespace UnityEngine.Rendering
             request.CreateSafetyHandle();
         }
 
+        static public extern void WaitAllRequests();
+
         static public AsyncGPUReadbackRequest Request(ComputeBuffer src, Action<AsyncGPUReadbackRequest> callback = null)
         {
             AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src);

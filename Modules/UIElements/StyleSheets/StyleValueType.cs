@@ -20,5 +20,6 @@ namespace UnityEngine.UIElements
         String, // A quoted value or any other value that is not recognized as a primitive
         Function,
         FunctionSeparator,
+        ScalableImage
     }
 }

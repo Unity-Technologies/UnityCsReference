@@ -201,7 +201,7 @@ namespace UnityEditor
             get { return m_TreeViewState; }
         }
 
-        private TreeViewController treeView
+        internal TreeViewController treeView
         {
             get
             {

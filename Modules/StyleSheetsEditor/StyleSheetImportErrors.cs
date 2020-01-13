@@ -37,6 +37,7 @@ namespace UnityEditor.StyleSheets
         InvalidURIProjectAssetPath,
         InvalidURIProjectAssetType,
         InvalidVarFunction,
+        InvalidHighResolutionImage,
     }
 
     struct StyleSheetImportError

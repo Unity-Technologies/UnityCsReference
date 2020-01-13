@@ -2087,28 +2087,30 @@ namespace UnityEditor
             while (newEditorsIndex < editors.Length && previousEditorsIndex < currentElements.Count)
             {
                 var ed = editors[newEditorsIndex];
-                var currentEd = currentElements[previousEditorsIndex];
+                var currentElement = currentElements[previousEditorsIndex];
+                var currentEditor = currentElement.editor;
 
-                if (currentEd.editor == null)
+                if (currentEditor == null)
                 {
                     ++previousEditorsIndex;
                     continue;
                 }
 
                 // We won't have an EditorElement for editors that are normally culled so we should skip this
+
                 if (ShouldCullEditor(editors, newEditorsIndex))
                 {
                     ++newEditorsIndex;
                     continue;
                 }
 
-                if (ed.target != currentEd.editor.target)
+                if (currentEditor && ed.target != currentEditor.target)
                 {
                     return null;
                 }
 
-                currentEd.Reinit(newEditorsIndex);
-                editorToElementMap[ed.target.GetInstanceID()] = currentEd;
+                currentElement.Reinit(newEditorsIndex);
+                editorToElementMap[ed.target.GetInstanceID()] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;
             }

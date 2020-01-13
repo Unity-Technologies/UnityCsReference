@@ -1556,17 +1556,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_CurrentEntry.clipRectID = m_ClipRectID;
                 m_CurrentEntry.isStencilClipped = m_StencilClip;
                 MeshBuilder.MakeText(textVertices, localOffset,  new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
-
-                var activeFont = textParams.font;
-
-                if (handle.useLegacy)
-                {
-                    var activeFontStyle = textParams.fontStyle;
-
-                    Font.FindClosestMatchingFont(ref activeFont, ref activeFontStyle);
-                }
-
-                m_CurrentEntry.font = activeFont.material.mainTexture;
+                m_CurrentEntry.font = textParams.font.material.mainTexture;
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
@@ -2002,19 +1992,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var textEntry = m_CurrentElement.renderChainData.textEntries[m_TextEntryIndex++];
 
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
-                var activeFont = textParams.font;
-
-                if (handle.useLegacy)
-                {
-                    var activeFontStyle = textParams.fontStyle;
-
-                    Font.FindClosestMatchingFont(ref activeFont, ref activeFontStyle);
-                }
-
                 MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace,
                     m_XFormClipPages, m_IDsFlags, m_OpacityPagesSettingsIndex,
                     m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
-                textEntry.command.state.font = activeFont.material.mainTexture;
+                textEntry.command.state.font = textParams.font.material.mainTexture;
             }
         }
     }

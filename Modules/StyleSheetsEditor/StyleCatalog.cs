@@ -1460,6 +1460,7 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.ResourcePath:
                 case StyleValueType.Enum:
                 case StyleValueType.Variable:
+                case StyleValueType.ScalableImage:
                 {
                     var str = value.AsString();
                     // Try a few conversions
@@ -1505,6 +1506,8 @@ namespace UnityEditor.StyleSheets
                     return SetIndex(strings, str);
                 case StyleValueType.AssetReference:
                     return SetIndex(strings, AssetDatabase.GetAssetPath(value.AsAssetReference()));
+                case StyleValueType.ScalableImage:
+                    return SetIndex(strings, AssetDatabase.GetAssetPath(value.AsScalableImage().normalImage));
                 case StyleValueType.String:
                     return SetIndex(strings, value.AsString());
                 case StyleValueType.Function:

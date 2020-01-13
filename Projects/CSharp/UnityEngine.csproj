@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    
+    <ProjectGuid>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>UnityEngine</RootNamespace>
     <AssemblyName>UnityEngine</AssemblyName>
@@ -1110,6 +1110,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Jobs\Managed\IJob.cs">
       <Link>Runtime\Jobs\Managed\IJob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Jobs\Managed\IJobFor.cs">
+      <Link>Runtime\Jobs\Managed\IJobFor.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Jobs\Managed\IJobParallelFor.cs">
       <Link>Runtime\Jobs\Managed\IJobParallelFor.cs</Link>
@@ -2265,6 +2268,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\InheritedStylesData.cs">
       <Link>Modules\UIElements\StyleSheets\InheritedStylesData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\StyleSheets\ScalableImage.cs">
+      <Link>Modules\UIElements\StyleSheets\ScalableImage.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleComplexSelector.cs">
       <Link>Modules\UIElements\StyleSheets\StyleComplexSelector.cs</Link>

@@ -1158,13 +1158,13 @@ namespace UnityEngine
         extern public float density { get; set; }
 
         // Reference high frequency in Hz. Ranges from 20.0 to 20000.0. Default is 5000.0.
-        public float hfReference { get; set; }
+        extern public float hfReference { get; set; }
 
         // Room effect low-frequency level in mB. Ranges from -10000.0 to 0.0. Default is 0.0.
         extern public float roomLF { get; set; }
 
         // Reference low-frequency in Hz. Ranges from 20.0 to 1000.0. Default is 250.0.
-        public float lfReference { get; set; }
+        extern public float lfReference { get; set; }
     }
 
     // Use this class to record to an [[AudioClip|audio clip]] using a connected microphone.

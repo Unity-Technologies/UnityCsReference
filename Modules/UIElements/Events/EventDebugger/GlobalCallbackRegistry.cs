@@ -10,6 +10,19 @@ namespace UnityEngine.UIElements
 {
     internal static class GlobalCallbackRegistry
     {
+        private static bool m_IsEventDebuggerConnected = false;
+        public static bool IsEventDebuggerConnected
+        {
+            get { return m_IsEventDebuggerConnected; }
+            set
+            {
+                if (!value)
+                    s_Listeners.Clear();
+
+                m_IsEventDebuggerConnected = value;
+            }
+        }
+
         internal struct ListenerRecord
         {
             public int hashCode;
@@ -24,6 +37,8 @@ namespace UnityEngine.UIElements
 
         public static void RegisterListeners<TEventType>(CallbackEventHandler ceh, Delegate callback, TrickleDown useTrickleDown)
         {
+            if (!IsEventDebuggerConnected)
+                return;
             Dictionary<Type, List<ListenerRecord>> dict;
             if (!s_Listeners.TryGetValue(ceh, out dict))
             {
@@ -54,6 +69,8 @@ namespace UnityEngine.UIElements
 
         public static void UnregisterListeners<TEventType>(CallbackEventHandler ceh, Delegate callback)
         {
+            if (!IsEventDebuggerConnected)
+                return;
             Dictionary<Type, List<ListenerRecord>> dict;
             if (!s_Listeners.TryGetValue(ceh, out dict))
                 return;

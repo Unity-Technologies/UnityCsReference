@@ -593,7 +593,7 @@ namespace UnityEditor.UIElements
 
             public bool IsValid()
             {
-                if (obj == null)
+                if (obj == null || obj.m_NativeObjectPtr == IntPtr.Zero)
                     return false;
 
                 return obj.isValid;
@@ -603,7 +603,7 @@ namespace UnityEditor.UIElements
             {
                 if (!wasUpdated)
                 {
-                    if (obj.isValid)
+                    if (IsValid())
                     {
                         obj.UpdateIfRequiredOrScript();
                         obj.UpdateExpandedState();

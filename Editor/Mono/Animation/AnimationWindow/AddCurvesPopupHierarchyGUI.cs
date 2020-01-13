@@ -14,7 +14,8 @@ namespace UnityEditorInternal
     {
         public EditorWindow owner;
         public bool showPlusButton { get; set; }
-        private GUIStyle plusButtonStyle = "OL Plus";
+        private GUIStyle buttonStyle = "IconButton";
+        private GUIContent plusIcon = EditorGUIUtility.TrIconContent("Toolbar Plus");
         private GUIStyle plusButtonBackgroundStyle = "Tag MenuItem";
         private GUIContent addPropertiesContent = EditorGUIUtility.TrTextContent("Add Properties");
         private const float plusButtonWidth = 17;
@@ -48,7 +49,7 @@ namespace UnityEditorInternal
 
             if (propertyPathMismatchWithHumanAvatar)
             {
-                Rect iconRect = new Rect(rowRect.width - plusButtonWidth, rowRect.yMin, plusButtonWidth, plusButtonStyle.fixedHeight);
+                Rect iconRect = new Rect(rowRect.width - plusButtonWidth, rowRect.yMin, plusButtonWidth, buttonStyle.fixedHeight);
                 GUI.Label(iconRect, new GUIContent(warningIcon, "The Avatar definition does not match the property path. Please author using a hierarchy the Avatar was built with."), warningIconStyle);
             }
         }
@@ -60,14 +61,14 @@ namespace UnityEditorInternal
             if (hierarchyNode == null || hierarchyNode.curveBindings == null || hierarchyNode.curveBindings.Length == 0)
                 return;
 
-            Rect buttonRect = new Rect(rowRect.width - plusButtonWidth, rowRect.yMin, plusButtonWidth, plusButtonStyle.fixedHeight);
+            Rect buttonRect = new Rect(rowRect.width - plusButtonWidth, rowRect.yMin, plusButtonWidth, buttonStyle.fixedHeight);
 
             // TODO Make a style for add curves popup
             // Draw background behind plus button to prevent text overlapping
             GUI.Box(buttonRect, GUIContent.none, plusButtonBackgroundStyle);
 
             // Check if the curve already exists and remove plus button
-            if (GUI.Button(buttonRect, GUIContent.none, plusButtonStyle))
+            if (GUI.Button(buttonRect, plusIcon, buttonStyle))
             {
                 AddCurvesPopup.AddNewCurve(hierarchyNode);
 

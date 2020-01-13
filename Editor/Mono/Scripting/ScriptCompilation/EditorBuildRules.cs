@@ -392,7 +392,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // Add initial dirty target assemblies
             foreach (var dirtyTargetAssembly in args.DirtyTargetAssemblies)
+            {
+                if (!IsCompatibleWithPlatformAndDefines(dirtyTargetAssembly, args.Settings))
+                    continue;
+
                 dirtyTargetAssemblies[dirtyTargetAssembly] = new DirtyTargetAssembly(DirtySource.DirtyAssembly);
+            }
 
             // Dirty custom script assemblies that have explicit references to
             // explicitly referenced dirty precompiled assemblies.
@@ -548,8 +553,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (!IsCompatibleWithPlatformAndDefines(targetAssembly, args.Settings))
                     continue;
 
-                DirtyTargetAssembly dirtyTargetAssembly;
-
                 var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(sourceFile);
                 var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
 
@@ -560,6 +563,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (scriptLanguage != targetAssembly.Language)
                     args.NotCompiledTargetAssemblies.Add(targetAssembly);
 
+                DirtyTargetAssembly dirtyTargetAssembly;
                 if (dirtyTargetAssemblies.TryGetValue(targetAssembly, out dirtyTargetAssembly))
                     dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, sourceFile));
             }

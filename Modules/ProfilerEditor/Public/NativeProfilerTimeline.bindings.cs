@@ -31,6 +31,7 @@ namespace UnityEditorInternal
         public float textFadeStartWidth;
         public IntPtr guiStyle;
         public ProfilerColorDescriptor[] profilerColorDescriptors;
+        public int showFullScriptingMethodNames;
 
         public void Reset()
         {
@@ -41,6 +42,7 @@ namespace UnityEditorInternal
             textFadeOutWidth = 0;
             textFadeStartWidth = 0;
             profilerColorDescriptors = null;
+            showFullScriptingMethodNames = 1;
         }
     }
 

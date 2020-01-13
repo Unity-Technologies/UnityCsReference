@@ -73,23 +73,15 @@ namespace UnityEditor.Scripting.Compilers
             File.WriteAllLines(pathMappingsFilePath, filePathMappings.ToArray());
 
             var tempOutputPath = "Library/Temp/ScriptUpdater/" + new System.Random().Next() + "/";
-
             try
             {
-                RunUpdatingProgram(
-                    "ScriptUpdater.exe",
-                    sourceExtension
-                    + " "
-                    + CommandLineFormatter.PrepareFileName(MonoInstallationFinder.GetFrameWorksFolder())
-                    + " "
-                    + tempOutputPath
-                    + " \"" // Quote the filer (regex) to avoid issues when passing through command line arg.
-                    + APIUpdaterManager.ConfigurationSourcesFilter
-                    + "\" "
-                    + pathMappingsFilePath
-                    + " "
-                    + responseFile,
-                    tempOutputPath);
+                var arguments = ArgumentsForScriptUpdater(
+                    sourceExtension,
+                    tempOutputPath,
+                    pathMappingsFilePath,
+                    responseFile);
+
+                RunUpdatingProgram("ScriptUpdater.exe", arguments, tempOutputPath);
             }
 #pragma warning disable CS0618 // Type or member is obsolete
             catch (Exception ex) when (!(ex is StackOverflowException) && !(ex is ExecutionEngineException))
@@ -102,10 +94,23 @@ namespace UnityEditor.Scripting.Compilers
             }
         }
 
+        public static string ArgumentsForScriptUpdater(string sourceExtension, string tempOutputPath, string pathMappingsFilePath, string responseFile)
+        {
+            return sourceExtension
+                + " "
+                + CommandLineFormatter.PrepareFileName(MonoInstallationFinder.GetFrameWorksFolder())
+                + " "
+                + CommandLineFormatter.PrepareFileName(tempOutputPath)
+                + " \"" + APIUpdaterManager.ConfigurationSourcesFilter + "\" " // Quote the filter (regex) to avoid issues when passing through command line arg.)
+                + CommandLineFormatter.PrepareFileName(pathMappingsFilePath)
+                + " "
+                + responseFile;  // Response file is always relative and without spaces, no need to quote.
+        }
+
         static void RunUpdatingProgram(string executable, string arguments, string tempOutputPath)
         {
-            var scriptUpdater = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/" + executable;
-            var program = new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null, scriptUpdater, arguments, false, null);
+            var scriptUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/" + executable; // ManagedProgram will quote this path for us.
+            var program = new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null, scriptUpdaterPath, arguments, false, null);
             program.LogProcessStartInfo();
             program.Start();
             program.WaitForExit();
@@ -597,7 +602,7 @@ namespace UnityEditor.Scripting.Compilers
             TypeReference aliased;
             if (aliases.TryGetValue(name, out aliased))
             {
-                var parts = aliased.ToString().Split('.');
+                var parts = SplitIdentifier(aliased.ToString());
                 identifier.parts.InsertRange(0, parts);
             }
             else
@@ -613,7 +618,7 @@ namespace UnityEditor.Scripting.Compilers
          */
         void AddIdentifierFromString(string name, int genericTypesCount)
         {
-            var parts = name.Split('.').ToArray();
+            var parts = SplitIdentifier(name);
             var first = parts[0];
             var last = parts[parts.Length - 1];
             var reminder = parts.Skip(1).Take(parts.Length - 2); // ignore first and last parts...
@@ -627,9 +632,93 @@ namespace UnityEditor.Scripting.Compilers
             if (genericTypesCount > 0)
                 last = last + "`" + genericTypesCount;
 
-            identifier.parts.Add(last);
+            if (parts.Length > 1)
+                identifier.parts.Add(last);
 
             identifiers.Add(identifier);
+        }
+
+        private unsafe static string[] SplitIdentifier(string identifier)
+        {
+            int last = 0;
+            var a = new List<string>();
+            var dotIndex = identifier.IndexOf('.');
+            while (dotIndex != -1)
+            {
+                var genericCloseBraceIndex = -1;
+                var genericOpenBranceIndex = identifier.IndexOf('<', last, dotIndex - last);
+                if (dotIndex > genericOpenBranceIndex && genericOpenBranceIndex != -1)
+                    genericCloseBraceIndex = FindClosingGenericBrance(identifier, genericOpenBranceIndex + 1);
+
+                if (dotIndex < genericOpenBranceIndex || genericOpenBranceIndex == -1)
+                {
+                    a.Add(identifier.Substring(last, dotIndex - last));
+                    last = dotIndex + 1;
+                }
+                else if (dotIndex > genericCloseBraceIndex)
+                {
+                    a.Add(MapCSharpGenericNameToReflectionName(identifier.Substring(last, dotIndex - last)));
+                    last = dotIndex + 1;
+                }
+                else if (genericCloseBraceIndex != -1)
+                {
+                    dotIndex = genericCloseBraceIndex;
+                }
+
+                dotIndex = identifier.IndexOf('.', dotIndex + 1);
+            }
+
+            a.Add(MapCSharpGenericNameToReflectionName(identifier.Substring(last)));
+
+            return a.ToArray();
+        }
+
+        private static int FindClosingGenericBrance(string identifier,  int startIndex)
+        {
+            var index = startIndex;
+            byte balanceCount = 1;
+            while (balanceCount > 0 && index < identifier.Length)
+            {
+                switch (identifier[index])
+                {
+                    case '<': balanceCount++; break;
+                    case '>': balanceCount--; break;
+                }
+                index++;
+            }
+
+            return balanceCount == 0 ? (index - 1) : -1;
+        }
+
+        /*
+         * maps names like A<T> => A`1, A<T,S> => A`2, A<B<C>, D> => A`2
+         */
+        private static string MapCSharpGenericNameToReflectionName(string typeName)
+        {
+            var index = typeName.IndexOf('<');
+            if (index == -1)
+                return typeName;
+
+            var typeNameWithtoutGeneric = typeName.Substring(0, index);
+
+            index++; // skip first '<'
+            byte genericArgumentCount = 1;
+            byte balanceCount = 1;
+            while (balanceCount > 0 && index < typeName.Length)
+            {
+                switch (typeName[index])
+                {
+                    case '<': balanceCount++; break;
+                    case '>': balanceCount--; break;
+                    case ',':
+                        if (balanceCount == 1)
+                            genericArgumentCount++;
+                        break;
+                }
+                index++;
+            }
+
+            return typeNameWithtoutGeneric + "`" + genericArgumentCount;
         }
 
         public InvalidTypeOrNamespaceErrorTypeMapper(int line, int column, string entityName)

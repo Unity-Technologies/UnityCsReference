@@ -28,7 +28,7 @@ namespace UnityEditor
         static PlayModeView s_LastFocused;
         static PlayModeView s_RenderingView;
 
-        Dictionary<Type, string> m_SerializedViews = new Dictionary<Type, string>();
+        Dictionary<string, string> m_SerializedViews = new Dictionary<string, string>();
         [SerializeField] private List<string> m_SerializedViewsNames = new List<string>();
         [SerializeField] private List<string> m_SerializedViewsValues = new List<string>();
         [SerializeField] string m_PlayModeViewName;
@@ -195,9 +195,14 @@ namespace UnityEditor
         {
         }
 
-        private void SetSerializedViews(Dictionary<Type, string> serializedViews)
+        private void SetSerializedViews(Dictionary<string, string> serializedViews)
         {
             m_SerializedViews = serializedViews;
+        }
+
+        private string GetTypeName()
+        {
+            return GetType().ToString();
         }
 
         protected void SwapMainWindow(Type type)
@@ -209,17 +214,17 @@ namespace UnityEditor
                 var serializedObject = SerializeView();
                 if (serializedObject != null)
                 {
-                    if (!m_SerializedViews.ContainsKey(GetType()))
-                        m_SerializedViews.Add(GetType(), serializedObject);
+                    if (!m_SerializedViews.ContainsKey(GetTypeName()))
+                        m_SerializedViews.Add(GetTypeName(), serializedObject);
                     else
-                        m_SerializedViews[GetType()] = serializedObject;
+                        m_SerializedViews[GetTypeName()] = serializedObject;
                 }
 
                 var window = CreateInstance(type) as PlayModeView;
                 window.autoRepaintOnSceneChange = true;
 
-                if (m_SerializedViews.ContainsKey(window.GetType()))
-                    window.DeserializeView(m_SerializedViews[window.GetType()]);
+                if (m_SerializedViews.ContainsKey(window.GetTypeName()))
+                    window.DeserializeView(m_SerializedViews[window.GetTypeName()]);
 
                 window.SetSerializedViews(m_SerializedViews);
 
@@ -376,17 +381,17 @@ namespace UnityEditor
 
             foreach (var serializedView in m_SerializedViews)
             {
-                m_SerializedViewsNames.Add(serializedView.Key.ToString());
+                m_SerializedViewsNames.Add(serializedView.Key);
                 m_SerializedViewsValues.Add(serializedView.Value);
             }
         }
 
         public void OnAfterDeserialize()
         {
-            m_SerializedViews = new Dictionary<Type, string>();
+            m_SerializedViews = new Dictionary<string, string>();
             for (int i = 0; i < m_SerializedViewsNames.Count; i++)
             {
-                m_SerializedViews.Add(Type.GetType(m_SerializedViewsNames[i]), m_SerializedViewsValues[i]);
+                m_SerializedViews.Add(m_SerializedViewsNames[i], m_SerializedViewsValues[i]);
             }
         }
     }
