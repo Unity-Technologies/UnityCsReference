@@ -200,7 +200,10 @@ namespace UnityEditor.Experimental.Networking.PlayerConnection
                     menuOptions.AddItem(new GUIContent(name), isConnected, () =>
                     {
                         ProfilerDriver.connectedProfiler = guid;
-                        SuccesfullyConnectedToPlayer(connectionName);
+                        if (ProfilerDriver.connectedProfiler == guid)
+                        {
+                            SuccesfullyConnectedToPlayer(connectionName);
+                        }
                     });
                 else
                     menuOptions.AddDisabledItem(new GUIContent(name), isConnected);
