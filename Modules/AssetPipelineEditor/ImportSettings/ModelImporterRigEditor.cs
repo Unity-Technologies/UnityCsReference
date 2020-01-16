@@ -562,7 +562,7 @@ With this option, this model will not create any avatar but only import animatio
 
                 if (m_SkinWeightsMode.intValue == (int)ModelImporterSkinWeights.Custom)
                 {
-                    EditorGUILayout.IntSlider(m_MaxBonesPerVertex, 1, 32, Styles.MaxBonesPerVertex);
+                    EditorGUILayout.IntSlider(m_MaxBonesPerVertex, 1, 255, Styles.MaxBonesPerVertex);
                     EditorGUILayout.Slider(m_MinBoneWeight, 0.001f, 0.5f, Styles.MinBoneWeight);
                 }
             }

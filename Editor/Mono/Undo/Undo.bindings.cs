@@ -78,6 +78,7 @@ namespace UnityEditor
                 RegisterCompleteObjectUndoMultiple(objectsToUndo[0], objectsToUndo, name, 0);
         }
 
+        [NativeThrows]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         private static extern void RegisterCompleteObjectUndoMultiple([NotNull] Object identifier, Object[] objectsToUndo, string name, int namePriority);
 
@@ -127,6 +128,7 @@ namespace UnityEditor
             RecordObjectsInternal(objectsToUndo, objectsToUndo.Length, name);
         }
 
+        [NativeThrows]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         private static extern void RecordObjectsInternal(Object[] objectToUndo, int size, string name);
 

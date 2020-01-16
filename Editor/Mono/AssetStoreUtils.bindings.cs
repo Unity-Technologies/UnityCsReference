@@ -15,18 +15,16 @@ namespace UnityEditor
         private const string kAssetStoreUrl = "https://shawarma.unity3d.com";
         public delegate void DownloadDoneCallback(string package_id, string message, int bytes, int total);
 
+        [NativeThrows]
         extern public static void Download(string id, string url, string[] destination, string key, string jsonData, bool resumeOK, DownloadDoneCallback doneCallback = null);
+        [NativeThrows]
         extern public static string CheckDownload(string id, string url, string[] destination, string key);
+        [NativeThrows]
         extern public static bool AbortDownload(string id, string[] destination);
         extern public static void RegisterDownloadDelegate([NotNull] ScriptableObject d);
         extern public static void UnRegisterDownloadDelegate([NotNull] ScriptableObject d);
         extern public static string GetLoaderPath();
         extern public static void UpdatePreloading();
-
-        public static string GetOfflinePath()
-        {
-            return System.Uri.EscapeUriString(EditorApplication.applicationContentsPath + "/Resources/offline.html");
-        }
 
         public static string GetAssetStoreUrl()
         {

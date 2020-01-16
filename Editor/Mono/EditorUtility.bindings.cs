@@ -207,7 +207,7 @@ namespace UnityEditor
         internal static extern void SaveProjectAsTemplate(string targetPath, string name, string displayName, string description, string defaultScene, string version);
 
         [Obsolete("Use AssetDatabase.LoadAssetAtPath", false),
-         FreeFunction("FindAssetWithKlass")]
+         FreeFunction("FindAssetWithKlass", ThrowsException = true)]
         public static extern Object FindAsset(string path, Type type);
 
         [FreeFunction("LoadPlatformSupportModuleNativeDll")]

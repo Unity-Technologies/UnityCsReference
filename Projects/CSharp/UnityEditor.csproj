@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    
+    <ProjectGuid>{016C8D73-3641-47FB-8D33-7A015A7EC7DB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>UnityEditor</RootNamespace>
     <AssemblyName>UnityEditor</AssemblyName>
@@ -403,29 +403,17 @@
     <Compile Include="..\..\Editor\Mono\AssetStoreToolUtils.bindings.cs">
       <Link>Editor\Mono\AssetStoreToolUtils.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStoreToolUtils.cs">
-      <Link>Editor\Mono\AssetStoreToolUtils.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStoreUtils.bindings.cs">
       <Link>Editor\Mono\AssetStoreUtils.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreAsset.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreAssetSelection.cs">
-      <Link>Editor\Mono\AssetStore\AssetStoreAssetSelection.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreClient.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreClient.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreContext.cs">
       <Link>Editor\Mono\AssetStore\AssetStoreContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreInstaBuyWindow.cs">
-      <Link>Editor\Mono\AssetStore\AssetStoreInstaBuyWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreLoginWIndow.cs">
-      <Link>Editor\Mono\AssetStore\AssetStoreLoginWIndow.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore\AssetStorePreviewManager.cs">
       <Link>Editor\Mono\AssetStore\AssetStorePreviewManager.cs</Link>
@@ -834,6 +822,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\CustomInspectorStubs.cs">
       <Link>Editor\Mono\CustomInspectorStubs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\CutBoard.cs">
+      <Link>Editor\Mono\CutBoard.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\DataWatchService.cs">
       <Link>Editor\Mono\DataWatchService.cs</Link>
@@ -1747,9 +1738,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\AssetBundleNameGUI.cs">
       <Link>Editor\Mono\Inspector\AssetBundleNameGUI.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AssetStoreAssetInspector.cs">
-      <Link>Editor\Mono\Inspector\AssetStoreAssetInspector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AudioChorusFilterEditor.cs">
       <Link>Editor\Mono\Inspector\AudioChorusFilterEditor.cs</Link>
     </Compile>
@@ -2140,6 +2128,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\PropertyDrawerCache.cs">
       <Link>Editor\Mono\Inspector\PropertyDrawerCache.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\PropertyEditor.cs">
+      <Link>Editor\Mono\Inspector\PropertyEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\QualitySettingsEditor.cs">
       <Link>Editor\Mono\Inspector\QualitySettingsEditor.cs</Link>
     </Compile>
@@ -2343,21 +2334,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Internal\MonoScripts.cs">
       <Link>Editor\Mono\Internal\MonoScripts.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\JSProxy\ClipboardAccess.cs">
-      <Link>Editor\Mono\JSProxy\ClipboardAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\JSProxy\JSProxyMgr.cs">
-      <Link>Editor\Mono\JSProxy\JSProxyMgr.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\JSProxy\PreviewGenerator.cs">
-      <Link>Editor\Mono\JSProxy\PreviewGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\JSProxy\TroubleshooterAccess.cs">
-      <Link>Editor\Mono\JSProxy\TroubleshooterAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\JSProxy\WebScriptObject.cs">
-      <Link>Editor\Mono\JSProxy\WebScriptObject.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\LODUtility.bindings.cs">
       <Link>Editor\Mono\LODUtility.bindings.cs</Link>
@@ -3274,9 +3250,6 @@
     <Compile Include="..\..\Editor\Mono\TooltipView\TooltipView.cs">
       <Link>Editor\Mono\TooltipView\TooltipView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Troubleshooter\TroubleshooterWindow.cs">
-      <Link>Editor\Mono\Troubleshooter\TroubleshooterWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Tuple.cs">
       <Link>Editor\Mono\Tuple.cs</Link>
     </Compile>
@@ -3493,9 +3466,6 @@
     <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnect.bindings.cs">
       <Link>Editor\Mono\UnityConnect\UnityConnect.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectConsentView.cs">
-      <Link>Editor\Mono\UnityConnect\UnityConnectConsentView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\UnityStats.bindings.cs">
       <Link>Editor\Mono\UnityStats.bindings.cs</Link>
     </Compile>
@@ -3703,21 +3673,6 @@
     <Compile Include="..\..\Editor\Mono\VisualStudioUtil.bindings.cs">
       <Link>Editor\Mono\VisualStudioUtil.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\WebView.bindings.cs">
-      <Link>Editor\Mono\WebView.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs">
-      <Link>Editor\Mono\WebViewEditorWindow\WebViewEditorStaticWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewEditorWindow.cs">
-      <Link>Editor\Mono\WebViewEditorWindow\WebViewEditorWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewEditorWindowsTabs.cs">
-      <Link>Editor\Mono\WebViewEditorWindow\WebViewEditorWindowsTabs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs">
-      <Link>Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\WindowAction.cs">
       <Link>Editor\Mono\WindowAction.cs</Link>
     </Compile>
@@ -3897,9 +3852,6 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReportHelper.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildReportHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReportViewerWindow.cs">
-      <Link>Modules\BuildReportingEditor\Managed\BuildReportViewerWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildResult.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildResult.cs</Link>
@@ -4383,12 +4335,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\Alert.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\Alert.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\Arrow.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Common\Arrow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ArrowToggle.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Common\ArrowToggle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\BasePage.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\BasePage.cs</Link>
@@ -5457,6 +5403,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\GradientFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\GradientFieldSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\HelpBoxSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\HelpBoxSnippet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\IntegerFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\IntegerFieldSnippet.cs</Link>

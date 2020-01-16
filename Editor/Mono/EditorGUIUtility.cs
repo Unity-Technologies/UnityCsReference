@@ -1530,7 +1530,7 @@ namespace UnityEditor
         {
             Type objType = typeof(T);
             //case 1113046: Delay the show method when it is called while other object picker is closing
-            if (Event.current.commandName == "ObjectSelectorClosed")
+            if (Event.current?.commandName == "ObjectSelectorClosed")
                 EditorApplication.delayCall += () => SetupObjectSelector(obj, objType, allowSceneObjects, searchFilter, controlID);
             else
                 SetupObjectSelector(obj, objType, allowSceneObjects, searchFilter, controlID);

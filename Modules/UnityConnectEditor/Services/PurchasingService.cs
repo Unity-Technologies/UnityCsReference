@@ -4,11 +4,9 @@
 
 using System.Text;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using UnityEditor.Purchasing;
-using UnityEditor.Web;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -48,6 +46,7 @@ namespace UnityEditor.Connect
         public override string description { get; }
         public override string pathTowardIcon { get; }
         public override string projectSettingsPath { get; }
+        public override string settingsProviderClassName => nameof(PurchasingProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.PurchasingService;
         public override string packageId { get; }

@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor.Experimental;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -67,6 +70,8 @@ namespace UnityEditor
                 }
             }
         }
+
+        private static readonly Stack<StringBuilder> _SbPool = new Stack<StringBuilder>();
 
         public delegate void SelectMenuItemFunction(object userData, string[] options, int selected);
 
@@ -583,6 +588,62 @@ namespace UnityEditor
         private static void Internal_DisplayCustomMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames = false)
         {
             DisplayCustomContextPopupMenu(screenPosition, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames);
+        }
+
+        internal static string GetTransformPath(Transform tform)
+        {
+            if (tform.parent == null)
+                return "/" + tform.name;
+            return GetTransformPath(tform.parent) + "/" + tform.name;
+        }
+
+        internal static string GetHierarchyPath(GameObject gameObject, bool includeScene = true)
+        {
+            if (gameObject == null)
+                return String.Empty;
+
+            StringBuilder sb;
+            if (_SbPool.Count > 0)
+            {
+                sb = _SbPool.Pop();
+                sb.Clear();
+            }
+            else
+            {
+                sb = new StringBuilder(200);
+            }
+
+            try
+            {
+                if (includeScene)
+                {
+                    var sceneName = gameObject.scene.name;
+                    if (sceneName == string.Empty)
+                    {
+                        var prefabStage = PrefabStageUtility.GetPrefabStage(gameObject);
+                        if (prefabStage != null)
+                        {
+                            sceneName = "Prefab Stage";
+                        }
+                        else
+                        {
+                            sceneName = "Unsaved Scene";
+                        }
+                    }
+
+                    sb.Append(sceneName);
+                }
+
+                sb.Append(GetTransformPath(gameObject.transform));
+
+                var path = sb.ToString();
+                sb.Clear();
+                return path;
+            }
+            finally
+            {
+                _SbPool.Push(sb);
+            }
         }
     }
 }

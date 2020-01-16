@@ -105,8 +105,9 @@ namespace UnityEditor.Presets
         {
             var target = targets[0];
 
-            if (!new PresetType(target).IsValid()
-                || (target.hideFlags & HideFlags.NotEditable) != 0)
+            if (!target ||
+                !new PresetType(target).IsValid() ||
+                (target.hideFlags & HideFlags.NotEditable) != 0)
                 return false;
 
             if (EditorGUI.DropdownButton(rectangle, Style.presetIcon , FocusType.Passive,

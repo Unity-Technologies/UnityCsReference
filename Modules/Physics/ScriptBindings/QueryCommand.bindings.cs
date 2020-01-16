@@ -38,7 +38,7 @@ namespace UnityEngine
             return ScheduleRaycastBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob);
         }
 
-        [FreeFunction("ScheduleRaycastCommandBatch")]
+        [FreeFunction("ScheduleRaycastCommandBatch", ThrowsException = true)]
         unsafe extern private static JobHandle ScheduleRaycastBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob);
     }
 
@@ -71,7 +71,7 @@ namespace UnityEngine
             return ScheduleSpherecastBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob);
         }
 
-        [FreeFunction("ScheduleSpherecastCommandBatch")]
+        [FreeFunction("ScheduleSpherecastCommandBatch", ThrowsException = true)]
         unsafe extern private static JobHandle ScheduleSpherecastBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob);
     }
 
@@ -106,7 +106,7 @@ namespace UnityEngine
             return ScheduleCapsulecastBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob);
         }
 
-        [FreeFunction("ScheduleCapsulecastCommandBatch")]
+        [FreeFunction("ScheduleCapsulecastCommandBatch", ThrowsException = true)]
         unsafe extern private static JobHandle ScheduleCapsulecastBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob);
     }
 
@@ -141,7 +141,7 @@ namespace UnityEngine
             return ScheduleBoxcastBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob);
         }
 
-        [FreeFunction("ScheduleBoxcastCommandBatch")]
+        [FreeFunction("ScheduleBoxcastCommandBatch", ThrowsException = true)]
         unsafe extern private static JobHandle ScheduleBoxcastBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob);
     }
 }

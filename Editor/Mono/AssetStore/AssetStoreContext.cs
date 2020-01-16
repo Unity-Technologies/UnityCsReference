@@ -16,18 +16,6 @@ using UnityEditor.Analytics;
 
 namespace UnityEditor
 {
-    /// <summary>
-    /// The interface of this class is mirrored into the browser's JavaScript world as
-    /// "window.context".
-    /// </summary>
-    /// <remarks>
-    /// The WebView will expose the methods of this class as functions on the JavaScript
-    /// object created by AssetStoreWindow.SetContextObject().  Return values and arguments
-    /// of these methods can be any primitive type, arrays of any other valid type, and
-    /// classes with public fields of any other valid type.  In the last case, objects of
-    /// these classes will be translate to and from JavaScript objects with C# fields mapping
-    /// to JavaScript properties.
-    /// </remarks>
     [InitializeOnLoad]
     internal partial class AssetStoreContext
     {
@@ -41,7 +29,6 @@ namespace UnityEditor
             if (s_Instance == null)
             {
                 s_Instance = new AssetStoreContext();
-                JSProxyMgr.GetInstance().AddGlobalObject("AssetStoreContext", s_Instance);
             }
 
             return s_Instance;
@@ -114,11 +101,6 @@ namespace UnityEditor
         public int GetSkinIndex()
         {
             return EditorGUIUtility.skinIndex;
-        }
-
-        public bool GetDockedStatus()
-        {
-            return docked;
         }
 
         public bool OpenPackage(string id)
@@ -316,7 +298,6 @@ namespace UnityEditor
         private static Regex s_GeneratedIDRegExp = new Regex(@"^\{(.*)\}$");
         private static Regex s_InvalidPathCharsRegExp = new Regex(@"[^a-zA-Z0-9() _-]");
 
-        internal bool docked;
         internal string initialOpenURL;
 
         private static AssetStoreContext s_Instance;

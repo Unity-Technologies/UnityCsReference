@@ -38,6 +38,7 @@ namespace UnityEditor.Connect
         const string k_MessageErrorForApiStatusData = "An unexpected error occurred while querying Cloud Build for api status. See the console for more information.";
 
         bool m_Enabled;
+        bool m_EnabledOnce;
         TickTimerHelper m_Timer = new TickTimerHelper(k_IntervalSeconds);
         string m_PollingUrl;
         List<string> m_BuildsToReportOn = new List<string>();
@@ -45,6 +46,9 @@ namespace UnityEditor.Connect
         static readonly CloudBuildPoller k_Instance;
 
         public static CloudBuildPoller instance => k_Instance;
+
+        internal bool enabled => m_Enabled;
+        internal bool enabledOnce => m_EnabledOnce;
 
         static CloudBuildPoller()
         {
@@ -55,6 +59,7 @@ namespace UnityEditor.Connect
         {
             if (!m_Enabled)
             {
+                m_EnabledOnce = true;
                 m_PollingUrl = pollingUrl;
                 m_Enabled = true;
                 EditorApplication.update += Update;
@@ -62,12 +67,17 @@ namespace UnityEditor.Connect
             }
         }
 
-        internal void Disable()
+        internal void Disable(bool resetPoller = false)
         {
             if (m_Enabled)
             {
                 m_Enabled = false;
                 EditorApplication.update -= Update;
+            }
+
+            if (resetPoller)
+            {
+                m_EnabledOnce = false;
             }
         }
 

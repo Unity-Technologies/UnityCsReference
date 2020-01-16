@@ -222,11 +222,19 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.MouseDown:
-                    // Ignore right clicks
-                    if (Event.current.button != 0)
-                        break;
                     if (position.Contains(Event.current.mousePosition))
                     {
+                        if (Event.current.button == 1)
+                        {
+                            var actualObject = property != null ? property.objectReferenceValue : obj;
+                            var contextMenu = new GenericMenu();
+                            contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
+                            contextMenu.DropDown(position);
+                        }
+
+                        if (Event.current.button != 0)
+                            break;
+
                         // Get button rect for Object Selector
                         Rect buttonRect = GetButtonRect(visualType, position);
 

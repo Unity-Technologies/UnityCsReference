@@ -49,7 +49,7 @@ namespace UnityEditor.PackageManager.UI
 
             itemLabel.OnLeftClick(SelectMainItem);
             seeAllVersionsLabel.OnLeftClick(SeeAllVersionsClick);
-            expander.OnLeftClick(ToggleExpansion);
+            arrowExpander.RegisterValueChangedCallback(ToggleExpansion);
             nameLabel.ShowTextTooltipOnSizeChange();
 
             UpdateExpanderUI(false);
@@ -77,7 +77,7 @@ namespace UnityEditor.PackageManager.UI
                 visualState.seeAllVersions = visualState.seeAllVersions || !keyVersions.Contains(selectedVersion);
             }
 
-            var expansionChanged = expander.expanded != visualState.expanded;
+            var expansionChanged = UIUtils.IsElementVisible(versionsContainer) != visualState.expanded;
             if (expansionChanged)
                 UpdateExpanderUI(visualState.expanded);
 
@@ -113,9 +113,9 @@ namespace UnityEditor.PackageManager.UI
             nameLabel.text = displayVersion.displayName;
 
             var expandable = package.versions.Skip(1).Any();
-            UIUtils.SetElementDisplay(expander, expandable);
+            UIUtils.SetElementDisplay(arrowExpander, expandable);
             UIUtils.SetElementDisplay(expanderHidden, !expandable);
-            if (!expandable && expander.expanded)
+            if (!expandable && UIUtils.IsElementVisible(versionsContainer))
                 UpdateExpanderUI(false);
 
             var showVersionLabel = !displayVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
@@ -158,7 +158,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshVersions()
         {
-            if (!expander.expanded)
+            if (!arrowExpander.value)
                 return;
 
             versionList.Clear();
@@ -208,9 +208,9 @@ namespace UnityEditor.PackageManager.UI
             PageManager.instance.SetSelected(package);
         }
 
-        private void ToggleExpansion()
+        private void ToggleExpansion(ChangeEvent<bool> evt)
         {
-            SetExpanded(!expander.expanded);
+            SetExpanded(evt.newValue);
         }
 
         internal void SetExpanded(bool value)
@@ -222,7 +222,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal void UpdateExpanderUI(bool expanded)
         {
-            expander.expanded = expanded;
+            arrowExpander.value = expanded;
             UIUtils.SetElementDisplay(versionsContainer, expanded);
         }
 
@@ -246,7 +246,7 @@ namespace UnityEditor.PackageManager.UI
         public IEnumerable<ISelectableItem> GetSelectableItems()
         {
             yield return this;
-            if (expander.expanded)
+            if (arrowExpander.value)
                 foreach (var version in versionItems)
                     yield return version;
         }
@@ -260,7 +260,7 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement versionToolbar { get { return cache.Get<VisualElement>("versionsToolbar"); } }
         private VisualElement itemLabel { get { return cache.Get<VisualElement>("itemLabel"); } }
         private LoadingSpinner spinner { get { return cache.Get<LoadingSpinner>("packageSpinner"); } }
-        private ArrowToggle expander { get { return cache.Get<ArrowToggle>("expander"); } }
+        private Toggle arrowExpander { get { return cache.Get<Toggle>("arrowExpander"); } }
         private Label expanderHidden { get { return cache.Get<Label>("expanderHidden"); } }
         private VisualElement versionsContainer { get { return cache.Get<VisualElement>("versionsContainer"); } }
         private ScrollView versionList { get { return cache.Get<ScrollView>("versionList"); } }

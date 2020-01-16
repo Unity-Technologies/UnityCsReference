@@ -393,6 +393,9 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateActiveSelection()
         {
+            if (EditorWindow.focusedWindow as PackageManagerWindow != PackageManagerWindow.instance)
+                return;
+
             IPackage package;
             IPackageVersion version;
             PageManager.instance.GetSelectedPackageAndVersion(out package, out version);

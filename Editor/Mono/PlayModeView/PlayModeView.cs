@@ -40,6 +40,7 @@ namespace UnityEditor
         [SerializeField] HideFlags m_TextureHideFlags = HideFlags.HideAndDontSave;
         [SerializeField] bool m_RenderIMGUI;
         [SerializeField] bool m_MaximizeOnPlay;
+        [SerializeField] bool m_UseMipMap;
 
         private Dictionary<Type, string> m_AvailableWindowTypes;
 
@@ -103,6 +104,12 @@ namespace UnityEditor
         {
             get { return m_MaximizeOnPlay; }
             set { m_MaximizeOnPlay = value; }
+        }
+
+        protected bool useMipMap
+        {
+            get { return m_UseMipMap; }
+            set { m_UseMipMap = value; }
         }
 
         RenderTexture m_TargetTexture;
@@ -211,22 +218,22 @@ namespace UnityEditor
                 throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);
             if (type.Name != GetType().Name)
             {
+                var serializedViews = new Dictionary<string, string>(m_SerializedViews);
+                m_SerializedViews.Clear();
                 var serializedObject = SerializeView();
                 if (serializedObject != null)
-                {
-                    if (!m_SerializedViews.ContainsKey(GetTypeName()))
-                        m_SerializedViews.Add(GetTypeName(), serializedObject);
-                    else
-                        m_SerializedViews[GetTypeName()] = serializedObject;
-                }
+                    serializedViews.Add(GetTypeName(), serializedObject);
 
                 var window = CreateInstance(type) as PlayModeView;
                 window.autoRepaintOnSceneChange = true;
 
-                if (m_SerializedViews.ContainsKey(window.GetTypeName()))
-                    window.DeserializeView(m_SerializedViews[window.GetTypeName()]);
+                if (serializedViews.ContainsKey(window.GetTypeName()))
+                {
+                    window.DeserializeView(serializedViews[window.GetTypeName()]);
+                    serializedViews.Remove(window.GetTypeName());
+                }
 
-                window.SetSerializedViews(m_SerializedViews);
+                window.SetSerializedViews(serializedViews);
 
                 var da = m_Parent as DockArea;
                 if (da)
@@ -251,8 +258,10 @@ namespace UnityEditor
 
         private void ConfigureTargetTexture(int width, int height, bool clearTexture, string name)
         {
-            // Changing color space requires destroying the entire RT object and recreating it
-            if (m_TargetTexture && m_CurrentColorSpace != QualitySettings.activeColorSpace)
+            // Requires destroying the entire RT object and recreating it if
+            // 1. color space is changed;
+            // 2. using mipmap is changed.
+            if (m_TargetTexture && (m_CurrentColorSpace != QualitySettings.activeColorSpace || m_TargetTexture.useMipMap != m_UseMipMap))
             {
                 UnityEngine.Object.DestroyImmediate(m_TargetTexture);
             }
@@ -263,6 +272,7 @@ namespace UnityEditor
                 m_TargetTexture.name = name + " RT";
                 m_TargetTexture.filterMode = textureFilterMode;
                 m_TargetTexture.hideFlags = textureHideFlags;
+                m_TargetTexture.useMipMap = useMipMap;
             }
 
             // Changes to these attributes require a release of the texture

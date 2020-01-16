@@ -283,6 +283,9 @@ namespace UnityEngine
 
         public extern void SetSiblingIndex(int index);
 
+        [NativeMethod("MoveAfterSiblingInternal")]
+        internal extern void MoveAfterSibling(Transform transform, bool notifyEditorAndMarkDirty);
+
         public extern int GetSiblingIndex();
 
         [FreeFunction]

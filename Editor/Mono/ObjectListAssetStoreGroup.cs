@@ -93,10 +93,7 @@ namespace UnityEditor
                             m_Owner.SetSelection(m_Assets[itemIdx], clicks == 2);
 
                         if (isRepaintEvent)
-                        {
-                            bool selected = !AssetStoreAssetSelection.Empty && AssetStoreAssetSelection.ContainsAsset(m_Assets[itemIdx].id);
-                            DrawLabel(r, m_Assets[itemIdx], selected);
-                        }
+                            DrawLabel(r, m_Assets[itemIdx], false);
                     }
                 }
                 else
@@ -107,10 +104,6 @@ namespace UnityEditor
                     for (; itemIdx < endItem && itemIdx < endContainerItem; itemIdx++)
                     {
                         r = m_Grid.CalcRect(itemIdx, yOffset);
-
-                        // Label has selection visuals now (keep below)
-                        // bool selected = !AssetStoreAssetSelection.Empty && AssetStoreAssetSelection.ContainsAsset (m_Assets[itemIdx].id);
-                        // bool selected = false;
 
                         // Mouse event handling
                         int clicks = HandleMouse(r);
@@ -131,8 +124,7 @@ namespace UnityEditor
                         for (; itemIdx < endItem && itemIdx < endContainerItem; itemIdx++)
                         {
                             r = m_Grid.CalcRect(itemIdx, yOffset);
-                            bool selected = !AssetStoreAssetSelection.Empty && AssetStoreAssetSelection.ContainsAsset(m_Assets[itemIdx].id);
-                            DrawLabel(r, m_Assets[itemIdx], selected);
+                            DrawLabel(r, m_Assets[itemIdx], false);
                         }
                     }
                 }
@@ -197,7 +189,6 @@ namespace UnityEditor
 
             void DrawIcon(Rect position, AssetStoreAsset assetStoreResource)
             {
-                // bool selected = !AssetStoreAssetSelection.Empty && AssetStoreAssetSelection.ContainsAsset (assetStoreResource.id);
                 bool selected = false; // labels have selection rendering only
 
                 m_Content.text = null;

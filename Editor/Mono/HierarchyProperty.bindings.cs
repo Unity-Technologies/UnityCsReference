@@ -142,7 +142,7 @@ namespace UnityEditor
         public extern Object pptrValue { [FreeFunction("HierarchyPropertyBindings::PPtrValue", HasExplicitThis = true)] get; }
         public extern string name { get; }
 
-        [FreeFunction("HierarchyPropertyBindings::GetScene", HasExplicitThis = true)]
+        [FreeFunction("HierarchyPropertyBindings::GetScene", HasExplicitThis = true, ThrowsException = true)]
         public extern Scene GetScene();
 
         public extern bool hasChildren { [NativeName("HasChildren")] get; }

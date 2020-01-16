@@ -56,6 +56,7 @@ namespace UnityEditor
         SerializedProperty m_PreserveHierarchy;
         SerializedProperty m_SortHierarchyByName;
         SerializedProperty m_AddColliders;
+        SerializedProperty m_BakeAxisConversion;
 
         public ModelImporterModelEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
@@ -98,6 +99,7 @@ namespace UnityEditor
             m_WeldVertices = serializedObject.FindProperty("weldVertices");
             m_ImportVisibility = serializedObject.FindProperty("m_ImportVisibility");
             m_PreserveHierarchy = serializedObject.FindProperty("m_PreserveHierarchy");
+            m_BakeAxisConversion = serializedObject.FindProperty("bakeAxisConversion");
             m_SortHierarchyByName = serializedObject.FindProperty("m_SortHierarchyByName");
         }
 
@@ -150,6 +152,7 @@ namespace UnityEditor
             public static GUIContent secondaryUVMinLightmapResolutionNotice = EditorGUIUtility.TrTextContent("The active scene's Lightmap Resolution is less than the specified Min Lightmap Resolution.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
 
             public static GUIContent LegacyComputeNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = EditorGUIUtility.TrTextContent("Legacy Blend Shape Normals", "Compute normals from smoothing groups when the mesh has BlendShapes.");
+            public static GUIContent BakeAxisConversion = EditorGUIUtility.TrTextContent("Bake Axis Conversion", "Perform axis conversion on all content for models defined in an axis system that differs from Unity's (left handed, Z forward, Y-up).");
         }
 
         public override void OnInspectorGUI()
@@ -225,6 +228,7 @@ namespace UnityEditor
                 }
             }
 
+            EditorGUILayout.PropertyField(m_BakeAxisConversion, Styles.BakeAxisConversion);
             EditorGUILayout.PropertyField(m_ImportBlendShapes, Styles.ImportBlendShapes);
             EditorGUILayout.PropertyField(m_ImportVisibility, Styles.ImportVisibility);
             EditorGUILayout.PropertyField(m_ImportCameras, Styles.ImportCameras);

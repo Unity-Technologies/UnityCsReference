@@ -173,7 +173,6 @@ namespace UnityEditor
                 // Note: report will be null, if delayToAfterScriptReload = true
                 var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, null, options.targetGroup, options.target, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
 
-
                 if (report != null)
                 {
                     var resultStr = String.Format("Build completed with a result of '{0}'", report.summary.result.ToString("g"));

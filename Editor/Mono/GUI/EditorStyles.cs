@@ -14,6 +14,10 @@ namespace UnityEditor
     // Common GUIStyles used for EditorGUI controls.
     public sealed class EditorStyles
     {
+        internal const int kInspectorPaddingLeft = 8 + 10;
+        internal const int kInspectorPaddingRight = 4;
+        internal const int kInspectorPaddingTop = 4;
+
         // Style used for the labeled on all EditorGUI overloads that take a prefix label
         public static GUIStyle label { get { return s_Current.m_Label; } }
         internal GUIStyle m_Label;
@@ -179,7 +183,6 @@ namespace UnityEditor
 
         internal static GUIStyle overrideMargin { get { return s_Current.m_OverrideMargin; } }
         private GUIStyle m_OverrideMargin;
-
 
         // Standard font.
         public static Font standardFont  => EditorResources.GetFont(FontDef.Style.Normal);
@@ -504,18 +507,14 @@ namespace UnityEditor
 
             m_InspectorDefaultMargins = new GUIStyle
             {
-                padding = new RectOffset(
-                    InspectorWindow.kInspectorPaddingLeft,
-                    InspectorWindow.kInspectorPaddingRight, InspectorWindow.kInspectorPaddingTop, 0)
+                padding = new RectOffset(kInspectorPaddingLeft, kInspectorPaddingRight, kInspectorPaddingTop, 0)
             };
 
             // For the full width margins, use padding from right side in both sides,
             // though adjust for overdraw by adding one in left side to get even margins.
             m_InspectorFullWidthMargins = new GUIStyle
             {
-                padding = new RectOffset(
-                    InspectorWindow.kInspectorPaddingRight + 1,
-                    InspectorWindow.kInspectorPaddingRight, 0, 0)
+                padding = new RectOffset(kInspectorPaddingRight + 1, kInspectorPaddingRight, 0, 0)
             };
 
             m_DefaultContentMargins = new GUIStyle

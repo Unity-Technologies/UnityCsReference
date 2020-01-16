@@ -95,7 +95,8 @@ namespace UnityEditor
         {
             m_RequiresConstantRepaint = false;
 
-            m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
+            Rect position = EditorGUILayout.GetControlRect();
+            m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUI.Foldout(position, m_ShowInfo.target, "Info", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
             {
                 if (targets.Length == 1)

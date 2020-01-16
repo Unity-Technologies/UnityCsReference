@@ -14,7 +14,7 @@ using UnityEngine.UIElements;
 using AsyncOperation = UnityEngine.AsyncOperation;
 using Button = UnityEngine.UIElements.Button;
 
-namespace UnityEditor.Mono.UnityConnect.Services
+namespace UnityEditor.Connect
 {
     /// <summary>
     /// The In App Purchasing section of the CloudServices project settings (actually simply called Services in the ProjectSettings)

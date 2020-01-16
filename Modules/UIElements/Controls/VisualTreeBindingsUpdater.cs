@@ -104,7 +104,7 @@ namespace UnityEngine.UIElements
 
         private static long CurrentTime()
         {
-            return Panel.TimeSinceStartup();
+            return Panel.TimeSinceStartupMs();
         }
 
         public void PerformTrackingOperations()

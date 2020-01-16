@@ -78,7 +78,7 @@ namespace UnityEditor.UIElements
                 if (value != m_Index)
                 {
                     if (value >= m_Choices.Count || value < 0)
-                        throw new ArgumentException(string.Format("Index {0} is beyond the scope of possible value", value));
+                        throw new ArgumentException(string.Format("Index {0} is beyond the scope of possible values", value));
                     m_Index = value;
                     this.value = m_Choices[m_Index];
                 }

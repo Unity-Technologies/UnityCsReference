@@ -5,6 +5,7 @@
 //#define UIR_DEBUG_CHAIN_BUILDER
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Profiling;
 
@@ -98,10 +99,50 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        struct RenderChainStaticIndexAllocator
+        {
+            static List<RenderChain> renderChains = new List<RenderChain>(4);
+            public static int AllocateIndex(RenderChain renderChain)
+            {
+                int index = renderChains.IndexOf(null);
+                if (index >= 0)
+                    renderChains[index] = renderChain;
+                else
+                {
+                    index = renderChains.Count;
+                    renderChains.Add(renderChain);
+                }
+                return index;
+            }
+
+            public static void FreeIndex(int index)
+            {
+                renderChains[index] = null;
+            }
+
+            public static RenderChain AccessIndex(int index)
+            {
+                return renderChains[index];
+            }
+        };
+
+        struct RenderNodeData
+        {
+            public Rect viewport;
+            public Material standardMat;
+            public MaterialPropertyBlock matPropBlock;
+        };
+
         RenderChainCommand m_FirstCommand;
         DepthOrderedDirtyTracking m_DirtyTracker;
         Pool<RenderChainCommand> m_CommandPool = new Pool<RenderChainCommand>();
+        List<RenderNodeData> m_RenderNodesData = new List<RenderNodeData>();
+        Shader m_DefaultShader, m_DefaultWorldSpaceShader;
+        Material m_DefaultMat, m_DefaultWorldSpaceMat;
         bool m_BlockDirtyRegistration;
+        bool m_DrawInCameras;
+        int m_StaticIndex = -1;
+        int m_ActiveRenderNodes = 0;
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
 
@@ -125,12 +166,18 @@ namespace UnityEngine.UIElements.UIR
         static ProfilerMarker s_MarkerVisualsProcessing = new ProfilerMarker("RenderChain.UpdateVisuals");
         static ProfilerMarker s_MarkerTextRegen = new ProfilerMarker("RenderChain.RegenText");
 
+        static RenderChain()
+        {
+            UIR.Utility.RegisterIntermediateRenderers += OnRegisterIntermediateRenderers;
+            UIR.Utility.RenderNodeExecute += OnRenderNodeExecute;
+        }
 
-        public RenderChain(IPanel panel, Shader standardShader)
+        public RenderChain(IPanel panel)
         {
             var atlasMan = new UIRAtlasManager();
             var vectorImageMan = new VectorImageManager(atlasMan);
-            Constructor(panel, new UIRenderDevice(Implementation.RenderEvents.ResolveShader(standardShader)), atlasMan, vectorImageMan);
+
+            Constructor(panel, new UIRenderDevice(), atlasMan, vectorImageMan);
         }
 
         protected RenderChain(IPanel panel, UIRenderDevice device, UIRAtlasManager atlasManager, VectorImageManager vectorImageManager)
@@ -150,6 +197,9 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.maxDepths = new int[(int)RenderDataDirtyTypeClasses.Count];
             m_DirtyTracker.Reset();
 
+            if (m_RenderNodesData.Count < 1)
+                m_RenderNodesData.Add(new RenderNodeData() { matPropBlock = new MaterialPropertyBlock() });
+
             this.panel = panelObj;
             this.device = deviceObj;
             this.atlasManager = atlasMan;
@@ -162,6 +212,14 @@ namespace UnityEngine.UIElements.UIR
 
         void Destructor()
         {
+            if (m_StaticIndex >= 0)
+                RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
+            m_StaticIndex = -1;
+
+            UIRUtility.Destroy(m_DefaultMat);
+            UIRUtility.Destroy(m_DefaultWorldSpaceMat);
+            m_DefaultMat = m_DefaultWorldSpaceMat = null;
+
             Font.textureRebuilt -= OnFontReset;
             painter?.Dispose();
             m_TextUpdatePainter?.Dispose();
@@ -175,6 +233,9 @@ namespace UnityEngine.UIElements.UIR
             atlasManager = null;
             shaderInfoAllocator = new UIRVEShaderInfoAllocator();
             device = null;
+
+            m_ActiveRenderNodes = 0;
+            m_RenderNodesData.Clear();
         }
 
         #region Dispose Pattern
@@ -216,6 +277,14 @@ namespace UnityEngine.UIElements.UIR
 
             if (shaderInfoAllocator.isReleased)
                 RecreateDevice(); // The shader info texture was released, recreate the device to start fresh
+
+            if (m_DrawInCameras && m_StaticIndex < 0)
+                m_StaticIndex = RenderChainStaticIndexAllocator.AllocateIndex(this);
+            else if (!m_DrawInCameras && m_StaticIndex >= 0)
+            {
+                RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
+                m_StaticIndex = -1;
+            }
 
             if (OnPreRender != null)
                 OnPreRender();
@@ -284,7 +353,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.TransformSize;
-            dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size;
+            dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.ClipRectSize;
             clearDirty = ~dirtyFlags;
             s_MarkerTransformProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
@@ -354,6 +423,8 @@ namespace UnityEngine.UIElements.UIR
             vectorImageManager?.Commit();
             shaderInfoAllocator.IssuePendingAtlasBlits();
 
+            device?.OnFrameRenderingBegin();
+
             s_MarkerProcess.End();
         }
 
@@ -362,26 +433,29 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerRender.Begin();
 
             if (BeforeDrawChain != null)
-                BeforeDrawChain(device);
+                BeforeDrawChain(this);
 
             Exception immediateException = null;
             if (m_FirstCommand != null)
             {
-                device.OnFrameRenderingBegin();
+                if (!m_DrawInCameras)
+                {
+                    var viewport = panel.visualTree.layout;
 
-                var viewport = panel.visualTree.layout;
+                    Material standardMaterial = GetStandardMaterial();
+                    standardMaterial?.SetPass(0);
 
-                device.GetStandardMaterial()?.SetPass(0);
-                GL.modelview = Matrix4x4.identity;
-                var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -1, 1);
-                GL.LoadProjectionMatrix(projection);
+                    var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
+                    GL.LoadProjectionMatrix(projection);
+                    GL.modelview = Matrix4x4.identity;
 
-                MaterialPropertyBlock stateMatProps = new MaterialPropertyBlock();
-                device.EvaluateChain(m_FirstCommand, viewport, projection, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
-                    (panel as BaseVisualElementPanel).scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
-                    stateMatProps, ref immediateException);
-
-                device?.OnFrameRenderingDone();
+                    //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
+                    //m_BlockDirtyRegistration = true;
+                    device.EvaluateChain(m_FirstCommand, viewport, standardMaterial, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
+                        (panel as BaseVisualElementPanel).scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
+                        m_RenderNodesData[0].matPropBlock, ref immediateException);
+                    //m_BlockDirtyRegistration = false;
+                }
             }
 
             s_MarkerRender.End();
@@ -428,18 +502,13 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerTextRegen.End();
         }
 
-        public event Action<UIRenderDevice> BeforeDrawChain;
+        public event Action<RenderChain> BeforeDrawChain;
 
         #region UIElements event handling callbacks
-        public void UIEOnStandardShaderChanged(Shader standardShader)
-        {
-            device.standardShader = Implementation.RenderEvents.ResolveShader(standardShader);
-        }
-
         public void UIEOnChildAdded(VisualElement parent, VisualElement ve, int index)
         {
             if (m_BlockDirtyRegistration)
-                throw new InvalidOperationException("VisualElements cannot be added to an active visual tree during generateVisualContent callback execution");
+                throw new InvalidOperationException("VisualElements cannot be added to an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
             if (parent != null && !parent.renderChainData.isInChain)
                 return; // Ignore it until its parent gets ultimately added
 
@@ -456,7 +525,7 @@ namespace UnityEngine.UIElements.UIR
         public void UIEOnChildrenReordered(VisualElement ve)
         {
             if (m_BlockDirtyRegistration)
-                throw new InvalidOperationException("VisualElements cannot be moved under an active visual tree during generateVisualContent callback execution");
+                throw new InvalidOperationException("VisualElements cannot be moved under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
             int childrenCount = ve.hierarchy.childCount;
             for (int i = 0; i < childrenCount; i++)
@@ -472,7 +541,7 @@ namespace UnityEngine.UIElements.UIR
         public void UIEOnChildRemoving(VisualElement ve)
         {
             if (m_BlockDirtyRegistration)
-                throw new InvalidOperationException("VisualElements cannot be removed from an active visual tree during generateVisualContent callback execution");
+                throw new InvalidOperationException("VisualElements cannot be removed from an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
 
             m_StatsElementsRemoved += Implementation.RenderEvents.DepthFirstOnChildRemoving(this, ve);
@@ -489,7 +558,7 @@ namespace UnityEngine.UIElements.UIR
             if (ve.renderChainData.isInChain)
             {
                 if (m_BlockDirtyRegistration)
-                    throw new InvalidOperationException("VisualElements cannot change clipping state under an active visual tree during generateVisualContent callback execution");
+                    throw new InvalidOperationException("VisualElements cannot change clipping state under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
                 m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Clipping | (hierarchical ? RenderDataDirtyTypes.ClippingHierarchy : 0), (int)RenderDataDirtyTypeClasses.Clipping);
             }
@@ -500,22 +569,22 @@ namespace UnityEngine.UIElements.UIR
             if (ve.renderChainData.isInChain)
             {
                 if (m_BlockDirtyRegistration)
-                    throw new InvalidOperationException("VisualElements cannot change opacity under an active visual tree during generateVisualContent callback execution");
+                    throw new InvalidOperationException("VisualElements cannot change opacity under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
                 m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Opacity, (int)RenderDataDirtyTypeClasses.Opacity);
             }
         }
 
-        public void UIEOnTransformOrSizeChanged(VisualElement ve, bool transformChanged, bool sizeChanged)
+        public void UIEOnTransformOrSizeChanged(VisualElement ve, bool transformChanged, bool clipRectSizeChanged)
         {
             if (ve.renderChainData.isInChain)
             {
                 if (m_BlockDirtyRegistration)
-                    throw new InvalidOperationException("VisualElements cannot change size or transform under an active visual tree during generateVisualContent callback execution");
+                    throw new InvalidOperationException("VisualElements cannot change size or transform under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
                 RenderDataDirtyTypes flags =
                     (transformChanged ? RenderDataDirtyTypes.Transform : RenderDataDirtyTypes.None) |
-                    (sizeChanged ? RenderDataDirtyTypes.Size : RenderDataDirtyTypes.None);
+                    (clipRectSizeChanged ? RenderDataDirtyTypes.ClipRectSize : RenderDataDirtyTypes.None);
                 m_DirtyTracker.RegisterDirty(ve, flags, (int)RenderDataDirtyTypeClasses.TransformSize);
             }
         }
@@ -525,7 +594,7 @@ namespace UnityEngine.UIElements.UIR
             if (ve.renderChainData.isInChain)
             {
                 if (m_BlockDirtyRegistration)
-                    throw new InvalidOperationException("VisualElements cannot be marked for dirty repaint under an active visual tree during generateVisualContent callback execution");
+                    throw new InvalidOperationException("VisualElements cannot be marked for dirty repaint under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
                 m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), (int)RenderDataDirtyTypeClasses.Visuals);
             }
@@ -540,6 +609,70 @@ namespace UnityEngine.UIElements.UIR
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
         internal Implementation.UIRStylePainter painter { get; private set; }
         internal bool drawStats { get; set; }
+        internal bool drawInCameras
+        {
+            get { return m_DrawInCameras; }
+            set
+            {
+                if (m_DrawInCameras != value)
+                {
+                    m_DrawInCameras = value;
+                    if (panel.visualTree != null)
+                        UIEOnClippingChanged(panel.visualTree, true);
+                }
+                if (m_DrawInCameras && m_StaticIndex < 0)
+                    m_StaticIndex = RenderChainStaticIndexAllocator.AllocateIndex(this);
+                else if (!m_DrawInCameras && m_StaticIndex >= 0)
+                {
+                    RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
+                    m_StaticIndex = -1;
+                }
+            }
+        }
+        internal Shader defaultShader
+        {
+            get { return m_DefaultShader; }
+            set
+            {
+                if (m_DefaultShader == value)
+                    return;
+                m_DefaultShader = value;
+                UIRUtility.Destroy(m_DefaultMat);
+                m_DefaultMat = null;
+            }
+        }
+        internal Shader defaultWorldSpaceShader
+        {
+            get { return m_DefaultWorldSpaceShader; }
+            set
+            {
+                if (m_DefaultWorldSpaceShader == value)
+                    return;
+                m_DefaultWorldSpaceShader = value;
+                UIRUtility.Destroy(m_DefaultWorldSpaceMat);
+                m_DefaultWorldSpaceMat = null;
+            }
+        }
+
+        internal Material GetStandardMaterial()
+        {
+            if (m_DefaultMat == null && m_DefaultShader != null)
+            {
+                m_DefaultMat = new Material(m_DefaultShader);
+                m_DefaultMat.hideFlags |= HideFlags.DontSaveInEditor;
+            }
+            return m_DefaultMat;
+        }
+
+        internal Material GetStandardWorldSpaceMaterial()
+        {
+            if (m_DefaultWorldSpaceMat == null && m_DefaultWorldSpaceShader != null)
+            {
+                m_DefaultWorldSpaceMat = new Material(m_DefaultWorldSpaceShader);
+                m_DefaultWorldSpaceMat.hideFlags |= HideFlags.DontSaveInEditor;
+            }
+            return m_DefaultWorldSpaceMat;
+        }
 
         internal void EnsureFitsDepth(int depth)
         {
@@ -617,22 +750,24 @@ namespace UnityEngine.UIElements.UIR
 
         struct RenderDeviceRestoreInfo
         {
+            public IPanel panel;
             public VisualElement root;
-            public Shader standardShader;
             public bool hasAtlasMan, hasVectorImageMan;
         }
         RenderDeviceRestoreInfo m_RenderDeviceRestoreInfo;
         internal void BeforeRenderDeviceRelease()
         {
             Debug.Assert(device != null);
+            Debug.Assert(m_RenderDeviceRestoreInfo.panel == null);
             Debug.Assert(m_RenderDeviceRestoreInfo.root == null);
 
+            m_RenderDeviceRestoreInfo.panel = panel;
             m_RenderDeviceRestoreInfo.root = GetFirstElementInPanel(m_FirstCommand?.owner);
-            m_RenderDeviceRestoreInfo.standardShader = device.standardShader;
             m_RenderDeviceRestoreInfo.hasAtlasMan = atlasManager != null;
             m_RenderDeviceRestoreInfo.hasVectorImageMan = vectorImageManager != null;
 
-            UIEOnChildRemoving(m_RenderDeviceRestoreInfo.root);
+            if (m_RenderDeviceRestoreInfo.root != null)
+                UIEOnChildRemoving(m_RenderDeviceRestoreInfo.root);
             Destructor();
         }
 
@@ -643,21 +778,85 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(device == null);
 
+            var panelObj = m_RenderDeviceRestoreInfo.panel;
             var root = m_RenderDeviceRestoreInfo.root;
-            var panelObj = root.panel;
-            var deviceObj = new UIRenderDevice(m_RenderDeviceRestoreInfo.standardShader);
+            var deviceObj = new UIRenderDevice();
             var atlasManObj = m_RenderDeviceRestoreInfo.hasAtlasMan ? new UIRAtlasManager() : null;
             var vectorImageManObj = m_RenderDeviceRestoreInfo.hasVectorImageMan ? new VectorImageManager(atlasManObj) : null;
             m_RenderDeviceRestoreInfo = new RenderDeviceRestoreInfo();
 
             Constructor(panelObj, deviceObj, atlasManObj, vectorImageManObj);
-            UIEOnChildAdded(root.parent, root, root.hierarchy.parent == null ? 0 : root.hierarchy.parent.IndexOf(panel.visualTree));
+            if (root != null)
+            {
+                Debug.Assert(root.panel == panelObj);
+                UIEOnChildAdded(root.parent, root, root.hierarchy.parent == null ? 0 : root.hierarchy.parent.IndexOf(panel.visualTree));
+            }
         }
 
         internal void RecreateDevice()
         {
             BeforeRenderDeviceRelease();
             AfterRenderDeviceRelease();
+        }
+
+        unsafe static RenderNodeData AccessRenderNodeData(IntPtr obj, out RenderChain rc)
+        {
+            int *indices = (int*)obj.ToPointer();
+            rc = RenderChainStaticIndexAllocator.AccessIndex(indices[0]);
+            return rc.m_RenderNodesData[indices[1]];
+        }
+
+        private unsafe static void OnRenderNodeExecute(IntPtr obj)
+        {
+            RenderChain rc;
+            RenderNodeData rnd = AccessRenderNodeData(obj, out rc);
+
+            Exception immediateException = null;
+            rc.device.EvaluateChain(rc.m_FirstCommand, rnd.viewport, rnd.standardMat, rc.atlasManager?.atlas,
+                rc.vectorImageManager?.atlas, rc.shaderInfoAllocator.atlas,
+                (rc.panel as BaseVisualElementPanel).scaledPixelsPerPoint, rc.shaderInfoAllocator.transformConstants, rc.shaderInfoAllocator.clipRectConstants,
+                rnd.matPropBlock, ref immediateException);
+        }
+
+        private unsafe static void OnRegisterIntermediateRenderers(Camera camera)
+        {
+            var panels = UIElementsUtility.GetPanelsIterator();
+            while (panels.MoveNext())
+            {
+                var p = panels.Current.Value;
+                RenderChain renderChain = (p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.renderChain;
+                if (renderChain == null || renderChain.m_StaticIndex < 0)
+                    continue;
+
+                Material standardMat = renderChain.GetStandardWorldSpaceMaterial();
+                RuntimePanel rtp = (RuntimePanel)p;
+
+                int renderNodeIndex = renderChain.m_ActiveRenderNodes;
+                if (renderNodeIndex < renderChain.m_RenderNodesData.Count)
+                {
+                    var renderNodeData = renderChain.m_RenderNodesData[renderNodeIndex];
+                    renderNodeData.viewport = p.visualTree.layout;
+                    renderNodeData.standardMat = standardMat;
+                    renderChain.m_RenderNodesData[renderNodeIndex] = renderNodeData;
+                }
+                else
+                {
+                    renderNodeIndex = renderChain.m_RenderNodesData.Count;
+                    renderChain.m_RenderNodesData.Add(new RenderNodeData()
+                    {
+                        matPropBlock = new MaterialPropertyBlock(),
+                        viewport = p.visualTree.layout,
+                        standardMat = standardMat
+                    });
+                }
+
+                int* userData = stackalloc int[2];
+                userData[0] = renderChain.m_StaticIndex;
+                userData[1] = renderNodeIndex;
+                UIR.Utility.RegisterIntermediateRenderer(camera, standardMat, rtp.panelToWorld,
+                    new Bounds(Vector3.zero, new Vector3(float.MaxValue, float.MaxValue, float.MaxValue)),
+                    3, 0, false, 0, (ulong)camera.cullingMask, (int)UIR.Utility.RendererCallbacks.RendererCallback_Exec, new IntPtr(userData), sizeof(int) * 2);
+            }
         }
 
         private void RepaintAtlassedElements()
@@ -732,11 +931,11 @@ namespace UnityEngine.UIElements.UIR
     {
         None = 0,
         Transform = 1 << 0,
-        Size = 1 << 1,
+        ClipRectSize = 1 << 1,
         Clipping = 1 << 2,           // The clipping state of the VE needs to be reevaluated.
         ClippingHierarchy = 1 << 3,  // Same as above, but applies to all descendants too.
         Visuals = 1 << 4,            // The visuals of the VE need to be repainted.
-        VisualsHierarchy = 1 << 5,    // Same as above, but applies to all descendants too.
+        VisualsHierarchy = 1 << 5,   // Same as above, but applies to all descendants too.
         Opacity = 1 << 6             // The opacity of the VE needs to be updated.
     }
 

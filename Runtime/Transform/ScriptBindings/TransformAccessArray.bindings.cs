@@ -196,7 +196,7 @@ namespace UnityEngine.Jobs
         [NativeMethod(Name = "TransformAccessArrayBindings::AddTransform", IsFreeFunction = true)]
         private static extern void Add(IntPtr transformArrayIntPtr, Transform transform);
 
-        [NativeMethod(Name = "TransformAccessArrayBindings::RemoveAtSwapBack", IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessArrayBindings::RemoveAtSwapBack", IsFreeFunction = true, ThrowsException = true)]
         private static extern void RemoveAtSwapBack(IntPtr transformArrayIntPtr, int index);
 
         [NativeMethod(Name = "TransformAccessArrayBindings::GetSortedTransformAccess", IsThreadSafe = true, IsFreeFunction = true)]
@@ -214,10 +214,10 @@ namespace UnityEngine.Jobs
         [NativeMethod(Name = "TransformAccessArrayBindings::SetCapacity", IsFreeFunction = true)]
         internal static extern void SetCapacity(IntPtr transformArrayIntPtr, int capacity);
 
-        [NativeMethod(Name = "TransformAccessArrayBindings::GetTransform", IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessArrayBindings::GetTransform", IsFreeFunction = true, ThrowsException = true)]
         internal static extern Transform GetTransform(IntPtr transformArrayIntPtr, int index);
 
-        [NativeMethod(Name = "TransformAccessArrayBindings::SetTransform", IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessArrayBindings::SetTransform", IsFreeFunction = true, ThrowsException = true)]
         internal static extern void SetTransform(IntPtr transformArrayIntPtr, int index, Transform transform);
     }
 }

@@ -6,7 +6,6 @@ using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.Experimental;
 
 namespace UnityEditor.UIElements
 {
@@ -306,9 +305,21 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.Enum:
                 {
-                    var field = new PopupField<string>(property.enumDisplayNames.ToList(), property.enumValueIndex);
-                    field.index = property.enumValueIndex;
-                    return ConfigureField<PopupField<string>, string>(field, property);
+                    Type enumType;
+                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+                    if (enumType.IsDefined(typeof(FlagsAttribute), false))
+                    {
+                        var field = new EnumFlagsField();
+                        field.choices = property.enumDisplayNames.ToList();
+                        field.value = (Enum)Enum.ToObject(enumType, property.intValue);
+                        return ConfigureField<EnumFlagsField, Enum>(field, property);
+                    }
+                    else
+                    {
+                        var field = new PopupField<string>(property.enumDisplayNames.ToList(), property.enumValueIndex);
+                        field.index = property.enumValueIndex;
+                        return ConfigureField<PopupField<string>, string>(field, property);
+                    }
                 }
                 case SerializedPropertyType.Vector2:
                     return ConfigureField<Vector2Field, Vector2>(new Vector2Field(), property);

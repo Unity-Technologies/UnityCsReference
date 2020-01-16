@@ -161,6 +161,32 @@ namespace UnityEditor
             m_Aniso = serializedObject.FindProperty("m_TextureSettings.m_Aniso");
 
             RecordTextureMipLevels();
+
+            SetMipLevelDefaultForVT();
+        }
+
+        //VT textures can be very large and aren't in GPU memory yet. To avoid unnecessary streaming and cache use, we limit the default shown mip resolution.
+        private void SetMipLevelDefaultForVT()
+        {
+            foreach (var t in targets)
+            {
+                var tex = t as Texture;
+                if (EditorGUI.UseVTMaterial(tex))
+                {
+                    int mips = TextureUtil.GetMipmapCount(tex);
+                    const int numMipsFor1K = 11;
+
+                    if (mips > numMipsFor1K)
+                    {
+                        mipLevel = Mathf.Max(mipLevel, mips - numMipsFor1K); //set to 1024x1024 or less
+                    }
+                }
+            }
+        }
+
+        public override void ReloadPreviewInstances()
+        {
+            SetMipLevelDefaultForVT();
         }
 
         private void RecordTextureMipLevels()
@@ -197,6 +223,11 @@ namespace UnityEditor
 
         public override bool RequiresConstantRepaint()
         {
+            //Keep repainting if the texture is rendered with a virtual texturing material because we don't know when all texture tiles will be streamed in
+            foreach (var item in targets)
+                if (EditorGUI.UseVTMaterial(item as Texture))
+                    return true;
+
             foreach (TextureMipLevels textureInfo in m_TextureMipLevels)
             {
                 if (textureInfo.texture == null)
@@ -595,6 +626,14 @@ namespace UnityEditor
                 GUILayout.Box(s_Styles.smallZoom, s_Styles.previewLabel);
                 GUI.changed = false;
                 m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
+
+                //For now, we don't have mipmaps smaller than the tile size when using VT.
+                if (EditorGUI.UseVTMaterial(tex))
+                {
+                    int numMipsOfTile = (int)Mathf.Log(VirtualTexturing.tileSize, 2) + 1;
+                    m_MipLevel = Mathf.Min(m_MipLevel, Mathf.Max(mipCount - numMipsOfTile, 0));
+                }
+
                 GUILayout.Box(s_Styles.largeZoom, s_Styles.previewLabel);
             }
         }
@@ -762,7 +801,7 @@ namespace UnityEditor
                 width, height,
                 0,
                 SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
-            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture, null, QualitySettings.activeColorSpace == ColorSpace.Linear);
+            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture, null, QualitySettings.activeColorSpace == ColorSpace.Linear, false);
             if (mat != null)
                 Graphics.Blit(texture, tmp, mat);
             else Graphics.Blit(texture, tmp);

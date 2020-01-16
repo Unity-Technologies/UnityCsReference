@@ -5,14 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Connect;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Networking;
 using Button = UnityEngine.UIElements.Button;
 
-namespace UnityEditor.Mono.UnityConnect.Services
+namespace UnityEditor.Connect
 {
     class AnalyticsProjectSettings : ServicesProjectSettings
     {

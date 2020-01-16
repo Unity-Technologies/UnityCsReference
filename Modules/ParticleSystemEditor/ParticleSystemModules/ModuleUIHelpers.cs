@@ -865,13 +865,22 @@ namespace UnityEditor
                 switch (state)
                 {
                     case MinMaxGradientState.k_Color:
+                        // The color field looks too large compared to the other fields because it does not have a border.
+                        //We will shrink it to give it a border of 1 pixel from the bacground.
+                        gradientRect.height -= 2;
+                        gradientRect.y++;
                         GUIColor(gradientRect, minMaxGradient.m_MaxColor, hdr);
                         break;
 
                     case MinMaxGradientState.k_RandomBetweenTwoColors:
+                        // The color field looks too large compared to the other fields because it does not have a border.
+                        //We will shrink it to give it a border of 1 pixel from the bacground.
+                        gradientRect.height -= 2;
+                        gradientRect.y++;
+
                         GUIColor(gradientRect, minMaxGradient.m_MaxColor, hdr);
 
-                        gradientRect.y += gradientRect.height;
+                        gradientRect.y += gradientRect.height + 2.0f;
 
                         GUIColor(gradientRect, minMaxGradient.m_MinColor, hdr);
                         break;

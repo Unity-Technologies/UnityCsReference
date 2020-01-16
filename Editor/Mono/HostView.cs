@@ -634,7 +634,8 @@ namespace UnityEditor
 
             AddDefaultItemsToMenu(menu, view);
 
-            AddWindowActionMenu(menu, view);
+            if (view != null)
+                AddWindowActionMenu(menu, view);
 
             menu.DropDown(pos);
             Event.current.Use();
@@ -712,7 +713,7 @@ namespace UnityEditor
             if (menu.GetItemCount() != 0)
                 menu.AddSeparator("");
 
-            if (Unsupported.IsDeveloperMode())
+            if (window && Unsupported.IsDeveloperMode())
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Inspect Window"), false, Inspect, window);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Inspect View"), false, Inspect, window.m_Parent);

@@ -115,9 +115,6 @@ namespace UnityEditor
         Vector2 m_LastScrollPosition = new Vector2(0, 0);
         double LastScrollTime = 0;
 
-        public bool selectedAssetStoreAsset;
-
-
         internal Texture m_SelectedObjectIcon = null;
 
         LocalGroup m_LocalAssets;
@@ -798,29 +795,11 @@ namespace UnityEditor
             {
                 m_State.m_LastClickedInstanceID = 0;
             }
-
-
-            if (Selection.activeObject == null || Selection.activeObject.GetType() != typeof(AssetStoreAssetInspector))
-            {
-                // Debug.Log("type is " + (Selection.activeObject == null ? "null " : Selection.activeObject.name) + " instance IDS ");
-                // foreach (int i in selectedInstanceIDs)
-                // {
-                //  Debug.Log("selected instance ID " + i.ToString());
-                // }
-                selectedAssetStoreAsset = false;
-                AssetStoreAssetSelection.Clear();
-            }
         }
 
         void SetSelection(AssetStoreAsset assetStoreResult, bool doubleClicked)
         {
             m_State.m_SelectedInstanceIDs.Clear();
-
-            selectedAssetStoreAsset = true;
-            AssetStoreAssetSelection.Clear(); // TODO: remove when multiselect is to be supported
-            AssetStorePreviewManager.CachedAssetStoreImage item = AssetStorePreviewManager.TextureFromUrl(assetStoreResult.staticPreviewURL, assetStoreResult.name, gridSize, s_Styles.resultsGridLabel, s_Styles.resultsGrid, true);
-            Texture2D lowresPreview = item.image;
-            AssetStoreAssetSelection.AddAsset(assetStoreResult, lowresPreview);
             if (m_ItemSelectedCallback != null)
             {
                 Repaint();
@@ -1151,30 +1130,6 @@ namespace UnityEditor
             int offsetIdx = m_LocalAssets.IndexOf(m_State.m_LastClickedInstanceID);
             if (offsetIdx != -1)
                 return offsetIdx;
-
-            offsetIdx = m_LocalAssets.m_Grid.rows * m_LocalAssets.m_Grid.columns;
-
-            // Project or builtin asset not selected. Check asset store asset.
-            if (AssetStoreAssetSelection.Count == 0)
-                return -1;
-
-            AssetStoreAsset asset = AssetStoreAssetSelection.GetFirstAsset();
-            if (asset == null)
-                return -1;
-            int assetID = asset.id;
-
-            foreach (AssetStoreGroup g in m_StoreAssets)
-            {
-                if (!g.Visible)
-                    continue;
-
-                int idx = g.IndexOf(assetID);
-                if (idx != -1)
-                    return offsetIdx + idx;
-
-                offsetIdx += g.m_Grid.rows * g.m_Grid.columns;
-            }
-
             return -1;
         }
 

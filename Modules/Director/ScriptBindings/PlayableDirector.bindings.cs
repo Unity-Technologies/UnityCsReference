@@ -78,11 +78,14 @@ namespace UnityEngine.Playables
         extern public double duration { get; }
 
         // Bindings methods.
+        [NativeThrows]
         extern public void Evaluate();
+        [NativeThrows]
         extern public void Play();
         extern public void Stop();
         extern public void Pause();
         extern public void Resume();
+        [NativeThrows]
         extern public void RebuildGraph();
         extern public void ClearReferenceValue(PropertyName id);
         extern public void SetReferenceValue(PropertyName id, UnityEngine.Object value);
@@ -91,6 +94,7 @@ namespace UnityEngine.Playables
         extern public Object GetGenericBinding(Object key);
         [NativeMethod("ClearBindingFor")]
         extern public void ClearGenericBinding(Object key);
+        [NativeThrows]
         extern public void RebindPlayableGraphOutputs();
 
         extern internal void ProcessPendingGraphChanges();
@@ -100,10 +104,12 @@ namespace UnityEngine.Playables
         extern private PlayState GetPlayState();
         extern private void SetWrapMode(DirectorWrapMode mode);
         extern private DirectorWrapMode GetWrapMode();
+        [NativeThrows]
         extern private void EvaluateNextFrame();
         extern private PlayableGraph GetGraphHandle();
         extern private void SetPlayOnAwake(bool on);
         extern private bool GetPlayOnAwake();
+        [NativeThrows]
         extern private void Internal_SetGenericBinding(Object key, Object value);
         extern private void SetPlayableAsset(ScriptableObject asset);
         extern private ScriptableObject Internal_GetPlayableAsset();

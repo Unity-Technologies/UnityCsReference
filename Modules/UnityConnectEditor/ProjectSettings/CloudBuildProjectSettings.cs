@@ -76,12 +76,14 @@ namespace UnityEditor.Connect
         const string k_JsonNodeNameLabel = "label";
         const string k_JsonNodeNameName = "name";
         const string k_JsonNodeNameBuildTargetId = "buildtargetid";
+        const string k_JsonNodeNameBuildTargetName = "buildtargetname";
         const string k_JsonNodeNameEnabled = "enabled";
         const string k_JsonNodeNameStartBuilds = "start_builds";
         const string k_JsonNodeNameText = "text";
         const string k_JsonNodeNameBillingPlan = "billingPlan";
         const string k_JsonNodeNameAlertType = "alertType";
         const string k_JsonNodeNameBuild = "build";
+        const string k_JsonNodeNameError = "error";
 
         const string k_UrlSuffixBillingPlan = "/billingplan";
 
@@ -97,6 +99,7 @@ namespace UnityEditor.Connect
 
         const string k_MessageLaunchingBuild = "Starting build {0}.";
         const string k_MessageLaunchedBuildSuccess = "Build #{0} {1} added to queue";
+        const string k_MessageLaunchedBuildFailedWithMsg = "Build {0} wasn't launched: {1}";
         const string k_MessageLaunchedBuildFailure = "Unable to build project";
 
         const string k_BuildButtonNamePrefix = "BuildBtn_";
@@ -359,7 +362,7 @@ namespace UnityEditor.Connect
 
             public override void EnterState()
             {
-                CloudBuildPoller.instance.Disable();
+                CloudBuildPoller.instance.Disable(true);
                 var generalTemplate = EditorGUIUtility.Load(k_CloudBuildDisabledUxmlPath) as VisualTreeAsset;
                 var scrollContainer = m_Provider.rootVisualElement.Q(className: k_ServiceScrollContainerClassName);
                 scrollContainer.Clear();
@@ -636,7 +639,11 @@ namespace UnityEditor.Connect
                                 m_Provider.rootVisualElement.Q(k_PollFooterSectionName).style.display = DisplayStyle.Flex;
 
                                 var pollerToggle = m_Provider.rootVisualElement.Q<Toggle>(k_PollToggleName);
-                                pollerToggle.SetValueWithoutNotify(true);
+                                if (!CloudBuildPoller.instance.enabledOnce)
+                                {
+                                    CloudBuildPoller.instance.Enable(m_CloudBuildApiOrgLatestBuilds);
+                                }
+                                pollerToggle.SetValueWithoutNotify(CloudBuildPoller.instance.enabled);
                                 pollerToggle.RegisterValueChangedCallback(evt =>
                                 {
                                     if (evt.newValue)
@@ -656,8 +663,6 @@ namespace UnityEditor.Connect
                                     var buildEntry = jsonBuildEntry.AsDict();
                                     AddBuildTarget(targetsContainer, buildEntry);
                                 }
-
-                                CloudBuildPoller.instance.Enable(m_CloudBuildApiOrgLatestBuilds);
                             }
                             m_Provider.rootVisualElement.Q(className: k_ServiceCloudBuildContainerClassName).style.display = DisplayStyle.Flex;
                             m_Provider.rootVisualElement.Q(className: k_ServiceCloudProgressClassName).style.display = DisplayStyle.None;
@@ -739,13 +744,25 @@ namespace UnityEditor.Connect
                                             foreach (var rawLaunchedBuild in launchedBuilds)
                                             {
                                                 var launchedBuild = rawLaunchedBuild.AsDict();
-                                                var buildNumber = launchedBuild[k_JsonNodeNameBuild].AsFloat().ToString();
-                                                var message = string.Format(L10n.Tr(k_MessageLaunchedBuildSuccess), buildNumber, buildTargetName);
-                                                Debug.Log(message);
-                                                NotificationManager.instance.Publish(
-                                                    Notification.Topic.BuildService,
-                                                    Notification.Severity.Info,
-                                                    message);
+                                                if (launchedBuild.ContainsKey(k_JsonNodeNameBuild))
+                                                {
+                                                    var buildNumber = launchedBuild[k_JsonNodeNameBuild].AsFloat().ToString();
+                                                    var message = string.Format(L10n.Tr(k_MessageLaunchedBuildSuccess), buildNumber, buildTargetName);
+                                                    Debug.Log(message);
+                                                    NotificationManager.instance.Publish(
+                                                        Notification.Topic.BuildService,
+                                                        Notification.Severity.Info,
+                                                        message);
+                                                }
+                                                else if (launchedBuild.ContainsKey(k_JsonNodeNameError))
+                                                {
+                                                    var message = string.Format(L10n.Tr(k_MessageLaunchedBuildFailedWithMsg), buildTargetName, launchedBuild[k_JsonNodeNameError].ToString());
+                                                    Debug.LogError(message);
+                                                    NotificationManager.instance.Publish(
+                                                        Notification.Topic.BuildService,
+                                                        Notification.Severity.Error,
+                                                        message);
+                                                }
                                             }
                                         }
                                         else

@@ -83,6 +83,8 @@ namespace UnityEngine.UIElements
             public IPanel m_Panel;
         }
 
+        private ClickDetector m_ClickDetector = new ClickDetector();
+
         List<IEventDispatchingStrategy> m_DispatchingStrategies;
         static readonly ObjectPool<Queue<EventRecord>> k_EventQueuePool = new ObjectPool<Queue<EventRecord>>();
         Queue<EventRecord> m_Queue;
@@ -303,6 +305,8 @@ namespace UnityEngine.UIElements
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
 
                 evt.PostDispatch(panel);
+
+                m_ClickDetector.ProcessEvent(evt);
 
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used, "Event is used but not stopped.");
             }

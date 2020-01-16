@@ -56,6 +56,8 @@ namespace UnityEditor.Connect
         /// </summary>
         public abstract string projectSettingsPath { get; }
 
+        public abstract string settingsProviderClassName { get; }
+
         /// <summary>
         /// Sets the topic of notification for this service
         /// </summary>
@@ -75,7 +77,6 @@ namespace UnityEditor.Connect
         /// Default value is alive. Override to set it true.
         /// </summary>
         public virtual bool requiresCoppaCompliance => false;
-
 
         public SingleService()
         {

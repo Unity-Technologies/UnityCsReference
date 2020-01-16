@@ -575,7 +575,7 @@ namespace UnityEditor
                 iconRect.width = k_IconWidth;
                 bool renderDisabled = colorCode >= 4;
                 Color col = GUI.color;
-                if (renderDisabled)
+                if (renderDisabled || (CutBoard.hasCutboardData && CutBoard.IsGameObjectPartOfCutAndPaste((GameObject)goItem.objectPPTR)))
                     col = new Color(1f, 1f, 1f, 0.5f);
                 GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, true, 0, col, 0, 0);
 

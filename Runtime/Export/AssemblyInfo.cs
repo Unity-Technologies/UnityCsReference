@@ -72,6 +72,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 
+// Needed for Baselib CSharp binding access.
+[assembly: InternalsVisibleTo("Unity.Networking.Transport")]
+[assembly: InternalsVisibleTo("Unity.Entities")]
+[assembly: InternalsVisibleTo("Unity.Collections")]
+[assembly: InternalsVisibleTo("Unity.Core")]
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")]

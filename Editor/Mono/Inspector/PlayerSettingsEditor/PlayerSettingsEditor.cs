@@ -15,7 +15,6 @@ using System.Linq;
 using UnityEditor.Modules;
 using UnityEngine.Events;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
-using VR = UnityEditorInternal.VR;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
 
@@ -343,6 +342,7 @@ namespace UnityEditor
 
         // Legacy
         SerializedProperty m_LegacyClampBlendShapeWeights;
+        SerializedProperty m_AndroidEnableTango;
 
         SerializedProperty m_VirtualTexturingSupportEnabled;
 
@@ -366,14 +366,12 @@ namespace UnityEditor
             s_ColorGamutList.list = PlayerSettings.GetColorGamuts().ToList();
         }
 
-        public VR.PlayerSettingsEditorVR m_VRSettings;
-
         int selectedPlatform = 0;
         int scriptingDefinesControlID = 0;
         ISettingEditorExtension[] m_SettingsExtensions;
 
         // Section animation state
-        const int kNumberGUISections = 7;
+        const int kNumberGUISections = 6;
         AnimBool[] m_SectionAnimators = new AnimBool[kNumberGUISections];
         readonly AnimBool m_ShowDefaultIsNativeResolution = new AnimBool();
         readonly AnimBool m_ShowResolution = new AnimBool();
@@ -490,6 +488,7 @@ namespace UnityEditor
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
 
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
+            m_AndroidEnableTango           = FindPropertyAssert("AndroidEnableTango");
 
             m_VirtualTexturingSupportEnabled = FindPropertyAssert("virtualTexturingSupportEnabled");
 
@@ -505,8 +504,6 @@ namespace UnityEditor
             for (int i = 0; i < m_SectionAnimators.Length; i++)
                 m_SectionAnimators[i] = new AnimBool(m_SelectedSection.value == i);
             SetValueChangeListeners(Repaint);
-
-            m_VRSettings = new VR.PlayerSettingsEditorVR(this);
 
             splashScreenEditor.OnEnable();
 
@@ -589,7 +586,6 @@ namespace UnityEditor
             DebugAndCrashReportingGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             OtherSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             PublishSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            m_VRSettings.XRSectionGUI(targetGroup, sectionIndex++);
 
             if (sectionIndex != kNumberGUISections)
                 Debug.LogError("Mismatched number of GUI sections.");
@@ -1457,7 +1453,7 @@ namespace UnityEditor
                 OtherSectionConfigurationGUI(platform, targetGroup, settingsExtension);
                 OtherSectionOptimizationGUI(platform, targetGroup);
                 OtherSectionLoggingGUI();
-                OtherSectionLegacyGUI();
+                OtherSectionLegacyGUI(targetGroup);
                 ShowSharedNote();
             }
             EndSettingsBox();
@@ -2315,11 +2311,17 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        private void OtherSectionLegacyGUI()
+        private void OtherSectionLegacyGUI(BuildTargetGroup targetGroup)
         {
             GUILayout.Label(SettingsContent.legacyTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_LegacyClampBlendShapeWeights, SettingsContent.legacyClampBlendShapeWeights);
+
+            // ARCore - legacy way to enable
+            if (BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, BuildTargetDiscovery.VRAttributes.SupportTango))
+            {
+                EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
+            }
 
             EditorGUILayout.Space();
         }

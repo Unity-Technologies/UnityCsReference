@@ -63,6 +63,28 @@ namespace UnityEngine.Rendering
         unsafe private extern IntPtr GetDataRaw(int layer);
     }
 
+    [UsedByNativeCode]
+    [NativeHeader("Runtime/Graphics/AsyncGPUReadbackManaged.h")]
+    [StructLayout(LayoutKind.Sequential)]
+    unsafe internal struct AsyncRequestNativeArrayData
+    {
+        public void* nativeArrayBuffer;
+        public long  lengthInBytes;
+        public AtomicSafetyHandle safetyHandle;
+        public static AsyncRequestNativeArrayData CreateAndCheckAccess<T>(NativeArray<T> array) where T : struct
+        {
+            var nativeArrayData = new AsyncRequestNativeArrayData();
+            nativeArrayData.nativeArrayBuffer = array.GetUnsafePtr();
+            nativeArrayData.lengthInBytes     = array.Length * UnsafeUtility.SizeOf<T>();
+            var handle = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(array);
+            var versionPtr = (int*)handle.versionNode;
+            if (handle.version != ((*versionPtr) & AtomicSafetyHandle.WriteCheck))
+                AtomicSafetyHandle.CheckWriteAndThrowNoEarlyOut(handle);
+            nativeArrayData.safetyHandle = handle;
+            return nativeArrayData;
+        }
+    }
+
     [StaticAccessor("AsyncGPUReadbackManager::GetInstance()", StaticAccessorType.Dot)]
     public static class AsyncGPUReadback
     {
@@ -73,45 +95,56 @@ namespace UnityEngine.Rendering
                 Debug.LogError(String.Format("'{0}' doesn't support ReadPixels usage on this platform. Async GPU readback failed.", srcformat));
         }
 
-        static private void SetUpScriptingRequest(AsyncGPUReadbackRequest request, Action<AsyncGPUReadbackRequest> callback)
-        {
-            request.SetScriptingCallback(callback);
-            request.CreateSafetyHandle();
-        }
+        static public extern void WaitAllRequests();
 
         static public AsyncGPUReadbackRequest Request(ComputeBuffer src, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(ComputeBuffer src, int size, int offset, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_2(src, size, offset);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_2(src, size, offset, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(GraphicsBuffer src, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_1(src);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_1(src, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(GraphicsBuffer src, int size, int offset, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_2(src, size, offset);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_2(src, size, offset, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex = 0, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_Texture_1(src, mipIndex);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_Texture_1(src, mipIndex, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, TextureFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
@@ -121,17 +154,23 @@ namespace UnityEngine.Rendering
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, GraphicsFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            ValidateFormat(src, dstFormat);
-            AsyncGPUReadbackRequest request = Request_Internal_Texture_2(src, mipIndex, dstFormat);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                ValidateFormat(src, dstFormat);
+                AsyncGPUReadbackRequest request = Request_Internal_Texture_2(src, mipIndex, dstFormat, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_Texture_3(src, mipIndex, x, width, y, height, z, depth);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_Texture_3(src, mipIndex, x, width, y, height, z, depth, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
@@ -141,18 +180,22 @@ namespace UnityEngine.Rendering
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            ValidateFormat(src, dstFormat);
-            AsyncGPUReadbackRequest request = Request_Internal_Texture_4(src, mipIndex, x, width, y, height, z, depth, dstFormat);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                ValidateFormat(src, dstFormat);
+                AsyncGPUReadbackRequest request = Request_Internal_Texture_4(src, mipIndex, x, width, y, height, z, depth, dstFormat, null);
+                request.SetScriptingCallback(callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest RequestIntoNativeArray<T>(ref NativeArray<T> output, ComputeBuffer src, Action<AsyncGPUReadbackRequest> callback = null) where T : struct
         {
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_3(src, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
-                SetUpScriptingRequest(request, callback);
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src, &data);
+                request.SetScriptingCallback(callback);
                 return request;
             }
         }
@@ -161,8 +204,9 @@ namespace UnityEngine.Rendering
         {
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_4(src, size, offset, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
-                SetUpScriptingRequest(request, callback);
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_2(src, size, offset, &data);
+                request.SetScriptingCallback(callback);
                 return request;
             }
         }
@@ -171,8 +215,9 @@ namespace UnityEngine.Rendering
         {
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_3(src, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
-                SetUpScriptingRequest(request, callback);
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_1(src, &data);
+                request.SetScriptingCallback(callback);
                 return request;
             }
         }
@@ -181,8 +226,9 @@ namespace UnityEngine.Rendering
         {
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_4(src, size, offset, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
-                SetUpScriptingRequest(request, callback);
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                AsyncGPUReadbackRequest request = Request_Internal_GraphicsBuffer_2(src, size, offset, &data);
+                request.SetScriptingCallback(callback);
                 return request;
             }
         }
@@ -191,8 +237,9 @@ namespace UnityEngine.Rendering
         {
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_Texture_5(src, mipIndex, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
-                SetUpScriptingRequest(request, callback);
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                AsyncGPUReadbackRequest request = Request_Internal_Texture_1(src, mipIndex, &data);
+                request.SetScriptingCallback(callback);
                 return request;
             }
         }
@@ -207,8 +254,9 @@ namespace UnityEngine.Rendering
             ValidateFormat(src, dstFormat);
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_Texture_6(src, mipIndex, dstFormat, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
-                SetUpScriptingRequest(request, callback);
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                AsyncGPUReadbackRequest request = Request_Internal_Texture_2(src, mipIndex, dstFormat, &data);
+                request.SetScriptingCallback(callback);
                 return request;
             }
         }
@@ -223,53 +271,40 @@ namespace UnityEngine.Rendering
             ValidateFormat(src, dstFormat);
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_Texture_7(src, mipIndex, x, width, y, height, z, depth, dstFormat, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
-                SetUpScriptingRequest(request, callback);
+                var data = AsyncRequestNativeArrayData.CreateAndCheckAccess(output);
+                AsyncGPUReadbackRequest request = Request_Internal_Texture_4(src, mipIndex, x, width, y, height, z, depth, dstFormat, &data);
+                request.SetScriptingCallback(callback);
                 return request;
             }
         }
 
         [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_1([NotNull] ComputeBuffer buffer);
+        unsafe
+        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_1([NotNull] ComputeBuffer buffer, AsyncRequestNativeArrayData* data);
         [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_2([NotNull] ComputeBuffer src, int size, int offset);
+        unsafe
+        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_2([NotNull] ComputeBuffer src, int size, int offset, AsyncRequestNativeArrayData* data);
+
 
         [NativeMethod("Request")]
         unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_3([NotNull] ComputeBuffer buffer, void* output, int allocationSize);
+        static private extern AsyncGPUReadbackRequest Request_Internal_GraphicsBuffer_1([NotNull] GraphicsBuffer buffer, AsyncRequestNativeArrayData* data);
         [NativeMethod("Request")]
         unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_4([NotNull] ComputeBuffer src, int size, int offset, void* output, int allocationSize);
+        static private extern AsyncGPUReadbackRequest Request_Internal_GraphicsBuffer_2([NotNull] GraphicsBuffer src, int size, int offset, AsyncRequestNativeArrayData* data);
 
-        [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_GraphicsBuffer_1([NotNull] GraphicsBuffer buffer);
-        [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_GraphicsBuffer_2([NotNull] GraphicsBuffer src, int size, int offset);
 
         [NativeMethod("Request")]
         unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_GraphicsBuffer_3([NotNull] GraphicsBuffer buffer, void* output, int allocationSize);
+        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_1([NotNull] Texture src, int mipIndex, AsyncRequestNativeArrayData* data);
         [NativeMethod("Request")]
         unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_GraphicsBuffer_4([NotNull] GraphicsBuffer src, int size, int offset, void* output, int allocationSize);
-
-        [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_1([NotNull] Texture src, int mipIndex);
-        [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_2([NotNull] Texture src, int mipIndex, GraphicsFormat dstFormat);
-        [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_3([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth);
-        [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_4([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat);
-
+        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_2([NotNull] Texture src, int mipIndex, GraphicsFormat dstFormat, AsyncRequestNativeArrayData* data);
         [NativeMethod("Request")]
         unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_5([NotNull] Texture src, int mipIndex, void* output, int allocationSize);
+        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_3([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, AsyncRequestNativeArrayData* data);
         [NativeMethod("Request")]
         unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_6([NotNull] Texture src, int mipIndex, GraphicsFormat dstFormat, void* output, int allocationSize);
-        [NativeMethod("Request")]
-        unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_7([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat, void* output, int allocationSize);
+        static private extern AsyncGPUReadbackRequest Request_Internal_Texture_4([NotNull] Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat, AsyncRequestNativeArrayData* data);
     }
 }

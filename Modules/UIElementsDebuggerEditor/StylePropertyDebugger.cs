@@ -430,6 +430,12 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     val = new StyleBackground(newValue as Texture2D);
                 }
+                else if (type == typeof(StyleEnum<Overflow>) && newValue is OverflowInternal)
+                {
+                    OverflowInternal newV = (OverflowInternal)newValue;
+                    Overflow v = newV == OverflowInternal.Hidden ? Overflow.Hidden : Overflow.Visible;
+                    val = new StyleEnum<Overflow>(v);
+                }
                 else
                 {
                     var valueInfo = type.GetProperty("value");

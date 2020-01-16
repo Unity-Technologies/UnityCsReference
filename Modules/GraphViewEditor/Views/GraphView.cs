@@ -1545,9 +1545,9 @@ namespace UnityEditor.Experimental.GraphView
         static readonly int s_EditorPixelsPerPointId = Shader.PropertyToID("_EditorPixelsPerPoint");
         static readonly int s_GraphViewScaleId = Shader.PropertyToID("_GraphViewScale");
 
-        void OnBeforeDrawChain(UnityEngine.UIElements.UIR.UIRenderDevice device)
+        void OnBeforeDrawChain(UnityEngine.UIElements.UIR.RenderChain renderChain)
         {
-            Material mat = device.GetStandardMaterial();
+            Material mat = renderChain.GetStandardMaterial();
             // Set global graph view shader properties (used by UIR)
             mat.SetFloat(s_EditorPixelsPerPointId, EditorGUIUtility.pixelsPerPoint);
             mat.SetFloat(s_GraphViewScaleId, scale);

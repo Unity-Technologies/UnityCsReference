@@ -34,6 +34,7 @@ namespace UnityEngine.UIElements.UIR
     [VisibleToOtherModules("Unity.UIElements")]
     internal partial class Utility
     {
+        [Flags] internal enum RendererCallbacks { RendererCallback_Init = 1, RendererCallback_Exec = 2, RendererCallback_Cleanup = 4 } // Combinable bit-wise flags
         internal enum GPUBufferType { Vertex, Index }
         unsafe public class GPUBuffer<T> : IDisposable where T : struct
         {
@@ -72,6 +73,8 @@ namespace UnityEngine.UIElements.UIR
         public static event Action<bool> GraphicsResourcesRecreate;
         public static event Action EngineUpdate;
         public static event Action FlushPendingResources;
+        public static event Action<Camera> RegisterIntermediateRenderers;
+        public static event Action<IntPtr> RenderNodeAdd, RenderNodeExecute, RenderNodeCleanup;
 
         [RequiredByNativeCode]
         internal static void RaiseGraphicsResourcesRecreate(bool recreate)
@@ -98,27 +101,57 @@ namespace UnityEngine.UIElements.UIR
             FlushPendingResources?.Invoke();
         }
 
-        extern static IntPtr AllocateBuffer(int elementCount, int elementStride, bool vertexBuffer);
-        extern static void FreeBuffer(IntPtr buffer);
-        extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
-        extern static void SetVectorArray(MaterialPropertyBlock props, int name, IntPtr vector4s, int count);
+        [RequiredByNativeCode]
+        internal static void RaiseRegisterIntermediateRenderers(Camera camera)
+        {
+            RegisterIntermediateRenderers?.Invoke(camera);
+        }
 
-        public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
-        public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
-        public extern static void SetPropertyBlock(MaterialPropertyBlock props);
-        public extern static void SetScissorRect(RectInt scissorRect);
-        public extern static void DisableScissor();
-        public extern static bool IsScissorEnabled();
-        public extern static UInt32 InsertCPUFence();
-        public extern static bool CPUFencePassed(UInt32 fence);
-        public extern static void WaitForCPUFencePassed(UInt32 fence);
-        public extern static void SyncRenderThread();
-        public extern static RectInt GetActiveViewport();
-        public extern static void ProfileDrawChainBegin();
-        public extern static void ProfileDrawChainEnd();
+        [RequiredByNativeCode]
+        internal static void RaiseRenderNodeAdd(IntPtr userData)
+        {
+            RenderNodeAdd?.Invoke(userData);
+        }
+
+        [RequiredByNativeCode]
+        internal static void RaiseRenderNodeExecute(IntPtr userData)
+        {
+            RenderNodeExecute?.Invoke(userData);
+        }
+
+        [RequiredByNativeCode]
+        internal static void RaiseRenderNodeCleanup(IntPtr userData)
+        {
+            RenderNodeCleanup?.Invoke(userData);
+        }
+
+        [ThreadSafe] extern static IntPtr AllocateBuffer(int elementCount, int elementStride, bool vertexBuffer);
+        [ThreadSafe] extern static void FreeBuffer(IntPtr buffer);
+        [ThreadSafe] extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
+        [ThreadSafe] extern static void SetVectorArray(MaterialPropertyBlock props, int name, IntPtr vector4s, int count);
+        [ThreadSafe] public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
+
+        public extern static void RegisterIntermediateRenderer(
+            Camera camera, Material material, Matrix4x4 transform, Bounds aabb,
+            int renderLayer, int shadowCasting, bool receiveShadows, int sameDistanceSortPriority,
+            UInt64 sceneCullingMask, int rendererCallbackFlags, IntPtr userData, int userDataSize);
+        [ThreadSafe] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
+        [ThreadSafe] public extern static void SetPropertyBlock(MaterialPropertyBlock props);
+        [ThreadSafe] public extern static void SetScissorRect(RectInt scissorRect);
+        [ThreadSafe] public extern static void DisableScissor();
+        [ThreadSafe] public extern static bool IsScissorEnabled();
+        [ThreadSafe] public extern static UInt32 InsertCPUFence();
+        [ThreadSafe] public extern static bool CPUFencePassed(UInt32 fence);
+        [ThreadSafe] public extern static void WaitForCPUFencePassed(UInt32 fence);
+        [ThreadSafe] public extern static void SyncRenderThread();
+        [ThreadSafe] public extern static RectInt GetActiveViewport();
+        [ThreadSafe] public extern static void ProfileDrawChainBegin();
+        [ThreadSafe] public extern static void ProfileDrawChainEnd();
         public extern static void ProfileImmediateRendererBegin();
         public extern static void ProfileImmediateRendererEnd();
         public extern static void NotifyOfUIREvents(bool subscribe);
-        public extern static bool GetInvertProjectionMatrix();
+        [ThreadSafe] public extern static Matrix4x4 GetUnityProjectionMatrix();
+        [ThreadSafe] public extern static Matrix4x4 GetDeviceProjectionMatrix();
+        [ThreadSafe] public extern static bool DebugIsMainThread(); // For debug code only
     }
 }

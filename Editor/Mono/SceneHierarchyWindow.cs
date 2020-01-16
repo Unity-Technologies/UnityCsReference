@@ -6,11 +6,12 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
-    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu
+    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener
     {
         public static SceneHierarchyWindow lastInteractedHierarchyWindow { get { return s_LastInteractedHierarchy; } }
         static SceneHierarchyWindow s_LastInteractedHierarchy;
@@ -130,6 +131,8 @@ namespace UnityEditor
 
             ExecuteCommands();
         }
+
+        public Object hoveredObject => sceneHierarchy.treeView.hoveredItem != null ? Object.FindObjectFromInstanceID(sceneHierarchy.treeView.hoveredItem.id) : null;
 
         public void ReloadData()
         {
@@ -287,6 +290,18 @@ namespace UnityEditor
         internal void RebuildStageHeader()
         {
             m_StageHandling.CacheStageHeaderContent();
+        }
+
+        [MenuItem("Edit/Paste As Child %#V", false, 103)]
+        static void PasteAsChild()
+        {
+            lastInteractedHierarchyWindow?.m_SceneHierarchy?.PasteGOAsChild();
+        }
+
+        [MenuItem("Edit/Paste As Child %#V", true, 103)]
+        static bool ValidatePasteAsChild()
+        {
+            return lastInteractedHierarchyWindow?.m_SceneHierarchy?.CanPasteAsChild() ?? false;
         }
     }
 

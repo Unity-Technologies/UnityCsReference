@@ -509,6 +509,9 @@ namespace UnityEditor
             Menu.AddMenuItem("Window/Layouts/Save Layout...", "", false, layoutMenuItemPriority++, SaveGUI, null);
             Menu.AddMenuItem("Window/Layouts/Delete Layout...", "", false, layoutMenuItemPriority++, DeleteGUI, null);
             Menu.AddMenuItem("Window/Layouts/Revert Factory Settings...", "", false, layoutMenuItemPriority++, () => RevertFactorySettings(false), null);
+
+            Menu.AddMenuItem("Window/Layouts/More/Save to disk...", "", false, 998, () => SaveToFile(), null);
+            Menu.AddMenuItem("Window/Layouts/More/Load from disk...", "", false, 999, () => LoadFromFile(), null);
         }
 
         internal static EditorWindow FindEditorWindowOfType(Type type)
@@ -1305,6 +1308,26 @@ namespace UnityEditor
             UnityEditor.SaveWindowLayout.Show(FindMainView().screenPosition);
         }
 
+        public static void LoadFromFile()
+        {
+            var layoutFilePath = EditorUtility.OpenFilePanelWithFilters("Load layout from disk...", "", new[] {"Layout", "wlt"});
+            if (String.IsNullOrEmpty(layoutFilePath))
+                return;
+
+            if (LoadWindowLayout(layoutFilePath, false))
+                Debug.Log("Loaded layout from " + layoutFilePath);
+        }
+
+        public static void SaveToFile()
+        {
+            var layoutFilePath = EditorUtility.SaveFilePanel("Save layout to disk...", "", "layout", "wlt");
+            if (String.IsNullOrEmpty(layoutFilePath))
+                return;
+
+            SaveWindowLayout(layoutFilePath);
+            Debug.Log("Saved layout to " + layoutFilePath);
+        }
+
         public static void DeleteGUI()
         {
             DeleteWindowLayout.Show(FindMainView().screenPosition);
@@ -1325,7 +1348,7 @@ namespace UnityEditor
             FileUtil.DeleteFileOrDirectory(layoutsPreferencesPath);
             FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
 
-            LoadDefaultWindowPreferences();
+            LoadCurrentModeLayout(true);
             ReloadWindowLayoutMenu();
             EditorUtility.Internal_UpdateAllMenus();
             ShortcutIntegration.instance.RebuildShortcuts();

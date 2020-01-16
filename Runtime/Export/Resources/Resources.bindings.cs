@@ -100,7 +100,7 @@ namespace UnityEngine
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
-        [FreeFunction("GetScriptingBuiltinResource")]
+        [FreeFunction("GetScriptingBuiltinResource", ThrowsException = true)]
         extern public static Object GetBuiltinResource([NotNull] Type type, string path);
 
         public static T GetBuiltinResource<T>(string path) where T : Object

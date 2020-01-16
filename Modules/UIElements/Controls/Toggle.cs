@@ -104,8 +104,8 @@ namespace UnityEngine.UIElements
         {
             if ((evt as MouseUpEvent)?.button == (int)MouseButton.LeftMouse)
             {
-                var mue = (MouseUpEvent)evt;
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mue.mousePosition)))
+                var ce = (MouseUpEvent)evt;
+                if (visualInput.ContainsPoint(visualInput.WorldToLocal(ce.mousePosition)))
                 {
                     OnClick();
                 }

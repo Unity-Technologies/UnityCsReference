@@ -75,9 +75,9 @@ namespace UnityEditor.UIElements
             }
         }
 
-        static void OnBeforeDrawChain(UnityEngine.UIElements.UIR.UIRenderDevice device)
+        static void OnBeforeDrawChain(UnityEngine.UIElements.UIR.RenderChain renderChain)
         {
-            Material mat = device.GetStandardMaterial();
+            Material mat = renderChain.GetStandardMaterial();
             mat.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
         }
 

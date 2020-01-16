@@ -548,8 +548,9 @@ namespace UnityEditor
                                         const int kMinDirectSamples = 1;
                                         const int kMinEnvironmentSamples = 8;
                                         const int kMinSamples = 8;
-                                        //We are counting the samples number on int32 hence the limitation here
-                                        const int kMaxSamples = int.MaxValue;
+
+                                        //We are using (signed) int32 plus a rounding to next power of two, hence the 30 bit limitation.
+                                        const int kMaxSamples = 1 << 30;
 
                                         // Sample count
                                         // TODO(PVR): make non-fixed sampling modes work.

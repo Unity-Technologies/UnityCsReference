@@ -451,9 +451,31 @@ namespace UnityEditor
             ShowPopupWithMode(ShowMode.PopupMenu, true);
         }
 
+        void MakeModal()
+        {
+            try
+            {
+                ContainerWindow.s_Modal = true;
+
+                SavedGUIState guiState = SavedGUIState.Create();
+                // TODO need to promote this outside of UIE
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PushDispatcherContext();
+
+                Internal_MakeModal(m_Parent.window);
+
+                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PopDispatcherContext();
+                guiState.ApplyAndForget();
+            }
+            finally
+            {
+                ContainerWindow.s_Modal = false;
+            }
+        }
+
         public void ShowModalUtility()
         {
             ShowWithMode(ShowMode.ModalUtility);
+            MakeModal();
         }
 
         // Used for popup style windows.
@@ -591,23 +613,7 @@ namespace UnityEditor
         public void ShowModal()
         {
             ShowWithMode(ShowMode.AuxWindow);
-            try
-            {
-                ContainerWindow.s_Modal = true;
-
-                SavedGUIState guiState = SavedGUIState.Create();
-                // TODO need to promote this outside of UIE
-                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PushDispatcherContext();
-
-                MakeModal(m_Parent.window);
-
-                UnityEngine.UIElements.EventDispatcher.editorDispatcher.PopDispatcherContext();
-                guiState.ApplyAndForget();
-            }
-            finally
-            {
-                ContainerWindow.s_Modal = false;
-            }
+            MakeModal();
         }
 
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
@@ -764,6 +770,7 @@ namespace UnityEditor
                 }
             }
             win.Show();
+
             return win;
         }
 
@@ -894,6 +901,7 @@ namespace UnityEditor
                 m_Parent.window.Close();
             }
             UnityEngine.Object.DestroyImmediate(this, true);
+            EditorWindow.UpdateWindowMenuListing();
         }
 
         // Make the window repaint.
@@ -1062,6 +1070,8 @@ namespace UnityEditor
             m_EnableViewDataPersistence = true;
             m_RequestedViewDataSave = false;
             titleContent.text = GetType().ToString();
+
+            UpdateWindowMenuListing();
         }
 
         private void __internalAwake()
@@ -1107,6 +1117,41 @@ namespace UnityEditor
         public virtual IEnumerable<Type> GetExtraPaneTypes()
         {
             return Enumerable.Empty<Type>();
+        }
+
+        internal static void UpdateWindowMenuListing()
+        {
+            EditorApplication.delayCall -= EditorWindow.BuildWindowMenuListing;
+            EditorApplication.delayCall += EditorWindow.BuildWindowMenuListing;
+        }
+
+        internal static void BuildWindowMenuListing()
+        {
+            const string k_RootMenuItemName = "Window/Panels";
+
+            EditorApplication.delayCall -= EditorWindow.BuildWindowMenuListing;
+
+            Menu.RemoveMenuItem(k_RootMenuItemName);
+            var editorWindows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            int menuIdx = -10;
+
+            Menu.AddMenuItem($"{k_RootMenuItemName}/Close all floating panels...", "", false, menuIdx++, () =>
+            {
+                var windows = Resources.FindObjectsOfTypeAll<ContainerWindow>();
+                foreach (var win in windows.Where(w => !!w && w.showMode != ShowMode.MainWindow))
+                    win.Close();
+            }, null);
+            Menu.AddSeparator($"{k_RootMenuItemName}/", menuIdx++);
+
+            foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
+            {
+                var title = win.titleContent.text;
+                if (!String.IsNullOrEmpty(win.titleContent.tooltip) && win.titleContent.tooltip != title)
+                    title += " (" + win.titleContent.tooltip + ")";
+                title = title.Replace("/", "\\");
+                Menu.AddMenuItem($"{k_RootMenuItemName}/{title}", "", false, menuIdx++, () => win.Focus(), null);
+            }
+            EditorUtility.Internal_UpdateAllMenus();
         }
     }
 

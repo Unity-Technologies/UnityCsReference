@@ -84,7 +84,7 @@ namespace UnityEngine.Profiling
         internal CustomSampler() {}
         internal CustomSampler(IntPtr ptr) { m_Ptr = ptr; }
 
-        static public CustomSampler Create(string name, bool collectGpuData = false)
+        public static CustomSampler Create(string name, bool collectGpuData = false)
         {
             IntPtr nativeSampler = CreateInternal(name, collectGpuData);
             if (nativeSampler == IntPtr.Zero)
@@ -93,23 +93,33 @@ namespace UnityEngine.Profiling
         }
 
         [NativeMethod(Name = "ProfilerBindings::CreateCustomSamplerInternal", IsFreeFunction = true, ThrowsException = true, IsThreadSafe = true)]
-        private extern static IntPtr CreateInternal([NotNull] string name, bool collectGpuData);
+        static extern IntPtr CreateInternal([NotNull] string name, bool collectGpuData);
 
         [Conditional("ENABLE_PROFILER")]
-        [NativeMethod(Name = "ProfilerBindings::CustomSampler_Begin", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
-        public extern void Begin();
+        public void Begin()
+        {
+            Begin_Internal(m_Ptr);
+        }
 
         [Conditional("ENABLE_PROFILER")]
         public void Begin(UnityEngine.Object targetObject)
         {
-            BeginWithObject(targetObject);
+            BeginWithObject_Internal(m_Ptr, targetObject);
         }
 
-        [NativeMethod(Name = "ProfilerBindings::CustomSampler_BeginWithObject", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
-        private extern void BeginWithObject(UnityEngine.Object targetObject);
-
         [Conditional("ENABLE_PROFILER")]
-        [NativeMethod(Name = "ProfilerBindings::CustomSampler_End", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
-        public extern void End();
+        public void End()
+        {
+            End_Internal(m_Ptr);
+        }
+
+        [NativeMethod(Name = "ProfilerBindings::CustomSampler_Begin", IsFreeFunction = true, IsThreadSafe = true)]
+        static extern void Begin_Internal(IntPtr ptr);
+
+        [NativeMethod(Name = "ProfilerBindings::CustomSampler_BeginWithObject", IsFreeFunction = true, IsThreadSafe = true)]
+        static extern void BeginWithObject_Internal(IntPtr ptr, UnityEngine.Object targetObject);
+
+        [NativeMethod(Name = "ProfilerBindings::CustomSampler_End", IsFreeFunction = true, IsThreadSafe = true)]
+        static extern void End_Internal(IntPtr ptr);
     }
 }

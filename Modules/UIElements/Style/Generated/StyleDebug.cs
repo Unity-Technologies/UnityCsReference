@@ -297,7 +297,7 @@ namespace UnityEngine.UIElements
                     style.backgroundColor = (StyleColor)value;
                     break;
                 case StylePropertyId.BackgroundImage:
-                    style.backgroundImage = value == null ? null : (StyleBackground)value;
+                    style.backgroundImage = (StyleBackground)value;
                     break;
                 case StylePropertyId.BorderBottomColor:
                     style.borderBottomColor = (StyleColor)value;
@@ -432,7 +432,7 @@ namespace UnityEngine.UIElements
                     style.unityBackgroundScaleMode = (StyleEnum<ScaleMode>)value;
                     break;
                 case StylePropertyId.UnityFont:
-                    style.unityFont = value == null ? null : (StyleFont)value;
+                    style.unityFont = (StyleFont)value;
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     style.unityFontStyleAndWeight = (StyleEnum<FontStyle>)value;

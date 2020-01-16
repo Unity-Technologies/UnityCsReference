@@ -79,7 +79,8 @@ namespace UnityEditor
             }
 
             LightingSettingsGUI(true);
-            OtherSettingsGUI(true, false, false, true);
+            RayTracingSettingsGUI();
+            OtherSettingsGUI(true, false, false);
 
             serializedObject.ApplyModifiedProperties();
         }

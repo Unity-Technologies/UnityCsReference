@@ -192,7 +192,7 @@ namespace UnityEditor
 
             public struct Enumerator : IEnumerator<Type>
             {
-                TypeCollection m_Collection;
+                readonly TypeCollection m_Collection;
                 int m_Index;
 
                 internal Enumerator(ref TypeCollection collection)
@@ -219,10 +219,11 @@ namespace UnityEditor
 
             class DebugView
             {
-                TypeCollection m_Collection;
+                readonly TypeCollection m_Collection;
+
                 public DebugView(ref TypeCollection collection)
                 {
-                    this.m_Collection = collection;
+                    m_Collection = collection;
                 }
 
                 [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -230,7 +231,7 @@ namespace UnityEditor
                 {
                     get
                     {
-                        Type[] values = new Type[m_Collection.count];
+                        var values = new Type[m_Collection.count];
                         m_Collection.CopyTo(values, 0);
                         return values;
                     }
@@ -414,7 +415,7 @@ namespace UnityEditor
 
             public struct Enumerator : IEnumerator<MethodInfo>
             {
-                MethodCollection m_Collection;
+                readonly MethodCollection m_Collection;
                 int m_Index;
 
                 internal Enumerator(ref MethodCollection collection)
@@ -441,7 +442,8 @@ namespace UnityEditor
 
             class DebugView
             {
-                MethodCollection m_Collection;
+                readonly MethodCollection m_Collection;
+
                 public DebugView(ref MethodCollection collection)
                 {
                     m_Collection = collection;
@@ -452,7 +454,231 @@ namespace UnityEditor
                 {
                     get
                     {
-                        MethodInfo[] values = new MethodInfo[m_Collection.count];
+                        var values = new MethodInfo[m_Collection.count];
+                        m_Collection.CopyTo(values, 0);
+                        return values;
+                    }
+                }
+            }
+        }
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        [DebuggerDisplay("Count = {" + nameof(count) + "}")]
+        [DebuggerTypeProxy(typeof(DebugView))]
+        public struct FieldInfoCollection : IList<FieldInfo>, IList
+        {
+            [NonSerialized]
+            readonly IntPtr ptr;
+            readonly int count;
+
+            internal FieldInfoCollection(IntPtr p, int s) { ptr = p; count = s; }
+
+            public int Count => count;
+
+            public bool IsReadOnly => true;
+
+            public bool IsFixedSize => true;
+
+            public bool IsSynchronized => true;
+
+            object ICollection.SyncRoot => null;
+
+            public FieldInfo this[int index]
+            {
+                get
+                {
+                    if (index >= 0 && index < count)
+                        return GetValue(ptr, index);
+                    throw new IndexOutOfRangeException($"Index {index} is out of range of '{count}' Count.");
+                }
+                set
+                {
+                    ThrowNotSupported();
+                }
+            }
+
+            public bool Contains(FieldInfo item) => IndexOf(item) != -1;
+
+            public bool Contains(object item) => IndexOf(item) != -1;
+
+            public Enumerator GetEnumerator() => new Enumerator(ref this);
+
+            public void CopyTo(FieldInfo[] array, int arrayIndex)
+            {
+                if (array == null)
+                    throw new ArgumentNullException(nameof(array));
+                if (arrayIndex < 0)
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                if (arrayIndex + count > array.Length)
+                    throw new ArgumentOutOfRangeException("arrayIndex");
+
+                Internal_CopyTo(array, arrayIndex);
+            }
+
+            public void CopyTo(Array array, int arrayIndex)
+            {
+                if (array == null)
+                    throw new ArgumentNullException(nameof(array));
+                if (array.Rank != 1)
+                    throw new ArgumentException(nameof(array));
+                if (arrayIndex < 0)
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                if (arrayIndex + count > array.Length)
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                var typedArray = array as FieldInfo[];
+                if (typedArray == null)
+                    throw new ArrayTypeMismatchException(nameof(array));
+
+                Internal_CopyTo(typedArray, arrayIndex);
+            }
+
+            public int IndexOf(FieldInfo item)
+            {
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item));
+
+                for (int i = 0; i < count; ++i)
+                {
+                    if (item.Equals(GetValue(ptr, i)))
+                        return i;
+                }
+
+                return -1;
+            }
+
+            public int IndexOf(object item)
+            {
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item));
+                var typedItem = item as FieldInfo;
+                if (typedItem == null)
+                    throw new ArgumentException(nameof(item) + " is not of type " + nameof(FieldInfo));
+
+                return IndexOf(typedItem);
+            }
+
+            [ThreadSafe]
+            static extern FieldInfo GetValue(IntPtr key, int index);
+
+            [ThreadSafe]
+            extern void Internal_CopyTo(FieldInfo[] array, int arrayIndex);
+
+            IEnumerator<FieldInfo> IEnumerable<FieldInfo>.GetEnumerator() => GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            void ICollection<FieldInfo>.Add(FieldInfo item)
+            {
+                ThrowNotSupported();
+            }
+
+            void ICollection<FieldInfo>.Clear()
+            {
+                ThrowNotSupported();
+            }
+
+            bool ICollection<FieldInfo>.Remove(FieldInfo item)
+            {
+                ThrowNotSupported();
+                return false;
+            }
+
+            void IList<FieldInfo>.Insert(int index, FieldInfo item)
+            {
+                ThrowNotSupported();
+            }
+
+            void IList<FieldInfo>.RemoveAt(int index)
+            {
+                ThrowNotSupported();
+            }
+
+            object IList.this[int index]
+            {
+                get
+                {
+                    return this[index];
+                }
+                set
+                {
+                    ThrowNotSupported();
+                }
+            }
+
+            int IList.Add(object value)
+            {
+                ThrowNotSupported();
+                return -1;
+            }
+
+            void IList.Clear()
+            {
+                ThrowNotSupported();
+            }
+
+            void IList.Insert(int index, object value)
+            {
+                ThrowNotSupported();
+            }
+
+            void IList.Remove(object value)
+            {
+                ThrowNotSupported();
+            }
+
+            void IList.RemoveAt(int index)
+            {
+                ThrowNotSupported();
+            }
+
+            static void ThrowNotSupported()
+            {
+                throw new NotSupportedException(nameof(TypeCollection) + " is read-only. Modification is not supported.");
+            }
+
+            public struct Enumerator : IEnumerator<FieldInfo>
+            {
+                readonly FieldInfoCollection m_Collection;
+                int m_Index;
+
+                internal Enumerator(ref FieldInfoCollection collection)
+                {
+                    m_Collection = collection;
+                    m_Index = -1;
+                }
+
+                public void Dispose()
+                {
+                }
+
+                public bool MoveNext()
+                {
+                    m_Index++;
+                    return m_Index < m_Collection.Count;
+                }
+
+                public FieldInfo Current => m_Collection[m_Index];
+
+                void IEnumerator.Reset() => m_Index = -1;
+                object IEnumerator.Current => Current;
+            }
+
+            class DebugView
+            {
+                readonly FieldInfoCollection m_Collection;
+
+                public DebugView(ref FieldInfoCollection collection)
+                {
+                    m_Collection = collection;
+                }
+
+                [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+                public FieldInfo[] Values
+                {
+                    get
+                    {
+                        var values = new FieldInfo[m_Collection.count];
                         m_Collection.CopyTo(values, 0);
                         return values;
                     }
@@ -465,6 +691,9 @@ namespace UnityEditor
 
         [ThreadSafe]
         public static extern MethodCollection GetMethodsWithAttribute(Type attrType);
+
+        [ThreadSafe]
+        public static extern FieldInfoCollection GetFieldsWithAttribute(Type attrType);
 
         [ThreadSafe]
         static extern TypeCollection GetTypesDerivedFromInterface(Type interfaceType);

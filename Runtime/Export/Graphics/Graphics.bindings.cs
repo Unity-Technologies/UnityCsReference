@@ -596,7 +596,7 @@ namespace UnityEngine
         private LightmapSettings() {}
 
         // Lightmap array.
-        public extern static LightmapData[] lightmaps {[FreeFunction] get; [FreeFunction] set; }
+        public extern static LightmapData[] lightmaps {[FreeFunction] get; [FreeFunction(ThrowsException = true)] set; }
 
         public extern static LightmapsMode lightmapsMode { get; [FreeFunction(ThrowsException = true)] set; }
 

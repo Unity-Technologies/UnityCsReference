@@ -19,15 +19,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal static class RenderEvents
     {
-        internal static Shader ResolveShader(Shader shader)
-        {
-            if (shader == null)
-                shader = Shader.Find(UIRUtility.k_DefaultShaderName);
-            Debug.Assert(shader != null, "Failed to load the shader UIRDefault shader");
-            shader.hideFlags |= HideFlags.DontSaveInEditor;
-            return shader;
-        }
-
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
         {
             bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
@@ -273,7 +264,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             bool mustRecurse = hierarchical;
 
             ClipMethod oldClippingMethod = ve.renderChainData.clipMethod;
-            ClipMethod newClippingMethod = mustUpdateClippingMethod ? DetermineSelfClipMethod(ve) : oldClippingMethod;
+            ClipMethod newClippingMethod = mustUpdateClippingMethod ? DetermineSelfClipMethod(renderChain, ve) : oldClippingMethod;
 
             // Shader discard support
             bool clipRectIDChanged = false;
@@ -491,6 +482,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (dirtyHasBeenResolved)
                 ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
 
+            // Make sure to pre-evaluate world transform and clip now so we don't do it at render time
+            if (renderChain.drawInCameras)
+                ve.EnsureWorldTransformAndClipUpToDate();
+
             if ((ve.renderHints & RenderHints.GroupTransform) == 0)
             {
                 // Recurse on children
@@ -591,7 +586,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return false;
         }
 
-        static ClipMethod DetermineSelfClipMethod(VisualElement ve)
+        static ClipMethod DetermineSelfClipMethod(RenderChain renderChain, VisualElement ve)
         {
             if (!ve.ShouldClip())
                 return ClipMethod.NotClipped;
@@ -606,7 +601,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (ve.hierarchy.parent?.renderChainData.isStencilClipped == true)
                 return ClipMethod.ShaderDiscard; // Prevent nested stenciling for now, even if inaccurate
 
-            return ClipMethod.Stencil;
+            // Stencil clipping is not yet supported in world-space rendering, fallback to a coarse shader discard for now
+            return renderChain.drawInCameras ? ClipMethod.ShaderDiscard : ClipMethod.Stencil;
         }
 
         static bool NeedsTransformID(VisualElement ve)
@@ -630,7 +626,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
-            if (IsElementSelfHidden(ve) || ve.renderChainData.isHierarchyHidden)
+            var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
+            if ((IsElementSelfHidden(ve) || ve.renderChainData.isHierarchyHidden) && !isClippingWithStencil)
             {
                 if (ve.renderChainData.data != null)
                 {
@@ -673,6 +670,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 painter.DrawVisualElementBorder();
                 painter.ApplyVisualElementClipping();
                 ve.InvokeGenerateVisualContent(painter.meshGenerationContext);
+            }
+            else
+            {
+                // Even though the element hidden, we still have to push the stencil shape in case any children are visible.
+                if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
+                    painter.ApplyVisualElementClipping();
             }
             var entries = painter.entries;
 
@@ -1875,6 +1878,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
             rp.rect.y += widthT;
             rp.rect.width -= widthL + widthR;
             rp.rect.height -= widthT + widthB;
+
+            // Skip padding, when requested
+            if (style.unityOverflowClipBox == OverflowClipBox.ContentBox)
+            {
+                rp.rect.x += style.paddingLeft.value.value;
+                rp.rect.y += style.paddingTop.value.value;
+                rp.rect.width -= style.paddingLeft.value.value + style.paddingRight.value.value;
+                rp.rect.height -= style.paddingTop.value.value + style.paddingBottom.value.value;
+            }
 
             m_CurrentEntry.clipRectID = m_ClipRectID;
             m_CurrentEntry.isStencilClipped = m_StencilClip;

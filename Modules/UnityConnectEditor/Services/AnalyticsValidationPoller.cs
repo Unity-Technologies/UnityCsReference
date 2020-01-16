@@ -3,12 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
-using UnityEditor.Connect;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace UnityEditor.Mono.UnityConnect.Services
+namespace UnityEditor.Connect
 {
     internal class AnalyticsValidationPoller
     {

@@ -76,16 +76,16 @@ namespace Unity.Jobs.LowLevel.Unsafe
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
         public static extern bool GetWorkStealingRange(ref JobRanges ranges, int jobIndex, out int beginIndex, out int endIndex);
 
-        [FreeFunction("ScheduleManagedJob")]
+        [FreeFunction("ScheduleManagedJob", ThrowsException = true)]
         public static extern JobHandle Schedule(ref JobScheduleParameters parameters);
 
-        [FreeFunction("ScheduleManagedJobParallelFor")]
+        [FreeFunction("ScheduleManagedJobParallelFor", ThrowsException = true)]
         public static extern JobHandle ScheduleParallelFor(ref JobScheduleParameters parameters, int arrayLength, int innerloopBatchCount);
 
-        [FreeFunction("ScheduleManagedJobParallelForDeferArraySize")]
+        [FreeFunction("ScheduleManagedJobParallelForDeferArraySize", ThrowsException = true)]
         unsafe public static extern JobHandle ScheduleParallelForDeferArraySize(ref JobScheduleParameters parameters, int innerloopBatchCount, void* listData, void* listDataAtomicSafetyHandle);
 
-        [FreeFunction("ScheduleManagedJobParallelForTransform")]
+        [FreeFunction("ScheduleManagedJobParallelForTransform", ThrowsException = true)]
         public static extern JobHandle ScheduleParallelForTransform(ref JobScheduleParameters parameters, IntPtr transfromAccesssArray);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]

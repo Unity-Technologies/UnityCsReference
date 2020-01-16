@@ -15,6 +15,7 @@ namespace UnityEditor.Connect
         public override string description { get; }
         public override string pathTowardIcon { get; }
         public override string projectSettingsPath { get; }
+        public override string settingsProviderClassName => nameof(CollabProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.CollabService;
         public override string packageId { get; }

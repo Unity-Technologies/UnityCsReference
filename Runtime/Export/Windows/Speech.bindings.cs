@@ -22,6 +22,7 @@ namespace UnityEngine.Windows.Speech
             get;
         }
 
+        [NativeThrows]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         public extern static void Restart();
 
@@ -39,6 +40,7 @@ namespace UnityEngine.Windows.Speech
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         protected static extern IntPtr CreateFromGrammarFile(object self, string grammarFilePath, ConfidenceLevel minimumConfidence);
 
+        [NativeThrows]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void Start_Internal(IntPtr recognizer);
 
@@ -62,6 +64,7 @@ namespace UnityEngine.Windows.Speech
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private static extern IntPtr Create(object self, ConfidenceLevel minimumConfidence, DictationTopicConstraint topicConstraint);
 
+        [NativeThrows]
         [NativeHeader("PlatformDependent/Win/Bindings/SpeechBindings.h")]
         private extern static void Start(IntPtr self);
 

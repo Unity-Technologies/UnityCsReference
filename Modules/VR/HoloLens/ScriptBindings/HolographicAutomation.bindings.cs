@@ -49,10 +49,12 @@ namespace UnityEngine.XR.WSA
     [NativeConditional("ENABLE_HOLOLENS_MODULE")]
     internal partial class HolographicAutomation
     {
+        [NativeThrows]
         internal static extern void Initialize();
 
         internal static extern void Shutdown();
 
+        [NativeThrows]
         internal static extern void LoadRoom(string id);
 
         internal static extern void SetEmulationMode(EmulationMode mode);

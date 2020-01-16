@@ -28,6 +28,12 @@ namespace UnityEditor
             return GetMethodsWithAttribute(typeof(T));
         }
 
+        public static FieldInfoCollection GetFieldsWithAttribute<T>()
+            where T : Attribute
+        {
+            return GetFieldsWithAttribute(typeof(T));
+        }
+
         public static TypeCollection GetTypesDerivedFrom<T>()
         {
             var parentType = typeof(T);

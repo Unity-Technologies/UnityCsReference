@@ -95,7 +95,7 @@ namespace UnityEditor
 
         // The actual unfiltered selection from the Scene returned as instance ids instead of ::ref::objects.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static int[] instanceIDs { get; set; }
+        extern public static int[] instanceIDs { get; [NativeThrows] set; }
 
         [StaticAccessor("GetSceneTracker()", StaticAccessorType.Dot)]
         [NativeMethod("IsSelected")]

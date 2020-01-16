@@ -54,7 +54,7 @@ namespace UnityEngine
         extern private int GetVertexAttributesList([NotNull] System.Collections.Generic.List<UnityEngine.Rendering.VertexAttributeDescriptor> attributes);
         [FreeFunction(Name = "MeshScripting::GetVertexAttributesCount", HasExplicitThis = true)]
         extern private int GetVertexAttributeCountImpl();
-        [FreeFunction(Name = "MeshScripting::GetVertexAttributeByIndex", HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetVertexAttributeByIndex", HasExplicitThis = true, ThrowsException = true)]
         extern public UnityEngine.Rendering.VertexAttributeDescriptor GetVertexAttribute(int index);
 
         [FreeFunction(Name = "MeshScripting::GetIndexStart", HasExplicitThis = true)]
@@ -75,10 +75,10 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetIndices", HasExplicitThis = true)]
         extern private int[] GetIndicesImpl(int submesh, bool applyBaseVertex);
 
-        [FreeFunction(Name = "SetMeshIndicesFromScript", HasExplicitThis = true)]
+        [FreeFunction(Name = "SetMeshIndicesFromScript", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetIndicesImpl(int submesh, MeshTopology topology, UnityEngine.Rendering.IndexFormat indicesFormat, System.Array indices, int arrayStart, int arraySize, bool calculateBounds, int baseVertex);
 
-        [FreeFunction(Name = "SetMeshIndicesFromNativeArray", HasExplicitThis = true)]
+        [FreeFunction(Name = "SetMeshIndicesFromNativeArray", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetIndicesNativeArrayImpl(int submesh, MeshTopology topology, UnityEngine.Rendering.IndexFormat indicesFormat, IntPtr indices, int arrayStart, int arraySize, bool calculateBounds, int baseVertex);
 
         [FreeFunction(Name = "MeshScripting::ExtractTrianglesToArray", HasExplicitThis = true)]
@@ -138,22 +138,22 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::ClearBlendShapes", HasExplicitThis = true)]
         extern public void ClearBlendShapes();
 
-        [FreeFunction(Name = "MeshScripting::GetBlendShapeName", HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeName", HasExplicitThis = true, ThrowsException = true)]
         extern public string GetBlendShapeName(int shapeIndex);
 
         [FreeFunction(Name = "MeshScripting::GetBlendShapeIndex", HasExplicitThis = true)]
         extern public int GetBlendShapeIndex(string blendShapeName);
 
-        [FreeFunction(Name = "MeshScripting::GetBlendShapeFrameCount", HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeFrameCount", HasExplicitThis = true, ThrowsException = true)]
         extern public int GetBlendShapeFrameCount(int shapeIndex);
 
-        [FreeFunction(Name = "MeshScripting::GetBlendShapeFrameWeight", HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeFrameWeight", HasExplicitThis = true, ThrowsException = true)]
         extern public float GetBlendShapeFrameWeight(int shapeIndex, int frameIndex);
 
-        [FreeFunction(Name = "GetBlendShapeFrameVerticesFromScript", HasExplicitThis = true)]
+        [FreeFunction(Name = "GetBlendShapeFrameVerticesFromScript", HasExplicitThis = true, ThrowsException = true)]
         extern public void GetBlendShapeFrameVertices(int shapeIndex, int frameIndex, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents);
 
-        [FreeFunction(Name = "AddBlendShapeFrameFromScript", HasExplicitThis = true)]
+        [FreeFunction(Name = "AddBlendShapeFrameFromScript", HasExplicitThis = true, ThrowsException = true)]
         extern public void AddBlendShapeFrame(string shapeName, float frameWeight, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents);
 
         // skinning

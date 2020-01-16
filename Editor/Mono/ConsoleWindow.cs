@@ -10,7 +10,6 @@ using JetBrains.Annotations;
 using UnityEngine.Scripting;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEditor.Networking.PlayerConnection;
-using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -25,7 +24,6 @@ namespace UnityEditor
             private static bool ms_Loaded;
             private static int ms_logStyleLineCount;
             public static GUIStyle Box;
-            public static GUIStyle MiniButtonLeft;
             public static GUIStyle MiniButton;
             public static GUIStyle MiniButtonRight;
             public static GUIStyle LogStyle;
@@ -49,13 +47,13 @@ namespace UnityEditor
             public static GUIStyle IconWarningSmallStyle;
             public static GUIStyle IconErrorSmallStyle;
 
-            public static readonly string ClearLabel = L10n.Tr("Clear");
-            public static readonly string ClearOnPlayLabel = L10n.Tr("Clear on Play");
-            public static readonly string ErrorPauseLabel = L10n.Tr("Error Pause");
-            public static readonly string CollapseLabel = L10n.Tr("Collapse");
-            public static readonly string StopForAssertLabel = L10n.Tr("Stop for Assert");
-            public static readonly string StopForErrorLabel = L10n.Tr("Stop for Error");
-            public static readonly string ClearOnBuildLabel = L10n.Tr("Clear on Build");
+            public static readonly GUIContent Clear = EditorGUIUtility.TrTextContent("Clear", "Clear console entries");
+            public static readonly GUIContent ClearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play");
+            public static readonly GUIContent ClearOnBuild = EditorGUIUtility.TrTextContent("Clear on Build");
+            public static readonly GUIContent Collapse = EditorGUIUtility.TrTextContent("Collapse", "Collapse identical entries");
+            public static readonly GUIContent ErrorPause = EditorGUIUtility.TrTextContent("Error Pause", "Pause Play Mode on error");
+            public static readonly GUIContent StopForAssert = EditorGUIUtility.TrTextContent("Stop for Assert");
+            public static readonly GUIContent StopForError = EditorGUIUtility.TrTextContent("Stop for Error");
 
             public static int LogStyleLineCount
             {
@@ -79,8 +77,6 @@ namespace UnityEditor
                 ms_Loaded = true;
                 Box = "CN Box";
 
-
-                MiniButtonLeft = "ToolbarButtonLeft";
                 MiniButton = "ToolbarButton";
                 MiniButtonRight = "ToolbarButtonRight";
                 Toolbar = "Toolbar";
@@ -466,6 +462,11 @@ namespace UnityEditor
             m_ListView.scrollPos.y = LogEntries.GetCount() * newRowHeight;
         }
 
+        bool HasSpaceForExtraButtons()
+        {
+            return position.width > 420;
+        }
+
         internal void OnGUI()
         {
             Event e = Event.current;
@@ -480,7 +481,21 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(Constants.Toolbar);
 
-            if (GUILayout.Button(Constants.ClearLabel, Constants.MiniButtonLeft))
+            // Clear button and clearing options
+            bool clearClicked = false;
+            if (EditorGUILayout.DropDownToggle(ref clearClicked, Constants.Clear, EditorStyles.toolbarDropDownToggle))
+            {
+                var clearOnPlay = HasFlag(ConsoleFlags.ClearOnPlay);
+                var clearOnBuild = HasFlag(ConsoleFlags.ClearOnBuild);
+
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(Constants.ClearOnPlay, clearOnPlay, () => { SetFlag(ConsoleFlags.ClearOnPlay, !clearOnPlay); });
+                menu.AddItem(Constants.ClearOnBuild, clearOnBuild, () => { SetFlag(ConsoleFlags.ClearOnBuild, !clearOnBuild); });
+                var rect = GUILayoutUtility.GetLastRect();
+                rect.y += EditorGUIUtility.singleLineHeight;
+                menu.DropDown(rect);
+            }
+            if (clearClicked)
             {
                 LogEntries.Clear();
                 GUIUtility.keyboardControl = 0;
@@ -498,7 +513,7 @@ namespace UnityEditor
             }
 
             bool wasCollapsed = HasFlag(ConsoleFlags.Collapse);
-            SetFlag(ConsoleFlags.Collapse, GUILayout.Toggle(wasCollapsed, Constants.CollapseLabel, Constants.MiniButton));
+            SetFlag(ConsoleFlags.Collapse, GUILayout.Toggle(wasCollapsed, Constants.Collapse, Constants.MiniButton));
 
             bool collapsedChanged = (wasCollapsed != HasFlag(ConsoleFlags.Collapse));
             if (collapsedChanged)
@@ -510,26 +525,17 @@ namespace UnityEditor
                 m_ListView.scrollPos.y = LogEntries.GetCount() * RowHeight;
             }
 
-            SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), Constants.ClearOnPlayLabel, Constants.MiniButton));
-            SetFlag(ConsoleFlags.ClearOnBuild, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnBuild), Constants.ClearOnBuildLabel, Constants.MiniButton));
-            SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPauseLabel, Constants.MiniButton));
-
-            PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown);
-
-            EditorGUILayout.Space();
-
-            if (m_DevBuild)
+            if (HasSpaceForExtraButtons())
             {
-                GUILayout.FlexibleSpace();
-                SetFlag(ConsoleFlags.StopForAssert, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForAssert), Constants.StopForAssertLabel, Constants.MiniButton));
-                SetFlag(ConsoleFlags.StopForError, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForError), Constants.StopForErrorLabel, Constants.MiniButton));
+                SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPause, Constants.MiniButton));
+                PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown);
             }
 
             GUILayout.FlexibleSpace();
 
             // Search bar
-            GUILayout.Space(4f);
-            SearchField(e);
+            if (HasSpaceForExtraButtons())
+                SearchField(e);
 
             // Flags
             int errorCount = 0, warningCount = 0, logCount = 0;
@@ -751,7 +757,7 @@ namespace UnityEditor
 
             GUI.SetNextControlName(searchBarName);
             Rect rect = GUILayoutUtility.GetRect(0, EditorGUILayout.kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight,
-                EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(100),
+                EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(60),
                 GUILayout.MaxWidth(300));
             var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
             if (m_SearchText != filteringText)
@@ -857,6 +863,14 @@ namespace UnityEditor
             menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
+
+            if (m_DevBuild)
+            {
+                menu.AddItem(Constants.StopForAssert, HasFlag(ConsoleFlags.StopForAssert),
+                    () => { SetFlag(ConsoleFlags.StopForAssert, !HasFlag(ConsoleFlags.StopForAssert)); });
+                menu.AddItem(Constants.StopForError, HasFlag(ConsoleFlags.StopForError),
+                    () => { SetFlag(ConsoleFlags.StopForError, !HasFlag(ConsoleFlags.StopForError)); });
+            }
 
             for (int i = 1; i <= 10; ++i)
             {

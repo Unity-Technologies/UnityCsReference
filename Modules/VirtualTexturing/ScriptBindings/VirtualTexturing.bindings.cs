@@ -36,8 +36,15 @@ namespace UnityEngine.Experimental.Rendering
         public const int AllMips = int.MaxValue;
         extern public static void RequestRegion(Material mat, int stackNameId, Rect r, int mipMap, int numMips);
 
+        [NativeConditional("UNITY_EDITOR")]
+        extern internal static int tileSize { get; }
+
+        [NativeConditional("UNITY_EDITOR")]
+        extern internal static bool GetTextureStackSize(Material mat, int stackNameId, out int width, out int height);
+
         extern public static string[] GetTexturesInTileset(string tileSetPathName);
 
+        [NativeThrows]
         [NativeConditional("UNITY_EDITOR")]
         extern public static bool ValidateTextureStack(Texture[] textures, out string errorMessage);
     }
@@ -59,10 +66,6 @@ namespace UnityEngine.Experimental.Rendering
 
         public VirtualTextureResolver()
         {
-            if (SystemInfo.supportsAsyncGPUReadback == false)
-            {
-                Debug.LogError("VirtualTextureResolver requires async gpu readback");
-            }
             m_Ptr = InitNative();
         }
 
@@ -195,10 +198,12 @@ namespace UnityEngine.Experimental.Rendering
         extern internal static void Destroy(ulong handle);
 
         extern internal static int GetActiveRequests(ulong handle, IntPtr requests);
-        extern internal static void MarkRequestsFinished(ulong handle, IntPtr requests, int count);
+        extern internal static void MarkAllRequestsFinished(ulong handle, IntPtr requests, int numRequests);
+        extern internal static void UpdateRequestStates(ulong handle, ProceduralTextureStackRequestUpdate[] requestUpdates);
 
         extern internal static void BindToMaterialPropertyBlock(ulong handle, MaterialPropertyBlock material, string name);
         extern internal static void BindToMaterial(ulong handle, Material material, string name);
+        extern internal static void BindGlobally(ulong handle, string name);
 
         extern public static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
         extern public static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
@@ -245,15 +250,37 @@ namespace UnityEngine.Experimental.Rendering
         }
     }
 
+    [UsedByNativeCode]
+    internal enum ProceduralTextureStackRequestStatus /// KEEP IN SYNC WITH IVirtualTexturingManager.h
+    {
+        StatusFree = 0xFFFF,// Anything smaller than this is considered a free slot
+        StatusRequested,    // Requested but user C# code is not processing this yet
+        StatusProcessing,   // Returned to C#
+        StatusComplete,     // C# indicates we're done
+        StatusDropped,      // C# indicates we no longer want to do this one
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ProceduralTextureStackRequestUpdate /// KEEP IN SYNC WITH IVirtualTexturingManager.h
+    {
+        internal int updatedID;
+        internal ProceduralTextureStackRequestStatus updatedStatus;
+    }
+
     public class ProceduralRequestList : IDisposable
     {
         NativeArray<ProceduralTextureStackRequest> requests;
         ProceduralTextureStack owner;
 
+        private System.Collections.Generic.List<ProceduralTextureStackRequestUpdate> requestUpdates;
+
         internal ProceduralRequestList(ProceduralTextureStackCreationParams creationParams, ProceduralTextureStack _owner)
         {
             requests = new NativeArray<ProceduralTextureStackRequest>((int)creationParams.maxRequestsPerFrame, Allocator.Persistent);
             owner = _owner;
+
+            requestUpdates = new System.Collections.Generic.List<ProceduralTextureStackRequestUpdate>((int)creationParams.maxRequestsPerFrame);
         }
 
         public void Dispose()
@@ -274,11 +301,41 @@ namespace UnityEngine.Experimental.Rendering
             }
         }
 
-        unsafe public void MarkAsFinished(int count = -1)
+        unsafe public void MarkAllRequestsFinished()
         {
-            int actualCount = count == -1 ? Length : Math.Min(count, Length);
-            ProceduralVirtualTexturing.MarkRequestsFinished(owner.handle, (IntPtr)requests.GetUnsafeReadOnlyPtr(), actualCount);
+            ProceduralVirtualTexturing.MarkAllRequestsFinished(owner.handle, (IntPtr)requests.GetUnsafeReadOnlyPtr(), Length);
             Length = 0;
+        }
+
+        public enum RequestStatus
+        {
+            Dropped,
+            Complete
+        }
+        public void UpdateRequestStatus(ProceduralTextureStackRequest request, RequestStatus status)
+        {
+            ProceduralTextureStackRequestUpdate update = new ProceduralTextureStackRequestUpdate();
+            update.updatedID = request.id;
+            if (status == RequestStatus.Dropped)
+            {
+                update.updatedStatus = ProceduralTextureStackRequestStatus.StatusDropped;
+            }
+            else
+            {
+                Debug.Assert(status == RequestStatus.Complete);
+                update.updatedStatus = ProceduralTextureStackRequestStatus.StatusComplete;
+            }
+            requestUpdates.Add(update);
+        }
+
+        unsafe public void Apply()
+        {
+            if (requestUpdates.Count == 0)
+                return;
+
+            ProceduralVirtualTexturing.UpdateRequestStates(owner.handle, requestUpdates.ToArray());
+
+            requestUpdates.Clear();
         }
 
         unsafe internal void Sync()
@@ -293,12 +350,22 @@ namespace UnityEngine.Experimental.Rendering
 
         public ProceduralRequestList GetActiveRequests()
         {
+            if (IsValid() == false)
+            {
+                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+            }
+
             requests.Sync();
             return requests;
         }
 
         internal readonly ulong handle;
         public readonly static uint borderSize = 8;
+
+        public bool IsValid()
+        {
+            return handle != 0;
+        }
 
         string name;
 
@@ -314,7 +381,10 @@ namespace UnityEngine.Experimental.Rendering
         public void Dispose()
         {
             requests.Dispose();
-            ProceduralVirtualTexturing.Destroy(handle);
+            if (IsValid())
+            {
+                ProceduralVirtualTexturing.Destroy(handle);
+            }
         }
 
         public void BindToMaterialPropertyBlock(MaterialPropertyBlock mpb)
@@ -322,6 +392,10 @@ namespace UnityEngine.Experimental.Rendering
             if (mpb == null)
             {
                 throw new ArgumentNullException("mbp");
+            }
+            if (IsValid() == false)
+            {
+                throw new InvalidOperationException("Invalid ProceduralTextureStack");
             }
             ProceduralVirtualTexturing.BindToMaterialPropertyBlock(handle, mpb, name);
         }
@@ -332,18 +406,35 @@ namespace UnityEngine.Experimental.Rendering
             {
                 throw new ArgumentNullException("mat");
             }
+            if (IsValid() == false)
+            {
+                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+            }
             ProceduralVirtualTexturing.BindToMaterial(handle, mat, name);
+        }
+
+        public void BindGlobally()
+        {
+            ProceduralVirtualTexturing.BindGlobally(handle, name);
         }
 
         public const int AllMips = int.MaxValue;
 
         public void RequestRegion(Rect r, int mipMap, int numMips)
         {
+            if (IsValid() == false)
+            {
+                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+            }
             ProceduralVirtualTexturing.RequestRegion(handle, r, mipMap, numMips);
         }
 
         public void InvalidateRegion(Rect r, int mipMap, int numMips)
         {
+            if (IsValid() == false)
+            {
+                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+            }
             ProceduralVirtualTexturing.InvalidateRegion(handle, r, mipMap, numMips);
         }
     }

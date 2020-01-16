@@ -100,9 +100,9 @@ namespace UnityEngine
         public int GetParticles([Out] Particle[] particles) { return GetParticles(particles, -1); }
 
         // Set/get custom particle data
-        [FreeFunction(Name = "ParticleSystemScriptBindings::SetCustomParticleData", HasExplicitThis = true)]
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetCustomParticleData", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetCustomParticleData([NotNull] List<Vector4> customData, ParticleSystemCustomData streamIndex);
-        [FreeFunction(Name = "ParticleSystemScriptBindings::GetCustomParticleData", HasExplicitThis = true)]
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetCustomParticleData", HasExplicitThis = true, ThrowsException = true)]
         extern public int GetCustomParticleData([NotNull] List<Vector4> customData, ParticleSystemCustomData streamIndex);
 
         // Set/get the playback state
@@ -185,7 +185,7 @@ namespace UnityEngine
         unsafe extern internal void* GetManagedJobData();
         extern internal JobHandle GetManagedJobHandle();
         extern internal void SetManagedJobHandle(JobHandle handle);
-        [FreeFunction("ScheduleManagedJob")]
+        [FreeFunction("ScheduleManagedJob", ThrowsException = true)]
         unsafe internal static extern JobHandle ScheduleManagedJob(ref JobsUtility.JobScheduleParameters parameters, void* additionalData);
         [ThreadSafe]
         unsafe internal static extern void CopyManagedJobData(void* systemPtr, out NativeParticleData particleData);

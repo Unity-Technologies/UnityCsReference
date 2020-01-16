@@ -158,6 +158,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         static void HandleSelectionWhenSwithingToNewPrefabMode(GameObject prefabContentsRoot, UInt64 previousFileID)
         {
+            CutBoard.Reset();
             GameObject newSelection = null;
 
             if (previousFileID != 0)

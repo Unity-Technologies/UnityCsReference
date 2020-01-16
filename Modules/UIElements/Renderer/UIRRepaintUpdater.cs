@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
-        public event Action<UIRenderDevice> BeforeDrawChain
+        public event Action<RenderChain> BeforeDrawChain
         {
             add { if (renderChain != null) renderChain.BeforeDrawChain += value; }
             remove { if (renderChain != null) renderChain.BeforeDrawChain -= value; }
@@ -38,9 +38,10 @@ namespace UnityEngine.UIElements
             bool sizeChanged = (versionChangeType & VersionChangeType.Size) != 0;
             bool overflowChanged = (versionChangeType & VersionChangeType.Overflow) != 0;
             bool borderRadiusChanged = (versionChangeType & VersionChangeType.BorderRadius) != 0;
+            bool borderWidthChanged = (versionChangeType & VersionChangeType.BorderWidth) != 0;
 
-            if (transformChanged || sizeChanged)
-                renderChain.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged);
+            if (transformChanged || sizeChanged || borderWidthChanged)
+                renderChain.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged || borderWidthChanged);
 
             if (overflowChanged || borderRadiusChanged)
                 renderChain.UIEOnClippingChanged(ve, false);
@@ -75,7 +76,7 @@ namespace UnityEngine.UIElements
         internal RenderChain DebugGetRenderChain() { return renderChain; }
 
         // Overriden in tests
-        protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel, panel.standardShader); }
+        protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel); }
 
         static UIRRepaintUpdater()
         {
@@ -114,7 +115,11 @@ namespace UnityEngine.UIElements
                     renderChain.UIEOnVisualsChanged(panel.visualTree, true);
                 }
                 panel.standardShaderChanged += OnPanelStandardShaderChanged;
+                panel.standardWorldSpaceShaderChanged += OnPanelStandardWorldSpaceShaderChanged;
                 panel.hierarchyChanged += OnPanelHierarchyChanged;
+                OnPanelStandardShaderChanged();
+                if (panel.contextType == ContextType.Player)
+                    OnPanelStandardWorldSpaceShaderChanged();
             }
         }
 
@@ -141,8 +146,34 @@ namespace UnityEngine.UIElements
 
         void OnPanelStandardShaderChanged()
         {
-            if (renderChain != null)
-                renderChain.UIEOnStandardShaderChanged(panel.standardShader);
+            if (renderChain == null)
+                return;
+
+            Shader shader = panel.standardShader;
+            if (shader == null)
+            {
+                shader = Shader.Find(UIRUtility.k_DefaultShaderName);
+                Debug.Assert(shader != null, "Failed to load UIElements default shader");
+                if (shader != null)
+                    shader.hideFlags |= HideFlags.DontSaveInEditor;
+            }
+            renderChain.defaultShader = shader;
+        }
+
+        void OnPanelStandardWorldSpaceShaderChanged()
+        {
+            if (renderChain == null)
+                return;
+
+            Shader shader = panel.standardWorldSpaceShader;
+            if (shader == null)
+            {
+                shader = Shader.Find(UIRUtility.k_DefaultWorldSpaceShaderName);
+                Debug.Assert(shader != null, "Failed to load UIElements default world-space shader");
+                if (shader != null)
+                    shader.hideFlags |= HideFlags.DontSaveInEditor;
+            }
+            renderChain.defaultWorldSpaceShader = shader;
         }
 
         void ResetAllElementsDataRecursive(VisualElement ve)

@@ -308,8 +308,7 @@ namespace UnityEditor
         {
             if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
             {
-                if (m_Owner.m_VRSettings.TargetGroupSupportsVirtualReality(targetGroup))
-                    ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
+                ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
 
                 if (TargetSupportsOptionalBuiltinSplashScreen(targetGroup, settingsExtension))
                     BuiltinCustomSplashScreenGUI();

@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Collections.Generic;
+using Debug = UnityEngine.Debug;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine.Networking;
@@ -121,12 +121,15 @@ namespace UnityEditor.Connect
         bool m_CachedLoggedInState;
         bool m_CachedOnlineState;
         bool m_UnityConnectStateChanged;
+        bool m_CacheInitialized;
+        bool m_DelayedLoad;
 
         void KeepCacheInfo()
         {
             m_CachedProjectInfo = UnityConnect.instance.projectInfo;
             m_CachedLoggedInState = UnityConnect.instance.loggedIn;
             m_CachedOnlineState = UnityConnect.instance.online;
+            m_CacheInitialized = true;
         }
 
         string GetServiceInstanceName()
@@ -168,6 +171,7 @@ namespace UnityEditor.Connect
 
             activateHandler = (s, element) =>
             {
+                m_DelayedLoad = !m_CacheInitialized;
                 // Take a cache copy of the project info...
                 KeepCacheInfo();
 
@@ -188,7 +192,11 @@ namespace UnityEditor.Connect
                 UnityConnect.instance.ProjectStateChanged += OnRefreshRequired;
                 UnityConnect.instance.ProjectRefreshed += OnRefreshRequired;
 
-                ReinitializeSettings();
+                if (!m_DelayedLoad)
+                {
+                    ReinitializeSettings();
+                }
+
                 UnityConnect.instance.RefreshProject();
 
                 if (settingsWindow.GetCurrentProvider() != this)
@@ -275,10 +283,11 @@ namespace UnityEditor.Connect
 
             // Before reinitializing, we check that the actual state of the project info is valid and
             //     that it has changed since the ActivateHandler.
-            if (state.valid && (IsProjectInfoChanged() || m_UnityConnectStateChanged))
+            if (state.valid && (IsProjectInfoChanged() || m_UnityConnectStateChanged || m_DelayedLoad))
             {
                 DismissWarningNotifications();
                 ReinitializeSettings();
+                m_DelayedLoad = false;
             }
             m_CachedOnlineState = UnityConnect.instance.online;
             m_CachedLoggedInState = UnityConnect.instance.loggedIn;

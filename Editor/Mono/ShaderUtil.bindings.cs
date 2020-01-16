@@ -248,6 +248,7 @@ namespace UnityEditor
             ApplyPropertyImpl(prop, propertyMask, undoName);
         }
 
+        [NativeThrows]
         extern private static void ApplyPropertyImpl(System.Object prop, int propertyMask, string undoName);
 
         internal static void ApplyMaterialPropertyBlockToMaterialProperty(MaterialPropertyBlock propertyBlock, MaterialProperty materialProperty)

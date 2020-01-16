@@ -114,7 +114,7 @@ namespace UnityEditor.Connect
 
             rootVisualElement.Q<Button>(k_ProjectSettingsBtnName).clicked += () =>
             {
-                SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);
+                ServicesUtils.OpenServicesProjectSettings(GeneralProjectSettings.generalProjectSettingsPath, typeof(GeneralProjectSettings).Name);
             };
 
             var dashboardClickable = new Clickable(() =>
@@ -136,7 +136,7 @@ namespace UnityEditor.Connect
                 else
                 {
                     NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Warning, L10n.Tr(k_ProjectNotBoundMessage));
-                    SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);
+                    ServicesUtils.OpenServicesProjectSettings(GeneralProjectSettings.generalProjectSettingsPath, typeof(GeneralProjectSettings).Name);
                 }
             });
             rootVisualElement.Q(k_DashboardLinkName).AddManipulator(dashboardClickable);
@@ -213,7 +213,7 @@ namespace UnityEditor.Connect
 
             Action openServiceSettingsLambda = () =>
             {
-                SettingsService.OpenProjectSettings(singleService.projectSettingsPath);
+                ServicesUtils.OpenServicesProjectSettings(singleService);
             };
             m_ClickableByServiceName.Add(singleService.name, new Clickable(openServiceSettingsLambda));
 

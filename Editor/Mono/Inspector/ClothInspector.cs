@@ -97,11 +97,10 @@ namespace UnityEditor
 
         int m_NumSelection = 0;
 
-        [NonSerialized]
-        SkinnedMeshRenderer m_SkinnedMeshRenderer;
-        [NonSerialized]
-        Transform m_RootBone;
-
+        SkinnedMeshRenderer m_Smr;
+        Transform m_TransformOverride;
+        Matrix4x4 m_CachedTransformState;
+        WeakReference m_CachedMesh;
         private static class Styles
         {
             public static readonly GUIContent editConstraintsLabel = EditorGUIUtility.TrTextContent("Edit Constraints");
@@ -257,27 +256,36 @@ namespace UnityEditor
             serializedObject.Update();
 
             // Multi-editing in scene not supported
-            if (targets.Length <= 1)
+            if (targets.Length < 2)
             {
+                bool reinitInspector = false;
+                //sync transform override from smr
+                var actualRootBone = m_Smr.actualRootBone;
+                if (m_TransformOverride != actualRootBone)
+                {
+                    reinitInspector = true;
+                    m_TransformOverride = actualRootBone;
+                }
+                else if (actualRootBone.localToWorldMatrix != m_CachedTransformState)
+                {
+                    reinitInspector = true;
+                    m_CachedTransformState = actualRootBone.localToWorldMatrix;
+                }
+
+                if (m_Smr.sharedMesh != m_CachedMesh.Target as Mesh)
+                {
+                    m_CachedMesh.Target = m_Smr.sharedMesh;
+                    reinitInspector = true;
+                }
+
+                if (reinitInspector)
+                    InitInspector();
+
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, this);
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
-            }
-
-            // If the Skinned Mesh Renderer's transform has changed we need to re-initialise the inspector
-            if (m_SkinnedMeshRenderer.transform.hasChanged)
-            {
-                InitInspector();
-                m_SkinnedMeshRenderer.transform.hasChanged = false;
-            }
-
-            // If the Skinned Mesh Renderer's root bone has changed we need to re-initialise the inspector
-            if (m_RootBone != m_SkinnedMeshRenderer.actualRootBone)
-            {
-                InitInspector();
-                m_RootBone = m_SkinnedMeshRenderer.actualRootBone;
             }
 
             if (editingSelfAndInterCollisionParticles)
@@ -427,9 +435,8 @@ namespace UnityEditor
             Vector3[] vertices = cloth.vertices;
             m_ClothParticlesInWorldSpace = new Vector3[m_NumVerts];
 
-            Transform t = m_SkinnedMeshRenderer.actualRootBone;
-            Quaternion rotation = t.rotation;
-            Vector3 position = t.position;
+            Quaternion rotation = m_TransformOverride.rotation;
+            Vector3 position = m_TransformOverride.position;
             for (int i = 0; i < m_NumVerts; i++)
             {
                 m_ClothParticlesInWorldSpace[i] = rotation * vertices[i] + position;
@@ -442,9 +449,8 @@ namespace UnityEditor
             int length = normals.Length;
             m_ClothNormalsInWorldSpace = new Vector3[length];
 
-            Transform t = m_SkinnedMeshRenderer.actualRootBone;
-            Quaternion rotation = t.rotation;
-            Vector3 position = t.position;
+            Quaternion rotation = m_TransformOverride.rotation;
+            Vector3 position = m_TransformOverride.position;
             for (int i = 0; i < length; i++)
             {
                 m_ClothNormalsInWorldSpace[i] = rotation * normals[i] + position;
@@ -453,8 +459,6 @@ namespace UnityEditor
 
         void DrawSelfAndInterCollisionParticles()
         {
-            Transform t = m_SkinnedMeshRenderer.actualRootBone;
-
             int id = GUIUtility.GetControlID(FocusType.Passive);
             float size = state.SelfCollisionDistance;
             if (state.VisualizeSelfOrInterCollision == CollisionVisualizationMode.SelfCollision)
@@ -495,7 +499,7 @@ namespace UnityEditor
                         }
                     }
 
-                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], t.rotation, size, EventType.Repaint);
+                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], m_TransformOverride.rotation, size, EventType.Repaint);
                 }
             }
         }
@@ -514,9 +518,10 @@ namespace UnityEditor
             if (s_ColorTexture == null)
                 s_ColorTexture = GenerateColorTexture(100);
 
-            m_SkinnedMeshRenderer = cloth.GetComponent<SkinnedMeshRenderer>();
-            m_RootBone = m_SkinnedMeshRenderer.actualRootBone;
-
+            m_Smr = cloth.GetComponent<SkinnedMeshRenderer>();
+            m_TransformOverride = m_Smr.actualRootBone;
+            m_CachedTransformState = m_TransformOverride.localToWorldMatrix;
+            m_CachedMesh = new WeakReference(m_Smr.sharedMesh);
             InitInspector();
 
             GenerateSelectionMesh();
@@ -1070,7 +1075,7 @@ namespace UnityEditor
             {
                 Vector3 dir = m_LastVertices[i] - mouseRay.origin;
                 float sqrDistance = Vector3.Cross(dir, mouseRay.direction).sqrMagnitude;
-                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], SceneView.GetLastActiveSceneViewCamera().transform.forward) <= 0;
                 if ((forwardFacing || state.ManipulateBackfaces) && sqrDistance < minDistance && sqrDistance < 0.05f * 0.05f)
                 {
                     minDistance = sqrDistance;
@@ -1085,7 +1090,6 @@ namespace UnityEditor
             if (SelectionMeshDirty())
                 GenerateSelectionMesh();
 
-            Transform t = m_SkinnedMeshRenderer.actualRootBone;
             int id = GUIUtility.GetControlID(FocusType.Passive);
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
             int length = coefficients.Length;
@@ -1107,7 +1111,7 @@ namespace UnityEditor
 
             for (int i = 0; i < length; i++)
             {
-                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], SceneView.GetLastActiveSceneViewCamera().transform.forward) <= 0;
                 if (forwardFacing || state.ManipulateBackfaces)
                 {
                     float val = GetCoefficient(coefficients[i]);
@@ -1139,7 +1143,7 @@ namespace UnityEditor
                         }
                     }
 
-                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], t.rotation, state.ConstraintSize, EventType.Repaint);
+                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], m_TransformOverride.rotation, state.ConstraintSize, EventType.Repaint);
                 }
             }
         }
@@ -1176,7 +1180,7 @@ namespace UnityEditor
             for (int i = 0; i < length; i++)
             {
                 Vector3 v = m_LastVertices[i];
-                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], SceneView.GetLastActiveSceneViewCamera().transform.forward) <= 0;
                 bool selected = top.GetSide(v) && bottom.GetSide(v) && left.GetSide(v) && right.GetSide(v);
                 selected = selected && (state.ManipulateBackfaces || forwardFacing);
                 if (m_ParticleRectSelection[i] != selected)
@@ -1340,7 +1344,7 @@ namespace UnityEditor
             for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
-                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], Camera.current.transform.forward) <= 0;
+                bool forwardFacing = Vector3.Dot(m_ClothNormalsInWorldSpace[i], SceneView.GetLastActiveSceneViewCamera().transform.forward) <= 0;
                 if ((distanceBetween.magnitude < state.BrushRadius) && (forwardFacing || state.ManipulateBackfaces))
                 {
                     bool changed = false;
@@ -1371,7 +1375,7 @@ namespace UnityEditor
                 return;
             }
 
-            Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
+            Quaternion rotation = m_TransformOverride.rotation;
             for (int i = 0; i < m_NumVerts; i++)
             {
                 Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
@@ -1836,7 +1840,7 @@ namespace UnityEditor
                     break;
             }
 
-            if (m_SkinnedMeshRenderer.sharedMesh == null)
+            if (m_CachedMesh.Target == null)
             {
                 EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
             }
@@ -1947,7 +1951,7 @@ namespace UnityEditor
                 cloth.SetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
             }
 
-            if (m_SkinnedMeshRenderer.sharedMesh == null)
+            if (m_CachedMesh.Target == null)
             {
                 EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
             }

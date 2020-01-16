@@ -21,7 +21,6 @@ namespace UnityEditor.PackageManager.UI
             IUxmlFactory[] factories =
             {
                 new Alert.UxmlFactory(),
-                new ArrowToggle.UxmlFactory(),
                 new DropdownButton.UxmlFactory(),
                 new LoadingSpinner.UxmlFactory(),
                 new PackageDependencies.UxmlFactory(),

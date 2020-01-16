@@ -26,6 +26,7 @@ namespace UnityEditor
             public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all scripting method calls to investigate scripts");
             public static readonly GUIContent deepProfileNotSupported = EditorGUIUtility.TrTextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.");
             public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available");
+            public static readonly GUIContent noActiveModules = EditorGUIUtility.TrTextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.");
 
             public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling");
             public static readonly string enableDeepProfilingWarningDialogContent = L10n.Tr("Enabling deep profiling requires reloading scripts.");
@@ -60,6 +61,7 @@ namespace UnityEditor
             public static readonly GUIContent preferencesButtonContent = EditorGUIUtility.TrTextContent("Preferences", "Open User Preferences for the Profiler");
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode", "Switch the color scheme to color blind safe colors");
+            public static readonly GUIContent showStatsLabelsOnCurrentFrameLabel = EditorGUIUtility.TrTextContent("Show Stats for 'current frame'", "Show stats labels when the 'current frame' toggle is on.");
 
             public static readonly GUIStyle background = "OL box flat";
             public static readonly GUIStyle header = "OL title";
@@ -185,6 +187,12 @@ namespace UnityEditor
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
 
+        // use this when iterating over arrays of history length. This + iterationIndex < 0 means no data for this frame, for anything else, this is the same as ProfilerDriver.firstFrame.
+        int firstFrameIndexWithHistoryOffset
+        {
+            get { return ProfilerDriver.lastFrameIndex + 1 - ProfilerUserSettings.frameCount; }
+        }
+
         public void SetSelectedPropertyPath(string path)
         {
             if (ProfilerDriver.selectedPropertyPath != path)
@@ -213,7 +221,9 @@ namespace UnityEditor
         public ProfilerProperty CreateProperty(int sortType)
         {
             int targetedFrame = GetActiveVisibleFrameIndex();
-            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerUserSettings.frameCount)
+            if (targetedFrame < 0)
+                targetedFrame = ProfilerDriver.lastFrameIndex;
+            if (targetedFrame < Math.Max(0, ProfilerDriver.firstFrameIndex))
             {
                 return null;
             }
@@ -370,7 +380,7 @@ namespace UnityEditor
             if (wasToggled)
             {
                 int historyLength = ProfilerUserSettings.frameCount;
-                int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+                int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
                 int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
                 ComputeChartScaleValue(ProfilerArea.CPU, historyLength, firstEmptyFrame, firstFrame);
@@ -541,11 +551,16 @@ namespace UnityEditor
             menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
         }
 
-        private void OnToggleColorBlindMode()
+        void OnToggleColorBlindMode()
         {
             UserAccessiblitySettings.colorBlindCondition = UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default
                 ? ColorBlindCondition.Deuteranopia
                 : ColorBlindCondition.Default;
+        }
+
+        void OnToggleShowStatsLabelsOnCurrentFrame()
+        {
+            ProfilerUserSettings.showStatsLabelsOnCurrentFrame = !ProfilerUserSettings.showStatsLabelsOnCurrentFrame;
         }
 
         // Used by Native method DoBuildPlayer_PostBuild() in BuildPlayer.cpp
@@ -679,7 +694,7 @@ namespace UnityEditor
         private void UpdateCharts()
         {
             int historyLength = ProfilerUserSettings.frameCount;
-            int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+            int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
             int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
             // Collect chart values
             foreach (var chart in m_Charts)
@@ -964,6 +979,7 @@ namespace UnityEditor
             {
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
+                menu.AddItem(Styles.showStatsLabelsOnCurrentFrameLabel, ProfilerUserSettings.showStatsLabelsOnCurrentFrame, OnToggleShowStatsLabelsOnCurrentFrame);
                 menu.AddSeparator("");
                 menu.AddItem(Styles.preferencesButtonContent, false, OpenProfilerPreferences);
                 menu.DropDown(overflowMenuRect);
@@ -1026,6 +1042,8 @@ namespace UnityEditor
             ProfilerDriver.ClearAllFrames();
             m_LastFrameFromTick = -1;
             m_FrameCountLabelMinWidth = 0;
+            m_CurrentFrame = -1;
+            m_CurrentFrameEnabled = true;
 
 #pragma warning disable CS0618
             NetworkDetailStats.m_NetworkOperations.Clear();
@@ -1063,13 +1081,17 @@ namespace UnityEditor
                 {
                     SetCurrentFrame(-1);
                     m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
+                    m_CurrentFrameEnabled = true;
                 }
-                m_CurrentFrameEnabled = true;
             }
             else if (m_CurrentFrame == -1)
             {
                 m_CurrentFrameEnabled = false;
                 PrevFrame();
+            }
+            else if (m_CurrentFrameEnabled && m_CurrentFrame >= 0)
+            {
+                m_CurrentFrameEnabled = false;
             }
 
             // Frame number
@@ -1131,12 +1153,13 @@ namespace UnityEditor
             }
 
             int newCurrentFrame = m_CurrentFrame;
+            bool noActiveModules = true;
             for (int c = 0; c < m_Charts.Length; ++c)
             {
                 var chart = m_Charts[c];
                 if (!chart.active)
                     continue;
-
+                noActiveModules = false;
                 newCurrentFrame = chart.DoChartGUI(newCurrentFrame, m_CurrentArea == chart.m_Area);
             }
 
@@ -1145,6 +1168,16 @@ namespace UnityEditor
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
                 GUIUtility.ExitGUI();
+            }
+            if (noActiveModules)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(Styles.noActiveModules);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
             }
 
             EditorGUILayout.EndScrollView();

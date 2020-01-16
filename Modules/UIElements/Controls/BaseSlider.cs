@@ -354,7 +354,7 @@ namespace UnityEngine.UIElements
                 {
                     var newPos = new Vector3(newLeft, 0 , 0);
                     dragElement.transform.position = newPos;
-                    dragElement.transform.position = newPos;
+                    dragBorderElement.transform.position = newPos;
                 }
             }
             else
@@ -372,7 +372,7 @@ namespace UnityEngine.UIElements
                 {
                     var newPos = new Vector3(0, newTop , 0);
                     dragElement.transform.position = newPos;
-                    dragElement.transform.position = newPos;
+                    dragBorderElement.transform.position = newPos;
                 }
             }
         }

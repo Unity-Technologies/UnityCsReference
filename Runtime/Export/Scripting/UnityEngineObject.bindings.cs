@@ -292,7 +292,7 @@ namespace UnityEngine
         public extern static Object[] FindObjectsOfType(Type type, bool includeInactive);
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
-        [FreeFunction("GetSceneManager().DontDestroyOnLoad")]
+        [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
         public extern static void DontDestroyOnLoad(Object target);
 
         // // Should the object be hidden, saved with the scene or modifiable by the user?

@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         const string k_DraggingModeKey = "InspectorEditorDraggingMode";
 
-        InspectorWindow m_InspectorWindow;
+        IPropertyView m_InspectorWindow;
         bool m_TargetAbove;
         int m_TargetIndex = -1;
         int m_LastIndex = -1;
@@ -29,7 +29,7 @@ namespace UnityEditor
             public static readonly GUIStyle insertionMarker = "InsertionMarker";
         }
 
-        public EditorDragging(InspectorWindow inspectorWindow)
+        public EditorDragging(IPropertyView inspectorWindow)
         {
             m_InspectorWindow = inspectorWindow;
         }

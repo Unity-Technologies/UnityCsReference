@@ -16,6 +16,7 @@ namespace UnityEditor.Connect
         public override string description { get; }
         public override string pathTowardIcon { get; }
         public override string projectSettingsPath { get; }
+        public override string settingsProviderClassName => nameof(CloudBuildProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.BuildService;
         public override string packageId { get; }

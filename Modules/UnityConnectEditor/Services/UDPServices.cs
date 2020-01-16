@@ -14,6 +14,7 @@ namespace UnityEditor.Connect
         public override string description { get; }
         public override string pathTowardIcon { get; }
         public override string projectSettingsPath { get; }
+        public override string settingsProviderClassName => "AppStoreProjectSettingsEditor";
         public override bool displayToggle { get; }
         public override bool isPackage { get; }
         public override string packageId { get; }

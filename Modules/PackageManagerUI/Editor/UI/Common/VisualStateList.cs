@@ -73,7 +73,7 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual bool Contains(string packageUniqueId)
         {
-            return m_UniqueIdToIndexLookup.ContainsKey(packageUniqueId);
+            return !string.IsNullOrEmpty(packageUniqueId) && m_UniqueIdToIndexLookup.ContainsKey(packageUniqueId);
         }
 
         protected void SetupLookupTable()

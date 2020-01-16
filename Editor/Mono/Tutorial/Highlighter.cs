@@ -112,10 +112,14 @@ namespace UnityEditor
 
         public static bool active { get; private set; }
 
+        internal static bool IsSearchingForIdentifier()
+        {
+            return searchMode == HighlightSearchMode.Identifier || searchMode == HighlightSearchMode.Auto;
+        }
+
         public static void HighlightIdentifier(Rect position, string identifier)
         {
-            if (searchMode == HighlightSearchMode.Identifier ||
-                searchMode == HighlightSearchMode.Auto)
+            if (IsSearchingForIdentifier())
             {
                 Handle(position, identifier);
             }

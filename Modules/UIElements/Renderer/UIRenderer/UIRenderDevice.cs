@@ -71,10 +71,7 @@ namespace UnityEngine.UIElements.UIR
 
         private readonly bool m_MockDevice; // Don't access GfxDevice resources nor submit commands of any sort, used for tests
 
-        private Shader m_DefaultMaterialShader;
-        private Material m_DefaultMaterial;
         private IntPtr m_VertexDecl;
-        private DrawingModes m_DrawingMode;
         private Page m_FirstPage;
         private uint m_NextPageVertexCount;
         private uint m_LargeMeshVertexCount;
@@ -87,7 +84,6 @@ namespace UnityEngine.UIElements.UIR
         private bool m_FrameIndexIncremented;
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
         private DrawStatistics m_DrawStats;
-        private bool m_APIUsesStraightYCoordinateSystem;
 
         readonly Pool<MeshHandle> m_MeshHandles = new Pool<MeshHandle>();
         readonly DrawParams m_DrawParams = new DrawParams();
@@ -103,7 +99,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_1PixelClipInvViewPropID = Shader.PropertyToID("_1PixelClipInvView");
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
-        static readonly int s_PixelClipRectPropID = Shader.PropertyToID("_PixelClipRect");
+        static readonly int s_ScreenClipRectPropID = Shader.PropertyToID("_ScreenClipRect");
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
         static readonly int s_ClipRectsPropID = Shader.PropertyToID("_ClipRects");
 
@@ -124,20 +120,12 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.FlushPendingResources += OnFlushPendingResources;
         }
 
-        public enum DrawingModes { FlipY, StraightY, DisableClipping }
-
-        public UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY) :
-            this(defaultMaterialShader, initialVertexCapacity, initialIndexCapacity, drawingMode, false)
+        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0) :
+            this(initialVertexCapacity, initialIndexCapacity, false)
         {
         }
 
-        // This protected constructor creates a "mock" render device
-        protected UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, DrawingModes drawingMode = DrawingModes.FlipY) :
-            this(null, initialVertexCapacity, initialIndexCapacity, drawingMode, true)
-        {
-        }
-
-        private UIRenderDevice(Shader defaultMaterialShader, uint initialVertexCapacity, uint initialIndexCapacity, DrawingModes drawingMode, bool mockDevice)
+        protected UIRenderDevice(uint initialVertexCapacity, uint initialIndexCapacity, bool mockDevice)
         {
             m_MockDevice = mockDevice;
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
@@ -149,9 +137,6 @@ namespace UnityEngine.UIElements.UIR
                     m_SubscribedToNotifications = true;
                 }
             }
-
-            m_DefaultMaterialShader = defaultMaterialShader;
-            m_DrawingMode = drawingMode;
 
             m_NextPageVertexCount = Math.Max(initialVertexCapacity, 2048); // No less than 4k vertices (doubled from 2k effectively when the first page is allocated)
             m_LargeMeshVertexCount = m_NextPageVertexCount;
@@ -165,11 +150,6 @@ namespace UnityEngine.UIElements.UIR
                 m_DeferredFrees.Add(new List<AllocToFree>());
                 m_Updates.Add(new List<AllocToUpdate>());
             }
-
-            m_APIUsesStraightYCoordinateSystem =
-                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore ||
-                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2 ||
-                SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3;
         }
 
         // TODO: Remove this once case 1148851 has been fixed.
@@ -324,13 +304,6 @@ namespace UnityEngine.UIElements.UIR
                 if (fullyCreated)
                     UIR.Utility.EngineUpdate -= OnEngineUpdate;
 
-                if (m_DefaultMaterial != null)
-                {
-                    if (Application.isPlaying)
-                        Object.Destroy(m_DefaultMaterial);
-                    else
-                        Object.DestroyImmediate(m_DefaultMaterial);
-                }
                 DeviceToFree free = new DeviceToFree()
                 { handle = m_MockDevice ? 0 : Utility.InsertCPUFence(), page = m_FirstPage };
                 if (free.handle == 0)
@@ -578,94 +551,18 @@ namespace UnityEngine.UIElements.UIR
 
         }
 
-        public Shader standardShader
-        {
-            get { return m_DefaultMaterialShader; }
-            set
-            {
-                if (m_DefaultMaterialShader != value)
-                {
-                    m_DefaultMaterialShader = value;
-                    UIRUtility.Destroy(m_DefaultMaterial);
-                    m_DefaultMaterial = null;
-                }
-            }
-        }
-
-        public Material GetStandardMaterial()
-        {
-            if (!m_MockDevice && m_DefaultMaterial == null && m_DefaultMaterialShader != null)
-            {
-                m_DefaultMaterial = new Material(m_DefaultMaterialShader);
-                SetupStandardMaterial(m_DefaultMaterial, m_DrawingMode);
-            }
-
-            return m_DefaultMaterial;
-        }
-
-        static void SetupStandardMaterial(Material material, DrawingModes mode)
-        {
-            const CompareFunction compFront = CompareFunction.Always;
-            const StencilOp passFront = StencilOp.Keep;
-            const StencilOp zFailFront = StencilOp.Replace;
-            const StencilOp failFront = StencilOp.Keep;
-
-            const CompareFunction compBack = CompareFunction.Equal;
-            const StencilOp passBack = StencilOp.Keep;
-            const StencilOp zFailBack = StencilOp.Zero;
-            const StencilOp failBack = StencilOp.Keep;
-
-            material.hideFlags |= HideFlags.DontSaveInEditor;
-
-            if (mode == DrawingModes.StraightY)
-            {
-                material.SetInt("_StencilCompFront", (int)compBack);
-                material.SetInt("_StencilPassFront", (int)passBack);
-                material.SetInt("_StencilZFailFront", (int)zFailBack);
-                material.SetInt("_StencilFailFront", (int)failBack);
-
-                material.SetInt("_StencilCompBack", (int)compFront);
-                material.SetInt("_StencilPassBack", (int)passFront);
-                material.SetInt("_StencilZFailBack", (int)zFailFront);
-                material.SetInt("_StencilFailBack", (int)failFront);
-            }
-            else if (mode == DrawingModes.FlipY)
-            {
-                material.SetInt("_StencilCompFront", (int)compFront);
-                material.SetInt("_StencilPassFront", (int)passFront);
-                material.SetInt("_StencilZFailFront", (int)zFailFront);
-                material.SetInt("_StencilFailFront", (int)failFront);
-
-                material.SetInt("_StencilCompBack", (int)compBack);
-                material.SetInt("_StencilPassBack", (int)passBack);
-                material.SetInt("_StencilZFailBack", (int)zFailBack);
-                material.SetInt("_StencilFailBack", (int)failBack);
-            }
-            else if (mode == DrawingModes.DisableClipping)
-            {
-                material.SetInt("_StencilCompFront", (int)CompareFunction.Always);
-                material.SetInt("_StencilPassFront", (int)StencilOp.Keep);
-                material.SetInt("_StencilZFailFront", (int)StencilOp.Keep);
-                material.SetInt("_StencilFailFront", (int)StencilOp.Keep);
-
-                material.SetInt("_StencilCompBack", (int)CompareFunction.Always);
-                material.SetInt("_StencilPassBack", (int)StencilOp.Keep);
-                material.SetInt("_StencilZFailBack", (int)StencilOp.Keep);
-                material.SetInt("_StencilFailBack", (int)StencilOp.Keep);
-            }
-        }
-
         static void Set1PixelSizeParameter(DrawParams drawParams, MaterialPropertyBlock props)
         {
             Vector4 _1PixelClipInvView = new Vector4();
 
-            // Size of 1 pixel in clip space.
+            // Size of 1 pixel in clip space
             RectInt viewport = Utility.GetActiveViewport();
             _1PixelClipInvView.x = 2.0f / viewport.width;
             _1PixelClipInvView.y = 2.0f / viewport.height;
 
-            // Pixel density in group space.
-            Matrix4x4 matVPInv = (drawParams.projection * drawParams.view.Peek().transform).inverse;
+            // Pixel density in group space
+            Matrix4x4 matProj = Utility.GetUnityProjectionMatrix();
+            Matrix4x4 matVPInv = (matProj * drawParams.view.Peek().transform).inverse;
             Vector3 v = matVPInv.MultiplyVector(new Vector3(_1PixelClipInvView.x, _1PixelClipInvView.y));
             _1PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + Mathf.Epsilon);
             _1PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + Mathf.Epsilon);
@@ -701,17 +598,14 @@ namespace UnityEngine.UIElements.UIR
             return slice;
         }
 
-        public unsafe void EvaluateChain(RenderChainCommand head, Rect viewport, Matrix4x4 projection, Texture atlas, Texture gradientSettings, Texture shaderInfo,
+        public unsafe void EvaluateChain(RenderChainCommand head, Rect viewport, Material defaultMat, Texture atlas, Texture gradientSettings, Texture shaderInfo,
             float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, MaterialPropertyBlock stateMatProps, ref Exception immediateException)
         {
             Utility.ProfileDrawChainBegin();
 
-            var usesStraightYCoordinateSystem = m_APIUsesStraightYCoordinateSystem;
-            if (Utility.GetInvertProjectionMatrix())
-                usesStraightYCoordinateSystem = !usesStraightYCoordinateSystem;
-
             var drawParams = m_DrawParams;
-            drawParams.Reset(viewport, projection);
+            drawParams.Reset(viewport);
+            stateMatProps.Clear();
 
             if (fullyCreated)
             {
@@ -726,7 +620,7 @@ namespace UnityEngine.UIElements.UIR
                 if (clipRects.Length > 0)
                     UIR.Utility.SetVectorArray<Vector4>(m_StandardMatProps, s_ClipRectsPropID, clipRects);
                 Set1PixelSizeParameter(drawParams, m_CommonMatProps);
-                m_CommonMatProps.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                m_CommonMatProps.SetVector(s_ScreenClipRectPropID, drawParams.view.Peek().clipRect);
                 Utility.SetPropertyBlock(m_StandardMatProps);
                 Utility.SetPropertyBlock(m_CommonMatProps);
             }
@@ -738,7 +632,7 @@ namespace UnityEngine.UIElements.UIR
             int rangesReady = 0;
             DrawBufferRange curDrawRange = new DrawBufferRange();
             Page curPage = null;
-            State curState = new State() { material = m_DefaultMaterial };
+            State curState = new State() { material = defaultMat };
             int curDrawIndex = -1;
             int maxVertexReferenced = 0;
 
@@ -753,7 +647,7 @@ namespace UnityEngine.UIElements.UIR
                 bool stateParamsChanges = false;
                 if (!kickRanges)
                 {
-                    Material stateMat = head.state.material != null ? head.state.material : m_DefaultMaterial;
+                    Material stateMat = head.state.material != null ? head.state.material : defaultMat;
                     materialChanges = (stateMat != curState.material);
                     curState.material = stateMat;
                     if (head.state.custom != null)
@@ -827,7 +721,7 @@ namespace UnityEngine.UIElements.UIR
                     if (head.type != CommandType.Draw)
                     {
                         if (!m_MockDevice)
-                            head.ExecuteNonDrawMesh(drawParams, usesStraightYCoordinateSystem, pixelsPerPoint, ref immediateException);
+                            head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
                         if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
                         {
                             curState.material = null; // A value that is unique to force material reset on next draw command
@@ -859,7 +753,7 @@ namespace UnityEngine.UIElements.UIR
                             else if (m_CommonMatProps != null && (head.type == CommandType.PushView || head.type == CommandType.PopView))
                             {
                                 Set1PixelSizeParameter(drawParams, m_CommonMatProps);
-                                m_CommonMatProps.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                                m_CommonMatProps.SetVector(s_ScreenClipRectPropID, drawParams.view.Peek().clipRect);
                                 Utility.SetPropertyBlock(m_CommonMatProps);
                             }
                         }
@@ -870,7 +764,7 @@ namespace UnityEngine.UIElements.UIR
                         if (m_CommonMatProps != null)
                         {
                             Set1PixelSizeParameter(drawParams, m_CommonMatProps);
-                            m_CommonMatProps.SetVector(s_PixelClipRectPropID, drawParams.view.Peek().clipRect);
+                            m_CommonMatProps.SetVector(s_ScreenClipRectPropID, drawParams.view.Peek().clipRect);
                             Utility.SetPropertyBlock(m_CommonMatProps);
                         }
 
@@ -890,8 +784,30 @@ namespace UnityEngine.UIElements.UIR
             if (rangesReady > 0)
                 KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, curPage);
 
+            UpdateFenceValue();
+
             Utility.ProfileDrawChainEnd();
 
+        }
+
+        unsafe void UpdateFenceValue()
+        {
+            if (m_Fences != null)
+            {
+                uint newFenceVal = Utility.InsertCPUFence();
+                fixed(uint* fence = &m_Fences[(int)(m_FrameIndex % m_Fences.Length)])
+                {
+                    for (;;)
+                    {
+                        uint curFenceVal = *fence;
+                        if (((int)(newFenceVal - curFenceVal)) <= 0) // This is the same test as in GfxDeviceWorker::WaitOnCPUFence(). Handles wrap around.
+                            break; // Our newFenceVal is already older than the current one, so keep the current
+                        int cmpOldVal = System.Threading.Interlocked.CompareExchange(ref *((int*)fence), (int)newFenceVal, (int)curFenceVal);
+                        if (cmpOldVal == curFenceVal)
+                            break; // The exchange succeeded, now newFenceVal is stored atomically in (*fence)
+                    }
+                }
+            }
         }
 
         unsafe void KickRanges(DrawBufferRange *ranges, ref int rangesReady, ref int rangesStart, int rangesCount, Page curPage)
@@ -928,12 +844,6 @@ namespace UnityEngine.UIElements.UIR
             IntPtr *vStream = stackalloc IntPtr[1];
             vStream[0] = vb.BufferPointer;
             Utility.DrawRanges(ib.BufferPointer, vStream, 1, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, m_VertexDecl);
-        }
-
-        public void OnFrameRenderingDone()
-        {
-            if (m_Fences != null)
-                m_Fences[(int)(m_FrameIndex % m_Fences.Length)] = Utility.InsertCPUFence();
         }
 
         public void AdvanceFrame()

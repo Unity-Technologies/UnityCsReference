@@ -57,7 +57,7 @@ namespace UnityEngine.Rendering
         public bool receiveShadows { get; set; } = true;
         public bool reflectionProbes { get; set; } = true;
         public bool rendererPriority { get; set; } = false;
-
+        public bool rendersUIOverlay { get; set; }
         public bool overridesEnvironmentLighting { get; set; } = false;
         public bool overridesFog { get; set; } = false;
         public bool overridesOtherLightingSettings { get; set; } = false;
@@ -207,6 +207,13 @@ namespace UnityEngine.Rendering
             // 0 = Enlighten
             // if the lightmapper is Enlighten but Enlighten is deprecated, it's not supported
             *isSupported = ((lightmapper == 0) && !active.enlighten) ? false : true;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void IsUIOverlayRenderedBySRP(IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+            *isSupported = active.rendersUIOverlay;
         }
 
         internal static unsafe int FallbackLightmapper()

@@ -120,7 +120,9 @@ namespace UnityEditor
             rootView.Reflow();
         }
 
-        static Color skinBackgroundColor => EditorGUIUtility.isProSkin ? Color.gray.RGBMultiplied(0.3f).AlphaMultiplied(0.5f) : Color.gray.AlphaMultiplied(0.32f);
+        private static readonly Color lightSkinColor = new Color(0.541f, 0.541f, 0.541f, 1.0f);
+        private static readonly Color darkSkinColor = new Color(0.098f, 0.098f, 0.098f, 1.0f);
+        static Color skinBackgroundColor => EditorGUIUtility.isProSkin ? darkSkinColor : lightSkinColor;
 
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
@@ -231,7 +233,7 @@ namespace UnityEditor
             if (v == null && rootView is SplitView && rootView.children.Length > 0)
                 v = rootView.children[0] as HostView;
 
-            if (v == null)
+            if (v == null || !v.actualView)
                 return rootView.GetType().ToString();
 
             if (rootView.children.Length > 0)

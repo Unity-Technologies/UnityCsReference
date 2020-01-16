@@ -235,9 +235,7 @@ namespace UnityEditor.Connect
                     {
                         try
                         {
-                            UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.name, projectInfo.organizationId);
-                            EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.name });
-                            NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
+                            BindProject(projectInfo);
                         }
                         catch (Exception ex)
                         {
@@ -298,9 +296,7 @@ namespace UnityEditor.Connect
                     var projectInfo = ExtractProjectInfoFromJson(json);
                     try
                     {
-                        UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.projectId, projectInfo.organizationId);
-                        EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindManager.ProjectBindState() { bound = true, projectName = projectInfo.name });
-                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
+                        BindProject(projectInfo);
                     }
                     catch (Exception ex)
                     {
@@ -364,6 +360,14 @@ namespace UnityEditor.Connect
                     m_CurrentRequest = null;
                 }
             }
+        }
+
+        void BindProject(ProjectInfoData projectInfo)
+        {
+            UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.name, projectInfo.organizationId);
+            EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.name });
+            NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
+            projectBindCompleted?.Invoke();
         }
 
         void LoadProjectField(string organizationName, PopupField<string> projectIdField)
@@ -658,6 +662,8 @@ namespace UnityEditor.Connect
             anchorParent.Insert(anchorIndex, popupField);
             return popupField;
         }
+
+        internal static event Action projectBindCompleted;
 
         public delegate void CreateButtonCallback(ProjectInfoData projectInfoData);
 

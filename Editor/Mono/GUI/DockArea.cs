@@ -142,6 +142,7 @@ namespace UnityEditor
                     continue;
 
                 UnityEngine.Object.DestroyImmediate(w, true);
+                EditorWindow.UpdateWindowMenuListing();
             }
 
             m_Panes.Clear();
@@ -632,10 +633,13 @@ namespace UnityEditor
         {
             base.AddDefaultItemsToMenu(menu, view);
 
-            if (parent.window.showMode == ShowMode.MainWindow)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Maximize, view);
-            else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Maximize"));
+            if (view)
+            {
+                if (parent.window.showMode == ShowMode.MainWindow)
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Maximize, view);
+                else
+                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Maximize"));
+            }
 
             bool closeAllowed = (window.showMode != ShowMode.MainWindow || AllowTabAction());
             if (closeAllowed)
@@ -787,8 +791,11 @@ namespace UnityEditor
                     if (GUIUtility.hotControl == 0)
                     {
                         int sel = GetTabAtMousePos(tabStyle, evt.mousePosition, scrollOffset, tabAreaRect);
+                        var menuPos = new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0);
                         if (sel != -1 && sel < m_Panes.Count && !ContainerWindow.s_Modal)
-                            PopupGenericMenu(m_Panes[sel], new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0));
+                            PopupGenericMenu(m_Panes[sel], menuPos);
+                        else if (!ContainerWindow.s_Modal)
+                            PopupGenericMenu(null, menuPos);
                     }
                     break;
                 case EventType.MouseDrag:
@@ -799,6 +806,9 @@ namespace UnityEditor
                         Rect screenRect = screenPosition;
 
                         // if we're not tab dragging yet, check to see if we should start
+
+                        // If modal window exists, disable all tab behavior
+                        if (ContainerWindow.s_Modal) break;
 
                         // check if we're allowed to drag tab
                         bool dragAllowed = (window.showMode != ShowMode.MainWindow || AllowTabAction());

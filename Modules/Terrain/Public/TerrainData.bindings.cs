@@ -867,7 +867,7 @@ namespace UnityEngine
             [FreeFunction(k_ScriptingInterfacePrefix + "GetSplatPrototypes", HasExplicitThis = true)]
             get;
 
-            [FreeFunction(k_ScriptingInterfacePrefix + "SetSplatPrototypes", HasExplicitThis = true)]
+            [FreeFunction(k_ScriptingInterfacePrefix + "SetSplatPrototypes", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 

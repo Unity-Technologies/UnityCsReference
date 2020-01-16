@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    
+    <ProjectGuid>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>UnityEngine</RootNamespace>
     <AssemblyName>UnityEngine</AssemblyName>
@@ -826,6 +826,9 @@
     <Compile Include="..\..\Modules\UIElements\ClampedDragger.cs">
       <Link>Modules\UIElements\ClampedDragger.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\ClickDetector.cs">
+      <Link>Modules\UIElements\ClickDetector.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Clickable.cs">
       <Link>Modules\UIElements\Clickable.cs</Link>
     </Compile>
@@ -852,6 +855,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Controls\Foldout.cs">
       <Link>Modules\UIElements\Controls\Foldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Controls\HelpBox.cs">
+      <Link>Modules\UIElements\Controls\HelpBox.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Controls\INotifyValueChanged.cs">
       <Link>Modules\UIElements\Controls\INotifyValueChanged.cs</Link>

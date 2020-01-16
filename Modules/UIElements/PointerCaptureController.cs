@@ -109,7 +109,7 @@ namespace UnityEngine.UIElements
         {
             if (pointerId == PointerId.mousePointerId && m_PendingPointerCapture[pointerId] != handler && GUIUtility.hotControl != 0)
             {
-                Debug.Assert(GUIUtility.hotControl != 0, "Should not be capturing when there is a hotcontrol");
+                Debug.LogWarning("Should not be capturing when there is a hotcontrol");
                 return;
             }
 

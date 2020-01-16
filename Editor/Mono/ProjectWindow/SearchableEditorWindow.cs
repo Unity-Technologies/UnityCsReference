@@ -81,6 +81,16 @@ namespace UnityEditor
             }
         }
 
+        [MenuItem("CONTEXT/Component/Properties...")]
+        private static void OnOpenPropertiesToComponent(MenuCommand command)
+        {
+            var component = command.context as Component;
+            if (!component)
+                return;
+
+            PropertyEditor.OpenPropertyEditor(component);
+        }
+
         [MenuItem("Assets/Find References In Scene", false, 25)]
         private static void OnSearchForReferences()
         {

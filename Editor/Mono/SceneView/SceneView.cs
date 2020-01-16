@@ -255,8 +255,9 @@ namespace UnityEditor
 
         const float kOrthoThresholdAngle = 3f;
         const float kOneOverSqrt2 = 0.707106781f;
-        // stop short of float.MaxValue to prevent rendering assertions
-        internal const float k_MaxSceneViewSize = 3.2e38f;
+        // Don't allow scene view zoom/size to go to crazy high values, or otherwise various
+        // operations will start going to infinities etc.
+        internal const float k_MaxSceneViewSize = 3.2e34f;
         // Limit the max draw distance to Sqrt(float.MaxValue) because transparent sorting function uses dist^2, and
         // Asserts that values are finite.
         internal const float k_MaxCameraFarClip = 1.844674E+19f;
@@ -396,6 +397,7 @@ namespace UnityEditor
         [SerializeField]
         AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
 
+#pragma warning disable 618
         [Obsolete("OnSceneFunc() has been deprecated. Use System.Action instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void OnSceneFunc(SceneView sceneView);
@@ -404,6 +406,7 @@ namespace UnityEditor
         [Obsolete("onSceneGUIDelegate has been deprecated. Use duringSceneGui instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static OnSceneFunc onSceneGUIDelegate;
+#pragma warning restore 618
 
         public static event Action<SceneView> beforeSceneGui;
         public static event Action<SceneView> duringSceneGui;
@@ -517,8 +520,7 @@ namespace UnityEditor
         [SerializeField]
         internal AnimQuaternion m_Rotation = new AnimQuaternion(kDefaultRotation);
 
-        // How large an area the scene view covers (measured diagonally). Use `size` to immediately affect the scene,
-        // or `targetSize` to lerp the effect
+        // How large an area the scene view covers (measured vertically)
         [SerializeField]
         AnimFloat m_Size = new AnimFloat(kDefaultViewSize);
 
@@ -577,7 +579,7 @@ namespace UnityEditor
                 m_SpeedMax = 2f;
                 m_EasingEnabled = true;
                 m_EasingDuration = defaultEasingDuration;
-                fieldOfView = kPerspectiveFov;
+                fieldOfView = kDefaultPerspectiveFov;
                 m_DynamicClip = true;
                 m_OcclusionCulling = false;
                 m_NearClip = .03f;
@@ -798,12 +800,15 @@ namespace UnityEditor
         {
             get
             {
-                float fov = m_Ortho.Fade(kPerspectiveFov, 0);
+                float fov = m_Ortho.Fade(camera.fieldOfView, 0);
 
+                float res;
                 if (!camera.orthographic)
-                    return size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
-
-                return size * 2f;
+                    res = size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
+                else
+                    res = size * 2f;
+                // clamp to allowed range in case scene view size was huge
+                return Mathf.Clamp(res, -k_MaxSceneViewSize, k_MaxSceneViewSize);
             }
         }
 
@@ -814,7 +819,7 @@ namespace UnityEditor
 
         RectSelection m_RectSelection;
 
-        const float kPerspectiveFov = 90;
+        const float kDefaultPerspectiveFov = 90;
 
         static ArrayList s_SceneViews = new ArrayList();
         public static ArrayList sceneViews { get { return s_SceneViews; } }
@@ -3047,19 +3052,14 @@ namespace UnityEditor
             set { m_Size.value = ValidateSceneSize(value); }
         }
 
+        // ReSharper disable once UnusedMember.Global - used only in editor tests
         internal float targetSize
         {
             get { return m_Size.target; }
             set { m_Size.target = ValidateSceneSize(value); }
         }
 
-        float perspectiveFov
-        {
-            get
-            {
-                return m_CameraSettings.fieldOfView;
-            }
-        }
+        float perspectiveFov => m_CameraSettings.fieldOfView;
 
         public bool orthographic
         {
@@ -3699,7 +3699,7 @@ namespace UnityEditor
 
         public bool Frame(Bounds bounds, bool instant = true)
         {
-            float newSize = bounds.extents.magnitude * 1.5f;
+            float newSize = bounds.extents.magnitude;
 
             if (float.IsInfinity(newSize))
                 return false;
@@ -3707,8 +3707,23 @@ namespace UnityEditor
             if (newSize < Mathf.Epsilon)
                 newSize = 10;
 
+            // By default we want to make scene view size a bit larger than the object bounds, so that we can orbit
+            // around it without it getting clipped. In orthographic camera we want to enclose a bit more.
+            float sizeMul = m_Ortho.value ? 2.2f : 1.2f;
+
+            if (!m_Ortho.value)
+            {
+                // At wide camera FOVs, need to enclose a larger area to make the object not get clipped.
+                if (perspectiveFov > 90)
+                    sizeMul += (perspectiveFov - 90) / 90.0f;
+                // If scene view is more tall than wide, we want to take that into account so that the bounds
+                // fit in horizontally
+                if (camera.aspect < 1.0f)
+                    sizeMul /= camera.aspect;
+            }
+
             // We snap instantly into target on playmode, because things might be moving fast and lerping lags behind
-            LookAt(bounds.center, m_Rotation.target, newSize * 2.2f, m_Ortho.value, instant);
+            LookAt(bounds.center, m_Rotation.target, newSize * sizeMul, m_Ortho.value, instant);
 
             return true;
         }

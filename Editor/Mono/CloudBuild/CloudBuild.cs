@@ -18,11 +18,6 @@ namespace UnityEditor.CloudBuild
     [InitializeOnLoad]
     internal class CloudBuild
     {
-        static CloudBuild()
-        {
-            JSProxyMgr.GetInstance().AddGlobalObject("unity/cloudbuild", new CloudBuild());
-        }
-
         public Dictionary<string, Dictionary<string, string>> GetScmCandidates()
         {
             Dictionary<string, Dictionary<string, string>> candidates = new Dictionary<string, Dictionary<string, string>>();

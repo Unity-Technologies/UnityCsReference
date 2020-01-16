@@ -69,5 +69,8 @@ namespace UnityEngine
             s_Current = s_MasterEvent;
             Internal_SetNativeEvent(s_MasterEvent.m_Ptr);
         }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern int GetDoubleClickTime();
     }
 }

@@ -275,7 +275,6 @@ namespace UnityEditor.Collaboration
             s_Instance.projectBrowserSingleSelectionPath = string.Empty;
             s_Instance.projectBrowserSingleMetaSelectionPath = string.Empty;
             s_Instance.m_nativeCollab = GetNativeCollab();
-            JSProxyMgr.GetInstance().AddGlobalObject("unity/collab", s_Instance);
             ObjectListArea.postAssetIconDrawCallback += CollabProjectHook.OnProjectWindowIconOverlay;
             AssetsTreeViewGUI.postAssetIconDrawCallback += CollabProjectHook.OnProjectBrowserNavPanelIconOverlay;
             InitializeSoftlocksViewController();
@@ -400,21 +399,11 @@ namespace UnityEditor.Collaboration
         public PublishInfo_V2 GetChangesToPublish_V2()
         {
             ChangeItem[] changes = GetChangeItemsToPublishInternal_V2();
-            bool isFiltered = false;
-
-            if (SupportsAsyncChanges())
-            {
-                changes = GetSelectedChangeItemsInternal_V2();
-                if (Toolbar.isLastShowRequestPartial)
-                {
-                    isFiltered = true;
-                }
-            }
 
             return new PublishInfo_V2()
             {
                 changes = changes,
-                filter = isFiltered
+                filter = false
             };
         }
 

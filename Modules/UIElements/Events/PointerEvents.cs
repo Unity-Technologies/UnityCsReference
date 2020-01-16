@@ -620,6 +620,16 @@ namespace UnityEngine.UIElements
         }
     }
 
+    public sealed class ClickEvent : PointerEventBase<ClickEvent>
+    {
+        internal static ClickEvent GetPooled(PointerUpEvent pointerEvent, int clickCount)
+        {
+            var evt = PointerEventBase<ClickEvent>.GetPooled(pointerEvent);
+            evt.clickCount = clickCount;
+            return evt;
+        }
+    }
+
     public sealed class PointerEnterEvent : PointerEventBase<PointerEnterEvent>
     {
         protected override void Init()

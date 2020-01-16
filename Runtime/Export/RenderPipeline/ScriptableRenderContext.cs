@@ -209,6 +209,12 @@ namespace UnityEngine.Rendering
             DrawGizmos_Internal(camera, gizmoSubset);
         }
 
+        public void DrawUIOverlay(Camera camera)
+        {
+            Validate();
+            DrawUIOverlay_Internal(camera);
+        }
+
         public unsafe CullingResults Cull(ref ScriptableCullingParameters parameters)
         {
             var results = new CullingResults();

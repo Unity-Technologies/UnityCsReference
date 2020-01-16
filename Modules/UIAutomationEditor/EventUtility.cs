@@ -223,6 +223,8 @@ namespace UnityEditor.UIAutomation
         // Mouse dragging (simulates simple mousedown, mouse drag and mouse up)
         // ----------------------------------------------------------
 
+        static Vector2 s_PrevMousePosition;
+
         public static void Drag(EditorWindow window, Vector2 mousePositionStart, Vector2 mousePositionEnd)
         {
             Drag(window, mousePositionStart, mousePositionEnd, EventModifiers.None);
@@ -241,6 +243,7 @@ namespace UnityEditor.UIAutomation
 
         public static void BeginDrag(EditorWindow window, Vector2 mousePosition, EventModifiers modifiers)
         {
+            s_PrevMousePosition = mousePosition;
             var evt = new Event()
             {
                 mousePosition = mousePosition,
@@ -266,8 +269,10 @@ namespace UnityEditor.UIAutomation
             var evt = new Event()
             {
                 mousePosition = mousePosition,
-                modifiers = modifiers
+                modifiers = modifiers,
+                delta = mousePosition - s_PrevMousePosition
             };
+            s_PrevMousePosition = mousePosition;
 
             evt.type = EventType.MouseDrag;
             window.SendEvent(evt);
@@ -287,8 +292,10 @@ namespace UnityEditor.UIAutomation
             {
                 type = EventType.MouseDrag,
                 mousePosition = mousePosition,
-                modifiers = modifiers
+                modifiers = modifiers,
+                delta = mousePosition - s_PrevMousePosition
             });
+            s_PrevMousePosition = mousePosition;
         }
 
         // These are not public so hardcoded here

@@ -70,21 +70,9 @@ namespace UnityEditorInternal
             return filename.StartsWith("visualstudio") && !filename.Contains("code") && filename.EndsWith(".app");
         }
 
-        #pragma warning disable 618
         public static string GetExternalScriptEditor()
         {
-            var editor = CodeEditor.CurrentEditorInstallation;
-
-            if (!string.IsNullOrEmpty(editor))
-                return editor;
-
-            // If no script editor is set, try to use first found supported one.
-            var editorPaths = GetFoundScriptEditorPaths(Application.platform);
-
-            if (editorPaths.Count > 0)
-                return editorPaths.Keys.ToArray()[0];
-
-            return string.Empty;
+            return CodeEditor.CurrentEditorInstallation;
         }
 
         [Obsolete("This method has been moved to CodeEditor.SetExternalScriptEditor", false)]

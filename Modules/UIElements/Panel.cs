@@ -32,14 +32,15 @@ namespace UnityEngine.UIElements
         Styles = 1 << 5,
         Overflow = 1 << 6,
         BorderRadius = 1 << 7,
+        BorderWidth = 1 << 8,
         // changes that may impact the world transform (e.g. laid out position, local transform)
-        Transform = 1 << 8,
+        Transform = 1 << 9,
         // changes to the size of the element after layout has been performed, without taking the local transform into account
-        Size = 1 << 9,
+        Size = 1 << 10,
         // The visuals of the element have changed
-        Repaint = 1 << 10,
+        Repaint = 1 << 11,
         // The opacity of the element have changed
-        Opacity = 1 << 11,
+        Opacity = 1 << 12,
     }
 
     [Flags]
@@ -253,14 +254,6 @@ namespace UnityEngine.UIElements
         internal virtual ICursorManager cursorManager { get; set; }
         public ContextualMenuManager contextualMenuManager { get; internal set; }
 
-        internal Matrix4x4 GetProjection()
-        {
-            var rect = visualTree.layout;
-            return ProjectionUtils.Ortho(rect.xMin, rect.xMax, rect.yMax, rect.yMin, -1, 1);
-        }
-
-        internal Rect GetViewport() { return visualTree.layout; }
-
         //IPanel
         public abstract VisualElement visualTree { get; }
         public abstract EventDispatcher dispatcher { get; protected set; }
@@ -303,9 +296,11 @@ namespace UnityEngine.UIElements
         }
 
         internal abstract Shader standardShader { get; set; }
+        internal virtual Shader standardWorldSpaceShader { get { return null; } set {} }
 
-        internal event Action standardShaderChanged;
+        internal event Action standardShaderChanged, standardWorldSpaceShaderChanged;
         protected void InvokeStandardShaderChanged() { if (standardShaderChanged != null) standardShaderChanged(); }
+        protected void InvokeStandardWorldSpaceShaderChanged() { if (standardWorldSpaceShaderChanged != null) standardWorldSpaceShaderChanged(); }
 
         internal event HierarchyEvent hierarchyChanged;
         internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType) { if (hierarchyChanged != null) hierarchyChanged(ve, changeType); }
@@ -466,20 +461,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static TimeMsFunction s_TimeSinceStartup;
-        internal static TimeMsFunction TimeSinceStartup
-        {
-            get { return s_TimeSinceStartup; }
-            set
-            {
-                if (value == null)
-                {
-                    value = DefaultTimeSinceStartupMs;
-                }
-
-                s_TimeSinceStartup = value;
-            }
-        }
+        internal static TimeMsFunction TimeSinceStartup { private get; set; }
 
         public override int IMGUIContainersCount { get; set; }
 
@@ -550,7 +532,7 @@ namespace UnityEngine.UIElements
 
         public static long TimeSinceStartupMs()
         {
-            return (s_TimeSinceStartup == null) ? DefaultTimeSinceStartupMs() : s_TimeSinceStartup();
+            return TimeSinceStartup?.Invoke() ?? DefaultTimeSinceStartupMs();
         }
 
         internal static long DefaultTimeSinceStartupMs()
@@ -762,8 +744,36 @@ namespace UnityEngine.UIElements
         public RuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
             : base(ownerObject, ContextType.Player, dispatcher) {}
 
-        // we may provide a rendertexture to be used for world space rendering
-        internal RenderTexture targetTexture = null;
+        private Shader m_StandardWorldSpaceShader;
+
+        internal override Shader standardWorldSpaceShader
+        {
+            get { return m_StandardWorldSpaceShader; }
+            set
+            {
+                if (m_StandardWorldSpaceShader != value)
+                {
+                    m_StandardWorldSpaceShader = value;
+                    InvokeStandardWorldSpaceShaderChanged();
+                }
+            }
+        }
+
+        internal bool drawToCameras
+        {
+            get
+            {
+                return (GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.renderChain?.drawInCameras == true;
+            }
+            set
+            {
+                var renderChain = (GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.renderChain;
+                if (renderChain != null)
+                    renderChain.drawInCameras = value;
+            }
+        }
+        internal RenderTexture targetTexture = null; // Render panel to a texture
+        internal Matrix4x4 panelToWorld = Matrix4x4.identity;
 
         public override void Repaint(Event e)
         {

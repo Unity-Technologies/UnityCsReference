@@ -19,6 +19,7 @@ using UnityEditor.Build;
 using UnityEditor.StyleSheets;
 using UnityEditor.VersionControl;
 using UnityEngine.Internal;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -1690,9 +1691,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.MouseUp && buttonRect.Contains(Event.current.mousePosition))
             {
                 s_RecycledEditor.text = text = "";
-                GUIUtility.keyboardControl = 0;
                 GUI.changed = true;
-                Event.current.Use();
             }
             text = DoTextField(s_RecycledEditor, id, textRect, text, showWithPopupArrow ? EditorStyles.toolbarSearchFieldPopup : EditorStyles.toolbarSearchField, null, out dummy, false, false, false);
             GUI.Button(buttonRect, GUIContent.none,
@@ -5782,6 +5781,13 @@ namespace UnityEditor
             return fieldPosition;
         }
 
+        internal static bool UseVTMaterial(Texture texture)
+        {
+            Texture2D tex2d = texture as Texture2D;
+            int tileSize = VirtualTexturing.tileSize;
+            return PlayerSettings.GetVirtualTexturingSupportEnabled() && tex2d != null && tex2d.vtOnly && tex2d.width > tileSize && tex2d.height > tileSize;
+        }
+
         internal static Rect MultiFieldPrefixLabel(Rect totalPosition, int id, GUIContent label, int columns)
         {
             if (!LabelHasContent(label))
@@ -5863,7 +5869,8 @@ namespace UnityEditor
                 throw new NullReferenceException(error);
             }
 
-            Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
+            if (Highlighter.IsSearchingForIdentifier())
+                Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
             s_PropertyFieldTempContent.tooltip = isCollectingTooltips ? ((label == null) ? property.tooltip : label.tooltip) : null;
@@ -5921,6 +5928,29 @@ namespace UnityEditor
 
                 animatedColor.a *= GUI.backgroundColor.a;
                 GUI.backgroundColor = animatedColor;
+            }
+            else
+            {
+                Object target = property.serializedObject.targetObject;
+                GameObject go = PrefabUtility.GetGameObject(target);
+                if (go != null && go.scene.IsValid() && EditorSceneManager.IsPreviewScene(go.scene))
+                {
+                    var prefabStage = Experimental.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                    if (prefabStage != null && prefabStage.mode == Experimental.SceneManagement.PrefabStage.Mode.InContext)
+                    {
+                        var propertyPath = property.propertyPath;
+                        ScriptableObject driver = prefabStage;
+                        if (
+                            (DrivenPropertyManagerInternal.IsDriving(driver, target, propertyPath))
+                            ||
+                            ((target is Transform || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, propertyPath)))
+                        {
+                            GUI.enabled = false;
+                            if (isCollectingTooltips)
+                                s_PropertyFieldTempContent.tooltip = s_PrefabInContextPreviewValuesTooltip;
+                        }
+                    }
+                }
             }
 
             GUI.enabled &= property.editable;
@@ -6094,7 +6124,8 @@ namespace UnityEditor
         // Draws the alpha channel of a texture within a rectangle.
         internal static void DrawTextureAlphaInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
         {
-            DrawPreviewTextureInternal(position, image, alphaMaterial, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
+            var mat = UseVTMaterial(image) ? alphaVTMaterial : alphaMaterial;
+            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
         }
 
         // Draws texture transparently using the alpha channel.
@@ -6111,7 +6142,10 @@ namespace UnityEditor
 
             DrawTransparencyCheckerTexture(position, scaleMode, imageAspect);
             if (image != null)
-                DrawPreviewTexture(position, image, transparentMaterial, scaleMode, imageAspect, mipLevel, colorWriteMask);
+            {
+                var mat = UseVTMaterial(image) ? transparentVTMaterial : transparentMaterial;
+                DrawPreviewTexture(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask);
+            }
         }
 
         internal static void DrawTransparencyCheckerTexture(Rect position, ScaleMode scaleMode, float imageAspect)
@@ -6152,9 +6186,11 @@ namespace UnityEditor
                     colorMask.a = 0;
 
                 if (mat == null)
-                    mat = GetMaterialForSpecialTexture(image, colorMaterial);
+                    mat = GetMaterialForSpecialTexture(image, UseVTMaterial(image) ? colorVTMaterial : colorMaterial);
+
                 mat.SetColor("_ColorMask", colorMask);
                 mat.SetFloat("_Mip", mipLevel);
+
 
                 RenderTexture rt = image as RenderTexture;
                 bool manualResolve = (rt != null) && rt.bindTextureMS;
@@ -6181,6 +6217,9 @@ namespace UnityEditor
                 }
                 Graphics.DrawTexture(screenRect, image, sourceRect, 0, 0, 0, 0, GUI.color, mat);
 
+                //Start streaming in content for the next preview draw calls. The first draw might not have texture content to render with.
+                //StreamTexture is called after the draw call because the VT stack might not have been created yet otherwise.
+                StreamTexture(image, mat, mipLevel);
 
                 if (manualResolve)
                 {
@@ -6189,9 +6228,61 @@ namespace UnityEditor
             }
         }
 
-        // This will return appriopriate material to use with the texture according to its usage mode
-        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null, bool normals2Linear = false)
+        internal static void StreamTexture(Texture texture, Material mat, float mipLevel)
         {
+            if (UseVTMaterial(texture))
+            {
+                const string stackName = "Stack";//keep in sync with preview shader stack name
+                int stackNameId = Shader.PropertyToID(stackName);
+                Texture2D t2d = texture as Texture2D;
+
+                int count = mat.shader.GetPropertyCount();
+                bool stackFound = false;
+                for (int i = 0; i < count; i++)
+                {
+                    if (mat.shader.GetPropertyType(i) == UnityEngine.Rendering.ShaderPropertyType.Texture)
+                    {
+                        string sName;
+                        int dummy;
+
+                        if (mat.shader.FindTextureStack(i, out sName, out dummy) && stackName.Equals(sName))
+                        {
+                            var tex = mat.GetTexture(mat.shader.GetPropertyName(i)) as Texture2D;
+                            if (tex == t2d)
+                            {
+                                stackFound = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                Debug.Assert(stackFound);
+                //Request a higher mipmap first to make sure we have (low res) data as soon as possible
+                const int fallbackResolution = 256;
+                int minDimension = Mathf.Min(texture.width, texture.height);
+                if (minDimension > fallbackResolution)
+                {
+                    float factor = (float)minDimension / (float)fallbackResolution;
+                    int fallbackMipLevel = (int)Math.Ceiling(Math.Log(factor, 2));
+
+                    if (fallbackMipLevel > (int)mipLevel)
+                        VirtualTexturing.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), fallbackMipLevel, 2); //make sure the 128x128 mip is also requested to always have a fallback. Needed for mini thumbnails
+                }
+
+                if (mipLevel >= 0) //otherwise we don't know what mip will be sampled in the shader
+                {
+                    VirtualTexturing.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
+                }
+
+                VirtualTexturing.UpdateSystem();
+            }
+        }
+
+        // This will return appriopriate material to use with the texture according to its usage mode
+        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null, bool normals2Linear = false, bool useVTMaterialWhenPossible = true)
+        {
+            bool useVT = useVTMaterialWhenPossible && UseVTMaterial(t);
+
             // i am not sure WHY do we check that (i would guess this is api user error and exception make sense, not "return something")
             if (t == null) return null;
 
@@ -6205,11 +6296,12 @@ namespace UnityEditor
                 return lightmapFullHDRMaterial;
             else if (usage == TextureUsageMode.NormalmapDXT5nm || (usage == TextureUsageMode.NormalmapPlain && format == TextureFormat.BC5))
             {
-                normalmapMaterial.SetFloat("_ManualTex2Linear", normals2Linear ? 1.0f : 0.0f);
-                return normalmapMaterial;
+                var normalMat = useVT ? normalmapVTMaterial : normalmapMaterial;
+                normalMat.SetFloat("_ManualTex2Linear", normals2Linear ? 1.0f : 0.0f);
+                return normalMat;
             }
             else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
-                return alphaMaterial;
+                return useVT ? alphaVTMaterial : alphaMaterial;
             return defaultMat;
         }
 
@@ -6235,24 +6327,40 @@ namespace UnityEditor
             return m;
         }
 
-        private static Material s_ColorMaterial, s_AlphaMaterial, s_TransparentMaterial, s_NormalmapMaterial;
+        private static Material s_ColorMaterial, s_ColorVTMaterial, s_AlphaMaterial, s_AlphaVTMaterial, s_TransparentMaterial, s_TransparentVTMaterial, s_NormalmapMaterial, s_NormalmapVTMaterial;
         private static Material s_LightmapRGBMMaterial, s_LightmapDoubleLDRMaterial, s_LightmapFullHDRMaterial;
 
         internal static Material colorMaterial
         {
             get { return GetPreviewMaterial(ref s_ColorMaterial, "Previews/PreviewColor2D.shader"); }
         }
+        internal static Material colorVTMaterial
+        {
+            get { return GetPreviewMaterial(ref s_ColorVTMaterial, "Previews/PreviewColor2DVT.shader"); }
+        }
         internal static Material alphaMaterial
         {
             get { return GetPreviewMaterial(ref s_AlphaMaterial, "Previews/PreviewAlpha.shader"); }
+        }
+        internal static Material alphaVTMaterial
+        {
+            get { return GetPreviewMaterial(ref s_AlphaVTMaterial, "Previews/PreviewAlphaVT.shader"); }
         }
         internal static Material transparentMaterial
         {
             get { return GetPreviewMaterial(ref s_TransparentMaterial, "Previews/PreviewTransparent.shader"); }
         }
+        internal static Material transparentVTMaterial
+        {
+            get { return GetPreviewMaterial(ref s_TransparentVTMaterial, "Previews/PreviewTransparentVT.shader"); }
+        }
         internal static Material normalmapMaterial
         {
             get { return GetPreviewMaterial(ref s_NormalmapMaterial, "Previews/PreviewEncodedNormals.shader"); }
+        }
+        internal static Material normalmapVTMaterial
+        {
+            get { return GetPreviewMaterial(ref s_NormalmapVTMaterial, "Previews/PreviewEncodedNormalsVT.shader"); }
         }
         internal static Material lightmapRGBMMaterial
         {
@@ -9246,7 +9354,7 @@ namespace UnityEditor
             return EditorGUI.ColorField(r, label, value);
         }
 
-        #pragma warning disable 612
+#pragma warning disable 612
         [Obsolete("Use EditorGUILayout.ColorField(GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, params GUILayoutOption[] options)")]
         public static Color ColorField(
             GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig, params GUILayoutOption[] options
@@ -9255,7 +9363,7 @@ namespace UnityEditor
             return ColorField(label, value, showEyedropper, showAlpha, hdr);
         }
 
-        #pragma warning restore 612
+#pragma warning restore 612
 
         public static Color ColorField(GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, params GUILayoutOption[] options)
         {

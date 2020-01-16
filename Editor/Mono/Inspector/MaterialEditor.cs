@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -1934,9 +1935,85 @@ namespace UnityEditor
 
             m_PreviewUtility.BeginStaticPreview(new Rect(0, 0, width, height));
 
+            StreamRenderResources();
+
             DoRenderPreview();
 
             return m_PreviewUtility.EndStaticPreview();
+        }
+
+        private void StreamRenderResources()
+        {
+            //Streaming texture tiles if the material uses VT
+            if (PlayerSettings.GetVirtualTexturingSupportEnabled())
+            {
+                foreach (var t in targets)
+                {
+                    var mat = t as Material;
+                    var shader = mat.shader;
+
+                    //Find all texture stacks and the maximum texture dimension per stack
+                    var stackTextures = new Dictionary<int, int>();
+
+                    int count = shader.GetPropertyCount();
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (shader.GetPropertyType(i) == UnityEngine.Rendering.ShaderPropertyType.Texture)
+                        {
+                            string stackName;
+                            int dummy;
+
+                            if (shader.FindTextureStack(i, out stackName, out dummy))
+                            {
+                                var stackId = Shader.PropertyToID(stackName);
+
+                                if (!stackTextures.ContainsKey(stackId))
+                                {
+                                    //Get the dimension of the texture stack. This can be different from the texture dimensions.
+                                    int width, height;
+                                    if (VirtualTexturing.GetTextureStackSize(mat, stackId, out width, out height))
+                                        stackTextures[stackId] = Math.Max(width, height);
+                                }
+                            }
+                        }
+                    }
+
+                    if (stackTextures.Count != 0)
+                    {
+                        //@TODO Poor mans prefetching. Remove once we request the mips synchronously and are guaranteed that they are in the cache.
+                        //Now we need to update the VT system. We sleep to make sure any VT threads (transcoder?) can pick up the work.
+
+                        const int numberOfVTUpdates = 3; // We assume the texture data will be in the texture tile cache after this number of updates
+                        //Streaming texture mips for all the stacks so we have texture data to render with
+                        for (int i = 0; i < numberOfVTUpdates; i++)
+                        {
+                            foreach (var item in stackTextures)
+                            {
+                                var stackId = item.Key;
+                                var maxDimension = item.Value;
+
+                                //Requesting the 256x256 mip and 128x128 mip so that their is content in the cache to render with
+                                const int mipResolutionToRequest = 256;
+                                int mipToRequest = 0;
+
+                                if (maxDimension > mipResolutionToRequest)
+                                {
+                                    float factor = (float)maxDimension / (float)mipResolutionToRequest;
+                                    mipToRequest = (int)Math.Log(factor, 2);
+                                }
+
+                                //@TODO use synchronous requesting once it is available.
+                                VirtualTexturing.RequestRegion(mat, stackId, new Rect(0, 0, 1, 1), mipToRequest, 2);
+                            }
+
+                            //2 system updates per sleep to make sure we flush the VT system while limiting sleeping.
+                            VirtualTexturing.UpdateSystem();
+                            System.Threading.Thread.Sleep(1);
+                            VirtualTexturing.UpdateSystem();
+                        }
+                    }
+                }
+            }
         }
 
         private void DoRenderPreview()

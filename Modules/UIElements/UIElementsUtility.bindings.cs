@@ -130,11 +130,9 @@ namespace UnityEngine.UIElements
         public static void RepaintOverlayPanels()
         {
             UIElementsUtility.GetAllPanels(panelsIteration, ContextType.Player);
-            foreach (var panel in panelsIteration)
+            foreach (RuntimePanel panel in panelsIteration)
             {
-                // at the moment, all runtime panels who do not use a rendertexure are rendered as overlays.
-                // later on, they'll be filtered based on render mode
-                if ((panel as RuntimePanel).targetTexture == null)
+                if (!panel.drawToCameras && panel.targetTexture == null)
                 {
                     using (s_RepaintProfilerMarker.Auto())
                         panel.Repaint(Event.current);

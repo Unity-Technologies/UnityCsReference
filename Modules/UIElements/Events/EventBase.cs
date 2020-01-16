@@ -374,7 +374,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            timestamp = (long)(Time.realtimeSinceStartup * 1000.0f);
+            timestamp = Panel.TimeSinceStartupMs();
 
             triggerEventId = 0;
             eventId = s_NextEventId++;

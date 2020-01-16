@@ -717,6 +717,7 @@ namespace UnityEngine
         extern public void Release();
         extern public bool IsCreated();
         extern public void GenerateMips();
+        [NativeThrows]
         extern public void ConvertToEquirect(RenderTexture equirect, Camera.MonoOrStereoscopicEye eye = Camera.MonoOrStereoscopicEye.Mono);
 
         extern internal void SetSRGBReadWrite(bool srgb);

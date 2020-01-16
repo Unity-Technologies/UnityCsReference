@@ -180,5 +180,19 @@ namespace UnityEditor.Connect
         {
             return (unityWebRequest.result != UnityWebRequest.Result.ProtocolError) && !string.IsNullOrEmpty(unityWebRequest.downloadHandler.text);
         }
+
+        public static void OpenServicesProjectSettings(SingleService singleService)
+        {
+            OpenServicesProjectSettings(singleService.projectSettingsPath, singleService.settingsProviderClassName);
+        }
+
+        public static void OpenServicesProjectSettings(string servicesProjectSettingsPath, string projectSettingsClassName)
+        {
+            var currentProvider = ((ProjectSettingsWindow)SettingsService.OpenProjectSettings()).GetCurrentProvider();
+            if (currentProvider == null || !currentProvider.GetType().Name.Equals(projectSettingsClassName))
+            {
+                SettingsService.OpenProjectSettings(servicesProjectSettingsPath);
+            }
+        }
     }
 }

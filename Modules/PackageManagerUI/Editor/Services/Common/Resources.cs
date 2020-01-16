@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -18,6 +19,10 @@ namespace UnityEditor.PackageManager.UI
         private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
         private const string k_ExtensionDarkVariablesSheetPath = "StyleSheets/Extensions/base/dark.uss";
         private const string k_ExtensionLightVariablesSheetPath = "StyleSheets/Extensions/base/light.uss";
+
+        private static readonly string[] k_PackageManagerStyleSheetPaths = new string[] {"StyleSheets/PackageManager/PackageDependencies.uss", "StyleSheets/PackageManager/PackageDetails.uss", "StyleSheets/PackageManager/PackageItem.uss",
+                                                                                         "StyleSheets/PackageManager/PackageList.uss", "StyleSheets/PackageManager/PackageLoadBar.uss", "StyleSheets/PackageManager/PackageSampleList.uss", "StyleSheets/PackageManager/PackageStatusBar.uss",
+                                                                                         "StyleSheets/PackageManager/PackageToolbar.uss", "StyleSheets/PackageManager/ProgressBar.uss"};
 
         private static StyleSheet m_DarkStyleSheet;
         private static StyleSheet darkStyleSheet
@@ -76,11 +81,14 @@ namespace UnityEditor.PackageManager.UI
             var packageManagerCommon = EditorGUIUtility.Load(k_PackageManagerCommonStyleSheetPath) as StyleSheet;
             var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
 
+            var packageManagerStyles = k_PackageManagerStyleSheetPaths.Select(p => EditorGUIUtility.Load(p) as StyleSheet).ToArray();
+
             var variableThemeSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(variablesThemeStyleSheetPath)) as StyleSheet;
             var extensionThemeStyleSheet = EditorGUIUtility.Load(extensionThemeStyleSheetPath) as StyleSheet;
 
             var resolver = new StyleSheets.StyleSheetResolver();
             resolver.AddStyleSheets(variableThemeSheet, extensionThemeStyleSheet, packageManagerCommon, packageManagerTheme);
+            resolver.AddStyleSheets(packageManagerStyles);
             resolver.ResolveTo(styleSheet);
 
             return styleSheet;

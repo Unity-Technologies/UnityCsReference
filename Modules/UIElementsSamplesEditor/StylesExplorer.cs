@@ -77,6 +77,7 @@ namespace UnityEditor.UIElements.Samples
             container.Add(CreateStandardSection<Toggle>());
             container.Add(CreateStandardSection<Slider>());
             container.Add(CreateStandardSection<TextField>());
+            container.Add(CreateStandardSection<HelpBox>());
             container.Add(CreateStandardSection<Vector3Field>());
             container.Add(CreateStandardSection<RectField>());
 
@@ -201,6 +202,12 @@ namespace UnityEditor.UIElements.Samples
                 var contents = new Label("Content with Border");
                 contents.AddToClassList(s_StyleFoldoutClassName);
                 foldout.Add(contents);
+            }
+            else if (element is HelpBox)
+            {
+                var helpBox = element as HelpBox;
+                helpBox.text = description;
+                helpBox.messageType = HelpBoxMessageType.Info;
             }
 
             parent.Add(element);

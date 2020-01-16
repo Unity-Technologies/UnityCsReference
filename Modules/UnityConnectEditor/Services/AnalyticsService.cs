@@ -3,11 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Text;
-using System.Collections.Generic;
 using UnityEditor.Analytics;
-using UnityEditor.Web;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -21,6 +17,7 @@ namespace UnityEditor.Connect
         public override string description { get; }
         public override string pathTowardIcon { get; }
         public override string projectSettingsPath { get; }
+        public override string settingsProviderClassName => nameof(AnalyticsProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.AnalyticsService;
         public override string packageId { get; }

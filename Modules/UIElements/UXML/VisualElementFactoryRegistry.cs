@@ -80,6 +80,7 @@ namespace UnityEngine.UIElements
                 new TextField.UxmlFactory(),
                 new TemplateContainer.UxmlFactory(),
                 new Box.UxmlFactory(),
+                new HelpBox.UxmlFactory(),
                 new PopupWindow.UxmlFactory(),
                 new ListView.UxmlFactory(),
                 new TreeView.UxmlFactory(),

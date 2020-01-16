@@ -2,18 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements.UIR;
-using System.Text.RegularExpressions;
-
 namespace UnityEngine.UIElements
 {
     internal static class UIRUtility
     {
         public static readonly string k_DefaultShaderName = "Hidden/Internal-UIRDefault";
+        public static readonly string k_DefaultWorldSpaceShaderName = "Hidden/Internal-UIRDefaultWorld";
 
-        public const float k_ClearZ = 0.99f; // Almost at the far plane
-        public const float k_MeshPosZ = 0.995f; // The correct z value to use to draw a shape regularly (no clipping)
-        public const float k_MaskPosZ = -0.995f; // The correct z value to use to mark a shape to be clipped
+        public const float k_ClearZ = 0.99f; // At the far plane like standard Unity rendering
+        public const float k_MeshPosZ = 0.0f; // The correct z value to use to draw a shape
+        public const float k_MaskPosZ = 1.0f; // The correct z value to use to mark a clipping shape
 
         public static Vector4 ToVector4(this Rect rc)
         {
