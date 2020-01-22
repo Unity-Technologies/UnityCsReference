@@ -889,9 +889,19 @@ namespace UnityEditor
                     Scene destinationScene = sceneView.customScene.IsValid() ? sceneView.customScene : SceneManager.GetActiveScene();
                     if (dragObject == null)
                     {
-                        dragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);
+                        if (!EditorApplication.isPlaying || EditorSceneManager.IsPreviewScene(destinationScene))
+                        {
+                            dragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);
+                            dragObject.name = go.name;
+                        }
+                        else
+                        {
+                            // Instatiate as regular GameObject in Play Mode so runtime logic
+                            // won't run into restrictions on restructuring Prefab instances.
+                            dragObject = Instantiate(prefabAssetRoot);
+                            SceneManager.MoveGameObjectToScene(dragObject, destinationScene);
+                        }
                         dragObject.hideFlags = HideFlags.HideInHierarchy;
-                        dragObject.name = go.name;
                     }
 
                     if (HandleUtility.ignoreRaySnapObjects == null)
@@ -951,7 +961,8 @@ namespace UnityEditor
                     HandleUtility.ignoreRaySnapObjects = null;
                     if (SceneView.mouseOverWindow != null)
                         SceneView.mouseOverWindow.Focus();
-                    dragObject.name = uniqueName;
+                    if (!Application.IsPlaying(dragObject))
+                        dragObject.name = uniqueName;
                     dragObject = null;
                     evt.Use();
                     break;

@@ -32,7 +32,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly Regex k_Strings = new Regex(@"""((\\[^\n]|[^""\n])*)""", RegexOptions.Compiled);
         static readonly Regex k_VerbatimStrings = new Regex(@"@(""[^""]*"")+", RegexOptions.Compiled);
         static readonly Regex k_NewlineRegex = new Regex("\r\n?", RegexOptions.Compiled);
-        static readonly Regex k_SingleQuote = new Regex(@"((?<![\\])['])(?:.(?!(?<![\\])\1))*.?\1", RegexOptions.Compiled);
+        static readonly Regex k_SingleQuote = new Regex(@"(?<![\\])'(\\[uUx]\w+|\\.|.)'", RegexOptions.Compiled);
         static readonly Regex k_ConditionalCompilation = new Regex(@"[\t ]*#[\t ]*(if|else|elif|endif|define|undef)([\t !(]+[^/\n]*)?", RegexOptions.Compiled);
         static readonly Regex k_Namespace = new Regex(@"\s*namespace\s.", RegexOptions.Compiled);
         static string s_ClassName;
