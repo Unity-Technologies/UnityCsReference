@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.TextCore;
 
 namespace UnityEngine.UIElements
 {
@@ -39,6 +40,7 @@ namespace UnityEngine.UIElements
             AddToClassList(ussClassName);
             generateVisualContent += OnGenerateVisualContent;
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         private TextHandle m_TextHandle = TextHandle.New();
@@ -49,6 +51,11 @@ namespace UnityEngine.UIElements
         private void OnAttachToPanel(AttachToPanelEvent e)
         {
             m_TextHandle.useLegacy = e.destinationPanel.contextType == ContextType.Editor;
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent e)
+        {
+            UpdateVisibleText();
         }
 
         [SerializeField]
@@ -62,9 +69,156 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private bool m_DisplayTooltipWhenElided = true;
+
+        public bool displayTooltipWhenElided
+        {
+            get { return m_DisplayTooltipWhenElided; }
+            set
+            {
+                if (m_DisplayTooltipWhenElided != value)
+                {
+                    m_DisplayTooltipWhenElided = value;
+                    UpdateVisibleText();
+                    MarkDirtyRepaint();
+                }
+            }
+        }
+
+        public bool isElided { get; private set; }
+
+        internal static readonly string k_EllipsisText = @"..."; // Some web standards seem to suggest "\u2026" (horizontal ellipsis Unicode character)
+
+        private bool m_WasElided;
+        private bool m_UpdateTextParams = true;
+        private MeshGenerationContextUtils.TextParams m_TextParams;
+        private int m_PreviousTextParamsHashCode = Int32.MaxValue;
+
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            mgc.Text(MeshGenerationContextUtils.TextParams.MakeStyleBased(this, this.text), m_TextHandle, this.scaledPixelsPerPoint);
+            UpdateVisibleText();
+
+            mgc.Text(m_TextParams, m_TextHandle, this.scaledPixelsPerPoint);
+
+            m_UpdateTextParams = true;
+        }
+
+        internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
+        {
+            // Try full size first
+            var size = MeasureTextSize(drawText, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
+            if (size.x <= width || string.IsNullOrEmpty(ellipsisText))
+                return drawText;
+
+            var minText = drawText.Length > 1 ? ellipsisText : drawText;
+            var minSize = MeasureTextSize(minText, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
+            if (minSize.x >= width)
+                return minText;
+
+            // Text will need to be truncated somehow
+            var drawTextMax = drawText.Length - 1;
+            var prevFitMid = -1;
+            var truncatedText = drawText;
+
+            // Don't assume that k_EllipsisText takes as much space as any other string of the same length;
+            // we will start by removing one character at a time
+            var min = textOverflowPosition == TextOverflowPosition.Start ? 1 : 0;
+            var max = (textOverflowPosition == TextOverflowPosition.Start ||
+                textOverflowPosition == TextOverflowPosition.Middle) ? drawTextMax : drawTextMax - 1;
+            var mid = (min + max) / 2;
+
+            while (min <= max)
+            {
+                if (textOverflowPosition == TextOverflowPosition.Start)
+                    truncatedText = ellipsisText + drawText.Substring(mid, drawTextMax - (mid - 1));
+                else if (textOverflowPosition == TextOverflowPosition.End)
+                    truncatedText = drawText.Substring(0, mid) + ellipsisText;
+                else if (textOverflowPosition == TextOverflowPosition.Middle)
+                    truncatedText = drawText.Substring(0, mid - 1) + ellipsisText +
+                        drawText.Substring(drawTextMax - (mid - 1));
+
+                size = MeasureTextSize(truncatedText, 0, MeasureMode.Undefined,
+                    0, MeasureMode.Undefined);
+
+                if (Math.Abs(size.x - width) < Mathf.Epsilon)
+                    return truncatedText;
+
+                if (textOverflowPosition == TextOverflowPosition.Start)
+                {
+                    if (size.x > width)
+                    {
+                        if (prevFitMid == mid - 1)
+                            return ellipsisText + drawText.Substring(prevFitMid, drawTextMax - (prevFitMid - 1));
+                        min = mid + 1;
+                    }
+                    else
+                    {
+                        max = mid - 1;
+                        prevFitMid = mid;
+                    }
+                }
+                else if (textOverflowPosition == TextOverflowPosition.End || textOverflowPosition == TextOverflowPosition.Middle)
+                {
+                    if (size.x > width)
+                    {
+                        if (prevFitMid == mid - 1)
+                            if (textOverflowPosition == TextOverflowPosition.End)
+                                return drawText.Substring(0, prevFitMid) + ellipsisText;
+                            else
+                                return drawText.Substring(0, prevFitMid - 1) + ellipsisText + drawText.Substring(drawTextMax - (prevFitMid - 1));
+                        max = mid - 1;
+                    }
+                    else
+                    {
+                        min = mid + 1;
+                        prevFitMid = mid;
+                    }
+                }
+
+                mid = (min + max) / 2;
+            }
+
+            return truncatedText;
+        }
+
+        private void UpdateTooltip()
+        {
+            // We set the tooltip text if text gets truncated
+            bool needsTooltip = displayTooltipWhenElided && isElided;
+
+            if (needsTooltip)
+            {
+                if (!m_WasElided)
+                {
+                    if (string.IsNullOrEmpty(tooltip))
+                        tooltip = this.text;
+                    m_WasElided = true;
+                }
+            }
+            else if (m_WasElided)
+            {
+                if (tooltip == this.text)
+                    tooltip = null;
+                m_WasElided = false;
+            }
+        }
+
+        private void UpdateVisibleText()
+        {
+            var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
+            var textParamsHashCode = textParams.GetHashCode();
+            if (m_UpdateTextParams || textParamsHashCode != m_PreviousTextParamsHashCode)
+            {
+                m_TextParams = textParams;
+                if (m_TextParams.textOverflowMode == TextOverflowMode.Ellipsis)
+                    m_TextParams.text = ElideText(m_TextParams.text, k_EllipsisText, m_TextParams.rect.width,
+                        m_TextParams.textOverflowPosition);
+
+                isElided = m_TextParams.textOverflowMode == TextOverflowMode.Ellipsis && m_TextParams.text != text;
+                m_PreviousTextParamsHashCode = textParamsHashCode;
+                m_UpdateTextParams = false;
+                UpdateTooltip();
+            }
         }
 
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
@@ -83,10 +237,7 @@ namespace UnityEngine.UIElements
                 return new Vector2(measuredWidth, measuredHeight);
 
             var elementScaling = ve.ComputeGlobalScale();
-
-            float scaling = (elementScaling.x + elementScaling.y) * 0.5f * ve.scaledPixelsPerPoint;
-
-            if (scaling <= 0)
+            if (elementScaling.x + elementScaling.y <= 0 || ve.scaledPixelsPerPoint <= 0)
                 return Vector2.zero;
 
             if (widthMode == MeasureMode.Exactly)
@@ -100,7 +251,7 @@ namespace UnityEngine.UIElements
                 textParams.richText = true;
 
                 //we make sure to round up as yoga could decide to round down and text would start wrapping
-                measuredWidth = Mathf.Ceil(textHandle.ComputeTextWidth(textParams, scaling));
+                measuredWidth = Mathf.Ceil(textHandle.ComputeTextWidth(textParams, ve.scaledPixelsPerPoint));
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -117,7 +268,7 @@ namespace UnityEngine.UIElements
                 var textParams = GetTextSettings(ve, textToMeasure);
                 textParams.wordWrapWidth = measuredWidth;
 
-                measuredHeight = Mathf.Ceil(textHandle.ComputeTextHeight(textParams, scaling));
+                measuredHeight = Mathf.Ceil(textHandle.ComputeTextHeight(textParams, ve.scaledPixelsPerPoint));
 
                 if (heightMode == MeasureMode.AtMost)
                 {
@@ -147,7 +298,9 @@ namespace UnityEngine.UIElements
                 anchor = style.unityTextAlign.value,
                 wordWrap = style.whiteSpace.value == WhiteSpace.Normal,
                 wordWrapWidth = style.whiteSpace.value == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
-                richText = true
+                richText = true,
+                textOverflowMode = MeshGenerationContextUtils.TextParams.GetTextOverflowMode(style),
+                textOverflowPosition = style.unityTextOverflowPosition.value
             };
         }
 

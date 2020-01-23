@@ -1966,7 +1966,7 @@ namespace UnityEditor
 
             // First pass: Draw the scene normally in destination render texture, save color buffer for later
             DoClearCamera(groupSpaceCameraRect);
-            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
+            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
             var colorDesc = m_SceneTargetTexture.descriptor;
             colorDesc.depthBufferBits = 0;
@@ -1987,7 +1987,7 @@ namespace UnityEditor
                 s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
             m_Camera.SetReplacementShader(s_AuraShader, "");
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowFiltered);
-            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
+            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
             var fadedDesc = m_SceneTargetTexture.descriptor;
             colorDesc.depthBufferBits = 0;
@@ -2002,7 +2002,7 @@ namespace UnityEditor
             if (!s_BuildFilterShader)
                 s_BuildFilterShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewBuildFilter.shader") as Shader;
             m_Camera.SetReplacementShader(s_BuildFilterShader, "");
-            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
+            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
             // Final pass: Blit the faded scene where the mask isn't set
             if (!s_ApplyFilterMaterial)

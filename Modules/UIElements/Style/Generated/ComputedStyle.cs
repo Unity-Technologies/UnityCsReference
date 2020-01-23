@@ -64,6 +64,7 @@ namespace UnityEngine.UIElements
         public StyleLength paddingTop => nonInheritedData.paddingTop;
         public StyleEnum<Position> position => nonInheritedData.position;
         public StyleLength right => nonInheritedData.right;
+        public StyleEnum<TextOverflow> textOverflow => nonInheritedData.textOverflow;
         public StyleLength top => nonInheritedData.top;
         public StyleColor unityBackgroundImageTintColor => nonInheritedData.unityBackgroundImageTintColor;
         public StyleEnum<ScaleMode> unityBackgroundScaleMode => nonInheritedData.unityBackgroundScaleMode;
@@ -75,6 +76,7 @@ namespace UnityEngine.UIElements
         public StyleInt unitySliceRight => nonInheritedData.unitySliceRight;
         public StyleInt unitySliceTop => nonInheritedData.unitySliceTop;
         public StyleEnum<TextAnchor> unityTextAlign => inheritedData.unityTextAlign;
+        public StyleEnum<TextOverflowPosition> unityTextOverflowPosition => nonInheritedData.unityTextOverflowPosition;
         public StyleEnum<Visibility> visibility => inheritedData.visibility;
         public StyleEnum<WhiteSpace> whiteSpace => inheritedData.whiteSpace;
         public StyleLength width => nonInheritedData.width;
@@ -249,6 +251,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.Right:
                         nonInheritedData.right = reader.ReadStyleLength(0);
                         break;
+                    case StylePropertyId.TextOverflow:
+                        nonInheritedData.textOverflow = (TextOverflow)reader.ReadStyleEnum(StyleEnumType.TextOverflow, 0).value;
+                        break;
                     case StylePropertyId.Top:
                         nonInheritedData.top = reader.ReadStyleLength(0);
                         break;
@@ -281,6 +286,9 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.UnityTextAlign:
                         inheritedData.unityTextAlign = (TextAnchor)reader.ReadStyleEnum(StyleEnumType.TextAnchor, 0).value;
+                        break;
+                    case StylePropertyId.UnityTextOverflowPosition:
+                        nonInheritedData.unityTextOverflowPosition = (TextOverflowPosition)reader.ReadStyleEnum(StyleEnumType.TextOverflowPosition, 0).value;
                         break;
                     case StylePropertyId.Visibility:
                         inheritedData.visibility = (Visibility)reader.ReadStyleEnum(StyleEnumType.Visibility, 0).value;
@@ -450,6 +458,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Right:
                     nonInheritedData.right = new StyleLength(sv.length, sv.keyword);
                     break;
+                case StylePropertyId.TextOverflow:
+                    nonInheritedData.textOverflow = new StyleEnum<TextOverflow>((TextOverflow)sv.number, sv.keyword);
+                    break;
                 case StylePropertyId.Top:
                     nonInheritedData.top = new StyleLength(sv.length, sv.keyword);
                     break;
@@ -482,6 +493,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.unityTextAlign = new StyleEnum<TextAnchor>((TextAnchor)sv.number, sv.keyword);
+                    break;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    nonInheritedData.unityTextOverflowPosition = new StyleEnum<TextOverflowPosition>((TextOverflowPosition)sv.number, sv.keyword);
                     break;
                 case StylePropertyId.Visibility:
                     inheritedData.visibility = new StyleEnum<Visibility>((Visibility)sv.number, sv.keyword);
@@ -693,6 +707,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Right:
                     nonInheritedData.right = InitialStyle.right;
                     break;
+                case StylePropertyId.TextOverflow:
+                    nonInheritedData.textOverflow = InitialStyle.textOverflow;
+                    break;
                 case StylePropertyId.Top:
                     nonInheritedData.top = InitialStyle.top;
                     break;
@@ -725,6 +742,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.unityTextAlign = InitialStyle.unityTextAlign;
+                    break;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    nonInheritedData.unityTextOverflowPosition = InitialStyle.unityTextOverflowPosition;
                     break;
                 case StylePropertyId.Visibility:
                     inheritedData.visibility = InitialStyle.visibility;

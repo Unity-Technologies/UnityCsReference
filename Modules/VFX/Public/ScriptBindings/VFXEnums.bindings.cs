@@ -79,6 +79,7 @@ namespace UnityEngine.VFX
         TransformPos,
         TransformVec,
         TransformDir,
+        TransformVector4,
 
         Vector3sToMatrix,
         Vector4sToMatrix,
@@ -166,6 +167,10 @@ namespace UnityEngine.VFX
         MeshVertexStride,
 
         BufferCount,
+
+        TextureWidth,
+        TextureHeight,
+        TextureDepth,
     }
 
     internal enum VFXValueType

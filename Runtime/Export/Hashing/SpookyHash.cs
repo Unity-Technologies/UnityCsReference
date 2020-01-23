@@ -44,7 +44,7 @@ namespace UnityEngine
         unsafe struct U
         {
             [FieldOffset(0)]
-            public ushort* p8;
+            public ushort* p8; // Note: should really be byte; produces incorrect results with ushort
             [FieldOffset(0)]
             public uint* p32;
             [FieldOffset(0)]
@@ -279,7 +279,7 @@ namespace UnityEngine
                     break;
                 case 7:
                     c += ((ulong)u.p8[6]) << 48;
-                    goto case 9;
+                    goto case 9; // Note: should really be 6, produces incorrect results and can read outside of the array with current code
                 case 6:
                     c += ((ulong)u.p8[5]) << 40;
                     goto case 5;

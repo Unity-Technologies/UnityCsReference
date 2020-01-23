@@ -55,13 +55,17 @@ namespace UnityEngine.XR.WSA
     {
         internal static extern void SetRemoteDeviceVersion(RemoteDeviceVersion remoteDeviceVersion);
 
+        [NativeThrows]
         internal static extern void Connect(string clientName);
 
+        [NativeThrows]
         internal static extern void Disconnect();
 
+        [NativeThrows]
         [NativeConditional("ENABLE_HOLOLENS_MODULE", StubReturnStatement = "HolographicEmulation::None")]
         internal static extern HolographicStreamerConnectionFailureReason CheckForDisconnect();
 
+        [NativeThrows]
         [NativeConditional("ENABLE_HOLOLENS_MODULE", StubReturnStatement = "HolographicEmulation::Disconnected")]
         internal static extern HolographicStreamerConnectionState GetConnectionState();
 

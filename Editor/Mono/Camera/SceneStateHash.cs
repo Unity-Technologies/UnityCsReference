@@ -48,9 +48,12 @@ namespace UnityEditor.Experimental.Rendering
         public override int GetHashCode()
         {
             var h = new Hash128();
-            HashUtilities.AppendHash(ref m_SceneObjectsHash, ref h);
-            HashUtilities.AppendHash(ref m_SkySettingsHash, ref h);
-            HashUtilities.AppendHash(ref m_AmbientProbeHash, ref h);
+            unsafe
+            {
+                fixed(Hash128* ptr = &m_SceneObjectsHash) h.Append(ptr, (ulong)sizeof(Hash128));
+                fixed(Hash128* ptr = &m_SkySettingsHash) h.Append(ptr, (ulong)sizeof(Hash128));
+                fixed(Hash128* ptr = &m_AmbientProbeHash) h.Append(ptr, (ulong)sizeof(Hash128));
+            }
             return h.GetHashCode();
         }
     }

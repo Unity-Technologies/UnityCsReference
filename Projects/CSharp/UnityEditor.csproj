@@ -10,7 +10,7 @@
     <AssemblyName>UnityEditor</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <LangVersion>6</LangVersion>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
@@ -1890,6 +1890,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ConstraintEditorBase.cs">
       <Link>Editor\Mono\Inspector\ConstraintEditorBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\CubemapArrayInspector.cs">
+      <Link>Editor\Mono\Inspector\CubemapArrayInspector.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CubemapInspector.cs">
       <Link>Editor\Mono\Inspector\CubemapInspector.cs</Link>

@@ -68,7 +68,7 @@ namespace UnityEditor.PackageManager.UI
                     // Highlight import path
                     var importRelativePath = m_Sample.importPath.Replace(Application.dataPath, "Assets");
                     Object obj = AssetDatabase.LoadAssetAtPath(importRelativePath, typeof(Object));
-                    Selection.activeObject = obj;
+                    ApplicationUtil.instance.activeSelection = obj;
                     EditorGUIUtility.PingObject(obj);
                 }
             }

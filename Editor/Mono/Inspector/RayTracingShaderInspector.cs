@@ -238,12 +238,22 @@ namespace UnityEditor
             ShowShaderErrors(rts);
         }
 
+        ShaderMessage[] m_ShaderMessages;
         private void ShowShaderErrors(RayTracingShader s)
         {
-            int n = ShaderUtil.GetRayTracingShaderMessageCount(s);
-            if (n < 1)
+            if (Event.current.type == EventType.Layout)
+            {
+                int n = ShaderUtil.GetRayTracingShaderMessageCount(s);
+                m_ShaderMessages = null;
+                if (n >= 1)
+                {
+                    m_ShaderMessages = ShaderUtil.GetRayTracingShaderMessages(s);
+                }
+            }
+
+            if (m_ShaderMessages == null)
                 return;
-            ShaderInspector.ShaderErrorListUI(s, ShaderUtil.GetRayTracingShaderMessages(s), ref m_ScrollPosition);
+            ShaderInspector.ShaderErrorListUI(s, m_ShaderMessages, ref m_ScrollPosition);
         }
     }
 }

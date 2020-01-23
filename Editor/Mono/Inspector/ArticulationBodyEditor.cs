@@ -2,8 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using ICSharpCode.NRefactory.Ast;
 using UnityEditor.IMGUI.Controls;
+using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.XR;
+//using UnityScript.TypeSystem;
 
 namespace UnityEditor
 {
@@ -36,6 +40,20 @@ namespace UnityEditor
         SerializedProperty m_JointFriction;
 
         SerializedProperty m_Immovable;
+        bool m_DisplayParentAnchor;
+
+        internal enum NonLockedMotion
+        {
+            Free = 2,
+            Limited = 1
+        }
+
+        internal enum LinearDof
+        {
+            X,
+            Y,
+            Z
+        }
 
         public void OnEnable()
         {
@@ -63,29 +81,14 @@ namespace UnityEditor
             m_JointFriction = serializedObject.FindProperty("m_JointFriction");
 
             m_Immovable = serializedObject.FindProperty("m_Immovable");
+            m_DisplayParentAnchor = false;
         }
 
-        private void QuaternionAsEulerAnglesPropertyField(string tag, SerializedProperty quaternionProperty, Quaternion rotation)
+        private void QuaternionAsEulerAnglesPropertyField(string tag, SerializedProperty quaternionProperty,
+            Quaternion rotation)
         {
-            quaternionProperty.quaternionValue = Quaternion.Euler(EditorGUILayout.Vector3Field(tag, rotation.eulerAngles));
-        }
-
-        // prismatic joint allows only one translational degree of freedom
-        private void PrismaticJointAxisLockProperty(SerializedProperty linearLock)
-        {
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(linearLock);
-            if (EditorGUI.EndChangeCheck() && linearLock.enumValueIndex != (int)ArticulationDofLock.LockedMotion)
-            {
-                if (linearLock != m_LinearX)
-                    m_LinearX.enumValueIndex = (int)ArticulationDofLock.LockedMotion;
-
-                if (linearLock != m_LinearY)
-                    m_LinearY.enumValueIndex = (int)ArticulationDofLock.LockedMotion;
-
-                if (linearLock != m_LinearZ)
-                    m_LinearZ.enumValueIndex = (int)ArticulationDofLock.LockedMotion;
-            }
+            quaternionProperty.quaternionValue =
+                Quaternion.Euler(EditorGUILayout.Vector3Field(tag, rotation.eulerAngles));
         }
 
         private ArticulationBody FindParentBody(ArticulationBody child)
@@ -124,6 +127,15 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_ComputeParentAnchor);
 
+                // Render anchor handle display button only if editor scene view has Move, Rotate or Transform tool mode selected
+                if (IsEditToolModeForAnchorDisplay())
+                {
+                    if (m_DisplayParentAnchor)
+                        m_DisplayParentAnchor = !GUILayout.Button("Show anchor handle");
+                    else
+                        m_DisplayParentAnchor = GUILayout.Button("Show parent anchor handle");
+                }
+
                 // Show anchor edit fields and set to joint if changed
                 // The reason we have change checks here is because in AwakeFromLoad we won't overwrite anchors
                 // If we were to do that, simulation would drift caused by anchors reset relative to current poses
@@ -149,7 +161,8 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(m_ParentAnchorPosition);
-                    QuaternionAsEulerAnglesPropertyField("Parent Anchor Rotation", m_ParentAnchorRotation, body.parentAnchorRotation);
+                    QuaternionAsEulerAnglesPropertyField("Parent Anchor Rotation", m_ParentAnchorRotation,
+                        body.parentAnchorRotation);
 
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -160,10 +173,12 @@ namespace UnityEditor
 
                 if (GUILayout.Button("Snap anchor to closest contact"))
                 {
+                    Undo.RecordObject(body, "Changing anchor position/rotation to match closest contact.");
                     Vector3 com = parentBody.centerOfMass;
                     Vector3 closestOnSurface = body.GetClosestPoint(com);
                     body.anchorPosition = body.transform.InverseTransformPoint(closestOnSurface);
-                    body.anchorRotation = Quaternion.FromToRotation(Vector3.right, body.transform.InverseTransformDirection(com - closestOnSurface).normalized);
+                    body.anchorRotation = Quaternion.FromToRotation(Vector3.right,
+                        body.transform.InverseTransformDirection(com - closestOnSurface).normalized);
                 }
 
                 EditorGUILayout.PropertyField(m_ArticulationJointType);
@@ -178,46 +193,88 @@ namespace UnityEditor
                         break;
 
                     case ArticulationJointType.PrismaticJoint:
-                        // toggles
-                        PrismaticJointAxisLockProperty(m_LinearX);
-                        PrismaticJointAxisLockProperty(m_LinearY);
-                        PrismaticJointAxisLockProperty(m_LinearZ);
+                        // work out joint settings
+                        LinearDof linearDof = LinearDof.X; // x by default
+                        ArticulationDofLock dofLockSetting = ArticulationDofLock.FreeMotion;
+
+                        if (body.linearLockX != ArticulationDofLock.LockedMotion)
+                        {
+                            linearDof = LinearDof.X;
+                            dofLockSetting = body.linearLockX;
+                        }
+                        else if (body.linearLockY != ArticulationDofLock.LockedMotion)
+                        {
+                            linearDof = LinearDof.Y;
+                            dofLockSetting = body.linearLockY;
+                        }
+                        else if (body.linearLockZ != ArticulationDofLock.LockedMotion)
+                        {
+                            linearDof = LinearDof.Z;
+                            dofLockSetting = body.linearLockZ;
+                        }
+
+                        int dofCount = 0;
+
+                        if (body.linearLockX != ArticulationDofLock.LockedMotion) dofCount++;
+                        if (body.linearLockY != ArticulationDofLock.LockedMotion) dofCount++;
+                        if (body.linearLockZ != ArticulationDofLock.LockedMotion) dofCount++;
+
+                        bool overrideDof = (dofCount != 1);
+
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUILayout.Space();
+                        linearDof = (LinearDof)EditorGUILayout.EnumPopup("Axis", linearDof);
+                        NonLockedMotion motion = (dofLockSetting == ArticulationDofLock.FreeMotion) ? NonLockedMotion.Free : NonLockedMotion.Limited;
+                        motion = (NonLockedMotion)EditorGUILayout.EnumPopup("Motion", motion);
+                        if (EditorGUI.EndChangeCheck() || overrideDof)
+                        {
+                            m_LinearX.enumValueIndex = (linearDof == LinearDof.X) ? (int)motion : 0;
+                            m_LinearY.enumValueIndex = (linearDof == LinearDof.Y) ? (int)motion : 0;
+                            m_LinearZ.enumValueIndex = (linearDof == LinearDof.Z) ? (int)motion : 0;
+                        }
 
                         EditorGUILayout.Space();
-                        if (body.linearLockX != ArticulationDofLock.LockedMotion)
-                            StructPropertyGUILayout.GenericStruct(m_XDrive);
 
-                        if (body.linearLockY != ArticulationDofLock.LockedMotion)
-                            StructPropertyGUILayout.GenericStruct(m_YDrive);
-
-                        if (body.linearLockZ != ArticulationDofLock.LockedMotion)
-                            StructPropertyGUILayout.GenericStruct(m_ZDrive);
+                        DoDriveInspector(m_YDrive, (ArticulationDofLock)m_LinearY.enumValueIndex);
+                        DoDriveInspector(m_ZDrive, (ArticulationDofLock)m_LinearZ.enumValueIndex);
+                        DoDriveInspector(m_XDrive, (ArticulationDofLock)m_LinearX.enumValueIndex);
 
                         break;
 
                     case ArticulationJointType.RevoluteJoint:
-                        EditorGUILayout.PropertyField(m_Twist);
+                        ArticulationDofLock serialisedDofLock = (ArticulationDofLock)m_Twist.enumValueIndex;
+
+                        NonLockedMotion revoluteMotion = serialisedDofLock == ArticulationDofLock.LimitedMotion
+                            ? NonLockedMotion.Limited
+                            : NonLockedMotion.Free;
 
                         EditorGUILayout.Space();
-                        StructPropertyGUILayout.GenericStruct(m_XDrive);
+                        motion = (NonLockedMotion)EditorGUILayout.EnumPopup("Motion", revoluteMotion);
+
+                        ArticulationDofLock newDofLock = (ArticulationDofLock)motion;
+
+                        if (newDofLock != serialisedDofLock)
+                        {
+                            m_Twist.enumValueIndex = (int)newDofLock;
+                        }
+
+                        EditorGUILayout.Space();
+                        DoDriveInspector(m_XDrive, newDofLock);
 
                         break;
 
                     case ArticulationJointType.SphericalJoint:
-                        EditorGUILayout.PropertyField(m_SwingY);
-                        EditorGUILayout.PropertyField(m_SwingZ);
-                        EditorGUILayout.PropertyField(m_Twist);
+                        EditorGUILayout.Space();
+                        // here we just need to make sure we disable getting into an invalid configuration
+                        SphericalJointMotionSetting(m_SwingY);
+                        SphericalJointMotionSetting(m_SwingZ);
+                        SphericalJointMotionSetting(m_Twist);
 
                         EditorGUILayout.Space();
 
-                        if (body.swingYLock != ArticulationDofLock.LockedMotion)
-                            StructPropertyGUILayout.GenericStruct(m_YDrive);
-
-                        if (body.swingZLock != ArticulationDofLock.LockedMotion)
-                            StructPropertyGUILayout.GenericStruct(m_ZDrive);
-
-                        if (body.twistLock != ArticulationDofLock.LockedMotion)
-                            StructPropertyGUILayout.GenericStruct(m_XDrive);
+                        DoDriveInspector(m_YDrive, body.swingYLock);
+                        DoDriveInspector(m_ZDrive, body.swingZLock);
+                        DoDriveInspector(m_XDrive, body.twistLock);
 
                         break;
                 }
@@ -226,10 +283,18 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
-        void DrawFrame(Vector3 p, Quaternion q)
+        private void SphericalJointMotionSetting(SerializedProperty axis)
         {
-            // we don't allow editing anchors visually for now
-            Handles.PositionHandle(p, q);
+            EditorGUI.BeginChangeCheck();
+            int oldSetting = axis.enumValueIndex; // assume it was correct before changing
+            EditorGUILayout.PropertyField(axis);
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (m_SwingY.enumValueIndex == 0 && m_SwingZ.enumValueIndex == 0 && m_Twist.enumValueIndex == 0)
+                {
+                    axis.enumValueIndex = oldSetting;
+                }
+            }
         }
 
         protected virtual void OnSceneGUI()
@@ -240,8 +305,95 @@ namespace UnityEditor
             if (body.isRoot)
                 return;
 
-            DrawFrame(body.transform.TransformPoint(body.anchorPosition), body.transform.rotation * body.anchorRotation);
-            DrawFrame(parentBody.transform.TransformPoint(body.parentAnchorPosition), parentBody.transform.rotation * body.parentAnchorRotation);
+            if (!m_DisplayParentAnchor)
+            {
+                Vector3 anchorPosInWorldSpace = body.transform.TransformPoint(body.anchorPosition);
+                Quaternion anchorRotInWorldSpace = body.transform.rotation * body.anchorRotation;
+
+                EditorGUI.BeginChangeCheck();
+
+                DisplayProperAnchorHandle(ref anchorPosInWorldSpace, ref anchorRotInWorldSpace);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(target, "Changing Articulation body anchor position/rotation");
+                    m_AnchorPosition.vector3Value = body.transform.InverseTransformPoint(anchorPosInWorldSpace);
+                    m_AnchorRotation.quaternionValue =
+                        Quaternion.Inverse(body.transform.rotation) * anchorRotInWorldSpace;
+
+                    body.anchorPosition = m_AnchorPosition.vector3Value;
+                    body.anchorRotation = m_AnchorRotation.quaternionValue;
+                }
+
+                return;
+            }
+
+            Vector3 parentAnchorPosInWorldSpace = body.transform.parent.TransformPoint(body.parentAnchorPosition);
+            Quaternion parentAnchorRotInWorldSpace = body.transform.parent.rotation * body.parentAnchorRotation;
+
+            EditorGUI.BeginChangeCheck();
+
+            DisplayProperAnchorHandle(ref parentAnchorPosInWorldSpace, ref parentAnchorRotInWorldSpace);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(target, "Changing Articulation body parent anchor position/rotation");
+                m_ParentAnchorPosition.vector3Value =
+                    body.transform.parent.InverseTransformPoint(parentAnchorPosInWorldSpace);
+                m_ParentAnchorRotation.quaternionValue =
+                    Quaternion.Inverse(body.transform.parent.rotation) * parentAnchorRotInWorldSpace;
+
+                body.parentAnchorPosition = m_ParentAnchorPosition.vector3Value;
+                body.parentAnchorRotation = m_ParentAnchorRotation.quaternionValue;
+            }
+        }
+
+        private void DisplayProperAnchorHandle(ref Vector3 anchorPos, ref Quaternion anchorRot)
+        {
+            if (Tools.current == Tool.Move)
+                anchorPos = Handles.PositionHandle(anchorPos, anchorRot);
+            if (Tools.current == Tool.Rotate)
+            {
+                anchorRot = Handles.RotationHandle(anchorRot, anchorPos);
+            }
+
+            if (Tools.current == Tool.Transform)
+            {
+                Handles.TransformHandle(ref anchorPos, ref anchorRot);
+            }
+        }
+
+        private bool IsEditToolModeForAnchorDisplay()
+        {
+            return (Tools.current == Tool.Move) || (Tools.current == Tool.Rotate) || (Tools.current == Tool.Transform);
+        }
+
+        private void DoDriveInspector(SerializedProperty drive, ArticulationDofLock dofLock)
+        {
+            // If lockedMotion - don't render any drive inspector fields
+            if (dofLock == ArticulationDofLock.LockedMotion)
+                return;
+
+            EditorGUILayout.LabelField(drive.displayName);
+
+            EditorGUI.indentLevel++;
+
+            // Display limit fields only if drive is LimitedMotion
+            if (dofLock == ArticulationDofLock.LimitedMotion)
+            {
+                EditorGUILayout.PropertyField(drive.FindPropertyRelative("lowerLimit"));
+                EditorGUILayout.PropertyField(drive.FindPropertyRelative("upperLimit"));
+            }
+
+            // Always display fields
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("stiffness"));
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("damping"));
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("forceLimit"));
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("target"));
+            EditorGUILayout.PropertyField(drive.FindPropertyRelative("targetVelocity"));
+
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
         }
     }
 }

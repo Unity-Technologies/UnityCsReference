@@ -401,8 +401,8 @@ namespace UnityEditor.PackageManager.UI
             PageManager.instance.GetSelectedPackageAndVersion(out package, out version);
 
             var packageSelectionObject = PageManager.instance.CreatePackageSelectionObject(package, version);
-            if (packageSelectionObject != null && Selection.activeObject != packageSelectionObject)
-                Selection.activeObject = packageSelectionObject;
+            if (packageSelectionObject != null && ApplicationUtil.instance.activeSelection != packageSelectionObject)
+                ApplicationUtil.instance.activeSelection = packageSelectionObject;
         }
 
         internal int CalculateNumberOfPackagesToDisplay()

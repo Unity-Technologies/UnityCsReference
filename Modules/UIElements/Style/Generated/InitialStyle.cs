@@ -68,6 +68,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.nonInheritedData.paddingTop = 0f;
             s_InitialStyle.nonInheritedData.position = Position.Relative;
             s_InitialStyle.nonInheritedData.right = StyleKeyword.Auto;
+            s_InitialStyle.nonInheritedData.textOverflow = TextOverflow.Clip;
             s_InitialStyle.nonInheritedData.top = StyleKeyword.Auto;
             s_InitialStyle.nonInheritedData.unityBackgroundImageTintColor = Color.white;
             s_InitialStyle.nonInheritedData.unityBackgroundScaleMode = ScaleMode.StretchToFill;
@@ -79,6 +80,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.nonInheritedData.unitySliceRight = 0;
             s_InitialStyle.nonInheritedData.unitySliceTop = 0;
             s_InitialStyle.inheritedData.unityTextAlign = TextAnchor.UpperLeft;
+            s_InitialStyle.nonInheritedData.unityTextOverflowPosition = TextOverflowPosition.End;
             s_InitialStyle.inheritedData.visibility = Visibility.Visible;
             s_InitialStyle.inheritedData.whiteSpace = WhiteSpace.Normal;
             s_InitialStyle.nonInheritedData.width = StyleKeyword.Auto;
@@ -130,6 +132,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static StyleLength paddingTop => s_InitialStyle.nonInheritedData.paddingTop;
         public static StyleEnum<Position> position => s_InitialStyle.nonInheritedData.position;
         public static StyleLength right => s_InitialStyle.nonInheritedData.right;
+        public static StyleEnum<TextOverflow> textOverflow => s_InitialStyle.nonInheritedData.textOverflow;
         public static StyleLength top => s_InitialStyle.nonInheritedData.top;
         public static StyleColor unityBackgroundImageTintColor => s_InitialStyle.nonInheritedData.unityBackgroundImageTintColor;
         public static StyleEnum<ScaleMode> unityBackgroundScaleMode => s_InitialStyle.nonInheritedData.unityBackgroundScaleMode;
@@ -141,6 +144,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static StyleInt unitySliceRight => s_InitialStyle.nonInheritedData.unitySliceRight;
         public static StyleInt unitySliceTop => s_InitialStyle.nonInheritedData.unitySliceTop;
         public static StyleEnum<TextAnchor> unityTextAlign => s_InitialStyle.inheritedData.unityTextAlign;
+        public static StyleEnum<TextOverflowPosition> unityTextOverflowPosition => s_InitialStyle.nonInheritedData.unityTextOverflowPosition;
         public static StyleEnum<Visibility> visibility => s_InitialStyle.inheritedData.visibility;
         public static StyleEnum<WhiteSpace> whiteSpace => s_InitialStyle.inheritedData.whiteSpace;
         public static StyleLength width => s_InitialStyle.nonInheritedData.width;

@@ -299,6 +299,7 @@ namespace UnityEditor.Connect
         [Obsolete]
         public void GoToHub(string page)
         {
+            // Old CEF approach to go to the hub was removed. Keeping method for legacy.
         }
 
         public void UnbindProject()

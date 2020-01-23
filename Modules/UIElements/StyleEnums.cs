@@ -64,6 +64,19 @@ namespace UnityEngine.UIElements
         SpaceAround = YogaJustify.SpaceAround
     }
 
+    public enum TextOverflowPosition
+    {
+        End = 0,
+        Start = 1,
+        Middle = 2
+    }
+
+    public enum TextOverflow
+    {
+        Clip = 0,
+        Ellipsis = 1
+    }
+
     public enum Visibility
     {
         Visible = 0,

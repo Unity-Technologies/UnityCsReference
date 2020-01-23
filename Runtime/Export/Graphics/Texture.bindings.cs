@@ -563,6 +563,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Graphics/CubemapArrayTexture.h")]
+    [ExcludeFromPreset]
     public sealed partial class CubemapArray : Texture
     {
         extern public int cubemapCount { get; }

@@ -67,6 +67,10 @@ namespace UnityEditor.UIElements
             {
                 position = ((IMouseEvent)triggerEvent).mousePosition;
             }
+            else if (triggerEvent is IPointerEvent)
+            {
+                position = ((IPointerEvent)triggerEvent).position;
+            }
             else if (triggerEvent.target is VisualElement)
             {
                 position = ((VisualElement)triggerEvent.target).layout.center;

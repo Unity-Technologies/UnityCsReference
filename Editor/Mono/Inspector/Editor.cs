@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -304,6 +306,22 @@ namespace UnityEditor
 
     public sealed partial class CanEditMultipleObjects : System.Attribute {}
 
+    [AttributeUsage(AttributeTargets.Field)]
+    internal sealed class CachePropertyAttribute : System.Attribute
+    {
+        public string propertyPath { get; }
+
+        public CachePropertyAttribute()
+        {
+            propertyPath = null;
+        }
+
+        public CachePropertyAttribute(string propertyPath)
+        {
+            this.propertyPath = propertyPath;
+        }
+    }
+
     // Base class to derive custom Editors from. Use this to create your own custom inspectors and editors for your objects.
     [ExcludeFromObjectFactory]
     public partial class Editor : ScriptableObject, IPreviewable, IToolModeOwner
@@ -567,6 +585,7 @@ namespace UnityEditor
             {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
                 m_SerializedObject.inspectorMode = inspectorMode;
+                AssignCachedProperties(this, m_SerializedObject.GetIterator());
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
             }
             catch (ArgumentException e)
@@ -574,6 +593,54 @@ namespace UnityEditor
                 m_SerializedObject = null;
                 m_EnabledProperty = null;
                 throw new SerializedObjectNotCreatableException(e.Message);
+            }
+        }
+
+        internal static void AssignCachedProperties<T>(T self, SerializedProperty root) where T : class
+        {
+            var fields = ScriptAttributeUtility.GetAutoLoadProperties(typeof(T));
+            if (fields.Count == 0)
+                return;
+
+            var properties = new Dictionary<string, FieldInfo>(fields.Count);
+            var allParents = new HashSet<string>();
+            foreach (var fieldInfo in fields)
+            {
+                var attribute = (CachePropertyAttribute)fieldInfo.GetCustomAttributes(typeof(CachePropertyAttribute), false).First();
+                var propertyName = string.IsNullOrEmpty(attribute.propertyPath) ? fieldInfo.Name : attribute.propertyPath;
+                properties.Add(propertyName, fieldInfo);
+                int dot = propertyName.LastIndexOf('.');
+                while (dot != -1)
+                {
+                    propertyName = propertyName.Substring(0, dot);
+                    if (!allParents.Add(propertyName))
+                        break;
+                    dot = propertyName.LastIndexOf('.');
+                }
+            }
+
+            var parentPath = root.propertyPath;
+            var parentPathLength = parentPath.Length > 0 ? parentPath.Length + 1 : 0;
+            var exitCount = properties.Count;
+            var iterator = root.Copy();
+            bool enterChildren = true;
+            while (iterator.Next(enterChildren) && exitCount > 0)
+            {
+                FieldInfo fieldInfo;
+                var propertyPath = iterator.propertyPath.Substring(parentPathLength);
+                if (properties.TryGetValue(propertyPath, out fieldInfo))
+                {
+                    fieldInfo.SetValue(self, iterator.Copy());
+                    properties.Remove(propertyPath);
+                    exitCount--;
+                }
+
+                enterChildren = allParents.Contains(propertyPath);
+            }
+            iterator.Dispose();
+            if (exitCount > 0)
+            {
+                Debug.LogWarning("The following properties registered with CacheProperty where not found during the inspector creation: " + string.Join(", ", properties.Keys.ToArray()));
             }
         }
 
@@ -684,7 +751,7 @@ namespace UnityEditor
         internal bool DoDrawDefaultInspector()
         {
             bool res;
-            using (new UnityEditor.Localization.Editor.LocalizationGroup(target))
+            using (new LocalizationGroup(target))
             {
                 res = DoDrawDefaultInspector(serializedObject);
 

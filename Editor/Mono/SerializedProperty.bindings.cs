@@ -179,7 +179,7 @@ namespace UnityEditor
             {
                 string[] names = enumDisplayNames;
                 var res = new string[names.Length];
-                using (new UnityEditor.Localization.Editor.LocalizationGroup(m_SerializedObject.targetObject))
+                using (new LocalizationGroup(m_SerializedObject.targetObject))
                 {
                     for (var i = 0; i < res.Length; ++i)
                     {

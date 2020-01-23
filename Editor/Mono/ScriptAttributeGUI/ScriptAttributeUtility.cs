@@ -23,6 +23,7 @@ namespace UnityEditor
         internal static Stack<PropertyDrawer> s_DrawerStack = new Stack<PropertyDrawer>();
         private static Dictionary<Type, DrawerKeySet> s_DrawerTypeForType = null;
         private static Dictionary<string, List<PropertyAttribute>> s_BuiltinAttributes = null;
+        static Dictionary<Type, List<FieldInfo>> s_AutoLoadProperties;
         private static PropertyHandler s_SharedNullHandler = new PropertyHandler();
         private static PropertyHandler s_NextHandler = new PropertyHandler();
 
@@ -486,6 +487,23 @@ namespace UnityEditor
             }
 
             return handler;
+        }
+
+        internal static List<FieldInfo> GetAutoLoadProperties(Type type)
+        {
+            if (s_AutoLoadProperties == null)
+                s_AutoLoadProperties = new Dictionary<Type, List<FieldInfo>>();
+
+            List<FieldInfo> list;
+            if (!s_AutoLoadProperties.TryGetValue(type, out list))
+            {
+                list = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
+                    .Where(f => f.FieldType == typeof(SerializedProperty) && f.IsDefined(typeof(CachePropertyAttribute), false))
+                    .ToList();
+                s_AutoLoadProperties.Add(type, list);
+            }
+
+            return list;
         }
     }
 }

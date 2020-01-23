@@ -72,6 +72,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"padding-top", StylePropertyId.PaddingTop},
             {"position", StylePropertyId.Position},
             {"right", StylePropertyId.Right},
+            {"text-overflow", StylePropertyId.TextOverflow},
             {"top", StylePropertyId.Top},
             {"-unity-background-image-tint-color", StylePropertyId.UnityBackgroundImageTintColor},
             {"-unity-background-scale-mode", StylePropertyId.UnityBackgroundScaleMode},
@@ -83,6 +84,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-right", StylePropertyId.UnitySliceRight},
             {"-unity-slice-top", StylePropertyId.UnitySliceTop},
             {"-unity-text-align", StylePropertyId.UnityTextAlign},
+            {"-unity-text-overflow-position", StylePropertyId.UnityTextOverflowPosition},
             {"visibility", StylePropertyId.Visibility},
             {"white-space", StylePropertyId.WhiteSpace},
             {"width", StylePropertyId.Width}
@@ -236,6 +238,28 @@ namespace UnityEngine.UIElements.StyleSheets
                         return (int)TextAnchor.LowerCenter;
                     else if (string.Equals(value, "lower-right", StringComparison.OrdinalIgnoreCase))
                         return (int)TextAnchor.LowerRight;
+                    else
+                        return 0;
+                }
+
+                case StyleEnumType.TextOverflow:
+                {
+                    if (string.Equals(value, "clip", StringComparison.OrdinalIgnoreCase))
+                        return (int)TextOverflow.Clip;
+                    else if (string.Equals(value, "ellipsis", StringComparison.OrdinalIgnoreCase))
+                        return (int)TextOverflow.Ellipsis;
+                    else
+                        return 0;
+                }
+
+                case StyleEnumType.TextOverflowPosition:
+                {
+                    if (string.Equals(value, "start", StringComparison.OrdinalIgnoreCase))
+                        return (int)TextOverflowPosition.Start;
+                    else if (string.Equals(value, "middle", StringComparison.OrdinalIgnoreCase))
+                        return (int)TextOverflowPosition.Middle;
+                    else if (string.Equals(value, "end", StringComparison.OrdinalIgnoreCase))
+                        return (int)TextOverflowPosition.End;
                     else
                         return 0;
                 }

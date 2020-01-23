@@ -94,7 +94,7 @@ namespace UnityEditor
             var property = m_SerializedObject.GetIterator();
             var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
 
-            using (new UnityEditor.Localization.Editor.LocalizationGroup(behaviour))
+            using (new LocalizationGroup(behaviour))
             {
                 while (property.NextVisible(childrenAreExpanded))
                 {

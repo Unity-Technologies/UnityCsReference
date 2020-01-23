@@ -106,6 +106,29 @@ namespace UnityEditor.Animations
             layers = layerVector;
         }
 
+        internal bool IsStateInLayer(AnimatorState state, int layerIndex)
+        {
+            if (layerIndex >= layers.Length)
+            {
+                return false;
+            }
+
+            return layers[layerIndex].stateMachine.HasState(state);
+        }
+
+        internal int GetStateLayer(AnimatorState state)
+        {
+            for (int i = 0; i < layers.Length; ++i)
+            {
+                if (layers[i].stateMachine.HasState(state))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         public void AddParameter(string name, AnimatorControllerParameterType type)
         {
             AnimatorControllerParameter newParameter = new AnimatorControllerParameter();

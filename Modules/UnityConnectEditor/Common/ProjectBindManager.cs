@@ -296,6 +296,7 @@ namespace UnityEditor.Connect
                     var projectInfo = ExtractProjectInfoFromJson(json);
                     try
                     {
+                        ServicesRepository.DisableAllServices();
                         BindProject(projectInfo);
                     }
                     catch (Exception ex)

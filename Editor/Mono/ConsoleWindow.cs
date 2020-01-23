@@ -300,7 +300,8 @@ namespace UnityEditor
             if (m_ConsoleAttachToPlayerState == null)
                 m_ConsoleAttachToPlayerState = new ConsoleAttachToPlayerState(this);
 
-            SetFilter(null);
+            // Update the filter on enable for DomainReload(keep current filter) and window opening(reset filter because m_searchText is null)
+            SetFilter(LogEntries.GetFilteringText());
 
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;

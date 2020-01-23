@@ -146,7 +146,7 @@ namespace UnityEditor
         }
 
         // transform path to absolute, resolving mount points
-        [FreeFunction]
+        [FreeFunction("PathToAbsolutePathFromScript")]
         extern internal static string PathToAbsolutePath(string path);
     }
 }

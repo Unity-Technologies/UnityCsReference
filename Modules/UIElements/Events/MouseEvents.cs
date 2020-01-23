@@ -545,11 +545,32 @@ namespace UnityEngine.UIElements
                     e.button = mouseEvent.button;
                     e.clickCount = mouseEvent.clickCount;
                 }
+                else
+                {
+                    IPointerEvent pointerEvent = triggerEvent as IPointerEvent;
+                    if (pointerEvent != null)
+                    {
+                        e.modifiers = pointerEvent.modifiers;
+                        e.mousePosition = pointerEvent.position;
+                        e.localMousePosition = pointerEvent.position;
+                        e.mouseDelta = pointerEvent.deltaPosition;
+                        e.button = pointerEvent.button;
+                        e.clickCount = pointerEvent.clickCount;
+                    }
+                }
 
                 IMouseEventInternal mouseEventInternal = triggerEvent as IMouseEventInternal;
                 if (mouseEventInternal != null)
                 {
                     ((IMouseEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
+                }
+                else
+                {
+                    IPointerEventInternal pointerEventInternal = triggerEvent as IPointerEventInternal;
+                    if (pointerEventInternal != null)
+                    {
+                        ((IMouseEventInternal)e).triggeredByOS = pointerEventInternal.triggeredByOS;
+                    }
                 }
             }
 

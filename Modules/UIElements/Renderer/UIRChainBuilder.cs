@@ -128,9 +128,16 @@ namespace UnityEngine.UIElements.UIR
 
         struct RenderNodeData
         {
-            public Rect viewport;
-            public Material standardMat;
+            public Material standardMaterial;
+            public Material initialMaterial;
             public MaterialPropertyBlock matPropBlock;
+            public RenderChainCommand firstCommand;
+
+            public UIRenderDevice device;
+            public Texture atlas, vectorAtlas, shaderInfoAtlas;
+            public float dpiScale;
+            public NativeSlice<Transform3x4> transformConstants;
+            public NativeSlice<Vector4> clipRectConstants;
         };
 
         RenderChainCommand m_FirstCommand;
@@ -143,6 +150,7 @@ namespace UnityEngine.UIElements.UIR
         bool m_DrawInCameras;
         int m_StaticIndex = -1;
         int m_ActiveRenderNodes = 0;
+        int m_CustomMaterialCommands = 0;
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
 
@@ -451,9 +459,9 @@ namespace UnityEngine.UIElements.UIR
 
                     //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
                     //m_BlockDirtyRegistration = true;
-                    device.EvaluateChain(m_FirstCommand, viewport, standardMaterial, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
+                    device.EvaluateChain(m_FirstCommand, standardMaterial, standardMaterial, atlasManager?.atlas, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
                         (panel as BaseVisualElementPanel).scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
-                        m_RenderNodesData[0].matPropBlock, ref immediateException);
+                        m_RenderNodesData[0].matPropBlock, true, ref immediateException);
                     //m_BlockDirtyRegistration = false;
                 }
             }
@@ -697,13 +705,17 @@ namespace UnityEngine.UIElements.UIR
 
         internal void FreeCommand(RenderChainCommand cmd)
         {
+            if (cmd.state.material != null)
+                m_CustomMaterialCommands--;
             m_CommandPool.Return(cmd);
         }
 
-        internal void OnRenderCommandAdded(RenderChainCommand firstCommand)
+        internal void OnRenderCommandAdded(RenderChainCommand command)
         {
-            if (firstCommand.prev == null)
-                m_FirstCommand = firstCommand;
+            if (command.prev == null)
+                m_FirstCommand = command;
+            if (command.state.material != null)
+                m_CustomMaterialCommands++;
         }
 
         internal void OnRenderCommandsRemoved(RenderChainCommand firstCommand, RenderChainCommand lastCommand)
@@ -799,64 +811,115 @@ namespace UnityEngine.UIElements.UIR
             AfterRenderDeviceRelease();
         }
 
-        unsafe static RenderNodeData AccessRenderNodeData(IntPtr obj, out RenderChain rc)
+        unsafe static RenderNodeData AccessRenderNodeData(IntPtr obj)
         {
             int *indices = (int*)obj.ToPointer();
-            rc = RenderChainStaticIndexAllocator.AccessIndex(indices[0]);
+            RenderChain rc = RenderChainStaticIndexAllocator.AccessIndex(indices[0]);
             return rc.m_RenderNodesData[indices[1]];
         }
 
         private unsafe static void OnRenderNodeExecute(IntPtr obj)
         {
-            RenderChain rc;
-            RenderNodeData rnd = AccessRenderNodeData(obj, out rc);
-
+            RenderNodeData rnd = AccessRenderNodeData(obj);
             Exception immediateException = null;
-            rc.device.EvaluateChain(rc.m_FirstCommand, rnd.viewport, rnd.standardMat, rc.atlasManager?.atlas,
-                rc.vectorImageManager?.atlas, rc.shaderInfoAllocator.atlas,
-                (rc.panel as BaseVisualElementPanel).scaledPixelsPerPoint, rc.shaderInfoAllocator.transformConstants, rc.shaderInfoAllocator.clipRectConstants,
-                rnd.matPropBlock, ref immediateException);
+            rnd.device.EvaluateChain(rnd.firstCommand, rnd.initialMaterial, rnd.standardMaterial,
+                rnd.atlas, rnd.vectorAtlas, rnd.shaderInfoAtlas,
+                rnd.dpiScale, rnd.transformConstants, rnd.clipRectConstants,
+                rnd.matPropBlock, false, ref immediateException);
         }
 
-        private unsafe static void OnRegisterIntermediateRenderers(Camera camera)
+        private static void OnRegisterIntermediateRenderers(Camera camera)
         {
+            int commandOrder = 0;
             var panels = UIElementsUtility.GetPanelsIterator();
             while (panels.MoveNext())
             {
                 var p = panels.Current.Value;
                 RenderChain renderChain = (p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.renderChain;
-                if (renderChain == null || renderChain.m_StaticIndex < 0)
+                if (renderChain == null || renderChain.m_StaticIndex < 0 || renderChain.m_FirstCommand == null)
                     continue;
 
-                Material standardMat = renderChain.GetStandardWorldSpaceMaterial();
                 RuntimePanel rtp = (RuntimePanel)p;
+                Material standardMaterial = renderChain.GetStandardWorldSpaceMaterial();
+                RenderNodeData rndSource = new RenderNodeData();
+                rndSource.device = renderChain.device;
+                rndSource.standardMaterial = standardMaterial;
+                rndSource.atlas = renderChain.atlasManager?.atlas;
+                rndSource.vectorAtlas = renderChain.vectorImageManager?.atlas;
+                rndSource.shaderInfoAtlas = renderChain.shaderInfoAllocator.atlas;
+                rndSource.dpiScale = rtp.scaledPixelsPerPoint;
+                rndSource.transformConstants = renderChain.shaderInfoAllocator.transformConstants;
+                rndSource.clipRectConstants = renderChain.shaderInfoAllocator.clipRectConstants;
 
-                int renderNodeIndex = renderChain.m_ActiveRenderNodes;
-                if (renderNodeIndex < renderChain.m_RenderNodesData.Count)
+                if (renderChain.m_CustomMaterialCommands == 0)
                 {
-                    var renderNodeData = renderChain.m_RenderNodesData[renderNodeIndex];
-                    renderNodeData.viewport = p.visualTree.layout;
-                    renderNodeData.standardMat = standardMat;
-                    renderChain.m_RenderNodesData[renderNodeIndex] = renderNodeData;
+                    // Trivial case, custom materials not used, so we don't have to chop the chain
+                    // to multiple intermediate renderers
+                    rndSource.initialMaterial = standardMaterial;
+                    rndSource.firstCommand = renderChain.m_FirstCommand;
+                    OnRegisterIntermediateRendererMat(rtp, renderChain, ref rndSource, camera, commandOrder++);
+                    continue;
                 }
-                else
+
+                // Complex case, custom materials used
+                // TODO: Early out once all custom materials have been counted
+                Material lastMaterial = null;
+                var command = renderChain.m_FirstCommand;
+                RenderChainCommand commandToStartWith = command;
+                while (command != null)
                 {
-                    renderNodeIndex = renderChain.m_RenderNodesData.Count;
-                    renderChain.m_RenderNodesData.Add(new RenderNodeData()
+                    if (command.type != CommandType.Draw)
                     {
-                        matPropBlock = new MaterialPropertyBlock(),
-                        viewport = p.visualTree.layout,
-                        standardMat = standardMat
-                    });
-                }
+                        command = command.next;
+                        continue;
+                    }
+                    Material commandMat = command.state.material == null ? standardMaterial : command.state.material;
+                    if (commandMat != lastMaterial)
+                    {
+                        if (lastMaterial != null)
+                        {
+                            rndSource.initialMaterial = lastMaterial;
+                            rndSource.firstCommand = commandToStartWith;
+                            OnRegisterIntermediateRendererMat(rtp, renderChain, ref rndSource, camera, commandOrder++);
+                            commandToStartWith = command;
+                        }
+                        lastMaterial = commandMat;
+                    }
+                    command = command.next;
+                } // While render chain commands to execute
 
-                int* userData = stackalloc int[2];
-                userData[0] = renderChain.m_StaticIndex;
-                userData[1] = renderNodeIndex;
-                UIR.Utility.RegisterIntermediateRenderer(camera, standardMat, rtp.panelToWorld,
-                    new Bounds(Vector3.zero, new Vector3(float.MaxValue, float.MaxValue, float.MaxValue)),
-                    3, 0, false, 0, (ulong)camera.cullingMask, (int)UIR.Utility.RendererCallbacks.RendererCallback_Exec, new IntPtr(userData), sizeof(int) * 2);
+                if (commandToStartWith != null)
+                {
+                    rndSource.initialMaterial = lastMaterial;
+                    rndSource.firstCommand = commandToStartWith;
+                    OnRegisterIntermediateRendererMat(rtp, renderChain, ref rndSource, camera, commandOrder++);
+                }
+            } // For each panel
+        }
+
+        private unsafe static void OnRegisterIntermediateRendererMat(RuntimePanel rtp, RenderChain renderChain, ref RenderNodeData rnd, Camera camera, int sameDistanceSortPriority)
+        {
+            int renderNodeIndex = renderChain.m_ActiveRenderNodes++;
+            if (renderNodeIndex < renderChain.m_RenderNodesData.Count)
+            {
+                var reuseRND = renderChain.m_RenderNodesData[renderNodeIndex];
+                rnd.matPropBlock = reuseRND.matPropBlock;
+                renderChain.m_RenderNodesData[renderNodeIndex] = rnd;
             }
+            else
+            {
+                rnd.matPropBlock = new MaterialPropertyBlock();
+                renderNodeIndex = renderChain.m_RenderNodesData.Count;
+                renderChain.m_RenderNodesData.Add(rnd);
+            }
+
+            int* userData = stackalloc int[2];
+            userData[0] = renderChain.m_StaticIndex;
+            userData[1] = renderNodeIndex;
+            UIR.Utility.RegisterIntermediateRenderer(camera, rnd.initialMaterial, rtp.panelToWorld,
+                new Bounds(Vector3.zero, new Vector3(float.MaxValue, float.MaxValue, float.MaxValue)),
+                3, 0, false, sameDistanceSortPriority, (ulong)camera.cullingMask, (int)UIR.Utility.RendererCallbacks.RendererCallback_Exec,
+                new IntPtr(userData), sizeof(int) * 2);
         }
 
         private void RepaintAtlassedElements()

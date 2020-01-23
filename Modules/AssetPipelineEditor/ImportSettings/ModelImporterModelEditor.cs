@@ -10,53 +10,90 @@ namespace UnityEditor
 {
     internal class ModelImporterModelEditor : BaseAssetImporterTabUI
     {
+#pragma warning disable 0649
         // Scene
+        [CacheProperty]
         SerializedProperty m_GlobalScale;
+        [CacheProperty]
         SerializedProperty m_UseFileScale;
+        [CacheProperty]
         SerializedProperty m_FileScale;
+        [CacheProperty]
         SerializedProperty m_FileScaleUnit;
+        [CacheProperty]
         SerializedProperty m_FileScaleFactor;
 
+        [CacheProperty]
         SerializedProperty m_ImportBlendShapes;
+        [CacheProperty]
         SerializedProperty m_ImportVisibility;
+        [CacheProperty]
         protected  SerializedProperty m_ImportCameras;
+        [CacheProperty]
         SerializedProperty m_ImportLights;
 
         // Meshes
+        [CacheProperty]
         SerializedProperty m_MeshCompression;
+        [CacheProperty]
         SerializedProperty m_IsReadable;
+        [CacheProperty("meshOptimizationFlags")]
         SerializedProperty m_MeshOptimizationFlags;
 
         // Geometry
+        [CacheProperty("keepQuads")]
         SerializedProperty m_KeepQuads;
+        [CacheProperty("weldVertices")]
         SerializedProperty m_WeldVertices;
+        [CacheProperty("indexFormat")]
         protected SerializedProperty m_IndexFormat;
 
+        [CacheProperty("swapUVChannels")]
         SerializedProperty m_SwapUVChannels;
 
+        [CacheProperty("generateSecondaryUV")]
         SerializedProperty m_GenerateSecondaryUV;
         bool m_SecondaryUVAdvancedOptions = false;
+        [CacheProperty("secondaryUVAngleDistortion")]
         SerializedProperty m_SecondaryUVAngleDistortion;
+        [CacheProperty("secondaryUVAreaDistortion")]
         SerializedProperty m_SecondaryUVAreaDistortion;
+        [CacheProperty("secondaryUVHardAngle")]
         SerializedProperty m_SecondaryUVHardAngle;
+        [CacheProperty("secondaryUVMarginMethod")]
         SerializedProperty m_SecondaryUVMarginMethod;
+        [CacheProperty("secondaryUVPackMargin")]
         SerializedProperty m_SecondaryUVPackMargin;
+        [CacheProperty("secondaryUVMinLightmapResolution")]
         SerializedProperty m_SecondaryUVMinLightmapResolution;
+        [CacheProperty("secondaryUVMinObjectScale")]
         SerializedProperty m_SecondaryUVMinObjectScale;
 
+        [CacheProperty("normalImportMode")]
         protected SerializedProperty m_NormalImportMode;
+        [CacheProperty("normalCalculationMode")]
         protected SerializedProperty m_NormalCalculationMode;
+        [CacheProperty("blendShapeNormalImportMode")]
         SerializedProperty m_BlendShapeNormalCalculationMode;
+        [CacheProperty("legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes")]
         SerializedProperty m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes;
+        [CacheProperty("normalSmoothingSource")]
         SerializedProperty m_NormalSmoothingSource;
+        [CacheProperty("normalSmoothAngle")]
         protected SerializedProperty m_NormalSmoothAngle;
+        [CacheProperty("tangentImportMode")]
         protected SerializedProperty m_TangentImportMode;
 
         // Prefab
+        [CacheProperty]
         SerializedProperty m_PreserveHierarchy;
+        [CacheProperty]
         SerializedProperty m_SortHierarchyByName;
+        [CacheProperty]
         SerializedProperty m_AddColliders;
+        [CacheProperty("bakeAxisConversion")]
         SerializedProperty m_BakeAxisConversion;
+#pragma warning restore 0649
 
         public ModelImporterModelEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
@@ -65,42 +102,7 @@ namespace UnityEditor
 
         internal override void OnEnable()
         {
-            m_GlobalScale = serializedObject.FindProperty("m_GlobalScale");
-            m_UseFileScale = serializedObject.FindProperty("m_UseFileScale");
-            m_FileScale = serializedObject.FindProperty("m_FileScale");
-            m_FileScaleUnit = serializedObject.FindProperty("m_FileScaleUnit");
-            m_FileScaleFactor = serializedObject.FindProperty("m_FileScaleFactor");
-            m_MeshCompression = serializedObject.FindProperty("m_MeshCompression");
-            m_ImportBlendShapes = serializedObject.FindProperty("m_ImportBlendShapes");
-            m_ImportCameras = serializedObject.FindProperty("m_ImportCameras");
-            m_ImportLights = serializedObject.FindProperty("m_ImportLights");
-            m_AddColliders = serializedObject.FindProperty("m_AddColliders");
-            m_SwapUVChannels = serializedObject.FindProperty("swapUVChannels");
-            m_GenerateSecondaryUV = serializedObject.FindProperty("generateSecondaryUV");
-            m_SecondaryUVAngleDistortion = serializedObject.FindProperty("secondaryUVAngleDistortion");
-            m_SecondaryUVAreaDistortion = serializedObject.FindProperty("secondaryUVAreaDistortion");
-            m_SecondaryUVHardAngle = serializedObject.FindProperty("secondaryUVHardAngle");
-            m_SecondaryUVMarginMethod = serializedObject.FindProperty("secondaryUVMarginMethod");
-            m_SecondaryUVPackMargin = serializedObject.FindProperty("secondaryUVPackMargin");
-            m_SecondaryUVMinLightmapResolution = serializedObject.FindProperty("secondaryUVMinLightmapResolution");
-            m_SecondaryUVMinObjectScale = serializedObject.FindProperty("secondaryUVMinObjectScale");
-            m_NormalSmoothAngle = serializedObject.FindProperty("normalSmoothAngle");
-            m_NormalImportMode = serializedObject.FindProperty("normalImportMode");
-            m_NormalCalculationMode = serializedObject.FindProperty("normalCalculationMode");
-            m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = serializedObject.FindProperty("legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes");
-            m_NormalSmoothingSource = serializedObject.FindProperty("normalSmoothingSource");
-            m_BlendShapeNormalCalculationMode = serializedObject.FindProperty("blendShapeNormalImportMode");
-            m_TangentImportMode = serializedObject.FindProperty("tangentImportMode");
-            m_MeshOptimizationFlags = serializedObject.FindProperty("meshOptimizationFlags");
-            m_IsReadable = serializedObject.FindProperty("m_IsReadable");
-
-            m_KeepQuads = serializedObject.FindProperty("keepQuads");
-            m_IndexFormat = serializedObject.FindProperty("indexFormat");
-            m_WeldVertices = serializedObject.FindProperty("weldVertices");
-            m_ImportVisibility = serializedObject.FindProperty("m_ImportVisibility");
-            m_PreserveHierarchy = serializedObject.FindProperty("m_PreserveHierarchy");
-            m_BakeAxisConversion = serializedObject.FindProperty("bakeAxisConversion");
-            m_SortHierarchyByName = serializedObject.FindProperty("m_SortHierarchyByName");
+            Editor.AssignCachedProperties(this, serializedObject.GetIterator());
         }
 
         protected static class Styles

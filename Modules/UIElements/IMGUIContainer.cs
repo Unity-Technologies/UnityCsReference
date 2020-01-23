@@ -535,12 +535,42 @@ namespace UnityEngine.UIElements
 
         private bool SendEventToIMGUIPrivate(EventBase evt, bool canAffectFocus)
         {
+            if (!IsRelevantEvent(evt))
+                return false;
+
             bool result;
             using (new EventDebuggerLogIMGUICall(evt))
             {
                 result = HandleIMGUIEvent(evt.imguiEvent, canAffectFocus);
             }
             return result;
+        }
+
+        private bool IsRelevantEvent(EventBase evt)
+        {
+            return IsContainerCapturingTheMouse() || !IsLocalEvent(evt) || IsEventInsideLocalWindow(evt);
+        }
+
+        private bool IsContainerCapturingTheMouse()
+        {
+            return this == panel?.dispatcher?.pointerState.GetCapturingElement(PointerId.mousePointerId);
+        }
+
+        private bool IsLocalEvent(EventBase evt)
+        {
+            long evtType = evt.eventTypeId;
+            return evtType == MouseDownEvent.TypeId() || evtType == MouseUpEvent.TypeId() ||
+                evtType == MouseMoveEvent.TypeId() ||
+                evtType == PointerDownEvent.TypeId() || evtType == PointerUpEvent.TypeId() ||
+                evtType == PointerMoveEvent.TypeId();
+        }
+
+        private bool IsEventInsideLocalWindow(EventBase evt)
+        {
+            Rect clippingRect = GetCurrentClipRect();
+            string pointerType = (evt as IPointerEvent)?.pointerType;
+            bool isDirectManipulationDevice = (pointerType == PointerType.touch || pointerType == PointerType.pen);
+            return GUIUtility.HitTest(clippingRect, evt.originalMousePosition, isDirectManipulationDevice);
         }
 
         private bool HandleIMGUIEvent(Event e, bool canAffectFocus)
@@ -708,15 +738,21 @@ namespace UnityEngine.UIElements
             return new Vector2(measuredWidth, measuredHeight);
         }
 
-        private static void GetCurrentTransformAndClip(IMGUIContainer container, Event evt, out Matrix4x4 transform, out Rect clipRect)
+        private Rect GetCurrentClipRect()
         {
-            clipRect = container.lastWorldClip;
+            Rect clipRect = this.lastWorldClip;
             if (clipRect.width == 0.0f || clipRect.height == 0.0f)
             {
                 // lastWorldClip will be empty until the first repaint occurred,
                 // we fall back on the worldBound in this case.
-                clipRect = container.worldBound;
+                clipRect = this.worldBound;
             }
+            return clipRect;
+        }
+
+        private static void GetCurrentTransformAndClip(IMGUIContainer container, Event evt, out Matrix4x4 transform, out Rect clipRect)
+        {
+            clipRect = container.GetCurrentClipRect();
 
             transform = container.worldTransform;
             if (evt.rawType == EventType.Repaint

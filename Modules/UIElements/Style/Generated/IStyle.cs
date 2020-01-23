@@ -59,6 +59,7 @@ namespace UnityEngine.UIElements
         StyleLength paddingTop { get; set; }
         StyleEnum<Position> position { get; set; }
         StyleLength right { get; set; }
+        StyleEnum<TextOverflow> textOverflow { get; set; }
         StyleLength top { get; set; }
         StyleColor unityBackgroundImageTintColor { get; set; }
         StyleEnum<ScaleMode> unityBackgroundScaleMode { get; set; }
@@ -70,6 +71,7 @@ namespace UnityEngine.UIElements
         StyleInt unitySliceRight { get; set; }
         StyleInt unitySliceTop { get; set; }
         StyleEnum<TextAnchor> unityTextAlign { get; set; }
+        StyleEnum<TextOverflowPosition> unityTextOverflowPosition { get; set; }
         StyleEnum<Visibility> visibility { get; set; }
         StyleEnum<WhiteSpace> whiteSpace { get; set; }
         StyleLength width { get; set; }

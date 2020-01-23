@@ -598,13 +598,14 @@ namespace UnityEngine.UIElements.UIR
             return slice;
         }
 
-        public unsafe void EvaluateChain(RenderChainCommand head, Rect viewport, Material defaultMat, Texture atlas, Texture gradientSettings, Texture shaderInfo,
-            float pixelsPerPoint, NativeArray<Transform3x4> transforms, NativeArray<Vector4> clipRects, MaterialPropertyBlock stateMatProps, ref Exception immediateException)
+        public unsafe void EvaluateChain(RenderChainCommand head, Material initialMat, Material defaultMat, Texture atlas, Texture gradientSettings, Texture shaderInfo,
+            float pixelsPerPoint, NativeSlice<Transform3x4> transforms, NativeSlice<Vector4> clipRects, MaterialPropertyBlock stateMatProps, bool allowMaterialChange,
+            ref Exception immediateException)
         {
             Utility.ProfileDrawChainBegin();
 
             var drawParams = m_DrawParams;
-            drawParams.Reset(viewport);
+            drawParams.Reset();
             stateMatProps.Clear();
 
             if (fullyCreated)
@@ -632,7 +633,7 @@ namespace UnityEngine.UIElements.UIR
             int rangesReady = 0;
             DrawBufferRange curDrawRange = new DrawBufferRange();
             Page curPage = null;
-            State curState = new State() { material = defaultMat };
+            State curState = new State() { material = initialMat };
             int curDrawIndex = -1;
             int maxVertexReferenced = 0;
 
@@ -740,6 +741,9 @@ namespace UnityEngine.UIElements.UIR
                         {
                             if (materialChanges)
                             {
+                                if (!allowMaterialChange)
+                                    goto EarlyOut;
+
                                 curState.material.SetPass(0); // No multipass support, should it be even considered?
                                 if (m_StandardMatProps != null)
                                 {
@@ -770,10 +774,10 @@ namespace UnityEngine.UIElements.UIR
 
                         m_DrawStats.materialSetCount++;
                     }
-                }
+                } // If kick ranges
 
                 head = head.next;
-            }
+            } // While there are commands to execute
 
             // Kick any pending ranges, this usually occurs when the draw chain ends with a draw command.
             if (curDrawRange.indexCount > 0)
@@ -786,6 +790,7 @@ namespace UnityEngine.UIElements.UIR
 
             UpdateFenceValue();
 
+        EarlyOut:
             Utility.ProfileDrawChainEnd();
 
         }

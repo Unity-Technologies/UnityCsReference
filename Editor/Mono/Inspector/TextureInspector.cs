@@ -284,9 +284,16 @@ namespace UnityEditor
             serializedObject.Update();
             EditorGUI.BeginChangeCheck();
 
-            DoWrapModePopup();
-            DoFilterModePopup();
-            DoAnisoLevelSlider();
+            if (IsCubemapArray())
+            {
+                DoFilterModePopup();
+            }
+            else
+            {
+                DoWrapModePopup();
+                DoFilterModePopup();
+                DoAnisoLevelSlider();
+            }
 
             if (EditorGUI.EndChangeCheck())
                 ApplySettingsToTextures();
@@ -502,6 +509,12 @@ namespace UnityEditor
         {
             var t = target as Texture;
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Cube;
+        }
+
+        bool IsCubemapArray()
+        {
+            var t = target as Texture;
+            return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.CubeArray;
         }
 
         bool IsVolume()
@@ -1018,7 +1031,6 @@ class PreviewGUI
                 if (GUIUtility.hotControl == id)
                 {
                     scrollPosition -= evt.delta * (evt.shift ? 3 : 1) / Mathf.Min(position.width, position.height) * 140.0f;
-                    scrollPosition.y = Mathf.Clamp(scrollPosition.y, -90, 90);
                     evt.Use();
                     GUI.changed = true;
                 }

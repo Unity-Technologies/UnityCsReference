@@ -1095,6 +1095,9 @@ namespace UnityEditor
         // Should unused [[Mesh]] components be excluded from game build?
         public static extern bool stripUnusedMeshComponents { get; set; }
 
+        // Should unused mips be excluded from texture build?
+        public static extern bool mipStripping { get; set; }
+
         // Is the advanced version being used?
         [StaticAccessor("GetBuildSettings()")]
         [NativeProperty("hasAdvancedVersion", TargetType.Field)]

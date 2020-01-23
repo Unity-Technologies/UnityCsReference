@@ -16,6 +16,10 @@ namespace UnityEditor.PackageManager.UI
 
         event Action onFinishCompiling;
 
+        event Action onEditorSelectionChanged;
+
+        UnityEngine.Object activeSelection { get; set; }
+
         bool isPreReleaseVersion { get; }
 
         string shortUnityVersion { get; }
@@ -37,6 +41,7 @@ namespace UnityEditor.PackageManager.UI
         void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback);
 
         int CalculateNumberOfElementsInsideContainerToDisplay(VisualElement container, float elementHeight);
+
         string GetTranslationForText(string text);
 
         void TranslateTextElement(TextElement textElement);

@@ -302,9 +302,7 @@ namespace UnityEditor.UIElements
                     {
                         b[i] = 0;
                     }
-                    Hash128 blockHash = new Hash128();
-                    HashUtilities.ComputeHash128(b, ref blockHash);
-                    HashUtilities.AppendHash(ref blockHash, ref h);
+                    h.Append(b);
                 }
             }
 
@@ -328,12 +326,8 @@ namespace UnityEditor.UIElements
 
         internal void ImportXmlFromString(string xml, out VisualTreeAsset vta)
         {
-            var h = new Hash128();
             byte[] b = Encoding.UTF8.GetBytes(xml);
-            if (b.Length > 0)
-            {
-                HashUtilities.ComputeHash128(b, ref h);
-            }
+            var h = Hash128.Compute(b);
 
             CreateVisualTreeAsset(out vta, h);
 

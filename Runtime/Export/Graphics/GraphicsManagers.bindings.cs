@@ -126,6 +126,8 @@ namespace UnityEngine
         [NativeName("SetCurrentIndex")] extern public static void SetQualityLevel(int index, [uei.DefaultValue("true")] bool applyExpensiveChanges);
 
         [NativeProperty("QualitySettingsNames")] extern public static string[] names { get; }
+
+        [NativeName("IsTextureResReducedOnAnyPlatform")] extern internal static bool IsTextureResReducedOnAnyPlatform();
     }
 
     // both desiredColorSpace/activeColorSpace should be deprecated

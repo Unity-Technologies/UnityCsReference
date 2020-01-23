@@ -2,11 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using System.Text;
-using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 using JSONObject = System.Collections.IDictionary;
 
@@ -72,6 +76,65 @@ namespace UnityEditor
             var bytes = Encoding.UTF8.GetBytes(s);
             File.WriteAllBytes(path, bytes);
             return true;
+        }
+
+        [RequiredByNativeCode]
+        internal static JSONObject CreateJSONObject()
+        {
+            return new Dictionary<string, object>(1);
+        }
+
+        [RequiredByNativeCode]
+        internal static void AddJSONKeyValue(JSONObject ht, string key, object value)
+        {
+            ht.Add(key, value);
+        }
+
+        [RequiredByNativeCode]
+        internal static string[] GetKeys(JSONObject ht)
+        {
+            return ht.Keys.Cast<string>().ToArray();
+        }
+
+        [RequiredByNativeCode]
+        internal static object GetValue(JSONObject ht, string key)
+        {
+            return ht[key];
+        }
+
+        [RequiredByNativeCode]
+        internal static int GetArrayCount(object obj)
+        {
+            var list = obj as ICollection;
+            if (list != null)
+                return list.Count;
+
+            var array = obj as Array;
+            if (array != null)
+                return array.Length;
+
+            var count = 0;
+            var enumerable = obj as IEnumerable;
+            if (enumerable != null)
+            {
+                foreach (var e in enumerable)
+                    count++;
+            }
+            return count;
+        }
+
+        [RequiredByNativeCode]
+        internal static object GetArrayElement(object obj, int index)
+        {
+            var list = obj as IList;
+            if (list != null)
+                return list[index];
+
+            var enumerable = obj as IEnumerable;
+            if (enumerable == null)
+                return null;
+
+            return Enumerable.ElementAt(enumerable.Cast<object>(), index);
         }
     }
 }

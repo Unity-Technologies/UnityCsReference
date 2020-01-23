@@ -201,6 +201,8 @@ namespace UnityEditor.Connect
                 L10n.Tr(k_Yes),
                 L10n.Tr(k_No)))
             {
+                ServicesRepository.DisableAllServices();
+
                 string cachedProjectName = UnityConnect.instance.projectInfo.projectName;
                 UnityConnect.instance.UnbindProject();
                 EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindManager.ProjectBindState() { bound = false, projectName = cachedProjectName });

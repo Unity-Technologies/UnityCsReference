@@ -441,14 +441,35 @@ namespace UnityEngine
                 //return l.innerSpotAngle * Mathf.Deg2Rad;
             }
 
+            private static Color ExtractColorTemperature(Light l)
+            {
+                Color cct = new Color(1.0f, 1.0f, 1.0f);
+                if (l.useColorTemperature && GraphicsSettings.lightsUseLinearIntensity)
+                    cct = Mathf.CorrelatedColorTemperatureToRGB(l.colorTemperature);
+                return cct;
+            }
+
+            private static void ApplyColorTemperature(Color cct, ref LinearColor lightColor)
+            {
+                lightColor.red *= cct.r;
+                lightColor.green *= cct.g;
+                lightColor.blue *= cct.b;
+            }
+
             public static void Extract(Light l, ref DirectionalLight dir)
             {
                 dir.instanceID          = l.GetInstanceID();
                 dir.mode                = Extract(l.lightmapBakeType);
                 dir.shadow              = l.shadows != LightShadows.None;
                 dir.direction           = l.transform.forward;
-                dir.color               = LinearColor.Convert(l.color, l.intensity);
-                dir.indirectColor       = ExtractIndirect(l);
+
+                Color cct = ExtractColorTemperature(l);
+                LinearColor directColor = LinearColor.Convert(l.color, l.intensity);
+                LinearColor indirectColor = ExtractIndirect(l);
+                ApplyColorTemperature(cct, ref directColor);
+                ApplyColorTemperature(cct, ref indirectColor);
+                dir.color = directColor;
+                dir.indirectColor = indirectColor;
                 dir.penumbraWidthRadian = l.shadows == LightShadows.Soft ? (Mathf.Deg2Rad * l.shadowAngle) : 0.0f;
             }
 
@@ -458,8 +479,15 @@ namespace UnityEngine
                 point.mode          = Extract(l.lightmapBakeType);
                 point.shadow        = l.shadows != LightShadows.None;
                 point.position      = l.transform.position;
-                point.color         = LinearColor.Convert(l.color, l.intensity);
-                point.indirectColor = ExtractIndirect(l);
+
+                Color cct = ExtractColorTemperature(l);
+                LinearColor directColor = LinearColor.Convert(l.color, l.intensity);
+                LinearColor indirectColor = ExtractIndirect(l);
+                ApplyColorTemperature(cct, ref directColor);
+                ApplyColorTemperature(cct, ref indirectColor);
+                point.color         = directColor;
+                point.indirectColor = indirectColor;
+
                 point.range         = l.range;
                 point.sphereRadius = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
                 point.falloff      = FalloffType.Legacy;
@@ -472,8 +500,15 @@ namespace UnityEngine
                 spot.shadow        = l.shadows != LightShadows.None;
                 spot.position      = l.transform.position;
                 spot.orientation   = l.transform.rotation;
-                spot.color         = LinearColor.Convert(l.color, l.intensity);
-                spot.indirectColor = ExtractIndirect(l);
+
+                Color cct = ExtractColorTemperature(l);
+                LinearColor directColor = LinearColor.Convert(l.color, l.intensity);
+                LinearColor indirectColor = ExtractIndirect(l);
+                ApplyColorTemperature(cct, ref directColor);
+                ApplyColorTemperature(cct, ref indirectColor);
+                spot.color = directColor;
+                spot.indirectColor = indirectColor;
+
                 spot.range         = l.range;
                 spot.sphereRadius  = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
                 spot.coneAngle      = l.spotAngle * Mathf.Deg2Rad;
@@ -489,8 +524,15 @@ namespace UnityEngine
                 rect.shadow         = l.shadows != LightShadows.None;
                 rect.position       = l.transform.position;
                 rect.orientation    = l.transform.rotation;
-                rect.color          = LinearColor.Convert(l.color, l.intensity);
-                rect.indirectColor  = ExtractIndirect(l);
+
+                Color cct = ExtractColorTemperature(l);
+                LinearColor directColor = LinearColor.Convert(l.color, l.intensity);
+                LinearColor indirectColor = ExtractIndirect(l);
+                ApplyColorTemperature(cct, ref directColor);
+                ApplyColorTemperature(cct, ref indirectColor);
+                rect.color = directColor;
+                rect.indirectColor = indirectColor;
+
                 rect.range          = l.range;
                 rect.width          = l.areaSize.x;
                 rect.height         = l.areaSize.y;
@@ -504,8 +546,15 @@ namespace UnityEngine
                 disc.shadow         = l.shadows != LightShadows.None;
                 disc.position       = l.transform.position;
                 disc.orientation    = l.transform.rotation;
-                disc.color          = LinearColor.Convert(l.color, l.intensity);
-                disc.indirectColor  = ExtractIndirect(l);
+
+                Color cct = ExtractColorTemperature(l);
+                LinearColor directColor = LinearColor.Convert(l.color, l.intensity);
+                LinearColor indirectColor = ExtractIndirect(l);
+                ApplyColorTemperature(cct, ref directColor);
+                ApplyColorTemperature(cct, ref indirectColor);
+                disc.color = directColor;
+                disc.indirectColor = indirectColor;
+
                 disc.range          = l.range;
                 disc.radius         = l.areaSize.x;
                 disc.falloff        = FalloffType.Legacy;

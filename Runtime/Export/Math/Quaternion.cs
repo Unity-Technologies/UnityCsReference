@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine
 {
@@ -151,6 +152,7 @@ namespace UnityEngine
         }
 
         // Returns the angle in degrees between two rotations /a/ and /b/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Angle(Quaternion a, Quaternion b)
         {
             float dot = Dot(a, b);
@@ -188,6 +190,7 @@ namespace UnityEngine
         }
         public static Quaternion Euler(float x, float y, float z) { return Internal_FromEulerRad(new Vector3(x, y, z) * Mathf.Deg2Rad); }
         public static Quaternion Euler(Vector3 euler) { return Internal_FromEulerRad(euler * Mathf.Deg2Rad); }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void ToAngleAxis(out float angle, out Vector3 axis) { Internal_ToAxisAngleRad(this, out axis, out angle); angle *= Mathf.Rad2Deg;  }
         public void SetFromToRotation(Vector3 fromDirection, Vector3 toDirection) { this = FromToRotation(fromDirection, toDirection); }
 

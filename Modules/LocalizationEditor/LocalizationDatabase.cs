@@ -18,14 +18,28 @@ using System.Security.Cryptography;
 namespace UnityEditor
 {
     [ExcludeFromDocs]
-    public class L10n
+    public static class L10n
     {
-        private L10n() {}
-
         public static string Tr(string str)
         {
-            var new_str = LocalizationDatabase.GetLocalizedString(str);
-            return new_str;
+            if (!LocalizationDatabase.enableEditorLocalization)
+                return str;
+
+            var assembly = System.Reflection.Assembly.GetCallingAssembly();
+            object[] attrobjs = assembly.GetCustomAttributes(typeof(LocalizationAttribute), true /* inherit */);
+            if (attrobjs != null && attrobjs.Length > 0 && attrobjs[0] != null)
+            {
+                var locAttr = (LocalizationAttribute)attrobjs[0];
+                string locGroupName = locAttr.locGroupName;
+                if (locGroupName == null)
+                    locGroupName = assembly.GetName().Name;
+                var new_str = LocalizationDatabase.GetLocalizedStringWithGroupName(str, locGroupName);
+                return new_str;
+            }
+            else
+            {
+                return LocalizationDatabase.GetLocalizedString(str);
+            }
         }
 
         public static string[] Tr(string[] str_list)
@@ -84,6 +98,88 @@ namespace UnityEditor
                 LocalizationDatabase.SetContextGroupName(null);
         }
     }
+
+    /// <summary>
+    /// This provides an auto dispose Localization system.
+    /// This can be called recursively.
+    /// </summary>
+    public class LocalizationGroup : IDisposable
+    {
+        string m_LocGroupName;
+        bool m_Pushed = false;
+
+        /// <summary>
+        /// a current group name for the localization.
+        /// </summary>
+        public string locGroupName { get { return m_LocGroupName; } }
+
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        public LocalizationGroup()
+        {
+            var assembly = System.Reflection.Assembly.GetCallingAssembly();
+            initialize(assembly);
+        }
+
+        /// <summary>
+        /// constructor.
+        /// <param name="behaviour">group name will become the name of Assembly the behaviour belongs to.</param>
+        /// </summary>
+        public LocalizationGroup(Behaviour behaviour)
+        {
+            if (behaviour != null)
+            {
+                System.Type type = behaviour.GetType();
+                initialize(type.Assembly);
+            }
+        }
+
+        /// <summary>
+        /// constructor.
+        /// <param name="type">group name will become the name of Assembly the type belongs to.</param>
+        /// </summary>
+        public LocalizationGroup(System.Type type)
+        {
+            initialize(type.Assembly);
+        }
+
+        /// <summary>
+        /// constructor.
+        /// <param name="obj">group name will become the name of Assembly the obj belongs to.</param>
+        /// </summary>
+        public LocalizationGroup(System.Object obj)
+        {
+            if (obj == null)
+                return;
+            initialize(obj.GetType().Assembly);
+        }
+
+        void initialize(System.Reflection.Assembly assembly)
+        {
+            string groupName = null;
+            object[] attrobjs = assembly.GetCustomAttributes(typeof(LocalizationAttribute), true /* inherit */);
+            if (attrobjs != null && attrobjs.Length > 0 && attrobjs[0] != null) // focus on only the first.
+            {
+                LocalizationAttribute locAttr = (LocalizationAttribute)attrobjs[0];
+                groupName = locAttr.locGroupName;
+                if (groupName == null)
+                    groupName = assembly.GetName().Name;
+            }
+            LocalizationGroupStack.Push(groupName);
+            m_Pushed = true;
+            m_LocGroupName = groupName;
+        }
+
+        /// <summary>
+        /// dispose current state.
+        /// </summary>
+        public void Dispose()
+        {
+            if (m_Pushed)
+                LocalizationGroupStack.Pop();
+        }
+    }
 }
 
 namespace UnityEditor.Localization.Editor
@@ -91,11 +187,13 @@ namespace UnityEditor.Localization.Editor
     /// <summary>
     /// This provides Localization function for Packages.
     /// </summary>
+    [System.Obsolete("Localization has been deprecated. Please use UnityEditor.L10n instead", true)]
     public static class Localization
     {
         /// <summary>
         /// get proper translation for the given argument.
         /// </summary>
+        [System.Obsolete("Obsolete msg (UnityUpgradable) -> UnityEditor.L10n.Tr(*)", true)]
         public static string Tr(string str)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
@@ -119,6 +217,7 @@ namespace UnityEditor.Localization.Editor
     /// This provides an auto dispose Localization system.
     /// This can be called recursively.
     /// </summary>
+    [System.Obsolete("LocalizationGroup has been deprecated. Please use UnityEditor.LocalizationGroup instead", true)]
     public class LocalizationGroup : IDisposable
     {
         string m_LocGroupName;

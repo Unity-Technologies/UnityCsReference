@@ -70,6 +70,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"padding-top", "<length> | <percentage>"},
             {"position", "relative | absolute"},
             {"right", "<length> | <percentage> | auto"},
+            {"text-overflow", "clip | ellipsis"},
             {"top", "<length> | <percentage> | auto"},
             {"-unity-background-image-tint-color", "<color>"},
             {"-unity-background-scale-mode", "stretch-to-fill | scale-and-crop | scale-to-fit"},
@@ -81,6 +82,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-right", "<integer>"},
             {"-unity-slice-top", "<integer>"},
             {"-unity-text-align", "upper-left | middle-left | lower-left | upper-center | middle-center | lower-center | upper-right | middle-right | lower-right"},
+            {"-unity-text-overflow-position", "start | middle | end"},
             {"visibility", "visible | hidden"},
             {"white-space", "normal | nowrap"},
             {"width", "<length> | <percentage> | auto"}

@@ -51,16 +51,14 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Rect k_FullNormalizedRect = new Rect(-1, -1, 2, 2);
 
 
-        public void Reset(Rect _viewport)
+        public void Reset()
         {
-            viewport = _viewport;
             view.Clear();
             view.Push(new ViewTransform { transform = Matrix4x4.identity, clipRect = k_FullNormalizedRect.ToVector4() });
             scissor.Clear();
             scissor.Push(k_UnlimitedRect);
         }
 
-        internal Rect viewport; // In points, not in pixels
         internal readonly Stack<ViewTransform> view = new Stack<ViewTransform>(8);
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
     }
@@ -96,7 +94,8 @@ namespace UnityEngine.UIElements.UIR
             {
                 case CommandType.ImmediateCull:
                 {
-                    if (!owner.worldBound.Overlaps(drawParams.viewport))
+                    RectInt worldRect = RectPointsToPixelsAndFlipYAxis(owner.worldBound, pixelsPerPoint);
+                    if (!worldRect.Overlaps(Utility.GetActiveViewport()))
                         break;
 
                     // Element isn't culled, follow through the normal immediate callback procedure
@@ -128,7 +127,7 @@ namespace UnityEngine.UIElements.UIR
                     Utility.ProfileImmediateRendererEnd();
 
                     if (hasScissor)
-                        Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(drawParams.scissor.Peek(), drawParams.viewport, pixelsPerPoint));
+                        Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(drawParams.scissor.Peek(), pixelsPerPoint));
                     break;
                 }
                 case CommandType.PushView:
@@ -143,14 +142,14 @@ namespace UnityEngine.UIElements.UIR
                 case CommandType.PushScissor:
                     Rect elemRect = CombineScissorRects(owner.worldClip, drawParams.scissor.Peek());
                     drawParams.scissor.Push(elemRect);
-                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, drawParams.viewport, pixelsPerPoint));
+                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
                     break;
                 case CommandType.PopScissor:
                     drawParams.scissor.Pop();
                     Rect prevRect = drawParams.scissor.Peek();
                     if (prevRect.x == DrawParams.k_UnlimitedRect.x)
                         Utility.DisableScissor();
-                    else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, drawParams.viewport, pixelsPerPoint));
+                    else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
                     break;
             }
         }
@@ -177,11 +176,12 @@ namespace UnityEngine.UIElements.UIR
             return r;
         }
 
-        static RectInt RectPointsToPixelsAndFlipYAxis(Rect rect, Rect viewport, float pixelsPerPoint)
+        static RectInt RectPointsToPixelsAndFlipYAxis(Rect rect, float pixelsPerPoint)
         {
+            float viewportHeight = Utility.GetActiveViewport().height;
             var r = new RectInt(0, 0, 0, 0);
             r.x = Mathf.RoundToInt(rect.x * pixelsPerPoint);
-            r.y = Mathf.RoundToInt((viewport.height - rect.yMax) * pixelsPerPoint);
+            r.y = Mathf.RoundToInt(viewportHeight - rect.yMax * pixelsPerPoint);
             r.width = Mathf.RoundToInt(rect.width * pixelsPerPoint);
             r.height = Mathf.RoundToInt(rect.height * pixelsPerPoint);
             return r;

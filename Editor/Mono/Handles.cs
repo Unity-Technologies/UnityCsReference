@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -107,7 +108,7 @@ namespace UnityEditor
             }
         }
 
-        static Mesh cubeMesh
+        internal static Mesh cubeMesh
         {
             get
             {
@@ -117,7 +118,7 @@ namespace UnityEditor
             }
         }
 
-        static Mesh coneMesh
+        internal static Mesh coneMesh
         {
             get
             {
@@ -127,7 +128,7 @@ namespace UnityEditor
             }
         }
 
-        static Mesh cylinderMesh
+        internal static Mesh cylinderMesh
         {
             get
             {
@@ -137,13 +138,23 @@ namespace UnityEditor
             }
         }
 
-        static Mesh sphereMesh
+        internal static Mesh sphereMesh
         {
             get
             {
                 if (s_SphereMesh == null)
                     Init();
                 return s_SphereMesh;
+            }
+        }
+
+        internal static Mesh quadMesh
+        {
+            get
+            {
+                if (s_QuadMesh == null)
+                    Init();
+                return s_QuadMesh;
             }
         }
 
@@ -1409,8 +1420,13 @@ namespace UnityEditor
 
         public static void DrawCamera(Rect position, Camera camera, [DefaultValue("UnityEditor.DrawCameraMode.Normal")] DrawCameraMode drawMode)
         {
+            DrawCamera(position, camera, drawMode, true);
+        }
+
+        public static void DrawCamera(Rect position, Camera camera, [DefaultValue("UnityEditor.DrawCameraMode.Normal")] DrawCameraMode drawMode, bool drawGizmos)
+        {
             DrawGridParameters nullGridParam = new DrawGridParameters();
-            DrawCameraImpl(position, camera, drawMode, false, nullGridParam, true);
+            DrawCameraImpl(position, camera, drawMode, false, nullGridParam, true, drawGizmos);
         }
 
         internal enum CameraFilterMode
@@ -1490,6 +1506,42 @@ namespace UnityEditor
             if (division < 1)
                 throw new ArgumentOutOfRangeException("division", "Must be greater than zero");
             return Internal_MakeBezierPoints(startPosition, endPosition, startTangent, endTangent, division);
+        }
+
+        public static void DrawTexture3DSDF(Texture texture,
+            [DefaultValue("1.0f")] float stepScale = 1.0f,
+            [DefaultValue("0.0f")] float surfaceOffset = 0.0f,
+            [DefaultValue("null")] Gradient customColorRamp = null)
+        {
+            Vector3 localScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude, matrix.GetColumn(2).magnitude);
+            Texture3DInspector.PrepareSDFPreview(Texture3DInspector.Materials.SDF, texture, localScale, stepScale, surfaceOffset, customColorRamp);
+            Texture3DInspector.Materials.SDF.SetPass(0);
+            Graphics.DrawMeshNow(cubeMesh, matrix);
+        }
+
+        public static void DrawTexture3DSlice(Texture texture, Vector3 slicePositions,
+            [DefaultValue("FilterMode.Bilinear")] FilterMode filterMode = FilterMode.Bilinear,
+            [DefaultValue("false")] bool useColorRamp = false,
+            [DefaultValue("null")] Gradient customColorRamp = null)
+        {
+            Vector3 localScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude, matrix.GetColumn(2).magnitude);
+            Texture3DInspector.PrepareSlicePreview(Texture3DInspector.Materials.Slice, texture, slicePositions, filterMode, useColorRamp, customColorRamp);
+            Texture3DInspector.Materials.Slice.SetPass(0);
+            Graphics.DrawMeshNow(cubeMesh, matrix);
+        }
+
+        public static void DrawTexture3DVolume(Texture texture,
+            [DefaultValue("1.0f")] float opacity = 1.0f,
+            [DefaultValue("1.0f")] float qualityModifier = 1.0f,
+            [DefaultValue("FilterMode.Bilinear")] FilterMode filterMode = FilterMode.Bilinear,
+            [DefaultValue("false")] bool useColorRamp = false,
+            [DefaultValue("null")] Gradient customColorRamp = null)
+        {
+            Vector3 localScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude, matrix.GetColumn(2).magnitude);
+            int sampleCount = Texture3DInspector.PrepareVolumePreview(Texture3DInspector.Materials.Volume, texture, localScale, opacity,
+                filterMode, useColorRamp, customColorRamp, Camera.current, matrix, qualityModifier);
+            Texture3DInspector.Materials.Volume.SetPass(0);
+            Graphics.DrawProceduralNow(MeshTopology.Quads, 4, sampleCount);
         }
     }
 }

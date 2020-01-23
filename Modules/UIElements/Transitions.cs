@@ -521,6 +521,8 @@ namespace UnityEngine.UIElements.Experimental
                     case StylePropertyId.Padding:
                     case StylePropertyId.Flex:
                     case StylePropertyId.Cursor:
+                    case StylePropertyId.TextOverflow:
+                    case StylePropertyId.UnityTextOverflowPosition:
                     default:
                         throw new ArgumentException("Style Value can't be animated");
                 }

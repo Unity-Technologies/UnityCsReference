@@ -72,19 +72,32 @@ namespace UnityEngine.TextCore
 
         protected bool Equals(TextGenerationSettings other)
         {
-            return string.Equals(text, other.text) && screenRect.Equals(other.screenRect) && margins.Equals(other.margins) && scale.Equals(other.scale) &&
-                Equals(fontAsset, other.fontAsset) && Equals(material, other.material) && Equals(spriteAsset, other.spriteAsset) && fontStyle == other.fontStyle &&
-                textAlignment == other.textAlignment && overflowMode == other.overflowMode && wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio) &&
-                color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient) && tintSprites == other.tintSprites &&
-                overrideRichTextColors == other.overrideRichTextColors && fontSize.Equals(other.fontSize) && autoSize == other.autoSize &&
-                fontSizeMin.Equals(other.fontSizeMin) && fontSizeMax.Equals(other.fontSizeMax) && enableKerning == other.enableKerning && richText == other.richText &&
-                isRightToLeft == other.isRightToLeft && extraPadding == other.extraPadding && parseControlCharacters == other.parseControlCharacters &&
-                characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing) && lineSpacing.Equals(other.lineSpacing) &&
-                paragraphSpacing.Equals(other.paragraphSpacing) && lineSpacingMax.Equals(other.lineSpacingMax) && maxVisibleCharacters == other.maxVisibleCharacters &&
-                maxVisibleWords == other.maxVisibleWords && maxVisibleLines == other.maxVisibleLines && firstVisibleCharacter == other.firstVisibleCharacter &&
-                useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight && pageToDisplay == other.pageToDisplay &&
-                horizontalMapping == other.horizontalMapping && verticalMapping == other.verticalMapping && uvLineOffset.Equals(other.uvLineOffset) &&
-                geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis && charWidthMaxAdj.Equals(other.charWidthMaxAdj);
+            return string.Equals(text, other.text) && screenRect.Equals(other.screenRect) &&
+                margins.Equals(other.margins) && scale.Equals(other.scale) &&
+                Equals(fontAsset, other.fontAsset) && Equals(material, other.material) &&
+                Equals(spriteAsset, other.spriteAsset) && fontStyle == other.fontStyle &&
+                textAlignment == other.textAlignment && overflowMode == other.overflowMode &&
+                wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio) &&
+                color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient) &&
+                tintSprites == other.tintSprites &&
+                overrideRichTextColors == other.overrideRichTextColors && fontSize.Equals(other.fontSize) &&
+                autoSize == other.autoSize &&
+                fontSizeMin.Equals(other.fontSizeMin) && fontSizeMax.Equals(other.fontSizeMax) &&
+                enableKerning == other.enableKerning && richText == other.richText &&
+                isRightToLeft == other.isRightToLeft && extraPadding == other.extraPadding &&
+                parseControlCharacters == other.parseControlCharacters &&
+                characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing) &&
+                lineSpacing.Equals(other.lineSpacing) &&
+                paragraphSpacing.Equals(other.paragraphSpacing) && lineSpacingMax.Equals(other.lineSpacingMax) &&
+                maxVisibleCharacters == other.maxVisibleCharacters &&
+                maxVisibleWords == other.maxVisibleWords && maxVisibleLines == other.maxVisibleLines &&
+                firstVisibleCharacter == other.firstVisibleCharacter &&
+                useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight &&
+                pageToDisplay == other.pageToDisplay &&
+                horizontalMapping == other.horizontalMapping && verticalMapping == other.verticalMapping &&
+                uvLineOffset.Equals(other.uvLineOffset) &&
+                geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis &&
+                charWidthMaxAdj.Equals(other.charWidthMaxAdj);
         }
 
         public override bool Equals(object obj)
@@ -826,7 +839,6 @@ namespace UnityEngine.TextCore
                 textInfo.textElementInfo[m_CharacterCount].highlightColor = m_HighlightColor;
                 textInfo.textElementInfo[m_CharacterCount].style = m_FontStyleInternal;
                 textInfo.textElementInfo[m_CharacterCount].index = i;
-
 
                 // Handle Kerning if Enabled.
                 GlyphValueRecord glyphAdjustments = new GlyphValueRecord();

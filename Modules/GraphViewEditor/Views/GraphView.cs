@@ -164,7 +164,6 @@ namespace UnityEditor.Experimental.GraphView
         private int m_SavedSelectionVersion;
         private PersistedSelection m_PersistedSelection;
         private GraphViewUndoRedoSelection m_GraphViewUndoRedoSelection;
-        private bool m_FontsOverridden = false;
 
         class ContentViewContainer : VisualElement
         {
@@ -296,24 +295,6 @@ namespace UnityEditor.Experimental.GraphView
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
             RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenu);
-
-            // We override the font for all GraphElements here so we can use the fallback system.
-            // We load the dummy font first and then we overwrite the fontNames, just like we do
-            // with the Editor's default font asset. Loading system fonts directly via
-            // Font.CreateDynamicFontFromOSFont() caused TextMesh to generate the wrong bounds.
-            //
-            // TODO: Add font fallback specifications and use of system fonts to USS.
-            if (!m_FontsOverridden && (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.OSXEditor))
-            {
-                Font graphViewFont = EditorGUIUtility.LoadRequired("GraphView/DummyFont(LucidaGrande).ttf") as Font;
-
-                if (Application.platform == RuntimePlatform.WindowsEditor)
-                    graphViewFont.fontNames = new string[] { "Verdana" };
-                else if (Application.platform == RuntimePlatform.OSXEditor)
-                    graphViewFont.fontNames = new string[] { "Lucida Grande" };
-
-                m_FontsOverridden = true;
-            }
         }
 
         private void ClearSavedSelection()

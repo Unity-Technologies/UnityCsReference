@@ -112,12 +112,12 @@ namespace UnityEditor.PackageManager.UI
                 var path = m_Version.packageInfo.assetPath;
                 var manifest = AssetDatabase.LoadAssetAtPath<PackageManifest>($"{path}/package.json");
                 if (manifest != null)
-                    Selection.activeObject = manifest;
+                    ApplicationUtil.instance.activeSelection = manifest;
             }
             GUI.enabled = targets.Length == 1 && m_Package != null && m_Version != null;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                PackageManagerWindow.SelectPackageAndFilter(m_Version.uniqueId);
+                PackageManagerWindow.SelectPackageAndFilter(m_Package.Is(PackageType.AssetStore) ? m_Version.packageUniqueId : m_Version.uniqueId);
             }
             GUI.enabled = previousEnabled;
         }

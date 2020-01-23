@@ -295,9 +295,17 @@ namespace UnityEditor.Presets
                 }
                 if (InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target) || m_InternalEditor.HasLargeHeader())
                 {
-                    EditorGUI.indentLevel++;
-                    m_InternalEditor.OnInspectorGUI();
-                    EditorGUI.indentLevel--;
+                    GUIStyle editorWrapper = (m_InternalEditor.UseDefaultMargins() && m_InternalEditor.CanBeExpandedViaAFoldoutWithoutUpdate()
+                        ? EditorStyles.inspectorDefaultMargins
+                        : GUIStyle.none);
+
+                    using (new InspectorWindowUtils.LayoutGroupChecker())
+                    {
+                        using (new EditorGUILayout.VerticalScope(editorWrapper))
+                        {
+                            m_InternalEditor.OnInspectorGUI();
+                        }
+                    }
                 }
                 if (change.changed || m_InternalEditor.isInspectorDirty)
                 {

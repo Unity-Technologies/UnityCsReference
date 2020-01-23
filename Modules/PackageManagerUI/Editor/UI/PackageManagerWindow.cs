@@ -103,7 +103,7 @@ namespace UnityEditor.PackageManager.UI
                 mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
 
                 EditorApplication.focusChanged += OnFocusChanged;
-                Selection.selectionChanged += OnEditorSelectionChanged;
+                ApplicationUtil.instance.onEditorSelectionChanged += OnEditorSelectionChanged;
 
                 rootVisualElement.focusable = true;
                 rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -178,7 +178,7 @@ namespace UnityEditor.PackageManager.UI
             packageStatusbar.OnDisable();
 
             EditorApplication.focusChanged -= OnFocusChanged;
-            Selection.selectionChanged -= OnEditorSelectionChanged;
+            ApplicationUtil.instance.onEditorSelectionChanged -= OnEditorSelectionChanged;
         }
 
         public void OnDestroy()
@@ -284,9 +284,9 @@ namespace UnityEditor.PackageManager.UI
             if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded) || m_FilterToSelectAfterLoad != null)
                 return;
 
-            if (Selection.activeObject is PackageSelectionObject)
+            if (ApplicationUtil.instance.activeSelection is PackageSelectionObject)
             {
-                var packageSelectionObject = (PackageSelectionObject)Selection.activeObject;
+                var packageSelectionObject = (PackageSelectionObject)ApplicationUtil.instance.activeSelection;
                 IPackage package;
                 IPackageVersion version;
 
@@ -294,7 +294,7 @@ namespace UnityEditor.PackageManager.UI
                 if (package == null || version == null)
                     return;
 
-                var tab = PageManager.instance.FindTab(packageSelectionObject.versionUniqueId);
+                var tab = PageManager.instance.FindTab(package.Is(PackageType.AssetStore) ? packageSelectionObject.packageUniqueId : packageSelectionObject.versionUniqueId);
                 PackageFiltering.instance.currentFilterTab = tab;
                 PageManager.instance.GetPage(tab).SetSelected(package, version);
             }

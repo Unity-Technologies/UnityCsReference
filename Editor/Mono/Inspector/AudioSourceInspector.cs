@@ -552,10 +552,11 @@ namespace UnityEditor
         {
             List<Rect> legendRects = new List<Rect>();
             List<AudioCurveWrapper> curves = GetShownAudioCurves();
-
-            Rect legendRect = GUILayoutUtility.GetRect(10, 20);
+            Rect legendRect = GUILayoutUtility.GetRect(10, 40 * EditorGUIUtility.pixelsPerPoint);
             legendRect.x += 4 + EditorGUI.indent;
             legendRect.width -= 8 + EditorGUI.indent;
+            // Graph's position acts as reference for Legends
+            legendRect.y = m_CurveEditor.rect.y + m_CurveEditor.rect.height + 20;
             int width = Mathf.Min(75, Mathf.FloorToInt(legendRect.width / curves.Count));
             for (int i = 0; i < curves.Count; i++)
             {

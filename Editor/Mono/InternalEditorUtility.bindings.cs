@@ -836,9 +836,6 @@ namespace UnityEditorInternal
         [NativeMethod("IsCompatibleWithEditor")]
         extern internal static bool IsUnityExtensionCompatibleWithEditor(BuildTargetGroup targetGroup, BuildTarget target, string path);
 
-        [FreeFunction("GetAllEditorModuleNames")]
-        extern internal static string[] GetEditorModuleDllNames();
-
         [FreeFunction(IsThreadSafe = true)]
         extern public static bool CurrentThreadIsMainThread();
 

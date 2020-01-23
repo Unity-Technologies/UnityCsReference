@@ -199,8 +199,8 @@ namespace UnityEngine.UIElements.UIR
                 (allocator.entryHeight * pageHeight == atlasRect.height);
         }
 
-        public NativeArray<Transform3x4> transformConstants { get { return m_Transforms; } }
-        public NativeArray<Vector4> clipRectConstants { get { return m_ClipRects; } }
+        public NativeSlice<Transform3x4> transformConstants { get { return m_Transforms; } }
+        public NativeSlice<Vector4> clipRectConstants { get { return m_ClipRects; } }
         public Texture atlas
         {
             get

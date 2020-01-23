@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI
 
             public event Action<bool> onUserLoginStateChange = delegate {};
             public event Action<bool> onInternetReachabilityChange = delegate {};
+            public event Action onEditorSelectionChanged = delegate {};
 
             [SerializeField]
             private ConnectInfo m_ConnectInfo;
@@ -51,6 +52,8 @@ namespace UnityEditor.PackageManager.UI
                 m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
                 m_LastInternetCheck = EditorApplication.timeSinceStartup;
                 EditorApplication.update += CheckInternetReachability;
+
+                Selection.selectionChanged += OnEditorSelectionChanged;
             }
 
             private void CheckInternetReachability()
@@ -81,6 +84,11 @@ namespace UnityEditor.PackageManager.UI
                     onUserLoginStateChange?.Invoke(m_ConnectInfo.loggedIn);
                 if (onlineChanged)
                     onInternetReachabilityChange?.Invoke(m_ConnectInfo.online);
+            }
+
+            private void OnEditorSelectionChanged()
+            {
+                onEditorSelectionChanged?.Invoke();
             }
 
             public bool isPreReleaseVersion
@@ -134,6 +142,12 @@ namespace UnityEditor.PackageManager.UI
                     }
                     return result;
                 }
+            }
+
+            public UnityEngine.Object activeSelection
+            {
+                get { return Selection.activeObject; }
+                set { Selection.activeObject = value; }
             }
 
             private void CheckCompilationStatus()

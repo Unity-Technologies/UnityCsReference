@@ -627,7 +627,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
             var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
-            if ((IsElementSelfHidden(ve) || ve.renderChainData.isHierarchyHidden) && !isClippingWithStencil)
+            if ((IsElementSelfHidden(ve) && !isClippingWithStencil) || ve.renderChainData.isHierarchyHidden)
             {
                 if (ve.renderChainData.data != null)
                 {

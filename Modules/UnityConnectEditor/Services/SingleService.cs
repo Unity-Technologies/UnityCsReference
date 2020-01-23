@@ -97,7 +97,7 @@ namespace UnityEditor.Connect
 
         void HandleProjectLink(bool enable)
         {
-            if (requiresBoundProject && !UnityConnect.instance.projectInfo.projectBound)
+            if (enable && requiresBoundProject && !UnityConnect.instance.projectInfo.projectBound)
             {
                 NotificationManager.instance.Publish(notificationTopic, Notification.Severity.Warning, L10n.Tr(string.Format(k_NoUnityProjectIdMessage, name)));
                 SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);
@@ -110,7 +110,7 @@ namespace UnityEditor.Connect
 
         void HandleCoppaCompliance(bool enable)
         {
-            if (requiresCoppaCompliance && UnityConnect.instance.projectInfo.COPPA == COPPACompliance.COPPAUndefined)
+            if (enable && requiresCoppaCompliance && UnityConnect.instance.projectInfo.COPPA == COPPACompliance.COPPAUndefined)
             {
                 NotificationManager.instance.Publish(notificationTopic, Notification.Severity.Warning, L10n.Tr(string.Format(k_NoCoppaComplianceMessage, name)));
                 SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);

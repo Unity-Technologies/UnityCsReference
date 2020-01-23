@@ -77,7 +77,27 @@ namespace UnityEditorInternal
 
         internal static void RunNetCoreProgram(string exe, string args, string workingDirectory, CompilerOutputParserBase parser, Action<ProcessStartInfo> setupStartInfo)
         {
-            var p = new NetCoreProgram(exe, args, setupStartInfo);
+            Program p;
+
+            if (Path.GetExtension(exe).Equals(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                p = new NetCoreProgram(exe, args, setupStartInfo);
+            }
+            else
+            {
+                var startInfo = new ProcessStartInfo()
+                {
+                    Arguments = args,
+                    CreateNoWindow = true,
+                    FileName = exe
+                };
+
+                if (setupStartInfo != null)
+                    setupStartInfo(startInfo);
+
+                p = new Program(startInfo);
+            }
+
             RunProgram(p, exe, args, workingDirectory, parser);
         }
 

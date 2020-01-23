@@ -2,12 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Scripting;
-using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 namespace UnityEditor.SceneManagement
 {
@@ -116,10 +113,8 @@ namespace UnityEditor.SceneManagement
         internal static Hash128 CreateWindowAndStageIdentifier(string windowGUID, Stage stage)
         {
             Hash128 hash = stage.GetHashForStateStorage();
-            Hash128 windowHash = Hash128.Compute(windowGUID);
-            Hash128 stageTypeHash = Hash128.Compute(stage.GetType().FullName);
-            HashUtilities.AppendHash(ref windowHash, ref hash);
-            HashUtilities.AppendHash(ref stageTypeHash, ref hash);
+            hash.Append(windowGUID);
+            hash.Append(stage.GetType().FullName);
             return hash;
         }
 

@@ -43,6 +43,11 @@ namespace UnityEditor.StyleSheets
             return true;
         }
 
+        private static bool IsMouseOverGUIView()
+        {
+            return GUIView.mouseOverView == GUIView.current;
+        }
+
         internal static StyleBlock FindBlock(int name, DrawStates drawStates)
         {
             StyleState stateFlags = 0;
@@ -50,7 +55,7 @@ namespace UnityEditor.StyleSheets
             {
                 if (drawStates.hasKeyboardFocus && GUIView.current.hasFocus) stateFlags |= StyleState.focus;
                 if (drawStates.isActive || GUI.HasMouseControl(drawStates.controlId)) stateFlags |= StyleState.active;
-                if (drawStates.isHover && GUIUtility.hotControl == 0) stateFlags |= StyleState.hover;
+                if (drawStates.isHover && GUIUtility.hotControl == 0 && IsMouseOverGUIView()) stateFlags |= StyleState.hover;
             }
             else
             {

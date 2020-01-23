@@ -83,6 +83,7 @@ namespace UnityEngine.UIElements
             m_CurrentGenerationSettings.color = parms.fontColor;
             m_CurrentGenerationSettings.inverseYAxis = true;
             m_CurrentGenerationSettings.scale = pixelsPerPoint;
+            m_CurrentGenerationSettings.overflowMode = parms.textOverflowMode;
 
             m_TextInfo.isDirty = true;
             TextCore.TextGenerator.GenerateText(m_CurrentGenerationSettings, m_TextInfo);

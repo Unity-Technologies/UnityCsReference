@@ -497,6 +497,19 @@ namespace UnityEditor
                 folder = "MacEditorTargetInstaller";
                 extension = ".pkg";
             }
+            else if (Application.platform == RuntimePlatform.LinuxEditor)
+            {
+                if (moduleName == "Android" || moduleName == "Mac" || moduleName == "Windows")
+                {
+                    folder = "MacEditorTargetInstaller";
+                    extension = ".pkg";
+                }
+                else
+                {
+                    folder = "LinuxEditorTargetInstaller";
+                    extension = ".tar.xz";
+                }
+            }
 
             return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
         }

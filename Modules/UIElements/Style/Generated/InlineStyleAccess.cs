@@ -786,6 +786,24 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleEnum<TextOverflow> IStyle.textOverflow
+        {
+            get
+            {
+                var tmp = GetStyleInt(StylePropertyId.TextOverflow);
+                return new StyleEnum<TextOverflow>((TextOverflow)tmp.value, tmp.keyword);
+            }
+
+            set
+            {
+                var tmp = new StyleEnum<TextOverflow>((TextOverflow)value.value, value.keyword);
+                if (SetStyleValue(StylePropertyId.TextOverflow, tmp, ve.sharedStyle.textOverflow))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleLength IStyle.top
         {
             get
@@ -967,6 +985,24 @@ namespace UnityEngine.UIElements
                 if (SetStyleValue(StylePropertyId.UnityTextAlign, tmp, ve.sharedStyle.unityTextAlign))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleEnum<TextOverflowPosition> IStyle.unityTextOverflowPosition
+        {
+            get
+            {
+                var tmp = GetStyleInt(StylePropertyId.UnityTextOverflowPosition);
+                return new StyleEnum<TextOverflowPosition>((TextOverflowPosition)tmp.value, tmp.keyword);
+            }
+
+            set
+            {
+                var tmp = new StyleEnum<TextOverflowPosition>((TextOverflowPosition)value.value, value.keyword);
+                if (SetStyleValue(StylePropertyId.UnityTextOverflowPosition, tmp, ve.sharedStyle.unityTextOverflowPosition))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
             }
         }

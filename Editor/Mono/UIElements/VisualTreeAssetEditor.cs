@@ -82,7 +82,10 @@ namespace UnityEditor.UIElements
 
             EditorGUI.DrawRect(r, EditorGUIUtility.kViewBackgroundColor);
 
-            m_Panel.visualTree.SetSize(r.size); // We will draw relative to a viewport covering the preview area, so draw at 0,0
+            var dpiScale = EditorGUIUtility.pixelsPerPoint;
+            var viewportRect = GUIClip.UnclipToWindow(r); // Still in points, not pixels
+            var viewportRectPx = new Rect(viewportRect.min * dpiScale, viewportRect.size * dpiScale);
+            m_Panel.visualTree.SetSize(viewportRect.size); // We will draw relative to a viewport covering the preview area, so draw at 0,0
             m_Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
 
             var oldState = SavedGUIState.Create();
@@ -93,21 +96,16 @@ namespace UnityEditor.UIElements
                 clips--;
             }
 
-            float pixelsPerPoint = EditorGUIUtility.pixelsPerPoint;
-            var desc = new RenderTextureDescriptor((int)(r.width * pixelsPerPoint), (int)(r.height * pixelsPerPoint), RenderTextureFormat.ARGB32, 16);
-            var rt = RenderTexture.GetTemporary(desc);
-            var oldRt = RenderTexture.active;
-            RenderTexture.active = rt;
-            GL.LoadPixelMatrix(0, rt.width, rt.height, 0);
+            var oldClearFlags = m_Panel.clearFlags;
+            m_Panel.clearFlags = PanelClearFlags.None;
+            RectInt oldViewport = UnityEngine.UIElements.UIR.Utility.GetActiveViewport();
+            GL.Viewport(new Rect(new Vector2(viewportRectPx.xMin, Screen.height - viewportRectPx.yMin - viewportRectPx.height), viewportRectPx.size));
 
             m_Panel.Repaint(Event.current);
 
-            RenderTexture.active = oldRt;
-
+            GL.Viewport(new Rect(oldViewport.xMin, oldViewport.yMin, oldViewport.width, oldViewport.height));
             oldState.ApplyAndForget();
-
-            GUI.DrawTexture(r, rt);
-            RenderTexture.ReleaseTemporary(rt);
+            m_Panel.clearFlags = oldClearFlags;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)

@@ -527,9 +527,13 @@ namespace UnityEditorInternal
                 il2cppOutputParser = new Il2CppOutputParser();
 
             if (useNetCore)
+            {
                 Runner.RunNetCoreProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
+            }
             else
+            {
                 Runner.RunManagedProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
+            }
         }
 
         private string GetIl2CppExe()
@@ -539,7 +543,7 @@ namespace UnityEditorInternal
 
         private string GetIl2CppCoreExe()
         {
-            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/netcoreapp2.1/publish/il2cppcore.dll";
+            return IL2CPPUtils.GetIl2CppFolder() + "/build/deploy/netcoreapp3.0/il2cpp" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "");
         }
 
         private bool ShouldUseIl2CppCore()
@@ -555,25 +559,20 @@ namespace UnityEditorInternal
             if (disableIl2CppCoreDiag)
                 return false;
 
-            bool shouldUse = false;
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
-                // .Net Core 2.1 is only supported on MacOSX versions 10.12 and later
+                // .Net Core 3.0 is only supported on MacOSX versions 10.13 and later
                 if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
                 {
                     var versionText = SystemInfo.operatingSystem.Substring(9);
                     var version = new Version(versionText);
 
-                    if (version >= new Version(10, 12))
-                        shouldUse = true;
-                }
-                else
-                {
-                    shouldUse = true;
+                    if (version >= new Version(10, 13))
+                        return false;
                 }
             }
 
-            return shouldUse && NetCoreProgram.IsNetCoreAvailable();
+            return true;
         }
     }
 

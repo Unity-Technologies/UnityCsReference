@@ -11,22 +11,9 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class Texture2DArrayInspector : TextureInspector
     {
-        private const int kScrubberHeight = 21;
-        private const int kSliceStepWidth = 33;
-        private const int kScrubberMargin = 3;
-
-        static class Styles
-        {
-            public static readonly GUIContent prevSliceIcon = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Go to previous slice in the array.");
-            public static readonly GUIContent nextSliceIcon = EditorGUIUtility.TrIconContent("Animation.NextKey", "Go to next slice in the array.");
-
-            public static readonly GUIStyle stepSlice = "TimeScrubberButton";
-            public static readonly GUIStyle sliceScrubber = "TimeScrubber";
-        }
-
         private Material m_Material;
         private int m_Slice;
-        private float m_MouseDrag;
+        private bool alphaOnly;
 
         public override string GetInfoString()
         {
@@ -41,6 +28,35 @@ namespace UnityEditor
             return info;
         }
 
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            InitPreview();
+            alphaOnly = false;
+            m_Material.SetInt("_AlphaOnly", alphaOnly ? 1 : 0);
+        }
+
+        public override void OnPreviewSettings()
+        {
+            if (m_Material == null)
+                InitPreview();
+
+            Texture2DArray t = (Texture2DArray)target;
+            m_Material.mainTexture = t;
+
+            if (t.depth > 1)
+            {
+                m_Slice = EditorGUILayout.IntSlider(m_Slice, 0, t.depth - 1, GUILayout.Width(120));
+                m_Material.SetInt("_SliceIndex", m_Slice);
+            }
+
+            if (GUILayout.Toggle(alphaOnly, EditorGUIUtility.TrIconContent("PreTexA"), "toolbarbutton") != alphaOnly)
+            {
+                alphaOnly = !alphaOnly;
+                m_Material.SetInt("_AlphaOnly", alphaOnly ? 1 : 0);
+            }
+        }
+
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
             if (!SystemInfo.supports2DArrayTextures)
@@ -52,12 +68,6 @@ namespace UnityEditor
 
             Texture2DArray t = (Texture2DArray)target;
 
-            Rect scrubberRect = r;
-            scrubberRect.height = kScrubberHeight;
-            r.yMin += kScrubberHeight + kScrubberMargin;
-
-            DoSliceScrubber(scrubberRect, t);
-
             if (Event.current.type == EventType.Repaint)
             {
                 InitPreview();
@@ -67,7 +77,6 @@ namespace UnityEditor
                 int effectiveSlice = Mathf.Clamp(m_Slice, 0, t.depth - 1);
 
                 m_Material.SetInt("_SliceIndex", effectiveSlice);
-                m_Material.SetInt("_AlphaOnly", showAlpha ? 1 : 0);
 
                 int texWidth = Mathf.Max(t.width, 1);
                 int texHeight = Mathf.Max(t.height, 1);
@@ -90,99 +99,6 @@ namespace UnityEditor
                     EditorGUI.DropShadowLabel(new Rect(r.x, r.y + 10, r.width, 30),
                         "Slice " + effectiveSlice + "\nMip " + effectiveMipLevel);
                 }
-            }
-        }
-
-        private static readonly int kScrubberHash = "Texture2DArrayPreviewScrubber".GetHashCode();
-
-        private void DoSliceScrubber(Rect controlRect, Texture2DArray t)
-        {
-            int id = GUIUtility.GetControlID(kScrubberHash, FocusType.Keyboard);
-
-            Rect prevFrameRect = controlRect;
-            prevFrameRect.width = kSliceStepWidth;
-
-            Rect nextFrameRect = prevFrameRect;
-            nextFrameRect.x += nextFrameRect.width;
-
-            var scrubberRect = controlRect;
-            scrubberRect.xMin = nextFrameRect.xMax;
-
-            var evt = Event.current;
-            switch (evt.GetTypeForControl(id))
-            {
-                case EventType.MouseDown:
-                {
-                    if (scrubberRect.Contains(evt.mousePosition))
-                    {
-                        GUIUtility.keyboardControl = id;
-                        GUIUtility.hotControl = id;
-                        m_MouseDrag = evt.mousePosition.x - scrubberRect.xMin;
-                        m_Slice = (int)(m_MouseDrag * t.depth / scrubberRect.width);
-                        evt.Use();
-                    }
-                    break;
-                }
-                case EventType.MouseDrag:
-                {
-                    if (GUIUtility.hotControl == id)
-                    {
-                        m_MouseDrag += evt.delta.x;
-                        m_Slice = (int)(Mathf.Clamp(m_MouseDrag, 0.0f, scrubberRect.width) * t.depth /
-                            scrubberRect.width);
-                        evt.Use();
-                    }
-                    break;
-                }
-                case EventType.MouseUp:
-                {
-                    if (GUIUtility.hotControl == id)
-                    {
-                        GUIUtility.hotControl = 0;
-                        evt.Use();
-                    }
-                    break;
-                }
-                case EventType.KeyDown:
-                {
-                    if (GUIUtility.keyboardControl == id)
-                    {
-                        if (evt.keyCode == KeyCode.LeftArrow)
-                        {
-                            if (m_Slice > 0)
-                                --m_Slice;
-                            evt.Use();
-                        }
-                        if (evt.keyCode == KeyCode.RightArrow)
-                        {
-                            if (m_Slice < t.depth - 1)
-                                ++m_Slice;
-                            evt.Use();
-                        }
-                    }
-                    break;
-                }
-                case EventType.Repaint:
-                {
-                    Styles.sliceScrubber.Draw(controlRect, GUIContent.none, id);
-
-                    float normalizedPosition = Mathf.Lerp(scrubberRect.x, scrubberRect.xMax, m_Slice / (float)(t.depth - 1));
-                    TimeArea.DrawPlayhead(normalizedPosition, scrubberRect.yMin, scrubberRect.yMax, 2f,
-                        (GUIUtility.keyboardControl == id) ? 1f : 0.5f);
-                    break;
-                }
-            }
-
-            using (new EditorGUI.DisabledGroupScope(m_Slice <= 0))
-            {
-                if (GUI.Button(prevFrameRect, Styles.prevSliceIcon, Styles.stepSlice))
-                    m_Slice--;
-            }
-
-            using (new EditorGUI.DisabledGroupScope(m_Slice >= t.depth - 1))
-            {
-                if (GUI.Button(nextFrameRect, Styles.nextSliceIcon, Styles.stepSlice))
-                    m_Slice++;
             }
         }
 

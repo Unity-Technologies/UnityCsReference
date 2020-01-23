@@ -227,7 +227,7 @@ namespace UnityEditor
             var enumType = selected.GetType();
             var enumData = EnumDataUtility.GetCachedEnumData(enumType);
             var i = Array.IndexOf(enumData.values, selected);
-            using (new UnityEditor.Localization.Editor.LocalizationGroup(enumType))
+            using (new LocalizationGroup(enumType))
             {
                 i = DoPopup(rect, i, EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip));
             }

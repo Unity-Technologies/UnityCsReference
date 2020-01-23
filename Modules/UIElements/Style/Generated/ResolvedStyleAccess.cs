@@ -61,6 +61,7 @@ namespace UnityEngine.UIElements
         float IResolvedStyle.paddingTop => yogaNode.LayoutPaddingTop;
         Position IResolvedStyle.position => computedStyle.position.value;
         float IResolvedStyle.right => yogaNode.LayoutRight;
+        TextOverflow IResolvedStyle.textOverflow => computedStyle.textOverflow.value;
         float IResolvedStyle.top => yogaNode.LayoutY;
         Color IResolvedStyle.unityBackgroundImageTintColor => computedStyle.unityBackgroundImageTintColor.value;
         ScaleMode IResolvedStyle.unityBackgroundScaleMode => computedStyle.unityBackgroundScaleMode.value;
@@ -71,6 +72,7 @@ namespace UnityEngine.UIElements
         int IResolvedStyle.unitySliceRight => computedStyle.unitySliceRight.value;
         int IResolvedStyle.unitySliceTop => computedStyle.unitySliceTop.value;
         TextAnchor IResolvedStyle.unityTextAlign => computedStyle.unityTextAlign.value;
+        TextOverflowPosition IResolvedStyle.unityTextOverflowPosition => computedStyle.unityTextOverflowPosition.value;
         Visibility IResolvedStyle.visibility => computedStyle.visibility.value;
         WhiteSpace IResolvedStyle.whiteSpace => computedStyle.whiteSpace.value;
         float IResolvedStyle.width => yogaNode.LayoutWidth;

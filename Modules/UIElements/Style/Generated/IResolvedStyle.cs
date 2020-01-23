@@ -56,6 +56,7 @@ namespace UnityEngine.UIElements
         float paddingTop { get; }
         Position position { get; }
         float right { get; }
+        TextOverflow textOverflow { get; }
         float top { get; }
         Color unityBackgroundImageTintColor { get; }
         ScaleMode unityBackgroundScaleMode { get; }
@@ -66,6 +67,7 @@ namespace UnityEngine.UIElements
         int unitySliceRight { get; }
         int unitySliceTop { get; }
         TextAnchor unityTextAlign { get; }
+        TextOverflowPosition unityTextOverflowPosition { get; }
         Visibility visibility { get; }
         WhiteSpace whiteSpace { get; }
         float width { get; }

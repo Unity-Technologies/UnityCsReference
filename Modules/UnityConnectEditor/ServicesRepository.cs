@@ -81,5 +81,10 @@ namespace UnityEditor.Connect
         {
             return k_Services[name];
         }
+
+        public static void DisableAllServices()
+        {
+            GetServices().ForEach(service => service?.EnableService(false));
+        }
     }
 }

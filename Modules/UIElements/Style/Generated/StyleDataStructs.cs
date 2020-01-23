@@ -118,6 +118,7 @@ namespace UnityEngine.UIElements
         public StyleLength paddingTop;
         public StyleEnum<Position> position;
         public StyleLength right;
+        public StyleEnum<TextOverflow> textOverflow;
         public StyleLength top;
         public StyleColor unityBackgroundImageTintColor;
         public StyleEnum<ScaleMode> unityBackgroundScaleMode;
@@ -126,6 +127,7 @@ namespace UnityEngine.UIElements
         public StyleInt unitySliceLeft;
         public StyleInt unitySliceRight;
         public StyleInt unitySliceTop;
+        public StyleEnum<TextOverflowPosition> unityTextOverflowPosition;
         public StyleLength width;
 
         public static bool operator ==(NonInheritedData lhs, NonInheritedData rhs)
@@ -183,6 +185,8 @@ namespace UnityEngine.UIElements
                 lhs.position.value == rhs.position.value &&
                 lhs.position.keyword == rhs.position.keyword &&
                 lhs.right == rhs.right &&
+                lhs.textOverflow.value == rhs.textOverflow.value &&
+                lhs.textOverflow.keyword == rhs.textOverflow.keyword &&
                 lhs.top == rhs.top &&
                 lhs.unityBackgroundImageTintColor == rhs.unityBackgroundImageTintColor &&
                 lhs.unityBackgroundScaleMode.value == rhs.unityBackgroundScaleMode.value &&
@@ -193,6 +197,8 @@ namespace UnityEngine.UIElements
                 lhs.unitySliceLeft == rhs.unitySliceLeft &&
                 lhs.unitySliceRight == rhs.unitySliceRight &&
                 lhs.unitySliceTop == rhs.unitySliceTop &&
+                lhs.unityTextOverflowPosition.value == rhs.unityTextOverflowPosition.value &&
+                lhs.unityTextOverflowPosition.keyword == rhs.unityTextOverflowPosition.keyword &&
                 lhs.width == rhs.width;
         }
 
@@ -262,6 +268,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ paddingTop.GetHashCode();
                 hashCode = (hashCode * 397) ^ position.GetHashCode();
                 hashCode = (hashCode * 397) ^ right.GetHashCode();
+                hashCode = (hashCode * 397) ^ textOverflow.GetHashCode();
                 hashCode = (hashCode * 397) ^ top.GetHashCode();
                 hashCode = (hashCode * 397) ^ unityBackgroundImageTintColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ unityBackgroundScaleMode.GetHashCode();
@@ -270,6 +277,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ unitySliceLeft.GetHashCode();
                 hashCode = (hashCode * 397) ^ unitySliceRight.GetHashCode();
                 hashCode = (hashCode * 397) ^ unitySliceTop.GetHashCode();
+                hashCode = (hashCode * 397) ^ unityTextOverflowPosition.GetHashCode();
                 hashCode = (hashCode * 397) ^ width.GetHashCode();
                 return hashCode;
             }
