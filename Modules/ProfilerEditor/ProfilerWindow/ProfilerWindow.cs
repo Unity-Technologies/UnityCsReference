@@ -62,6 +62,7 @@ namespace UnityEditor
             public static readonly GUIContent preferencesButtonContent = EditorGUIUtility.TrTextContent("Preferences", "Open User Preferences for the Profiler");
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode", "Switch the color scheme to color blind safe colors");
+            public static readonly GUIContent showStatsLabelsOnCurrentFrameLabel = EditorGUIUtility.TrTextContent("Show Stats for 'current frame'", "Show stats labels when the 'current frame' toggle is on.");
 
             public static readonly GUIStyle background = "OL box flat";
             public static readonly GUIStyle header = "OL title";
@@ -187,6 +188,12 @@ namespace UnityEditor
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
 
+        // use this when iterating over arrays of history length. This + iterationIndex < 0 means no data for this frame, for anything else, this is the same as ProfilerDriver.firstFrame.
+        int firstFrameIndexWithHistoryOffset
+        {
+            get { return ProfilerDriver.lastFrameIndex + 1 - ProfilerUserSettings.frameCount; }
+        }
+
         public void SetSelectedPropertyPath(string path)
         {
             if (ProfilerDriver.selectedPropertyPath != path)
@@ -215,7 +222,9 @@ namespace UnityEditor
         public ProfilerProperty CreateProperty(int sortType)
         {
             int targetedFrame = GetActiveVisibleFrameIndex();
-            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerUserSettings.frameCount)
+            if (targetedFrame < 0)
+                targetedFrame = ProfilerDriver.lastFrameIndex;
+            if (targetedFrame < Math.Max(0, ProfilerDriver.firstFrameIndex))
             {
                 return null;
             }
@@ -372,7 +381,7 @@ namespace UnityEditor
             if (wasToggled)
             {
                 int historyLength = ProfilerUserSettings.frameCount;
-                int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+                int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
                 int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
                 ComputeChartScaleValue(ProfilerArea.CPU, historyLength, firstEmptyFrame, firstFrame);
@@ -543,11 +552,16 @@ namespace UnityEditor
             menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
         }
 
-        private void OnToggleColorBlindMode()
+        void OnToggleColorBlindMode()
         {
             UserAccessiblitySettings.colorBlindCondition = UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default
                 ? ColorBlindCondition.Deuteranopia
                 : ColorBlindCondition.Default;
+        }
+
+        void OnToggleShowStatsLabelsOnCurrentFrame()
+        {
+            ProfilerUserSettings.showStatsLabelsOnCurrentFrame = !ProfilerUserSettings.showStatsLabelsOnCurrentFrame;
         }
 
         // Used by Native method DoBuildPlayer_PostBuild() in BuildPlayer.cpp
@@ -681,7 +695,7 @@ namespace UnityEditor
         private void UpdateCharts()
         {
             int historyLength = ProfilerUserSettings.frameCount;
-            int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+            int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
             int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
             // Collect chart values
             foreach (var chart in m_Charts)
@@ -966,6 +980,7 @@ namespace UnityEditor
             {
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
+                menu.AddItem(Styles.showStatsLabelsOnCurrentFrameLabel, ProfilerUserSettings.showStatsLabelsOnCurrentFrame, OnToggleShowStatsLabelsOnCurrentFrame);
                 menu.AddSeparator("");
                 menu.AddItem(Styles.preferencesButtonContent, false, OpenProfilerPreferences);
                 menu.DropDown(overflowMenuRect);
@@ -1029,6 +1044,8 @@ namespace UnityEditor
             ProfilerDriver.ClearAllFrames();
             m_LastFrameFromTick = -1;
             m_FrameCountLabelMinWidth = 0;
+            m_CurrentFrame = -1;
+            m_CurrentFrameEnabled = true;
 
 #pragma warning disable CS0618
             NetworkDetailStats.m_NetworkOperations.Clear();

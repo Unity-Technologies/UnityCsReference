@@ -19,6 +19,7 @@ namespace UnityEditor
 
         readonly AnimBool m_ShowInfo = new AnimBool();
         private bool m_RequiresConstantRepaint;
+        private SavedBool m_ShowInfoFoldout;
 
         public void OnEnable()
         {
@@ -26,6 +27,8 @@ namespace UnityEditor
             m_ShowInfo.valueChanged.AddListener(Repaint);
 
             m_RequiresConstantRepaint = false;
+            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowFoldout", false);
+            m_ShowInfo.value = m_ShowInfoFoldout.value;
         }
 
         public void OnDisable()
@@ -92,7 +95,8 @@ namespace UnityEditor
         {
             m_RequiresConstantRepaint = false;
 
-            m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
+            Rect position = EditorGUILayout.GetControlRect();
+            m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUI.Foldout(position, m_ShowInfo.target, "Info", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
             {
                 if (targets.Length == 1)

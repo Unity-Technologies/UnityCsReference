@@ -890,6 +890,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             skipCustomScriptAssemblyGraphValidation = skipChecks;
         }
 
+        public void ClearCustomScriptAssemblies()
+        {
+            customScriptAssemblies = null;
+            customScriptAssemblyReferences.Clear();
+        }
+
         public Exception[] SetAllCustomScriptAssemblyReferenceJsons(string[] paths)
         {
             return SetAllCustomScriptAssemblyReferenceJsonsContents(paths, null);

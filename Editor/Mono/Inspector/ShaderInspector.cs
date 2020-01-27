@@ -319,12 +319,22 @@ namespace UnityEditor
             GUILayout.EndScrollView();
         }
 
+        ShaderMessage[] m_ShaderMessages;
         private void ShowShaderErrors(Shader s)
         {
-            int n = ShaderUtil.GetShaderMessageCount(s);
-            if (n < 1)
+            if (Event.current.type == EventType.Layout)
+            {
+                int n = ShaderUtil.GetShaderMessageCount(s);
+                m_ShaderMessages = null;
+                if (n >= 1)
+                {
+                    m_ShaderMessages = ShaderUtil.GetShaderMessages(s);
+                }
+            }
+
+            if (m_ShaderMessages == null)
                 return;
-            ShaderErrorListUI(s, ShaderUtil.GetShaderMessages(s), ref m_ScrollPosition);
+            ShaderErrorListUI(s, m_ShaderMessages, ref m_ScrollPosition);
         }
 
         // Compiled shader code button+dropdown
@@ -589,6 +599,7 @@ namespace UnityEditor
             }
             s_ShaderPlatformNames = names.ToArray();
             s_ShaderPlatformIndices = indices.ToArray();
+            currentPlatformMask &= platformMask;
         }
 
         public override Vector2 GetWindowSize()

@@ -22,7 +22,7 @@ namespace UnityEditor.StyleSheets
 
         internal static bool DrawStyle(GUIStyle gs, Rect position, GUIContent content, DrawStates states)
         {
-            if (gs == GUIStyle.none || gs.normal.background != null)
+            if (gs == GUIStyle.none || String.IsNullOrEmpty(gs.name) || gs.normal.background != null)
                 return false;
 
             if (!GUIClip.visibleRect.Overlaps(position))

@@ -31,14 +31,15 @@ namespace UnityEngine.UIElements
         Styles = 1 << 5,
         Overflow = 1 << 6,
         BorderRadius = 1 << 7,
+        BorderWidth = 1 << 8,
         // changes that may impact the world transform (e.g. laid out position, local transform)
-        Transform = 1 << 8,
+        Transform = 1 << 9,
         // changes to the size of the element after layout has been performed, without taking the local transform into account
-        Size = 1 << 9,
+        Size = 1 << 10,
         // The visuals of the element have changed
-        Repaint = 1 << 10,
+        Repaint = 1 << 11,
         // The opacity of the element have changed
-        Opacity = 1 << 11,
+        Opacity = 1 << 12,
     }
 
     [Flags]

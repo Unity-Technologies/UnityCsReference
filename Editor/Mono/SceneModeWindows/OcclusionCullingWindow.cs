@@ -19,6 +19,8 @@ namespace UnityEditor
         static bool s_IsVisible = false;
 
         private bool m_PreVis;
+        private bool m_ClearCacheData = true;
+        private bool m_ClearBakeData = true;
         private string m_Warning;
 
         static OcclusionCullingWindow ms_OcclusionCullingWindow;
@@ -262,15 +264,24 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
 
             bool allowBaking = !EditorApplication.isPlayingOrWillChangePlaymode;
+            bool bakeRunning = StaticOcclusionCulling.isRunning;
 
-            // Clear Tome button
-            GUI.enabled = StaticOcclusionCulling.umbraDataSize != 0 && allowBaking;
-            if (GUILayout.Button("Clear", GUILayout.Width(buttonWidth)))
-                StaticOcclusionCulling.Clear();
+            GUI.enabled = !bakeRunning && allowBaking;
+            if (CustomDropdownButton("Clear", buttonWidth))
+            {
+                if (m_ClearBakeData)
+                {
+                    StaticOcclusionCulling.Clear();
+                }
+
+                if (m_ClearCacheData)
+                {
+                    StaticOcclusionCulling.RemoveCacheFolder();
+                }
+            }
+
             GUI.enabled = allowBaking;
-
-            // Is occlusion culling running
-            if (StaticOcclusionCulling.isRunning)
+            if (bakeRunning)
             {
                 if (GUILayout.Button("Cancel", GUILayout.Width(buttonWidth)))
                     StaticOcclusionCulling.Cancel();
@@ -284,8 +295,53 @@ namespace UnityEditor
             }
 
             GUILayout.EndHorizontal();
-
             GUI.enabled = true;
+        }
+
+        private bool CustomDropdownButton(string name, float width, params GUILayoutOption[] options)
+        {
+            var content = EditorGUIUtility.TrTextContent(name);
+            var rect = GUILayoutUtility.GetRect(content, EditorStyles.dropDownList, options);
+
+            var halfDiff = (width - rect.width) / 2f;
+            rect.xMin -= halfDiff;
+            rect.xMax += halfDiff;
+            var currPos = rect.position;
+            currPos.x -= halfDiff;
+            rect.position = currPos;
+
+            var dropDownRect = rect;
+            const float kDropDownButtonWidth = 20f;
+            dropDownRect.xMin = dropDownRect.xMax - kDropDownButtonWidth;
+
+            string[] names = { "Bake Data", "Cache Data" };
+            bool[] values = { m_ClearBakeData, m_ClearCacheData };
+            if (Event.current.type == EventType.MouseDown && dropDownRect.Contains(Event.current.mousePosition))
+            {
+                var menu = new GenericMenu();
+                for (int i = 0; i != names.Length; i++)
+                    menu.AddItem(new GUIContent(names[i]), values[i], CustomDropdownCallback, i);
+
+                menu.DropDown(rect);
+                Event.current.Use();
+
+                return false;
+            }
+
+            return GUI.Button(rect, content, EditorStyles.dropDownList);
+        }
+
+        private void CustomDropdownCallback(object userData)
+        {
+            int index = (int)userData;
+            if (index == 0)
+            {
+                m_ClearBakeData = !m_ClearBakeData;
+            }
+            else if (index == 1)
+            {
+                m_ClearCacheData = !m_ClearCacheData;
+            }
         }
 
         void ModeToggle()

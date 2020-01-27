@@ -268,6 +268,9 @@ namespace UnityEditor
             if (!scene.IsValid())
                 return;
 
+            if (!scene.isLoaded)
+                return;
+
             SceneVisibilityState.ShowScene(scene);
 
             if (sendContentChangedEvent)
@@ -281,12 +284,18 @@ namespace UnityEditor
             if (!scene.IsValid())
                 return;
 
+            if (!scene.isLoaded)
+                return;
+
             SceneVisibilityState.EnablePicking(scene);
         }
 
         public void Show(Scene scene)
         {
             if (!scene.IsValid())
+                return;
+
+            if (!scene.isLoaded)
                 return;
 
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Show Scene");
@@ -298,6 +307,9 @@ namespace UnityEditor
             if (!scene.IsValid())
                 return;
 
+            if (!scene.isLoaded)
+                return;
+
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Enable Picking Scene");
             EnablePickingNoUndo(scene);
         }
@@ -305,6 +317,9 @@ namespace UnityEditor
         private void HideNoUndo(Scene scene)
         {
             if (!scene.IsValid())
+                return;
+
+            if (!scene.isLoaded)
                 return;
 
             SceneVisibilityState.ShowScene(scene);
@@ -316,6 +331,9 @@ namespace UnityEditor
             if (!scene.IsValid())
                 return;
 
+            if (!scene.isLoaded)
+                return;
+
             SceneVisibilityState.EnablePicking(scene);
             SceneVisibilityState.SetGameObjectsPickingDisabled(scene.GetRootGameObjects(), true, true);
         }
@@ -325,6 +343,9 @@ namespace UnityEditor
             if (!scene.IsValid())
                 return;
 
+            if (!scene.isLoaded)
+                return;
+
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Hide Scene");
             HideNoUndo(scene);
         }
@@ -332,6 +353,9 @@ namespace UnityEditor
         public void DisablePicking(Scene scene)
         {
             if (!scene.IsValid())
+                return;
+
+            if (!scene.isLoaded)
                 return;
 
             Undo.RecordObject(SceneVisibilityState.GetInstance(), "Disable Picking Scene");

@@ -651,7 +651,7 @@ namespace UnityEngine.UIElements
                     float y2 = Mathf.Min(wb.yMax, m_WorldClip.yMax);
                     float width = Mathf.Max(x2 - x1, 0);
                     float height = Mathf.Max(y2 - y1, 0);
-                    m_WorldClip = new Rect(x1, y1, width, height);
+                    m_WorldClip = SubstractBorderPadding(new Rect(x1, y1, width, height));
 
                     x1 = Mathf.Max(wb.xMin, m_WorldClipMinusGroup.xMin);
                     x2 = Mathf.Min(wb.xMax, m_WorldClipMinusGroup.xMax);
@@ -659,21 +659,31 @@ namespace UnityEngine.UIElements
                     y2 = Mathf.Min(wb.yMax, m_WorldClipMinusGroup.yMax);
                     width = Mathf.Max(x2 - x1, 0);
                     height = Mathf.Max(y2 - y1, 0);
-                    m_WorldClipMinusGroup = new Rect(x1, y1, width, height);
+                    m_WorldClipMinusGroup = SubstractBorderPadding(new Rect(x1, y1, width, height));
                 }
             }
             else
             {
                 m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;
             }
+        }
 
-            if (ShouldClip() && computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
+        private Rect SubstractBorderPadding(Rect rect)
+        {
+            rect.x += resolvedStyle.borderLeftWidth;
+            rect.y += resolvedStyle.borderTopWidth;
+            rect.width -= resolvedStyle.borderLeftWidth + resolvedStyle.borderRightWidth;
+            rect.height -= resolvedStyle.borderTopWidth + resolvedStyle.borderBottomWidth;
+
+            if (computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
             {
-                m_WorldClip.x += resolvedStyle.paddingLeft;
-                m_WorldClip.y += resolvedStyle.paddingTop;
-                m_WorldClip.width -= resolvedStyle.paddingLeft + resolvedStyle.paddingRight;
-                m_WorldClip.height -= resolvedStyle.paddingTop + resolvedStyle.paddingBottom;
+                rect.x += resolvedStyle.paddingLeft;
+                rect.y += resolvedStyle.paddingTop;
+                rect.width -= resolvedStyle.paddingLeft + resolvedStyle.paddingRight;
+                rect.height -= resolvedStyle.paddingTop + resolvedStyle.paddingBottom;
             }
+
+            return rect;
         }
 
         // get the AA aligned bound
@@ -1328,6 +1338,10 @@ namespace UnityEngine.UIElements
             var previousBorderBottomRightRadius = m_Style.borderBottomRightRadius;
             var previousBorderTopLeftRadius = m_Style.borderTopLeftRadius;
             var previousBorderTopRightRadius = m_Style.borderTopRightRadius;
+            var previousBorderLeftWidth = m_Style.borderLeftWidth;
+            var previousBorderTopWidth = m_Style.borderTopWidth;
+            var previousBorderRightWidth = m_Style.borderRightWidth;
+            var previousBorderBottomWidth = m_Style.borderBottomWidth;
             var previousOpacity = m_Style.opacity;
 
             if (hasInlineStyle)
@@ -1354,6 +1368,14 @@ namespace UnityEngine.UIElements
                 previousBorderTopRightRadius != m_Style.borderTopRightRadius)
             {
                 changes |= VersionChangeType.BorderRadius;
+            }
+
+            if (previousBorderLeftWidth != m_Style.borderLeftWidth ||
+                previousBorderTopWidth != m_Style.borderTopWidth ||
+                previousBorderRightWidth != m_Style.borderRightWidth ||
+                previousBorderBottomWidth != m_Style.borderBottomWidth)
+            {
+                changes |= VersionChangeType.BorderWidth;
             }
 
             if (m_Style.opacity != previousOpacity)

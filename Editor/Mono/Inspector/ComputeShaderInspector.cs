@@ -97,12 +97,22 @@ namespace UnityEditor
             }
         }
 
+        ShaderMessage[] m_ShaderMessages;
         private void ShowShaderErrors(ComputeShader s)
         {
-            int n = ShaderUtil.GetComputeShaderMessageCount(s);
-            if (n < 1)
+            if (Event.current.type == EventType.Layout)
+            {
+                int n = ShaderUtil.GetComputeShaderMessageCount(s);
+                m_ShaderMessages = null;
+                if (n >= 1)
+                {
+                    m_ShaderMessages = ShaderUtil.GetComputeShaderMessages(s);
+                }
+            }
+
+            if (m_ShaderMessages == null)
                 return;
-            ShaderInspector.ShaderErrorListUI(s, ShaderUtil.GetComputeShaderMessages(s), ref m_ScrollPosition);
+            ShaderInspector.ShaderErrorListUI(s, m_ShaderMessages, ref m_ScrollPosition);
         }
     }
 }

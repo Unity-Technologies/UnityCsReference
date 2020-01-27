@@ -80,6 +80,18 @@ namespace UnityEngine.Rendering
             Submit_Internal();
         }
 
+        internal int GetNumberOfCameras()
+        {
+            Validate();
+            return GetNumberOfCameras_Internal();
+        }
+
+        internal Camera GetCamera(int index)
+        {
+            Validate();
+            return GetCamera_Internal(index);
+        }
+
         public void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings)
         {
             Validate();

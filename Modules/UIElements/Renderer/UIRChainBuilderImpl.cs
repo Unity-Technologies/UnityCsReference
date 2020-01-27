@@ -630,7 +630,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static UIRStylePainter PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
-            if (IsElementSelfHidden(ve) || ve.renderChainData.isHierarchyHidden)
+            var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
+            if ((IsElementSelfHidden(ve) && !isClippingWithStencil) || ve.renderChainData.isHierarchyHidden)
             {
                 if (ve.renderChainData.data != null)
                 {
@@ -673,6 +674,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 painter.DrawVisualElementBorder();
                 painter.ApplyVisualElementClipping();
                 ve.InvokeGenerateVisualContent(painter.meshGenerationContext);
+            }
+            else
+            {
+                // Even though the element hidden, we still have to push the stencil shape in case any children are visible.
+                if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
+                    painter.ApplyVisualElementClipping();
             }
             var entries = painter.entries;
 
@@ -1213,8 +1220,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var c = ve.renderChainData.firstCommand;
                 while (c != ve.renderChainData.lastCommand)
                 {
+                    var nextC = c.next;
                     renderChain.FreeCommand(c);
-                    c = c.next;
+                    c = nextC;
                 }
                 renderChain.FreeCommand(c); // Last command
             }
@@ -1234,8 +1242,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var c = ve.renderChainData.firstClosingCommand;
                 while (c != ve.renderChainData.lastClosingCommand)
                 {
+                    var nextC = c.next;
                     renderChain.FreeCommand(c);
-                    c = c.next;
+                    c = nextC;
                 }
                 renderChain.FreeCommand(c); // Last closing command
             }
@@ -1839,6 +1848,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
             rp.rect.y += widthT;
             rp.rect.width -= widthL + widthR;
             rp.rect.height -= widthT + widthB;
+
+            // Skip padding, when requested
+            if (style.unityOverflowClipBox == OverflowClipBox.ContentBox)
+            {
+                rp.rect.x += style.paddingLeft.value.value;
+                rp.rect.y += style.paddingTop.value.value;
+                rp.rect.width -= style.paddingLeft.value.value + style.paddingRight.value.value;
+                rp.rect.height -= style.paddingTop.value.value + style.paddingBottom.value.value;
+            }
 
             m_CurrentEntry.clipRectID = m_ClipRectID;
             m_CurrentEntry.isStencilClipped = m_StencilClip;
