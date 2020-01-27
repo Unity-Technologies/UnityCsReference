@@ -85,7 +85,7 @@ namespace UnityEditor
         private extern void Internal_Show(Rect r, int showMode, Vector2 minSize, Vector2 maxSize);
 
         [FreeFunction(k_ScriptingPrefix + "Internal_BringLiveAfterCreation", HasExplicitThis = true)]
-        private extern void Internal_BringLiveAfterCreation(bool displayImmediately, bool setFocus);
+        private extern void Internal_BringLiveAfterCreation(bool displayImmediately, bool setFocus, bool showMaximized);
 
         [FreeFunction(k_ScriptingPrefix + "Internal_SetTitle", HasExplicitThis = true)]
         private extern void Internal_SetTitle(string title);
