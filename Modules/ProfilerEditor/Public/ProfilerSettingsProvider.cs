@@ -49,6 +49,7 @@ namespace UnityEditor.Profiling
                     EditorGUILayout.Toggle(Content.k_EnableOutOfProcessProfiler, ProfilerUserSettings.useOutOfProcessProfiler);
             }
             ProfilerUserSettings.rememberLastRecordState = EditorGUILayout.Toggle(Content.k_RememberLastRecordState, ProfilerUserSettings.rememberLastRecordState);
+            ProfilerUserSettings.showStatsLabelsOnCurrentFrame = EditorGUILayout.Toggle(ProfilerWindow.Styles.showStatsLabelsOnCurrentFrameLabel, ProfilerUserSettings.showStatsLabelsOnCurrentFrame);
 
             var defaultRecordStateIndex = EditorGUILayout.Popup(Content.k_DefaultRecordState, ProfilerUserSettings.defaultRecordState ? 0 : 1, Content.k_RecordStates);
             ProfilerUserSettings.defaultRecordState = defaultRecordStateIndex == 0;

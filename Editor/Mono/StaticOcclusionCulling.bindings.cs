@@ -23,6 +23,9 @@ namespace UnityEditor
         [NativeName("GenerateTomeInBackground")]
         public static extern bool GenerateInBackground();
 
+        [NativeName("RemoveTempFolder")]
+        public static extern void RemoveCacheFolder();
+
         // Used to invalidate preVisualistion debug data.
         internal static extern void InvalidatePrevisualisationData();
 

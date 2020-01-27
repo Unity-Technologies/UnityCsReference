@@ -27,6 +27,7 @@ namespace UnityEditor
             {
                 var joint = target as Joint2D;
                 if (joint.connectedBody != null &&
+                    joint.gameObject.activeInHierarchy && joint.connectedBody.gameObject.activeInHierarchy &&
                     joint.gameObject.scene.GetPhysicsScene2D() != joint.connectedBody.gameObject.scene.GetPhysicsScene2D())
                 {
                     EditorGUILayout.HelpBox("This joint will not function because it is connected to a Rigidbody2D in a different physics scene. This is not supported.", MessageType.Warning);

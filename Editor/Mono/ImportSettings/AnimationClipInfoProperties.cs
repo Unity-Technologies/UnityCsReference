@@ -2,14 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.IO;
-using UnityEditor.Animations;
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
-using System.Collections.Generic;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -17,50 +10,102 @@ namespace UnityEditor
     {
         SerializedProperty m_Property;
 
-        Dictionary<string, SerializedProperty> m_CachedProp = new Dictionary<string, SerializedProperty>();
-        SerializedProperty Get(string property)
+        public AnimationClipInfoProperties(SerializedProperty prop)
         {
-            SerializedProperty prop;
-            if (!m_CachedProp.TryGetValue(property, out prop))
-            {
-                prop = m_Property.FindPropertyRelative(property);
-                m_CachedProp.Add(property, prop);
-            }
-            return prop;
+            m_Property = prop;
+            Editor.AssignCachedProperties(this, prop);
         }
 
-        public AnimationClipInfoProperties(SerializedProperty prop) { m_Property = prop; }
+#pragma warning disable 0649
+        [CacheProperty("name")]
+        SerializedProperty m_Name;
+        [CacheProperty("takeName")]
+        SerializedProperty m_TakeName;
+        [CacheProperty("internalID")]
+        SerializedProperty m_InternalId;
+        [CacheProperty("firstFrame")]
+        SerializedProperty m_FirstFrame;
+        [CacheProperty("lastFrame")]
+        SerializedProperty m_LastFrame;
+        [CacheProperty("wrapMode")]
+        SerializedProperty m_WrapMode;
+        [CacheProperty("loop")]
+        SerializedProperty m_Loop;
+        [CacheProperty("orientationOffsetY")]
+        SerializedProperty m_OrientationOffsetY;
+        [CacheProperty("level")]
+        SerializedProperty m_Level;
+        [CacheProperty("cycleOffset")]
+        SerializedProperty m_CycleOffset;
+        [CacheProperty("additiveReferencePoseFrame")]
+        SerializedProperty m_AdditiveReferencePoseFrame;
+        [CacheProperty("hasAdditiveReferencePose")]
+        SerializedProperty m_HasAdditiveReferencePose;
+        [CacheProperty("loopTime")]
+        SerializedProperty m_LoopTime;
+        [CacheProperty("loopBlend")]
+        SerializedProperty m_LoopBlend;
+        [CacheProperty("loopBlendOrientation")]
+        SerializedProperty m_LoopBlendOrientation;
+        [CacheProperty("loopBlendPositionY")]
+        SerializedProperty m_LoopBlendPositionY;
+        [CacheProperty("loopBlendPositionXZ")]
+        SerializedProperty m_LoopBlendPositionXZ;
+        [CacheProperty("keepOriginalOrientation")]
+        SerializedProperty m_KeepOriginalOrientation;
+        [CacheProperty("keepOriginalPositionY")]
+        SerializedProperty m_KeepOriginalPositionY;
+        [CacheProperty("keepOriginalPositionXZ")]
+        SerializedProperty m_KeepOriginalPositionXZ;
+        [CacheProperty("heightFromFeet")]
+        SerializedProperty m_HeightFromFeet;
+        [CacheProperty("mirror")]
+        SerializedProperty m_Mirror;
+        [CacheProperty("maskType")]
+        SerializedProperty m_MaskType;
+        [CacheProperty("maskSource")]
+        SerializedProperty m_MaskSource;
+        [CacheProperty("bodyMask")]
+        SerializedProperty m_BodyMask;
+        [CacheProperty("transformMask")]
+        SerializedProperty m_TransformMask;
+        [CacheProperty("curves")]
+        SerializedProperty m_Curves;
+        [CacheProperty("events")]
+        SerializedProperty m_Events;
+#pragma warning restore 0649
 
-        public string name      { get { return Get("name").stringValue; }     set { Get("name").stringValue = value; } }
-        public string takeName  { get { return Get("takeName").stringValue; }  set { Get("takeName").stringValue = value; } }
-        public long internalID   { get { return Get("internalID").longValue; } set { Get("internalID").longValue = value; } }
-        public float firstFrame   { get { return Get("firstFrame").floatValue; } set { Get("firstFrame").floatValue = value; } }
-        public float lastFrame  { get { return Get("lastFrame").floatValue; }  set { Get("lastFrame").floatValue = value; } }
-        public int wrapMode    { get { return Get("wrapMode").intValue; }    set { Get("wrapMode").intValue = value; } }
-        public bool loop          { get { return Get("loop").boolValue; }       set { Get("loop").boolValue = value; } }
+        public string name      { get { return m_Name.stringValue;      } set { m_Name.stringValue = value;      } }
+        public string takeName  { get { return m_TakeName.stringValue;  } set { m_TakeName.stringValue = value;  } }
+        public long internalID  { get { return m_InternalId.longValue;  } set { m_InternalId.longValue = value;  } }
+        public float firstFrame { get { return m_FirstFrame.floatValue; } set { m_FirstFrame.floatValue = value; } }
+        public float lastFrame  { get { return m_LastFrame.floatValue;  } set { m_LastFrame.floatValue = value;  } }
+        public int wrapMode     { get { return m_WrapMode.intValue;     } set { m_WrapMode.intValue = value;     } }
+        public bool loop        { get { return m_Loop.boolValue;        } set { m_Loop.boolValue = value;        } }
 
         // Mecanim animation properties
-        public float orientationOffsetY   { get { return Get("orientationOffsetY").floatValue; }     set { Get("orientationOffsetY").floatValue = value; } }
-        public float level                 { get { return Get("level").floatValue; }                  set { Get("level").floatValue = value; } }
-        public float cycleOffset             { get { return Get("cycleOffset").floatValue; }            set { Get("cycleOffset").floatValue = value; } }
-        public float additiveReferencePoseFrame { get { return Get("additiveReferencePoseFrame").floatValue; } set { Get("additiveReferencePoseFrame").floatValue = value; } }
-        public bool hasAdditiveReferencePose { get { return Get("hasAdditiveReferencePose").boolValue; } set { Get("hasAdditiveReferencePose").boolValue = value; } }
-        public bool loopTime { get { return Get("loopTime").boolValue; } set { Get("loopTime").boolValue = value; } }
-        public bool loopBlend { get { return Get("loopBlend").boolValue; } set { Get("loopBlend").boolValue = value; } }
-        public bool  loopBlendOrientation   { get { return Get("loopBlendOrientation").boolValue; } set { Get("loopBlendOrientation").boolValue = value; } }
-        public bool  loopBlendPositionY   { get { return Get("loopBlendPositionY").boolValue; }   set { Get("loopBlendPositionY").boolValue = value; } }
-        public bool  loopBlendPositionXZ     { get { return Get("loopBlendPositionXZ").boolValue; }  set { Get("loopBlendPositionXZ").boolValue = value; } }
-        public bool  keepOriginalOrientation { get { return Get("keepOriginalOrientation").boolValue; } set { Get("keepOriginalOrientation").boolValue = value; } }
-        public bool  keepOriginalPositionY   { get { return Get("keepOriginalPositionY").boolValue; }   set { Get("keepOriginalPositionY").boolValue = value; } }
-        public bool  keepOriginalPositionXZ  { get { return Get("keepOriginalPositionXZ").boolValue; }  set { Get("keepOriginalPositionXZ").boolValue = value; } }
-        public bool  heightFromFeet       { get { return Get("heightFromFeet").boolValue; }       set { Get("heightFromFeet").boolValue = value; } }
-        public bool  mirror { get { return Get("mirror").boolValue; } set { Get("mirror").boolValue = value; } }
-        public ClipAnimationMaskType maskType { get { return (ClipAnimationMaskType)Get("maskType").intValue; } set { Get("maskType").intValue = (int)value; } }
-        public SerializedProperty maskTypeProperty { get { return Get("maskType"); } }
-        public AvatarMask maskSource { get { return Get("maskSource").objectReferenceValue as AvatarMask; } set { Get("maskSource").objectReferenceValue = value; } }
-        public SerializedProperty maskSourceProperty { get { return Get("maskSource"); } }
-        public SerializedProperty bodyMaskProperty { get { return Get("bodyMask"); } }
-        public SerializedProperty transformMaskProperty { get { return Get("transformMask"); } }
+        public float orientationOffsetY         { get { return m_OrientationOffsetY.floatValue;         } set { m_OrientationOffsetY.floatValue = value;         } }
+        public float level                      { get { return m_Level.floatValue;                      } set { m_Level.floatValue = value;                      } }
+        public float cycleOffset                { get { return m_CycleOffset.floatValue;                } set { m_CycleOffset.floatValue = value;                } }
+        public float additiveReferencePoseFrame { get { return m_AdditiveReferencePoseFrame.floatValue; } set { m_AdditiveReferencePoseFrame.floatValue = value; } }
+        public bool  hasAdditiveReferencePose   { get { return m_HasAdditiveReferencePose.boolValue;    } set { m_HasAdditiveReferencePose.boolValue = value;    } }
+        public bool  loopTime                   { get { return m_LoopTime.boolValue;                    } set { m_LoopTime.boolValue = value;                    } }
+        public bool  loopBlend                  { get { return m_LoopBlend.boolValue;                   } set { m_LoopBlend.boolValue = value;                   } }
+        public bool  loopBlendOrientation       { get { return m_LoopBlendOrientation.boolValue;        } set { m_LoopBlendOrientation.boolValue = value;        } }
+        public bool  loopBlendPositionY         { get { return m_LoopBlendPositionY.boolValue;          } set { m_LoopBlendPositionY.boolValue = value;          } }
+        public bool  loopBlendPositionXZ        { get { return m_LoopBlendPositionXZ.boolValue;         } set { m_LoopBlendPositionXZ.boolValue = value;         } }
+        public bool  keepOriginalOrientation    { get { return m_KeepOriginalOrientation.boolValue;     } set { m_KeepOriginalOrientation.boolValue = value;     } }
+        public bool  keepOriginalPositionY      { get { return m_KeepOriginalPositionY.boolValue;       } set { m_KeepOriginalPositionY.boolValue = value;       } }
+        public bool  keepOriginalPositionXZ     { get { return m_KeepOriginalPositionXZ.boolValue;      } set { m_KeepOriginalPositionXZ.boolValue = value;      } }
+        public bool  heightFromFeet             { get { return m_HeightFromFeet.boolValue;              } set { m_HeightFromFeet.boolValue = value;              } }
+        public bool  mirror                     { get { return m_Mirror.boolValue;                      } set { m_Mirror.boolValue = value;                      } }
+        public ClipAnimationMaskType maskType   { get { return (ClipAnimationMaskType)m_MaskType.intValue;    } set { m_MaskType.intValue = (int)value;          } }
+        public AvatarMask maskSource            { get { return (AvatarMask)m_MaskSource.objectReferenceValue; } set { m_MaskSource.objectReferenceValue = value; } }
+
+        public SerializedProperty maskTypeProperty      => m_MaskType;
+        public SerializedProperty maskSourceProperty    => m_MaskSource;
+        public SerializedProperty bodyMaskProperty      => m_BodyMask;
+        public SerializedProperty transformMaskProperty => m_TransformMask;
 
         public void ApplyModifiedProperties()
         {
@@ -87,7 +132,7 @@ namespace UnityEditor
 
         public void MaskFromClip(AvatarMask mask)
         {
-            SerializedProperty bodyMask = Get("bodyMask");
+            SerializedProperty bodyMask = bodyMaskProperty;
 
             if (bodyMask != null && bodyMask.isArray)
             {
@@ -123,7 +168,7 @@ namespace UnityEditor
 
         public void MaskToClip(AvatarMask mask)
         {
-            SerializedProperty bodyMask = Get("bodyMask");
+            SerializedProperty bodyMask = bodyMaskProperty;
 
             if (bodyMask != null && bodyMask.isArray)
             {
@@ -140,7 +185,7 @@ namespace UnityEditor
 
         public void ClearCurves()
         {
-            SerializedProperty curves = Get("curves");
+            SerializedProperty curves = m_Curves;
 
             if (curves != null && curves.isArray)
             {
@@ -152,7 +197,7 @@ namespace UnityEditor
         {
             int ret = 0;
 
-            SerializedProperty curves = Get("curves");
+            SerializedProperty curves = m_Curves;
 
             if (curves != null && curves.isArray)
             {
@@ -166,7 +211,7 @@ namespace UnityEditor
         {
             SerializedProperty ret = null;
 
-            SerializedProperty curves = Get("curves");
+            SerializedProperty curves = m_Curves;
 
             if (curves != null && curves.isArray)
             {
@@ -180,7 +225,7 @@ namespace UnityEditor
         {
             string ret = "";
 
-            SerializedProperty curves = Get("curves");
+            SerializedProperty curves = m_Curves;
 
             if (curves != null && curves.isArray)
             {
@@ -192,7 +237,7 @@ namespace UnityEditor
 
         public void SetCurveName(int index, string name)
         {
-            SerializedProperty curves = Get("curves");
+            SerializedProperty curves = m_Curves;
 
             if (curves != null && curves.isArray)
             {
@@ -226,7 +271,7 @@ namespace UnityEditor
 
         public void AddCurve()
         {
-            SerializedProperty curves = Get("curves");
+            SerializedProperty curves = m_Curves;
 
             if (curves != null && curves.isArray)
             {
@@ -241,7 +286,7 @@ namespace UnityEditor
 
         public void RemoveCurve(int index)
         {
-            SerializedProperty curves = Get("curves");
+            SerializedProperty curves = m_Curves;
 
             if (curves != null && curves.isArray)
             {
@@ -252,7 +297,7 @@ namespace UnityEditor
         public AnimationEvent GetEvent(int index)
         {
             AnimationEvent evt = new AnimationEvent();
-            SerializedProperty events = Get("events");
+            SerializedProperty events = m_Events;
 
             if (events != null && events.isArray)
             {
@@ -276,7 +321,7 @@ namespace UnityEditor
 
         public void SetEvent(int index, AnimationEvent animationEvent)
         {
-            SerializedProperty events = Get("events");
+            SerializedProperty events = m_Events;
 
             if (events != null && events.isArray)
             {
@@ -298,7 +343,7 @@ namespace UnityEditor
 
         public void ClearEvents()
         {
-            SerializedProperty events = Get("events");
+            SerializedProperty events = m_Events;
 
             if (events != null && events.isArray)
             {
@@ -310,7 +355,7 @@ namespace UnityEditor
         {
             int ret = 0;
 
-            SerializedProperty curves = Get("events");
+            SerializedProperty curves = m_Events;
 
             if (curves != null && curves.isArray)
             {
@@ -322,7 +367,7 @@ namespace UnityEditor
 
         public void AddEvent(float time)
         {
-            SerializedProperty events = Get("events");
+            SerializedProperty events = m_Events;
 
             if (events != null && events.isArray)
             {
@@ -334,7 +379,7 @@ namespace UnityEditor
 
         public void RemoveEvent(int index)
         {
-            SerializedProperty events = Get("events");
+            SerializedProperty events = m_Events;
 
             if (events != null && events.isArray)
             {
@@ -344,7 +389,7 @@ namespace UnityEditor
 
         public void SetEvents(AnimationEvent[] newEvents)
         {
-            SerializedProperty events = Get("events");
+            SerializedProperty events = m_Events;
 
             if (events != null && events.isArray)
             {
@@ -361,7 +406,7 @@ namespace UnityEditor
         public AnimationEvent[] GetEvents()
         {
             AnimationEvent[]  ret  = new AnimationEvent[GetEventCount()];
-            SerializedProperty events = Get("events");
+            SerializedProperty events = m_Events;
 
             if (events != null && events.isArray)
             {

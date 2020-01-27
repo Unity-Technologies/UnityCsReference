@@ -80,10 +80,6 @@ namespace UnityEngine.UIElements
 
         internal void CachePseudoStateMasks()
         {
-            // If we have already cached data on this selector, skip it
-            if (selectors[0].pseudoStateMask != -1)
-                return;
-
             // lazily build a cache of pseudo state names
             if (s_PseudoStates == null)
             {

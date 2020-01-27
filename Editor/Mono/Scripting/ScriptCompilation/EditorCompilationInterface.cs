@@ -210,6 +210,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void ClearCustomScriptAssemblies()
+        {
+            Instance.ClearCustomScriptAssemblies();
+        }
+
+        [RequiredByNativeCode]
         public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
             Instance.RunScriptUpdaterOnAssembly(assemblyFilename);

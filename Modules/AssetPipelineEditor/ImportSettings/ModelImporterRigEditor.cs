@@ -19,26 +19,44 @@ namespace UnityEditor
 
         Avatar m_Avatar;
 
+#pragma warning disable 0649
+        [CacheProperty]
         SerializedProperty m_AnimationType;
+        [CacheProperty]
         SerializedProperty m_AvatarSetup;
+        [CacheProperty("m_LastHumanDescriptionAvatarSource")]
         SerializedProperty m_AvatarSource;
+        [CacheProperty]
         SerializedProperty m_LegacyGenerateAnimations;
+        [CacheProperty]
         SerializedProperty m_AnimationCompression;
+        [CacheProperty("skinWeightsMode")]
         SerializedProperty m_SkinWeightsMode;
+        [CacheProperty("maxBonesPerVertex")]
         SerializedProperty m_MaxBonesPerVertex;
+        [CacheProperty("minBoneWeight")]
         SerializedProperty m_MinBoneWeight;
+        [CacheProperty]
         SerializedProperty m_OptimizeGameObjects;
 
+        [CacheProperty("m_HumanDescription.m_RootMotionBoneName")]
         SerializedProperty m_RootMotionBoneName;
 
+        [CacheProperty("m_HasExtraRoot")]
         SerializedProperty m_SrcHasExtraRoot;
+        [CacheProperty("m_HumanDescription.m_HasExtraRoot")]
         SerializedProperty m_DstHasExtraRoot;
 
+        [CacheProperty]
         SerializedProperty m_RigImportErrors;
+        [CacheProperty]
         SerializedProperty m_RigImportWarnings;
 
+        [CacheProperty("m_HumanDescription.m_Human")]
         SerializedProperty m_HumanBoneArray;
+        [CacheProperty("m_HumanDescription.m_Skeleton")]
         SerializedProperty m_Skeleton;
+#pragma warning restore 0649
 
         private static bool importMessageFoldout = false;
 
@@ -116,12 +134,7 @@ namespace UnityEditor
 
         internal override void OnEnable()
         {
-            m_AnimationType = serializedObject.FindProperty("m_AnimationType");
-            m_AvatarSetup = serializedObject.FindProperty("m_AvatarSetup");
-            m_AvatarSource = serializedObject.FindProperty("m_LastHumanDescriptionAvatarSource");
-
-            // Generic bone setup
-            m_RootMotionBoneName = serializedObject.FindProperty("m_HumanDescription.m_RootMotionBoneName");
+            Editor.AssignCachedProperties(this, serializedObject.GetIterator());
 
             m_ExposeTransformEditor = new ExposeTransformEditor();
 
@@ -132,25 +145,6 @@ namespace UnityEditor
 
             if (m_RootMotionBoneList.Length > 0)
                 m_RootMotionBoneList[0] = EditorGUIUtility.TrTextContent("None");
-
-            m_SrcHasExtraRoot = serializedObject.FindProperty("m_HasExtraRoot");
-            m_DstHasExtraRoot = serializedObject.FindProperty("m_HumanDescription.m_HasExtraRoot");
-
-            // Animation
-            m_LegacyGenerateAnimations = serializedObject.FindProperty("m_LegacyGenerateAnimations");
-            m_AnimationCompression = serializedObject.FindProperty("m_AnimationCompression");
-
-            m_SkinWeightsMode = serializedObject.FindProperty("skinWeightsMode");
-            m_MaxBonesPerVertex = serializedObject.FindProperty("maxBonesPerVertex");
-            m_MinBoneWeight = serializedObject.FindProperty("minBoneWeight");
-
-            m_OptimizeGameObjects = serializedObject.FindProperty("m_OptimizeGameObjects");
-
-            m_RigImportErrors = serializedObject.FindProperty("m_RigImportErrors");
-            m_RigImportWarnings = serializedObject.FindProperty("m_RigImportWarnings");
-
-            m_HumanBoneArray = serializedObject.FindProperty("m_HumanDescription.m_Human");
-            m_Skeleton = serializedObject.FindProperty("m_HumanDescription.m_Skeleton");
 
             m_ExposeTransformEditor.OnEnable(singleImporter.transformPaths, serializedObject);
 

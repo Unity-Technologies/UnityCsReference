@@ -21,7 +21,6 @@ namespace UnityEditorInternal.VR
     {
         static class Styles
         {
-            public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TrTextContent("Single Pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
             public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TrTextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
             public static readonly GUIContent singlepassAndroidWarning3 = EditorGUIUtility.TrTextContent("When using a Scriptable Render Pipeline, Single Pass Double Wide will be used on Android devices that don't support Single Pass Instancing or Multi-view.");
             public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TrTextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
@@ -186,7 +185,7 @@ namespace UnityEditorInternal.VR
 
                     SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
 
-                    RemotingWSAHolographicGUI(targetGroup);
+                    RemotingWSAHolographicGUI(targetGroup, shouldVRDeviceSettingsBeDisabled);
                 }
 
                 if (m_SharedSettingShown)
@@ -336,10 +335,6 @@ namespace UnityEditorInternal.VR
                     {
                         EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning3.text, MessageType.Info);
                     }
-                }
-                else
-                {
-                    EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning.text, MessageType.Warning);
                 }
             }
             else if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.Instancing) && (targetGroup == BuildTargetGroup.Standalone))
@@ -549,12 +544,18 @@ namespace UnityEditorInternal.VR
             return ret;
         }
 
-        internal void RemotingWSAHolographicGUI(BuildTargetGroup targetGroup)
+        internal void RemotingWSAHolographicGUI(BuildTargetGroup targetGroup, bool vrDeviceDisabled)
         {
             if (!TargetGroupSupportsWSAHolographicRemoting(targetGroup))
                 return;
 
-            var shouldEnableScope = VREditor.GetVREnabledOnTargetGroup(targetGroup) && GetVRDeviceElementIsInList(targetGroup, "WindowsMR");
+            var shouldEnableScope = false;
+
+            if (vrDeviceDisabled)
+                PlayerSettings.SetWsaHolographicRemotingEnabled(false);
+            else
+                shouldEnableScope = VREditor.GetVREnabledOnTargetGroup(targetGroup) && GetVRDeviceElementIsInList(targetGroup, "WindowsMR");
+
             using (new EditorGUI.DisabledScope(!shouldEnableScope))
             {
                 var remotingEnabled = PlayerSettings.GetWsaHolographicRemotingEnabled();

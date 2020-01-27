@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Profiling;
 
 namespace UnityEditorInternal
 {
@@ -91,8 +92,7 @@ namespace UnityEditorInternal
 
         private int MoveSelectedFrame(int selectedFrame, ChartViewData cdata, int direction)
         {
-            Vector2 domain = cdata.GetDataDomain();
-            int length = (int)(domain.y - domain.x);
+            int length = cdata.GetDataDomainLength();
             int newSelectedFrame = selectedFrame + direction;
             if (newSelectedFrame < cdata.firstSelectableFrame || newSelectedFrame > cdata.chartDomainOffset + length)
                 return selectedFrame;
@@ -117,8 +117,7 @@ namespace UnityEditorInternal
                     {
                         GUIUtility.keyboardControl = chartControlID;
                         GUIUtility.hotControl = chartControlID;
-                        Vector2 domain = cdata.GetDataDomain();
-                        int len = (int)(domain.y - domain.x);
+                        int len = cdata.GetDataDomainLength();
                         selectedFrame = DoFrameSelectionDrag(evt.mousePosition.x, chartFrame, cdata, len);
                         evt.Use();
                     }
@@ -127,8 +126,7 @@ namespace UnityEditorInternal
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == chartControlID)
                     {
-                        Vector2 domain = cdata.GetDataDomain();
-                        int len = (int)(domain.y - domain.x);
+                        int len = cdata.GetDataDomainLength();
                         selectedFrame = DoFrameSelectionDrag(evt.mousePosition.x, chartFrame, cdata, len);
                         evt.Use();
                     }
@@ -254,8 +252,7 @@ namespace UnityEditorInternal
                 return;
 
 
-            Vector2 domain = cdata.GetDataDomain();
-            float domainSize = domain.y - domain.x;
+            float domainSize = cdata.GetDataDomainLength();
             float lineWidth = Mathf.Max(minWidth, r.width / domainSize);
             if (maxWidth > 0)
                 lineWidth = Mathf.Min(maxWidth, lineWidth);
@@ -379,8 +376,7 @@ namespace UnityEditorInternal
         {
             HandleUtility.ApplyWireMaterial();
 
-            Vector2 domain = cdata.GetDataDomain();
-            int numSamples = (int)(domain.y - domain.x);
+            int numSamples = cdata.GetDataDomainLength();
             if (numSamples <= 0)
                 return;
 
@@ -482,7 +478,8 @@ namespace UnityEditorInternal
         {
             if (data.selectedLabels == null || Event.current.type != EventType.Repaint)
                 return;
-
+            if (selectedFrame == -1 && ProfilerUserSettings.showStatsLabelsOnCurrentFrame)
+                selectedFrame = ProfilerDriver.lastFrameIndex;
             // exit early if the selected frame is outside the domain of the chart
             var domain = data.GetDataDomain();
             if (
@@ -757,19 +754,45 @@ namespace UnityEditorInternal
                 m_LineDrawingPoints = new Vector3[series.numDataPoints];
 
             Vector2 domain = cdata.GetDataDomain();
-            float domainSize = domain.y - domain.x;
+            float domainSize = cdata.GetDataDomainLength();
             if (domainSize <= 0f)
                 return;
 
-            float domainScale = 1f / domainSize * r.width;
+            float domainScale = 1f / (domainSize) * r.width;
             float rangeScale = cdata.series[index].rangeAxis.sqrMagnitude == 0f ?
                 0f : 1f / (cdata.series[index].rangeAxis.y - cdata.series[index].rangeAxis.x) * r.height;
             float rectBottom = r.y + r.height;
+            bool passedFirstValidValue = false;
             for (int i = 0; i < series.numDataPoints; ++i)
             {
-                float yValue = series.yValues[i] * series.yScale;
+                float yValue = series.yValues[i];
+                if (yValue == -1f)
+                {
+                    if (!passedFirstValidValue)
+                    {
+                        continue;
+                    }
+                    // once we started drawing the points in the line, we have to keep going, otherwise the line will interpolate over frames with missing data, leading to misleading visuals.
+                    // alternatively we'd have to split the line here, which might be better.
+                    // consider splitting in a future version
+                    yValue = 0;
+                }
+                yValue *= series.yScale;
+                if (!passedFirstValidValue)
+                {
+                    passedFirstValidValue = true;
+                    // first valid point found. Set all skipped points in the line point array to the current one, the line starts here
+                    for (int k = 0; k < i; k++)
+                    {
+                        m_LineDrawingPoints[k].Set(
+                            (series.xValues[i] - domain.x + 0.5f) * domainScale + r.x,
+                            rectBottom - (Mathf.Clamp(yValue, graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
+                            0f
+                        );
+                    }
+                }
                 m_LineDrawingPoints[i].Set(
-                    (series.xValues[i] - domain.x) * domainScale + r.x,
+                    (series.xValues[i] - domain.x + 0.5f) * domainScale + r.x,
                     rectBottom - (Mathf.Clamp(yValue, graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
                     0f
                 );
@@ -781,8 +804,7 @@ namespace UnityEditorInternal
 
         private void DrawChartItemStacked(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
         {
-            Vector2 domain = cdata.GetDataDomain();
-            int numSamples = (int)(domain.y - domain.x);
+            int numSamples = cdata.GetDataDomainLength();
 
             float step = r.width / numSamples;
 
@@ -801,13 +823,25 @@ namespace UnityEditorInternal
             float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
                 0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
             float rectBottom = r.y + r.height;
+            bool passedFirstValidValue = false;
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
                 var serie = cdata.series[index];
-                float value = serie.yValues[i] * serie.yScale;
+                float value = serie.yValues[i];
+
                 if (value == -1f)
-                    continue;
+                {
+                    if (!passedFirstValidValue)
+                    {
+                        continue;
+                    }
+                    // once we started drawing the vertices, we have to keep going, otherwise the mesh will interpolate over frames with missing data, leading to misleading visuals.
+                    value = 0;
+                }
+                passedFirstValidValue = true;
+
+                value *= serie.yScale;
 
                 float val = (value - cdata.series[0].rangeAxis.x) * rangeScale;
                 if (y - val < r.yMin)
@@ -824,8 +858,7 @@ namespace UnityEditorInternal
 
         private void DrawChartItemStackedOverlay(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
         {
-            Vector2 domain = cdata.GetDataDomain();
-            int numSamples = (int)(domain.y - domain.x);
+            int numSamples = cdata.GetDataDomainLength();
             float step = r.width / numSamples;
 
             int orderIdx = cdata.order[index];
@@ -841,13 +874,25 @@ namespace UnityEditorInternal
             float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
                 0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
             float rectBottom = r.y + r.height;
+            bool passedFirstValidValue = false;
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
                 var overlay = cdata.overlays[orderIdx];
-                float value = overlay.yValues[i] * overlay.yScale;
+                float value = overlay.yValues[i];
+
                 if (value == -1f)
-                    continue;
+                {
+                    if (!passedFirstValidValue)
+                    {
+                        continue;
+                    }
+                    // once we started drawing the vertices, we have to keep going, otherwise the mesh will interpolate over frames with missing data, leading to misleading visuals.
+                    value = 0;
+                }
+                passedFirstValidValue = true;
+
+                value *= overlay.yScale;
 
                 float val = (value - cdata.series[0].rangeAxis.x) * rangeScale;
                 GL.Color(color);
@@ -1134,6 +1179,13 @@ namespace UnityEditorInternal
                 result.y = Mathf.Max(result.y, series[i].xValues[series[i].numDataPoints - 1]);
             }
             return result;
+        }
+
+        public int GetDataDomainLength()
+        {
+            var domain = GetDataDomain();
+            // the domain is a range of indices, logically starting at 0. The Length is therefore the (lastIndex - firstIndex + 1)
+            return (int)(domain.y - domain.x) + 1;
         }
     }
 }

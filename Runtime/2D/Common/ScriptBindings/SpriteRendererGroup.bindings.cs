@@ -22,11 +22,12 @@ namespace UnityEngine.Experimental.U2D
     [NativeHeader("Runtime/2D/Renderer/SpriteRendererGroup.h")]
     internal struct SpriteIntermediateRendererInfo
     {
+        public int SpriteID;
         public int TextureID;
+        public int MaterialID;
         public Color Color;
         public Matrix4x4 Transform;
         public Bounds Bounds;
-        public int MaterialID;
         public int Layer;
         public int SortingLayer;
         public int SortingOrder;

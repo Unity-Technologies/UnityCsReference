@@ -24,6 +24,7 @@ namespace UnityEditor.Profiling
         public const string k_RememberLastRecordStateSettingKey = k_SettingsPrefix + "RememberLastRecordState";
         public const string k_DefaultRecordStateSettingKey = k_SettingsPrefix + "DefaultRecordState";
         public const string k_DefaultTargetModeSettingKey = k_SettingsPrefix + "DefaultTargetMode";
+        public const string k_ShowStatsLabelsOnCurrentFrameSettingKey = k_SettingsPrefix + "ShowStatsLabelsOnCurrentFrame";
 
         public const int kMinFrameCount = 300;
         public const int kMaxFrameCount = 2000;
@@ -75,6 +76,12 @@ namespace UnityEditor.Profiling
         {
             get { return EditorPrefs.GetBool(k_DefaultRecordStateSettingKey, true); }
             set { EditorPrefs.SetBool(k_DefaultRecordStateSettingKey, value); }
+        }
+
+        public static bool showStatsLabelsOnCurrentFrame
+        {
+            get { return EditorPrefs.GetBool(k_ShowStatsLabelsOnCurrentFrameSettingKey, false); }
+            set { EditorPrefs.SetBool(k_ShowStatsLabelsOnCurrentFrameSettingKey, value); }
         }
 
         public static ProfilerEditorTargetMode defaultTargetMode

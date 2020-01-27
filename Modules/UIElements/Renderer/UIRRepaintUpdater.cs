@@ -38,9 +38,10 @@ namespace UnityEngine.UIElements
             bool sizeChanged = (versionChangeType & VersionChangeType.Size) != 0;
             bool overflowChanged = (versionChangeType & VersionChangeType.Overflow) != 0;
             bool borderRadiusChanged = (versionChangeType & VersionChangeType.BorderRadius) != 0;
+            bool borderWidthChanged = (versionChangeType & VersionChangeType.BorderWidth) != 0;
 
-            if (transformChanged || sizeChanged)
-                renderChain.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged);
+            if (transformChanged || sizeChanged || borderWidthChanged)
+                renderChain.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged || borderWidthChanged);
 
             if (overflowChanged || borderRadiusChanged)
                 renderChain.UIEOnClippingChanged(ve, false);

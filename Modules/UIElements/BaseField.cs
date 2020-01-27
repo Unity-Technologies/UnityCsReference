@@ -185,6 +185,7 @@ namespace UnityEngine.UIElements
                     using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(oldValue, m_Value))
                     {
                         evt.target = this;
+                        SetValueWithoutNotify(m_Value);
                         SendEvent(evt);
                     }
                 }

@@ -584,6 +584,7 @@ namespace UnityEditorInternal.Profiling
             {
                 threadIndex = newThreadIndex;
                 m_ThreadName = m_ThreadNames[threadIndex];
+                cpuModule.Repaint();
                 EditorGUIUtility.ExitGUI();
             }
         }

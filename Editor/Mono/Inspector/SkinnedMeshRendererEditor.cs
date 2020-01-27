@@ -91,6 +91,8 @@ namespace UnityEditor
         {
             SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
 
+            EditorGUILayout.PropertyField(m_Mesh, Styles.mesh);
+
             if (renderer.sharedMesh != null)
             {
                 bool haveClothComponent = renderer.gameObject.GetComponent<Cloth>() != null;
@@ -100,8 +102,6 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Styles.meshNotSupportingSkinningInfo.text, MessageType.Info);
                 }
             }
-
-            EditorGUILayout.PropertyField(m_Mesh, Styles.mesh);
         }
 
         public void OnBlendShapeUI()

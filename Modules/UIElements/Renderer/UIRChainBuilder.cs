@@ -283,7 +283,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.TransformSize;
-            dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.Size;
+            dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.ClipRectSize;
             clearDirty = ~dirtyFlags;
             s_MarkerTransformProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
@@ -483,7 +483,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public void UIEOnTransformOrSizeChanged(VisualElement ve, bool transformChanged, bool sizeChanged)
+        public void UIEOnTransformOrSizeChanged(VisualElement ve, bool transformChanged, bool clipRectSizeChanged)
         {
             if (ve.renderChainData.isInChain)
             {
@@ -492,7 +492,7 @@ namespace UnityEngine.UIElements.UIR
 
                 RenderDataDirtyTypes flags =
                     (transformChanged ? RenderDataDirtyTypes.Transform : RenderDataDirtyTypes.None) |
-                    (sizeChanged ? RenderDataDirtyTypes.Size : RenderDataDirtyTypes.None);
+                    (clipRectSizeChanged ? RenderDataDirtyTypes.ClipRectSize : RenderDataDirtyTypes.None);
                 m_DirtyTracker.RegisterDirty(ve, flags, (int)RenderDataDirtyTypeClasses.TransformSize);
             }
         }
@@ -541,6 +541,7 @@ namespace UnityEngine.UIElements.UIR
 
         internal void FreeCommand(RenderChainCommand cmd)
         {
+            cmd.Reset();
             m_CommandPool.Return(cmd);
         }
 
@@ -710,11 +711,11 @@ namespace UnityEngine.UIElements.UIR
     {
         None = 0,
         Transform = 1 << 0,
-        Size = 1 << 1,
+        ClipRectSize = 1 << 1,
         Clipping = 1 << 2,           // The clipping state of the VE needs to be reevaluated.
         ClippingHierarchy = 1 << 3,  // Same as above, but applies to all descendants too.
         Visuals = 1 << 4,            // The visuals of the VE need to be repainted.
-        VisualsHierarchy = 1 << 5,    // Same as above, but applies to all descendants too.
+        VisualsHierarchy = 1 << 5,   // Same as above, but applies to all descendants too.
         Opacity = 1 << 6             // The opacity of the VE needs to be updated.
     }
 

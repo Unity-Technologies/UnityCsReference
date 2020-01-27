@@ -37,6 +37,10 @@ namespace UnityEngine.Rendering
 
         extern private void Submit_Internal();
 
+        extern private int GetNumberOfCameras_Internal();
+
+        extern private Camera GetCamera_Internal(int index);
+
         extern private unsafe void DrawRenderers_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, IntPtr renderTypes, IntPtr stateBlocks, int stateCount);
 
         extern private void DrawShadows_Internal(IntPtr shadowDrawingSettings);

@@ -211,22 +211,22 @@ namespace UnityEditor
                 throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);
             if (type.Name != GetType().Name)
             {
+                var serializedViews = new Dictionary<string, string>(m_SerializedViews);
+                m_SerializedViews.Clear();
                 var serializedObject = SerializeView();
                 if (serializedObject != null)
-                {
-                    if (!m_SerializedViews.ContainsKey(GetTypeName()))
-                        m_SerializedViews.Add(GetTypeName(), serializedObject);
-                    else
-                        m_SerializedViews[GetTypeName()] = serializedObject;
-                }
+                    serializedViews.Add(GetTypeName(), serializedObject);
 
                 var window = CreateInstance(type) as PlayModeView;
                 window.autoRepaintOnSceneChange = true;
 
-                if (m_SerializedViews.ContainsKey(window.GetTypeName()))
-                    window.DeserializeView(m_SerializedViews[window.GetTypeName()]);
+                if (serializedViews.ContainsKey(window.GetTypeName()))
+                {
+                    window.DeserializeView(serializedViews[window.GetTypeName()]);
+                    serializedViews.Remove(window.GetTypeName());
+                }
 
-                window.SetSerializedViews(m_SerializedViews);
+                window.SetSerializedViews(serializedViews);
 
                 var da = m_Parent as DockArea;
                 if (da)

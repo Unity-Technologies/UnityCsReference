@@ -19,9 +19,12 @@ namespace UnityEngine.XR.WSA
 {
     internal class HolographicEmulationWindow : EditorWindow
     {
+        static HolographicEmulationWindow s_ActiveWindow;
+
         private bool m_InPlayMode = false;
         private bool m_OperatingSystemChecked = false;
         private bool m_OperatingSystemValid = false;
+        private bool m_LoggedLastConnectionFailure = false;
         private HolographicStreamerConnectionState m_LastConnectionState = HolographicStreamerConnectionState.Disconnected;
 
         [SerializeField]
@@ -94,20 +97,34 @@ namespace UnityEngine.XR.WSA
             EditorGUIUtility.TrTextContent("Right Controller"),
         };
 
-        internal EmulationMode emulationMode
+        private static void UpdatePlayModeState(PlayModeStateChange state)
         {
-            get { return m_Mode; }
-            set
+            if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.EnteredPlayMode)
+                s_ActiveWindow.m_InPlayMode = true;
+            else if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.ExitingPlayMode)
+                s_ActiveWindow.m_InPlayMode = false;
+
+            if (s_ActiveWindow.m_Mode == EmulationMode.Simulated)
             {
-                HolographicAutomation.SetEmulationMode(value);
-                m_Mode = value;
-                Repaint();
+                if (state == PlayModeStateChange.ExitingEditMode)
+                    HolographicAutomation.SetEmulationMode(s_ActiveWindow.m_Mode);
+
+                if (state == PlayModeStateChange.EnteredPlayMode)
+                    s_ActiveWindow.LoadCurrentRoom();
             }
         }
 
         internal static void Init()
         {
-            EditorWindow.GetWindow<HolographicEmulationWindow>(false);
+            if (s_ActiveWindow == null)
+            {
+                HolographicEmulationWindow window = EditorWindow.GetWindow<HolographicEmulationWindow>(false);
+                s_ActiveWindow = window;
+            }
+
+            s_ActiveWindow.m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
+
+            EditorApplication.playModeStateChanged += UpdatePlayModeState;
         }
 
         private bool RemoteMachineNameSpecified { get { return !String.IsNullOrEmpty(m_RemoteMachineAddress); } }
@@ -115,9 +132,12 @@ namespace UnityEngine.XR.WSA
         private void OnEnable()
         {
             titleContent = EditorGUIUtility.TrTextContent("Holographic (Deprecated)");
-            m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
-
             m_RemoteMachineHistory = EditorPrefs.GetString("HolographicRemoting.RemoteMachineHistory").Split(',');
+        }
+
+        private void OnDestroy()
+        {
+            EditorApplication.playModeStateChanged -= UpdatePlayModeState;
         }
 
         private void LoadCurrentRoom()
@@ -131,6 +151,7 @@ namespace UnityEngine.XR.WSA
 
         private void Connect()
         {
+            m_LoggedLastConnectionFailure = false;
             HolographicAutomation.SetEmulationMode(m_Mode);
             PerceptionRemoting.SetRemoteDeviceVersion(m_DeviceVersion);
             PerceptionRemoting.SetVideoEncodingParameters(m_MaxBitrateKbps);
@@ -333,6 +354,9 @@ namespace UnityEngine.XR.WSA
                 return;
             }
 
+            if (s_ActiveWindow == null)
+                Init();
+
             EditorGUILayout.Space();
 
             EditorGUI.BeginDisabledGroup(m_InPlayMode);
@@ -386,18 +410,17 @@ namespace UnityEngine.XR.WSA
                     {
                         Repaint();
                     }
-                    var lastConnectionFailureReason = PerceptionRemoting.CheckForDisconnect();
-                    if (lastConnectionFailureReason == HolographicStreamerConnectionFailureReason.Unreachable
-                        || lastConnectionFailureReason == HolographicStreamerConnectionFailureReason.ConnectionLost)
-                    {
-                        Debug.LogWarning("Disconnected with failure reason " + lastConnectionFailureReason + ", attempting to reconnect.");
-                        Connect();
-                    }
-                    else if (lastConnectionFailureReason != HolographicStreamerConnectionFailureReason.None)
-                    {
-                        Debug.LogError("Disconnected with error " + lastConnectionFailureReason);
-                    }
                     m_LastConnectionState = connectionState;
+
+                    if (connectionState == HolographicStreamerConnectionState.Disconnected && !m_LoggedLastConnectionFailure)
+                    {
+                        var lastConnectionFailureReason = PerceptionRemoting.CheckForDisconnect();
+                        if (lastConnectionFailureReason != HolographicStreamerConnectionFailureReason.None)
+                        {
+                            Debug.LogError("Disconnected with error " + lastConnectionFailureReason);
+                            m_LoggedLastConnectionFailure = true;
+                        }
+                    }
                     break;
             }
         }

@@ -171,6 +171,11 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView.Clear();
         }
 
+        public void Repaint()
+        {
+            m_ProfilerWindow.Repaint();
+        }
+
         const int k_AnyFullManagedMarker = (int)(MarkerFlags.ScriptInvoke | MarkerFlags.ScriptDeepProfiler);
         public string GetItemName(HierarchyFrameDataView frameData, int itemId)
         {
