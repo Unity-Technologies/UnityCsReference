@@ -287,7 +287,15 @@ namespace UnityEditor
                 args.report = report;
 
                 BuildProperties props;
-                postprocessor.PostProcess(args, out props);
+                try
+                {
+                    postprocessor.PostProcess(args, out props);
+                }
+                catch (System.Exception e)
+                {
+                    // Rethrow exceptions during build postprocessing as BuildFailedException, so we don't pretend the build was fine.
+                    throw new UnityEditor.Build.BuildFailedException(e);
+                }
                 report.AddAppendix(props);
 
                 return;

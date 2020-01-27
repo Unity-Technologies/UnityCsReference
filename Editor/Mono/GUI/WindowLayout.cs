@@ -587,10 +587,7 @@ namespace UnityEditor
                 }
 
                 if (mainWindowToSetSize)
-                {
                     mainWindowToSetSize.position = mainWindowPosition;
-                    mainWindowToSetSize.OnResize();
-                }
 
                 // Always show main window before other windows. So that other windows can
                 // get their parent/owner.
@@ -777,6 +774,26 @@ namespace UnityEditor
             UnityEditor.SaveWindowLayout.Show(FindMainView().screenPosition);
         }
 
+        public static void LoadFromFile()
+        {
+            var layoutFilePath = EditorUtility.OpenFilePanelWithFilters("Load layout from disk...", "", new[] {"Layout", "wlt"});
+            if (String.IsNullOrEmpty(layoutFilePath))
+                return;
+
+            if (LoadWindowLayout(layoutFilePath, false))
+                Debug.Log("Loaded layout from " + layoutFilePath);
+        }
+
+        public static void SaveToFile()
+        {
+            var layoutFilePath = EditorUtility.SaveFilePanel("Save layout to disk...", "", "layout", "wlt");
+            if (String.IsNullOrEmpty(layoutFilePath))
+                return;
+
+            SaveWindowLayout(layoutFilePath);
+            Debug.Log("Saved layout to " + layoutFilePath);
+        }
+
         public static void DeleteGUI()
         {
             DeleteWindowLayout.Show(FindMainView().screenPosition);
@@ -869,6 +886,7 @@ namespace UnityEditor
             GUI.SetNextControlName("m_PreferencesName");
             EditorGUI.BeginChangeCheck();
             s_LayoutName = EditorGUILayout.TextField(s_LayoutName);
+            s_LayoutName = s_LayoutName.TrimEnd();
             if (EditorGUI.EndChangeCheck())
             {
                 UpdateCurrentInvalidChars();

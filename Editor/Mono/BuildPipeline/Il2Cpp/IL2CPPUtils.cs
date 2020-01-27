@@ -242,8 +242,14 @@ namespace UnityEditorInternal
                 var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
                 var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
 
+                var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
+                if (!string.IsNullOrEmpty(additionalArgs))
+                    arguments.Add(additionalArgs);
+
                 arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
+
+
                 arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
                 if (IL2CPPUtils.EnableIL2CPPDebugger(m_PlatformProvider, buildTargetGroup) && m_PlatformProvider.supportsManagedDebugging)
                     arguments.Add("--enable-debugger");

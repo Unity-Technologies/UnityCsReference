@@ -20,6 +20,7 @@ namespace UnityEditor
         [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("m_MainView")] View m_RootView;
         [SerializeField] Vector2 m_MinSize = new Vector2(120, 80);
         [SerializeField] Vector2 m_MaxSize = new Vector2(8192, 8192);
+        [SerializeField] bool m_Maximized;
 
         internal bool m_DontSaveToLayout = false;
 
@@ -55,14 +56,30 @@ namespace UnityEditor
             hideFlags = HideFlags.DontSave;
         }
 
-        internal ShowMode showMode { get { return (ShowMode)m_ShowMode; } }
+        internal ShowMode showMode => (ShowMode)m_ShowMode;
+
+        private string m_WindowID = null;
+        internal string windowID
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(m_WindowID))
+                    return GetWindowID();
+                return m_WindowID;
+            }
+
+            set
+            {
+                m_WindowID = value;
+            }
+        }
 
         internal static bool IsPopup(ShowMode mode)
         {
             return (ShowMode.PopupMenu == mode);
         }
 
-        internal bool isPopup { get { return IsPopup((ShowMode)m_ShowMode); } }
+        internal bool isPopup => IsPopup((ShowMode)m_ShowMode);
 
         internal void ShowPopup()
         {
@@ -82,17 +99,16 @@ namespace UnityEditor
                 m_RootView.SetWindowRecurse(this);
             Internal_SetTitle(m_Title);
             Save();
-            //  only set focus iff mode is a popupMenu.
-            Internal_BringLiveAfterCreation(false, giveFocus);
+            //  only set focus if mode is a popupMenu.
+            Internal_BringLiveAfterCreation(true, giveFocus, false);
+
+            // Fit window to screen - needs to be done after bringing the window live
+            position = FitWindowRectToScreen(m_PixelRect, true, false);
+            rootView.position = new Rect(0, 0, Mathf.Ceil(m_PixelRect.width), Mathf.Ceil(m_PixelRect.height));
+            rootView.Reflow();
         }
 
-        static Color skinBackgroundColor
-        {
-            get
-            {
-                return EditorGUIUtility.isProSkin ? Color.gray.RGBMultiplied(0.3f).AlphaMultiplied(0.5f) : Color.gray.AlphaMultiplied(0.32f);
-            }
-        }
+        static Color skinBackgroundColor => EditorGUIUtility.isProSkin ? Color.gray.RGBMultiplied(0.3f).AlphaMultiplied(0.5f) : Color.gray.AlphaMultiplied(0.32f);
 
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
@@ -109,16 +125,18 @@ namespace UnityEditor
             if (!isPopup)
                 Load(loadPosition);
 
+            var initialMaximizedState = m_Maximized;
+
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
 
-            // Tell the mainview its now in this window (quick hack to get platform-specific code to move its views to the right window)
+            // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
             if (m_RootView)
                 m_RootView.SetWindowRecurse(this);
             Internal_SetTitle(m_Title);
 
             SetBackgroundColor(skinBackgroundColor);
 
-            Internal_BringLiveAfterCreation(displayImmediately, setFocus);
+            Internal_BringLiveAfterCreation(displayImmediately, setFocus, initialMaximizedState);
 
             // Window could be killed by now in user callbacks...
             if (!this)
@@ -126,11 +144,15 @@ namespace UnityEditor
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, false);
-            rootView.position = new Rect(0, 0, m_PixelRect.width, m_PixelRect.height);
+            rootView.position = new Rect(0, 0, Mathf.Ceil(m_PixelRect.width), Mathf.Ceil(m_PixelRect.height));
+
             rootView.Reflow();
 
             // save position right away
             Save();
+
+            // Restore the initial maximized state since Internal_BringLiveAfterCreation might not be reflected right away and Save() might alter it.
+            m_Maximized = initialMaximizedState;
         }
 
         public void OnEnable()
@@ -182,7 +204,7 @@ namespace UnityEditor
             return ( // hallelujah
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
-
+                (m_ShowMode == (int)ShowMode.MainWindow && rootView is HostView) ||
                 (rootView is SplitView &&
                     rootView.children.Length == 1 &&
                     rootView.children[0] is DockArea &&
@@ -190,69 +212,80 @@ namespace UnityEditor
             );
         }
 
-        private string NotDockedWindowID()
+        internal string GetWindowID()
         {
-            if (IsNotDocked())
-            {
-                HostView v = rootView as HostView;
+            HostView v = rootView as HostView;
 
-                if (v == null)
-                {
-                    if (rootView is SplitView)
-                        v = (HostView)rootView.children[0];
-                    else
-                        return rootView.GetType().ToString();
-                }
+            if (v == null && rootView is SplitView && rootView.children.Length > 0)
+                v = rootView.children[0] as HostView;
 
+            if (v == null)
+                return rootView.GetType().ToString();
 
+            if (rootView.children.Length > 0)
                 return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
                     : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
-            }
 
-            return null;
+            return v.actualView.GetType().ToString();
+        }
+
+        public bool IsMainWindow()
+        {
+            return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
+        }
+
+        internal void SaveGeometry()
+        {
+            string ID = windowID;
+            if (String.IsNullOrEmpty(ID))
+                return;
+
+            // save position/size
+            EditorPrefs.SetFloat(ID + "x", m_PixelRect.x);
+            EditorPrefs.SetFloat(ID + "y", m_PixelRect.y);
+            EditorPrefs.SetFloat(ID + "w", m_PixelRect.width);
+            EditorPrefs.SetFloat(ID + "h", m_PixelRect.height);
+            EditorPrefs.SetBool(ID + "z", m_Maximized);
         }
 
         public void Save()
         {
-            // only save it if its not docked and its not the MainWindow
-            if ((m_ShowMode != (int)ShowMode.MainWindow) && IsNotDocked() && !IsZoomed())
-            {
-                string ID = NotDockedWindowID();
+            m_Maximized = IsZoomed();
+            SaveGeometry();
+        }
 
-                // save position/size
-                EditorPrefs.SetFloat(ID + "x", m_PixelRect.x);
-                EditorPrefs.SetFloat(ID + "y", m_PixelRect.y);
-                EditorPrefs.SetFloat(ID + "w", m_PixelRect.width);
-                EditorPrefs.SetFloat(ID + "h", m_PixelRect.height);
+        internal void LoadGeometry(bool loadPosition)
+        {
+            string ID = windowID;
+            if (String.IsNullOrEmpty(ID))
+                return;
+
+            // get position/size
+            Rect p = m_PixelRect;
+            if (loadPosition)
+            {
+                p.x = EditorPrefs.GetFloat(ID + "x", m_PixelRect.x);
+                p.y = EditorPrefs.GetFloat(ID + "y", m_PixelRect.y);
+                p.width = EditorPrefs.GetFloat(ID + "w", m_PixelRect.width);
+                p.height = EditorPrefs.GetFloat(ID + "h", m_PixelRect.height);
+                m_Maximized = EditorPrefs.GetBool(ID + "z");
             }
+            p.width = Mathf.Min(Mathf.Max(p.width, m_MinSize.x), m_MaxSize.x);
+            p.height = Mathf.Min(Mathf.Max(p.height, m_MinSize.y), m_MaxSize.y);
+            m_PixelRect = p;
         }
 
         private void Load(bool loadPosition)
         {
-            if ((m_ShowMode != (int)ShowMode.MainWindow) && IsNotDocked())
-            {
-                string ID = NotDockedWindowID();
-
-                // get position/size
-                Rect p = m_PixelRect;
-                if (loadPosition)
-                {
-                    p.x = EditorPrefs.GetFloat(ID + "x", m_PixelRect.x);
-                    p.y = EditorPrefs.GetFloat(ID + "y", m_PixelRect.y);
-                    p.width = EditorPrefs.GetFloat(ID + "w", m_PixelRect.width);
-                    p.height = EditorPrefs.GetFloat(ID + "h", m_PixelRect.height);
-                }
-                p.width = Mathf.Min(Mathf.Max(p.width, m_MinSize.x), m_MaxSize.x);
-                p.height = Mathf.Min(Mathf.Max(p.height, m_MinSize.y), m_MaxSize.y);
-                m_PixelRect = p;
-            }
+            if (!IsMainWindow() && IsNotDocked())
+                LoadGeometry(loadPosition);
         }
 
         internal void OnResize()
         {
             if (rootView == null)
                 return;
-            rootView.position = new Rect(0, 0, position.width, position.height);
+            rootView.position = new Rect(0, 0, Mathf.Ceil(position.width), Mathf.Ceil(position.height));
 
             // save position
             Save();
@@ -296,7 +329,7 @@ namespace UnityEditor
             {
                 m_RootView = value;
                 m_RootView.SetWindowRecurse(this);
-                m_RootView.position = new Rect(0, 0, position.width, position.height);
+                m_RootView.position = new Rect(0, 0, Mathf.Ceil(position.width), Mathf.Ceil(position.height));
                 m_MinSize = value.minSize;
                 m_MaxSize = value.maxSize;
             }
@@ -308,8 +341,17 @@ namespace UnityEditor
             {
                 if (m_ShowMode == (int)ShowMode.MainWindow && rootView && rootView.children.Length == 3)
                     return rootView.children[1] as SplitView;
-                else
-                    return rootView as SplitView;
+                if (m_ShowMode == (int)ShowMode.MainWindow && rootView && rootView.children.Length == 2)
+                    return rootView.children[0] as SplitView;
+
+                foreach (var c in rootView.children)
+                {
+                    var sv = c as SplitView;
+                    if (sv)
+                        return sv;
+                }
+
+                return rootView as SplitView;
             }
         }
 
@@ -326,26 +368,6 @@ namespace UnityEditor
         internal Rect GetDropDownRect(Rect buttonRect, Vector2 minSize, Vector2 maxSize)
         {
             return PopupLocationHelper.GetDropDownRect(buttonRect, minSize, maxSize, this);
-        }
-
-        internal Rect FitPopupWindowRectToScreen(Rect rect, float minimumHeight)
-        {
-            const float maxHeight = 900;
-            float spaceFromBottom = 0f;
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                spaceFromBottom = 10f;
-
-            float minHeight = minimumHeight + spaceFromBottom;
-            Rect p = rect;
-            p.height = Mathf.Min(p.height, maxHeight);
-            p.height += spaceFromBottom;
-            p = FitWindowRectToScreen(p, true, true);
-
-            float newHeight = Mathf.Max(p.yMax - rect.y, minHeight);
-            p.y = p.yMax - newHeight;
-            p.height = newHeight - spaceFromBottom;
-
-            return p;
         }
 
         public void HandleWindowDecorationEnd(Rect windowPosition)

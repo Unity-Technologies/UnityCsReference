@@ -96,5 +96,6 @@ namespace UnityEditor.U2D
         extern internal static Texture2D[] GetPreviewAlphaTextures(this SpriteAtlas spriteAtlas);
         extern internal static TextureFormat GetTextureFormat(this SpriteAtlas spriteAtlas, BuildTarget target);
         extern internal static Sprite[] GetPackedSprites(this SpriteAtlas spriteAtlas);
+        extern internal static Hash128 GetStoredHash(this SpriteAtlas spriteAtlas);
     }
 }
