@@ -242,7 +242,10 @@ namespace UnityEditor.Connect
                 {
                     var clickable = new Clickable(() =>
                     {
-                        OpenDashboardOrgAndProjectIds(ServicesConfiguration.instance.baseCloudDiagCrashesDashboardUrl);
+                        ServicesConfiguration.instance.RequestBaseCloudDiagCrashesDashboardUrl(baseCloudDiagCrashesDashboardUrl =>
+                        {
+                            OpenDashboardOrgAndProjectIds(baseCloudDiagCrashesDashboardUrl);
+                        });
                     });
                     m_CrashServiceGoToDashboard.AddManipulator(clickable);
                 }

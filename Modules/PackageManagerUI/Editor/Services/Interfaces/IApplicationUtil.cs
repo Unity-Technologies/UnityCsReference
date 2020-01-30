@@ -36,7 +36,9 @@ namespace UnityEditor.PackageManager.UI
 
         void OpenURL(string url);
 
-        IAsyncHTTPClient GetASyncHTTPClient(string url, string method = null);
+        IAsyncHTTPClient GetASyncHTTPClient(string url);
+
+        IAsyncHTTPClient PostASyncHTTPClient(string url, string postData);
 
         void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback);
 

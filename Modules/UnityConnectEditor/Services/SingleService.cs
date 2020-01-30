@@ -2,9 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
-using UnityEngine;
 using System;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
 
 namespace UnityEditor.Connect
 {
@@ -66,11 +67,16 @@ namespace UnityEditor.Connect
         public virtual bool isPackage { get; }
         public abstract string packageId { get; }
 
+        public virtual string serviceFlagName { get; }
+
         /// <summary>
         /// True if a project needs to be bound to a Unity project ID before the service can be enabled.
         /// (Should probably always be true)
         /// </summary>
         public virtual bool requiresBoundProject => true;
+
+        public virtual bool shouldEnableOnProjectCreation => false;
+        public virtual bool shouldSyncOnProjectRebind => false;
 
         /// <summary>
         /// True if a project needs to have a Coppa compliance set before the service can be enabled.
@@ -88,14 +94,14 @@ namespace UnityEditor.Connect
             return PlayerSettings.GetCloudServiceEnabled(name);
         }
 
-        internal void EnableService(bool enable)
+        internal void EnableService(bool enable, bool shouldUpdateApiFlag = true)
         {
             //Last minute check for services dependencies
             ServicesRepository.InitializeServicesHandlers();
-            HandleProjectLink(enable);
+            HandleProjectLink(enable, shouldUpdateApiFlag);
         }
 
-        void HandleProjectLink(bool enable)
+        void HandleProjectLink(bool enable, bool shouldUpdateApiFlag)
         {
             if (enable && requiresBoundProject && !UnityConnect.instance.projectInfo.projectBound)
             {
@@ -104,11 +110,11 @@ namespace UnityEditor.Connect
             }
             else
             {
-                HandleCoppaCompliance(enable);
+                HandleCoppaCompliance(enable, shouldUpdateApiFlag);
             }
         }
 
-        void HandleCoppaCompliance(bool enable)
+        void HandleCoppaCompliance(bool enable, bool shouldUpdateApiFlag)
         {
             if (enable && requiresCoppaCompliance && UnityConnect.instance.projectInfo.COPPA == COPPACompliance.COPPAUndefined)
             {
@@ -117,11 +123,11 @@ namespace UnityEditor.Connect
             }
             else
             {
-                HandleServiceEnabling(enable);
+                HandleServiceEnabling(enable, shouldUpdateApiFlag);
             }
         }
 
-        void HandleServiceEnabling(bool enable)
+        void HandleServiceEnabling(bool enable, bool shouldUpdateApiFlag)
         {
             var beforeArgs = new ServiceBeforeEventArgs();
             OnServiceBeforeEvent(enable, beforeArgs);
@@ -131,7 +137,7 @@ namespace UnityEditor.Connect
             }
             try
             {
-                InternalEnableService(enable);
+                InternalEnableService(enable, shouldUpdateApiFlag);
             }
             catch (Exception ex)
             {
@@ -191,9 +197,31 @@ namespace UnityEditor.Connect
             handler?.Invoke(this, afterArgs);
         }
 
-        protected virtual void InternalEnableService(bool enable)
+        protected virtual void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
+            if (shouldUpdateApiFlag && !string.IsNullOrEmpty(serviceFlagName))
+            {
+                UpdateServiceFlag(enable);
+            }
+
             PlayerSettings.SetCloudServiceEnabled(name, enable);
+        }
+
+        public void UpdateServiceFlag(bool enable)
+        {
+            if (!string.IsNullOrEmpty(UnityConnect.instance.projectInfo.projectId))
+            {
+                ServicesConfiguration.instance.RequestCurrentProjectServiceFlagsApiUrl(currentProjectServiceFlagsApiUrl =>
+                {
+                    var payload = "{\"service_flags\":{\"" + serviceFlagName + "\":" + enable.ToString().ToLower() + "}}";
+                    var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
+                    var serviceFlagRequest = new UnityWebRequest(currentProjectServiceFlagsApiUrl,
+                        UnityWebRequest.kHttpVerbPUT) { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler };
+                    serviceFlagRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                    serviceFlagRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                    serviceFlagRequest.SendWebRequest();
+                });
+            }
         }
 
         /// <summary>

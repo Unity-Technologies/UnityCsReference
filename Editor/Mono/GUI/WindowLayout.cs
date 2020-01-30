@@ -1237,6 +1237,10 @@ namespace UnityEditor
                 foreach (View killme in oldViews)
                     UnityObject.DestroyImmediate(killme, true);
             }
+
+            UnityObject[] toolbars = Resources.FindObjectsOfTypeAll(typeof(EditorToolbar));
+            foreach (var killme in toolbars)
+                UnityObject.DestroyImmediate(killme, true);
         }
 
         public static void SaveWindowLayout(string path)

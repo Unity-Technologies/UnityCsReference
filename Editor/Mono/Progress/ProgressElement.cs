@@ -9,6 +9,7 @@ using UnityEditor.UIElements;
 using UnityEngine.Assertions;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace UnityEditor
 {
@@ -95,16 +96,16 @@ namespace UnityEditor
         private static VisualTreeAsset s_VisualTreeSubTask = null;
 
         private DisplayedTask m_MainTask;
-        private List<ProgressItem> m_ProgressItemChildren;
+        private List<Progress.Item> m_ProgressItemChildren;
         private List<DisplayedTask> m_SubTasks;
         private VisualElement m_Details;
         private ScrollView m_DetailsScrollView;
         private Toggle m_DetailsFoldoutToggle;
 
         public VisualElement rootVisualElement { get; }
-        public ProgressItem dataSource { get; private set; }
+        public Progress.Item dataSource { get; private set; }
 
-        public ProgressElement(ProgressItem dataSource)
+        public ProgressElement(Progress.Item dataSource)
         {
             rootVisualElement = new TemplateContainer();
             if (s_VisualTreeBackgroundTask == null)
@@ -137,13 +138,13 @@ namespace UnityEditor
             if (s_VisualTreeSubTask == null)
                 s_VisualTreeSubTask = EditorGUIUtility.Load(k_UxmlSubTaskPath) as VisualTreeAsset;
 
-            m_ProgressItemChildren = new List<ProgressItem>();
+            m_ProgressItemChildren = new List<Progress.Item>();
             m_SubTasks = new List<DisplayedTask>();
 
             m_MainTask = InitializeTask(dataSource, rootVisualElement);
         }
 
-        internal ProgressItem GetSubTaskItem(int id)
+        internal Progress.Item GetSubTaskItem(int id)
         {
             foreach (var child in m_ProgressItemChildren)
             {
@@ -167,7 +168,7 @@ namespace UnityEditor
                 if (m_MainTask.lastElapsedTime != taskElapsedTime)
                 {
                     m_MainTask.lastElapsedTime = taskElapsedTime;
-                    m_MainTask.elapsedTimeLabel.text = $"{taskElapsedTime:0} seconds";
+                    UpdateRunningTime();
                 }
             }
 
@@ -185,7 +186,24 @@ namespace UnityEditor
             }
         }
 
-        internal bool TryUpdate(ProgressItem op, int id)
+        internal void UpdateRunningTime()
+        {
+            if (m_MainTask == null)
+                return;
+
+            if (dataSource.timeDisplayMode == Progress.TimeDisplayMode.NoTimeShown)
+            {
+                m_MainTask.elapsedTimeLabel.text = "";
+                return;
+            }
+
+            if (dataSource.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && !dataSource.finished)
+                m_MainTask.elapsedTimeLabel.text = FormatRemainingTime(dataSource.remainingTime);
+            else
+                m_MainTask.elapsedTimeLabel.text = $"{m_MainTask.lastElapsedTime:0} seconds";
+        }
+
+        internal bool TryUpdate(Progress.Item op, int id)
         {
             if (dataSource.id == id)
             {
@@ -225,7 +243,7 @@ namespace UnityEditor
             return false;
         }
 
-        internal void AddElement(ProgressItem item)
+        internal void AddElement(Progress.Item item)
         {
             m_DetailsFoldoutToggle.visible = true;
             SubTaskInitialization(item);
@@ -242,7 +260,7 @@ namespace UnityEditor
             return span.Days > 0 ? $"{span:dd\\.hh\\:mm\\:ss}" : $"{span:hh\\:mm\\:ss}";
         }
 
-        private static void UpdateResponsiveness(DisplayedTask task, ProgressItem dataSource)
+        private static void UpdateResponsiveness(DisplayedTask task, Progress.Item dataSource)
         {
             if (dataSource.responding && !task.isResponding)
             {
@@ -263,7 +281,7 @@ namespace UnityEditor
             task.isResponding = dataSource.responding;
         }
 
-        private void UpdateDisplay(DisplayedTask task, ProgressItem dataSource)
+        private void UpdateDisplay(DisplayedTask task, Progress.Item dataSource)
         {
             task.nameLabel.text = dataSource.name;
 
@@ -280,22 +298,25 @@ namespace UnityEditor
                 task.SetProgressStyleFull(dataSource.progress > 0.96f);
             }
 
-            if (dataSource.status == ProgressStatus.Canceled)
+            if (dataSource.status == Progress.Status.Canceled)
             {
                 task.descriptionLabel.text += " (Cancelled)";
                 UpdateProgressCompletion(task, ProgressWindow.kCanceledIcon);
             }
-            else if (dataSource.status == ProgressStatus.Failed)
+            else if (dataSource.status == Progress.Status.Failed)
             {
                 task.descriptionLabel.text += " (Failed)";
                 UpdateProgressCompletion(task, ProgressWindow.kFailedIcon);
             }
-            else if (dataSource.status == ProgressStatus.Succeeded)
+            else if (dataSource.status == Progress.Status.Succeeded)
             {
                 task.progressBar.value = 100;
                 task.SetProgressStyleFull(true);
                 UpdateProgressCompletion(task, ProgressWindow.kSuccessIcon);
                 task.progressLabel.style.unityBackgroundImageTintColor = new StyleColor(Color.green);
+
+                // Update running time to force elapsed time to show when the task is set to show ETA
+                UpdateRunningTime();
 
                 if (m_MainTask == task && m_DetailsFoldoutToggle.value)
                 {
@@ -322,7 +343,7 @@ namespace UnityEditor
             m_Details.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        private void SubTaskInitialization(ProgressItem subTaskSource)
+        private void SubTaskInitialization(Progress.Item subTaskSource)
         {
             var parentElement = s_VisualTreeBackgroundTask.CloneTree();
             parentElement.name = "SubTask";
@@ -334,7 +355,7 @@ namespace UnityEditor
             m_DetailsScrollView.Add(parentElement);
         }
 
-        private DisplayedTask InitializeTask(ProgressItem progressItem, VisualElement parentElement)
+        private DisplayedTask InitializeTask(Progress.Item progressItem, VisualElement parentElement)
         {
             var displayedTask = new DisplayedTask(
                 parentElement.Q<Label>("BackgroundTaskNameLabel"),
@@ -372,7 +393,7 @@ namespace UnityEditor
         private void CancelButtonClicked(EventBase obj)
         {
             var sender = obj.target as Button;
-            var ds = sender?.userData as ProgressItem;
+            var ds = sender?.userData as Progress.Item;
             if (ds != null)
             {
                 var wasCancelled = ds.Cancel();
@@ -391,11 +412,25 @@ namespace UnityEditor
         private static void DeleteButtonClicked(EventBase obj)
         {
             var sender = obj.target as Button;
-            var ds = sender?.userData as ProgressItem;
+            var ds = sender?.userData as Progress.Item;
             if (ds != null)
             {
-                Progress.Clear(ds.id);
+                Progress.Remove(ds.id);
             }
+        }
+
+        private static string FormatRemainingTime(TimeSpan eta)
+        {
+            if (eta.Days > 0)
+                return $"{eta.Days} day{(eta.Days > 1 ? "s" : "")} left";
+            if (eta.Hours > 0)
+                return $"{eta.Hours} hour{(eta.Hours > 1 ? "s" : "")} left";
+            if (eta.Minutes > 0)
+                return $"{eta.Minutes} minute{(eta.Minutes > 1 ? "s" : "")} left";
+            if (eta.Seconds > 0)
+                return $"{eta.Seconds} second{(eta.Seconds > 1 ? "s" : "")} left";
+
+            return "";
         }
     }
 }

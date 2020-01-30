@@ -127,6 +127,7 @@ namespace UnityEditor
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
         {
+            bool useMousePos = showMode == ShowMode.AuxWindow;
             if (showMode == ShowMode.AuxWindow)
                 showMode = ShowMode.Utility;
 
@@ -138,8 +139,11 @@ namespace UnityEditor
             // Load previous position/size
             if (!isPopup)
                 Load(loadPosition);
+            if (useMousePos)
+                LoadInCurrentMousePosition();
 
             var initialMaximizedState = m_Maximized;
+
 
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
 
@@ -157,7 +161,7 @@ namespace UnityEditor
                 return;
 
             // Fit window to screen - needs to be done after bringing the window live
-            position = FitWindowRectToScreen(m_PixelRect, true, false);
+            position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
             rootView.position = new Rect(0, 0, Mathf.Ceil(m_PixelRect.width), Mathf.Ceil(m_PixelRect.height));
 
             rootView.Reflow();
@@ -288,6 +292,16 @@ namespace UnityEditor
             }
             p.width = Mathf.Min(Mathf.Max(p.width, m_MinSize.x), m_MaxSize.x);
             p.height = Mathf.Min(Mathf.Max(p.height, m_MinSize.y), m_MaxSize.y);
+            m_PixelRect = p;
+        }
+
+        internal void LoadInCurrentMousePosition()
+        {
+            Vector2 mousePos = Editor.GetCurrentMousePosition();
+
+            Rect p = m_PixelRect;
+            p.x = mousePos.x;
+            p.y = mousePos.y;
             m_PixelRect = p;
         }
 

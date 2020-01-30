@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Text;
 using UnityEditor.Analytics;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -21,6 +23,9 @@ namespace UnityEditor.Connect
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.AnalyticsService;
         public override string packageId { get; }
+        public override string serviceFlagName { get; }
+        public override bool shouldEnableOnProjectCreation => true;
+        public override bool shouldSyncOnProjectRebind => true;
 
         static readonly AnalyticsService k_Instance;
 
@@ -35,14 +40,15 @@ namespace UnityEditor.Connect
 
         AnalyticsService()
         {
-            string serviceName = L10n.Tr("Analytics");
+            const string serviceName = "Analytics";
             name = serviceName;
-            title = serviceName;
+            title = L10n.Tr(serviceName);
             description = L10n.Tr("Discover player insights");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Analytics.png";
             projectSettingsPath = "Project/Services/Analytics";
             displayToggle = true;
             packageId = "com.unity.analytics";
+            serviceFlagName = "analytics";
             ServicesRepository.AddService(this);
         }
 
@@ -51,7 +57,7 @@ namespace UnityEditor.Connect
             return AnalyticsSettings.enabled;
         }
 
-        protected override void InternalEnableService(bool enable)
+        protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
             if (AnalyticsSettings.enabled != enable)
             {
@@ -63,7 +69,7 @@ namespace UnityEditor.Connect
                 }
             }
 
-            base.InternalEnableService(enable);
+            base.InternalEnableService(enable, shouldUpdateApiFlag);
         }
 
         public void RequestValidationData(Action<AsyncOperation> onGet, string authSignature, out UnityWebRequest request)

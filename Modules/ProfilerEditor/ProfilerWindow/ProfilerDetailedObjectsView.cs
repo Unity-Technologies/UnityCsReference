@@ -293,11 +293,11 @@ namespace UnityEditorInternal.Profiling
                     if (string.IsNullOrEmpty(methodInfo.methodName))
                         sb.AppendFormat("0x{0:X}\n", addr);
                     else if (string.IsNullOrEmpty(methodInfo.sourceFileName))
-                        sb.AppendFormat("0x{0:X}\t{1}\n", addr, methodInfo.methodName);
+                        sb.AppendFormat("0x{0:X}\t\t{1}\n", addr, methodInfo.methodName);
                     else if (methodInfo.sourceFileLine == 0)
-                        sb.AppendFormat("0x{0:X}\t{1}\t{2}\n", addr, methodInfo.methodName, methodInfo.sourceFileName);
+                        sb.AppendFormat("0x{0:X}\t\t{1}\t{2}\n", addr, methodInfo.methodName, methodInfo.sourceFileName);
                     else
-                        sb.AppendFormat("0x{0:X}\t{1}\t{2}:{3}\n", addr, methodInfo.methodName, methodInfo.sourceFileName, methodInfo.sourceFileLine);
+                        sb.AppendFormat("0x{0:X}\t\t{1}\t{2}:{3}\n", addr, methodInfo.methodName, methodInfo.sourceFileName, methodInfo.sourceFileLine);
                 }
                 EditorGUILayout.TextArea(sb.ToString(), Styles.callstackTextArea);
 

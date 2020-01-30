@@ -28,4 +28,13 @@ namespace UnityEngine.UIElements
 
         protected abstract void ImmediateRepaint();
     }
+
+    // Used to wrap the exception thrown by the immediate callback
+    class ImmediateModeException : Exception
+    {
+        public ImmediateModeException(Exception inner)
+            : base("", inner)
+        {
+        }
+    }
 }

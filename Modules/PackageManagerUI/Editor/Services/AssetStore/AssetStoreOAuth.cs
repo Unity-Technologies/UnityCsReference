@@ -271,8 +271,9 @@ namespace UnityEditor.PackageManager.UI
 
                     var secret = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
 
-                    m_AccessTokenRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_OAuthUri}", "POST");
-                    m_AccessTokenRequest.postData = $"grant_type=authorization_code&code={authCode}&client_id=packman&client_secret={secret}&redirect_uri=packman://unity";
+                    m_AccessTokenRequest = ApplicationUtil.instance.PostASyncHTTPClient(
+                        $"{host}{k_OAuthUri}",
+                        $"grant_type=authorization_code&code={authCode}&client_id=packman&client_secret={secret}&redirect_uri=packman://unity");
                     m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
                     m_AccessTokenRequest.doneCallback = httpClient =>
                     {

@@ -77,6 +77,7 @@ namespace UnityEditor
         [SerializeField] protected string m_AssetGUID = "";
         [SerializeField] protected int m_InstanceID = 0;
 
+        private Object m_InspectedObject;
         private static PropertyEditor s_LastPropertyEditor;
         protected int m_LastInitialEditorInstanceID;
         protected Component[] m_ComponentsInPrefabSource;
@@ -305,16 +306,27 @@ namespace UnityEditor
             m_LabelGUI.OnLostFocus();
         }
 
+        private bool CloseIfEmpty()
+        {
+            if ((!String.IsNullOrEmpty(m_AssetGUID) || m_InstanceID != 0) && !m_InspectedObject)
+            {
+                EditorApplication.delayCall += Close;
+                return true;
+            }
+            return false;
+        }
+
         [UsedImplicitly]
         protected virtual void OnInspectorUpdate()
         {
+            if (CloseIfEmpty())
+                return;
+
             // Check if scripts have changed without calling set dirty
             tracker.VerifyModifiedMonoBehaviours();
 
             if (!tracker.isDirty || !ReadyToRepaint())
-            {
                 return;
-            }
 
             Repaint();
         }
@@ -502,29 +514,44 @@ namespace UnityEditor
             return false;
         }
 
+        protected bool LoadPersistedObject()
+        {
+            if (String.IsNullOrEmpty(m_AssetGUID) && m_InstanceID == 0)
+                return false;
+
+            if (!String.IsNullOrEmpty(m_AssetGUID))
+            {
+                var assetPath = AssetDatabase.GUIDToAssetPath(m_AssetGUID);
+                m_InspectedObject = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
+            }
+            else if (m_InstanceID != 0)
+            {
+                m_InspectedObject = FindObjectFromInstanceID(m_InstanceID) ?? ForceLoadFromInstanceID(m_InstanceID);
+            }
+
+            if (m_InspectedObject)
+            {
+                SetTitle(m_InspectedObject);
+                m_Tracker.SetObjectsLockedByThisTracker(new List<Object> { m_InspectedObject });
+            }
+            else
+            {
+                // Failed to load object, lets close this property editor.
+                EditorApplication.delayCall += Close;
+                return false;
+            }
+
+            return true;
+        }
+
         protected virtual void CreateTracker()
         {
             if (m_Tracker != null)
                 return;
 
-            Object obj = null;
             m_Tracker = new ActiveEditorTracker { inspectorMode = InspectorMode.Normal };
-            if (!String.IsNullOrEmpty(m_AssetGUID))
-            {
-                var assetPath = AssetDatabase.GUIDToAssetPath(m_AssetGUID);
-                obj = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
-            }
-            else if (m_InstanceID != 0)
-            {
-                obj = Object.FindObjectFromInstanceID(m_InstanceID);
-            }
-
-            if (obj)
-            {
-                SetTitle(obj);
-                m_Tracker.SetObjectsLockedByThisTracker(new List<Object> { obj });
-            }
-            m_Tracker.RebuildIfNecessary();
+            if (LoadPersistedObject())
+                m_Tracker.RebuildIfNecessary();
         }
 
         private void OnTrackerRebuilt()
@@ -754,6 +781,7 @@ namespace UnityEditor
             EndRebuildContentContainers();
 
             Repaint();
+            RefreshTitle();
         }
 
         private void DragOverBottomArea(DragUpdatedEvent dragUpdatedEvent)
@@ -915,12 +943,9 @@ namespace UnityEditor
             return editorsWithPreview.ToArray();
         }
 
-        internal Object GetInspectedObject()
+        internal virtual Object GetInspectedObject()
         {
-            Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
-            if (editor == null)
-                return null;
-            return editor.target;
+            return m_InspectedObject;
         }
 
         private void ResetKeyboardControl()
@@ -1856,20 +1881,22 @@ namespace UnityEditor
                 propertyEditor.m_AssetGUID = AssetDatabase.AssetPathToGUID(assetPath);
             else
                 propertyEditor.m_InstanceID = obj.GetInstanceID();
+            propertyEditor.m_InspectedObject = obj;
 
             propertyEditor.SetTitle(obj);
             if (showWindow)
-            {
-                propertyEditor.Show();
-
-                if (s_LastPropertyEditor)
-                {
-                    var pos = s_LastPropertyEditor.position;
-                    propertyEditor.position = new Rect(pos.x + 30, pos.y + 30, propertyEditor.position.width, propertyEditor.position.height);
-                }
-                s_LastPropertyEditor = propertyEditor;
-            }
+                ShowPropertyEditorWindow(propertyEditor);
             return propertyEditor;
+        }
+
+        private static void ShowPropertyEditorWindow(PropertyEditor propertyEditor)
+        {
+            propertyEditor.Show();
+
+            // Offset new window instance.
+            var pos = s_LastPropertyEditor ? s_LastPropertyEditor.position : propertyEditor.m_Parent.screenPosition;
+            propertyEditor.position = new Rect(pos.x + 30, pos.y + 30, propertyEditor.position.width, propertyEditor.position.height);
+            s_LastPropertyEditor = propertyEditor;
         }
 
         [ShortcutManagement.Shortcut("PropertyEditor/OpenMouseOver")]

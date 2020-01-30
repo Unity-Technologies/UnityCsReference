@@ -5,7 +5,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 
 namespace UnityEditor
 {
@@ -68,6 +67,8 @@ namespace UnityEditor
                 return s_TemplateGUIThumbnails;
             }
         }
+
+        public abstract string[] GetCustomKeys(string path);
 
         public int GetTemplateIndex(string path)
         {
@@ -141,29 +142,7 @@ namespace UnityEditor
                 template.m_Thumbnail.LoadImage(File.ReadAllBytes(thumbnailPath));
             }
 
-            Regex preprocessedFilenameRegex = new Regex("\\.(html|php|css|js|json)$");
-            Regex preprocessedBlockRegex = new Regex("((^|\\n)#if [^\\n]+(\\n|$))|({{{([^}]|}(?!}))+}}})");
-            Regex customKeyRegex = new Regex("(?<=[^0-9a-zA-Z_$]UNITY_CUSTOM_)[A-Z_]+(?=[^0-9a-zA-Z_$])");
-            List<string> customKeys = new List<string>();
-            foreach (var file in FileUtil.GetAllFilesRecursive(path))
-            {
-                if (preprocessedFilenameRegex.IsMatch(FileUtil.UnityGetFileName(file)))
-                {
-                    MatchCollection preprocessedBlockMatches = preprocessedBlockRegex.Matches(File.ReadAllText(file));
-                    foreach (Match preprocessedBlockMatch in preprocessedBlockMatches)
-                    {
-                        MatchCollection customKeysMatches = customKeyRegex.Matches(preprocessedBlockMatch.Value);
-                        foreach (Match customKeysMatch in customKeysMatches)
-                        {
-                            if (!customKeys.Contains(customKeysMatch.Value))
-                            {
-                                customKeys.Add(customKeysMatch.Value);
-                            }
-                        }
-                    }
-                }
-            }
-            template.m_CustomKeys = customKeys.ToArray();
+            template.m_CustomKeys = GetCustomKeys(path);
 
             return template;
         }

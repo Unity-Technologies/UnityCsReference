@@ -248,7 +248,7 @@ namespace UnityEngine.UIElements
             {
                 var textParams = GetTextSettings(ve, textToMeasure);
                 textParams.wordWrap = false;
-                textParams.richText = true;
+                textParams.richText = false;
 
                 //we make sure to round up as yoga could decide to round down and text would start wrapping
                 measuredWidth = Mathf.Ceil(textHandle.ComputeTextWidth(textParams, ve.scaledPixelsPerPoint));
@@ -267,6 +267,7 @@ namespace UnityEngine.UIElements
             {
                 var textParams = GetTextSettings(ve, textToMeasure);
                 textParams.wordWrapWidth = measuredWidth;
+                textParams.richText = false;
 
                 measuredHeight = Mathf.Ceil(textHandle.ComputeTextHeight(textParams, ve.scaledPixelsPerPoint));
 

@@ -119,6 +119,11 @@ namespace UnityEditor.PackageManager.UI
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
             GetTagLabel(PackageTag.Verified.ToString()).text = string.Format(ApplicationUtil.instance.GetTranslationForText("{0} verified"), ApplicationUtil.instance.shortUnityVersion);
+
+            root.Query<TextField>().ForEach(t =>
+            {
+                t.isReadOnly = true;
+            });
         }
 
         public UnityEngine.Object GetDisplayPackageManifestAsset()
@@ -239,17 +244,17 @@ namespace UnityEditor.PackageManager.UI
 
                 SetUpdateVisibility(true);
 
-                detailTitle.text = displayVersion.displayName;
+                detailTitle.SetValueWithoutNotify(displayVersion.displayName);
 
                 UIUtils.SetElementDisplay(detailNameContainer, !string.IsNullOrEmpty(package.name));
-                detailName.text = package.name;
+                detailName.SetValueWithoutNotify(package.name);
 
                 RefreshLinks();
 
                 RefreshDescription();
 
-                string versionString = displayVersion.version?.StripTag() ?? displayVersion.versionString;
-                detailVersion.text = string.Format(ApplicationUtil.instance.GetTranslationForText("Version {0}"), versionString);
+                var versionString = displayVersion.version?.StripTag() ?? displayVersion.versionString;
+                detailVersion.SetValueWithoutNotify(string.Format(ApplicationUtil.instance.GetTranslationForText("Version {0}"), versionString));
                 UIUtils.SetElementDisplay(detailVersion, !isBuiltIn && !String.IsNullOrEmpty(versionString));
 
                 foreach (var tag in k_VisibleTags)
@@ -286,13 +291,13 @@ namespace UnityEditor.PackageManager.UI
             if (package?.images.Any() != true)
                 return;
 
-            var minTextHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 1;
-            var textHeight = (int)detailDesc.MeasureTextSize(detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
+            var minTextHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, "|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined, detailDesc.textHandle).y*3 + 1;
+            var textHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined, detailDesc.textHandle).y + 1;
             if (!m_DescriptionExpanded && textHeight > minTextHeight)
             {
                 UIUtils.SetElementDisplay(detailDescMore, true);
                 UIUtils.SetElementDisplay(detailDescLess, false);
-                detailDesc.style.maxHeight = minTextHeight;
+                detailDesc.style.maxHeight = minTextHeight + 4;
                 return;
             }
 
@@ -310,14 +315,14 @@ namespace UnityEditor.PackageManager.UI
         private void ImagesGeometryChangeEvent(GeometryChangedEvent evt)
         {
             // hide or show the last image depending on whether it fits on the screen
-            IEnumerable<VisualElement> images = detailImages.Children();
-            IEnumerable<VisualElement> visibleImages = images.Where(elem => UIUtils.IsElementVisible(elem));
+            var images = detailImages.Children();
+            var visibleImages = images.Where(elem => UIUtils.IsElementVisible(elem));
 
-            VisualElement firstInvisibleImage = images.FirstOrDefault(elem => !UIUtils.IsElementVisible(elem));
-            float visibleImagesWidth = visibleImages.Sum(elem => elem.rect.width);
-            VisualElement lastVisibleImage = visibleImages.LastOrDefault();
+            var firstInvisibleImage = images.FirstOrDefault(elem => !UIUtils.IsElementVisible(elem));
+            var visibleImagesWidth = visibleImages.Sum(elem => elem.rect.width);
+            var lastVisibleImage = visibleImages.LastOrDefault();
 
-            float widthWhenLastImageRemoved = detailImagesWidthsWhenImagesRemoved.Any() ? detailImagesWidthsWhenImagesRemoved.Peek() : float.MaxValue;
+            var widthWhenLastImageRemoved = detailImagesWidthsWhenImagesRemoved.Any() ? detailImagesWidthsWhenImagesRemoved.Peek() : float.MaxValue;
 
             // if the container approximately doubles in height, that indicates the last image was wrapped around to another row
             if (lastVisibleImage != null && (evt.newRect.height >= 2 * lastVisibleImage.rect.height || visibleImagesWidth >= evt.newRect.width))
@@ -337,7 +342,7 @@ namespace UnityEditor.PackageManager.UI
             var hasDescription = !string.IsNullOrEmpty(displayVersion.description);
             detailDesc.EnableClass(k_EmptyDescriptionClass, !hasDescription);
             detailDesc.style.maxHeight = int.MaxValue;
-            detailDesc.text = hasDescription ? displayVersion.description : ApplicationUtil.instance.GetTranslationForText("There is no description for this package.");
+            detailDesc.SetValueWithoutNotify(hasDescription ? displayVersion.description : ApplicationUtil.instance.GetTranslationForText("There is no description for this package."));
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, false);
             m_DescriptionExpanded = false;
@@ -358,7 +363,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     UIUtils.SetElementDisplay(detailAuthorText, true);
                     UIUtils.SetElementDisplay(detailAuthorLink, false);
-                    detailAuthorText.text = displayVersion.author;
+                    detailAuthorText.SetValueWithoutNotify(displayVersion.author);
                 }
             }
         }
@@ -369,14 +374,19 @@ namespace UnityEditor.PackageManager.UI
 
             if (enabledSelf && m_Package?.labels != null)
             {
-                string labels = string.Join(", ", m_Package.labels.ToArray());
+                var labels = string.Join(", ", m_Package.labels.ToArray());
 
                 if (!string.IsNullOrEmpty(labels))
-                    detailLabels.Add(new Label(labels));
+                {
+                    var textField = new TextField();
+                    textField.SetValueWithoutNotify(labels);
+                    textField.isReadOnly = true;
+                    detailLabels.Add(textField);
+                }
             }
 
-            bool hasLabels = detailLabels.Children().Any();
-            bool isAssetStorePackage = m_Package is AssetStorePackage;
+            var hasLabels = detailLabels.Children().Any();
+            var isAssetStorePackage = m_Package is AssetStorePackage;
 
             if (!hasLabels && isAssetStorePackage)
                 detailLabels.Add(new Label(ApplicationUtil.instance.GetTranslationForText("(None)")));
@@ -388,7 +398,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (enabledSelf)
             {
-                detailPurchasedDate.text = m_Package?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty;
+                detailPurchasedDate.SetValueWithoutNotify(m_Package?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
             }
             UIUtils.SetElementDisplay(detailPurchasedDateContainer, !string.IsNullOrEmpty(detailPurchasedDate.text));
         }
@@ -438,14 +448,14 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshSizeAndSupportedUnityVersions()
         {
-            bool showSupportedUnityVersions = RefreshSupportedUnityVersions();
-            bool showSize = RefreshSizeInfo();
+            var showSupportedUnityVersions = RefreshSupportedUnityVersions();
+            var showSize = RefreshSizeInfo();
             UIUtils.SetElementDisplay(detailSizesAndSupportedVersionsContainer, showSize || showSupportedUnityVersions);
         }
 
         private bool RefreshSupportedUnityVersions()
         {
-            bool hasSupportedVersions = (displayVersion.supportedVersions?.Any() == true);
+            var hasSupportedVersions = (displayVersion.supportedVersions?.Any() == true);
             var supportedVersion = displayVersion.supportedVersions?.FirstOrDefault();
 
             if (!hasSupportedVersions)
@@ -457,7 +467,7 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(detailUnityVersionsContainer, hasSupportedVersions);
             if (hasSupportedVersions)
             {
-                detailUnityVersions.text = string.Format(ApplicationUtil.instance.GetTranslationForText("{0} or higher"), supportedVersion);
+                detailUnityVersions.SetValueWithoutNotify(string.Format(ApplicationUtil.instance.GetTranslationForText("{0} or higher"), supportedVersion));
                 var tooltip = supportedVersion.ToString();
                 if (displayVersion.supportedVersions != null && displayVersion.supportedVersions.Any())
                 {
@@ -469,7 +479,7 @@ namespace UnityEditor.PackageManager.UI
             }
             else
             {
-                detailUnityVersions.text = string.Empty;
+                detailUnityVersions.SetValueWithoutNotify(string.Empty);
                 detailUnityVersions.tooltip = string.Empty;
             }
 
@@ -487,7 +497,12 @@ namespace UnityEditor.PackageManager.UI
                 sizeInfo = displayVersion.sizes.LastOrDefault();
 
             if (sizeInfo != null)
-                detailSizes.Add(new Label(string.Format(ApplicationUtil.instance.GetTranslationForText("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount)));
+            {
+                var textField = new TextField();
+                textField.SetValueWithoutNotify(string.Format(ApplicationUtil.instance.GetTranslationForText("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount));
+                textField.isReadOnly = true;
+                detailSizes.Add(textField);
+            }
 
             return showSizes;
         }
@@ -697,7 +712,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void DescLessClick()
         {
-            detailDesc.style.maxHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y*3 + 1;
+            detailDesc.style.maxHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, "|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined, detailDesc.textHandle).y*3 + 5;
             UIUtils.SetElementDisplay(detailDescMore, true);
             UIUtils.SetElementDisplay(detailDescLess, false);
             m_DescriptionExpanded = false;
@@ -923,8 +938,8 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElement detailDescContainer { get { return cache.Get<VisualElement>("detailDescContainer"); } }
         private VisualElement detailNameContainer { get { return cache.Get<VisualElement>("detailNameContainer"); } }
-        private Label detailName { get { return cache.Get<Label>("detailName"); } }
-        private Label detailDesc { get { return cache.Get<Label>("detailDesc"); } }
+        private TextField detailName { get { return cache.Get<TextField>("detailName"); } }
+        private TextField detailDesc { get { return cache.Get<TextField>("detailDesc"); } }
         private Button detailDescMore { get { return cache.Get<Button>("detailDescMore"); } }
         private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
         private VisualElement detailLinksContainer { get { return cache.Get<VisualElement>("detailLinksContainer"); } }
@@ -932,12 +947,12 @@ namespace UnityEditor.PackageManager.UI
         internal Alert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
-        private Label detailTitle { get { return cache.Get<Label>("detailTitle"); } }
-        private Label detailVersion { get { return cache.Get<Label>("detailVersion"); } }
+        private TextField detailTitle { get { return cache.Get<TextField>("detailTitle"); } }
+        private TextField detailVersion { get { return cache.Get<TextField>("detailVersion"); } }
         private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
-        private Label detailPurchasedDate { get { return cache.Get<Label>("detailPurchasedDate"); } }
+        private TextField detailPurchasedDate { get { return cache.Get<TextField>("detailPurchasedDate"); } }
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
-        private Label detailAuthorText { get { return cache.Get<Label>("detailAuthorText"); } }
+        private TextField detailAuthorText { get { return cache.Get<TextField>("detailAuthorText"); } }
         private Button detailAuthorLink { get { return cache.Get<Button>("detailAuthorLink"); } }
         private VisualElement customContainer { get { return cache.Get<VisualElement>("detailCustomContainer"); } }
         private PackageSampleList sampleList { get { return cache.Get<PackageSampleList>("detailSampleList"); } }
@@ -951,7 +966,7 @@ namespace UnityEditor.PackageManager.UI
         private ProgressBar downloadProgress { get { return cache.Get<ProgressBar>("downloadProgress"); } }
         private VisualElement detailSizesAndSupportedVersionsContainer { get { return cache.Get<VisualElement>("detailSizesAndSupportedVersionsContainer"); } }
         private VisualElement detailUnityVersionsContainer { get { return cache.Get<VisualElement>("detailUnityVersionsContainer"); } }
-        private Label detailUnityVersions { get { return cache.Get<Label>("detailUnityVersions"); } }
+        private TextField detailUnityVersions { get { return cache.Get<TextField>("detailUnityVersions"); } }
         private VisualElement detailSizesContainer { get { return cache.Get<VisualElement>("detailSizesContainer"); } }
         private VisualElement detailSizes { get { return cache.Get<VisualElement>("detailSizes"); } }
         private VisualElement detailImagesContainer { get { return cache.Get<VisualElement>("detailImagesContainer"); } }

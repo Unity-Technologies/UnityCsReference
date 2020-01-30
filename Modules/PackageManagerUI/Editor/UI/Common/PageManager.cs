@@ -338,10 +338,7 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnSearchTextChanged(string searchText)
             {
-                var page = GetPageFromTab();
-                var filters = page.filters.Clone();
-                filters.searchText = searchText;
-                page.UpdateFilters(filters);
+                UpdateSearchTextOnPage(GetPageFromTab(), searchText);
             }
 
             private void OnFilterChanged(PackageFilterTab filterTab)
@@ -350,6 +347,16 @@ namespace UnityEditor.PackageManager.UI
                 if (GetRefreshTimestamp(page.tab) == 0)
                     Refresh(filterTab);
                 page.Rebuild();
+                UpdateSearchTextOnPage(page, PackageFiltering.instance.currentSearchText);
+            }
+
+            private static void UpdateSearchTextOnPage(IPage page, string searchText)
+            {
+                if (page.filters.searchText == searchText)
+                    return;
+                var filters = page.filters.Clone();
+                filters.searchText = searchText;
+                page.UpdateFilters(filters);
             }
 
             private void OnShowDependenciesChanged(bool value)

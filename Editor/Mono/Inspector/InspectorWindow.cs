@@ -435,5 +435,13 @@ namespace UnityEditor
                 inspector.tracker.ForceRebuild();
             }
         }
+
+        internal override Object GetInspectedObject()
+        {
+            Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
+            if (editor == null)
+                return null;
+            return editor.target;
+        }
     }
 }

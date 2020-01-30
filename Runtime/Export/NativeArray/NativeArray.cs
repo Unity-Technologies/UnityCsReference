@@ -143,13 +143,6 @@ namespace Unity.Collections
 
         public bool IsCreated => m_Buffer != null;
 
-        void Deallocate()
-        {
-            UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
-            m_Buffer = null;
-            m_Length = 0;
-        }
-
         [WriteAccessRequired]
         public void Dispose()
         {
@@ -158,7 +151,9 @@ namespace Unity.Collections
                 throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
 
             DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
-            Deallocate();
+            UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
+            m_Buffer = null;
+            m_Length = 0;
         }
 
         /// <summary>
@@ -179,24 +174,14 @@ namespace Unity.Collections
             // AtomicSafetyHandle can be destroyed after the job was scheduled (Job scheduling
             // will check that no jobs are writing to the container).
             DisposeSentinel.Clear(ref m_DisposeSentinel);
-            var jobHandle = new DisposeJob { Container = this }.Schedule(inputDeps);
+
+            var jobHandle = new NativeArrayDisposeJob { Data = new NativeArrayDispose { m_Buffer = m_Buffer, m_AllocatorLabel = m_AllocatorLabel, m_Safety = m_Safety } }.Schedule(inputDeps);
 
             AtomicSafetyHandle.Release(m_Safety);
             m_Buffer = null;
             m_Length = 0;
 
             return jobHandle;
-        }
-
-        // [BurstCompile] - can't use attribute since it's inside com.untity.collections.
-        struct DisposeJob : IJob
-        {
-            public NativeArray<T> Container;
-
-            public void Execute()
-            {
-                Container.Deallocate();
-            }
         }
 
         [WriteAccessRequired]
@@ -565,6 +550,79 @@ namespace Unity.Collections
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
             result.m_DisposeSentinel = null;
             return result;
+        }
+
+        public ReadOnly AsReadOnly()
+        {
+            return new ReadOnly(m_Buffer, m_Length, ref m_Safety);
+        }
+
+        [NativeContainer]
+        [NativeContainerIsReadOnly]
+        public unsafe struct ReadOnly
+        {
+            [NativeDisableUnsafePtrRestriction]
+            internal void* m_Buffer;
+            internal int   m_Length;
+
+            internal AtomicSafetyHandle m_Safety;
+
+            internal ReadOnly(void* buffer, int length, ref AtomicSafetyHandle safety)
+            {
+                m_Buffer = buffer;
+                m_Length = length;
+                m_Safety = safety;
+            }
+
+
+            public T this[int index]
+            {
+                get
+                {
+                    CheckElementReadAccess(index);
+                    return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index);
+                }
+            }
+
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            void CheckElementReadAccess(int index)
+            {
+                if (index < 0
+                    &&  index >= m_Length)
+                {
+                    throw new IndexOutOfRangeException($"Index {index} is out of range (must be between 0 and {m_Length-1}).");
+                }
+
+                var versionPtr = (int*)m_Safety.versionNode;
+                if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.ReadCheck))
+                    AtomicSafetyHandle.CheckReadAndThrowNoEarlyOut(m_Safety);
+            }
+        }
+    }
+
+    [NativeContainer]
+    internal unsafe struct NativeArrayDispose
+    {
+        [NativeDisableUnsafePtrRestriction]
+        internal void*     m_Buffer;
+        internal Allocator m_AllocatorLabel;
+
+        internal AtomicSafetyHandle m_Safety;
+
+        public void Dispose()
+        {
+            UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
+        }
+    }
+
+    // [BurstCompile] - can't use attribute since it's inside com.unity.collections.
+    internal struct NativeArrayDisposeJob : IJob
+    {
+        internal NativeArrayDispose Data;
+
+        public void Execute()
+        {
+            Data.Dispose();
         }
     }
 

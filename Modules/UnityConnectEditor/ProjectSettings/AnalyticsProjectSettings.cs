@@ -175,7 +175,10 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    OpenDashboardForProjectGuid(ServicesConfiguration.instance.baseAnalyticsDashboardUrl);
+                    ServicesConfiguration.instance.RequestBaseAnalyticsDashboardUrl(baseAnalyticsDashboardUrl =>
+                    {
+                        OpenDashboardForProjectGuid(baseAnalyticsDashboardUrl);
+                    });
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -508,7 +511,10 @@ namespace UnityEditor.Connect
                     {
                         var clickable = new Clickable(() =>
                         {
-                            provider.OpenDashboardForProjectGuid(ServicesConfiguration.instance.baseAnalyticsDashboardUrl);
+                            ServicesConfiguration.instance.RequestBaseAnalyticsDashboardUrl(baseAnalyticsDashboardUrl =>
+                            {
+                                provider.OpenDashboardForProjectGuid(baseAnalyticsDashboardUrl);
+                            });
                         });
                         accessDashboard.AddManipulator(clickable);
                     }
@@ -653,7 +659,10 @@ namespace UnityEditor.Connect
                 {
                     var goToDashboard = new Clickable(() =>
                     {
-                        provider.OpenDashboardForProjectGuid(ServicesConfiguration.instance.baseAnalyticsDashboardUrl);
+                        ServicesConfiguration.instance.RequestBaseAnalyticsDashboardUrl(baseAnalyticsDashboardUrl =>
+                        {
+                            provider.OpenDashboardForProjectGuid(baseAnalyticsDashboardUrl);
+                        });
                     });
 
                     welcomeBlock.Q(k_DashboardButton).AddManipulator(goToDashboard);

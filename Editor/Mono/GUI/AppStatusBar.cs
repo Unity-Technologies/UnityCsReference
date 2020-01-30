@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -82,7 +83,7 @@ namespace UnityEditor
         {
             get
             {
-                return Progress.IsRunning && m_LastElapsedTime > 1.5f;
+                return Progress.running && m_LastElapsedTime > 0.5f;
             }
         }
 
@@ -92,16 +93,16 @@ namespace UnityEditor
             s_AppStatusBar = this;
             m_ManagedDebuggerToggle = new ManagedDebuggerToggle();
 
-            Progress.OnAdded += RefreshProgressBar;
-            Progress.OnRemoved += RefreshProgressBar;
-            Progress.OnUpdated += RefreshProgressBar;
+            Progress.added += RefreshProgressBar;
+            Progress.removed += RefreshProgressBar;
+            Progress.updated += RefreshProgressBar;
         }
 
         protected override void OnDisable()
         {
-            Progress.OnAdded -= RefreshProgressBar;
-            Progress.OnRemoved -= RefreshProgressBar;
-            Progress.OnUpdated -= RefreshProgressBar;
+            Progress.added -= RefreshProgressBar;
+            Progress.removed -= RefreshProgressBar;
+            Progress.updated -= RefreshProgressBar;
             base.OnDisable();
         }
 
@@ -127,7 +128,7 @@ namespace UnityEditor
 
         private void CheckProgressUnresponsive()
         {
-            if (Progress.IsRunning)
+            if (Progress.running)
             {
                 var progressItem = Progress.GetProgressById(m_LastProgressId);
                 if (progressItem != null && !progressItem.responding)
@@ -227,7 +228,7 @@ namespace UnityEditor
                 var fade = Mathf.Min(Mathf.Max(0.25f, Mathf.Cos((float)EditorApplication.timeSinceStartup * 2.0f) / 2.0f + 0.75f), 0.85f);
                 GUI.color = new Color(fade, fade, fade);
             }
-            var globalProgress = Progress.GlobalProgress;
+            var globalProgress = Progress.globalProgress;
             var progressBarStyle = GetProgressBarStyle(globalProgress);
             var progressBarContent = GetProgressBarContent(globalProgress, m_ProgressPercentageStatus);
             var progressRect = EditorGUILayout.GetControlRect(false, position.height, Styles.progressBarBack, Styles.progressBarWidth);
@@ -323,7 +324,7 @@ namespace UnityEditor
             GUILayout.EndVertical();
         }
 
-        private void RefreshProgressBar(ProgressItem[] progressItems)
+        private void RefreshProgressBar(Progress.Item[] progressItems)
         {
             var taskCount = Progress.GetRunningProgressCount();
             if (taskCount == 0)
@@ -339,14 +340,18 @@ namespace UnityEditor
                 var currentItem = progressItems[0];
                 if (!String.IsNullOrEmpty(currentItem.description))
                     m_ProgressStatus.tooltip = currentItem.name + "\r\n" + currentItem.description;
-                m_ProgressPercentageStatus.text = Progress.GlobalProgress.ToString("P", percentageFormat);
+                m_ProgressPercentageStatus.text = Progress.globalProgress.ToString("P", percentageFormat);
+
+                var remainingTimeText = "";
+                if (Progress.EnumerateItems().Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime) && Progress.EnumerateItems().All(item => !item.indefinite) && Progress.globalRemainingTime.TotalSeconds > 0)
+                {
+                    remainingTimeText = $" [{Progress.globalRemainingTime:g}]";
+                }
 
                 if (taskCount > 1)
-                {
-                    m_ProgressStatus.text = $"Multiple tasks ({taskCount})";
-                }
+                    m_ProgressStatus.text = $"Multiple tasks ({taskCount}){remainingTimeText}";
                 else
-                    m_ProgressStatus.text = currentItem.name;
+                    m_ProgressStatus.text = $"{currentItem.name}{remainingTimeText}";
 
 
                 m_LastProgressId = currentItem.id;
@@ -369,13 +374,13 @@ namespace UnityEditor
             RepaintProgress(progressItems);
         }
 
-        private void RepaintProgress(ProgressItem[] progressItems)
+        private void RepaintProgress(Progress.Item[] progressItems)
         {
             bool hasSynchronous = false;
             bool hasIndefinite = false;
             foreach (var item in progressItems)
             {
-                if ((item.options & ProgressOptions.Synchronous) == ProgressOptions.Synchronous)
+                if ((item.options & Progress.Options.Synchronous) == Progress.Options.Synchronous)
                 {
                     hasSynchronous = true;
                     break;

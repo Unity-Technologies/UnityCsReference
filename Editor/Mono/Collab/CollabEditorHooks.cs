@@ -177,10 +177,12 @@ namespace UnityEditor.Collaboration
 
             try
             {
-                var fs = File.OpenRead(path);
-                var bytes = new byte[fs.Length];
-                fs.Read(bytes, 0, (int)fs.Length);
-                if (!tex.LoadImage(bytes)) return null;
+                using (var fs = File.OpenRead(path))
+                {
+                    var bytes = new byte[fs.Length];
+                    fs.Read(bytes, 0, (int)fs.Length);
+                    if (!tex.LoadImage(bytes)) return null;
+                }
             }
             catch (Exception)
             {

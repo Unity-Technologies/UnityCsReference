@@ -125,13 +125,19 @@ namespace UnityEditor.Connect
                 }
                 else if (UnityConnect.instance.projectInfo.projectBound)
                 {
-                    EditorAnalytics.SendOpenDashboardForService(new ServicesProjectSettings.OpenDashboardForService() {
-                        serviceName = k_WindowTitle,
-                        url = ServicesConfiguration.instance.baseDashboardUrl,
-                        organizationId = UnityConnect.instance.projectInfo.organizationId,
-                        projectId = UnityConnect.instance.projectInfo.projectId
+                    ServicesConfiguration.instance.RequestBaseDashboardUrl(baseDashboardUrl =>
+                    {
+                        EditorAnalytics.SendOpenDashboardForService(new ServicesProjectSettings.OpenDashboardForService() {
+                            serviceName = k_WindowTitle,
+                            url = baseDashboardUrl,
+                            organizationId = UnityConnect.instance.projectInfo.organizationId,
+                            projectId = UnityConnect.instance.projectInfo.projectId
+                        });
+                        ServicesConfiguration.instance.RequestCurrentProjectDashboardUrl(currentProjectDashboardUrl =>
+                        {
+                            Application.OpenURL(currentProjectDashboardUrl);
+                        });
                     });
-                    Application.OpenURL(ServicesConfiguration.instance.GetCurrentProjectDashboardUrl());
                 }
                 else
                 {

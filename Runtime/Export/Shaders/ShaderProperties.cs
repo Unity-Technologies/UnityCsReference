@@ -30,6 +30,8 @@ namespace UnityEngine.Rendering
         HDR                         = 1 << 4,
         Gamma                       = 1 << 5,
         NonModifiableTextureData    = 1 << 6,
+        MainTexture                 = 1 << 7,
+        MainColor                   = 1 << 8,
     }
 }
 

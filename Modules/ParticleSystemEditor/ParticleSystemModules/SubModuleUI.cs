@@ -56,6 +56,8 @@ namespace UnityEditor
 
         ReorderableList m_EmittersList;
 
+        static readonly float kSubEmitterPadding = EditorGUIUtility.standardVerticalSpacing * 2;
+
         public SubModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "SubModule", displayName)
         {
@@ -75,7 +77,7 @@ namespace UnityEditor
             m_EmittersList = new ReorderableList(m_SubEmitters.m_SerializedObject, m_SubEmitters, true, false, true, true);
             m_EmittersList.headerHeight = 0;
             m_EmittersList.drawElementCallback = DrawSubEmitterElementCallback;
-            m_EmittersList.elementHeight = EditorGUIUtility.singleLineHeight * 3 + EditorGUIUtility.standardVerticalSpacing * 4;
+            m_EmittersList.elementHeight = kSingleLineHeight * 3 + EditorGUIUtility.standardVerticalSpacing * 4 + kSubEmitterPadding * 2;
             m_EmittersList.drawElementBackgroundCallback = DrawSubEmitterElementBackgroundCallback;
             m_EmittersList.onAddCallback = OnAddSubEmitterElementCallback;
         }
@@ -102,8 +104,8 @@ namespace UnityEditor
             var properties = subEmitterData.FindPropertyRelative("properties");
             var emitProbability = subEmitterData.FindPropertyRelative("emitProbability");
 
-            rect.height = EditorGUIUtility.singleLineHeight;
-            rect.y += EditorGUIUtility.standardVerticalSpacing * 2;
+            rect.height = kSingleLineHeight;
+            rect.y += kSubEmitterPadding;
 
             Rect typeRect = new Rect(rect.x, rect.y, EditorGUIUtility.labelWidth - EditorGUI.kSpacing, rect.height);
             Rect objectRect = new Rect(rect.x + EditorGUIUtility.labelWidth, rect.y, rect.width - EditorGUIUtility.labelWidth - EditorGUI.kSpacing * 3, rect.height);
@@ -118,9 +120,9 @@ namespace UnityEditor
                 }
             }
 
-            rect.y += EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight;
+            rect.y += EditorGUIUtility.standardVerticalSpacing + rect.height;
             GUIMask(rect, s_Texts.inherit, properties, s_Texts.propertyTypes);
-            rect.y += EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight;
+            rect.y += EditorGUIUtility.standardVerticalSpacing + rect.height;
             GUIFloat(rect, s_Texts.emitProbability, emitProbability);
         }
 

@@ -59,12 +59,6 @@ namespace UnityEditor.Profiling
             }
         }
 
-        public static bool useOutOfProcessProfiler
-        {
-            get { return EditorPrefs.GetBool(k_ProfilerOutOfProcessSettingKey, false); }
-            set { EditorPrefs.SetBool(k_ProfilerOutOfProcessSettingKey, value); }
-        }
-
         public static bool rememberLastRecordState
         {
             get { return EditorPrefs.GetBool(k_RememberLastRecordStateSettingKey, false); }

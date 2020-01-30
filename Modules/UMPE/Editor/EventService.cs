@@ -10,15 +10,16 @@ using UnityEditor;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using UnityEngine;
-using System.Text;
 
 namespace Unity.MPE
 {
-    internal delegate object OnHandler(string eventType, object[] data);
-    internal delegate void PromiseHandler(Exception err, object[] data);
-    internal enum EventDataSerialization { StandardJson, JsonUtility };
+    [UnityEngine.Internal.ExcludeFromDocs] public delegate object OnHandler(string eventType, object[] data);
+    [UnityEngine.Internal.ExcludeFromDocs] public delegate void OnVoidHandler(string eventType, object[] data);
+    [UnityEngine.Internal.ExcludeFromDocs] public delegate void PromiseHandler(Exception err, object[] data);
+    [UnityEngine.Internal.ExcludeFromDocs] public enum EventDataSerialization { StandardJson, JsonUtility };
 
-    internal static class EventService
+    [UnityEngine.Internal.ExcludeFromDocs]
+    public static class EventService
     {
         internal class RequestData
         {
@@ -74,6 +75,15 @@ namespace Unity.MPE
             m_Client.Close();
             m_Client = null;
             EditorApplication.update -= Tick;
+        }
+
+        public static Action On(string eventType, OnVoidHandler handler)
+        {
+            return On(eventType, (type, args) =>
+            {
+                handler(type, args);
+                return null;
+            });
         }
 
         public static Action On(string eventType, OnHandler handler)
@@ -382,7 +392,7 @@ namespace Unity.MPE
             return s_Events.TryGetValue(eventType, out handlers) && handlers.Count > 0;
         }
 
-        internal static void Tick()
+        public static void Tick()
         {
             if (!IsConnected)
                 return;

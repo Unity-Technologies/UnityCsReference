@@ -18,7 +18,7 @@ namespace UnityEditor.Connect
     /// <summary>
     /// A common system to handle Project Bind configuration.
     /// </summary>
-    internal class ProjectBindManager
+    internal class ProjectBindManager : IDisposable
     {
         const string k_ProjectBindTemplatePath = "UXML/ServicesWindow/ProjectBind.uxml";
         const string k_ProjectBindCommonStyleSheetPath = "StyleSheets/ServicesWindow/ProjectBindCommon.uss";
@@ -104,6 +104,27 @@ namespace UnityEditor.Connect
         public ProjectBindManager(VisualElement rootVisualElement)
         {
             InitializeProjectBindManager(rootVisualElement);
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
+                UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterCreation;
+                m_CurrentRequest?.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~ProjectBindManager()
+        {
+            Dispose(false);
         }
 
         void InitializeProjectBindManager(VisualElement rootVisualElement)
@@ -235,6 +256,10 @@ namespace UnityEditor.Connect
                     {
                         try
                         {
+                            //Only register before creation. Remove first in case it was already added.
+                            //TODO: Review to avoid dependency on project refreshed
+                            UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
+                            UnityConnect.instance.ProjectStateChanged += OnProjectStateChangedAfterRebind;
                             BindProject(projectInfo);
                         }
                         catch (Exception ex)
@@ -261,16 +286,17 @@ namespace UnityEditor.Connect
 
         void RequestCreateOperation()
         {
-            var payload = $"{{\"name\":\"{Application.productName + GetProjectNameSuffix()}\", \"active\":true}}";
-            var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
-            m_CurrentRequest = new UnityWebRequest(
-                ServicesConfiguration.instance.GetOrganizationProjectsApiUrl(m_OrgIdByName[m_LastCreateBlockOrganization]),
-                UnityWebRequest.kHttpVerbPOST)
-            { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler};
-            m_CurrentRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-            m_CurrentRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
-            var operation = m_CurrentRequest.SendWebRequest();
-            operation.completed += CreateOperationOnCompleted;
+            ServicesConfiguration.instance.RequestOrganizationProjectsApiUrl(m_OrgIdByName[m_LastCreateBlockOrganization], organizationProjectsApiUrl =>
+            {
+                var payload = $"{{\"name\":\"{Application.productName + GetProjectNameSuffix()}\", \"active\":true}}";
+                var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
+                m_CurrentRequest = new UnityWebRequest(organizationProjectsApiUrl, UnityWebRequest.kHttpVerbPOST)
+                { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler};
+                m_CurrentRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                m_CurrentRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                var operation = m_CurrentRequest.SendWebRequest();
+                operation.completed += CreateOperationOnCompleted;
+            });
         }
 
         string GetProjectNameSuffix()
@@ -296,7 +322,11 @@ namespace UnityEditor.Connect
                     var projectInfo = ExtractProjectInfoFromJson(json);
                     try
                     {
-                        ServicesRepository.DisableAllServices();
+                        ServicesRepository.DisableAllServices(shouldUpdateApiFlag: false);
+                        //Only register before creation. Remove first in case it was already added.
+                        //TODO: Review to avoid dependency on project refreshed
+                        UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterCreation;
+                        UnityConnect.instance.ProjectStateChanged += OnProjectStateChangedAfterCreation;
                         BindProject(projectInfo);
                     }
                     catch (Exception ex)
@@ -368,46 +398,99 @@ namespace UnityEditor.Connect
             UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.name, projectInfo.organizationId);
             EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.name });
             NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
-            projectBindCompleted?.Invoke();
+        }
+
+        /// <summary>
+        /// Using this method to simulate a callback after binding a project for creation and making sure the
+        /// project info are fully loaded in UnityConnect.instance.projectInfo
+        /// </summary>
+        /// <param name="projectInfo"></param>
+        private void OnProjectStateChangedAfterCreation(ProjectInfo projectInfo)
+        {
+            if (UnityConnect.instance.projectInfo.valid)
+            {
+                UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterCreation;
+                ServicesRepository.EnableServicesOnProjectCreation();
+            }
+        }
+
+        /// <summary>
+        /// Using this method to simulate a callback after binding a project for rebinding an existing project
+        /// and making sure the project info are fully loaded in UnityConnect.instance.projectInfo
+        /// </summary>
+        /// <param name="projectInfo"></param>
+        private void OnProjectStateChangedAfterRebind(ProjectInfo projectInfo)
+        {
+            if (UnityConnect.instance.projectInfo.valid)
+            {
+                UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
+                ServicesRepository.SyncServicesOnProjectRebind();
+            }
         }
 
         void LoadProjectField(string organizationName, PopupField<string> projectIdField)
         {
-            var getProjectsRequest = new UnityWebRequest(ServicesConfiguration.instance.GetOrganizationProjectsApiUrl(m_OrgIdByName[organizationName]),
-                UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-            getProjectsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-            var operation = getProjectsRequest.SendWebRequest();
-            operation.completed += op =>
+            ServicesConfiguration.instance.RequestOrganizationProjectsApiUrl(m_OrgIdByName[organizationName], organizationProjectsApiUrl =>
             {
-                try
+                var getProjectsRequest = new UnityWebRequest(organizationProjectsApiUrl,
+                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getProjectsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                var operation = getProjectsRequest.SendWebRequest();
+                operation.completed += op =>
                 {
-                    if (getProjectsRequest.result != UnityWebRequest.Result.ProtocolError)
+                    try
                     {
-                        var jsonParser = new JSONParser(getProjectsRequest.downloadHandler.text);
-                        var json = jsonParser.Parse();
-                        try
+                        if (getProjectsRequest.result != UnityWebRequest.Result.ProtocolError)
                         {
-                            m_ProjectInfoByName = new Dictionary<string, ProjectInfoData>();
-
-                            var jsonProjects = json.AsDict()[k_JsonProjectsNodeName].AsList();
-                            foreach (var jsonProject in jsonProjects)
+                            var jsonParser = new JSONParser(getProjectsRequest.downloadHandler.text);
+                            var json = jsonParser.Parse();
+                            try
                             {
-                                if (!jsonProject.AsDict()[k_JsonArchivedNodeName].AsBool())
+                                m_ProjectInfoByName = new Dictionary<string, ProjectInfoData>();
+
+                                var jsonProjects = json.AsDict()[k_JsonProjectsNodeName].AsList();
+                                foreach (var jsonProject in jsonProjects)
                                 {
-                                    var projectInfo = ExtractProjectInfoFromJson(jsonProject);
-                                    m_ProjectInfoByName.Add(projectInfo.name, projectInfo);
+                                    if (!jsonProject.AsDict()[k_JsonArchivedNodeName].AsBool())
+                                    {
+                                        var projectInfo = ExtractProjectInfoFromJson(jsonProject);
+                                        m_ProjectInfoByName.Add(projectInfo.name, projectInfo);
+                                    }
+                                }
+
+                                var projectNames = new List<string> { L10n.Tr(k_SelectProjectText) };
+                                var sortedProjectNames = new List<string>(m_ProjectInfoByName.Keys);
+                                sortedProjectNames.Sort();
+                                projectNames.AddRange(sortedProjectNames);
+                                projectIdField.choices = projectNames;
+                                projectIdField.SetEnabled(true);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (exceptionCallback != null)
+                                {
+                                    exceptionCallback.Invoke(ex);
+                                }
+                                else
+                                {
+                                    //If there is no exception callback, we have to at least log it
+                                    Debug.LogException(ex);
                                 }
                             }
-
-                            var projectNames = new List<string> { L10n.Tr(k_SelectProjectText) };
-                            var sortedProjectNames = new List<string>(m_ProjectInfoByName.Keys);
-                            sortedProjectNames.Sort();
-                            projectNames.AddRange(sortedProjectNames);
-                            projectIdField.choices = projectNames;
-                            projectIdField.SetEnabled(true);
                         }
-                        catch (Exception ex)
+                        else
                         {
+                            var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainProjectMessage))
+                            {
+                                error = getProjectsRequest.error,
+                                method = getProjectsRequest.method,
+                                timeout = getProjectsRequest.timeout,
+                                url = getProjectsRequest.url,
+                                responseHeaders = getProjectsRequest.GetResponseHeaders(),
+                                responseCode = getProjectsRequest.responseCode,
+                                isHttpError = (getProjectsRequest.result == UnityWebRequest.Result.ProtocolError),
+                                isNetworkError = (getProjectsRequest.result == UnityWebRequest.Result.ConnectionError),
+                            };
                             if (exceptionCallback != null)
                             {
                                 exceptionCallback.Invoke(ex);
@@ -419,35 +502,12 @@ namespace UnityEditor.Connect
                             }
                         }
                     }
-                    else
+                    finally
                     {
-                        var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainProjectMessage))
-                        {
-                            error = getProjectsRequest.error,
-                            method = getProjectsRequest.method,
-                            timeout = getProjectsRequest.timeout,
-                            url = getProjectsRequest.url,
-                            responseHeaders = getProjectsRequest.GetResponseHeaders(),
-                            responseCode = getProjectsRequest.responseCode,
-                            isHttpError = (getProjectsRequest.result == UnityWebRequest.Result.ProtocolError),
-                            isNetworkError = (getProjectsRequest.result == UnityWebRequest.Result.ConnectionError),
-                        };
-                        if (exceptionCallback != null)
-                        {
-                            exceptionCallback.Invoke(ex);
-                        }
-                        else
-                        {
-                            //If there is no exception callback, we have to at least log it
-                            Debug.LogException(ex);
-                        }
+                        getProjectsRequest.Dispose();
                     }
-                }
-                finally
-                {
-                    getProjectsRequest.Dispose();
-                }
-            };
+                };
+            });
         }
 
         static ProjectInfoData ExtractProjectInfoFromJson(JSONValue jsonProject)
@@ -468,46 +528,72 @@ namespace UnityEditor.Connect
         /// <param name="projectIdField"></param>
         void LoadCreateOrganizationField(PopupField<string> organizationField, PopupField<string> projectIdField = null)
         {
-            var getOrganizationsRequest = new UnityWebRequest(ServicesConfiguration.instance.GetCurrentUserApiUrl() + "?include=orgs",
-                UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-            getOrganizationsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-            var operation = getOrganizationsRequest.SendWebRequest();
-            operation.completed += op =>
+            ServicesConfiguration.instance.RequestCurrentUserApiUrl(currentUserApiUrl =>
             {
-                try
+                var getOrganizationsRequest = new UnityWebRequest(currentUserApiUrl + "?include=orgs",
+                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getOrganizationsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                var operation = getOrganizationsRequest.SendWebRequest();
+                operation.completed += op =>
                 {
-                    if (getOrganizationsRequest.result != UnityWebRequest.Result.ProtocolError)
+                    try
                     {
-                        try
+                        if (getOrganizationsRequest.result != UnityWebRequest.Result.ProtocolError)
                         {
-                            var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
-                            var json = jsonParser.Parse();
-                            m_OrgIdByName.Clear();
-                            var sortedOrganizationNames = new List<string>();
-                            foreach (var rawOrg in json.AsDict()[k_JsonOrgsNodeName].AsList())
+                            try
                             {
-                                var org = rawOrg.AsDict();
-                                if (k_AtLeastManagerFilter.Contains(org[k_JsonRoleNodeName].AsString()))
+                                var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
+                                var json = jsonParser.Parse();
+                                m_OrgIdByName.Clear();
+                                var sortedOrganizationNames = new List<string>();
+                                foreach (var rawOrg in json.AsDict()[k_JsonOrgsNodeName].AsList())
                                 {
-                                    sortedOrganizationNames.Add(org[k_JsonNameNodeName].AsString());
-                                    m_OrgIdByName.Add(org[k_JsonNameNodeName].AsString(), org[k_JsonIdNodeName].AsString());
+                                    var org = rawOrg.AsDict();
+                                    if (k_AtLeastManagerFilter.Contains(org[k_JsonRoleNodeName].AsString()))
+                                    {
+                                        sortedOrganizationNames.Add(org[k_JsonNameNodeName].AsString());
+                                        m_OrgIdByName.Add(org[k_JsonNameNodeName].AsString(), org[k_JsonIdNodeName].AsString());
+                                    }
+                                }
+                                sortedOrganizationNames.Sort();
+                                var popUpChoices = new List<string> { L10n.Tr(k_SelectOrganizationText) };
+                                organizationField.SetEnabled(true);
+                                popUpChoices.AddRange(sortedOrganizationNames);
+                                organizationField.choices = popUpChoices;
+                                organizationField.SetValueWithoutNotify(organizationField.choices[0]);
+                                if (projectIdField != null)
+                                {
+                                    projectIdField.choices = new List<string> { L10n.Tr(k_SelectProjectText) };
+                                    projectIdField.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText));
+                                    projectIdField.SetEnabled(false);
                                 }
                             }
-                            sortedOrganizationNames.Sort();
-                            var popUpChoices = new List<string> { L10n.Tr(k_SelectOrganizationText) };
-                            organizationField.SetEnabled(true);
-                            popUpChoices.AddRange(sortedOrganizationNames);
-                            organizationField.choices = popUpChoices;
-                            organizationField.SetValueWithoutNotify(organizationField.choices[0]);
-                            if (projectIdField != null)
+                            catch (Exception ex)
                             {
-                                projectIdField.choices = new List<string> { L10n.Tr(k_SelectProjectText) };
-                                projectIdField.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText));
-                                projectIdField.SetEnabled(false);
+                                if (exceptionCallback != null)
+                                {
+                                    exceptionCallback.Invoke(ex);
+                                }
+                                else
+                                {
+                                    //If there is no exception callback, we have to at least log it
+                                    Debug.LogException(ex);
+                                }
                             }
                         }
-                        catch (Exception ex)
+                        else
                         {
+                            var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainOrganizationsMessage))
+                            {
+                                error = getOrganizationsRequest.error,
+                                method = getOrganizationsRequest.method,
+                                timeout = getOrganizationsRequest.timeout,
+                                url = getOrganizationsRequest.url,
+                                responseHeaders = getOrganizationsRequest.GetResponseHeaders(),
+                                responseCode = getOrganizationsRequest.responseCode,
+                                isHttpError = (getOrganizationsRequest.result == UnityWebRequest.Result.ProtocolError),
+                                isNetworkError = (getOrganizationsRequest.result == UnityWebRequest.Result.ConnectionError),
+                            };
                             if (exceptionCallback != null)
                             {
                                 exceptionCallback.Invoke(ex);
@@ -519,35 +605,12 @@ namespace UnityEditor.Connect
                             }
                         }
                     }
-                    else
+                    finally
                     {
-                        var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainOrganizationsMessage))
-                        {
-                            error = getOrganizationsRequest.error,
-                            method = getOrganizationsRequest.method,
-                            timeout = getOrganizationsRequest.timeout,
-                            url = getOrganizationsRequest.url,
-                            responseHeaders = getOrganizationsRequest.GetResponseHeaders(),
-                            responseCode = getOrganizationsRequest.responseCode,
-                            isHttpError = (getOrganizationsRequest.result == UnityWebRequest.Result.ProtocolError),
-                            isNetworkError = (getOrganizationsRequest.result == UnityWebRequest.Result.ConnectionError),
-                        };
-                        if (exceptionCallback != null)
-                        {
-                            exceptionCallback.Invoke(ex);
-                        }
-                        else
-                        {
-                            //If there is no exception callback, we have to at least log it
-                            Debug.LogException(ex);
-                        }
+                        getOrganizationsRequest.Dispose();
                     }
-                }
-                finally
-                {
-                    getOrganizationsRequest.Dispose();
-                }
-            };
+                };
+            });
         }
 
         /// <summary>
@@ -559,58 +622,84 @@ namespace UnityEditor.Connect
         /// <param name="projectIdField"></param>
         void LoadReuseOrganizationField(PopupField<string> organizationField, PopupField<string> projectIdField = null)
         {
-            var getOrganizationsRequest = new UnityWebRequest(ServicesConfiguration.instance.GetCurrentUserApiUrl() + "?include=orgs,projects",
-                UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-            getOrganizationsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-            var operation = getOrganizationsRequest.SendWebRequest();
-            operation.completed += op =>
+            ServicesConfiguration.instance.RequestCurrentUserApiUrl(currentUserApiUrl =>
             {
-                try
+                var getOrganizationsRequest = new UnityWebRequest(currentUserApiUrl + "?include=orgs,projects",
+                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getOrganizationsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                var operation = getOrganizationsRequest.SendWebRequest();
+                operation.completed += op =>
                 {
-                    if (getOrganizationsRequest.result != UnityWebRequest.Result.ProtocolError)
+                    try
                     {
-                        var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
-                        var json = jsonParser.Parse();
-                        try
+                        if (getOrganizationsRequest.result != UnityWebRequest.Result.ProtocolError)
                         {
-                            m_OrgIdByName.Clear();
-                            var sortedOrganizationNames = new List<string>();
-                            foreach (var rawOrg in json.AsDict()[k_JsonOrgsNodeName].AsList())
+                            var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
+                            var json = jsonParser.Parse();
+                            try
                             {
-                                var org = rawOrg.AsDict();
-                                if (k_AnyRoleFilter.Contains(org[k_JsonRoleNodeName].AsString()))
+                                m_OrgIdByName.Clear();
+                                var sortedOrganizationNames = new List<string>();
+                                foreach (var rawOrg in json.AsDict()[k_JsonOrgsNodeName].AsList())
                                 {
-                                    sortedOrganizationNames.Add(org[k_JsonNameNodeName].AsString());
-                                    m_OrgIdByName.Add(org[k_JsonNameNodeName].AsString(), org[k_JsonIdNodeName].AsString());
+                                    var org = rawOrg.AsDict();
+                                    if (k_AnyRoleFilter.Contains(org[k_JsonRoleNodeName].AsString()))
+                                    {
+                                        sortedOrganizationNames.Add(org[k_JsonNameNodeName].AsString());
+                                        m_OrgIdByName.Add(org[k_JsonNameNodeName].AsString(), org[k_JsonIdNodeName].AsString());
+                                    }
+                                }
+
+                                foreach (var rawProject in json.AsDict()[k_JsonProjectsNodeName].AsList())
+                                {
+                                    var project = rawProject.AsDict();
+                                    if (!project[k_JsonArchivedNodeName].AsBool()
+                                        && !sortedOrganizationNames.Contains(project[k_JsonOrgNameNodeName].AsString()))
+                                    {
+                                        sortedOrganizationNames.Add(project[k_JsonOrgNameNodeName].AsString());
+                                        m_OrgIdByName.Add(project[k_JsonOrgNameNodeName].AsString(), project[k_JsonOrgIdNodeName].AsString());
+                                    }
+                                }
+
+                                sortedOrganizationNames.Sort();
+                                var popUpChoices = new List<string> { L10n.Tr(k_SelectOrganizationText) };
+                                organizationField.SetEnabled(true);
+                                popUpChoices.AddRange(sortedOrganizationNames);
+                                organizationField.choices = popUpChoices;
+                                organizationField.SetValueWithoutNotify(organizationField.choices[0]);
+                                if (projectIdField != null)
+                                {
+                                    projectIdField.choices = new List<string> { L10n.Tr(k_SelectProjectText) };
+                                    projectIdField.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText));
+                                    projectIdField.SetEnabled(false);
                                 }
                             }
-
-                            foreach (var rawProject in json.AsDict()[k_JsonProjectsNodeName].AsList())
+                            catch (Exception ex)
                             {
-                                var project = rawProject.AsDict();
-                                if (!project[k_JsonArchivedNodeName].AsBool()
-                                    && !sortedOrganizationNames.Contains(project[k_JsonOrgNameNodeName].AsString()))
+                                if (exceptionCallback != null)
                                 {
-                                    sortedOrganizationNames.Add(project[k_JsonOrgNameNodeName].AsString());
-                                    m_OrgIdByName.Add(project[k_JsonOrgNameNodeName].AsString(), project[k_JsonOrgIdNodeName].AsString());
+                                    exceptionCallback.Invoke(ex);
                                 }
-                            }
-
-                            sortedOrganizationNames.Sort();
-                            var popUpChoices = new List<string> { L10n.Tr(k_SelectOrganizationText) };
-                            organizationField.SetEnabled(true);
-                            popUpChoices.AddRange(sortedOrganizationNames);
-                            organizationField.choices = popUpChoices;
-                            organizationField.SetValueWithoutNotify(organizationField.choices[0]);
-                            if (projectIdField != null)
-                            {
-                                projectIdField.choices = new List<string> { L10n.Tr(k_SelectProjectText) };
-                                projectIdField.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText));
-                                projectIdField.SetEnabled(false);
+                                else
+                                {
+                                    //If there is no exception callback, we have to at least log it
+                                    Debug.LogException(ex);
+                                }
                             }
                         }
-                        catch (Exception ex)
+                        else
                         {
+                            var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainOrganizationsMessage))
+                            {
+                                error = getOrganizationsRequest.error,
+                                method = getOrganizationsRequest.method,
+                                timeout = getOrganizationsRequest.timeout,
+                                url = getOrganizationsRequest.url,
+                                responseHeaders = getOrganizationsRequest.GetResponseHeaders(),
+                                responseCode = getOrganizationsRequest.responseCode,
+                                isHttpError = (getOrganizationsRequest.result == UnityWebRequest.Result.ProtocolError),
+                                isNetworkError = (getOrganizationsRequest.result == UnityWebRequest.Result.ConnectionError),
+                            };
                             if (exceptionCallback != null)
                             {
                                 exceptionCallback.Invoke(ex);
@@ -622,35 +711,12 @@ namespace UnityEditor.Connect
                             }
                         }
                     }
-                    else
+                    finally
                     {
-                        var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainOrganizationsMessage))
-                        {
-                            error = getOrganizationsRequest.error,
-                            method = getOrganizationsRequest.method,
-                            timeout = getOrganizationsRequest.timeout,
-                            url = getOrganizationsRequest.url,
-                            responseHeaders = getOrganizationsRequest.GetResponseHeaders(),
-                            responseCode = getOrganizationsRequest.responseCode,
-                            isHttpError = (getOrganizationsRequest.result == UnityWebRequest.Result.ProtocolError),
-                            isNetworkError = (getOrganizationsRequest.result == UnityWebRequest.Result.ConnectionError),
-                        };
-                        if (exceptionCallback != null)
-                        {
-                            exceptionCallback.Invoke(ex);
-                        }
-                        else
-                        {
-                            //If there is no exception callback, we have to at least log it
-                            Debug.LogException(ex);
-                        }
+                        getOrganizationsRequest.Dispose();
                     }
-                }
-                finally
-                {
-                    getOrganizationsRequest.Dispose();
-                }
-            };
+                };
+            });
         }
 
         static PopupField<string> BuildPopupField(VisualElement block, string anchorName)
@@ -663,8 +729,6 @@ namespace UnityEditor.Connect
             anchorParent.Insert(anchorIndex, popupField);
             return popupField;
         }
-
-        internal static event Action projectBindCompleted;
 
         public delegate void CreateButtonCallback(ProjectInfoData projectInfoData);
 

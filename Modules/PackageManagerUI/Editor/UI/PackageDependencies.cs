@@ -28,6 +28,15 @@ namespace UnityEditor.PackageManager.UI
             return label;
         }
 
+        private static TextField BuildTextField(string text, string clazz)
+        {
+            var textfield = new TextField();
+            textfield.SetValueWithoutNotify(text);
+            textfield.AddToClassList(clazz);
+            textfield.tooltip = text;
+            return textfield;
+        }
+
         private static string GetNameText(DependencyInfo dependency)
         {
             var packageVersion = PackageDatabase.instance.GetPackageVersion(dependency);
@@ -79,8 +88,8 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var dependency in dependencies)
             {
-                dependenciesNames.Add(BuildLabel(GetNameText(dependency), "text"));
-                dependenciesVersions.Add(BuildLabel(dependency.version, "text"));
+                dependenciesNames.Add(BuildTextField(GetNameText(dependency), "text"));
+                dependenciesVersions.Add(BuildTextField(dependency.version, "text"));
                 dependenciesStatuses.Add(BuildLabel(GetStatusText(dependency), "text"));
             }
         }
@@ -100,8 +109,8 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var version in reverseDependencies)
             {
-                reverseDependenciesNames.Add(BuildLabel(version.displayName ?? string.Empty, "text"));
-                reverseDependenciesVersions.Add(BuildLabel(version.version.ToString(), "text"));
+                reverseDependenciesNames.Add(BuildTextField(version.displayName ?? string.Empty, "text"));
+                reverseDependenciesVersions.Add(BuildTextField(version.version.ToString(), "text"));
             }
         }
 

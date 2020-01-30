@@ -138,7 +138,7 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 var localInfosJsonData = Json.Serialize(localInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
-                var httpRequest = ApplicationUtil.instance.GetASyncHTTPClient($"{host}{k_UpdateInfoUri}", "POST");
+                var httpRequest = ApplicationUtil.instance.PostASyncHTTPClient($"{host}{k_UpdateInfoUri}", localInfosJsonData);
 
                 HandleHttpRequest(httpRequest,
                     result =>

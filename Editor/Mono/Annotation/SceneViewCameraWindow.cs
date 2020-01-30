@@ -48,7 +48,7 @@ namespace UnityEditor
         const int k_HeaderSpacing = 2;
         // FOV values chosen to be the smallest and largest before extreme visual corruption
         const float k_MinFieldOfView = 4f;
-        const float k_MaxFieldOfView = 160f;
+        const float k_MaxFieldOfView = 120f;
 
         Vector2 m_WindowSize;
         Vector2 m_Scroll;

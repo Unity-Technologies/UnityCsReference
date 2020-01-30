@@ -50,7 +50,7 @@ namespace UnityEditor.Connect
             return CrashReportingSettings.enabled;
         }
 
-        protected override void InternalEnableService(bool enable)
+        protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
             if (CrashReportingSettings.enabled != enable)
             {
@@ -58,7 +58,7 @@ namespace UnityEditor.Connect
                 EditorAnalytics.SendEventServiceInfo(new CrashServiceState() { crash_reporting = enable });
             }
 
-            base.InternalEnableService(enable);
+            base.InternalEnableService(enable, shouldUpdateApiFlag);
         }
     }
 }

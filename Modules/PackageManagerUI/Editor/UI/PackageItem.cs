@@ -286,10 +286,10 @@ namespace UnityEditor.PackageManager.UI
         private static readonly string[] k_TooltipsByProgress =
         {
             "",
-            ApplicationUtil.instance.GetTranslationForText("Package refreshing in progress."),
-            ApplicationUtil.instance.GetTranslationForText("Package downloading in progress."),
-            ApplicationUtil.instance.GetTranslationForText("Package installing in progress."),
-            ApplicationUtil.instance.GetTranslationForText("Package removing in progress.")
+            "Package refreshing in progress.",
+            "Package downloading in progress.",
+            "Package installing in progress.",
+            "Package removing in progress."
         };
 
         public static string GetTooltipByProgress(PackageProgress progress)

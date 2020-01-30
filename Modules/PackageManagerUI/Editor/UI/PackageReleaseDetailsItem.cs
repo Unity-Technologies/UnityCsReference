@@ -19,15 +19,20 @@ namespace UnityEditor.PackageManager.UI
             var root = Resources.GetTemplate("PackageReleaseDetailsItem.uxml");
             Add(root);
             cache = new VisualElementCache(root);
+
+            root.Query<TextField>().ForEach(t =>
+            {
+                t.isReadOnly = true;
+            });
         }
 
         public PackageReleaseDetailsItem(string versionString, DateTime? publishedDate, string releaseNotes) : this()
         {
-            string releaseDateString = publishedDate?.ToString("MMMM dd,  yyyy", CultureInfo.CreateSpecificCulture("en-US"));
+            var releaseDateString = publishedDate?.ToString("MMMM dd,  yyyy", CultureInfo.CreateSpecificCulture("en-US"));
 
-            versionAndReleaseDateLabel.text = versionString + (releaseDateString != null ? $" - released on {releaseDateString}" : string.Empty);
+            versionAndReleaseDateLabel.SetValueWithoutNotify(versionString + (releaseDateString != null ? $" - released on {releaseDateString}" : string.Empty));
 
-            releaseNotesLabel.text = releaseNotes;
+            releaseNotesLabel.SetValueWithoutNotify(releaseNotes);
 
             lessButton.clicked += OnLessButtonClicked;
             moreButton.clicked += OnMoreButtonClicked;
@@ -49,9 +54,9 @@ namespace UnityEditor.PackageManager.UI
         }
 
         private VisualElementCache cache { get; set; }
-        private Label versionAndReleaseDateLabel { get { return cache.Get<Label>("versionAndReleaseDate"); } }
+        private TextField versionAndReleaseDateLabel { get { return cache.Get<TextField>("versionAndReleaseDate"); } }
         private VisualElement releaseNotesContainer { get { return cache.Get<VisualElement>("releaseNotesContainer"); } }
-        private Label releaseNotesLabel { get { return cache.Get<Label>("releaseNotes"); } }
+        private TextField releaseNotesLabel { get { return cache.Get<TextField>("releaseNotes"); } }
         private Button moreButton { get { return cache.Get<Button>("releaseDetailMore"); } }
         private Button lessButton { get { return cache.Get<Button>("releaseDetailLess"); } }
     }

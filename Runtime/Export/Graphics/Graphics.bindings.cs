@@ -774,8 +774,10 @@ namespace UnityEngine
         [Obsolete("SetPaperWhiteInNits is deprecated, please use paperWhiteNits instead.")]
         public static void SetPaperWhiteInNits(float paperWhite)
         {
+            int mainDisplay = 0;
             //Set paper white on the primary display
-            SetPaperWhiteNits(0, paperWhite);
+            if (GetAvailable(mainDisplay))
+                SetPaperWhiteNits(mainDisplay, paperWhite);
         }
 
         [FreeFunction("HDROutputSettingsBindings::GetActive", HasExplicitThis = false, ThrowsException = true)]

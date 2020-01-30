@@ -34,14 +34,14 @@ namespace UnityEditor.Connect
             k_Instance = new CollabService();
         }
 
-        protected override void InternalEnableService(bool enable)
+        protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
             if (IsServiceEnabled() != enable)
             {
                 EditorAnalytics.SendEventServiceInfo(new CollabServiceState() { collaborate = enable });
             }
 
-            base.InternalEnableService(enable);
+            base.InternalEnableService(enable, shouldUpdateApiFlag);
 
             Collab.instance.SetCollabEnabledForCurrentProject(enable);
 

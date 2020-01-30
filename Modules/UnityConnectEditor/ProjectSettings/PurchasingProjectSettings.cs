@@ -152,7 +152,10 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    OpenDashboardForProjectGuid(ServicesConfiguration.instance.basePurchasingDashboardUrl);
+                    ServicesConfiguration.instance.RequestBasePurchasingDashboardUrl(basePurchasingDashboardUrl =>
+                    {
+                        OpenDashboardForProjectGuid(basePurchasingDashboardUrl);
+                    });
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }

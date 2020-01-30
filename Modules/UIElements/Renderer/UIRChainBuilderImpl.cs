@@ -1218,8 +1218,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var c = ve.renderChainData.firstCommand;
                 while (c != ve.renderChainData.lastCommand)
                 {
+                    var nextC = c.next;
                     renderChain.FreeCommand(c);
-                    c = c.next;
+                    c = nextC;
                 }
                 renderChain.FreeCommand(c); // Last command
             }
@@ -1239,8 +1240,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var c = ve.renderChainData.firstClosingCommand;
                 while (c != ve.renderChainData.lastClosingCommand)
                 {
+                    var nextC = c.next;
                     renderChain.FreeCommand(c);
-                    c = c.next;
+                    c = nextC;
                 }
                 renderChain.FreeCommand(c); // Last closing command
             }

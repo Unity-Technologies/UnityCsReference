@@ -703,9 +703,9 @@ namespace UnityEditor
 
         internal static extern string[] templateCustomKeys { get; set; }
 
-        internal static extern void SetTemplateCustomValue(string key, string value);
+        public static extern void SetTemplateCustomValue(string name, string value);
 
-        internal static extern string GetTemplateCustomValue(string key);
+        public static extern string GetTemplateCustomValue(string name);
 
         internal static extern string spritePackerPolicy
         {

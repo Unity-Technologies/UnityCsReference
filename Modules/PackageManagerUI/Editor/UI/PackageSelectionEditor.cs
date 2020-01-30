@@ -12,7 +12,6 @@ namespace UnityEditor.PackageManager.UI
     [CustomEditor(typeof(PackageSelectionObject))]
     internal sealed class PackageEditor : Editor
     {
-        private static readonly string s_LocalizedTitle = ApplicationUtil.instance.GetTranslationForText("Package '{0}' Manifest");
         private const float kMinHeightForAssetStore = 192f;
         private const float kMinHeightForOther = 96f;
         private const float kLabelMinWidth = 64f;
@@ -24,7 +23,7 @@ namespace UnityEditor.PackageManager.UI
                 if (packageSelectionObject == null)
                     return base.targetTitle;
 
-                return string.Format(s_LocalizedTitle, m_Version != null ?
+                return string.Format(ApplicationUtil.instance.GetTranslationForText("Package '{0}' Manifest"), m_Version != null ?
                     string.IsNullOrEmpty(m_Version.displayName) ? m_Version.name : m_Version.displayName :
                     packageSelectionObject.displayName);
             }

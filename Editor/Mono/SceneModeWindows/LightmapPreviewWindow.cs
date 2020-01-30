@@ -26,7 +26,7 @@ namespace UnityEditor
         [SerializeField]
         float m_ExposureSliderValue = 0.0f;
         // this value can be altered by the user
-        float m_ExposureSliderMax = 10f;
+        float m_ExposureSliderMax = 16f;
         // no point of allowing the user to go over this
         const float kExposureSliderAbsoluteMax = 23.0f;
 

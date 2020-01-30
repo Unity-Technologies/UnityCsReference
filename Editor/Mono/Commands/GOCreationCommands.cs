@@ -63,6 +63,12 @@ namespace UnityEditor
                     parent = activeGO;
             }
 
+            // If selected GameObject is a Sub Scene header, place GameObject in active scene
+            // similar to what happens when other scene headers are selected.
+            SceneHierarchyHooks.SubSceneInfo info = SubSceneGUI.GetSubSceneInfo(parent);
+            if (info.isValid)
+                parent = null;
+
             var go = ObjectFactory.CreateGameObject("GameObject");
             Place(go, parent);
         }

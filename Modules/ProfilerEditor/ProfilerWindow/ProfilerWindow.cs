@@ -38,6 +38,19 @@ namespace UnityEditor
             public static readonly GUIContent recordCallstacks = EditorGUIUtility.TrTextContent("Call Stacks", "Record call stacks for special samples such as \"GC.Alloc\". " +
                 "To see the call stacks, select a sample in the CPU Usage module, e.g. in Timeline view. " +
                 "To also see call stacks in Hierarchy view, switch from \"No Details\" to \"Show Related Objects\", select a \"GC.Alloc\" sample and select \"N/A\" items from the list.");
+            public static readonly string[] recordCallstacksOptions =
+            {
+                L10n.Tr("GC.Alloc"), L10n.Tr("UnsafeUtility.Malloc(Persistent)"), L10n.Tr("JobHandle.Complete")
+            };
+            public static readonly string[] recordCallstacksDevelopmentOptions =
+            {
+                L10n.Tr("GC.Alloc"), L10n.Tr("UnsafeUtility.Malloc(Persistent)"), L10n.Tr("JobHandle.Complete"), L10n.Tr("Native Allocations (Editor Only)")
+            };
+            public static readonly ProfilerMemoryRecordMode[] recordCallstacksEnumValues =
+            {
+                ProfilerMemoryRecordMode.GCAlloc, ProfilerMemoryRecordMode.UnsafeUtilityMalloc, ProfilerMemoryRecordMode.JobHandleComplete, ProfilerMemoryRecordMode.NativeAlloc
+            };
+
             public static readonly GUIContent profilerRecordOff = EditorGUIUtility.TrIconContent("Record Off", "Record profiling information");
             public static readonly GUIContent profilerRecordOn = EditorGUIUtility.TrIconContent("Record On", "Record profiling information");
 
@@ -165,8 +178,9 @@ namespace UnityEditor
             return null;
         }
 
-        private ProfilerMemoryRecordMode m_SelectedMemRecordMode = ProfilerMemoryRecordMode.None;
-        private ProfilerMemoryRecordMode m_LastSelectedMemRecordMode = ProfilerMemoryRecordMode.None;
+        ProfilerMemoryRecordMode m_CurrentCallstackRecordMode = ProfilerMemoryRecordMode.None;
+        [SerializeField]
+        ProfilerMemoryRecordMode m_CallstackRecordMode = ProfilerMemoryRecordMode.None;
 
 
         public string ConnectedTargetName => m_AttachProfilerState.connectionName;
@@ -178,6 +192,7 @@ namespace UnityEditor
 
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
+        const string kProfilerEditorTargetModeEnabledSessionKey = "ProfilerTargetMode";
         const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
 
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
@@ -243,7 +258,12 @@ namespace UnityEditor
 
         public bool IsRecording()
         {
-            return m_Recording && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
+            return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
+        }
+
+        public bool IsSetToRecord()
+        {
+            return m_Recording;
         }
 
         void OnEnable()
@@ -494,8 +514,11 @@ namespace UnityEditor
 
             // This event gets called every time when some other window is maximized and then unmaximized
             ProfilerDriver.enabled = m_Recording;
+            ProfilerDriver.profileEditor = SessionState.GetBool(kProfilerEditorTargetModeEnabledSessionKey,
+                ProfilerUserSettings.defaultTargetMode == ProfilerEditorTargetMode.Editmode || ProfilerDriver.profileEditor);
 
-            m_SelectedMemRecordMode = ProfilerDriver.memoryRecordMode;
+            // Update the current callstack capture mode.
+            m_CurrentCallstackRecordMode = ProfilerDriver.memoryRecordMode;
         }
 
         void OnPlaymodeStateChanged(PlayModeStateChange stateChange)
@@ -567,10 +590,73 @@ namespace UnityEditor
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
         static void ShowProfilerWindow()
         {
-            if (ProfilerUserSettings.useOutOfProcessProfiler && Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
+            EditorWindow.GetWindow<ProfilerWindow>(false);
+        }
+
+        [MenuItem("Window/Analysis/Profiler (Standalone Process)", false, 1)]
+        static void ShowProfilerOOP()
+        {
+            if (EditorUtility.DisplayDialog("Profiler (Standalone Process)",
+                "The Standalone Profiler launches the Profiler window in a separate process from the Editor. " +
+                "This means that the performance of the Editor does not affect profiling data, and the Profiler does not affect the performance of the Editor. " +
+                "It takes around 3-4 seconds to launch.", "OK", DialogOptOutDecisionType.ForThisMachine, "UseOutOfProcessProfiler"))
+            {
                 ProfilerRoleProvider.LaunchProfilerSlave();
-            else
-                EditorWindow.GetWindow<ProfilerWindow>(false);
+            }
+        }
+
+        static string GetRecordingStateName(string defaultName)
+        {
+            if (!String.IsNullOrEmpty(defaultName))
+                return $"of {defaultName}";
+            if (ProfilerDriver.profileEditor)
+                return "editmode";
+            return "playmode";
+        }
+
+        [ShortcutManagement.Shortcut("Profiling/Profiler/RecordToggle", KeyCode.F9)]
+        static void RecordToggle()
+        {
+            var commandHandled = false;
+            if (CommandService.Exists("ProfilerRecordToggle"))
+            {
+                var result = CommandService.Execute("ProfilerRecordToggle", CommandHint.Shortcut);
+                commandHandled = Convert.ToBoolean(result);
+            }
+
+            if (!commandHandled)
+            {
+                if (HasOpenInstances<ProfilerWindow>())
+                {
+                    var profilerWindow = GetWindow<ProfilerWindow>();
+                    profilerWindow.SetRecordingEnabled(!profilerWindow.IsSetToRecord());
+                }
+                else
+                {
+                    ProfilerDriver.enabled = !ProfilerDriver.enabled;
+                }
+
+                using (var state = PlayerConnectionGUIUtility.GetConnectionState(null, null))
+                {
+                    var connectionName = "";
+                    if (state.connectedToTarget != ConnectionTarget.Editor)
+                        connectionName = state.connectionName;
+                    EditorGUI.hyperLinkClicked -= EditorGUI_HyperLinkClicked;
+                    EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
+                    if (ProfilerDriver.enabled)
+                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"Recording {GetRecordingStateName(connectionName)} has started...");
+                    else
+                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Recording has ended.\r\nClick <a openprofiler=\"true\">here</a> to open the profiler window.");
+                }
+            }
+        }
+
+        private static void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
+        {
+            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
+
+            if (args.hyperlinkInfos.ContainsKey("openprofiler"))
+                ShowProfilerWindow();
         }
 
         [RequiredByNativeCode]
@@ -819,20 +905,20 @@ namespace UnityEditor
                 m_Charts[selected].active = true;
         }
 
-        void SetRecordMode(ProfilerMemoryRecordMode memRecordMode)
+        void SetCallstackRecordMode(ProfilerMemoryRecordMode memRecordMode)
         {
-            if (memRecordMode == m_SelectedMemRecordMode)
+            if (memRecordMode == m_CurrentCallstackRecordMode)
                 return;
-            m_SelectedMemRecordMode = memRecordMode;
-            if (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None)
-                m_LastSelectedMemRecordMode = m_SelectedMemRecordMode;
+            m_CurrentCallstackRecordMode = memRecordMode;
             ProfilerDriver.memoryRecordMode = memRecordMode;
             memoryRecordingModeChanged?.Invoke(memRecordMode);
         }
 
-        void MemRecordModeClick(object userData, string[] options, int selected)
+        void ToggleCallstackRecordModeFlag(object userData, string[] options, int selected)
         {
-            SetRecordMode((ProfilerMemoryRecordMode)selected);
+            m_CallstackRecordMode ^= Styles.recordCallstacksEnumValues[selected];
+            if (m_CurrentCallstackRecordMode != ProfilerMemoryRecordMode.None)
+                SetCallstackRecordMode(m_CallstackRecordMode);
         }
 
         internal void SaveProfilingData()
@@ -999,39 +1085,31 @@ namespace UnityEditor
 
         void AllocationCallstacksToolbarItem()
         {
-            var selectedMemRecordMode = m_SelectedMemRecordMode;
-            if (Unsupported.IsDeveloperMode())
-            {
-                bool toggled = m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None;
-                var oldToggleState = toggled;
-                if (EditorGUILayout.DropDownToggle(ref toggled, Styles.recordCallstacks, EditorStyles.toolbarDropDownToggle))
-                {
-                    Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    var names = new string[]
-                    {
-                        L10n.Tr("None"), L10n.Tr("Managed Allocations"), L10n.Tr("All Allocations (fast)"), L10n.Tr("All Allocations (full)")
-                    };
+            // Whenever we unset all flags, we fallback to the default GC Alloc callstacks.
+            if (m_CallstackRecordMode == ProfilerMemoryRecordMode.None)
+                m_CallstackRecordMode = ProfilerMemoryRecordMode.GCAlloc;
 
-                    var enabled = new bool[names.Length];
-                    for (int c = 0; c < names.Length; ++c)
-                        enabled[c] = true;
-                    var selected = new int[] { (int)m_SelectedMemRecordMode };
-                    EditorUtility.DisplayCustomMenu(rect, names, enabled, selected, MemRecordModeClick, null);
-                    GUIUtility.ExitGUI();
-                }
-                if (toggled != oldToggleState)
-                {
-                    selectedMemRecordMode = (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None) ? ProfilerMemoryRecordMode.None :
-                        (m_LastSelectedMemRecordMode == ProfilerMemoryRecordMode.None ? ProfilerMemoryRecordMode.ManagedAllocations : m_LastSelectedMemRecordMode);
-                }
-            }
-            else
+            var selectedMemRecordMode = m_CurrentCallstackRecordMode;
+            var toggled = selectedMemRecordMode != ProfilerMemoryRecordMode.None;
+            var oldToggleState = toggled;
+            if (EditorGUILayout.DropDownToggle(ref toggled, Styles.recordCallstacks, EditorStyles.toolbarDropDownToggle))
             {
-                selectedMemRecordMode = GUILayout.Toggle(m_SelectedMemRecordMode == ProfilerMemoryRecordMode.ManagedAllocations, Styles.recordCallstacks, EditorStyles.toolbarButton) ? ProfilerMemoryRecordMode.ManagedAllocations : ProfilerMemoryRecordMode.None;
+                var rect = GUILayoutUtility.topLevel.GetLast();
+                var names = Unsupported.IsDeveloperMode() ? Styles.recordCallstacksDevelopmentOptions : Styles.recordCallstacksOptions;
+                var selected = new List<int>();
+                for (var i = 0; i < names.Length; ++i)
+                {
+                    if ((m_CallstackRecordMode & Styles.recordCallstacksEnumValues[i]) != 0)
+                        selected.Add(i);
+                }
+                EditorUtility.DisplayCustomMenu(rect, names, selected.ToArray(), ToggleCallstackRecordModeFlag, null);
+                GUIUtility.ExitGUI();
             }
-
-            if (selectedMemRecordMode != m_SelectedMemRecordMode)
-                SetRecordMode(selectedMemRecordMode);
+            if (toggled != oldToggleState)
+            {
+                selectedMemRecordMode = m_CurrentCallstackRecordMode != ProfilerMemoryRecordMode.None ? ProfilerMemoryRecordMode.None : m_CallstackRecordMode;
+                SetCallstackRecordMode(selectedMemRecordMode);
+            }
         }
 
         void Clear()
@@ -1236,6 +1314,8 @@ namespace UnityEditor
                         Debug.LogError($"{change} is not implemented!");
                     break;
             }
+
+            SessionState.SetBool(kProfilerEditorTargetModeEnabledSessionKey, ProfilerDriver.profileEditor);
         }
 
         bool IsEditorConnectionTargeted(EditorConnectionTarget connection)

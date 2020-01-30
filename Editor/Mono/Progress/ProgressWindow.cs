@@ -74,7 +74,7 @@ namespace UnityEditor
         }
 
         // only for tests
-        internal static ProgressItem GetProgressItem(int id)
+        internal static Progress.Item GetProgressItem(int id)
         {
             if (m_Window == null)
                 return null;
@@ -134,9 +134,9 @@ namespace UnityEditor
             UpdateStatusHeaders();
             UpdateStatusFilter();
 
-            Progress.OnAdded += OperationWasAdded;
-            Progress.OnRemoved += OperationWasRemoved;
-            Progress.OnUpdated += OperationWasUpdated;
+            Progress.added += OperationWasAdded;
+            Progress.removed += OperationWasRemoved;
+            Progress.updated += OperationWasUpdated;
 
             CheckUnresponsive();
         }
@@ -144,9 +144,9 @@ namespace UnityEditor
         private void OnDisable()
         {
             EditorApplication.delayCall -= CheckUnresponsive;
-            Progress.OnAdded -= OperationWasAdded;
-            Progress.OnRemoved -= OperationWasRemoved;
-            Progress.OnUpdated -= OperationWasUpdated;
+            Progress.added -= OperationWasAdded;
+            Progress.removed -= OperationWasRemoved;
+            Progress.updated -= OperationWasUpdated;
         }
 
         private void CheckUnresponsive()
@@ -159,7 +159,7 @@ namespace UnityEditor
             EditorApplication.delayCall += CheckUnresponsive;
         }
 
-        private void OperationWasAdded(ProgressItem[] ops)
+        private void OperationWasAdded(Progress.Item[] ops)
         {
             Assert.IsNotNull(ops[0]);
             var el = AddElement(ops[0]);
@@ -168,7 +168,7 @@ namespace UnityEditor
             UpdateStatusFilter(el);
         }
 
-        private void OperationWasRemoved(ProgressItem[] ops)
+        private void OperationWasRemoved(Progress.Item[] ops)
         {
             Assert.IsNotNull(ops[0]);
 
@@ -198,7 +198,7 @@ namespace UnityEditor
             };
         }
 
-        private void OperationWasUpdated(ProgressItem[] ops)
+        private void OperationWasUpdated(Progress.Item[] ops)
         {
             Assert.IsNotNull(ops[0]);
 
@@ -223,7 +223,7 @@ namespace UnityEditor
 
                 Assert.IsTrue(parentElementIndex != -1);
 
-                if (statusWasChanged && op.parentId < 0 && op.status == ProgressStatus.Failed)
+                if (statusWasChanged && op.parentId < 0 && op.status == Progress.Status.Failed)
                 {
                     if (m_Elements.Count > 1)
                     {
@@ -246,7 +246,7 @@ namespace UnityEditor
             int firstSucceededOrCanceledIndex = elements.Count;
             for (int i = elements.Count - 1; i >= 0; i--)
             {
-                if (elements[i].dataSource.status == ProgressStatus.Succeeded || elements[i].dataSource.status == ProgressStatus.Canceled)
+                if (elements[i].dataSource.status == Progress.Status.Succeeded || elements[i].dataSource.status == Progress.Status.Canceled)
                     firstSucceededOrCanceledIndex = i;
                 else
                     break;
@@ -278,13 +278,13 @@ namespace UnityEditor
         private void UpdateStatusHeaders()
         {
             var countPerStatus = Progress.GetCountPerStatus();
-            UpdateStatusHeader(m_FilterActive, ProgressStatus.Running, countPerStatus);
-            UpdateStatusHeader(m_FilterCancelled, ProgressStatus.Canceled, countPerStatus);
-            UpdateStatusHeader(m_FilterFailed, ProgressStatus.Failed, countPerStatus);
-            UpdateStatusHeader(m_FilterSuccess, ProgressStatus.Succeeded, countPerStatus);
+            UpdateStatusHeader(m_FilterActive, Progress.Status.Running, countPerStatus);
+            UpdateStatusHeader(m_FilterCancelled, Progress.Status.Canceled, countPerStatus);
+            UpdateStatusHeader(m_FilterFailed, Progress.Status.Failed, countPerStatus);
+            UpdateStatusHeader(m_FilterSuccess, Progress.Status.Succeeded, countPerStatus);
         }
 
-        private static void UpdateStatusHeader(Toggle toggle, ProgressStatus status, int[] countPerStatus)
+        private static void UpdateStatusHeader(Toggle toggle, Progress.Status status, int[] countPerStatus)
         {
             var countStr = countPerStatus[(int)status].ToString();
             if (toggle.text != countStr)
@@ -301,19 +301,19 @@ namespace UnityEditor
 
         private void UpdateStatusFilter(ProgressElement el)
         {
-            if (el.dataSource.status == ProgressStatus.Canceled)
+            if (el.dataSource.status == Progress.Status.Canceled)
             {
                 UpdateStatusFilter(el.rootVisualElement, m_FilterCancelled.value);
             }
-            else if (el.dataSource.status == ProgressStatus.Failed)
+            else if (el.dataSource.status == Progress.Status.Failed)
             {
                 UpdateStatusFilter(el.rootVisualElement, m_FilterFailed.value);
             }
-            else if (el.dataSource.status == ProgressStatus.Running)
+            else if (el.dataSource.status == Progress.Status.Running)
             {
                 UpdateStatusFilter(el.rootVisualElement, m_FilterActive.value);
             }
-            else if (el.dataSource.status == ProgressStatus.Succeeded)
+            else if (el.dataSource.status == Progress.Status.Succeeded)
             {
                 UpdateStatusFilter(el.rootVisualElement, m_FilterSuccess.value);
             }
@@ -336,7 +336,7 @@ namespace UnityEditor
             var finishedTasks = m_Elements.Where(el => !el.dataSource.running).Select(el => el.dataSource.id).ToArray();
             foreach (var id in finishedTasks)
             {
-                Progress.Clear(id);
+                Progress.Remove(id);
             }
         }
 
@@ -350,7 +350,7 @@ namespace UnityEditor
             m_DismissAllBtn.SetEnabled(m_Elements.Any(el => !el.dataSource.running));
         }
 
-        private ProgressElement AddElement(ProgressItem progressItem)
+        private ProgressElement AddElement(Progress.Item progressItem)
         {
             if (progressItem.parentId >= 0)
             {
@@ -366,13 +366,13 @@ namespace UnityEditor
             }
             // if parent was not found
             var element = new ProgressElement(progressItem);
-            if (m_Elements.Count > 0 && progressItem.status == ProgressStatus.Failed)
+            if (m_Elements.Count > 0 && progressItem.status == Progress.Status.Failed)
             {
                 var insertIndex = -1;
                 for (int i = 0; i < m_Elements.Count; i++)
                 {
-                    if ((m_Elements[i].dataSource.status == ProgressStatus.Failed && progressItem.updateTime > m_Elements[i].dataSource.updateTime)
-                        || m_Elements[i].dataSource.status != ProgressStatus.Failed)
+                    if ((m_Elements[i].dataSource.status == Progress.Status.Failed && progressItem.updateTime > m_Elements[i].dataSource.updateTime)
+                        || m_Elements[i].dataSource.status != Progress.Status.Failed)
                     {
                         insertIndex = i;
                         break;

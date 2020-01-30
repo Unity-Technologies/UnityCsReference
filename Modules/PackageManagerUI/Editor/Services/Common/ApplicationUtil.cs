@@ -161,9 +161,14 @@ namespace UnityEditor.PackageManager.UI
                 onFinishCompiling();
             }
 
-            public IAsyncHTTPClient GetASyncHTTPClient(string url, string method = null)
+            public IAsyncHTTPClient GetASyncHTTPClient(string url)
             {
-                return string.IsNullOrEmpty(method) ? new AsyncHTTPClient(url) : new AsyncHTTPClient(url, method);
+                return new AsyncHTTPClient(url);
+            }
+
+            public IAsyncHTTPClient PostASyncHTTPClient(string url, string postData)
+            {
+                return new AsyncHTTPClient(url, "POST") {postData = postData};
             }
 
             public void GetAuthorizationCodeAsync(string clientId, Action<UnityOAuth.AuthCodeResponse> callback)

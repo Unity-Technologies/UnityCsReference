@@ -277,25 +277,27 @@ namespace UnityEditor
             var importer = PrefabUtility.IsPartOfModelPrefab(target) ? GetImporter() : null;
             if (importer != null)
             {
-                var importerRef = new SerializedObject(importer);
-                var importerLODLevels = importerRef.FindProperty("m_LODScreenPercentages");
-                var lodNumberOnImporterMatches = importerLODLevels.isArray && importerLODLevels.arraySize == lods.Count;
-
-                var guiState = GUI.enabled;
-                if (!lodNumberOnImporterMatches)
-                    GUI.enabled = false;
-
-                if (GUILayout.Button(lodNumberOnImporterMatches ? LODGroupGUI.Styles.m_UploadToImporter : LODGroupGUI.Styles.m_UploadToImporterDisabled))
+                using (var importerRef = new SerializedObject(importer))
                 {
-                    // Number of imported LOD's is the same as in the imported model
-                    for (var i = 0; i < importerLODLevels.arraySize; i++)
-                        importerLODLevels.GetArrayElementAtIndex(i).floatValue = lods[i].RawScreenPercent;
+                    var importerLODLevels = importerRef.FindProperty("m_LODScreenPercentages");
+                    var lodNumberOnImporterMatches = importerLODLevels.isArray && importerLODLevels.arraySize == lods.Count;
 
-                    importerRef.ApplyModifiedProperties();
+                    var guiState = GUI.enabled;
+                    if (!lodNumberOnImporterMatches)
+                        GUI.enabled = false;
 
-                    AssetDatabase.ImportAsset(importer.assetPath);
+                    if (GUILayout.Button(lodNumberOnImporterMatches ? LODGroupGUI.Styles.m_UploadToImporter : LODGroupGUI.Styles.m_UploadToImporterDisabled))
+                    {
+                        // Number of imported LOD's is the same as in the imported model
+                        for (var i = 0; i < importerLODLevels.arraySize; i++)
+                            importerLODLevels.GetArrayElementAtIndex(i).floatValue = lods[i].RawScreenPercent;
+
+                        importerRef.ApplyModifiedProperties();
+
+                        AssetDatabase.ImportAsset(importer.assetPath);
+                    }
+                    GUI.enabled = guiState;
                 }
-                GUI.enabled = guiState;
             }
 
             // Apply the property, handle undo

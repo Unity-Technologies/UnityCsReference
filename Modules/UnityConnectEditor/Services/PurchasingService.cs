@@ -84,7 +84,7 @@ namespace UnityEditor.Connect
         {
             k_PackageUri = new Uri(PurchasingConfiguration.instance.purchasingPackageUrl);
 
-            name = L10n.Tr("Purchasing");
+            name = "Purchasing";
             title = L10n.Tr("In-App Purchasing");
             description = L10n.Tr("Simplify cross-platform IAP");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Purchasing.png";
@@ -101,7 +101,7 @@ namespace UnityEditor.Connect
 
         public override bool requiresCoppaCompliance => true;
 
-        protected override void InternalEnableService(bool enable)
+        protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
             if (PurchasingSettings.enabled != enable)
             {
@@ -113,7 +113,7 @@ namespace UnityEditor.Connect
                 }
             }
 
-            base.InternalEnableService(enable);
+            base.InternalEnableService(enable, shouldUpdateApiFlag);
         }
 
         /// <summary>

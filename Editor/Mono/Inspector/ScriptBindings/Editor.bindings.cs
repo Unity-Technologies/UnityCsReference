@@ -21,5 +21,6 @@ namespace UnityEditor
     {
         // Make a custom editor for /targetObject/ or /objects/.
         extern static Editor CreateEditorWithContextInternal(Object[] targetObjects, Object context, Type editorType);
+        internal extern static Vector2 GetCurrentMousePosition();
     }
 }

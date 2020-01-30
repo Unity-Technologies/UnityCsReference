@@ -6,7 +6,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace UnityEditor.Connect
 {
@@ -20,6 +22,9 @@ namespace UnityEditor.Connect
         static readonly Dictionary<string, SingleService> k_Services = new Dictionary<string, SingleService>();
 
         static List<string> s_InitializedServices = new List<string>();
+
+        UnityWebRequest m_ServiceRequest;
+        const string k_serviceFlagsKey = "service_flags";
 
         const string k_NotInitializedMsg = "Service {0} was not initialized. See the console for more details.";
 
@@ -82,9 +87,101 @@ namespace UnityEditor.Connect
             return k_Services[name];
         }
 
-        public static void DisableAllServices()
+        public static void DisableAllServices(bool shouldUpdateApiFlag)
         {
-            GetServices().ForEach(service => service?.EnableService(false));
+            GetServices().ForEach(service => service.EnableService(false, shouldUpdateApiFlag));
+        }
+
+        public static void EnableServicesOnProjectCreation()
+        {
+            GetServices().ForEach(service =>
+            {
+                if (service.shouldEnableOnProjectCreation)
+                {
+                    service.EnableService(true);
+                }
+            });
+        }
+
+        public static void SyncServicesOnProjectRebind()
+        {
+            k_Instance.RequestServicesApiFlags(flags =>
+            {
+                if (flags != null)
+                {
+                    GetServices().ForEach(service =>
+                    {
+                        if (service.shouldSyncOnProjectRebind && flags.ContainsKey(service.serviceFlagName))
+                        {
+                            service.EnableService(flags[service.serviceFlagName]);
+                        }
+                    });
+                }
+            });
+        }
+
+        private void RequestServicesApiFlags(Action<Dictionary<string, bool>> callback)
+        {
+            if (m_ServiceRequest != null)
+            {
+                m_ServiceRequest?.Abort();
+                m_ServiceRequest?.Dispose();
+                m_ServiceRequest = null;
+            }
+
+            ServicesConfiguration.instance.RequestCurrentProjectApiUrl(currentProjectApiUrl =>
+            {
+                m_ServiceRequest = new UnityWebRequest(currentProjectApiUrl,
+                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                m_ServiceRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                m_ServiceRequest.SendWebRequest().completed += op =>
+                {
+                    if (op.isDone)
+                    {
+                        Dictionary<string, bool> serviceFlags = null;
+                        if ((m_ServiceRequest != null) &&
+                            (m_ServiceRequest.result != UnityWebRequest.Result.ConnectionError) &&
+                            (m_ServiceRequest.result != UnityWebRequest.Result.ProtocolError) &&
+                            (m_ServiceRequest.downloadHandler != null))
+                        {
+                            if (m_ServiceRequest.downloadHandler.text.Length != 0)
+                            {
+                                var jsonParser = new JSONParser(m_ServiceRequest.downloadHandler.text);
+                                try
+                                {
+                                    var json = jsonParser.Parse();
+                                    serviceFlags = new Dictionary<string, bool>();
+                                    Dictionary<string, JSONValue> jsonFlags = null;
+
+                                    if (json.AsDict().ContainsKey(k_serviceFlagsKey))
+                                    {
+                                        jsonFlags = json.AsDict()[k_serviceFlagsKey].AsDict();
+                                    }
+
+                                    if (jsonFlags != null)
+                                    {
+                                        foreach (var key in jsonFlags.Keys)
+                                        {
+                                            serviceFlags.Add(key, jsonFlags[key].AsBool());
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Debug.LogException(ex);
+                                    NotificationManager.instance.Publish(Notification.Topic.AdsService, Notification.Severity.Error, ex.Message);
+                                }
+                            }
+                        }
+
+                        m_ServiceRequest?.Abort();
+                        m_ServiceRequest?.Dispose();
+                        m_ServiceRequest = null;
+
+                        callback?.Invoke(serviceFlags);
+                    }
+                };
+            });
         }
     }
 }

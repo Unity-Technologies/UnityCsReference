@@ -83,7 +83,8 @@ namespace UnityEditor.PackageManager.UI
 
             if (purchaseInfo == null)
             {
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, "Invalid purchase details."));
+                var errorMessage = ApplicationUtil.instance.GetTranslationForText("Unable to get purchase details because you may not have purchased this package.");
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, errorMessage));
             }
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
             {
@@ -126,7 +127,10 @@ namespace UnityEditor.PackageManager.UI
             m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
 
             if (purchaseInfo == null)
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, ApplicationUtil.instance.GetTranslationForText("Invalid purchase details.")));
+            {
+                var errorMessage = ApplicationUtil.instance.GetTranslationForText("Unable to get purchase details because you may not have purchased this package.");
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, errorMessage));
+            }
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, ApplicationUtil.instance.GetTranslationForText("Invalid product details.")));
             else if (string.IsNullOrEmpty(package?.name))

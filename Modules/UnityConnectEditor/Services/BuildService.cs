@@ -47,13 +47,13 @@ namespace UnityEditor.Connect
             ServicesRepository.AddService(this);
         }
 
-        protected override void InternalEnableService(bool enable)
+        protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
             if (IsServiceEnabled() != enable)
             {
                 EditorAnalytics.SendEventServiceInfo(new BuildServiceState() { build = enable });
             }
-            base.InternalEnableService(enable);
+            base.InternalEnableService(enable, shouldUpdateApiFlag);
         }
     }
 }

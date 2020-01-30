@@ -33,10 +33,12 @@ namespace UnityEditor
 
 
         [SerializeField]
-        List<EditorToolbar> m_LoadedToolbars = new List<EditorToolbar>();
+        List<EditorToolbar> m_LoadedToolbars;
 
         internal EditorToolbar GetSingleton(Type type)
         {
+            if (m_LoadedToolbars == null)
+                m_LoadedToolbars = new List<EditorToolbar>();
             m_LoadedToolbars = m_LoadedToolbars.Where(x => x != null).ToList();
             var res = m_LoadedToolbars.FirstOrDefault(x => x.GetType() == type);
             if (res != null)
@@ -65,11 +67,10 @@ namespace UnityEditor
 
                 if (m_MainToolbar != null)
                 {
-                    m_MainToolbar.m_Parent = this;
-
-
+                    m_MainToolbar.m_Parent = null;
                     if (m_MainToolbar.rootVisualElement != null)
                         m_MainToolbar.rootVisualElement.RemoveFromHierarchy();
+                    DestroyImmediate(m_MainToolbar);
                 }
 
                 m_MainToolbar = value == null ? GetSingleton(k_DefaultToolbarType) : value;

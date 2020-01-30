@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.Experimental;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -14,38 +13,56 @@ namespace UnityEditor.Connect
     /// <summary>
     /// Singleton class used to expose common services configurations
     /// </summary>
-    [InitializeOnLoad]
     internal sealed class ServicesConfiguration
     {
         static readonly ServicesConfiguration k_Instance;
+        const string k_CloudHubServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/hub";
+        const string k_CloudUsageDashboardUrl = "/usage";
+        const string k_CloudBuildAddTargetUrl = "/setup/platform";
+        const string k_CloudBuildTutorialUrl = "https://unity3d.com/learn/tutorials/topics/cloud-build-0";
+        const string k_CloudDiagnosticsUrl = "https://unitytech.github.io/clouddiagnostics/";
+        const string k_CloudDiagUserReportingSdkUrl = "https://userreporting.cloud.unity3d.com/api/userreporting/sdk";
+        const int k_NoProgressId = -1;
+        const int k_NoProgressAmount = -1;
+        const string k_ProgressTitle = "Connecting to services url";
 
         string m_CurrentUserApiUrl;
         string m_ProjectsApiUrl;
+        string m_ProjectApiUrl;
         string m_ProjectCoppaApiUrl;
         string m_ProjectUsersApiUrl;
         string m_ProjectDashboardUrl;
-        string m_CloudUsageDashboardUrl;
+        string m_ProjectServiceFlagsApiUrl;
         string m_CloudDiagCrashesDashboardUrl;
         string m_UnityTeamUrl;
-        string m_CloudBuildTutorialUrl;
+
         string m_CloudBuildProjectUrl;
-        string m_CloudBuildAddTargetUrl;
         string m_CloudBuildUploadUrl;
         string m_CloudBuildTargetUrl;
         string m_CloudBuildApiUrl;
         string m_CloudBuildApiProjectUrl;
         string m_CloudBuildApiStatusUrl;
 
-        string m_CloudDiagnosticsUrl;
-        string m_CloudDiagUserReportingSdkUrl;
         string m_CollabDashboardUrl;
         string m_PurchasingDashboardUrl;
         string m_AnalyticsDashboardUrl;
+
+        UnityWebRequest m_GetServicesUrlsRequest;
 
         public const string cdnConfigUri = "public-cdn.cloud.unity3d.com";
         const string k_CdnConfigUrl = "https://" + cdnConfigUri + "/config/{0}";
 
         Dictionary<string, string> m_ServicesUrlsConfig = new Dictionary<string, string>();
+
+
+        public static ServicesConfiguration instance => k_Instance;
+
+        public string cloudHubServiceUrl => k_CloudHubServiceUrl;
+
+        public bool pathsReady { get; internal set; }
+        public bool loadingConfigurations  { get; private set; }
+        int m_ProgressId = k_NoProgressId;
+        Queue<AsyncUrlCallback> m_AsyncUrlCallbacks = new Queue<AsyncUrlCallback>();
 
         public enum ServerEnvironment
         {
@@ -53,6 +70,27 @@ namespace UnityEditor.Connect
             Development,
             Staging,
             Custom,
+        }
+
+        enum AsyncUrlId
+        {
+            CurrentUserApiUrl,
+            ProjectsApiUrl,
+            ProjectApiUrl,
+            ProjectCoppaApiUrl,
+            ProjectUsersApiUrl,
+            ProjectDashboardUrl,
+            ProjectServiceFlagsApiUrl,
+            CloudBuildProjectUrl,
+            CloudBuildUploadUrl,
+            CloudBuildTargetUrl,
+            CloudBuildApiUrl,
+            CloudBuildApiProjectUrl,
+            CloudBuildApiStatusUrl,
+            CloudDiagCrashesDashboardUrl,
+            CollabDashboardUrl,
+            PurchasingDashboardUrl,
+            AnalyticsDashboardUrl,
         }
 
         static ServicesConfiguration()
@@ -65,11 +103,22 @@ namespace UnityEditor.Connect
 
         ServicesConfiguration()
         {
-            //We load configurations from most fallback to most relevant.
-            //So we always have some fallback entries if a config only overwrite some of the URLs.
-            LoadDefaultConfigurations();
-            LoadConfigurationsFromLocalConfigFile();
-            LoadConfigurationsFromCdn();
+            m_UnityTeamUrl = L10n.Tr("https://unity3d.com/teams"); // Should be https://unity3d.com/fr/teams in French !
+            PrepareAdsEnvironment(ConvertStringToServerEnvironment(UnityConnect.instance.GetEnvironment()));
+        }
+
+        internal void LoadConfigurations(bool forceLoad = false)
+        {
+            if ((!pathsReady && !loadingConfigurations) || forceLoad)
+            {
+                loadingConfigurations = true;
+                pathsReady = false;
+                StartProgress();
+                //We load configurations from most fallback to most relevant.
+                //So we always have some fallback entries if a config only overwrite some of the URLs.
+                LoadDefaultConfigurations();
+                LoadConfigurationsFromCdn();
+            }
         }
 
         void BuildPaths()
@@ -77,17 +126,13 @@ namespace UnityEditor.Connect
             var apiUrl = m_ServicesUrlsConfig["core"] + "/api";
             m_CurrentUserApiUrl = apiUrl + "/users/me";
             m_ProjectsApiUrl = apiUrl + "/orgs/{0}/projects";
-            var projectApiUrl = m_ProjectsApiUrl + "/{1}";
-            m_ProjectCoppaApiUrl = projectApiUrl + "/coppa";
-            m_ProjectUsersApiUrl = projectApiUrl + "/users";
+            m_ProjectApiUrl = m_ProjectsApiUrl + "/{1}";
+            m_ProjectCoppaApiUrl = m_ProjectApiUrl + "/coppa";
+            m_ProjectUsersApiUrl = m_ProjectApiUrl + "/users";
             m_ProjectDashboardUrl = m_ServicesUrlsConfig["core"] + "/orgs/{0}/projects/{1}";
-            cloudHubServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/hub";
-            m_CloudUsageDashboardUrl = "/usage";
-            m_UnityTeamUrl = L10n.Tr("https://unity3d.com/teams"); // Should be https://unity3d.com/fr/teams in French !
+            m_ProjectServiceFlagsApiUrl = apiUrl + "/projects/{0}/service_flags"; //no org to specify
 
-            m_CloudBuildTutorialUrl = "https://unity3d.com/learn/tutorials/topics/cloud-build-0";
             m_CloudBuildProjectUrl = m_ServicesUrlsConfig["build"] + "/build/orgs/{0}/projects/{1}";
-            m_CloudBuildAddTargetUrl = "/setup/platform";
 
             m_CloudBuildUploadUrl = m_CloudBuildProjectUrl + "/upload/?page=1";
             m_CloudBuildTargetUrl = m_CloudBuildProjectUrl + "/buildtargets";
@@ -95,15 +140,45 @@ namespace UnityEditor.Connect
             m_CloudBuildApiProjectUrl = m_CloudBuildApiUrl + "/api/v1/projects/{0}";
             m_CloudBuildApiStatusUrl = m_CloudBuildApiUrl + "/api/v1/status";
 
-            m_CloudDiagnosticsUrl = "https://unitytech.github.io/clouddiagnostics/";
-            m_CloudDiagUserReportingSdkUrl = "https://userreporting.cloud.unity3d.com/api/userreporting/sdk";
             m_CloudDiagCrashesDashboardUrl = m_ServicesUrlsConfig["build"] + "/diagnostics/orgs/{0}/projects/{1}/crashes";
             m_CollabDashboardUrl = m_ServicesUrlsConfig["build"] + "/collab/orgs/{0}/projects/{1}/assets/";
             m_PurchasingDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/projects/{0}/purchasing/";
             m_AnalyticsDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/events/{0}/";
-            PrepareAdsEnvironment(ConvertStringToServerEnvironment(UnityConnect.instance.GetEnvironment()));
 
             pathsReady = true;
+            loadingConfigurations = false;
+
+            while (m_AsyncUrlCallbacks.Count > 0)
+            {
+                InvokeAsyncUrlCallback(m_AsyncUrlCallbacks.Dequeue());
+            }
+
+            StopProgress();
+        }
+
+        void StartProgress()
+        {
+            if (m_ProgressId != k_NoProgressId)
+            {
+                Progress.Cancel(m_ProgressId);
+                Progress.Remove(m_ProgressId);
+            }
+
+            m_ProgressId = Progress.Start(L10n.Tr(k_ProgressTitle), options: Progress.Options.Indefinite);
+        }
+
+        void StopProgress()
+        {
+            Progress.Finish(m_ProgressId);
+            m_ProgressId = k_NoProgressId;
+        }
+
+        internal void UpdateProgress()
+        {
+            if (m_ProgressId != k_NoProgressId)
+            {
+                Progress.Report(m_ProgressId, k_NoProgressAmount);
+            }
         }
 
         void LoadDefaultConfigurations()
@@ -155,52 +230,52 @@ namespace UnityEditor.Connect
             LoadJsonConfiguration(hardCodedConfigs);
         }
 
-        void LoadConfigurationsFromLocalConfigFile()
-        {
-            //Localfile is a snapshot of https://public-cdn.cloud.unity3d.com/config/production taken on 2019-11-13, update periodically.
-            //This file is the first fallback for CDN configs is the productionUrls.json file in default editor resources.
-            try
-            {
-                var jsonTextAsset = EditorResources.Load<TextAsset>("Configurations/ServicesWindow/productionUrls.json");
-                LoadJsonConfiguration(jsonTextAsset.text);
-            }
-            catch (Exception)
-            {
-                //We fallback to hardcoded config
-            }
-        }
-
         void LoadConfigurationsFromCdn()
         {
             try
             {
-                var getServicesUrlsRequest = new UnityWebRequest(string.Format(k_CdnConfigUrl, UnityConnect.instance.GetEnvironment()),
+                if (m_GetServicesUrlsRequest != null)
+                {
+                    try
+                    {
+                        m_GetServicesUrlsRequest.Abort();
+                    }
+                    catch (Exception)
+                    {
+                        // ignored, we try to abort (best effort) but no need to panic if it fails
+                    }
+                    m_GetServicesUrlsRequest.Dispose();
+                    m_GetServicesUrlsRequest = null;
+                }
+
+                m_GetServicesUrlsRequest = new UnityWebRequest(string.Format(k_CdnConfigUrl, UnityConnect.instance.GetEnvironment()),
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-                var operation = getServicesUrlsRequest.SendWebRequest();
+                var operation = m_GetServicesUrlsRequest.SendWebRequest();
                 operation.completed += asyncOperation =>
                 {
                     try
                     {
-                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getServicesUrlsRequest))
+                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_GetServicesUrlsRequest))
                         {
-                            LoadJsonConfiguration(getServicesUrlsRequest.downloadHandler.text);
+                            LoadJsonConfiguration(m_GetServicesUrlsRequest.downloadHandler.text);
                             BuildPaths();
                         }
                     }
                     catch (Exception)
                     {
-                        //We fallback to local file config
+                        //We fallback to hardcoded config
                         BuildPaths();
                     }
                     finally
                     {
-                        getServicesUrlsRequest.Dispose();
+                        m_GetServicesUrlsRequest?.Dispose();
+                        m_GetServicesUrlsRequest = null;
                     }
                 };
             }
             catch (Exception)
             {
-                //We fallback to local file config
+                //We fallback to hardcoded config
                 BuildPaths();
             }
         }
@@ -269,95 +344,210 @@ namespace UnityEditor.Connect
             return ServerEnvironment.Production;
         }
 
-        public static ServicesConfiguration instance => k_Instance;
+        class AsyncUrlCallback
+        {
+            internal AsyncUrlId asyncUrlId;
+            internal Action<string> callback;
+        }
 
-        public string cloudHubServiceUrl { get; internal set; }
+        void RequestAsyncUrl(AsyncUrlId asyncUrlId, Action<string> callback)
+        {
+            var asyncUrlCallback = new AsyncUrlCallback()
+            {
+                asyncUrlId = asyncUrlId,
+                callback = callback
+            };
+            if (pathsReady)
+            {
+                InvokeAsyncUrlCallback(asyncUrlCallback);
+            }
+            else
+            {
+                m_AsyncUrlCallbacks.Enqueue(asyncUrlCallback);
+                LoadConfigurations();
+            }
+        }
 
-        public bool pathsReady { get; internal set; }
+        void InvokeAsyncUrlCallback(AsyncUrlCallback asyncUrlCallback)
+        {
+            switch (asyncUrlCallback.asyncUrlId)
+            {
+                case AsyncUrlId.CurrentUserApiUrl:
+                    asyncUrlCallback.callback(m_CurrentUserApiUrl);
+                    break;
+                case AsyncUrlId.ProjectsApiUrl:
+                    asyncUrlCallback.callback(m_ProjectsApiUrl);
+                    break;
+                case AsyncUrlId.ProjectApiUrl:
+                    asyncUrlCallback.callback(m_ProjectApiUrl);
+                    break;
+                case AsyncUrlId.ProjectCoppaApiUrl:
+                    asyncUrlCallback.callback(m_ProjectCoppaApiUrl);
+                    break;
+                case AsyncUrlId.ProjectUsersApiUrl:
+                    asyncUrlCallback.callback(m_ProjectUsersApiUrl);
+                    break;
+                case AsyncUrlId.ProjectDashboardUrl:
+                    asyncUrlCallback.callback(m_ProjectDashboardUrl);
+                    break;
+                case AsyncUrlId.ProjectServiceFlagsApiUrl:
+                    asyncUrlCallback.callback(m_ProjectServiceFlagsApiUrl);
+                    break;
+                case AsyncUrlId.CloudBuildProjectUrl:
+                    asyncUrlCallback.callback(m_CloudBuildProjectUrl);
+                    break;
+                case AsyncUrlId.CloudBuildUploadUrl:
+                    asyncUrlCallback.callback(m_CloudBuildUploadUrl);
+                    break;
+                case AsyncUrlId.CloudBuildTargetUrl:
+                    asyncUrlCallback.callback(m_CloudBuildTargetUrl);
+                    break;
+                case AsyncUrlId.CloudBuildApiUrl:
+                    asyncUrlCallback.callback(m_CloudBuildApiUrl);
+                    break;
+                case AsyncUrlId.CloudBuildApiProjectUrl:
+                    asyncUrlCallback.callback(m_CloudBuildApiProjectUrl);
+                    break;
+                case AsyncUrlId.CloudBuildApiStatusUrl:
+                    asyncUrlCallback.callback(m_CloudBuildApiStatusUrl);
+                    break;
+                case AsyncUrlId.CloudDiagCrashesDashboardUrl:
+                    asyncUrlCallback.callback(m_CloudDiagCrashesDashboardUrl);
+                    break;
+                case AsyncUrlId.CollabDashboardUrl:
+                    asyncUrlCallback.callback(m_CollabDashboardUrl);
+                    break;
+                case AsyncUrlId.PurchasingDashboardUrl:
+                    asyncUrlCallback.callback(m_PurchasingDashboardUrl);
+                    break;
+                case AsyncUrlId.AnalyticsDashboardUrl:
+                    asyncUrlCallback.callback(m_AnalyticsDashboardUrl);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
         /// <summary>
-        /// Gets the current user api url
+        /// Requests the current user api url
         /// </summary>
+        /// <param name="callback"></param>
         /// <returns>A url to query the current user data</returns>
-        public string GetCurrentUserApiUrl()
+        public void RequestCurrentUserApiUrl(Action<string> callback)
         {
-            return m_CurrentUserApiUrl;
+            RequestAsyncUrl(AsyncUrlId.CurrentUserApiUrl, callback);
         }
 
         /// <summary>
-        /// Get the endpoint to retrieve the projects of the specified organization, create a new one, etc.
+        /// Request the endpoint to retrieve the projects of the specified organization, create a new one, etc.
         /// </summary>
         /// <param name="organizationId">Identical to organization name at the time of this comment</param>
+        /// <param name="callback"></param>
         /// <returns>A url endpoint to request projects</returns>
-        public string GetOrganizationProjectsApiUrl(string organizationId)
+        public void RequestOrganizationProjectsApiUrl(string organizationId, Action<string> callback)
         {
-            return string.Format(m_ProjectsApiUrl, organizationId);
+            RequestAsyncUrl(AsyncUrlId.ProjectsApiUrl, projectsApiUrl =>
+            {
+                callback(string.Format(projectsApiUrl, organizationId));
+            });
+        }
+
+        public void RequestCurrentProjectApiUrl(Action<string> callback)
+        {
+            RequestProjectApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
+        }
+
+        public void RequestProjectApiUrl(string organizationId, string projectId, Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.ProjectApiUrl, projectApiUrl =>
+            {
+                callback(string.Format(projectApiUrl, organizationId, projectId));
+            });
+        }
+
+        public void RequestCurrentProjectCoppaApiUrl(Action<string> callback)
+        {
+            RequestProjectCoppaApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
+        }
+
+        public void RequestProjectCoppaApiUrl(string organizationId, string projectId, Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.ProjectCoppaApiUrl, projectCoppaApiUrl =>
+            {
+                callback(string.Format(projectCoppaApiUrl, organizationId, projectId));
+            });
         }
 
         /// <summary>
-        /// Gets the current native code project coppa url
+        /// Requests the current project users api url
         /// </summary>
-        /// <returns>A url to reach the project coppa info</returns>
-        public string GetCurrentProjectCoppaApiUrl()
-        {
-            return GetProjectCoppaApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
-        }
-
-        /// <summary>
-        /// Gets a specified project coppa url
-        /// </summary>
-        /// <param name="organizationId">Identical to organization name at the time of this comment</param>
-        /// <param name="projectId">A project's ID</param>
-        /// <returns>A url to reach the project coppa info</returns>
-        public string GetProjectCoppaApiUrl(string organizationId, string projectId)
-        {
-            return string.Format(m_ProjectCoppaApiUrl, organizationId, projectId);
-        }
-
-        /// <summary>
-        /// Gets the current project users api url
-        /// </summary>
+        /// <param name="callback"></param>
         /// <returns>A url to reach the project users info</returns>
-        public string GetCurrentProjectUsersApiUrl()
+        public void RequestCurrentProjectUsersApiUrl(Action<string> callback)
         {
-            return GetProjectUsersApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
+            RequestProjectUsersApiUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
         }
 
         /// <summary>
-        /// Gets a specified project users api url
+        /// Requests a specified project users api url
         /// </summary>
         /// <param name="organizationId">Identical to organization name at the time of this comment</param>
         /// <param name="projectId">A project's ID</param>
+        /// <param name="callback"></param>
         /// <returns>A url to reach the project users info</returns>
-        public string GetProjectUsersApiUrl(string organizationId, string projectId)
+        public void RequestProjectUsersApiUrl(string organizationId, string projectId, Action<string> callback)
         {
-            return string.Format(m_ProjectUsersApiUrl, organizationId, projectId);
+            RequestAsyncUrl(AsyncUrlId.ProjectUsersApiUrl, projectUsersApiUrl =>
+            {
+                callback(string.Format(projectUsersApiUrl, organizationId, projectId));
+            });
         }
 
         /// <summary>
-        /// Gets the current project dashboard url
+        /// Requests the current project dashboard url
         /// </summary>
+        /// <param name="callback"></param>
         /// <returns></returns>
-        public string GetCurrentProjectDashboardUrl()
+        public void RequestCurrentProjectDashboardUrl(Action<string> callback)
         {
-            return GetProjectDashboardUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
+            RequestProjectDashboardUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
         }
 
         /// <summary>
-        /// Gets a specified project dashboard url
+        /// Requests a specified project dashboard url
         /// </summary>
         /// <param name="organizationId">Identical to organization name at the time of this comment</param>
         /// <param name="projectId">A project's ID</param>
+        /// <param name="callback"></param>
         /// <returns></returns>
-        public string GetProjectDashboardUrl(string organizationId, string projectId)
+        public void RequestProjectDashboardUrl(string organizationId, string projectId, Action<string> callback)
         {
-            return string.Format(m_ProjectDashboardUrl, organizationId, projectId);
+            RequestAsyncUrl(AsyncUrlId.ProjectDashboardUrl, projectDashboardUrl =>
+            {
+                callback(string.Format(projectDashboardUrl, organizationId, projectId));
+            });
+        }
+
+        public void RequestCurrentProjectServiceFlagsApiUrl(Action<string> callback)
+        {
+            RequestProjectServiceFlagsApiUrl(UnityConnect.instance.projectInfo.projectId, callback);
+        }
+
+        public void RequestProjectServiceFlagsApiUrl(string projectId, Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.ProjectServiceFlagsApiUrl, projectServiceFlagsApiUrl =>
+            {
+                callback(string.Format(projectServiceFlagsApiUrl, projectId));
+            });
         }
 
         // Return the specific Cloud Usage URL for the Collab service
-        public string GetCloudUsageDashboardUrl()
+        public void RequestCloudUsageDashboardUrl(Action<string> callback)
         {
-            return GetCurrentProjectDashboardUrl() + m_CloudUsageDashboardUrl;
+            RequestCurrentProjectDashboardUrl(cloudUsageDashboardUrl =>
+            {
+                callback(cloudUsageDashboardUrl + k_CloudUsageDashboardUrl);
+            });
         }
 
         // Return the specific Unity Teams information URL for the Collab service
@@ -369,100 +559,176 @@ namespace UnityEditor.Connect
         // Return the specific cloud build tutorial URL for the cloud build service
         public string GetCloudBuildTutorialUrl()
         {
-            return m_CloudBuildTutorialUrl;
+            return k_CloudBuildTutorialUrl;
         }
 
-        public string GetCloudBuildAddTargetUrl()
+        public void RequestCloudBuildAddTargetUrl(Action<string> callback)
         {
-            return GetCloudBuildCurrentProjectUrl() + m_CloudBuildAddTargetUrl;
+            RequestCloudBuildCurrentProjectUrl(cloudBuildCurrentProjectUrl =>
+            {
+                callback(cloudBuildCurrentProjectUrl + k_CloudBuildAddTargetUrl);
+            });
         }
 
-        public string GetCloudBuildCurrentProjectUrl()
+        public void RequestCloudBuildCurrentProjectUrl(Action<string> callback)
         {
-            return GetCloudBuildProjectsUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
+            RequestCloudBuildProjectsUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
         }
 
-        public string GetCloudBuildProjectsUrl(string organizationId, string projectId)
+        public void RequestCloudBuildProjectsUrl(string organizationId, string projectId, Action<string> callback)
         {
-            return string.Format(m_CloudBuildProjectUrl, organizationId, projectId);
+            RequestAsyncUrl(AsyncUrlId.CloudBuildProjectUrl, cloudBuildProjectUrl =>
+            {
+                callback(string.Format(cloudBuildProjectUrl, organizationId, projectId));
+            });
         }
 
-        public string GetCurrentCloudBuildProjectUploadUrl()
+        public void RequestCurrentCloudBuildProjectUploadUrl(Action<string> callback)
         {
-            return GetCloudBuildProjectUploadUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
+            RequestCloudBuildProjectUploadUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
         }
 
-        public string GetCloudBuildProjectUploadUrl(string organizationId, string projectId)
+        public void RequestCloudBuildProjectUploadUrl(string organizationId, string projectId, Action<string> callback)
         {
-            return string.Format(m_CloudBuildUploadUrl, organizationId, projectId);
+            RequestAsyncUrl(AsyncUrlId.CloudBuildUploadUrl, cloudBuildUploadUrl =>
+            {
+                callback(string.Format(cloudBuildUploadUrl, organizationId, projectId));
+            });
         }
 
-        public string GetCurrentCloudBuildProjectTargetUrl()
+        public void RequestCurrentCloudBuildProjectTargetUrl(Action<string> callback)
         {
-            return GetCloudBuildProjectTargetUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
+            RequestCloudBuildProjectTargetUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
         }
 
-        public string GetCloudBuildProjectTargetUrl(string organizationId, string projectId)
+        public void RequestCloudBuildProjectTargetUrl(string organizationId, string projectId, Action<string> callback)
         {
-            return string.Format(m_CloudBuildTargetUrl, organizationId, projectId);
+            RequestAsyncUrl(AsyncUrlId.CloudBuildTargetUrl, cloudBuildTargetUrl =>
+            {
+                callback(string.Format(cloudBuildTargetUrl, organizationId, projectId));
+            });
         }
 
-        public string GetCurrentCloudBuildProjectHistoryUrl()
+        public void RequestCurrentCloudBuildProjectHistoryUrl(Action<string> callback)
         {
-            return GetCloudBuildProjectHistoryUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
+            RequestCloudBuildProjectHistoryUrl(UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId, callback);
         }
 
-        public string GetCloudBuildProjectHistoryUrl(string organizationId, string projectId)
+        public void RequestCloudBuildProjectHistoryUrl(string organizationId, string projectId, Action<string> callback)
         {
-            return string.Format(m_CloudBuildProjectUrl, organizationId, projectId);
+            RequestAsyncUrl(AsyncUrlId.CloudBuildProjectUrl, cloudBuildProjectUrl =>
+            {
+                callback(string.Format(cloudBuildProjectUrl, organizationId, projectId));
+            });
         }
 
-        public string GetCloudBuildApiCurrentProjectUrl()
+        public void RequestCloudBuildApiCurrentProjectUrl(Action<string> callback)
         {
-            return GetCloudBuildApiProjectUrl(UnityConnect.instance.projectInfo.projectId);
+            RequestCloudBuildApiProjectUrl(UnityConnect.instance.projectInfo.projectId, callback);
         }
 
-        public string GetCloudBuildApiProjectUrl(string projectId)
+        public void RequestCloudBuildApiProjectUrl(string projectId, Action<string> callback)
         {
-            return string.Format(m_CloudBuildApiProjectUrl, projectId);
+            RequestAsyncUrl(AsyncUrlId.CloudBuildApiProjectUrl, cloudBuildApiProjectUrl =>
+            {
+                callback(string.Format(cloudBuildApiProjectUrl, projectId));
+            });
         }
 
-        public string GetCloudBuildApiUrl()
+        public void RequestCloudBuildApiUrl(Action<string> callback)
         {
-            return m_CloudBuildApiUrl;
+            RequestAsyncUrl(AsyncUrlId.CloudBuildApiUrl, callback);
         }
 
-        public string GetCloudBuildApiStatusUrl()
+        public void RequestCloudBuildApiStatusUrl(Action<string> callback)
         {
-            return m_CloudBuildApiStatusUrl;
+            RequestAsyncUrl(AsyncUrlId.CloudBuildApiStatusUrl, callback);
         }
 
         // Return the cloud diagnostic URL
         public string GetUnityCloudDiagnosticInfoUrl()
         {
-            return m_CloudDiagnosticsUrl;
+            return k_CloudDiagnosticsUrl;
         }
 
         public string GetUnityCloudDiagnosticUserReportingSdkUrl()
         {
-            return m_CloudDiagUserReportingSdkUrl;
+            return k_CloudDiagUserReportingSdkUrl;
         }
 
-        internal string baseDashboardUrl { get { return m_ProjectDashboardUrl; } }
-        public string baseAnalyticsDashboardUrl { get { return m_AnalyticsDashboardUrl; } }
-        public string baseCloudBuildDashboardUrl { get { return m_CloudBuildProjectUrl; } }
-        public string baseCloudUsageDashboardUrl { get { return baseDashboardUrl + m_CloudUsageDashboardUrl; } }
-        public string baseCloudDiagCrashesDashboardUrl { get { return m_CloudDiagCrashesDashboardUrl; } }
-        public string baseCollabDashboardUrl { get { return m_CollabDashboardUrl; } }
-        public string basePurchasingDashboardUrl { get { return m_PurchasingDashboardUrl; } }
+        internal void RequestBaseDashboardUrl(Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.ProjectDashboardUrl, callback);
+        }
+
+        public void RequestBaseAnalyticsDashboardUrl(Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.AnalyticsDashboardUrl, callback);
+        }
+
+        public void RequestBaseCloudBuildDashboardUrl(Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.CloudBuildProjectUrl, callback);
+        }
+
+        public void RequestBaseCloudUsageDashboardUrl(Action<string> callback)
+        {
+            RequestBaseDashboardUrl(baseDashboardUrl =>
+            {
+                callback(baseDashboardUrl + k_CloudUsageDashboardUrl);
+            });
+        }
+
+        public void RequestBaseCloudDiagCrashesDashboardUrl(Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.CloudDiagCrashesDashboardUrl, callback);
+        }
+
+        public void RequestBaseCollabDashboardUrl(Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.CollabDashboardUrl, callback);
+        }
+
+        public void RequestBasePurchasingDashboardUrl(Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.ProjectDashboardUrl, callback);
+        }
 
         public string adsGettingStartedUrl { get; private set; }
         public string adsLearnMoreUrl { get; private set; }
         public string adsDashboardUrl { get; private set; }
         public string adsOperateApiUrl { get; private set; }
-        public string cloudDiagCrashesDashboardUrl => string.Format(m_CloudDiagCrashesDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
-        public string collabDashboardUrl => string.Format(m_CollabDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId);
-        public string purchasingDashboardUrl => string.Format(m_PurchasingDashboardUrl, UnityConnect.instance.projectInfo.projectGUID);
-        public string analyticsDashboardUrl => string.Format(m_AnalyticsDashboardUrl, UnityConnect.instance.projectInfo.projectGUID);
+
+        public void RequestCloudDiagCrashesDashboardUrl(Action<string> callback)
+        {
+            RequestBaseCloudDiagCrashesDashboardUrl(baseCloudDiagCrashesDashboardUrl =>
+            {
+                callback(string.Format(baseCloudDiagCrashesDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId));
+            });
+        }
+
+        public void RequestCollabDashboardUrl(Action<string> callback)
+        {
+            RequestBaseCollabDashboardUrl(baseCollabDashboardUrl =>
+            {
+                callback(string.Format(baseCollabDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId));
+            });
+        }
+
+        public void RequestPurchasingDashboardUrl(Action<string> callback)
+        {
+            RequestBasePurchasingDashboardUrl(basePurchasingDashboardUrl =>
+            {
+                callback(string.Format(m_PurchasingDashboardUrl, UnityConnect.instance.projectInfo.projectGUID));
+            });
+        }
+
+        public void RequestAnalyticsDashboardUrl(Action<string> callback)
+        {
+            RequestBaseAnalyticsDashboardUrl(baseAnalyticsDashboardUrl =>
+            {
+                callback(string.Format(m_AnalyticsDashboardUrl, UnityConnect.instance.projectInfo.projectGUID));
+            });
+        }
     }
 }

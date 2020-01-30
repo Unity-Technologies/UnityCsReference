@@ -215,7 +215,7 @@ namespace UnityEditor
         void ShowContacts(Rigidbody2D body)
         {
             EditorGUI.indentLevel++;
-            m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts");
+            m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowContacts.faded))
             {
                 var contactCount = body.GetContacts(m_Contacts);

@@ -7,8 +7,9 @@ using UnityEngine.Scripting;
 
 namespace Unity.MPE
 {
+    [UnityEngine.Internal.ExcludeFromDocs]
     [RequiredByNativeCode, AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    internal sealed class RoleProviderAttribute : Attribute
+    public sealed class RoleProviderAttribute : Attribute
     {
         public RoleProviderAttribute(string name, ProcessEvent eventType)
         {

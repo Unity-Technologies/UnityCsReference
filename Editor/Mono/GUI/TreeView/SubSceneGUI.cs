@@ -99,60 +99,18 @@ static class SubSceneGUI
         return IsUsingSubScenes() && m_SubSceneHeadersMap.ContainsKey(gameObject);
     }
 
-    internal static bool HandleGameObjectContextMenu(GenericMenu menu, GameObject gameObject)
+    internal static void CreateClosedSubSceneContextClick(GenericMenu menu, SceneHierarchyHooks.SubSceneInfo subScene)
     {
-        SceneHierarchyHooks.SubSceneInfo subScene;
-        if (m_SubSceneHeadersMap.TryGetValue(gameObject, out subScene))
-        {
-            Scene scene = subScene.scene;
-            if (!scene.IsValid())
-                return false; // use default GameObject context menu if no Scene has been specified in the SubScene component yet
-
-            if (scene.isLoaded)
-            {
-                var content = EditorGUIUtility.TrTextContent("Set Active Scene");
-                if (SceneManager.GetActiveScene() != scene)
-                    menu.AddItem(content, false, SetSceneActive, scene);
-                else
-                    menu.AddDisabledItem(content, true);
-                menu.AddSeparator("");
-            }
-
-            var saveSceneContent = EditorGUIUtility.TrTextContent("Save Scene");
-            if (!EditorApplication.isPlaying && subScene.scene.isLoaded)
-                menu.AddItem(saveSceneContent, false, SaveSubSceneMenuHandler, subScene);
-            else
-                menu.AddDisabledItem(saveSceneContent);
-
-            menu.AddSeparator("");
-            var selectAssetContent = EditorGUIUtility.TrTextContent("Select Scene Asset");
-            if (!string.IsNullOrEmpty(scene.path))
-                menu.AddItem(selectAssetContent, false, SelectSceneAsset, subScene);
-            else
-                menu.AddDisabledItem(selectAssetContent);
-
-            return true;
-        }
-        return false;
-    }
-
-    static void SetSceneActive(object userData)
-    {
-        Scene scene = (Scene)userData;
-        EditorSceneManager.SetActiveScene(scene);
-    }
-
-    static void SaveSubSceneMenuHandler(object userData)
-    {
-        var subScene = (SceneHierarchyHooks.SubSceneInfo)userData;
-        if (subScene.scene.isLoaded && subScene.scene.isDirty)
-            EditorSceneManager.SaveScene(subScene.scene);
+        var selectAssetContent = EditorGUIUtility.TrTextContent("Select Scene Asset");
+        if (subScene.sceneAsset)
+            menu.AddItem(selectAssetContent, false, SelectSceneAsset, subScene.sceneAsset);
+        else
+            menu.AddDisabledItem(selectAssetContent);
     }
 
     static void SelectSceneAsset(object userData)
     {
-        var subScene = (SceneHierarchyHooks.SubSceneInfo)userData;
-        var sceneAssetObject = AssetDatabase.LoadMainAssetAtPath(subScene.scene.path);
+        SceneAsset sceneAssetObject = (SceneAsset)userData;
         Selection.activeObject = sceneAssetObject;
         EditorGUIUtility.PingObject(sceneAssetObject);
     }
@@ -194,6 +152,15 @@ static class SubSceneGUI
     {
         SceneHierarchyHooks.SubSceneInfo subScene;
         if (m_SceneAssetToSubSceneMap.TryGetValue(sceneAsset, out subScene))
+            return subScene;
+
+        return default(SceneHierarchyHooks.SubSceneInfo);
+    }
+
+    internal static SceneHierarchyHooks.SubSceneInfo GetSubSceneInfo(GameObject gameObject)
+    {
+        SceneHierarchyHooks.SubSceneInfo subScene;
+        if (gameObject != null && m_SubSceneHeadersMap.TryGetValue(gameObject, out subScene))
             return subScene;
 
         return default(SceneHierarchyHooks.SubSceneInfo);

@@ -23,6 +23,12 @@ namespace UnityEditor.PackageManager.UI
 
             private Dictionary<string, long> m_Categories = new Dictionary<string, long>();
 
+            private Dictionary<string, AssetStorePurchaseInfo> m_PurchaseInfos = new Dictionary<string, AssetStorePurchaseInfo>();
+
+            private Dictionary<string, AssetStoreProductInfo> m_ProductInfos = new Dictionary<string, AssetStoreProductInfo>();
+
+            private Dictionary<string, AssetStoreLocalInfo> m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
+
             [SerializeField]
             private string[] m_SerializedKeys = new string[0];
 
@@ -35,6 +41,19 @@ namespace UnityEditor.PackageManager.UI
             [SerializeField]
             private long[] m_SerializedCategoryCounts = new long[0];
 
+            [SerializeField]
+            private AssetStorePurchaseInfo[] m_SerializedPurchaseInfos = new AssetStorePurchaseInfo[0];
+
+            [SerializeField]
+            private AssetStoreProductInfo[] m_SerializedProductInfos = new AssetStoreProductInfo[0];
+
+            [SerializeField]
+            private AssetStoreLocalInfo[] m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
+
+            public event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+
+            public IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
+
             public void OnBeforeSerialize()
             {
                 m_SerializedKeys = m_ETags.Keys.ToArray();
@@ -42,6 +61,10 @@ namespace UnityEditor.PackageManager.UI
 
                 m_SerializedCategories = m_Categories.Keys.ToArray();
                 m_SerializedCategoryCounts = m_Categories.Values.ToArray();
+
+                m_SerializedPurchaseInfos = m_PurchaseInfos.Values.ToArray();
+                m_SerializedProductInfos = m_ProductInfos.Values.ToArray();
+                m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
             }
 
             public void OnAfterDeserialize()
@@ -51,6 +74,10 @@ namespace UnityEditor.PackageManager.UI
 
                 for (var i = 0; i < m_SerializedCategories.Length; i++)
                     m_Categories[m_SerializedCategories[i]] = m_SerializedCategoryCounts[i];
+
+                m_PurchaseInfos = m_SerializedPurchaseInfos.ToDictionary(info => info.productId.ToString(), info => info);
+                m_ProductInfos = m_SerializedProductInfos.ToDictionary(info => info.id, info => info);
+                m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.id, info => info);
             }
 
             public string GetLastETag(string key)
@@ -103,6 +130,66 @@ namespace UnityEditor.PackageManager.UI
             {
                 m_ETags.Clear();
                 m_Categories.Clear();
+
+                m_PurchaseInfos.Clear();
+                m_ProductInfos.Clear();
+                m_LocalInfos.Clear();
+            }
+
+            public AssetStorePurchaseInfo GetPurchaseInfo(string productIdString)
+            {
+                return m_PurchaseInfos.Get(productIdString);
+            }
+
+            public AssetStoreProductInfo GetProductInfo(string productIdString)
+            {
+                return m_ProductInfos.Get(productIdString);
+            }
+
+            public AssetStoreLocalInfo GetLocalInfo(string productIdString)
+            {
+                return m_LocalInfos.Get(productIdString);
+            }
+
+            public void SetPurchaseInfo(AssetStorePurchaseInfo info)
+            {
+                m_PurchaseInfos[info.productId.ToString()] = info;
+            }
+
+            public void SetProductInfo(AssetStoreProductInfo info)
+            {
+                m_ProductInfos[info.id] = info;
+            }
+
+            public void SetLocalInfos(IEnumerable<AssetStoreLocalInfo> localInfos)
+            {
+                var oldLocalInfos = m_LocalInfos;
+                m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
+                var addedOrUpdatedLocalInfos = new List<AssetStoreLocalInfo>();
+                foreach (var info in localInfos)
+                {
+                    var id = info?.id;
+                    if (string.IsNullOrEmpty(id))
+                        continue;
+
+                    m_LocalInfos[info.id] = info;
+
+                    var oldInfo = oldLocalInfos.Get(id);
+                    if (oldInfo != null)
+                        oldLocalInfos.Remove(id);
+
+                    var localInfoUpdated = oldInfo == null || oldInfo.versionId != info.versionId ||
+                        oldInfo.versionString != info.versionString || oldInfo.packagePath != info.packagePath;
+                    if (localInfoUpdated)
+                        addedOrUpdatedLocalInfos.Add(info);
+                }
+                if (addedOrUpdatedLocalInfos.Any() || oldLocalInfos.Any())
+                    onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);
+            }
+
+            public void RemoveProductInfo(string productIdString)
+            {
+                m_ProductInfos.Remove(productIdString);
             }
         }
     }

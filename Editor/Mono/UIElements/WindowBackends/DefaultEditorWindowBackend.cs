@@ -232,7 +232,7 @@ namespace UnityEditor.UIElements
                 return;
 
             if (CommandService.Exists(UIElementsDebugger.OpenWindowCommand))
-                CommandService.Execute(UIElementsDebugger.OpenWindowCommand, CommandHint.Menu);
+                CommandService.Execute(UIElementsDebugger.OpenWindowCommand, CommandHint.Menu, window);
             else
             {
                 UIElementsDebugger.OpenAndInspectWindow(window);

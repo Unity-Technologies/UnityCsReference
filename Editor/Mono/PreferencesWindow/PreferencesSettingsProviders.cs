@@ -252,7 +252,7 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateColorsProvider()
         {
-            var settings = new PreferencesProvider("Preferences/Colors", GetSearchKeywordsFromGUIContentProperties<ColorsProperties>());
+            var settings = new PreferencesProvider("Preferences/Colors", GetSearchKeywordsFromGUIContentProperties<ColorsProperties>().Concat(OrderPrefs(PrefSettings.Prefs<PrefColor>()).Values.SelectMany(l => l).Select(pair => pair.Key)));
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowColors); };
             return settings;
         }
@@ -606,7 +606,7 @@ namespace UnityEditor
             }
         }
 
-        private SortedDictionary<string, List<KeyValuePair<string, T>>> OrderPrefs<T>(IEnumerable<KeyValuePair<string, T>> input)
+        internal static SortedDictionary<string, List<KeyValuePair<string, T>>> OrderPrefs<T>(IEnumerable<KeyValuePair<string, T>> input)
             where T : IPrefType
         {
             SortedDictionary<string, List<KeyValuePair<string, T>>> retval = new SortedDictionary<string, List<KeyValuePair<string, T>>>();

@@ -35,6 +35,9 @@ namespace UnityEditor.Connect
         public override Notification.Topic notificationTopic => Notification.Topic.AdsService;
         public override bool requiresCoppaCompliance => true;
         public override string packageId { get; }
+        public override string serviceFlagName { get; }
+        public override bool shouldSyncOnProjectRebind => true;
+
         static readonly AdsService k_Instance;
 
         public static AdsService instance => k_Instance;
@@ -53,8 +56,8 @@ namespace UnityEditor.Connect
             projectSettingsPath = "Project/Services/Ads";
             displayToggle = true;
             packageId = "com.unity.ads";
+            serviceFlagName = "ads";
             ServicesRepository.AddService(this);
-            RegisterEvent();
         }
 
         public override bool IsServiceEnabled()
@@ -67,17 +70,7 @@ namespace UnityEditor.Connect
             public bool ads;
         }
 
-        void RegisterEvent()
-        {
-            ProjectBindManager.projectBindCompleted += OnProjectBindCompleted;
-        }
-
-        void OnProjectBindCompleted()
-        {
-            RefreshGameIds();
-        }
-
-        protected override void InternalEnableService(bool enable)
+        protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
             if (AdvertisementSettings.enabled != enable)
             {
@@ -95,7 +88,7 @@ namespace UnityEditor.Connect
                 EditorAnalytics.SendEventServiceInfo(new AdsServiceState() { ads = enable });
             }
 
-            base.InternalEnableService(enable);
+            base.InternalEnableService(enable, shouldUpdateApiFlag);
         }
 
         void RefreshGameIds()

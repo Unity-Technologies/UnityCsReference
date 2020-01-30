@@ -12,8 +12,8 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class AssetStoreDownloadOperation : IOperation
     {
-        internal static readonly string k_LocalizedDownloadErrorMessage = ApplicationUtil.instance.GetTranslationForText("The download could not be completed. Please try again. See console for more details.");
-        internal static readonly string k_LocalizedAbortErrorMessage = ApplicationUtil.instance.GetTranslationForText("The download could not be aborted. Please try again.");
+        internal static readonly string k_LocalizedDownloadErrorMessage = "The download could not be completed. Please try again. See console for more details.";
+        internal static readonly string k_LocalizedAbortErrorMessage = "The download could not be aborted. Please try again.";
         internal static readonly string k_AssetStoreDownloadPrefix = "content__";
 
         [SerializeField]
@@ -99,7 +99,7 @@ namespace UnityEditor.PackageManager.UI
         private void OnErrorMessage(string errorMessage)
         {
             m_State = DownloadState.Error;
-            m_ErrorMessage = k_LocalizedDownloadErrorMessage;
+            m_ErrorMessage = ApplicationUtil.instance.GetTranslationForText(k_LocalizedDownloadErrorMessage);
             Debug.LogError(errorMessage);
             onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
             onOperationFinalized?.Invoke(this);
@@ -115,7 +115,7 @@ namespace UnityEditor.PackageManager.UI
 
             // the actual download state change from `downloading` to `aborted` happens in `OnDownloadProgress` callback
             if (!AssetStoreUtils.instance.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
-                Debug.LogError(k_LocalizedAbortErrorMessage);
+                Debug.LogError(ApplicationUtil.instance.GetTranslationForText(k_LocalizedAbortErrorMessage));
         }
 
         public void Download()

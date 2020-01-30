@@ -384,9 +384,11 @@ namespace UnityEditorInternal
                     int smallerArraySize = m_Elements.arraySize;
                     foreach (Object targetObject in m_Elements.serializedObject.targetObjects)
                     {
-                        SerializedObject serializedObject = new SerializedObject(targetObject);
-                        SerializedProperty property = serializedObject.FindProperty(m_Elements.propertyPath);
-                        smallerArraySize = Math.Min(property.arraySize, smallerArraySize);
+                        using (SerializedObject serializedObject = new SerializedObject(targetObject))
+                        {
+                            SerializedProperty property = serializedObject.FindProperty(m_Elements.propertyPath);
+                            smallerArraySize = Math.Min(property.arraySize, smallerArraySize);
+                        }
                     }
                     return smallerArraySize;
                 }

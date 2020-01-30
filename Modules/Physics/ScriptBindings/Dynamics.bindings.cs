@@ -1021,6 +1021,7 @@ namespace UnityEngine
         extern public static bool queriesHitTriggers { get; set; }
         extern public static bool queriesHitBackfaces { get; set; }
         extern public static float bounceThreshold { get; set; }
+        extern public static float defaultMaxDepenetrationVelocity { get; set; }
         extern public static int defaultSolverIterations { get; set; }
         extern public static int defaultSolverVelocityIterations { get; set; }
 

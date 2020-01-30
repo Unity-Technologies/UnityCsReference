@@ -201,7 +201,7 @@ namespace UnityEditor.Connect
 
                 if (settingsWindow.GetCurrentProvider() != this)
                 {
-                    EditorAnalytics.SendEventShowService(new ServicesProjectSettings.ShowServiceState() {
+                    EditorAnalytics.SendEventShowService(new ShowServiceState() {
                         service = GetServiceInstanceName(),
                         page = "",
                         referrer = "show_service_method"
@@ -418,45 +418,48 @@ namespace UnityEditor.Connect
 
         void RefreshCurrentUserRole()
         {
-            var getProjectUsersRequest = new UnityWebRequest(ServicesConfiguration.instance.GetCurrentProjectUsersApiUrl(),
-                UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-            getProjectUsersRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-            var operation = getProjectUsersRequest.SendWebRequest();
-            operation.completed += op =>
+            ServicesConfiguration.instance.RequestCurrentProjectUsersApiUrl(currentProjectUsersApiUrl =>
             {
-                try
+                var getProjectUsersRequest = new UnityWebRequest(currentProjectUsersApiUrl,
+                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getProjectUsersRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                var operation = getProjectUsersRequest.SendWebRequest();
+                operation.completed += op =>
                 {
-                    if ((getProjectUsersRequest.result != UnityWebRequest.Result.ProtocolError) && !string.IsNullOrEmpty(getProjectUsersRequest.downloadHandler.text))
+                    try
                     {
-                        var jsonParser = new JSONParser(getProjectUsersRequest.downloadHandler.text);
-                        var json = jsonParser.Parse();
-                        try
+                        if ((getProjectUsersRequest.result != UnityWebRequest.Result.ProtocolError) && !string.IsNullOrEmpty(getProjectUsersRequest.downloadHandler.text))
                         {
-                            var currentUserId = UnityConnect.instance.userInfo.userId;
-                            var users = json.AsDict()[k_JsonUsersNodeName].AsList();
-                            foreach (var rawUser in users)
+                            var jsonParser = new JSONParser(getProjectUsersRequest.downloadHandler.text);
+                            var json = jsonParser.Parse();
+                            try
                             {
-                                var user = rawUser.AsDict();
-                                if (currentUserId.Equals(user[k_JsonUserIdNodeName].AsString()))
+                                var currentUserId = UnityConnect.instance.userInfo.userId;
+                                var users = json.AsDict()[k_JsonUsersNodeName].AsList();
+                                foreach (var rawUser in users)
                                 {
-                                    currentUserPermission = ConvertStringToUserRole(user[k_JsonRoleNodeName].AsString());
-                                    InternalToggleRestrictedVisualElementsAvailability(currentUserPermission == UserRole.User);
-                                    break;
+                                    var user = rawUser.AsDict();
+                                    if (currentUserId.Equals(user[k_JsonUserIdNodeName].AsString()))
+                                    {
+                                        currentUserPermission = ConvertStringToUserRole(user[k_JsonRoleNodeName].AsString());
+                                        InternalToggleRestrictedVisualElementsAvailability(currentUserPermission == UserRole.User);
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.LogException(ex);
+                            catch (Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
                         }
                     }
-                }
-                finally
-                {
-                    getProjectUsersRequest.Dispose();
-                    getProjectUsersRequest = null;
-                }
-            };
+                    finally
+                    {
+                        getProjectUsersRequest.Dispose();
+                        getProjectUsersRequest = null;
+                    }
+                };
+            });
         }
 
         UserRole ConvertStringToUserRole(string s)
@@ -953,7 +956,7 @@ namespace UnityEditor.Connect
             const string k_ConnectingServicesContainerName = "ConnectingServicesContainer";
             const string k_RefreshButtonName = "RefreshBtn";
 
-            const string k_ConnectionRefreshedMessage = "Attempting connection refresh...";
+            const string k_ConnectionRefreshedMessage = "Attempting connection refresh.";
             const string k_ConnectionFailedMessage = "Failed to connect to Services. Services are not reachable right now.";
             const short k_MaxVerifyRetries = 50;
             const short k_VerifyDelay = 500;
@@ -995,6 +998,7 @@ namespace UnityEditor.Connect
                     refreshAccessButton.clicked += () =>
                     {
                         NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ConnectionRefreshedMessage));
+                        ServicesConfiguration.instance.LoadConfigurations(true);
                         stateMachine.ProcessEvent(Event.Initializing);
                     };
                 }
@@ -1017,6 +1021,13 @@ namespace UnityEditor.Connect
 
             void VerifyPaths()
             {
+                ServicesConfiguration.instance.UpdateProgress();
+                if (!ServicesConfiguration.instance.pathsReady && !ServicesConfiguration.instance.loadingConfigurations)
+                {
+                    //Get a path to force load
+                    ServicesConfiguration.instance.RequestBaseDashboardUrl(s => {});
+                }
+
                 if (ServicesConfiguration.instance.pathsReady)
                 {
                     ClearScheduledVerify();

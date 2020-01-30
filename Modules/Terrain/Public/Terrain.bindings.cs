@@ -232,6 +232,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Terrain/Public/Tree.h")]
+    [ExcludeFromPreset]
     public sealed partial class Tree : Component
     {
         [NativeProperty("TreeData")]

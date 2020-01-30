@@ -28,7 +28,6 @@ namespace Unity.SerializationLogic
             "Vector2Int",
         };
 
-        private const string AnimationCurve = "UnityEngine.AnimationCurve";
         private const string Gradient = "UnityEngine.Gradient";
         private const string GUIStyle = "UnityEngine.GUIStyle";
         private const string RectOffset = "UnityEngine.RectOffset";

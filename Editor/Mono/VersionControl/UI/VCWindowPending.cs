@@ -38,9 +38,12 @@ namespace UnityEditor.VersionControl
 
         bool m_ShowIncoming = false;
         bool m_ShowIncomingPrevious = true;
+        const float k_MinWindowHeight = 100f;
         const float k_ResizerHeight =  17f;
         const float k_MinIncomingAreaHeight = 50f;
         const float k_BottomBarHeight = 21f;
+        const float k_MinSearchFieldWidth = 50f;
+        const float k_MaxSearchFieldWidth = 240f;
         float s_ToolbarButtonsWidth = 0f;
         float s_SettingsButtonWidth = 0f;
         float s_DeleteChangesetsButtonWidth = 0f;
@@ -459,8 +462,8 @@ namespace UnityEditor.VersionControl
 
             GUI.SetNextControlName(searchBarName);
             Rect rect = GUILayoutUtility.GetRect(0, EditorGUILayout.kLabelFloatMaxW * 1.5f, EditorGUI.kSingleLineHeight,
-                EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(100),
-                GUILayout.MaxWidth(300));
+                EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField, GUILayout.MinWidth(k_MinSearchFieldWidth),
+                GUILayout.MaxWidth(k_MaxSearchFieldWidth));
 
             var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
             if (m_SearchText != filteringText)
@@ -495,10 +498,12 @@ namespace UnityEditor.VersionControl
             EditorGUI.BeginChangeCheck();
 
             int incomingChangesetCount = incomingList.Root == null ? 0 : incomingList.Root.ChildCount;
-            m_ShowIncoming = !GUILayout.Toggle(!m_ShowIncoming, "Outgoing", EditorStyles.toolbarButton);
+            bool switchToOutgoing = GUILayout.Toggle(!m_ShowIncoming, "Outgoing", EditorStyles.toolbarButton);
 
             GUIContent cont = GUIContent.Temp("Incoming" + (incomingChangesetCount == 0 ? "" : " (" + incomingChangesetCount + ")"));
-            m_ShowIncoming = GUILayout.Toggle(m_ShowIncoming, cont, EditorStyles.toolbarButton);
+            bool switchToIncoming = GUILayout.Toggle(m_ShowIncoming, cont, EditorStyles.toolbarButton);
+
+            m_ShowIncoming = m_ShowIncoming ? !switchToOutgoing : switchToIncoming;
 
             if (EditorGUI.EndChangeCheck())
                 refresh = true;
@@ -519,14 +524,14 @@ namespace UnityEditor.VersionControl
             }
 
             bool showDeleteEmptyChangesetsButton =
-                Mathf.FloorToInt(position.width - s_ToolbarButtonsWidth - s_SettingsButtonWidth - s_DeleteChangesetsButtonWidth) > 0 &&
+                Mathf.FloorToInt(position.width - s_ToolbarButtonsWidth - k_MinSearchFieldWidth - s_SettingsButtonWidth - s_DeleteChangesetsButtonWidth) > 0 &&
                 HasEmptyPendingChangesets();
             if (showDeleteEmptyChangesetsButton && GUILayout.Button("Delete Empty Changesets", EditorStyles.toolbarButton))
             {
                 DeleteEmptyPendingChangesets();
             }
 
-            bool showSettingsButton = Mathf.FloorToInt(position.width - s_ToolbarButtonsWidth - s_SettingsButtonWidth) > 0;
+            bool showSettingsButton = Mathf.FloorToInt(position.width - s_ToolbarButtonsWidth - k_MinSearchFieldWidth - s_SettingsButtonWidth) > 0;
 
             if (showSettingsButton && GUILayout.Button(Styles.editorSettingsLabel, EditorStyles.toolbarButton))
             {
@@ -746,9 +751,9 @@ namespace UnityEditor.VersionControl
                 s_ToolbarButtonsWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Incoming (xx)")).x;
                 s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Outgoing")).x;
                 s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(new GUIContent(refreshIcon)).x;
-
                 s_SettingsButtonWidth = EditorStyles.toolbarButton.CalcSize(Styles.editorSettingsLabel).x;
                 s_DeleteChangesetsButtonWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Delete Empty Changesets")).x;
+                minSize = new Vector2(s_ToolbarButtonsWidth + k_MinSearchFieldWidth, k_MinWindowHeight);
             }
         }
 

@@ -27,12 +27,15 @@ namespace UnityEditorInternal
         NotApplicable = 10
     }
 
+    // Must match ProfilerMemoryRecordMode in Profiler.h!!!
+    [Flags]
     public enum ProfilerMemoryRecordMode
     {
         None = 0,
-        ManagedAllocations,
-        AllAllocationsFast,
-        AllAllocationsFull
+        GCAlloc = 1 << 0,
+        UnsafeUtilityMalloc = 1 << 1,
+        JobHandleComplete = 1 << 2,
+        NativeAlloc = 1 << 3
     }
 
     [Flags]

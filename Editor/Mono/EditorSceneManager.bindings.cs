@@ -16,10 +16,21 @@ namespace UnityEditor.SceneManagement
     [NativeHeader("Editor/Mono/EditorSceneManager.bindings.h")]
     public sealed partial class EditorSceneManager : SceneManager
     {
+        [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
+        [NativeMethod("IsReloading")]
+        public extern static bool IsReloading(Scene scene);
+
         public extern static int loadedSceneCount
         {
             [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
             [NativeMethod("GetLoadedSceneCount")]
+            get;
+        }
+
+        public extern static int loadedRootSceneCount
+        {
+            [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
+            [NativeMethod("GetLoadedRootSceneCount")]
             get;
         }
 

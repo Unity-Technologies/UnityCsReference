@@ -7811,7 +7811,7 @@ namespace UnityEditor
 
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
-                var propertyHash = property.hashCodeForPropertyPath;
+                var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
                 GUIContent[] result;
                 if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(propertyHash, out result))
                 {

@@ -36,8 +36,21 @@ namespace UnityEditor.UIElements.Samples
 
         private VisualElement m_ContentPanel;
 
-        [MenuItem("Window/UI/UIElements Samples", false, 3010)]
-        public static void ShowExample()
+        public const string k_WindowPath = "Window/UI/UIElements Samples";
+        public static readonly string OpenWindowCommand = nameof(OpenUIElementsSamplesCommand);
+
+        [MenuItem(k_WindowPath, false, 3010, false)]
+        private static void OpenUIElementsSamplesCommand()
+        {
+            if (CommandService.Exists(OpenWindowCommand))
+                CommandService.Execute(OpenWindowCommand, CommandHint.Menu);
+            else
+            {
+                OpenUIElementsSamples();
+            }
+        }
+
+        public static void OpenUIElementsSamples()
         {
             var wnd = GetWindow<UIElementsSamples>();
             wnd.minSize = new Vector2(345, 100);

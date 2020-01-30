@@ -429,15 +429,22 @@ namespace UnityEditor
             ((IEditorWindowModel)this).onRegisterWindow?.Invoke();
 
             if (GetPaneMethod("Update") != null)
+            {
+                EditorApplication.update -= SendUpdate;
                 EditorApplication.update += SendUpdate;
+            }
 
             if (GetPaneMethod("ModifierKeysChanged") != null)
+            {
+                EditorApplication.modifierKeysChanged -= SendModKeysChanged;
                 EditorApplication.modifierKeysChanged += SendModKeysChanged;
+            }
 
             m_ActualView.MakeParentsSettingsMatchMe();
 
             if (m_ActualView.m_FadeoutTime != 0)
             {
+                EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
                 EditorApplication.update += m_ActualView.CheckForWindowRepaint;
             }
 

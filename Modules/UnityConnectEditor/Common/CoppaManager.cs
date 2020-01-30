@@ -95,85 +95,86 @@ namespace UnityEditor.Connect
             {
                 try
                 {
-                    var payload = $"{{\"coppa\":\"{GetCompliancyJsonValueFromFieldValue(coppaField)}\"}}";
-                    var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
-                    var currentSaveRequest = new UnityWebRequest(
-                        ServicesConfiguration.instance.GetCurrentProjectCoppaApiUrl(),
-                        UnityWebRequest.kHttpVerbPUT)
-                    { uploadHandler = uploadHandler};
-                    currentSaveRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-                    currentSaveRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                    var operation = currentSaveRequest.SendWebRequest();
-                    SetEnabledCoppaControls(coppaContainer, false);
-                    operation.completed += asyncOperation =>
+                    ServicesConfiguration.instance.RequestCurrentProjectCoppaApiUrl(projectCoppaApiUrl =>
                     {
-                        try
+                        var payload = $"{{\"coppa\":\"{GetCompliancyJsonValueFromFieldValue(coppaField)}\"}}";
+                        var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
+                        var currentSaveRequest = new UnityWebRequest(projectCoppaApiUrl, UnityWebRequest.kHttpVerbPUT)
+                        { uploadHandler = uploadHandler};
+                        currentSaveRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
+                        currentSaveRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                        var operation = currentSaveRequest.SendWebRequest();
+                        SetEnabledCoppaControls(coppaContainer, false);
+                        operation.completed += asyncOperation =>
                         {
-                            if (currentSaveRequest.responseCode == k_HttpStatusNoContent)
+                            try
                             {
-                                try
+                                if (currentSaveRequest.responseCode == k_HttpStatusNoContent)
                                 {
-                                    var newCompliancyValue = GetCompliancyForFieldValue(coppaField);
-                                    if (!UnityConnect.instance.SetCOPPACompliance(newCompliancyValue))
+                                    try
                                     {
-                                        EditorAnalytics.SendCoppaComplianceEvent(new CoppaState() { isCompliant = newCompliancyValue == COPPACompliance.COPPACompliant });
+                                        var newCompliancyValue = GetCompliancyForFieldValue(coppaField);
+                                        if (!UnityConnect.instance.SetCOPPACompliance(newCompliancyValue))
+                                        {
+                                            EditorAnalytics.SendCoppaComplianceEvent(new CoppaState() { isCompliant = newCompliancyValue == COPPACompliance.COPPACompliant });
 
-                                        SetCoppaFieldValue(originalCoppaValue, coppaField);
-                                        SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                        exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage));
+                                            SetCoppaFieldValue(originalCoppaValue, coppaField);
+                                            SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
+                                            exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage));
+                                        }
+                                        else
+                                        {
+                                            originalCoppaValue = newCompliancyValue;
+                                            SetCoppaFieldValue(originalCoppaValue, coppaField);
+                                            SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
+                                            NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Info,
+                                                L10n.Tr(CoppaComplianceChangedMessage));
+                                            saveButtonCallback?.Invoke(originalCoppaValue);
+                                        }
                                     }
-                                    else
+                                    catch (Exception ex)
                                     {
-                                        originalCoppaValue = newCompliancyValue;
                                         SetCoppaFieldValue(originalCoppaValue, coppaField);
                                         SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                        NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Info,
-                                            L10n.Tr(CoppaComplianceChangedMessage));
-                                        saveButtonCallback?.Invoke(originalCoppaValue);
+                                        exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage, ex));
+                                    }
+                                    finally
+                                    {
+                                        currentSaveRequest.Dispose();
+                                        currentSaveRequest = null;
                                     }
                                 }
-                                catch (Exception ex)
+                                else
                                 {
-                                    SetCoppaFieldValue(originalCoppaValue, coppaField);
-                                    SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                    exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage, ex));
-                                }
-                                finally
-                                {
-                                    currentSaveRequest.Dispose();
-                                    currentSaveRequest = null;
+                                    try
+                                    {
+                                        SetCoppaFieldValue(originalCoppaValue, coppaField);
+                                        SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
+                                        exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceWebConfigurationException(L10n.Tr(k_CoppaUnexpectedSaveRequestBehaviorMessage))
+                                        {
+                                            error = currentSaveRequest.error,
+                                            method = currentSaveRequest.method,
+                                            timeout = currentSaveRequest.timeout,
+                                            url = currentSaveRequest.url,
+                                            responseHeaders = currentSaveRequest.GetResponseHeaders(),
+                                            responseCode = currentSaveRequest.responseCode,
+                                            isHttpError = (currentSaveRequest.result == UnityWebRequest.Result.ProtocolError),
+                                            isNetworkError = (currentSaveRequest.result == UnityWebRequest.Result.ConnectionError),
+                                        });
+                                    }
+                                    finally
+                                    {
+                                        currentSaveRequest.Dispose();
+                                        currentSaveRequest = null;
+                                    }
                                 }
                             }
-                            else
+                            finally
                             {
-                                try
-                                {
-                                    SetCoppaFieldValue(originalCoppaValue, coppaField);
-                                    SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                    exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceWebConfigurationException(L10n.Tr(k_CoppaUnexpectedSaveRequestBehaviorMessage))
-                                    {
-                                        error = currentSaveRequest.error,
-                                        method = currentSaveRequest.method,
-                                        timeout = currentSaveRequest.timeout,
-                                        url = currentSaveRequest.url,
-                                        responseHeaders = currentSaveRequest.GetResponseHeaders(),
-                                        responseCode = currentSaveRequest.responseCode,
-                                        isHttpError = (currentSaveRequest.result == UnityWebRequest.Result.ProtocolError),
-                                        isNetworkError = (currentSaveRequest.result == UnityWebRequest.Result.ConnectionError),
-                                    });
-                                }
-                                finally
-                                {
-                                    currentSaveRequest.Dispose();
-                                    currentSaveRequest = null;
-                                }
+                                SetEnabledCoppaControls(coppaContainer, true);
                             }
-                        }
-                        finally
-                        {
-                            SetEnabledCoppaControls(coppaContainer, true);
-                        }
-                    };
+                        };
+                    });
                 }
                 catch (Exception ex)
                 {

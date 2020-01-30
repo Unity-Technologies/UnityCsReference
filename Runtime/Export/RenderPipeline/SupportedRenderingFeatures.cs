@@ -57,6 +57,7 @@ namespace UnityEngine.Rendering
         public bool receiveShadows { get; set; } = true;
         public bool reflectionProbes { get; set; } = true;
         public bool rendererPriority { get; set; } = false;
+        public bool terrainDetailUnsupported { get; set; } = false;
         public bool rendersUIOverlay { get; set; }
         public bool overridesEnvironmentLighting { get; set; } = false;
         public bool overridesFog { get; set; } = false;
@@ -64,7 +65,6 @@ namespace UnityEngine.Rendering
         public bool editableMaterialRenderQueue { get; set; } = true;
         public bool overridesLODBias { get; set; } = false;
         public bool overridesMaximumLODLevel { get; set; } = false;
-
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {
             MixedLightingMode fallbackMode;

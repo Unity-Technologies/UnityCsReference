@@ -159,6 +159,9 @@ namespace UnityEditor
             public readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
             public readonly GUIContent holesSettings = EditorGUIUtility.TrTextContent("Holes Settings (On Terrain Data)");
             public readonly GUIContent holesCompressionToggle = EditorGUIUtility.TrTextContent("Compress Holes Texture", "If enabled, holes texture will be compressed at runtime if compression supported.");
+            public readonly GUIContent detailShadersMissing = EditorGUIUtility.TrTextContent("The current render pipeline does not have all Detail shaders");
+            public readonly GUIContent detailShadersUnsupported = EditorGUIUtility.TrTextContent("The current render pipeline does not support Detail shaders");
+
 
             public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
 
@@ -1228,6 +1231,23 @@ namespace UnityEditor
         public void ShowDetails()
         {
             LoadDetailIcons();
+
+            RenderPipelineAsset renderPipelineAsset = GraphicsSettings.currentRenderPipeline;
+            if (renderPipelineAsset != null)
+            {
+                if (SupportedRenderingFeatures.active.terrainDetailUnsupported)
+                {
+                    EditorGUILayout.HelpBox(styles.detailShadersUnsupported.text, MessageType.Error);
+                }
+                else if (
+                    (renderPipelineAsset.terrainDetailLitShader == null) ||
+                    (renderPipelineAsset.terrainDetailGrassShader == null) ||
+                    (renderPipelineAsset.terrainDetailGrassBillboardShader == null))
+                {
+                    EditorGUILayout.HelpBox(styles.detailShadersMissing.text, MessageType.Error);
+                }
+            }
+
             ShowBrushes(0, true, true, false, false, 0);
 
             // Detail picker

@@ -1027,6 +1027,26 @@ namespace UnityEditor
             }
         }
 
+        void CreateSubSceneGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
+        {
+            // For Sub Scenes GameObjects, have menu items for cut, paste and delete.
+            // Not copy or duplicate, since multiple of the same Sub Scene is not supported anyway.
+
+            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutGO);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
+            if (Selection.gameObjects.Length == 1)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, PasteGOAsChild);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
+
+            menu.AddSeparator("");
+
+            if (GetIsCustomParentSelected())
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete GameObject"));
+            else
+                menu.AddItem(EditorGUIUtility.TrTextContent("Delete GameObject"), false, DeleteGO);
+        }
+
         void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
         {
             menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutGO);
@@ -1165,9 +1185,13 @@ namespace UnityEditor
             AddCreateGameObjectItemsToMenu(menu, Selection.transforms.Select(t => t.gameObject).ToArray(), false, true, scene.handle);
         }
 
-        void CreateMultiSceneHeaderContextClick(GenericMenu menu, int contextClickedItemID)
+        protected void AddCreateGameObjectItemsToSubSceneMenu(GenericMenu menu, Scene scene)
         {
-            Scene scene = EditorSceneManager.GetSceneByHandle(contextClickedItemID);
+            AddCreateGameObjectItemsToMenu(menu, new UnityEngine.Object[0], false, true, scene.handle);
+        }
+
+        internal void CreateSceneHeaderContextClick(GenericMenu menu, Scene scene)
+        {
             if (!IsSceneHeaderInHierarchyWindow(scene))
             {
                 Debug.LogError("Context clicked item is not a scene");
@@ -1181,7 +1205,7 @@ namespace UnityEditor
             {
                 var content = EditorGUIUtility.TrTextContent("Set Active Scene");
                 if (hasMultipleScenes && SceneManager.GetActiveScene() != scene)
-                    menu.AddItem(content, false, SetSceneActive, contextClickedItemID);
+                    menu.AddItem(content, false, SetSceneActive, scene);
                 else
                     menu.AddDisabledItem(content);
                 menu.AddSeparator("");
@@ -1192,10 +1216,11 @@ namespace UnityEditor
             {
                 if (!EditorApplication.isPlaying)
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Save Scene"), false, SaveSelectedScenes, contextClickedItemID);
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Save Scene As"), false, SaveSceneAs, contextClickedItemID);
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Save Scene"), false, SaveSelectedScenes, scene);
+                    if (!scene.isSubScene)
+                        menu.AddItem(EditorGUIUtility.TrTextContent("Save Scene As"), false, SaveSceneAs, scene);
                     if (hasMultipleScenes)
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Save All"), false, SaveAllScenes, contextClickedItemID);
+                        menu.AddItem(EditorGUIUtility.TrTextContent("Save All"), false, SaveAllScenes, scene);
                     else
                         menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Save All"));
                 }
@@ -1210,35 +1235,38 @@ namespace UnityEditor
 
             bool isUnloadOrRemoveValid = EditorSceneManager.loadedSceneCount != GetNumLoadedScenesInSelection();
 
-            if (scene.isLoaded)
+            if (!scene.isSubScene)
             {
-                // Unload
-                var content = EditorGUIUtility.TrTextContent("Unload Scene");
-                bool canUnloadScenes = isUnloadOrRemoveValid && !EditorApplication.isPlaying && !string.IsNullOrEmpty(scene.path);
-                if (canUnloadScenes)
-                    menu.AddItem(content, false, UnloadSelectedScenes, contextClickedItemID);
+                if (scene.isLoaded)
+                {
+                    // Unload
+                    var content = EditorGUIUtility.TrTextContent("Unload Scene");
+                    bool canUnloadScenes = isUnloadOrRemoveValid && !EditorApplication.isPlaying && !string.IsNullOrEmpty(scene.path);
+                    if (canUnloadScenes)
+                        menu.AddItem(content, false, UnloadSelectedScenes, scene);
+                    else
+                        menu.AddDisabledItem(content);
+                }
                 else
-                    menu.AddDisabledItem(content);
-            }
-            else
-            {
-                // Load
-                var content = EditorGUIUtility.TrTextContent("Load Scene");
-                bool canLoadScenes = !EditorApplication.isPlaying;
-                if (canLoadScenes)
-                    menu.AddItem(content, false, LoadSelectedScenes, contextClickedItemID);
-                else
-                    menu.AddDisabledItem(content);
-            }
+                {
+                    // Load
+                    var content = EditorGUIUtility.TrTextContent("Load Scene");
+                    bool canLoadScenes = !EditorApplication.isPlaying;
+                    if (canLoadScenes)
+                        menu.AddItem(content, false, LoadSelectedScenes, scene);
+                    else
+                        menu.AddDisabledItem(content);
+                }
 
-            // Remove
-            var removeContent = EditorGUIUtility.TrTextContent("Remove Scene");
-            bool selectedAllScenes = GetSelectedScenes().Count == EditorSceneManager.sceneCount;
-            bool canRemoveScenes = isUnloadOrRemoveValid && !selectedAllScenes && !EditorApplication.isPlaying;
-            if (canRemoveScenes)
-                menu.AddItem(removeContent, false, RemoveSelectedScenes, contextClickedItemID);
-            else
-                menu.AddDisabledItem(removeContent);
+                // Remove
+                var removeContent = EditorGUIUtility.TrTextContent("Remove Scene");
+                bool selectedAllScenes = GetSelectedScenes().Count == EditorSceneManager.sceneCount;
+                bool canRemoveScenes = isUnloadOrRemoveValid && !selectedAllScenes && !EditorApplication.isPlaying;
+                if (canRemoveScenes)
+                    menu.AddItem(removeContent, false, RemoveSelectedScenes, scene);
+                else
+                    menu.AddDisabledItem(removeContent);
+            }
 
             // Discard changes
             if (scene.isLoaded)
@@ -1248,7 +1276,7 @@ namespace UnityEditor
                 var modifiedScenes = GetModifiedScenes(selectedSceneHandles);
                 bool canDiscardChanges = !EditorApplication.isPlaying && modifiedScenes.Length > 0;
                 if (canDiscardChanges)
-                    menu.AddItem(content, false, DiscardChangesInSelectedScenes, contextClickedItemID);
+                    menu.AddItem(content, false, DiscardChangesInSelectedScenes, scene);
                 else
                     menu.AddDisabledItem(content);
             }
@@ -1257,26 +1285,29 @@ namespace UnityEditor
             menu.AddSeparator("");
             var selectAssetContent = EditorGUIUtility.TrTextContent("Select Scene Asset");
             if (!string.IsNullOrEmpty(scene.path))
-                menu.AddItem(selectAssetContent, false, SelectSceneAsset, contextClickedItemID);
+                menu.AddItem(selectAssetContent, false, SelectSceneAsset, scene);
             else
                 menu.AddDisabledItem(selectAssetContent);
 
-            var addSceneContent = EditorGUIUtility.TrTextContent("Add New Scene");
-            if (!EditorApplication.isPlaying)
-                menu.AddItem(addSceneContent, false, AddNewScene, contextClickedItemID);
-            else
-                menu.AddDisabledItem(addSceneContent);
+            if (!scene.isSubScene)
+            {
+                var addSceneContent = EditorGUIUtility.TrTextContent("Add New Scene");
+                if (!EditorApplication.isPlaying)
+                    menu.AddItem(addSceneContent, false, AddNewScene, scene);
+                else
+                    menu.AddDisabledItem(addSceneContent);
+            }
 
             // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
             // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
             if (scene.isLoaded)
             {
                 menu.AddSeparator("");
-                AddCreateGameObjectItemsToSceneMenu(menu, scene);
+                if (scene.isSubScene)
+                    AddCreateGameObjectItemsToSubSceneMenu(menu, scene);
+                else
+                    AddCreateGameObjectItemsToSceneMenu(menu, scene);
             }
-
-            // Let users add extra items
-            SceneHierarchyHooks.AddCustomSceneHeaderContextMenuItems(menu, scene);
         }
 
         int GetNumLoadedScenesInSelection()
@@ -1301,7 +1332,18 @@ namespace UnityEditor
                 {
                     selectedSceneHandles.Add(id);
                 }
+                else
+                {
+                    GameObject gameObject = EditorUtility.InstanceIDToObject(id) as GameObject;
+                    if (gameObject)
+                    {
+                        var subSceneInfo = SubSceneGUI.GetSubSceneInfo(gameObject);
+                        if (subSceneInfo.isValid && subSceneInfo.scene.IsValid())
+                            selectedSceneHandles.Add(subSceneInfo.scene.handle);
+                    }
+                }
             }
+
             return selectedSceneHandles;
         }
 
@@ -1334,13 +1376,36 @@ namespace UnityEditor
 
             if (clickedSceneHeader)
             {
-                CreateMultiSceneHeaderContextClick(menu, contextClickedItemID);
+                CreateSceneHeaderContextClick(menu, scene);
+                // Let users add extra items.
+                SceneHierarchyHooks.AddCustomSceneHeaderContextMenuItems(menu, scene);
             }
             else
             {
-                var gameObject = (GameObject)EditorUtility.InstanceIDToObject(contextClickedItemID);
-                if (!SubSceneGUI.HandleGameObjectContextMenu(menu, gameObject))
+                GameObject gameObject = EditorUtility.InstanceIDToObject(contextClickedItemID) as GameObject;
+                var subSceneInfo = SubSceneGUI.GetSubSceneInfo(gameObject);
+                if (subSceneInfo.isValid)
+                {
+                    CreateSubSceneGameObjectContextClick(menu, contextClickedItemID);
+                    menu.AddSeparator(string.Empty);
+
+                    if (subSceneInfo.scene.IsValid())
+                    {
+                        // Sub scenes where the scene object exists can reuse menu for regular scenes.
+                        CreateSceneHeaderContextClick(menu, subSceneInfo.scene);
+                    }
+                    else
+                    {
+                        // Sub scenes where only the info exists, but not the scene object, need special handling.
+                        SubSceneGUI.CreateClosedSubSceneContextClick(menu, subSceneInfo);
+                    }
+                    // Let users add extra items.
+                    SceneHierarchyHooks.AddCustomSubSceneHeaderContextMenuItems(menu, subSceneInfo);
+                }
+                else
+                {
                     CreateGameObjectContextClick(menu, contextClickedItemID);
+                }
             }
 
             menu.ShowAsContext();
@@ -1456,8 +1521,8 @@ namespace UnityEditor
 
         void SetSceneActive(object userData)
         {
-            int itemID = (int)userData;
-            EditorSceneManager.SetActiveScene(EditorSceneManager.GetSceneByHandle(itemID));
+            Scene scene = (Scene)userData;
+            EditorSceneManager.SetActiveScene(scene);
         }
 
         private void LoadSelectedScenes(object userdata)
@@ -1475,9 +1540,7 @@ namespace UnityEditor
 
         private void SaveSceneAs(object userdata)
         {
-            int itemID = (int)userdata;
-
-            var scene = EditorSceneManager.GetSceneByHandle(itemID);
+            Scene scene = (Scene)userdata;
             if (scene.isLoaded)
             {
                 EditorSceneManager.SaveSceneAs(scene);
@@ -1589,16 +1652,14 @@ namespace UnityEditor
             Scene newScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Additive);
 
             // Move new scene after context clicked scene
-            int itemID = (int)userData;
-            var scene = EditorSceneManager.GetSceneByHandle(itemID);
+            Scene scene = (Scene)userData;
             if (scene.IsValid())
                 EditorSceneManager.MoveSceneAfter(newScene, scene);
         }
 
         void SelectSceneAsset(object userData)
         {
-            int itemID = (int)userData;
-            var scene = EditorSceneManager.GetSceneByHandle(itemID);
+            Scene scene = (Scene)userData;
             var sceneObject = AssetDatabase.LoadMainAssetAtPath(scene.path);
             Selection.activeObject = sceneObject;
             EditorGUIUtility.PingObject(sceneObject);

@@ -8,7 +8,6 @@ using System.Linq;
 using JetBrains.Annotations;
 using UnityEditorInternal;
 using UnityEditor.Profiling;
-using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using Unity.MPE;
 
@@ -17,6 +16,8 @@ namespace UnityEditor
     static class ProfilerRoleProvider
     {
         const string k_RoleName = "profiler";
+
+        static int s_SlaveProcessId = -1;
 
         internal enum EventType
         {
@@ -270,10 +271,13 @@ namespace UnityEditor
                 EventService.On(nameof(EventType.UmpProfilerMemRecordModeChanged), OnProfilerMemoryRecordModeChanged);
             }
 
-            [UsedImplicitly, Shortcut("Profiling/Profiler/RecordToggle", KeyCode.F9)]
-            static void RecordToggle()
+            [UsedImplicitly, CommandHandler("ProfilerRecordToggle", CommandHint.Shortcut)]
+            static void RecordToggle(CommandExecuteContext context)
             {
-                if (ProcessService.level == ProcessLevel.UMP_MASTER && ProcessService.IsChannelServiceStarted() && EventService.IsConnected)
+                if (ProcessService.level == ProcessLevel.UMP_MASTER &&
+                    ProcessService.IsChannelServiceStarted() &&
+                    ProcessService.GetSlaveProcessState(s_SlaveProcessId) == ProcessState.UMP_RUNNING &&
+                    EventService.IsConnected)
                 {
                     EventService.Request(nameof(EventType.UmpProfilerRecordToggle), (err, args) =>
                     {
@@ -304,11 +308,12 @@ namespace UnityEditor
                         else
                             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Recording has ended.");
                     }, 250);
+
+                    context.result = true;
                 }
                 else
                 {
-                    var profilerWindow = EditorWindow.GetWindow<ProfilerWindow>();
-                    profilerWindow.SetRecordingEnabled(!profilerWindow.IsRecording());
+                    context.result = false;
                 }
             }
 
@@ -357,24 +362,29 @@ namespace UnityEditor
             }
         }
 
-        static double s_LastStartupTime = 0;
+        internal static bool IsRunning()
+        {
+            if (s_SlaveProcessId == -1)
+                return false;
+            return ProcessService.GetSlaveProcessState(s_SlaveProcessId) == ProcessState.UMP_RUNNING;
+        }
+
         internal static void LaunchProfilerSlave()
         {
-            if (s_LastStartupTime + 3f > EditorApplication.timeSinceStartup)
+            if (IsRunning())
             {
-                Debug.LogWarning("You've already launched the profiler out-of-process, please wait a few seconds...");
+                Debug.LogWarning($"You've already launched the profiler out-of-process ({s_SlaveProcessId}), please wait a few seconds...");
                 return;
             }
 
             const string umpCap = "ump-cap";
             const string umpWindowTitleSwitch = "ump-window-title";
-            ProcessService.LaunchSlave(k_RoleName,
+            s_SlaveProcessId = ProcessService.LaunchSlave(k_RoleName,
                 umpWindowTitleSwitch, "Profiler",
                 umpCap, "disable-extra-resources",
                 umpCap, "menu_bar",
                 "editor-mode", k_RoleName,
                 "disableManagedDebugger", "true");
-            s_LastStartupTime = EditorApplication.timeSinceStartup;
         }
     }
 }
