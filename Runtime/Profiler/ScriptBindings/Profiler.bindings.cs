@@ -149,6 +149,7 @@ namespace UnityEngine.Profiling
         [Conditional("ENABLE_PROFILER")]
         public static void BeginSample(string name)
         {
+            ValidateArguments(name);
             BeginSampleImpl(name, null);
         }
 
@@ -159,7 +160,17 @@ namespace UnityEngine.Profiling
         [Conditional("ENABLE_PROFILER")]
         public static void BeginSample(string name, Object targetObject)
         {
+            ValidateArguments(name);
             BeginSampleImpl(name, targetObject);
+        }
+
+        [MethodImpl(256)]
+        static void ValidateArguments(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException("Argument should be a valid string.", "name");
+            }
         }
 
         [NativeMethod(Name = "ProfilerBindings::BeginSample", IsFreeFunction = true, IsThreadSafe = true)]
