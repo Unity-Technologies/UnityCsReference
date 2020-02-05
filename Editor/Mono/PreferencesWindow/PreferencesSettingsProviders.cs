@@ -57,6 +57,7 @@ namespace UnityEditor
         internal class GeneralProperties
         {
             public static readonly GUIContent autoRefresh = EditorGUIUtility.TrTextContent("Auto Refresh");
+            public static readonly GUIContent directoryMonitoring = EditorGUIUtility.TrTextContent("Directory Monitoring", "Monitor directories instead of periodically scanning all project files to detect asset changes.");
             public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
             public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Assets on Import");
@@ -128,6 +129,7 @@ namespace UnityEditor
 
         private List<IPreferenceWindowExtension> prefWinExtensions;
         private bool m_AutoRefresh;
+        private bool m_DirectoryMonitoring;
 
         private bool m_ReopenLastUsedProjectOnStartup;
         private bool m_CompressAssetsOnImport;
@@ -476,6 +478,7 @@ namespace UnityEditor
                 else
                     m_AutoRefresh = EditorGUILayout.Toggle(GeneralProperties.autoRefresh, m_AutoRefresh);
             }
+            DoDirectoryMonitoring();
 
             m_ReopenLastUsedProjectOnStartup = EditorGUILayout.Toggle(GeneralProperties.loadPreviousProjectOnStartup, m_ReopenLastUsedProjectOnStartup);
 
@@ -593,6 +596,20 @@ namespace UnityEditor
             if (assetStoreSearchChanged)
             {
                 ProjectBrowser.ShowAssetStoreHitsWhileSearchingLocalAssetsChanged();
+            }
+        }
+
+        private void DoDirectoryMonitoring()
+        {
+            bool isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT ||
+                Environment.OSVersion.Platform == PlatformID.Win32Windows;
+
+            using (new EditorGUI.DisabledScope(!isWindows))
+            {
+                m_DirectoryMonitoring = EditorGUILayout.Toggle(GeneralProperties.directoryMonitoring, m_DirectoryMonitoring);
+
+                if (!isWindows)
+                    EditorGUILayout.HelpBox("Directory monitoring currently only available on windows", MessageType.Info, true);
             }
         }
 
@@ -916,6 +933,13 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
 
+            bool oldDirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
+            if (oldDirectoryMonitoring != m_DirectoryMonitoring)
+            {
+                EditorPrefs.SetBool("DirectoryMonitoring", m_DirectoryMonitoring);
+                AssetDatabaseExperimental.RefreshSettings();
+            }
+
             if (m_ContentScaleChangedThisSession)
             {
                 EditorPrefs.SetInt(kContentScalePrefKey, m_ContentScalePercentValue);
@@ -1037,6 +1061,7 @@ namespace UnityEditor
                 m_DiffToolIndex = 0;
 
             m_AutoRefresh = EditorPrefs.GetBool("kAutoRefresh");
+            m_DirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
 
             m_ReopenLastUsedProjectOnStartup = EditorPrefs.GetBool("ReopenLastUsedProjectOnStartup");
 

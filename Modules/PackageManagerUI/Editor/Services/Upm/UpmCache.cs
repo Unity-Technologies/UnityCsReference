@@ -194,11 +194,13 @@ namespace UnityEditor.PackageManager.UI
 
             private static bool IsPreviewInstalled(PackageInfo packageInfo)
             {
-                SemVersion? packageInfoVersion;
-                bool isPackageInfoVersionParsed = SemVersionParser.TryParse(packageInfo?.version, out packageInfoVersion);
+                if (packageInfo == null)
+                    return false;
 
-                return packageInfo?.isDirectDependency == true &&
-                    packageInfo.source == PackageSource.Registry && isPackageInfoVersionParsed && !((SemVersion)packageInfoVersion).IsRelease();
+                SemVersion? packageInfoVersion;
+
+                return packageInfo.isDirectDependency && packageInfo.source == PackageSource.Registry
+                    && SemVersionParser.TryParse(packageInfo.version, out packageInfoVersion) && !((SemVersion)packageInfoVersion).IsRelease();
             }
 
             private void OnInstalledPreviewPackagesChanged()

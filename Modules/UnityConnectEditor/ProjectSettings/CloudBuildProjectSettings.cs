@@ -493,6 +493,7 @@ namespace UnityEditor.Connect
                 {
                     var getCurrentProjectRequest = new UnityWebRequest(cloudBuildApiCurrentProjectUrl,
                         UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                    getCurrentProjectRequest.suppressErrorsToConsole = true;
                     getCurrentProjectRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                     if (m_Provider.m_GetProjectRequest != null)
                     {
@@ -565,6 +566,7 @@ namespace UnityEditor.Connect
             {
                 var getCurrentProjectBillingPlanRequest = new UnityWebRequest(m_CloudBuildApiOrgProjectBillingPlanUrl,
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getCurrentProjectBillingPlanRequest.suppressErrorsToConsole = true;
                 getCurrentProjectBillingPlanRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 if (m_Provider.m_GetProjectBillingPlanRequest != null)
                 {
@@ -618,6 +620,7 @@ namespace UnityEditor.Connect
             {
                 var getCurrentProjectBuildTargetsRequest = new UnityWebRequest(m_CloudBuildApiOrgProjectBuildTargetsUrl,
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getCurrentProjectBuildTargetsRequest.suppressErrorsToConsole = true;
                 getCurrentProjectBuildTargetsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 if (m_Provider.m_GetProjectBuildTargetsRequest != null)
                 {
@@ -736,6 +739,7 @@ namespace UnityEditor.Connect
                             var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(k_LaunchBuildPayload));
                             var launchBuildPostRequest = new UnityWebRequest(startBuildUrl,
                                 UnityWebRequest.kHttpVerbPOST) { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler };
+                            launchBuildPostRequest.suppressErrorsToConsole = true;
                             launchBuildPostRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                             launchBuildPostRequest.SetRequestHeader("Content-Type", "application/json;charset=utf-8");
                             m_Provider.m_BuildRequests.Add(launchBuildPostRequest);
@@ -832,6 +836,7 @@ namespace UnityEditor.Connect
                 {
                     var getCurrentProjectStatusRequest = new UnityWebRequest(cloudBuildApiStatusUrl,
                         UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                    getCurrentProjectStatusRequest.suppressErrorsToConsole = true;
                     getCurrentProjectStatusRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                     if (m_Provider.m_GetApiStatusRequest != null)
                     {

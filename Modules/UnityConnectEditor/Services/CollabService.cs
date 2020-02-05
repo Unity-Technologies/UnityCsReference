@@ -18,7 +18,7 @@ namespace UnityEditor.Connect
         public override string settingsProviderClassName => nameof(CollabProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.CollabService;
-        public override string packageId { get; }
+        public override string packageName { get; }
 
         static readonly CollabService k_Instance;
 
@@ -56,7 +56,7 @@ namespace UnityEditor.Connect
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Collab.png";
             projectSettingsPath = "Project/Services/Collaborate";
             displayToggle = true;
-            packageId = "com.unity.collab-proxy";
+            packageName = "com.unity.collab-proxy";
             ServicesRepository.AddService(this);
         }
     }

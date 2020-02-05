@@ -16,7 +16,7 @@ namespace UnityEditor.Connect
     [InitializeOnLoad]
     internal class AdsService : SingleService
     {
-        const string k_GameIdApiUrl = "/unity/games";
+        const string k_GameIdApiUrl = "/unity/v1/games";
         const string k_JsonAppleGameId = "iOSGameKey";
         const string k_JsonAndroidGameId = "androidGameKey";
         const int k_GameIdsRequestMaxIteration = 20;
@@ -34,7 +34,7 @@ namespace UnityEditor.Connect
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.AdsService;
         public override bool requiresCoppaCompliance => true;
-        public override string packageId { get; }
+        public override string packageName { get; }
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;
 
@@ -55,7 +55,7 @@ namespace UnityEditor.Connect
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Ads.png";
             projectSettingsPath = "Project/Services/Ads";
             displayToggle = true;
-            packageId = "com.unity.ads";
+            packageName = "com.unity.ads";
             serviceFlagName = "ads";
             ServicesRepository.AddService(this);
         }
@@ -106,6 +106,7 @@ namespace UnityEditor.Connect
                 var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(bodyContent));
 
                 m_CurrentWebRequest = new UnityWebRequest(ServicesConfiguration.instance.adsOperateApiUrl + k_GameIdApiUrl, UnityWebRequest.kHttpVerbPOST) { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler };
+                m_CurrentWebRequest.suppressErrorsToConsole = true;
                 m_CurrentWebRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
 
                 var operation = m_CurrentWebRequest.SendWebRequest();

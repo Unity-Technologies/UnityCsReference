@@ -23,10 +23,12 @@ namespace Unity.Collections
         static int s_NativeLeakDetectionMode;
         const string kNativeLeakDetectionModePrefsString = "Unity.Colletions.NativeLeakDetection.Mode";
 
+        // Initialize leak detection on startup/domain reload to avoid NativeLeakDetection.Mode
+        // access on a job to trigger the initialization.
         [RuntimeInitializeOnLoadMethod]
         static void Initialize()
         {
-            s_NativeLeakDetectionMode = UnityEngine.PlayerPrefs.GetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
+            s_NativeLeakDetectionMode = UnityEngine.PlayerPrefs.EditorPrefsGetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
             if (s_NativeLeakDetectionMode < (int)NativeLeakDetectionMode.Disabled || s_NativeLeakDetectionMode > (int)NativeLeakDetectionMode.EnabledWithStackTrace)
                 s_NativeLeakDetectionMode = (int)NativeLeakDetectionMode.Enabled;
         }
@@ -45,7 +47,7 @@ namespace Unity.Collections
                 if (s_NativeLeakDetectionMode != intValue)
                 {
                     s_NativeLeakDetectionMode = intValue;
-                    UnityEngine.PlayerPrefs.SetInt(kNativeLeakDetectionModePrefsString, intValue);
+                    UnityEngine.PlayerPrefs.EditorPrefsSetInt(kNativeLeakDetectionModePrefsString, intValue);
                 }
             }
         }

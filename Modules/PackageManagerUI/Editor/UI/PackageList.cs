@@ -114,7 +114,13 @@ namespace UnityEditor.PackageManager.UI
             else if (string.IsNullOrEmpty(PackageFiltering.instance.currentSearchText))
                 noPackagesLabel.text = ApplicationUtil.instance.GetTranslationForText("There are no packages.");
             else
-                noPackagesLabel.text = string.Format(ApplicationUtil.instance.GetTranslationForText("No results for \"{0}\""), PackageFiltering.instance.currentSearchText);
+            {
+                const int maxSearchTextToDisplay = 64;
+                var searchText = PackageFiltering.instance.currentSearchText;
+                if (searchText?.Length > maxSearchTextToDisplay)
+                    searchText = searchText.Substring(0, maxSearchTextToDisplay) + "...";
+                noPackagesLabel.text = string.Format(ApplicationUtil.instance.GetTranslationForText("No results for \"{0}\""), searchText);
+            }
         }
 
         public void ShowEmptyResults(bool value)
@@ -278,7 +284,7 @@ namespace UnityEditor.PackageManager.UI
             foreach (var state in visualStates)
                 GetPackageItem(state.packageUniqueId)?.UpdateVisualState(state);
 
-            ShowResults();
+            ShowResults(true);
         }
 
         private void OnListRebuild(IPage page)
@@ -298,7 +304,7 @@ namespace UnityEditor.PackageManager.UI
                 onPackageListLoaded?.Invoke();
             }
 
-            ShowResults();
+            ShowResults(true);
         }
 
         private void OnListUpdate(IPage page, IEnumerable<IPackage> addedOrUpated, IEnumerable<IPackage> removed, bool reorder)
@@ -331,7 +337,7 @@ namespace UnityEditor.PackageManager.UI
                 m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
             }
 
-            ShowResults();
+            ShowResults(PageManager.instance.GetRefreshTimestamp(page.tab) == 0);
         }
 
         public List<ISelectableItem> GetSelectableItems()
@@ -381,12 +387,12 @@ namespace UnityEditor.PackageManager.UI
             SetEmptyAreaDisplay(false);
         }
 
-        private void ShowResults()
+        private void ShowResults(bool updateScrollPosition)
         {
             var visiblePackageItems = packageItems.Where(UIUtils.IsElementVisible);
             var showEmptyResults = !visiblePackageItems.Any();
             ShowEmptyResults(showEmptyResults);
-            if (!showEmptyResults)
+            if (updateScrollPosition && !showEmptyResults)
                 ScrollIfNeeded();
             UpdateActiveSelection();
         }

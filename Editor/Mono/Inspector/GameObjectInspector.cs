@@ -950,19 +950,18 @@ namespace UnityEditor
                         HandleUtility.ignoreRaySnapObjects = dragObject.GetComponentsInChildren<Transform>();
 
                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                    object hit = HandleUtility.RaySnap(HandleUtility.GUIPointToWorldRay(evt.mousePosition));
+                    Vector3 point, normal;
 
-                    if (hit != null)
+                    if (HandleUtility.PlaceObject(evt.mousePosition, out point, out normal))
                     {
-                        RaycastHit rh = (RaycastHit)hit;
                         float offset = 0;
                         if (Tools.pivotMode == PivotMode.Center)
                         {
-                            float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, rh.normal);
+                            float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, normal);
                             if (geomOffset != Mathf.Infinity)
-                                offset = Vector3.Dot(dragObject.transform.position, rh.normal) - geomOffset;
+                                offset = Vector3.Dot(dragObject.transform.position, normal) - geomOffset;
                         }
-                        dragObject.transform.position = Matrix4x4.identity.MultiplyPoint(rh.point + (rh.normal * offset));
+                        dragObject.transform.position = Matrix4x4.identity.MultiplyPoint(point + (normal * offset));
                     }
                     else
                         dragObject.transform.position = HandleUtility.GUIPointToWorldRay(evt.mousePosition).GetPoint(10);

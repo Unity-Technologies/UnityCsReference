@@ -98,13 +98,10 @@ namespace UnityEditor
 
         private void RemoveNullWindows()
         {
-            List<EditorWindow> result = new List<EditorWindow>();
-            foreach (EditorWindow i in m_Panes)
-            {
-                if (i != null)
-                    result.Add(i);
-            }
-            m_Panes = result;
+            m_Panes = m_Panes.Where(w => w).ToList();
+            // Restore dock area actual view if there is no valid pane left.
+            if (m_Panes.Count == 0 && actualView)
+                m_Panes.Add(actualView);
             s_GUIContents.Clear();
         }
 
@@ -128,7 +125,7 @@ namespace UnityEditor
             m_IsBeingDestroyed = true;
 
             if (hasFocus)
-                Invoke("OnLostFocus");
+                m_OnLostFocus?.Invoke();
 
             actualView = null;
 

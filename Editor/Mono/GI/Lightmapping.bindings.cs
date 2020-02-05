@@ -152,9 +152,12 @@ namespace UnityEditor
             set { GetOrCreateLightingsSettings().bakedGI = value; }
         }
 
-        [Obsolete("Lightmapping.indirectOutputScale is obsolete, use DynamicGI.indirectScale instead. ", false)]
-        [StaticAccessor("GetGISettings()")]
-        public static extern float indirectOutputScale { get; set; }
+        [Obsolete("Lightmapping.indirectOutputScale is obsolete, use Lightmapping.lightingSettings.indirectScale instead. ", false)]
+        public static float indirectOutputScale
+        {
+            get { return GetLightingSettingsOrDefaultsFallback().indirectScale; }
+            set { GetOrCreateLightingsSettings().indirectScale = value; }
+        }
 
         [Obsolete("Lightmapping.bounceBoost is obsolete, use Lightmapping.lightingSettings.albedoBoost instead. ", false)]
         public static float bounceBoost

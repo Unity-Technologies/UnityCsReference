@@ -44,34 +44,35 @@ namespace UnityEditor
         // Follows actually referenced libraries only
         private void CollectReferencesFromRootsRecursive(string dir, IEnumerable<string> roots, bool ignoreSystemDlls)
         {
-            var resolver = AssemblyResolverFor(dir);
-
-            foreach (var assemblyFileName in roots)
+            using (var resolver = AssemblyResolverFor(dir))
             {
-                var fileName = Path.Combine(dir, assemblyFileName);
-                if (_assemblyFileNames.Contains(assemblyFileName))
-                    continue;
-
-                // It is possible to have references to missing assemblies, if the compiler emitted an assembly reference
-                // which was not actually needed (https://github.com/dotnet/roslyn/issues/31192), so that UnityLinker would
-                // then delete such an assembly.
-                if (!File.Exists(fileName))
-                    continue;
-
-                var assemblyDefinition = AssemblyDefinition.ReadAssembly(fileName, new ReaderParameters { AssemblyResolver = resolver });
-
-                if (ignoreSystemDlls && IsIgnoredSystemDll(assemblyDefinition))
-                    continue;
-
-                _assemblyFileNames.Add(assemblyFileName);
-                _assemblyDefinitions.Add(assemblyDefinition);
-
-                foreach (var reference in assemblyDefinition.MainModule.AssemblyReferences)
+                foreach (var assemblyFileName in roots)
                 {
-                    var refFileName = reference.Name + ".dll";
-                    if (_assemblyFileNames.Contains(refFileName))
+                    var fileName = Path.Combine(dir, assemblyFileName);
+                    if (_assemblyFileNames.Contains(assemblyFileName))
                         continue;
-                    CollectReferencesFromRootsRecursive(dir, new string[] {refFileName}, ignoreSystemDlls);
+
+                    // It is possible to have references to missing assemblies, if the compiler emitted an assembly reference
+                    // which was not actually needed (https://github.com/dotnet/roslyn/issues/31192), so that UnityLinker would
+                    // then delete such an assembly.
+                    if (!File.Exists(fileName))
+                        continue;
+
+                    var assemblyDefinition = AssemblyDefinition.ReadAssembly(fileName, new ReaderParameters { AssemblyResolver = resolver });
+
+                    if (ignoreSystemDlls && IsIgnoredSystemDll(assemblyDefinition))
+                        continue;
+
+                    _assemblyFileNames.Add(assemblyFileName);
+                    _assemblyDefinitions.Add(assemblyDefinition);
+
+                    foreach (var reference in assemblyDefinition.MainModule.AssemblyReferences)
+                    {
+                        var refFileName = reference.Name + ".dll";
+                        if (_assemblyFileNames.Contains(refFileName))
+                            continue;
+                        CollectReferencesFromRootsRecursive(dir, new string[] {refFileName}, ignoreSystemDlls);
+                    }
                 }
             }
         }
@@ -98,20 +99,21 @@ namespace UnityEditor
 
             var filePaths = Directory.Exists(path) ? Directory.GetFiles(path) : new string[0];
 
-            var resolver = AssemblyResolverFor(path);
-
-            foreach (var filePath in filePaths)
+            using (var resolver = AssemblyResolverFor(path))
             {
-                if (Path.GetExtension(filePath) != ".dll")
-                    continue;
+                foreach (var filePath in filePaths)
+                {
+                    if (Path.GetExtension(filePath) != ".dll")
+                        continue;
 
-                var assembly = AssemblyDefinition.ReadAssembly(filePath, new ReaderParameters { AssemblyResolver = resolver });
+                    var assembly = AssemblyDefinition.ReadAssembly(filePath, new ReaderParameters { AssemblyResolver = resolver });
 
-                if (ignoreSystemDlls && IsIgnoredSystemDll(assembly))
-                    continue;
+                    if (ignoreSystemDlls && IsIgnoredSystemDll(assembly))
+                        continue;
 
-                _assemblyFileNames.Add(Path.GetFileName(filePath));
-                _assemblyDefinitions.Add(assembly);
+                    _assemblyFileNames.Add(Path.GetFileName(filePath));
+                    _assemblyDefinitions.Add(assembly);
+                }
             }
 
             var assemblyDefinitionsAsArray = _assemblyDefinitions.ToArray();

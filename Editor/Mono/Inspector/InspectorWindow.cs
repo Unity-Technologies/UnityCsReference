@@ -210,11 +210,17 @@ namespace UnityEditor
                 return;
             }
 
-            var sharedTracker = ActiveEditorTracker.sharedTracker;
-            bool sharedTrackerInUse = m_AllInspectors.Any(i => i.m_Tracker != null && i.m_Tracker.Equals(sharedTracker));
             m_Tracker = sharedTrackerInUse ? new ActiveEditorTracker() : ActiveEditorTracker.sharedTracker;
             m_Tracker.inspectorMode = m_InspectorMode;
             m_Tracker.RebuildIfNecessary();
+        }
+
+        bool sharedTrackerInUse
+        {
+            get
+            {
+                return m_AllInspectors.Any(i => i.m_Tracker != null && i.m_Tracker.Equals(ActiveEditorTracker.sharedTracker));
+            }
         }
 
         protected virtual void ShowButton(Rect r)

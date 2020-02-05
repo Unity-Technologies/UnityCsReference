@@ -217,6 +217,10 @@ namespace UnityEditor.PackageManager.UI
         {
             // mark the package as expanded in the page manager,
             // the UI will be updated through the callback chain
+
+            if (!value || string.IsNullOrEmpty(visualState.selectedVersionId))
+                SelectMainItem();
+
             PageManager.instance.SetExpanded(package, value);
         }
 

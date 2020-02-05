@@ -137,7 +137,7 @@ namespace UnityEditor
 
             if (AssetDatabase.IsV2Enabled())
             {
-                AssetDatabaseExperimental.RefreshConnectionToCacheServer();
+                AssetDatabaseExperimental.RefreshSettings();
             }
 
             if (changedDir)

@@ -426,9 +426,19 @@ namespace UnityEditor
         {
             string name = string.IsNullOrEmpty(frame.name) ? "Sprite" : frame.name;
             name = GameObjectUtility.GetUniqueNameForSibling(null, name);
-            GameObject go = new GameObject(name);
 
-            SpriteRenderer spriteRenderer = go.AddComponent<SpriteRenderer>();
+            // ObjectFactory registers an Undo for the GameObject created, which we do not
+            // want for the drag preview. We register an Undo only when the user does a
+            // DragPerform to confirm the creation of the Sprite GameObject.
+            // The GameObject is cloned and returned while the original is destroyed to
+            // remove the Undo operation.
+            GameObject go = ObjectFactory.CreateGameObject(name, typeof(SpriteRenderer));
+            GameObject cloneGO = GameObject.Instantiate(go);
+            Object.DestroyImmediate(go);
+            go = cloneGO;
+            go.name = name;
+
+            SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer>();
             spriteRenderer.sprite = frame;
             go.transform.position = position;
             go.hideFlags = HideFlags.HideAndDontSave;
@@ -446,7 +456,7 @@ namespace UnityEditor
             if (spriteRenderer == null)
             {
                 Debug.LogWarning(SpriteUtilityStrings.unableToFindSpriteRendererWarning.text);
-                spriteRenderer = go.AddComponent<SpriteRenderer>();
+                spriteRenderer = (SpriteRenderer)ObjectFactory.AddComponent(go, typeof(SpriteRenderer));
                 if (spriteRenderer == null)
                 {
                     Debug.LogWarning(SpriteUtilityStrings.unableToAddSpriteRendererWarning.text);
@@ -460,7 +470,7 @@ namespace UnityEditor
         public static GameObject DropSpriteToSceneToCreateGO(Sprite sprite, Vector3 position)
         {
             GameObject go = new GameObject(string.IsNullOrEmpty(sprite.name) ? "Sprite" : sprite.name);
-            SpriteRenderer spriteRenderer = go.AddComponent<SpriteRenderer>();
+            SpriteRenderer spriteRenderer = (SpriteRenderer)ObjectFactory.AddComponent(go, typeof(SpriteRenderer));
             spriteRenderer.sprite = sprite;
             go.transform.position = position;
             Selection.activeObject = go;

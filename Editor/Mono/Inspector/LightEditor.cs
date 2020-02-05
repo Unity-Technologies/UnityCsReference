@@ -762,12 +762,10 @@ namespace UnityEditor
 
             ShadowsGUI();
 
-            if (EditorGUILayout.BeginFadeGroup(m_AnimShowRuntimeOptions.faded))
-                settings.DrawCookie();
-            EditorGUILayout.EndFadeGroup();
+            settings.DrawCookie();
 
             // Cookie size also requires directional light
-            if (EditorGUILayout.BeginFadeGroup(m_AnimShowRuntimeOptions.faded * m_AnimShowDirOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowDirOptions.faded))
                 settings.DrawCookieSize();
             EditorGUILayout.EndFadeGroup();
 

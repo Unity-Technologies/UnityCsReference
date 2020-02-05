@@ -369,12 +369,12 @@ namespace UnityEditor
             return ProcessService.GetSlaveProcessState(s_SlaveProcessId) == ProcessState.UMP_RUNNING;
         }
 
-        internal static void LaunchProfilerSlave()
+        internal static int LaunchProfilerSlave()
         {
             if (IsRunning())
             {
                 Debug.LogWarning($"You've already launched the profiler out-of-process ({s_SlaveProcessId}), please wait a few seconds...");
-                return;
+                return s_SlaveProcessId;
             }
 
             const string umpCap = "ump-cap";
@@ -385,6 +385,7 @@ namespace UnityEditor
                 umpCap, "menu_bar",
                 "editor-mode", k_RoleName,
                 "disableManagedDebugger", "true");
+            return s_SlaveProcessId;
         }
     }
 }

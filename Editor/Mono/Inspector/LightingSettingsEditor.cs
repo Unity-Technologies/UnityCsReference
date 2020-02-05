@@ -58,6 +58,7 @@ namespace UnityEditor
         SerializedProperty m_EnabledBakedGI;
         SerializedProperty m_MixedBakeMode;
         SerializedProperty m_AlbedoBoost;
+        SerializedProperty m_IndirectOutputScale;
         SerializedProperty m_LightmapParameters;
         SerializedProperty m_LightmapDirectionalMode;
         SerializedProperty m_BakeResolution;
@@ -185,6 +186,7 @@ namespace UnityEditor
             public static readonly GUIContent bounceScale = EditorGUIUtility.TrTextContent("Bounce Scale", "Multiplier for indirect lighting. Use with care.");
             public static readonly GUIContent updateThreshold = EditorGUIUtility.TrTextContent("Update Threshold", "Threshold for updating realtime GI. A lower value causes more frequent updates (default 1.0).");
             public static readonly GUIContent albedoBoost = EditorGUIUtility.TrTextContent("Albedo Boost", "Controls the amount of light bounced between surfaces by intensifying the albedo of materials in the scene. Increasing this draws the albedo value towards white for indirect light computation. The default value is physically accurate.");
+            public static readonly GUIContent indirectOutputScale = EditorGUIUtility.TrTextContent("Indirect Intensity", "Controls the brightness of indirect light stored in realtime and baked lightmaps. A value above 1.0 will increase the intensity of indirect light while a value less than 1.0 will reduce indirect light intensity.");
             public static readonly GUIContent lightmapDirectionalMode = EditorGUIUtility.TrTextContent("Directional Mode", "Controls whether baked and realtime lightmaps will store directional lighting information from the lighting environment. Options are Directional and Non-Directional.");
             public static readonly GUIContent defaultLightmapParameters = EditorGUIUtility.TrTextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
             public static readonly GUIContent realtimeLightsLabel = EditorGUIUtility.TrTextContent("Realtime Lighting", "Precompute Realtime indirect lighting for realtime lights and static objects. In this mode realtime lights, ambient lighting, materials of static objects (including emission) will generate indirect lighting at runtime. Only static objects are blocking and bouncing light, dynamic objects receive indirect lighting via light probes.");
@@ -294,6 +296,7 @@ namespace UnityEditor
                 m_BakeBackend = lso.FindProperty("m_BakeBackend");
                 m_MixedBakeMode = lso.FindProperty("m_MixedBakeMode");
                 m_AlbedoBoost = lso.FindProperty("m_AlbedoBoost");
+                m_IndirectOutputScale = lso.FindProperty("m_IndirectOutputScale");
                 m_LightmapMaxSize = lso.FindProperty("m_LightmapMaxSize");
                 m_LightmapParameters = lso.FindProperty("m_LightmapParameters");
                 m_LightmapDirectionalMode = lso.FindProperty("m_LightmapsBakeMode");
@@ -749,6 +752,7 @@ namespace UnityEditor
 
                     // albedo boost, push the albedo value towards one in order to get more bounce
                     EditorGUILayout.Slider(m_AlbedoBoost, 1.0f, 10.0f, Styles.albedoBoost);
+                    EditorGUILayout.Slider(m_IndirectOutputScale, 0.0f, 5.0f, Styles.indirectOutputScale);
 
                     if (LightmapParametersGUI(m_LightmapParameters, Styles.defaultLightmapParameters))
                     {

@@ -97,7 +97,11 @@ namespace UnityEditor.PackageManager.UI
             private void SetupAddOperation()
             {
                 m_AddOperation.onProcessResult += OnProcessAddResult;
-                m_AddOperation.onOperationError += (op, error) => Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Error adding package: {0}."), m_AddOperation.packageId));
+                m_AddOperation.onOperationError += (op, error) =>
+                {
+                    var packageId = string.IsNullOrEmpty(m_AddOperation.packageId) ? m_AddOperation.specialUniqueId : m_AddOperation.packageId;
+                    Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Error adding package: {0}."), packageId));
+                };
                 onAddOperation(m_AddOperation);
             }
 

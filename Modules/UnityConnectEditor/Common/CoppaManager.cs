@@ -101,6 +101,7 @@ namespace UnityEditor.Connect
                         var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
                         var currentSaveRequest = new UnityWebRequest(projectCoppaApiUrl, UnityWebRequest.kHttpVerbPUT)
                         { uploadHandler = uploadHandler};
+                        currentSaveRequest.suppressErrorsToConsole = true;
                         currentSaveRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                         currentSaveRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
                         var operation = currentSaveRequest.SendWebRequest();

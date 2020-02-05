@@ -20,7 +20,7 @@ namespace UnityEditor.Connect
         public override string settingsProviderClassName => nameof(CloudDiagProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.CrashService;
-        public override string packageId { get; }
+        public override string packageName { get; }
 
         static readonly CrashService k_Instance;
 
@@ -41,7 +41,7 @@ namespace UnityEditor.Connect
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Crash.png";
             projectSettingsPath = "Project/Services/Cloud Diagnostics";
             displayToggle = false;
-            packageId = null;
+            packageName = null;
             ServicesRepository.AddService(this);
         }
 

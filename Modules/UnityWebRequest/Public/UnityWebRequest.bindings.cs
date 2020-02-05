@@ -610,5 +610,21 @@ namespace UnityEngine.Networking
                     throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
             }
         }
+
+        private extern bool GetSuppressErrorsToConsole();
+        private extern UnityWebRequestError SetSuppressErrorsToConsole(bool suppress);
+
+        internal bool suppressErrorsToConsole
+        {
+            get { return GetSuppressErrorsToConsole(); }
+            set
+            {
+                if (!isModifiable)
+                    throw new InvalidOperationException("UnityWebRequest has already been sent; cannot modify the timeout");
+                UnityWebRequestError ret = SetSuppressErrorsToConsole(value);
+                if (ret != UnityWebRequestError.OK)
+                    throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
+            }
+        }
     }
 }

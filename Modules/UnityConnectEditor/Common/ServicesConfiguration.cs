@@ -250,6 +250,7 @@ namespace UnityEditor.Connect
 
                 m_GetServicesUrlsRequest = new UnityWebRequest(string.Format(k_CdnConfigUrl, UnityConnect.instance.GetEnvironment()),
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                m_GetServicesUrlsRequest.suppressErrorsToConsole = true;
                 var operation = m_GetServicesUrlsRequest.SendWebRequest();
                 operation.completed += asyncOperation =>
                 {

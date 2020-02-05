@@ -203,6 +203,24 @@ namespace UnityEditor
             Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
         }
 
+        public static void SetObjectReferenceCurves(AnimationClip clip, EditorCurveBinding[] bindings, ObjectReferenceKeyframe[][] keyframes)
+        {
+            if (bindings == null)
+                throw new ArgumentNullException(nameof(bindings), $"{nameof(bindings)} must be non-null");
+            if (keyframes == null)
+                throw new ArgumentNullException(nameof(keyframes), $"{nameof(keyframes)} must be non-null");
+            if (bindings.Length != keyframes.Length)
+                throw new InvalidOperationException($"{nameof(bindings)} and {nameof(keyframes)} must be of equal length");
+
+            int length = bindings.Length;
+            for (int i = 0; i < length; i++)
+            {
+                SetObjectReferenceCurveNoSync(clip, bindings[i], keyframes[i]);
+            }
+            SyncEditorCurves(clip);
+            Internal_InvokeOnCurveWasModified(clip, new EditorCurveBinding(), CurveModifiedType.ClipModified);
+        }
+
         internal static void SetObjectReferenceCurveNoSync(AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes)
         {
             Internal_SetObjectReferenceCurve(clip, binding, keyframes, false);
@@ -218,6 +236,25 @@ namespace UnityEditor
         {
             Internal_SetEditorCurve(clip, binding, curve, true);
             Internal_InvokeOnCurveWasModified(clip, binding, curve != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
+        }
+
+        public static void SetEditorCurves(AnimationClip clip, EditorCurveBinding[] bindings, AnimationCurve[] curves)
+        {
+            if (bindings == null)
+                throw new ArgumentNullException(nameof(bindings), $"{nameof(bindings)} must be non-null");
+            if (curves == null)
+                throw new ArgumentNullException(nameof(curves), $"{nameof(curves)} must be non-null");
+            if (bindings.Length != curves.Length)
+                throw new InvalidOperationException($"{nameof(bindings)} and {nameof(curves)} must be of equal length");
+
+            int length = bindings.Length;
+            for (int i = 0; i < length; i++)
+            {
+                SetEditorCurveNoSync(clip, bindings[i], curves[i]);
+            }
+            SyncEditorCurves(clip);
+
+            Internal_InvokeOnCurveWasModified(clip, new EditorCurveBinding(), AnimationUtility.CurveModifiedType.ClipModified);
         }
 
         internal static void SetEditorCurveNoSync(AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve)

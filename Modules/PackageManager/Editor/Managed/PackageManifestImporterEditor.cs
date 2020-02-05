@@ -184,9 +184,6 @@ namespace UnityEditor.PackageManager
         {
             base.OnEnable();
 
-            if (target == null)
-                return;
-
             errorMessages = new List<string>();
             warningMessages = new List<string>();
 

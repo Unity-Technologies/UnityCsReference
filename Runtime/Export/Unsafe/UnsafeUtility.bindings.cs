@@ -59,7 +59,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         unsafe public static extern void ReleaseGCObject(ulong gcHandle);
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void CopyObjectAddressToPtr(object target, void* dstPtr);
 
         public static unsafe bool IsBlittable<T>() where T : struct
@@ -67,28 +67,28 @@ namespace Unity.Collections.LowLevel.Unsafe
             return IsBlittable(typeof(T));
         }
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void* Malloc(long size, int alignment, Allocator allocator);
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 
         public static bool IsValidAllocator(Allocator allocator) { return allocator > Allocator.None; }
 
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void MemCpy(void* destination, void* source, long size);
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void MemCpyReplicate(void* destination, void* source, int size, int count);
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void MemCpyStride(void* destination, int destinationStride, void* source, int sourceStride, int elementSize, int count);
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void MemMove(void* destination, void* source, long size);
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void MemSet(void* destination, byte value, long size);
 
         unsafe public static void MemClear(void* destination, long size)
@@ -96,7 +96,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             MemSet(destination, 0, size);
         }
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         unsafe public static extern int MemCmp(void* ptr1, void* ptr2, long size);
 
         [ThreadSafe]

@@ -28,6 +28,7 @@ namespace UnityEditor.UIElements
 
         public static readonly string ussClassName = "unity-search-field-base";
         public static readonly string textUssClassName = ussClassName + "__text-field";
+        public static readonly string textInputUssClassName = textUssClassName + "__input";
         public static readonly string searchButtonUssClassName = ussClassName + "__search-button";
         public static readonly string cancelButtonUssClassName = ussClassName + "__cancel-button";
         public static readonly string cancelButtonOffVariantUssClassName = cancelButtonUssClassName + "--off";
@@ -51,7 +52,10 @@ namespace UnityEditor.UIElements
             m_TextField.AddToClassList(textUssClassName);
             hierarchy.Add(m_TextField);
             m_TextField.RegisterValueChangedCallback(OnValueChanged);
-            m_TextField.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
+
+            var textInput = m_TextField.Q(TextField.textInputUssName);
+            textInput.RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
+            textInput.AddToClassList(textInputUssClassName);
 
             m_CancelButton = new Button(() => {}) { name = "unity-cancel" };
             m_CancelButton.AddToClassList(cancelButtonUssClassName);

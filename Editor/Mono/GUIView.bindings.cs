@@ -35,7 +35,6 @@ namespace UnityEditor
 
         internal extern void SetTitle(string title);
         internal extern void AddToAuxWindowList();
-        internal extern void RemoveFromAuxWindowList();
         internal extern void SetInternalGameViewDimensions(Rect rect, Rect clippedRect, Vector2 targetSize);
         internal extern void SetMainPlayModeViewSize(Vector2 targetSize);
         internal extern void SetAsStartView();

@@ -422,6 +422,7 @@ namespace UnityEditor.Connect
             {
                 var getProjectUsersRequest = new UnityWebRequest(currentProjectUsersApiUrl,
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getProjectUsersRequest.suppressErrorsToConsole = true;
                 getProjectUsersRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 var operation = getProjectUsersRequest.SendWebRequest();
                 operation.completed += op =>
@@ -1173,7 +1174,7 @@ namespace UnityEditor.Connect
                 EditorApplication.update += ListingCurrentPackageProgress;
 
                 // Look for a specific package
-                m_SearchRequest = Client.Search(provider.serviceInstance.packageId);
+                m_SearchRequest = Client.Search(provider.serviceInstance.packageName);
                 EditorApplication.update += SearchPackageProgress;
             }
 
@@ -1220,7 +1221,7 @@ namespace UnityEditor.Connect
                     }
                     else
                     {
-                        EditorAnalytics.SendImportServicePackageEvent(new ImportPackageInfo() { packageName = provider.serviceInstance.packageId, version = m_LatestPackageVersion });
+                        EditorAnalytics.SendImportServicePackageEvent(new ImportPackageInfo() { packageName = provider.serviceInstance.packageName, version = m_LatestPackageVersion });
                     }
                     m_InstallingLatest = false;
                 }
@@ -1235,7 +1236,7 @@ namespace UnityEditor.Connect
                     {
                         foreach (var package in m_SearchRequest.Result)
                         {
-                            if (package.name.Contains(provider.serviceInstance.packageId))
+                            if (package.name.Equals(provider.serviceInstance.packageName))
                             {
                                 m_LatestPackageVersion = package.version;
                                 if (m_LatestPackageVersionLabel != null)
@@ -1269,7 +1270,7 @@ namespace UnityEditor.Connect
                         m_CurrentPackageVersion = L10n.Tr("N/A").ToUpper();
                         foreach (var package in m_Request.Result)
                         {
-                            if (package.name.Contains(provider.serviceInstance.packageId))
+                            if (package.name.Equals(provider.serviceInstance.packageName))
                             {
                                 packmanPackageInstalled = true;
                                 m_CurrentPackageVersion = package.version;
@@ -1301,9 +1302,9 @@ namespace UnityEditor.Connect
                 {
                     gotoPackManWindow.clicked += () =>
                     {
-                        var packageId = provider.serviceInstance.packageId;
-                        EditorAnalytics.SendOpenPackManFromServiceSettings(new OpenPackageManager() { packageName = packageId });
-                        PackageManagerWindow.OpenPackageManager(packageId);
+                        var packageName = provider.serviceInstance.packageName;
+                        EditorAnalytics.SendOpenPackManFromServiceSettings(new OpenPackageManager() { packageName = packageName });
+                        PackageManagerWindow.OpenPackageManager(packageName);
                     };
                 }
                 m_CurrentPackageVersionLabel = sectionRoot.Q<Label>(k_CurrentVersionInfo);
@@ -1342,7 +1343,7 @@ namespace UnityEditor.Connect
                                 L10n.Tr(k_ChoiceYes), L10n.Tr(k_ChoiceNo)))
                             {
                                 m_InstallingLatest = true;
-                                m_AddRequest = Client.Add(provider.serviceInstance.packageId);
+                                m_AddRequest = Client.Add(provider.serviceInstance.packageName);
                                 EditorApplication.update += AddPackageProgress;
                             }
                         }

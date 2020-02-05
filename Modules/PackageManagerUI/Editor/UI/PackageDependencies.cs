@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
-using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -55,8 +54,10 @@ namespace UnityEditor.PackageManager.UI
             if (installedVersion.HasTag(PackageTag.Local))
                 return ApplicationUtil.instance.GetTranslationForText("(local)");
 
+            var statusText = installedVersion.HasTag(PackageTag.BuiltIn)
+                ? ApplicationUtil.instance.GetTranslationForText("enabled") : ApplicationUtil.instance.GetTranslationForText("installed");
             return installedVersion.version?.ToString() == dependency.version
-                ? ApplicationUtil.instance.GetTranslationForText("(installed \u2714)") : string.Format(ApplicationUtil.instance.GetTranslationForText("({0} installed \u2714)"), installedVersion.version);
+                ? string.Format("({0} \u2714)", statusText) : string.Format("({0} {1} \u2714)", installedVersion.version, statusText);
         }
 
         public void SetPackageVersion(IPackageVersion version)

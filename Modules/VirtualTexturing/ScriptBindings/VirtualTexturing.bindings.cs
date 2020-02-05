@@ -30,6 +30,7 @@ namespace UnityEngine.Experimental.Rendering
     {
         extern public static bool debugTilesEnabled { get; set; }
         extern public static bool resolvingEnabled { get; set; }
+        extern public static bool flushEveryTickEnabled { get; set; }
 
         extern public static void UpdateSystem();
 
@@ -201,9 +202,9 @@ namespace UnityEngine.Experimental.Rendering
         extern internal static void MarkAllRequestsFinished(ulong handle, IntPtr requests, int numRequests);
         extern internal static void UpdateRequestStates(ulong handle, ProceduralTextureStackRequestUpdate[] requestUpdates);
 
-        extern internal static void BindToMaterialPropertyBlock(ulong handle, MaterialPropertyBlock material, string name);
-        extern internal static void BindToMaterial(ulong handle, Material material, string name);
-        extern internal static void BindGlobally(ulong handle, string name);
+        extern internal static bool BindToMaterialPropertyBlock(ulong handle, MaterialPropertyBlock material, string name);
+        extern internal static bool BindToMaterial(ulong handle, Material material, string name);
+        extern internal static bool BindGlobally(ulong handle, string name);
 
         extern public static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
         extern public static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
@@ -352,7 +353,7 @@ namespace UnityEngine.Experimental.Rendering
         {
             if (IsValid() == false)
             {
-                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+                throw new InvalidOperationException("Invalid ProceduralTextureStack {name}");
             }
 
             requests.Sync();
@@ -395,9 +396,13 @@ namespace UnityEngine.Experimental.Rendering
             }
             if (IsValid() == false)
             {
-                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+                throw new InvalidOperationException("Invalid ProceduralTextureStack {name}");
             }
-            ProceduralVirtualTexturing.BindToMaterialPropertyBlock(handle, mpb, name);
+            bool success = ProceduralVirtualTexturing.BindToMaterialPropertyBlock(handle, mpb, name);
+            if (!success)
+            {
+                throw new InvalidOperationException($"ProceduralTextureStack {name} is not fully initialized on the render thread and cannot bind to a MaterialPropertyBlock. Please try again next frame.");
+            }
         }
 
         public void BindToMaterial(Material mat)
@@ -408,14 +413,26 @@ namespace UnityEngine.Experimental.Rendering
             }
             if (IsValid() == false)
             {
-                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+                throw new InvalidOperationException("Invalid ProceduralTextureStack {name}");
             }
-            ProceduralVirtualTexturing.BindToMaterial(handle, mat, name);
+            bool success = ProceduralVirtualTexturing.BindToMaterial(handle, mat, name);
+            if (!success)
+            {
+                throw new InvalidOperationException($"ProceduralTextureStack {name} is not fully initialized on the render thread and cannot bind to a Material. Please try again next frame.");
+            }
         }
 
         public void BindGlobally()
         {
-            ProceduralVirtualTexturing.BindGlobally(handle, name);
+            if (IsValid() == false)
+            {
+                throw new InvalidOperationException("Invalid ProceduralTextureStack {name}");
+            }
+            bool success = ProceduralVirtualTexturing.BindGlobally(handle, name);
+            if (!success)
+            {
+                throw new InvalidOperationException($"ProceduralTextureStack {name} is not fully initialized on the render thread and cannot bind globally. Please try again next frame.");
+            }
         }
 
         public const int AllMips = int.MaxValue;
@@ -424,7 +441,7 @@ namespace UnityEngine.Experimental.Rendering
         {
             if (IsValid() == false)
             {
-                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+                throw new InvalidOperationException("Invalid ProceduralTextureStack {name}");
             }
             ProceduralVirtualTexturing.RequestRegion(handle, r, mipMap, numMips);
         }
@@ -433,7 +450,7 @@ namespace UnityEngine.Experimental.Rendering
         {
             if (IsValid() == false)
             {
-                throw new InvalidOperationException("Invalid ProceduralTextureStack");
+                throw new InvalidOperationException("Invalid ProceduralTextureStack {name}");
             }
             ProceduralVirtualTexturing.InvalidateRegion(handle, r, mipMap, numMips);
         }

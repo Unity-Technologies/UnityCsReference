@@ -17,6 +17,13 @@ namespace Unity.Collections.LowLevel.Unsafe
         HandleWasAlreadyDeallocated = 2,
     }
 
+    public enum AtomicSafetyErrorType
+    {
+        Deallocated = 0,         // access on main thread after deallocation
+        DeallocatedFromJob = 1,  // access from job after deallocation
+        NotAllocatedFromJob = 2, // Access from job prior to assignment
+    }
+
     // AtomicSafetyHandle is used by the C# job system to provide validation and full safety
     // for read / write permissions to access the buffers represented by each handle.
     // Each AtomicSafetyHandle represents a single container.
@@ -41,6 +48,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         [NativeDisableUnsafePtrRestriction]
         internal IntPtr versionNode;
         internal int  version;
+        internal int  staticSafetyId;
 
         // Creates a new AtomicSafetyHandle that is valid until Release is called.
         [ThreadSafe]
@@ -171,6 +179,15 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         [ThreadSafe]
         public static extern string GetWriterName(AtomicSafetyHandle handle);
+
+        [ThreadSafe]
+        public static extern int NewStaticSafetyId(string ownerTypeName);
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [NativeThrows, ThreadSafe]
+        public static extern void SetCustomErrorMessage(int staticSafetyId, AtomicSafetyErrorType errorType, string message);
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [NativeThrows, ThreadSafe]
+        public static extern void SetStaticSafetyId(ref AtomicSafetyHandle handle, int staticSafetyId);
     }
 }
 

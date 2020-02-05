@@ -591,15 +591,6 @@ namespace UnityEditor
             set;
         }
 
-        // Instead of creating a ROM file, create a buildable Visual Studio 2015 solution.
-        public static extern bool switchCreateSolutionFile
-        {
-            [NativeMethod("GetCreateSolutionFileForSwitch")]
-            get;
-            [NativeMethod("SetCreateSolutionFileForSwitch")]
-            set;
-        }
-
 
         // Create a .nsp ROM file out of the loose-files .nspd folder
         public static extern bool switchCreateRomFile

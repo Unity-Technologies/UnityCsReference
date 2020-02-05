@@ -292,6 +292,7 @@ namespace UnityEditor.Connect
                 var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
                 m_CurrentRequest = new UnityWebRequest(organizationProjectsApiUrl, UnityWebRequest.kHttpVerbPOST)
                 { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler};
+                m_CurrentRequest.suppressErrorsToConsole = true;
                 m_CurrentRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 m_CurrentRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
                 var operation = m_CurrentRequest.SendWebRequest();
@@ -434,6 +435,7 @@ namespace UnityEditor.Connect
             {
                 var getProjectsRequest = new UnityWebRequest(organizationProjectsApiUrl,
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getProjectsRequest.suppressErrorsToConsole = true;
                 getProjectsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 var operation = getProjectsRequest.SendWebRequest();
                 operation.completed += op =>
@@ -532,6 +534,7 @@ namespace UnityEditor.Connect
             {
                 var getOrganizationsRequest = new UnityWebRequest(currentUserApiUrl + "?include=orgs",
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getOrganizationsRequest.suppressErrorsToConsole = true;
                 getOrganizationsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 var operation = getOrganizationsRequest.SendWebRequest();
                 operation.completed += op =>
@@ -626,6 +629,7 @@ namespace UnityEditor.Connect
             {
                 var getOrganizationsRequest = new UnityWebRequest(currentUserApiUrl + "?include=orgs,projects",
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getOrganizationsRequest.suppressErrorsToConsole = true;
                 getOrganizationsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 var operation = getOrganizationsRequest.SendWebRequest();
                 operation.completed += op =>

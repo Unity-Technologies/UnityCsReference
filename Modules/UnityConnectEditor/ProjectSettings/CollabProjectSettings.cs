@@ -32,7 +32,7 @@ namespace UnityEditor.Connect
         const string k_GoToWebDashboardLink = "GoToWebDashboard";
         const string k_GoToDashboardLinkName = "GoToDashboard";
         const string k_OpenHistoryLink = "OpenHistory";
-        const string k_OpenToolbarLink = "OpenToolbar";
+        const string k_OpenChangesLink = "OpenChanges";
 
         const string k_CollabPublishSection = "CollabPublishSection";
         const string k_CollabHistorySection = "CollabHistorySection";
@@ -347,15 +347,14 @@ namespace UnityEditor.Connect
                     };
                 }
 
-                Button openToolbarLinkBtn = provider.rootVisualElement.Q(k_OpenToolbarLink) as Button;
-                if (openToolbarLinkBtn != null)
+                Button openChangesLinkBtn = provider.rootVisualElement.Q(k_OpenChangesLink) as Button;
+                if (openChangesLinkBtn != null)
                 {
-                    openToolbarLinkBtn.clicked += () =>
+                    openChangesLinkBtn.clicked += () =>
                     {
-                        Toolbar.requestShowCollabToolbar = true;
-                        if (Toolbar.get)
+                        if (Collab.ShowChangesWindow != null)
                         {
-                            Toolbar.get.Repaint();
+                            Collab.ShowChangesWindow();
                         }
                     };
                 }

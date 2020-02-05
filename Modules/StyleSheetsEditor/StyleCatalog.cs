@@ -588,7 +588,7 @@ namespace UnityEditor.StyleSheets
     }
 
     [DebuggerDisplay("name = {name}")]
-    internal struct StyleBlock
+    internal readonly struct StyleBlock
     {
         public readonly int name;
         public readonly StyleState[] states;
@@ -943,6 +943,11 @@ namespace UnityEditor.StyleSheets
             }
 
             return defaultValue;
+        }
+
+        public bool IsFunction(int key)
+        {
+            return GetValueIndex(key, StyleValue.Type.Function) != -1;
         }
 
         public T Execute<T>(int key, Func<StyleFunctionCall, T> callback)
@@ -1306,7 +1311,7 @@ namespace UnityEditor.StyleSheets
             return true;
         }
 
-        const int k_CacheVersion = 1;
+        const int k_CacheVersion = 2;
         public void Save(BinaryWriter writer)
         {
             // version
@@ -1339,6 +1344,31 @@ namespace UnityEditor.StyleSheets
             return FindStyleIndex(key, m_Blocks);
         }
 
+        public static int FindStyleIndex(int key, StyleBlock[] blocks)
+        {
+            if (blocks == null || blocks.Length == 0)
+                return -1;
+
+            int low = 0;
+            int high = blocks.Length - 1;
+            int middle = (low + high + 1) / 2;
+            do
+            {
+                int currentKey = blocks[middle].name;
+                if (key == currentKey)
+                    return middle;
+
+                if (key < currentKey)
+                    high = middle - 1;
+                else
+                    low = middle + 1;
+                middle = (low + high + 1) / 2;
+            }
+            while (low <= high);
+
+            return -1;
+        }
+
         public static int FindStyleIndex(int key, IList<StyleBlock> blocks)
         {
             if (blocks == null || blocks.Count == 0)
@@ -1366,7 +1396,7 @@ namespace UnityEditor.StyleSheets
 
         public StyleBlock GetStyle(int selectorKey, params StyleState[] states)
         {
-            int location = FindStyleIndex(selectorKey);
+            int location = FindStyleIndex(selectorKey, m_Blocks);
             if (location != -1)
             {
                 var foundStyle = m_Blocks[location];
@@ -1594,6 +1624,7 @@ namespace UnityEditor.StyleSheets
             var states = values.Select(v => v.state).Distinct().ToArray();
 
             // Rects
+            values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.position, StyleCatalogKeyword.top, StyleCatalogKeyword.right, StyleCatalogKeyword.bottom, StyleCatalogKeyword.left);
             values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.margin, StyleCatalogKeyword.marginTop, StyleCatalogKeyword.marginRight, StyleCatalogKeyword.marginBottom, StyleCatalogKeyword.marginLeft);
             values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.padding, StyleCatalogKeyword.paddingTop, StyleCatalogKeyword.paddingRight, StyleCatalogKeyword.paddingBottom, StyleCatalogKeyword.paddingLeft);
             values = ExpandRect(states, values, numbers, rects, "-unity-overflow".GetHashCode(), "-unity-overflow-top".GetHashCode(), "-unity-overflow-right".GetHashCode(), "-unity-overflow-bottom".GetHashCode(), "-unity-overflow-left".GetHashCode());
@@ -1954,7 +1985,7 @@ namespace UnityEditor.StyleSheets
             foreach (var catBlock in catalog.m_Blocks)
             {
                 var blockName = m_NameCollisionTable[catBlock.name];
-                var block = m_Blocks[FindStyleIndex(catBlock.name)];
+                var block = m_Blocks[FindStyleIndex(catBlock.name, m_Blocks)];
 
                 if (catBlock.name != block.name)
                 {

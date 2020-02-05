@@ -924,6 +924,41 @@ namespace UnityEditor
             return null;
         }
 
+        public delegate bool PlaceObjectDelegate(Vector2 guiPosition, out Vector3 position, out Vector3 normal);
+        public static event PlaceObjectDelegate placeObjectCustomPasses;
+
+        public static bool PlaceObject(Vector2 guiPosition, out Vector3 position, out Vector3 normal)
+        {
+            Ray ray = GUIPointToWorldRay(guiPosition);
+            object hit = RaySnap(ray);
+            bool objectIntersected = hit != null;
+            float bestDistance = objectIntersected ? ((RaycastHit)hit).distance : Mathf.Infinity;
+            position = objectIntersected ? ray.GetPoint(((RaycastHit)hit).distance) : Vector3.zero;
+            normal = objectIntersected ? ((RaycastHit)hit).normal : Vector3.up;
+
+            if (placeObjectCustomPasses != null)
+            {
+                foreach (var del in placeObjectCustomPasses.GetInvocationList())
+                {
+                    Vector3 pos, nrm;
+
+                    if (((PlaceObjectDelegate)del)(guiPosition, out pos, out nrm))
+                    {
+                        var dst = Vector3.Distance(ray.origin, pos);
+                        if (dst < bestDistance)
+                        {
+                            objectIntersected = true;
+                            bestDistance = dst;
+                            position = pos;
+                            normal = nrm;
+                        }
+                    }
+                }
+            }
+
+            return objectIntersected;
+        }
+
         // Repaint the current view
         public static void Repaint()
         {

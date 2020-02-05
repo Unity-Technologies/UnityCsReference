@@ -548,8 +548,9 @@ namespace UnityEditor
                 if (PlayerSettings.virtualRealitySupported || m_DisplaySubsystemDescs.Count != 0)
                 {
                     EditorGUI.BeginChangeCheck();
-                    int selectedRenderMode = EditorGUILayout.Popup(m_XRRenderMode, Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
-                    if (EditorGUI.EndChangeCheck())
+                    GameViewRenderMode currentGameViewRenderMode = UnityEngine.XR.XRSettings.gameViewRenderMode;
+                    int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(((int)currentGameViewRenderMode) - 1, 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
+                    if (EditorGUI.EndChangeCheck() && currentGameViewRenderMode != GameViewRenderMode.None)
                     {
                         SetXRRenderMode(selectedRenderMode);
                     }

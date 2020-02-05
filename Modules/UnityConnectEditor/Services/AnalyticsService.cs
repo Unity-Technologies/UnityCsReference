@@ -22,7 +22,7 @@ namespace UnityEditor.Connect
         public override string settingsProviderClassName => nameof(AnalyticsProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.AnalyticsService;
-        public override string packageId { get; }
+        public override string packageName { get; }
         public override string serviceFlagName { get; }
         public override bool shouldEnableOnProjectCreation => true;
         public override bool shouldSyncOnProjectRebind => true;
@@ -47,7 +47,7 @@ namespace UnityEditor.Connect
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Analytics.png";
             projectSettingsPath = "Project/Services/Analytics";
             displayToggle = true;
-            packageId = "com.unity.analytics";
+            packageName = "com.unity.analytics";
             serviceFlagName = "analytics";
             ServicesRepository.AddService(this);
         }
@@ -75,6 +75,7 @@ namespace UnityEditor.Connect
         public void RequestValidationData(Action<AsyncOperation> onGet, string authSignature, out UnityWebRequest request)
         {
             request = UnityWebRequest.Get(String.Format(AnalyticsConfiguration.instance.validatorUrl, UnityConnect.instance.projectInfo.projectGUID));
+            request.suppressErrorsToConsole = true;
             var encodedAuthToken = ServicesUtils.Base64Encode((UnityConnect.instance.projectInfo.projectGUID + ":" + authSignature));
             request.SetRequestHeader("Authorization", $"Basic {encodedAuthToken}");
             var operation = request.SendWebRequest();
@@ -85,6 +86,7 @@ namespace UnityEditor.Connect
         public void RequestAuthSignature(Action<AsyncOperation> onGet, out UnityWebRequest request)
         {
             request = UnityWebRequest.Get(String.Format(AnalyticsConfiguration.instance.coreProjectsUrl, UnityConnect.instance.projectInfo.projectGUID));
+            request.suppressErrorsToConsole = true;
             request.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
             var operation = request.SendWebRequest();
             operation.completed += onGet;

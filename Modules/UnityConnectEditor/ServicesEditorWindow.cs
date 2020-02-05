@@ -152,7 +152,7 @@ namespace UnityEditor.Connect
             foreach (var service in ServicesRepository.GetServices())
             {
                 m_SortedServices.Add(service.title, service);
-                if (service.isPackage && service.packageId != null)
+                if (service.isPackage && service.packageName != null)
                 {
                     needProjectListOfPackage = true;
                 }
@@ -235,13 +235,13 @@ namespace UnityEditor.Connect
             var installButtonContainer = serviceRoot.Q(className: k_ServicePackageInstallContainerClassName);
             installButtonContainer.style.display = DisplayStyle.None;
 
-            if (singleService.isPackage && (singleService.packageId != null) && (m_PackageCollection != null))
+            if (singleService.isPackage && (singleService.packageName != null) && (m_PackageCollection != null))
             {
                 SetServiceToUninstalledState(installButton, serviceRoot, singleService);
                 bool packageFound = false;
                 foreach (var info in m_PackageCollection)
                 {
-                    if (info.packageId.Contains(singleService.packageId))
+                    if (info.name.Equals(singleService.packageName))
                     {
                         packageFound = true;
                         SetServiceToInstalledState(installButton, serviceRoot, singleService);
@@ -256,9 +256,9 @@ namespace UnityEditor.Connect
                     installButtonContainer.style.display = DisplayStyle.Flex;
                     installButton.clicked += () =>
                     {
-                        var packageId = singleService.packageId;
-                        EditorAnalytics.SendOpenPackManFromServiceSettings(new ServicesProjectSettings.OpenPackageManager() { packageName = packageId });
-                        PackageManagerWindow.OpenPackageManager(packageId);
+                        var packageName = singleService.packageName;
+                        EditorAnalytics.SendOpenPackManFromServiceSettings(new ServicesProjectSettings.OpenPackageManager() { packageName = packageName });
+                        PackageManagerWindow.OpenPackageManager(packageName);
                     };
                 }
             }

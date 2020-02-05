@@ -11,9 +11,6 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<Alert> {}
 
-        private const float k_PositionRightOriginal = 5.0f;
-        private const float k_PositionRightWithScroll = 12.0f;
-
         public Action onCloseError;
 
         public Alert()
@@ -34,9 +31,9 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetError(UIError error)
         {
-            var message = ApplicationUtil.instance.GetTranslationForText("An error occurred.");
-            if (error != null)
-                message = error.message ?? string.Format(ApplicationUtil.instance.GetTranslationForText("An error occurred ({0})"), error.errorCode.ToString());
+            var message = string.IsNullOrEmpty(error.message) ?
+                ApplicationUtil.instance.GetTranslationForText("An error occurred. See console for more details.") :
+                string.Format(ApplicationUtil.instance.GetTranslationForText("An error occurred ({0}). See console for more details."), error.message);
 
             alertMessage.text = message;
             UIUtils.SetElementDisplay(this, true);
@@ -45,7 +42,7 @@ namespace UnityEditor.PackageManager.UI
         public void ClearError()
         {
             UIUtils.SetElementDisplay(this, false);
-            alertMessage.text = "";
+            alertMessage.text = string.Empty;
             onCloseError = null;
         }
 

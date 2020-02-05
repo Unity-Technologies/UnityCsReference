@@ -5719,18 +5719,6 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="Boo.Lang">
-      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Boo.Lang.dll</HintPath>
-    </Reference>
-    <Reference Include="Boo.Lang.Parser">
-      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Boo.Lang.Parser.dll</HintPath>
-    </Reference>
-    <Reference Include="Boo.Lang.Compiler">
-      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Boo.Lang.Compiler.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityScript">
-      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\UnityScript.dll</HintPath>
-    </Reference>
     <Reference Include="Unity.CompilationPipeline.Common">
       <HintPath>..\..\External\Unity.Compiler.Client\Unity.CompilationPipeline.Common.dll</HintPath>
     </Reference>

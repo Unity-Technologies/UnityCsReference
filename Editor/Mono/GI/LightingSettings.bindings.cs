@@ -111,11 +111,11 @@ namespace UnityEditor
         [NativeName("RealtimeEnvironmentLighting")]
         public extern bool realtimeEnvironmentLighting { get; set; }
 
-        [NativeName("MixedBakeMode")]
-        public extern MixedLightingMode mixedBakeMode { get; set; }
-
         [NativeName("AlbedoBoost")]
         public extern float albedoBoost { get; set; }
+
+        [NativeName("IndirectOutputScale")]
+        public extern float indirectScale { get; set; }
 
         [NativeName("BakeBackend")]
         public extern Lightmapper lightmapper { get; set; }
@@ -155,6 +155,9 @@ namespace UnityEditor
         // If we should write out AO to disk. Only works in On Demand bakes
         [NativeName("ExtractAO")]
         public extern bool extractAO { get; set; }
+
+        [NativeName("MixedBakeMode")]
+        public extern MixedLightingMode mixedBakeMode { get; set; }
 
         [NativeName("LightmapsBakeMode")]
         public extern LightmapsMode directionalityMode { get; set; }

@@ -38,6 +38,18 @@ namespace Unity.Collections
         internal AtomicSafetyHandle       m_Safety;
         [NativeSetClassTypeToNullOnSchedule]
         internal DisposeSentinel          m_DisposeSentinel;
+        static int                        s_staticSafetyId;
+
+        [BurstDiscard]
+        static void AssignStaticSafetyId(ref AtomicSafetyHandle safetyHandle)
+        {
+            if (s_staticSafetyId == 0)
+            {
+                s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId($"NativeArray<{typeof(T).Name}>");
+            }
+            AtomicSafetyHandle.SetStaticSafetyId(ref safetyHandle, s_staticSafetyId);
+        }
+
 
         internal Allocator                m_AllocatorLabel;
 
@@ -89,6 +101,7 @@ namespace Unity.Collections
             array.m_MinIndex = 0;
             array.m_MaxIndex = length - 1;
             DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
+            AssignStaticSafetyId(ref array.m_Safety);
         }
 
         public int Length => m_Length;

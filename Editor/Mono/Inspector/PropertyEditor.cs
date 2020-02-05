@@ -338,17 +338,19 @@ namespace UnityEditor
                 RebuildContentsContainers();
         }
 
+        static Editor[] s_Editors = new Editor[10];
+
         [UsedImplicitly]
         protected virtual void Update()
         {
-            Editor[] editors = tracker.activeEditors;
-            if (editors == null)
+            ActiveEditorTracker.Internal_GetActiveEditorsNonAlloc(tracker, s_Editors);
+            if (s_Editors.Length == 0)
                 return;
 
             bool wantsRepaint = false;
-            foreach (var myEditor in editors)
+            foreach (var myEditor in s_Editors)
             {
-                if (myEditor.RequiresConstantRepaint() && !myEditor.hideInspector)
+                if (myEditor != null && myEditor.RequiresConstantRepaint() && !myEditor.hideInspector)
                     wantsRepaint = true;
             }
 

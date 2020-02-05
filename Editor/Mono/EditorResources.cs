@@ -303,16 +303,18 @@ namespace UnityEditor.Experimental
             using (new EditorPerformanceTracker(nameof(BuildCatalog)))
             {
                 s_StyleCatalog = new StyleCatalog();
-                s_RefreshGlobalStyleCatalog = false;
 
                 var paths = GetDefaultStyleCatalogPaths();
                 foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
                     paths.Add(editorUssPath);
 
+                var forceRebuild = s_RefreshGlobalStyleCatalog;
+                s_RefreshGlobalStyleCatalog = false;
+
                 bool rebuildCatalog = true;
                 string catalogHash = ComputeCatalogHash(paths);
                 const string k_GlobalStyleCatalogCacheFilePath = "Library/Style.catalog";
-                if (File.Exists(k_GlobalStyleCatalogCacheFilePath))
+                if (!forceRebuild && File.Exists(k_GlobalStyleCatalogCacheFilePath))
                 {
                     using (var cacheCatalogStream = new FileStream(k_GlobalStyleCatalogCacheFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {

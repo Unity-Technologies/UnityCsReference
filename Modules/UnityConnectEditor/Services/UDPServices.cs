@@ -17,7 +17,7 @@ namespace UnityEditor.Connect
         public override string settingsProviderClassName => "AppStoreProjectSettingsEditor";
         public override bool displayToggle { get; }
         public override bool isPackage { get; }
-        public override string packageId { get; }
+        public override string packageName { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.UDPService;
         static readonly UDPService k_Instance;
         public static UDPService instance => k_Instance;
@@ -35,7 +35,7 @@ namespace UnityEditor.Connect
             projectSettingsPath = "Project/Services/Unity Distribution Portal";
             displayToggle = false;
             isPackage = true;
-            packageId = "com.unity.purchasing.udp";
+            packageName = "com.unity.purchasing.udp";
             ServicesRepository.AddService(this);
         }
     }

@@ -72,10 +72,10 @@ namespace UnityEngine
         [FreeFunction("ClusterSerialization::RestoreInputManagerState")]
         private static extern unsafe bool RestoreInputManagerStateInternal(void* buffer, int bufferSize);
 
-        [FreeFunction("ClusterSerialization::SaveClusterInputState")]
+        [FreeFunction("ClusterSerialization::SaveClusterInputState", ThrowsException = true)]
         private static extern unsafe int SaveClusterInputStateInternal(void* intBuffer, int bufferSize);
 
-        [FreeFunction("ClusterSerialization::RestoreClusterInputState")]
+        [FreeFunction("ClusterSerialization::RestoreClusterInputState", ThrowsException = true)]
         private static extern unsafe bool RestoreClusterInputStateInternal(void* buffer, int bufferSize);
     }
 }

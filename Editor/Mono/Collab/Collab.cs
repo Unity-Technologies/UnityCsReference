@@ -21,6 +21,7 @@ namespace UnityEditor.Collaboration
     internal delegate bool ShowToolbarAtPositionDelegate(Rect screenRect);
     internal delegate bool IsToolbarVisibleDelegate();
     internal delegate void ShowHistoryWindowDelegate();
+    internal delegate void ShowChangesWindowDelegate();
     internal delegate void CloseToolbarDelegate();
     internal delegate void ChangesChangedDelegate(Change[] changes, bool isFiltered);
     internal delegate void ChangeItemsChangedDelegate(ChangeItem[] changes, bool isFiltered);
@@ -62,8 +63,9 @@ namespace UnityEditor.Collaboration
         public static IsToolbarVisibleDelegate IsToolbarVisible = null;
         public static CloseToolbarDelegate CloseToolbar = null;
 
-        // History delegates
+        // Preferences link delegates
         public static ShowHistoryWindowDelegate ShowHistoryWindow = null;
+        public static ShowChangesWindowDelegate ShowChangesWindow = null;
 
         private static Collab s_Instance;
         private static bool s_IsFirstStateChange = true;

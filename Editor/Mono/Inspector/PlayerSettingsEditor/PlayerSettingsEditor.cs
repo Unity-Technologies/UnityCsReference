@@ -1633,7 +1633,7 @@ namespace UnityEditor
                 {
                     GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
 
-                    hdrDisplaySupported = gfxAPIs[0] == GraphicsDeviceType.Direct3D11 || gfxAPIs[0] == GraphicsDeviceType.Direct3D12 || gfxAPIs[0] == GraphicsDeviceType.Vulkan;
+                    hdrDisplaySupported = gfxAPIs[0] == GraphicsDeviceType.Direct3D11 || gfxAPIs[0] == GraphicsDeviceType.Direct3D12 || gfxAPIs[0] == GraphicsDeviceType.Vulkan || gfxAPIs[0] == GraphicsDeviceType.Metal;
                 }
             }
 
@@ -2055,8 +2055,7 @@ namespace UnityEditor
                         if (ShouldRestartEditorToApplySetting())
                         {
                             m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
-                            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                                EditorApplication.OpenProject(Environment.CurrentDirectory);
+                            EditorApplication.OpenProject(Environment.CurrentDirectory);
                         }
                         else
                             m_GCIncremental.boolValue = oldValue;
@@ -2159,8 +2158,7 @@ namespace UnityEditor
                         m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
                         m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
                         m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
-                        if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                            EditorApplication.OpenProject(Environment.CurrentDirectory);
+                        EditorApplication.OpenProject(Environment.CurrentDirectory);
                     }
                 }
                 EditorGUIUtility.ExitGUI();

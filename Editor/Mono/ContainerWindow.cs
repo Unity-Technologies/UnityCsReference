@@ -7,6 +7,7 @@ using UnityEditor.StyleSheets;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -198,8 +199,6 @@ namespace UnityEditor
             Save();
             if (m_RootView)
             {
-                if (m_RootView is GUIView)
-                    ((GUIView)m_RootView).RemoveFromAuxWindowList();
                 DestroyImmediate(m_RootView, true);
                 m_RootView = null;
             }
@@ -241,8 +240,14 @@ namespace UnityEditor
                 return rootView.GetType().ToString();
 
             if (rootView.children.Length > 0)
-                return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
-                    : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
+            {
+                var dockArea = rootView.children.FirstOrDefault(c => c is DockArea) as DockArea;
+                if (dockArea && dockArea.m_Panes.Count > 0)
+                {
+                    return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
+                        : dockArea.m_Panes[0].GetType().ToString();
+                }
+            }
 
             return v.actualView.GetType().ToString();
         }

@@ -104,7 +104,7 @@ namespace UnityEditor.Experimental
         [FreeFunction()]
         public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
         [FreeFunction()]
-        public extern static void RefreshConnectionToCacheServer();
+        public extern static void RefreshSettings();
 
         [FreeFunction("IsConnectedToCacheServerV2")]
         public extern static bool IsConnectedToCacheServer();
@@ -114,8 +114,6 @@ namespace UnityEditor.Experimental
         public extern static string GetCacheServerAddress();
         [FreeFunction()]
         public extern static UInt16 GetCacheServerPort();
-        [FreeFunction()]
-        public extern static void RefreshCacheServerNamespacePrefix();
 
         [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
         public extern static bool IsCacheServerEnabled();
@@ -131,6 +129,9 @@ namespace UnityEditor.Experimental
 
         [FreeFunction("ImportCountersResetDeltas")]
         private extern static void ImportCountersResetDeltas();
+
+        [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
+        public extern static bool IsDirectoryMonitoringEnabled();
 
         public extern static OnDemandMode ActiveOnDemandMode
         {

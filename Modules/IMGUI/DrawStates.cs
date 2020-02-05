@@ -6,7 +6,7 @@ namespace UnityEngine
 {
     internal delegate bool DrawHandler(GUIStyle style, Rect rect, GUIContent content, DrawStates states);
 
-    internal struct DrawStates
+    internal readonly struct DrawStates
     {
         public DrawStates(bool isHover, bool isActive, bool on, bool hasKeyboardFocus) : this(-1, isHover, isActive, on, hasKeyboardFocus)
         {
@@ -22,10 +22,8 @@ namespace UnityEngine
 
             hasTextInput = false;
             drawSelectionAsComposition = false;
-            cursorFirst = -1;
-            cursorLast = -1;
-            cursorColor = Color.red;
-            selectionColor = Color.red;
+            cursorFirst = cursorLast = -1;
+            selectionColor = cursorColor = Color.red;
         }
 
         public DrawStates(int controlId, bool isHover, bool isActive, bool on, bool hasKeyboardFocus,

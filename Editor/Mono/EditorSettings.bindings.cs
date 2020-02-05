@@ -215,6 +215,9 @@ namespace UnityEditor
         public static extern bool useLegacyProbeSampleCount { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool disableCookiesInLightmapper { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool enterPlayModeOptionsEnabled { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]

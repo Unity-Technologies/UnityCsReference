@@ -19,7 +19,7 @@ namespace UnityEditor.Connect
         public override string settingsProviderClassName => nameof(CloudBuildProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.BuildService;
-        public override string packageId { get; }
+        public override string packageName { get; }
 
         static readonly BuildService k_Instance;
 
@@ -43,7 +43,7 @@ namespace UnityEditor.Connect
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Build.png";
             projectSettingsPath = "Project/Services/Cloud Build";
             displayToggle = true;
-            packageId = null;
+            packageName = null;
             ServicesRepository.AddService(this);
         }
 

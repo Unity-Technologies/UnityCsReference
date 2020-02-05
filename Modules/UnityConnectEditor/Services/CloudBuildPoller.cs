@@ -87,6 +87,7 @@ namespace UnityEditor.Connect
             {
                 var getCurrentBuildTargetStatusRequest = new UnityWebRequest(m_PollingUrl,
                     UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
+                getCurrentBuildTargetStatusRequest.suppressErrorsToConsole = true;
                 getCurrentBuildTargetStatusRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                 var operation = getCurrentBuildTargetStatusRequest.SendWebRequest();
                 operation.completed += asyncOperation =>

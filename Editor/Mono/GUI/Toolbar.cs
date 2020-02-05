@@ -28,7 +28,6 @@ namespace UnityEditor
 
         public static Toolbar get;
 
-        internal static bool requestShowCollabToolbar;
         public static bool isLastShowRequestPartial = true;
 
 

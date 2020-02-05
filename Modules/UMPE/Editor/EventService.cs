@@ -157,6 +157,22 @@ namespace Unity.MPE
             m_Client.Send(reqStr);
         }
 
+        public static bool IsRequestPending(string eventType)
+        {
+            return s_Requests.ContainsKey(eventType);
+        }
+
+        public static bool CancelRequest(string eventType, string message = null)
+        {
+            RequestData request;
+            if (!s_Requests.TryGetValue(eventType, out request))
+                return false;
+
+            CleanRequest(request.eventType);
+            Reject(request, new OperationCanceledException(message ?? $"Request {eventType} canceled"));
+            return true;
+        }
+
         public static void Request(string eventType, PromiseHandler promiseHandler, object args = null, long timeoutInMs = kRequestDefaultTimeout, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
             if (args == null)
@@ -411,7 +427,7 @@ namespace Unity.MPE
                     {
                         var eventType = request.eventType;
                         CleanRequest(request.eventType);
-                        Reject(request, new Exception($"Request timeout for {eventType} ({elapsedTime} > {request.timeoutInMs})"));
+                        Reject(request, new TimeoutException($"Request timeout for {eventType} ({elapsedTime} > {request.timeoutInMs})"));
                     }
                 }
             }

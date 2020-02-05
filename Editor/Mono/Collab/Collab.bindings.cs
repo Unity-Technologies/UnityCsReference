@@ -131,6 +131,9 @@ namespace UnityEditor.Collaboration
         public extern void RevertFile(string path, bool forceOverwrite);
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
+        public extern void RevertFiles(ChangeItem[] changeItems, bool forceOverwrite);
+
+        [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
         public extern void LaunchConflictExternalMerge(string path);
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]

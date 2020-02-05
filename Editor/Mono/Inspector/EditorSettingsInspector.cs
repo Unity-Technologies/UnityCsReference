@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Hardware;
@@ -35,6 +36,7 @@ namespace UnityEditor
             public static GUIContent cacheServerEnableAuthLabel = EditorGUIUtility.TrTextContent("Authentication", "Enable authentication for cache server. Also forces TLS/SSL encryption.");
             public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
+
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Force Serialize References On One Line", "Forces Unity to write references and other inline mappings on one line, to help reduce version control noise");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
@@ -42,6 +44,7 @@ namespace UnityEditor
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
+            public static GUIContent disableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Disable cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations.");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
 
@@ -219,11 +222,7 @@ namespace UnityEditor
         public void OnDisable()
         {
             DevDeviceList.Changed -= OnDeviceListChanged;
-            if (AssetDatabase.IsV2Enabled())
-            {
-                AssetDatabaseExperimental.RefreshCacheServerNamespacePrefix();
-                AssetDatabaseExperimental.RefreshConnectionToCacheServer();
-            }
+            AssetDatabaseExperimental.RefreshSettings();
         }
 
         void OnDeviceListChanged()
@@ -311,6 +310,7 @@ namespace UnityEditor
 
                 GUI.enabled = wasEnabled;
             }
+
             GUILayout.Space(10);
 
             GUI.enabled = true;
@@ -351,6 +351,15 @@ namespace UnityEditor
             {
                 EditorApplication.RequestRepaintAllViews();
                 EditorSettings.useLegacyProbeSampleCount = useLegacyProbeSampleCountValue;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            bool disableCookiesInLightmapperValue = EditorSettings.disableCookiesInLightmapper;
+            disableCookiesInLightmapperValue = EditorGUILayout.Toggle(Content.disableCookiesInLightmapper, disableCookiesInLightmapperValue);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorApplication.RequestRepaintAllViews();
+                EditorSettings.disableCookiesInLightmapper = disableCookiesInLightmapperValue;
             }
 
             GUILayout.Space(10);

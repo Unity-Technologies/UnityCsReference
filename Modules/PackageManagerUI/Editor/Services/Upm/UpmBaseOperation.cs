@@ -121,14 +121,15 @@ namespace UnityEditor.PackageManager.UI
             {
                 this.error = error;
                 var message = ApplicationUtil.instance.GetTranslationForText("Cannot perform upm operation");
-                message += error == null ? "." : $": {error.message} [{error.errorCode}]";
+                message += string.IsNullOrEmpty(error.message) ? "." : $": {error.message} [{error.errorCode}].";
+                message += ApplicationUtil.instance.GetTranslationForText("See console for more details");
 
                 Debug.LogError(message);
                 onOperationError?.Invoke(this, error);
             }
             catch (Exception exception)
             {
-                Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Package Manager Window had an error while reporting an error in an operation: {0}"), exception));
+                Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Package Manager Window had an error while reporting an error in an operation: {0}"), exception.Message));
             }
         }
 
@@ -142,7 +143,7 @@ namespace UnityEditor.PackageManager.UI
             }
             catch (Exception exception)
             {
-                Debug.LogError(string.Format("Package Manager Window had an error while completing an operation: {0}", exception));
+                Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Package Manager Window had an error while completing an operation: {0}"), exception.Message));
             }
         }
 

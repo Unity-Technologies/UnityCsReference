@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI
 
         public static explicit operator UIError(Error v)
         {
-            return new UIError((UIErrorCode)v.errorCode, v.message);
+            return v == null ?  new UIError(UIErrorCode.Unknown, string.Empty) : new UIError((UIErrorCode)v.errorCode, v.message);
         }
     }
 }

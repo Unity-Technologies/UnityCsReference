@@ -380,16 +380,19 @@ namespace UnityEditor
         {
             m_Lighting.RenderSettings(showLightmappSettings, showShadowBias);
 
-            m_ShowProbeSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowProbeSettings.value, Styles.probeSettings);
-
-            if (m_ShowProbeSettings.value)
+            if (SupportedRenderingFeatures.active.rendererProbes)
             {
-                EditorGUI.indentLevel += 1;
-                m_Probes.OnGUI(targets, (Renderer)target, false);
-                EditorGUI.indentLevel -= 1;
-            }
+                m_ShowProbeSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowProbeSettings.value, Styles.probeSettings);
 
-            EditorGUILayout.EndFoldoutHeaderGroup();
+                if (m_ShowProbeSettings.value)
+                {
+                    EditorGUI.indentLevel += 1;
+                    m_Probes.OnGUI(targets, (Renderer)target, false);
+                    EditorGUI.indentLevel -= 1;
+                }
+
+                EditorGUILayout.EndFoldoutHeaderGroup();
+            }
         }
 
         protected void Other2DSettingsGUI()

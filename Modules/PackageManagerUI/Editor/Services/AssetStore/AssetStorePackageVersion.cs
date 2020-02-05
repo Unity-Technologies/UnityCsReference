@@ -135,7 +135,7 @@ namespace UnityEditor.PackageManager.UI
                 foreach (var supportedVersion in productInfo.supportedVersions)
                 {
                     SemVersion? version;
-                    bool isVersionParsed = SemVersionParser.TryParse(supportedVersion as string, out version);
+                    bool isVersionParsed = SemVersionParser.TryParse(supportedVersion, out version);
 
                     if (isVersionParsed)
                         m_SupportedUnityVersions.Add((SemVersion)version);

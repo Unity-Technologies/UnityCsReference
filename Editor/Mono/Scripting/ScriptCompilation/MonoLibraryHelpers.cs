@@ -64,13 +64,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // used later by the language compilers.
                 var monoAssemblyDirectory = MonoInstallationFinder.GetProfileDirectory("4.7.1-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
                 references.AddRange(Directory.GetFiles(Path.Combine(monoAssemblyDirectory, "Facades"), "*.dll"));
-
-                references.AddRange(GetBooAndUsReferences().Select(dll => Path.Combine(MonoInstallationFinder.GetProfileDirectory("unityscript", MonoInstallationFinder.MonoBleedingEdgeInstallation), dll)));
             }
             else
             {
                 references.AddRange(GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
-                references.AddRange(GetBooAndUsReferences().FindReferencesInDirectories(monoAssemblyDirectories));
             }
 
             cachedReferences = new CachedReferences
@@ -158,16 +155,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 "System.Net.Http.dll",
                 "Microsoft.CSharp.dll",
                 "System.Data.dll",
-            };
-        }
-
-        static string[] GetBooAndUsReferences()
-        {
-            return new[]
-            {
-                "UnityScript.dll",
-                "UnityScript.Lang.dll",
-                "Boo.Lang.dll",
             };
         }
     }

@@ -234,6 +234,7 @@ namespace UnityEditor.VFX
     internal struct VFXExpressionSheet
     {
         public VFXExpressionDesc[] expressions;
+        public VFXExpressionDesc[] expressionsPerSpawnEventAttribute;
         public VFXExpressionValueContainerDesc[] values;
         public VFXMapping[] exposed;
     }
@@ -272,6 +273,7 @@ namespace UnityEditor.VFX
     internal struct VFXExpressionSheetInternal
     {
         public VFXExpressionDesc[] expressions;
+        public VFXExpressionDesc[] expressionsPerSpawnEventAttribute;
         public VFXExpressionValuesSheetInternal values;
         public VFXMapping[] exposed;
     }
@@ -410,6 +412,7 @@ namespace UnityEditor.VFX
         {
             var internalSheet = new VFXExpressionSheetInternal();
             internalSheet.expressions = sheet.expressions;
+            internalSheet.expressionsPerSpawnEventAttribute = sheet.expressionsPerSpawnEventAttribute;
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 
@@ -426,6 +429,7 @@ namespace UnityEditor.VFX
         {
             var internalSheet = new VFXExpressionSheetInternal();
             internalSheet.expressions = sheet.expressions;
+            internalSheet.expressionsPerSpawnEventAttribute = sheet.expressionsPerSpawnEventAttribute;
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 

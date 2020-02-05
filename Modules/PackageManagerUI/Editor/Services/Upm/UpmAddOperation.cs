@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI
             m_SpecialUniqueId = urlOrPath;
             m_PackageId = string.Empty;
             m_PackageName = string.Empty;
+            m_PackageUniqueId = string.Empty;
             Start();
         }
 

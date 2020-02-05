@@ -65,7 +65,7 @@ namespace UnityEditor.Connect
         public abstract Notification.Topic notificationTopic { get; }
 
         public virtual bool isPackage { get; }
-        public abstract string packageId { get; }
+        public abstract string packageName { get; }
 
         public virtual string serviceFlagName { get; }
 

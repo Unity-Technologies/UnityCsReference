@@ -56,6 +56,9 @@ namespace UnityEditor
         static extern Array Internal_GetActiveEditors(ActiveEditorTracker self);
         public Editor[] activeEditors { get { return (Editor[])Internal_GetActiveEditors(this); } }
 
+        [FreeFunction]
+        internal static extern void Internal_GetActiveEditorsNonAlloc(ActiveEditorTracker self, Editor[] editors);
+
         // List<T> version
         internal void GetObjectsLockedByThisTracker(List<UnityObject> lockedObjects)
         {
