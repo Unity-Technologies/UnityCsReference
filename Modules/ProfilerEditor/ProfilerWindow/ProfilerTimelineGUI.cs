@@ -1279,7 +1279,7 @@ namespace UnityEditorInternal
                 float emptySpaceBelowBars = k_LineHeight * 3f;
 
                 // if needed, take up more empty space below, to fill up the ZoomableArea
-                emptySpaceBelowBars = Mathf.Max(emptySpaceBelowBars, timeAreaRect.height - heightForAllBars);
+                emptySpaceBelowBars = Mathf.Max(emptySpaceBelowBars, timeAreaRect.height - m_TimeArea.hSliderHeight - heightForAllBars);
 
                 heightForAllBars += emptySpaceBelowBars;
 
