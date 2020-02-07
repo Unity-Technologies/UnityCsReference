@@ -923,31 +923,41 @@ namespace UnityEditor
 
         public void EnforceScaleAndRange()
         {
-            // Minimum scale might also be constrained by maximum range
-            float constrainedHScaleMin = rect.width / m_HScaleMin;
-            float constrainedVScaleMin = rect.height / m_VScaleMin;
-            if (hRangeMax != Mathf.Infinity && hRangeMin != Mathf.NegativeInfinity)
-                constrainedHScaleMin = Mathf.Min(constrainedHScaleMin, hRangeMax - hRangeMin);
-            if (vRangeMax != Mathf.Infinity && vRangeMin != Mathf.NegativeInfinity)
-                constrainedVScaleMin = Mathf.Min(constrainedVScaleMin, vRangeMax - vRangeMin);
-
             Rect oldArea = m_LastShownAreaInsideMargins;
             Rect newArea = shownAreaInsideMargins;
             if (newArea == oldArea)
                 return;
 
-            float epsilon = 0.00001f;
             float minChange = 0.01f;
 
             if (!Mathf.Approximately(newArea.width, oldArea.width))
             {
-                float constrainedValue = newArea.width < oldArea.width - epsilon ? rect.width / m_HScaleMax : constrainedHScaleMin;
-                constrainedValue = GetWidthInsideMargins(constrainedValue, true);
-                float xLerp = Mathf.InverseLerp(oldArea.width, newArea.width, constrainedValue);
+                float constrainedWidth = newArea.width;
+                if (newArea.width < oldArea.width)
+                {
+                    // The shown area decreasing in size means the scale is increasing. This happens e.g. while zooming in.
+                    // Only the max scale restricts the shown area size here, range has no influence.
+                    constrainedWidth = GetWidthInsideMargins(drawRect.width / m_HScaleMax, false);
+                }
+                else
+                {
+                    constrainedWidth = GetWidthInsideMargins(drawRect.width / m_HScaleMin, false);
+
+                    if (hRangeMax != Mathf.Infinity && hRangeMin != Mathf.NegativeInfinity)
+                    {
+                        // range only has an influence if it is enforced, i.e. not infinity
+                        float denum = hRangeMax - hRangeMin;
+                        if (denum < kMinWidth) denum = kMinWidth;
+
+                        constrainedWidth = Mathf.Min(constrainedWidth, denum);
+                    }
+                }
+
+                float xLerp = Mathf.InverseLerp(oldArea.width, newArea.width, constrainedWidth);
                 float newWidth = Mathf.Lerp(oldArea.width, newArea.width, xLerp);
                 float widthChange = Mathf.Abs(newWidth - newArea.width);
                 newArea = new Rect(
-                    // only affect the position if there was any significant change in width (the unit is in pixels so technically anything under 0.05f would already be impossible to see)
+                    // only affect the position if there was any significant change in width
                     // this fixes an issue where if width was only different due to rounding issues, position changes are ignored as xLerp comes back 0 (or very nearly 0)
                     widthChange > minChange ? Mathf.Lerp(oldArea.x, newArea.x, xLerp) : newArea.x,
                     newArea.y,
@@ -957,14 +967,32 @@ namespace UnityEditor
             }
             if (!Mathf.Approximately(newArea.height, oldArea.height))
             {
-                float constrainedValue = newArea.height < oldArea.height - epsilon ? rect.height / m_VScaleMax : constrainedVScaleMin;
-                constrainedValue = GetHeightInsideMargins(constrainedValue, true);
-                float yLerp = Mathf.InverseLerp(oldArea.height, newArea.height, constrainedValue);
+                float constrainedHeight = newArea.height;
+                if (newArea.height < oldArea.height)
+                {
+                    // The shown area decreasing in size means the scale is increasing. This happens e.g. while zooming in.
+                    // Only the max scale restricts the shown area size here, range has no influence.
+                    constrainedHeight = GetHeightInsideMargins(drawRect.height / m_VScaleMax, false);
+                }
+                else
+                {
+                    constrainedHeight = GetHeightInsideMargins(drawRect.height / m_VScaleMin, false);
+
+                    if (vRangeMax != Mathf.Infinity && vRangeMin != Mathf.NegativeInfinity)
+                    {
+                        // range only has an influence if it is enforced, i.e. not infinity
+                        float denum = vRangeMax - vRangeMin;
+                        if (denum < kMinHeight) denum = kMinHeight;
+                        constrainedHeight = Mathf.Min(constrainedHeight, denum);
+                    }
+                }
+
+                float yLerp = Mathf.InverseLerp(oldArea.height, newArea.height, constrainedHeight);
                 float newHeight = Mathf.Lerp(oldArea.height, newArea.height, yLerp);
                 float heightChange = Mathf.Abs(newHeight - newArea.height);
                 newArea = new Rect(
                     newArea.x,
-                    // only affect the position if there was any significant change in height (the unit is in pixels so technically anything under 0.05f would already be impossible to see)
+                    // only affect the position if there was any significant change in height
                     // this fixes an issue where if height was only different due to rounding issues, position changes are ignored as yLerp comes back 0 (or very nearly 0)
                     heightChange > minChange ? Mathf.Lerp(oldArea.y, newArea.y, yLerp) : newArea.y,
                     newArea.width,
@@ -983,7 +1011,7 @@ namespace UnityEditor
                 newArea.y = vRangeMax - newArea.height;
 
             shownAreaInsideMarginsInternal = newArea;
-            m_LastShownAreaInsideMargins = newArea;
+            m_LastShownAreaInsideMargins = shownAreaInsideMargins;
         }
 
         public float PixelToTime(float pixelX, Rect rect)
