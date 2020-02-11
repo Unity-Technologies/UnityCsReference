@@ -66,9 +66,18 @@ namespace UnityEngine.Networking
         }
 
         internal virtual byte[] GetData() { return null; }
-        internal virtual string GetContentType() { return "text/plain"; }
-        internal virtual void   SetContentType(string newContentType) {}
-        internal virtual float  GetProgress() { return 0.5f; }
+        internal virtual string GetContentType() { return InternalGetContentType(); }
+        internal virtual void   SetContentType(string newContentType) { InternalSetContentType(newContentType); }
+        internal virtual float  GetProgress() { return InternalGetProgress(); }
+
+        [NativeMethod("GetContentType")]
+        private extern string InternalGetContentType();
+
+        [NativeMethod("SetContentType")]
+        private extern void InternalSetContentType(string newContentType);
+
+        [NativeMethod("GetProgress")]
+        private extern float InternalGetProgress();
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -84,32 +93,11 @@ namespace UnityEngine.Networking
             m_Ptr = Create(this, data);
         }
 
-        [NativeMethod("GetContentType")]
-        private extern string InternalGetContentType();
-
-        [NativeMethod("SetContentType")]
-        private extern void InternalSetContentType(string newContentType);
-
         private extern byte[] InternalGetData();
-
-        [NativeMethod("GetProgress")]
-        private extern float InternalGetProgress();
-
-        internal override string GetContentType() { return InternalGetContentType(); }
-
-        internal override void SetContentType(string newContentType)
-        {
-            InternalSetContentType(newContentType);
-        }
 
         internal override byte[] GetData()
         {
             return InternalGetData();
-        }
-
-        internal override float GetProgress()
-        {
-            return InternalGetProgress();
         }
 
     }
