@@ -2080,7 +2080,7 @@ namespace UnityEditor
             // Every EditorWindow has its own keyboardControl state so we also need to
             // check if the current OS view has focus to determine if the control has actual key focus (gets the input)
             // and not just being a focused control in an unfocused window.
-            return (GUIUtility.keyboardControl == controlID && GUIView.current.hasFocus);
+            return (GUIUtility.keyboardControl == controlID && EditorGUIUtility.HasCurrentWindowKeyFocus());
         }
 
         internal static void DoNumberField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable, double dragSensitivity)
@@ -7536,7 +7536,7 @@ namespace UnityEditor
 
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
-                var propertyHash = property.hashCodeForPropertyPath;
+                var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
                 GUIContent[] result;
                 if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(propertyHash, out result))
                 {
