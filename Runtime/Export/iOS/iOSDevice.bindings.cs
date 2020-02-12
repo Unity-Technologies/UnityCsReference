@@ -56,6 +56,9 @@ namespace UnityEngine.iOS
         iPhoneXR        = 42,
         iPadPro11Inch   = 43,
         iPadPro3Gen     = 44,
+        iPhone11        = 48,
+        iPhone11Pro     = 49,
+        iPhone11ProMax  = 50,
 
         iPhoneUnknown       = 10001,
         iPadUnknown         = 10002,
