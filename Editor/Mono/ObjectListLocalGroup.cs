@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
@@ -65,6 +66,7 @@ namespace UnityEditor
             public bool HasBuiltinResources { get {  return m_CurrentBuiltinResources.Length > 0; } }
 
             ItemFader m_ItemFader = new ItemFader();
+            private readonly Action m_OwnerRepaintAction;
 
             public override int ItemCount
             {
@@ -85,6 +87,7 @@ namespace UnityEditor
                 InitBuiltinResources();
                 ItemsWantedShown = int.MaxValue;
                 m_Collapsable = false;
+                m_OwnerRepaintAction = () => m_Owner.Repaint();
             }
 
             public override void UpdateAssets()
@@ -894,7 +897,7 @@ namespace UnityEditor
                                 postAssetIconDrawCallback(position, filterItem.guid, false);
                             }
 
-                            ProjectHooks.OnProjectWindowItem(filterItem.guid, position);
+                            ProjectHooks.OnProjectWindowItem(filterItem.guid, position, m_OwnerRepaintAction);
                         }
                     }
                 }
@@ -1385,7 +1388,7 @@ namespace UnityEditor
                 m_FilteredHierarchy.SetResults(instanceIDs);
             }
 
-            public static void DrawIconAndLabel(Rect rect, FilteredHierarchy.FilterResult filterItem, string label, Texture2D icon, bool selected, bool focus)
+            public void DrawIconAndLabel(Rect rect, FilteredHierarchy.FilterResult filterItem, string label, Texture2D icon, bool selected, bool focus)
             {
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
                 rect.xMin += s_Styles.resultsLabel.margin.left;
@@ -1426,7 +1429,7 @@ namespace UnityEditor
                     {
                         postAssetIconDrawCallback(overlayRect, filterItem.guid, true);
                     }
-                    ProjectHooks.OnProjectWindowItem(filterItem.guid, overlayRect);
+                    ProjectHooks.OnProjectWindowItem(filterItem.guid, overlayRect, m_OwnerRepaintAction);
                 }
             }
 

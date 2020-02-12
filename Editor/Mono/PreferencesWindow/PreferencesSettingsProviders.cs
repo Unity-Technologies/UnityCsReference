@@ -73,6 +73,15 @@ namespace UnityEditor
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
+            public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame throttling (milliseconds)", "Number of milliseconds to wait between each editor frames.");
+            public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Define how the editor application gets updated and throttled.");
+            public static readonly GUIContent[] interactionModes =
+            {
+                EditorGUIUtility.TrTextContent("Default", "The editor application will be throttled up to 4 ms per frame."),
+                EditorGUIUtility.TrTextContent("No throttling", "The editor application will not be throttled and run as fast as possible."),
+                EditorGUIUtility.TrTextContent("Monitor Refresh Rate", "The editor will wait up to the monitor refresh rate in milliseconds (i.e. ~16 ms)."),
+                EditorGUIUtility.TrTextContent("Custom", "Specify how many milliseconds at most the application will be idle per frame."),
+            };
         }
 
         internal class ExternalProperties
@@ -596,6 +605,65 @@ namespace UnityEditor
             if (assetStoreSearchChanged)
             {
                 ProjectBrowser.ShowAssetStoreHitsWhileSearchingLocalAssetsChanged();
+            }
+
+            DrawInteractionModeOptions();
+        }
+
+        enum InteractionMode
+        {
+            Default,                // 4 ms
+            NoThrottling,           // 0 ms (will never idle)
+            MonitorRefreshRate,     // ~16 ms
+            Custom                  // Between 1 ms and 33 ms
+        }
+
+        private void DrawInteractionModeOptions()
+        {
+            const int defaultIdleTimeMs = 4;
+            int monitorRefreshDelayMs = (int)(1f / Math.Max(Screen.currentResolution.refreshRate, 1) * 1000f);
+            const string idleTimePrefKeyName = "ApplicationIdleTime";
+            const string interactionModePrefKeyName = "InteractionMode";
+            var idleTimeMs = EditorPrefs.GetInt(idleTimePrefKeyName, defaultIdleTimeMs);
+            var interactionModeOption = (InteractionMode)EditorPrefs.GetInt(interactionModePrefKeyName, (int)InteractionMode.Default);
+
+            if (Event.current.type == EventType.MouseDown)
+                GeneralProperties.interactionModes[(int)InteractionMode.MonitorRefreshRate].text = $"Monitor Refresh Rate ({monitorRefreshDelayMs} ms)";
+
+            EditorGUI.BeginChangeCheck();
+            interactionModeOption = (InteractionMode)EditorGUILayout.Popup(GeneralProperties.interactionMode, (int)interactionModeOption, GeneralProperties.interactionModes);
+            if (interactionModeOption == InteractionMode.Default)
+            {
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.DeleteKey(idleTimePrefKeyName);
+                    EditorPrefs.DeleteKey(interactionModePrefKeyName);
+                }
+            }
+            else if (interactionModeOption == InteractionMode.NoThrottling)
+            {
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetInt(idleTimePrefKeyName, 0);
+                    EditorPrefs.SetInt(interactionModePrefKeyName, (int)interactionModeOption);
+                }
+            }
+            else if (interactionModeOption == InteractionMode.MonitorRefreshRate)
+            {
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetInt(idleTimePrefKeyName, monitorRefreshDelayMs);
+                    EditorPrefs.SetInt(interactionModePrefKeyName, (int)interactionModeOption);
+                }
+            }
+            else
+            {
+                idleTimeMs = EditorGUILayout.IntSlider(GeneralProperties.applicationFrameThrottling, idleTimeMs, 0, 33);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetInt(idleTimePrefKeyName, idleTimeMs);
+                    EditorPrefs.SetInt(interactionModePrefKeyName, (int)interactionModeOption);
+                }
             }
         }
 

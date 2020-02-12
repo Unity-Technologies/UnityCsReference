@@ -25,6 +25,8 @@ namespace UnityEngine
         internal IntPtr m_Ptr;
 #pragma warning restore 414
 
+        AtomicSafetyHandle m_Safety;
+
         // IDisposable implementation, with Release() for explicit cleanup.
 
         ~ComputeBuffer()
@@ -108,6 +110,8 @@ namespace UnityEngine
 
         // Size of one element in the buffer (RO).
         extern public int stride { get; }
+
+        extern private ComputeBufferMode usage { get; }
 
         // Set buffer data.
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -248,6 +252,49 @@ namespace UnityEngine
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "ComputeShader_Bindings::InternalGetData", HasExplicitThis = true, ThrowsException = true)]
         extern private void InternalGetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+
+        extern unsafe private void* BeginBufferWrite(int offset = 0, int size = 0);
+
+        public NativeArray<T> BeginWrite<T>(int computeBufferStartIndex, int count) where T : struct
+        {
+            if (usage != ComputeBufferMode.SubUpdates)
+                throw new ArgumentException("ComputeBuffer must be created with usage mode ComputeBufferMode.SubUpdates to be able to be mapped with BeginWrite");
+
+            var elementSize = UnsafeUtility.SizeOf<T>();
+            if (computeBufferStartIndex < 0 || count < 0 || (computeBufferStartIndex + count) * elementSize > this.count * this.stride)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (computeBufferStartIndex:{0} count:{1} elementSize:{2}, this.count:{3}, this.stride{4})", computeBufferStartIndex, count, elementSize, this.count, this.stride));
+
+            NativeArray<T> array;
+            unsafe
+            {
+                var ptr = BeginBufferWrite(computeBufferStartIndex * elementSize, count * elementSize);
+                array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)ptr, count, Allocator.Invalid);
+            }
+            m_Safety = AtomicSafetyHandle.Create();
+            AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, true);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
+            return array;
+        }
+
+        extern private void EndBufferWrite(int bytesWritten = 0);
+
+        public void EndWrite<T>(int countWritten) where T : struct
+        {
+            try
+            {
+                AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
+                AtomicSafetyHandle.Release(m_Safety);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("ComputeBuffer.EndWrite was called without matching ComputeBuffer.BeginWrite", e);
+            }
+            if (countWritten < 0)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (countWritten:{0})", countWritten));
+
+            var elementSize = UnsafeUtility.SizeOf<T>();
+            EndBufferWrite(countWritten * elementSize);
+        }
 
         // Buffer name for graphics debuggers
         public string name { set { SetName(value); } }

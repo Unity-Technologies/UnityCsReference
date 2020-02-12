@@ -4,16 +4,17 @@
 
 using System;
 using System.Collections.Generic;
-using Debug = UnityEngine.Debug;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine.Networking;
-using Button = UnityEngine.UIElements.Button;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.UI;
+
+using Button = UnityEngine.UIElements.Button;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Connect
 {
@@ -121,15 +122,12 @@ namespace UnityEditor.Connect
         bool m_CachedLoggedInState;
         bool m_CachedOnlineState;
         bool m_UnityConnectStateChanged;
-        bool m_CacheInitialized;
-        bool m_DelayedLoad;
 
         void KeepCacheInfo()
         {
             m_CachedProjectInfo = UnityConnect.instance.projectInfo;
             m_CachedLoggedInState = UnityConnect.instance.loggedIn;
             m_CachedOnlineState = UnityConnect.instance.online;
-            m_CacheInitialized = true;
         }
 
         string GetServiceInstanceName()
@@ -171,7 +169,6 @@ namespace UnityEditor.Connect
 
             activateHandler = (s, element) =>
             {
-                m_DelayedLoad = !m_CacheInitialized;
                 // Take a cache copy of the project info...
                 KeepCacheInfo();
 
@@ -192,10 +189,7 @@ namespace UnityEditor.Connect
                 UnityConnect.instance.ProjectStateChanged += OnRefreshRequired;
                 UnityConnect.instance.ProjectRefreshed += OnRefreshRequired;
 
-                if (!m_DelayedLoad)
-                {
-                    ReinitializeSettings();
-                }
+                ReinitializeSettings();
 
                 UnityConnect.instance.RefreshProject();
 
@@ -228,8 +222,8 @@ namespace UnityEditor.Connect
         {
             // All struct fields are private, we check the public interface...
             // Doing something like: return (m_CachedProjectInfo != UnityConnect.instance.projectInfo); DOES NOT work.
+            // Also, we do not consider "projectInfo.valid" as a property to identify if the info changed.
             return
-                (m_CachedProjectInfo.valid != UnityConnect.instance.projectInfo.valid) ||
                 (m_CachedProjectInfo.buildAllowed != UnityConnect.instance.projectInfo.buildAllowed) ||
                 (m_CachedProjectInfo.coppaLock != UnityConnect.instance.projectInfo.coppaLock) ||
                 (m_CachedProjectInfo.moveLock != UnityConnect.instance.projectInfo.moveLock) ||
@@ -283,11 +277,10 @@ namespace UnityEditor.Connect
 
             // Before reinitializing, we check that the actual state of the project info is valid and
             //     that it has changed since the ActivateHandler.
-            if (state.valid && (IsProjectInfoChanged() || m_UnityConnectStateChanged || m_DelayedLoad))
+            if (state.valid && (IsProjectInfoChanged() || m_UnityConnectStateChanged))
             {
                 DismissWarningNotifications();
                 ReinitializeSettings();
-                m_DelayedLoad = false;
             }
             m_CachedOnlineState = UnityConnect.instance.online;
             m_CachedLoggedInState = UnityConnect.instance.loggedIn;
@@ -429,7 +422,7 @@ namespace UnityEditor.Connect
                 {
                     try
                     {
-                        if ((getProjectUsersRequest.result != UnityWebRequest.Result.ProtocolError) && !string.IsNullOrEmpty(getProjectUsersRequest.downloadHandler.text))
+                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getProjectUsersRequest))
                         {
                             var jsonParser = new JSONParser(getProjectUsersRequest.downloadHandler.text);
                             var json = jsonParser.Parse();

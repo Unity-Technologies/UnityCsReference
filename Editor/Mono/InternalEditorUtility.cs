@@ -86,6 +86,29 @@ namespace UnityEditorInternal
             return FindIconForFile(fileName) ?? EditorGUIUtility.FindTexture(typeof(DefaultAsset));
         }
 
+        static GUIContent[] sStatusWheel;
+
+        internal static GUIContent animatedProgressImage
+        {
+            get
+            {
+                if (sStatusWheel == null)
+                {
+                    sStatusWheel = new GUIContent[12];
+                    for (int i = 0; i < 12; i++)
+                    {
+                        GUIContent gc = new GUIContent();
+                        gc.image = EditorGUIUtility.LoadIcon("WaitSpin" + i.ToString("00")) as Texture2D;
+                        gc.image.hideFlags = HideFlags.HideAndDontSave;
+                        gc.image.name = "Spinner";
+                        sStatusWheel[i] = gc;
+                    }
+                }
+                int frame = (int)Mathf.Repeat(Time.realtimeSinceStartup * 10, 11.99f);
+                return sStatusWheel[frame];
+            }
+        }
+
         public static string[] GetEditorSettingsList(string prefix, int count)
         {
             ArrayList aList = new ArrayList();
@@ -163,7 +186,7 @@ namespace UnityEditorInternal
                 public bool Equals(AssetReference x, AssetReference y)
                 {
                     if (!string.IsNullOrEmpty(x.guid) || !string.IsNullOrEmpty(y.guid))
-                        string.Equals(x.guid, y.guid);
+                        return string.Equals(x.guid, y.guid);
 
                     // Both guids are nullOrEmpty now
                     return x.instanceID == y.instanceID;
@@ -190,18 +213,22 @@ namespace UnityEditorInternal
             return GetNewSelection(ref clicked, allInstanceIDs, allGuids, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, shiftKeyIsDown, actionKeyIsDown);
         }
 
-        internal static void EnsureInstanceId(ref AssetReference entry)
+        internal static bool TrySetInstanceId(ref AssetReference entry)
         {
             if (entry.instanceID != 0 || string.IsNullOrEmpty(entry.guid))
-                return;
+                return true;
 
             var guids = new string[] { entry.guid };
-            UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids);
+            var hashes = UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids, UnityEditor.Experimental.AssetDatabaseExperimental.ImportSyncMode.Queue);
+            if (!hashes[0].isValid)
+                return false;
+
             string path = AssetDatabase.GUIDToAssetPath(entry.guid);
             entry.instanceID = AssetDatabase.GetMainAssetInstanceID(path);
+            return true;
         }
 
-        internal static List<int> EnsureInstanceIds(List<int> entryInstanceIds, List<string> entryInstanceGuids, int from, int to)
+        internal static List<int> TryGetInstanceIds(List<int> entryInstanceIds, List<string> entryInstanceGuids, int from, int to)
         {
             List<string> guids = new List<string>();
 
@@ -219,7 +246,10 @@ namespace UnityEditorInternal
             }
             else
             {
-                UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids.ToArray());
+                var hashes = UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids.ToArray(), UnityEditor.Experimental.AssetDatabaseExperimental.ImportSyncMode.Queue);
+                if (System.Array.FindIndex(hashes, a => !a.isValid) != -1)
+                    return null;
+
                 var newSelection = new List<int>(to - from + 1);
 
                 for (int i = from; i <= to; ++i)
@@ -258,8 +288,8 @@ namespace UnityEditorInternal
                     newSelection.Remove(clickedEntry.instanceID);
                 else
                 {
-                    EnsureInstanceId(ref clickedEntry);
-                    newSelection.Add(clickedEntry.instanceID);
+                    if (TrySetInstanceId(ref clickedEntry))
+                        newSelection.Add(clickedEntry.instanceID);
                 }
                 return newSelection;
             }
@@ -276,9 +306,10 @@ namespace UnityEditorInternal
                 if (!GetFirstAndLastSelected(allEntryInstanceIDs, selectedInstanceIDs, out firstIndex, out lastIndex))
                 {
                     // We had no selection
-                    EnsureInstanceId(ref clickedEntry);
                     var newSelection = new List<int>(1);
-                    newSelection.Add(clickedEntry.instanceID);
+                    if (TrySetInstanceId(ref clickedEntry))
+                        newSelection.Add(clickedEntry.instanceID);
+
                     return newSelection;
                 }
 
@@ -287,7 +318,9 @@ namespace UnityEditorInternal
 
                 // Only valid in case the selection concerns assets
 
-                EnsureInstanceId(ref clickedEntry);
+                if (!TrySetInstanceId(ref clickedEntry))
+                    return new List<int>(selectedInstanceIDs);
+
                 int clickedInstanceID = clickedEntry.instanceID;
 
                 if (lastClickedInstanceID != 0)
@@ -344,8 +377,12 @@ namespace UnityEditorInternal
                 //Debug.Log (clickedEntry + ",   firstIndex " + firstIndex + ", lastIndex " + lastIndex + ",    newIndex " + newIndex + " " + ", lastClickedIndex " + prevIndex + ",     from " + from + ", to " + to);
                 if (allEntryGuids == null)
                     return allEntryInstanceIDs.GetRange(from, to - from + 1);
-                else
-                    return EnsureInstanceIds(allEntryInstanceIDs, allEntryGuids, from, to);
+
+                var foundInstanceIDs = TryGetInstanceIds(allEntryInstanceIDs, allEntryGuids, from, to);
+                if (foundInstanceIDs != null)
+                    return foundInstanceIDs;
+
+                return new List<int>(selectedInstanceIDs);
             }
             // Just set the selection to the clicked object
             else
@@ -360,10 +397,16 @@ namespace UnityEditorInternal
                     }
                 }
 
-                EnsureInstanceId(ref clickedEntry);
-                var newSelection = new List<int>(1);
-                newSelection.Add(clickedEntry.instanceID);
-                return newSelection;
+                if (TrySetInstanceId(ref clickedEntry))
+                {
+                    var newSelection = new List<int>(1);
+                    newSelection.Add(clickedEntry.instanceID);
+                    return newSelection;
+                }
+                else
+                {
+                    return new List<int>(selectedInstanceIDs);
+                }
             }
         }
 

@@ -2,12 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using ICSharpCode.NRefactory.Ast;
-using UnityEditor.IMGUI.Controls;
-using UnityEditorInternal;
+using UnityEditor.AnimatedValues;
 using UnityEngine;
-using UnityEngine.XR;
-//using UnityScript.TypeSystem;
 
 namespace UnityEditor
 {
@@ -40,7 +36,12 @@ namespace UnityEditor
         SerializedProperty m_JointFriction;
 
         SerializedProperty m_Immovable;
+        SerializedProperty m_UseGravity;
         bool m_DisplayParentAnchor;
+
+        readonly AnimBool m_ShowInfo = new AnimBool();
+        bool m_RequiresConstantRepaint;
+        SavedBool m_ShowInfoFoldout;
 
         internal enum NonLockedMotion
         {
@@ -81,7 +82,20 @@ namespace UnityEditor
             m_JointFriction = serializedObject.FindProperty("m_JointFriction");
 
             m_Immovable = serializedObject.FindProperty("m_Immovable");
+            m_UseGravity = serializedObject.FindProperty("m_UseGravity");
             m_DisplayParentAnchor = false;
+
+            // Info foldout
+            m_ShowInfo.valueChanged.AddListener(Repaint);
+
+            m_RequiresConstantRepaint = false;
+            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowFoldout", false);
+            m_ShowInfo.value = m_ShowInfoFoldout.value;
+        }
+
+        public void OnDisable()
+        {
+            m_ShowInfo.valueChanged.RemoveListener(Repaint);
         }
 
         private void QuaternionAsEulerAnglesPropertyField(string tag, SerializedProperty quaternionProperty,
@@ -120,11 +134,13 @@ namespace UnityEditor
             if (body.isRoot)
             {
                 EditorGUILayout.PropertyField(m_Immovable);
+                EditorGUILayout.PropertyField(m_UseGravity);
 
                 EditorGUILayout.HelpBox("This is the root body of the articulation.", MessageType.Info);
             }
             else
             {
+                EditorGUILayout.PropertyField(m_UseGravity);
                 EditorGUILayout.PropertyField(m_ComputeParentAnchor);
 
                 // Render anchor handle display button only if editor scene view has Move, Rotate or Transform tool mode selected
@@ -279,8 +295,8 @@ namespace UnityEditor
                         break;
                 }
             }
-
             serializedObject.ApplyModifiedProperties();
+            ShowBodyInfoProperties();
         }
 
         private void SphericalJointMotionSetting(SerializedProperty axis)
@@ -394,6 +410,44 @@ namespace UnityEditor
 
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
+        }
+
+        private void ShowBodyInfoProperties()
+        {
+            m_RequiresConstantRepaint = false;
+
+            m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
+            {
+                if (targets.Length == 1)
+                {
+                    var body = targets[0] as ArticulationBody;
+                    EditorGUI.BeginDisabledGroup(true);
+                    EditorGUILayout.FloatField("Speed", body.velocity.magnitude);
+                    EditorGUILayout.Vector3Field("Velocity", body.velocity);
+                    EditorGUILayout.Vector3Field("Angular Velocity", body.angularVelocity);
+                    EditorGUILayout.Vector3Field("Inertia Tensor", body.inertiaTensor);
+                    EditorGUILayout.Vector3Field("Inertia Tensor Rotation", body.inertiaTensorRotation.eulerAngles);
+                    EditorGUILayout.Vector3Field("Local Center of Mass", body.centerOfMass);
+                    EditorGUILayout.Vector3Field("World Center of Mass", body.worldCenterOfMass);
+                    EditorGUILayout.LabelField("Sleep State", body.IsSleeping() ? "Asleep" : "Awake");
+                    EditorGUI.EndDisabledGroup();
+
+                    // We need to repaint as some of the above properties can change without causing a repaint.
+                    if (EditorApplication.isPlaying)
+                        m_RequiresConstantRepaint = true;
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Cannot show Info properties when multiple bodies are selected.", MessageType.Info);
+                }
+            }
+            EditorGUILayout.EndFadeGroup();
+        }
+
+        public override bool RequiresConstantRepaint()
+        {
+            return m_RequiresConstantRepaint;
         }
     }
 }

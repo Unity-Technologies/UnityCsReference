@@ -65,7 +65,7 @@ namespace UnityEditor.Connect
                 EditorAnalytics.SendEventServiceInfo(new AnalyticsServiceState() { analytics = enable });
                 if (!enable && PurchasingService.instance.IsServiceEnabled())
                 {
-                    PurchasingService.instance.EnableService(false);
+                    PurchasingService.instance.EnableService(false, shouldUpdateApiFlag);
                 }
             }
 

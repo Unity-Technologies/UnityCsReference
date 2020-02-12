@@ -107,6 +107,10 @@ namespace UnityEditor.StyleSheets
         public readonly static int borderTopStyle = "border-top-style".GetHashCode();
         public readonly static int borderTopWidth = "border-top-width".GetHashCode();
         public readonly static int borderWidth = "border-width".GetHashCode();
+        public readonly static int borderTopLeftRadius = "border-top-left-radius".GetHashCode();
+        public readonly static int borderTopRightRadius = "border-top-right-radius".GetHashCode();
+        public readonly static int borderBottomLeftRadius = "border-bottom-left-radius".GetHashCode();
+        public readonly static int borderBottomRightRadius = "border-bottom-right-radius".GetHashCode();
         public readonly static int clear = "clear".GetHashCode();
         public readonly static int clip = "clip".GetHashCode();
         public readonly static int color = "color".GetHashCode();
@@ -1078,7 +1082,7 @@ namespace UnityEditor.StyleSheets
         {
             writer.Write(buffer.Length);
             foreach (var i in buffer)
-                writer.Write(i);
+                writer.Write(i ?? String.Empty);
         }
 
         private float[] ReadNumberBuffer(BinaryReader reader)
@@ -1311,7 +1315,7 @@ namespace UnityEditor.StyleSheets
             return true;
         }
 
-        const int k_CacheVersion = 2;
+        const int k_CacheVersion = 3;
         public void Save(BinaryWriter writer)
         {
             // version
@@ -1529,6 +1533,14 @@ namespace UnityEditor.StyleSheets
             return key;
         }
 
+        private string GetKeyName(int key)
+        {
+            string name;
+            if (m_NameCollisionTable.TryGetValue(key, out name))
+                return name;
+            return "<unknown>";
+        }
+
         private static StyleValue[] MergeValues(IEnumerable<StyleValue> values, IEnumerable<StyleValue> newValues)
         {
             var mergedBlockValues = new List<StyleValue>(values);
@@ -1543,9 +1555,8 @@ namespace UnityEditor.StyleSheets
                 for (int j = 0; j < mergedBlockValues.Count; ++j)
                 {
                     var blockValue = mergedBlockValues[j];
-                    if (newValue.key == blockValue.key && newValue.state == blockValue.state)
+                    if (newValue.key == blockValue.key && newValue.state == blockValue.state && blockValue.type == newValue.type)
                     {
-                        blockValue.type = newValue.type;
                         blockValue.index = newValue.index;
                         mergedBlockValues[j] = blockValue;
                         valueMerged = true;
@@ -1633,6 +1644,10 @@ namespace UnityEditor.StyleSheets
             // Lines
             values = ExpandLine(states, values, numbers, colors, strings, rects, groups, StyleCatalogKeyword.border, StyleCatalogKeyword.borderWidth, StyleCatalogKeyword.borderStyle, StyleCatalogKeyword.borderColor);
 
+            // Extended styles
+            values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.borderWidth, StyleCatalogKeyword.borderTopWidth, StyleCatalogKeyword.borderRightWidth, StyleCatalogKeyword.borderBottomWidth, StyleCatalogKeyword.borderLeftWidth);
+            values = ExpandRect(states, values, numbers, rects, StyleCatalogKeyword.borderRadius, StyleCatalogKeyword.borderTopLeftRadius, StyleCatalogKeyword.borderTopRightRadius, StyleCatalogKeyword.borderBottomRightRadius, StyleCatalogKeyword.borderBottomLeftRadius);
+
             return values;
         }
 
@@ -1645,6 +1660,7 @@ namespace UnityEditor.StyleSheets
             //using (new Profiling.EditorPerformanceTracker("BuildCatalog.ExpandLine"))
             for (int stateIndex = 0; stateIndex < states.Length; ++stateIndex)
             {
+                bool applyValues = false;
                 var currentState = states[stateIndex];
                 var lineValues = new List<StyleValue>();
                 var line = new StyleLine();
@@ -1670,18 +1686,23 @@ namespace UnityEditor.StyleSheets
                         continue;
                     }
 
-                    StyleValueGroup vg = new StyleValueGroup(borderKey, 3)
-                    {
-                        v1 = new StyleValue {key = borderWidthKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, line.width)},
-                        v2 = new StyleValue {key = borderStyleKey, state = currentState, type = StyleValue.Type.Text, index = SetIndex(strings, line.style)},
-                        v3 = new StyleValue {key = borderColorKey, state = currentState, type = StyleValue.Type.Color, index = SetIndex(colors, line.color)}
-                    };
-
-                    lineValues.Add(new StyleValue { key = borderKey, state = currentState, type = StyleValue.Type.Group, index = SetIndex(groups, vg) });
-                    lineValues.Add(vg.v1);
-                    lineValues.Add(vg.v2);
-                    lineValues.Add(vg.v3);
+                    applyValues = true;
                 }
+
+                if (!applyValues)
+                    continue;
+
+                StyleValueGroup vg = new StyleValueGroup(borderKey, 3)
+                {
+                    v1 = new StyleValue { key = borderWidthKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, line.width) },
+                    v2 = new StyleValue { key = borderStyleKey, state = currentState, type = StyleValue.Type.Text, index = SetIndex(strings, line.style) },
+                    v3 = new StyleValue { key = borderColorKey, state = currentState, type = StyleValue.Type.Color, index = SetIndex(colors, line.color) }
+                };
+
+                lineValues.Add(new StyleValue { key = borderKey, state = currentState, type = StyleValue.Type.Group, index = SetIndex(groups, vg) });
+                lineValues.Add(vg.v1);
+                lineValues.Add(vg.v2);
+                lineValues.Add(vg.v3);
 
                 if (lineValues.Count > 0)
                     values = MergeListValues(values, lineValues);
@@ -1696,11 +1717,10 @@ namespace UnityEditor.StyleSheets
             if (!ExpandHasMembers(values, rectKey, topKey, rightKey, bottomKey, leftKey))
                 return values;
 
-            //using (new Profiling.EditorPerformanceTracker("BuildCatalog.ExpandRect"))
             for (int stateIndex = 0; stateIndex < states.Length; ++stateIndex)
             {
+                bool applyValues = false;
                 var currentState = states[stateIndex];
-                var rectValues = new List<StyleValue>();
                 var rect = new StyleRect { top = float.MaxValue, right = float.MaxValue, bottom = float.MaxValue, left = float.MaxValue };
                 for (int i = 0; i < values.Count; ++i)
                 {
@@ -1709,6 +1729,14 @@ namespace UnityEditor.StyleSheets
                         continue;
 
                     if (value.key == rectKey && value.type == StyleValue.Type.Rect) rect = rects[value.index];
+                    else if (value.key == rectKey && value.type == StyleValue.Type.Number)
+                    {
+                        var defaultValue = numbers[value.index];
+                        if (rect.top == float.MaxValue) rect.top = defaultValue;
+                        if (rect.right == float.MaxValue) rect.right = defaultValue;
+                        if (rect.bottom == float.MaxValue) rect.bottom = defaultValue;
+                        if (rect.left == float.MaxValue) rect.left = defaultValue;
+                    }
                     else if (value.key == topKey && value.type == StyleValue.Type.Number) rect.top = numbers[value.index];
                     else if (value.key == rightKey && value.type == StyleValue.Type.Number) rect.right = numbers[value.index];
                     else if (value.key == bottomKey && value.type == StyleValue.Type.Number) rect.bottom = numbers[value.index];
@@ -1719,30 +1747,36 @@ namespace UnityEditor.StyleSheets
                         continue;
                     }
 
-                    if (rect.left != float.MaxValue || rect.right != float.MaxValue || rect.top != float.MaxValue || rect.bottom != float.MaxValue)
-                    {
-                        var validRect = new StyleRect
-                        {
-                            top = rect.top == float.MaxValue ? 0 : rect.top,
-                            right = rect.right == float.MaxValue ? 0 : rect.right,
-                            bottom = rect.bottom == float.MaxValue ? 0 : rect.bottom,
-                            left = rect.left == float.MaxValue ? 0 : rect.left
-                        };
-                        rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, validRect) });
-                    }
-
-                    if (rect.top != float.MaxValue)
-                        rectValues.Add(new StyleValue { key = topKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.top) });
-
-                    if (rect.right != float.MaxValue)
-                        rectValues.Add(new StyleValue { key = rightKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.right) });
-
-                    if (rect.bottom != float.MaxValue)
-                        rectValues.Add(new StyleValue { key = bottomKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.bottom) });
-
-                    if (rect.left != float.MaxValue)
-                        rectValues.Add(new StyleValue { key = leftKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.left) });
+                    applyValues = true;
                 }
+
+                if (!applyValues)
+                    continue;
+
+                var rectValues = new List<StyleValue>();
+                if (rect.left != float.MaxValue || rect.right != float.MaxValue || rect.top != float.MaxValue || rect.bottom != float.MaxValue)
+                {
+                    var validRect = new StyleRect
+                    {
+                        top = rect.top == float.MaxValue ? 0 : rect.top,
+                        right = rect.right == float.MaxValue ? 0 : rect.right,
+                        bottom = rect.bottom == float.MaxValue ? 0 : rect.bottom,
+                        left = rect.left == float.MaxValue ? 0 : rect.left
+                    };
+                    rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, validRect) });
+                }
+
+                if (rect.top != float.MaxValue)
+                    rectValues.Add(new StyleValue { key = topKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.top) });
+
+                if (rect.right != float.MaxValue)
+                    rectValues.Add(new StyleValue { key = rightKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.right) });
+
+                if (rect.bottom != float.MaxValue)
+                    rectValues.Add(new StyleValue { key = bottomKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.bottom) });
+
+                if (rect.left != float.MaxValue)
+                    rectValues.Add(new StyleValue { key = leftKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.left) });
 
                 if (rectValues.Count > 0)
                     values = MergeListValues(values, rectValues);
@@ -1984,7 +2018,7 @@ namespace UnityEditor.StyleSheets
             // All the blocks are the same, compare their values;
             foreach (var catBlock in catalog.m_Blocks)
             {
-                var blockName = m_NameCollisionTable[catBlock.name];
+                var blockName = GetKeyName(catBlock.name);
                 var block = m_Blocks[FindStyleIndex(catBlock.name, m_Blocks)];
 
                 if (catBlock.name != block.name)
@@ -2009,18 +2043,18 @@ namespace UnityEditor.StyleSheets
                         var value2Index = GetComparableValue(value1, catBlock);
                         if (value2Index == -1)
                         {
-                            sb.AppendLine($"Property {m_NameCollisionTable[value1.key]} not found in block {blockName}");
+                            sb.AppendLine($"Property {GetKeyName(value1.key)} not found in block {blockName}");
                             continue;
                         }
 
                         var value2 = catBlock.values[value2Index];
                         if (value1.type != value2.type)
                         {
-                            sb.AppendLine($"Property: {m_NameCollisionTable[value1.key]} has different type in block {blockName}");
+                            sb.AppendLine($"Property: {GetKeyName(value1.key)} has different type in block {blockName}");
                         }
                         else if (!CompareValue(block, value1, catBlock, value2))
                         {
-                            sb.AppendLine($"Property: {m_NameCollisionTable[value1.key]} has different value in block {blockName}");
+                            sb.AppendLine($"Property: {GetKeyName(value1.key)} has different value in block {blockName}");
                         }
                     }
                 }
@@ -2042,7 +2076,7 @@ namespace UnityEditor.StyleSheets
                         sb.AppendLine(title);
                         sameStyles = false;
                     }
-                    sb.AppendLine("    " + m_NameCollisionTable[block.name]);
+                    sb.AppendLine("    " + GetKeyName(block.name));
                 }
             }
 
@@ -2054,7 +2088,7 @@ namespace UnityEditor.StyleSheets
             for (var valueIndex = 0; valueIndex < block.values.Length; ++valueIndex)
             {
                 var v2 = block.values[valueIndex];
-                if (v1.key == v2.key && v1.state == v2.state)
+                if (v1.key == v2.key && v1.state == v2.state && v1.type == v2.type)
                 {
                     return valueIndex;
                 }

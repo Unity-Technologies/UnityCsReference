@@ -109,12 +109,11 @@ namespace UnityEditor
         private PopupElement[] spritePackerPopupList =
         {
             new PopupElement("Disabled"),
-            new PopupElement("Legacy Sprite Packer - Enabled For Builds"),
-            new PopupElement("Legacy Sprite Packer - Always Enabled"),
             new PopupElement("Sprite Atlas V1 - Enabled For Builds"),
             new PopupElement("Sprite Atlas V1 - Always Enabled"),
             new PopupElement("Sprite Atlas V2 (Experimental) - Enabled"),
         };
+        private static readonly int spritePackDeprecatedEnums = 2;
 
         private PopupElement[] lineEndingsPopupList =
         {
@@ -368,20 +367,14 @@ namespace UnityEditor
             GUILayout.Label(Content.spritePacker, EditorStyles.boldLabel);
             GUI.enabled = editorEnabled;
 
-            index = Mathf.Clamp((int)EditorSettings.spritePackerMode, 0, spritePackerPopupList.Length - 1);
+            // Legacy Packer has been deprecated.
+            index = Mathf.Clamp((int)(EditorSettings.spritePackerMode) - spritePackDeprecatedEnums, 0, spritePackerPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
 
             if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)
             {
                 var message = "Sprite Atlas V2 (Experimental) supports CacheServer with Importer workflow. Please take a backup of your project before switching to V2.";
                 EditorGUILayout.HelpBox(message, MessageType.Info, true);
-            }
-
-            if (EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOn
-                || EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnly)
-            {
-                index = Mathf.Clamp((int)(EditorSettings.spritePackerPaddingPower - 1), 0, 2);
-                CreatePopupMenu("Padding Power (Legacy Sprite Packer)", spritePackerPaddingPowerPopupList, index, SetSpritePackerPaddingPower);
             }
 
             DoProjectGenerationSettings();
@@ -777,6 +770,8 @@ namespace UnityEditor
         {
             int popupIndex = (int)data;
 
+            // Legacy Packer has been obsoleted (1 & 2). Disabled (0) is still valid.
+            popupIndex = (popupIndex != 0) ? (popupIndex + spritePackDeprecatedEnums) : 0;
             EditorSettings.spritePackerMode = (SpritePackerMode)popupIndex;
 
             if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)

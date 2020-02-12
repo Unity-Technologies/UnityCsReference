@@ -996,8 +996,14 @@ namespace UnityEngine.UIElements
 
         internal void InvokeHierarchyChanged(HierarchyChangeType changeType) { elementPanel?.InvokeHierarchyChanged(this, changeType); }
 
-        //TODO: Make private once VisualContainer is merged with VisualElement
+        [Obsolete("SetEnabledFromHierarchy is deprecated and will be removed in a future release. Please use SetEnabled instead.")]
         protected internal bool SetEnabledFromHierarchy(bool state)
+        {
+            return SetEnabledFromHierarchyPrivate(state);
+        }
+
+        //TODO: rename to SetEnabledFromHierarchy once the protected version has been removed
+        private bool SetEnabledFromHierarchyPrivate(bool state)
         {
             var initialState = enabledInHierarchy;
             if (state)
@@ -1054,7 +1060,7 @@ namespace UnityEngine.UIElements
 
         void PropagateEnabledToChildren(bool value)
         {
-            if (SetEnabledFromHierarchy(value))
+            if (SetEnabledFromHierarchyPrivate(value))
             {
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)

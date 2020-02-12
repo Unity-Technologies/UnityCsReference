@@ -50,6 +50,9 @@ namespace UnityEngine.XR
         extern public bool contentProtectionEnabled { get; set; }
         extern public float scaleOfAllViewports { get; set; }
         extern public float scaleOfAllRenderTargets { get; set; }
+        extern public float zNear { get; set; }
+        extern public float zFar { get; set; }
+        extern public bool  sRGB { get; set; }
 
         [Flags]
         public enum TextureLayout

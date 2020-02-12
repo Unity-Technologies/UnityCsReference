@@ -241,5 +241,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         private static extern void FileMenuNewScene();
+
+        [ThreadSafe]
+        internal static extern void SignalTick();
     }
 }

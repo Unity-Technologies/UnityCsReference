@@ -169,13 +169,8 @@ namespace UnityEditor.Connect
         void SetupServiceToggle(SingleService singleService)
         {
             m_MainServiceToggle.SetProperty(k_ServiceNameProperty, singleService.name);
-            m_MainServiceToggle.SetValueWithoutNotify(singleService.IsServiceEnabled());
-            SetupServiceToggleLabel(m_MainServiceToggle, singleService.IsServiceEnabled());
             m_MainServiceToggle.SetEnabled(false);
-            if (m_GoToDashboard != null)
-            {
-                m_GoToDashboard.style.display = (singleService.IsServiceEnabled()) ? DisplayStyle.Flex : DisplayStyle.None;
-            }
+            UpdateServiceToggleAndDashboardLink(singleService.IsServiceEnabled());
 
             if (singleService.displayToggle)
             {
@@ -183,21 +178,29 @@ namespace UnityEditor.Connect
                 {
                     if (currentUserPermission != UserRole.Owner && currentUserPermission != UserRole.Manager)
                     {
-                        m_MainServiceToggle.SetValueWithoutNotify(evt.previousValue);
-                        SetupServiceToggleLabel(m_MainServiceToggle, evt.previousValue);
+                        UpdateServiceToggleAndDashboardLink(evt.previousValue);
                         return;
                     }
-                    SetupServiceToggleLabel(m_MainServiceToggle, evt.newValue);
                     singleService.EnableService(evt.newValue);
-                    if (m_GoToDashboard != null)
-                    {
-                        m_GoToDashboard.style.display = (evt.newValue) ? DisplayStyle.Flex : DisplayStyle.None;
-                    }
                 });
             }
             else
             {
                 m_MainServiceToggle.style.display = DisplayStyle.None;
+            }
+        }
+
+        void UpdateServiceToggleAndDashboardLink(bool isEnabled)
+        {
+            if (m_GoToDashboard != null)
+            {
+                m_GoToDashboard.style.display = (isEnabled) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (m_MainServiceToggle != null)
+            {
+                m_MainServiceToggle.SetValueWithoutNotify(isEnabled);
+                SetupServiceToggleLabel(m_MainServiceToggle, isEnabled);
             }
         }
 
@@ -316,6 +319,8 @@ namespace UnityEditor.Connect
                 var scrollContainer = provider.rootVisualElement.Q(className: k_ScrollContainerClass);
                 scrollContainer.Add(ServicesUtils.SetupSupportedPlatformsBlock(GetSupportedPlatforms()));
 
+                provider.UpdateServiceToggleAndDashboardLink(provider.serviceInstance.IsServiceEnabled());
+
                 provider.HandlePermissionRestrictedControls();
             }
 
@@ -423,6 +428,9 @@ namespace UnityEditor.Connect
                 SetupIapOptionsBlock();
                 var scrollContainer = provider.rootVisualElement.Q(className: k_ScrollContainerClass);
                 scrollContainer.Add(ServicesUtils.SetupSupportedPlatformsBlock(GetSupportedPlatforms()));
+
+                provider.UpdateServiceToggleAndDashboardLink(provider.serviceInstance.IsServiceEnabled());
+
                 provider.HandlePermissionRestrictedControls();
 
                 // Prepare the package section and update the package information

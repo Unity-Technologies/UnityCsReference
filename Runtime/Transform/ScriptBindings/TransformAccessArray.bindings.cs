@@ -33,42 +33,42 @@ namespace UnityEngine.Jobs
         //@TODO: Static code analysis needs to prevent creation of TransformAccess except through TransformAccessArray accessor.
         // Code below assumes this to be true since it doesn't check if TransformAccess is valid
 
-        [NativeMethod(Name = "TransformAccessBindings::GetPosition", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::GetPosition", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetPosition(ref TransformAccess access, out Vector3 p);
 
-        [NativeMethod(Name = "TransformAccessBindings::SetPosition", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::SetPosition", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void SetPosition(ref TransformAccess access, ref Vector3 p);
 
-        [NativeMethod(Name = "TransformAccessBindings::GetRotation", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::GetRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetRotation(ref TransformAccess access, out Quaternion r);
 
-        [NativeMethod(Name = "TransformAccessBindings::SetRotation", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::SetRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void SetRotation(ref TransformAccess access, ref Quaternion r);
 
 
-        [NativeMethod(Name = "TransformAccessBindings::GetLocalPosition", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalPosition", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetLocalPosition(ref TransformAccess access, out Vector3 p);
 
-        [NativeMethod(Name = "TransformAccessBindings::SetLocalPosition", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalPosition", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void SetLocalPosition(ref TransformAccess access, ref Vector3 p);
 
-        [NativeMethod(Name = "TransformAccessBindings::GetLocalRotation", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetLocalRotation(ref TransformAccess access, out Quaternion r);
 
-        [NativeMethod(Name = "TransformAccessBindings::SetLocalRotation", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void SetLocalRotation(ref TransformAccess access, ref Quaternion r);
 
 
-        [NativeMethod(Name = "TransformAccessBindings::GetLocalScale", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalScale", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetLocalScale(ref TransformAccess access, out Vector3 r);
 
-        [NativeMethod(Name = "TransformAccessBindings::SetLocalScale", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalScale", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void SetLocalScale(ref TransformAccess access, ref Vector3 r);
 
-        [NativeMethod(Name = "TransformAccessBindings::GetLocalToWorldMatrix", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalToWorldMatrix", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetLocalToWorldMatrix(ref TransformAccess access, out Matrix4x4 m);
 
-        [NativeMethod(Name = "TransformAccessBindings::GetWorldToLocalMatrix", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessBindings::GetWorldToLocalMatrix", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         private static extern void GetWorldToLocalMatrix(ref TransformAccess access, out Matrix4x4 m);
 
         //@TODO: API incomplete...
@@ -199,10 +199,10 @@ namespace UnityEngine.Jobs
         [NativeMethod(Name = "TransformAccessArrayBindings::RemoveAtSwapBack", IsFreeFunction = true, ThrowsException = true)]
         private static extern void RemoveAtSwapBack(IntPtr transformArrayIntPtr, int index);
 
-        [NativeMethod(Name = "TransformAccessArrayBindings::GetSortedTransformAccess", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessArrayBindings::GetSortedTransformAccess", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         internal static extern IntPtr GetSortedTransformAccess(IntPtr transformArrayIntPtr);
 
-        [NativeMethod(Name = "TransformAccessArrayBindings::GetSortedToUserIndex", IsThreadSafe = true, IsFreeFunction = true)]
+        [NativeMethod(Name = "TransformAccessArrayBindings::GetSortedToUserIndex", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
         internal static extern IntPtr GetSortedToUserIndex(IntPtr transformArrayIntPtr);
 
         [NativeMethod(Name = "TransformAccessArrayBindings::GetLength", IsFreeFunction = true)]

@@ -4,7 +4,6 @@
 
 using UnityEngine;
 
-
 namespace UnityEditor
 {
     internal class ParticleSystemClipboard
@@ -12,57 +11,25 @@ namespace UnityEditor
         static AnimationCurve m_AnimationCurve1;
         static AnimationCurve m_AnimationCurve2;
         static float m_AnimationCurveScalar;
-        static Gradient m_Gradient1;
-        static Gradient m_Gradient2;
 
-
-        // Gradient section
-
-        static public bool HasSingleGradient()
-        {
-            return m_Gradient1 != null && m_Gradient2 == null;
-        }
-
-        static public bool HasDoubleGradient()
-        {
-            return m_Gradient1 != null && m_Gradient2 != null;
-        }
-
-        static public void CopyGradient(Gradient gradient1, Gradient gradient2)
-        {
-            m_Gradient1 = gradient1;
-            m_Gradient2 = gradient2;
-        }
-
-        static public void PasteGradient(SerializedProperty gradientProperty, SerializedProperty gradientProperty2)
-        {
-            if (gradientProperty != null && m_Gradient1 != null)
-                gradientProperty.gradientValue = m_Gradient1;
-
-            if (gradientProperty2 != null && m_Gradient2 != null)
-                gradientProperty2.gradientValue = m_Gradient2;
-        }
-
-        // AnimationCurve section
-
-        static public bool HasSingleAnimationCurve()
+        public static bool HasSingleAnimationCurve()
         {
             return m_AnimationCurve1 != null && m_AnimationCurve2 == null;
         }
 
-        static public bool HasDoubleAnimationCurve()
+        public static bool HasDoubleAnimationCurve()
         {
             return m_AnimationCurve1 != null && m_AnimationCurve2 != null;
         }
 
-        static public void CopyAnimationCurves(AnimationCurve animCurve, AnimationCurve animCurve2, float scalar)
+        public static void CopyAnimationCurves(AnimationCurve animCurve, AnimationCurve animCurve2, float scalar)
         {
             m_AnimationCurve1 = animCurve;
             m_AnimationCurve2 = animCurve2;
             m_AnimationCurveScalar = scalar;
         }
 
-        static private void ClampCurve(SerializedProperty animCurveProperty, Rect curveRanges)
+        static void ClampCurve(SerializedProperty animCurveProperty, Rect curveRanges)
         {
             AnimationCurve clampedCurve = animCurveProperty.animationCurveValue;
             Keyframe[] keys = clampedCurve.keys;
@@ -75,7 +42,7 @@ namespace UnityEditor
             animCurveProperty.animationCurveValue = clampedCurve;
         }
 
-        static public void PasteAnimationCurves(SerializedProperty animCurveProperty, SerializedProperty animCurveProperty2, SerializedProperty scalarProperty, Rect curveRanges, ParticleSystemCurveEditor particleSystemCurveEditor)
+        public static void PasteAnimationCurves(SerializedProperty animCurveProperty, SerializedProperty animCurveProperty2, SerializedProperty scalarProperty, Rect curveRanges, ParticleSystemCurveEditor particleSystemCurveEditor)
         {
             if (animCurveProperty != null && m_AnimationCurve1 != null)
             {
@@ -101,42 +68,41 @@ namespace UnityEditor
 
     internal class GradientContextMenu
     {
-        readonly SerializedProperty m_Prop1;
+        readonly SerializedProperty m_Property;
 
-
-        static internal void Show(SerializedProperty prop)
+        internal static void Show(SerializedProperty prop)
         {
-            // Curve context menu
             GUIContent copy = EditorGUIUtility.TrTextContent("Copy");
             GUIContent paste = EditorGUIUtility.TrTextContent("Paste");
 
             GenericMenu menu = new GenericMenu();
             var gradientMenu = new GradientContextMenu(prop);
             menu.AddItem(copy, false, gradientMenu.Copy);
-            if (ParticleSystemClipboard.HasSingleGradient())
+            if (Clipboard.hasGradient)
                 menu.AddItem(paste, false, gradientMenu.Paste);
             else
                 menu.AddDisabledItem(paste);
-
             menu.ShowAsContext();
+            Event.current.Use();
         }
 
-        private GradientContextMenu(SerializedProperty prop1)
+        GradientContextMenu(SerializedProperty prop)
         {
-            m_Prop1 = prop1;
+            m_Property = prop;
         }
 
-        private void Copy()
+        void Copy()
         {
-            Gradient gradient1 = m_Prop1 != null ? m_Prop1.gradientValue : null;
-            ParticleSystemClipboard.CopyGradient(gradient1, null);
+            Clipboard.gradientValue = m_Property?.gradientValue;
         }
 
-        private void Paste()
+        void Paste()
         {
-            ParticleSystemClipboard.PasteGradient(m_Prop1, null);
-            if (m_Prop1 != null)
-                m_Prop1.serializedObject.ApplyModifiedProperties();
+            if (m_Property == null) return;
+            var grad = Clipboard.gradientValue;
+            if (grad == null) return;
+            m_Property.gradientValue = grad;
+            m_Property.serializedObject.ApplyModifiedProperties();
             UnityEditorInternal.GradientPreviewCache.ClearCache();
         }
     }

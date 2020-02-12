@@ -63,6 +63,9 @@ namespace UnityEngine
         [NativeConditional("UNITY_EDITOR")]
         extern public ulong  overrideSceneCullingMask     { get; set; }
 
+        [NativeConditional("UNITY_EDITOR")]
+        extern internal ulong sceneCullingMask { get; }
+
         [FreeFunction("CameraScripting::GetLayerCullDistances", HasExplicitThis = true)] extern private float[] GetLayerCullDistances();
         [FreeFunction("CameraScripting::SetLayerCullDistances", HasExplicitThis = true)] extern private void SetLayerCullDistances([NotNull] float[] d);
         public float[] layerCullDistances

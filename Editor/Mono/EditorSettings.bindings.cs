@@ -27,7 +27,9 @@ namespace UnityEditor
     public enum SpritePackerMode
     {
         Disabled = 0,
+        [Obsolete("Sprite Packing Tags are deprecated. Please use Sprite Atlas asset.")]
         BuildTimeOnly = 1,
+        [Obsolete("Sprite Packing Tags are deprecated. Please use Sprite Atlas asset.")]
         AlwaysOn = 2,
         BuildTimeOnlyAtlas = 3,
         AlwaysOnAtlas = 4,

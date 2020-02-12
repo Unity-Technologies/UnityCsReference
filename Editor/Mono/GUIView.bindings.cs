@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -29,6 +30,9 @@ namespace UnityEditor
         public extern void BeginCaptureRenderDoc();
         public extern void EndCaptureRenderDoc();
 
+        internal extern void RenderCurrentSceneForCapture();
+
+
         internal extern bool mouseRayInvisible {[NativeMethod("IsMouseRayInvisible")] get; [NativeMethod("SetMouseRayInvisible")] set; }
         internal extern bool disableInputEvents {[NativeMethod("AreInputEventsDisabled")] get; [NativeMethod("SetDisableInputEvents")] set; }
 
@@ -50,6 +54,11 @@ namespace UnityEditor
         internal extern void MarkHotRegion(Rect hotRegionRect);
         internal extern void EnableVSync(bool value);
         internal extern void SetActualViewName(string viewName);
+        internal extern System.IntPtr nativeHandle
+        {
+            [NativeMethod("GetGUIViewHandle")]
+            get;
+        }
 
         protected extern void Internal_SetAsActiveWindow();
 

@@ -129,17 +129,6 @@ namespace UnityEditor.Sprites
 
         private bool ValidateIsPackingEnabled()
         {
-            if (EditorSettings.spritePackerMode != SpritePackerMode.BuildTimeOnly
-                && EditorSettings.spritePackerMode != SpritePackerMode.AlwaysOn)
-            {
-                EditorGUILayout.BeginVertical();
-                GUILayout.Label(PackerWindowStyle.packingDisabledLabel);
-                if (GUILayout.Button(PackerWindowStyle.openProjectSettingButton))
-                    SettingsService.OpenProjectSettings("Project/Editor");
-                EditorGUILayout.EndVertical();
-                return false;
-            }
-
             return true;
         }
 
@@ -167,7 +156,7 @@ namespace UnityEditor.Sprites
                 {
                     if (GUI.Button(adjustedDrawRect, PackerWindowStyle.packLabel, EditorStyles.toolbarButton))
                     {
-                        Packer.RebuildAtlasCacheIfNeeded(EditorUserBuildSettings.activeBuildTarget, true);
+                        Packer.RebuildAtlasCacheIfNeededInternal(EditorUserBuildSettings.activeBuildTarget, true, Packer.Execution.Normal);
                         m_SelectedSprite = null;
                         RefreshAtlasPageList();
                         RefreshState();
@@ -182,7 +171,7 @@ namespace UnityEditor.Sprites
                     {
                         if (GUI.Button(adjustedDrawRect, PackerWindowStyle.repackLabel, EditorStyles.toolbarButton))
                         {
-                            Packer.RebuildAtlasCacheIfNeeded(EditorUserBuildSettings.activeBuildTarget, true, Packer.Execution.ForceRegroup);
+                            Packer.RebuildAtlasCacheIfNeededInternal(EditorUserBuildSettings.activeBuildTarget, true, Packer.Execution.ForceRegroup);
                             m_SelectedSprite = null;
                             RefreshAtlasPageList();
                             RefreshState();

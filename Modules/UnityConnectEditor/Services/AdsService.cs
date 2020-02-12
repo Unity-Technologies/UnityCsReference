@@ -19,7 +19,7 @@ namespace UnityEditor.Connect
         const string k_GameIdApiUrl = "/unity/v1/games";
         const string k_JsonAppleGameId = "iOSGameKey";
         const string k_JsonAndroidGameId = "androidGameKey";
-        const int k_GameIdsRequestMaxIteration = 20;
+        const int k_GameIdsRequestMaxIteration = 10;
         const int k_GameIdsIterationDelay = 1000;
 
         int m_GameIdsRequestIteration = 0;
@@ -58,6 +58,21 @@ namespace UnityEditor.Connect
             packageName = "com.unity.ads";
             serviceFlagName = "ads";
             ServicesRepository.AddService(this);
+
+            InitializeService();
+        }
+
+        void InitializeService()
+        {
+            var iPhoneGameId = AdvertisementSettings.GetGameId(RuntimePlatform.IPhonePlayer);
+            var androidGameId = AdvertisementSettings.GetGameId(RuntimePlatform.Android);
+
+            //Make sure that the service was enabled as expected, if not refresh the information
+            if (IsServiceEnabled()
+                && (string.IsNullOrEmpty(iPhoneGameId) || string.IsNullOrEmpty(androidGameId)))
+            {
+                RefreshGameIds();
+            }
         }
 
         public override bool IsServiceEnabled()
@@ -100,7 +115,8 @@ namespace UnityEditor.Connect
 
         void RequestGameIds()
         {
-            if (IsServiceEnabled() && m_CurrentWebRequest == null)
+            if (IsServiceEnabled() && m_CurrentWebRequest == null &&
+                !string.IsNullOrEmpty(UnityConnect.instance.projectInfo.projectGUID))
             {
                 var bodyContent = "{\"projectGUID\": \"" + UnityConnect.instance.projectInfo.projectGUID + "\",\"projectName\":\"" + UnityConnect.instance.projectInfo.projectName + "\",\"token\":\"" + UnityConnect.instance.GetUserInfo().accessToken + "\"}";
                 var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(bodyContent));
@@ -118,10 +134,7 @@ namespace UnityEditor.Connect
         {
             if (asyncOperation.isDone)
             {
-                if ((m_CurrentWebRequest != null) &&
-                    (m_CurrentWebRequest.result != UnityWebRequest.Result.ConnectionError) &&
-                    (m_CurrentWebRequest.result != UnityWebRequest.Result.ProtocolError) &&
-                    (m_CurrentWebRequest.downloadHandler != null))
+                if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_CurrentWebRequest))
                 {
                     if (m_CurrentWebRequest.downloadHandler.text.Length != 0)
                     {

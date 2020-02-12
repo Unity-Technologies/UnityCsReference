@@ -41,6 +41,7 @@ namespace UnityEditor.Experimental.SceneManagement
             public static GUIContent contextLabel = EditorGUIUtility.TrTextContent("Context:");
             public static GUIContent[] contextRenderModeTexts = new[] { EditorGUIUtility.TrTextContent("Normal"), EditorGUIUtility.TrTextContent("Gray"), EditorGUIUtility.TrTextContent("Hidden") };
             public static StageUtility.ContextRenderMode[] contextRenderModeOptions = new[] { StageUtility.ContextRenderMode.Normal, StageUtility.ContextRenderMode.GreyedOut, StageUtility.ContextRenderMode.Hidden };
+            public static GUIContent showOverridesLabel = EditorGUIUtility.TrTextContent("Show Overrides", "Visualize overrides from the Prefab instance on the Prefab Asset. Overrides on the root Transform are always visualized.");
 
             static Styles()
             {
@@ -532,9 +533,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 prefabObject = PrefabUtility.GetCorrespondingObjectFromSource(prefabObject);
             }
 
-            var patchOverridenPropertiesState = PrefabSettingsProvider.GetPatchOverridenPropertiesState();
-            bool onlyCheckTransforms = patchOverridenPropertiesState == PrefabSettingsProvider.PatchOverridenProperties.AllTransforms ||
-                patchOverridenPropertiesState == PrefabSettingsProvider.PatchOverridenProperties.RootTransformOnly;
+            bool onlyPatchRootTransform = !s_PatchAllOverriddenProperties.value;
 
             // Run through same objects, but from innermost out so outer overrides are applied last.
             for (int i = instanceAndCorrespondingObjectChain.Count - 1; i >= 0; i--)
@@ -549,7 +548,7 @@ namespace UnityEditor.Experimental.SceneManagement
                     if (mod.target == null)
                         continue;
 
-                    if (onlyCheckTransforms && !(mod.target is Transform))
+                    if (onlyPatchRootTransform && !(mod.target is Transform))
                         continue;
 
                     UnityEngine.Object targetInContent = null;
@@ -587,8 +586,7 @@ namespace UnityEditor.Experimental.SceneManagement
                         if (targetInContent == prefabContentsRoot && mod.propertyPath == "m_Name")
                             continue;
 
-                        bool wantRootTransformOverridesOnly = patchOverridenPropertiesState == PrefabSettingsProvider.PatchOverridenProperties.RootTransformOnly;
-                        if (wantRootTransformOverridesOnly && targetInContent != prefabContentsRoot.transform)
+                        if (onlyPatchRootTransform && targetInContent != prefabContentsRoot.transform)
                             continue;
 
                         if (instanceTransformSO != null)
@@ -654,8 +652,7 @@ namespace UnityEditor.Experimental.SceneManagement
                                 continue;
 
                             // Root can be a different object than it was in outer Stage, så check again here.
-                            bool wantRootTransformOverridesOnly = patchOverridenPropertiesState == PrefabSettingsProvider.PatchOverridenProperties.RootTransformOnly;
-                            if (wantRootTransformOverridesOnly && targetInContent != prefabContentsRoot.transform)
+                            if (onlyPatchRootTransform && targetInContent != prefabContentsRoot.transform)
                                 continue;
 
                             DrivenPropertyManager.TryRegisterProperty(this, targetInContent, mod.propertyPath);
@@ -1475,8 +1472,14 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal override void OnControlsGUI(SceneView sceneView)
         {
-            InContextModeSelector(sceneView);
-            GUILayout.Space(5);
+            GUILayout.Space(15);
+            if (mode == Mode.InContext)
+            {
+                InContextModeSelector(sceneView);
+                GUILayout.Space(15);
+                VisualizeOverridesToggle();
+                GUILayout.Space(15);
+            }
             AutoSaveButtons(sceneView);
         }
 
@@ -1556,16 +1559,11 @@ namespace UnityEditor.Experimental.SceneManagement
 
         void InContextModeSelector(SceneView sceneView)
         {
-            if (mode != Mode.InContext)
-                return;
-
             if (s_ContextRenderModeSelector == null)
             {
                 s_ContextRenderModeSelector = new ExposablePopupMenu();
                 InitContextRenderModeSelector();
             }
-
-            GUILayout.Space(10);
 
             EditorGUI.BeginChangeCheck();
             var rect = GUILayoutUtility.GetRect(s_ContextRenderModeSelector.widthOfPopupAndLabel, s_ContextRenderModeSelector.widthOfButtonsAndLabel, 0, 22);
@@ -1574,9 +1572,21 @@ namespace UnityEditor.Experimental.SceneManagement
             {
                 SceneView.RepaintAll();
             }
+        }
 
+        static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
 
-            GUILayout.Space(10);
+        void VisualizeOverridesToggle()
+        {
+            EditorGUI.BeginChangeCheck();
+            bool patchAll = GUILayout.Toggle(s_PatchAllOverriddenProperties.value, Styles.showOverridesLabel);
+            if (EditorGUI.EndChangeCheck())
+            {
+                s_PatchAllOverriddenProperties.value = patchAll;
+                DrivenPropertyManager.UnregisterProperties(this);
+                RecordPatchedPropertiesForContent();
+                ApplyPatchedPropertiesToContent();
+            }
         }
 
         void CachePrefabFolderInfo()
@@ -1809,69 +1819,6 @@ namespace UnityEditor.Experimental.SceneManagement
                 return true;
             }
             return false;
-        }
-    }
-
-    internal class PrefabSettingsProvider : SettingsProvider
-    {
-        public enum PatchOverridenProperties
-        {
-            All,
-            AllTransforms,
-            RootTransformOnly
-        }
-
-        class Styles
-        {
-            public static GUIContent patchTransformsOnly = new GUIContent("Patch Overridden Properties");
-        }
-
-        const string kPatchOverridenProperties = "InContextEditingPatchTransformsOnly";
-
-        public static PatchOverridenProperties GetPatchOverridenPropertiesState()
-        {
-            return (PatchOverridenProperties)EditorPrefs.GetInt(kPatchOverridenProperties, (int)PatchOverridenProperties.RootTransformOnly);
-        }
-
-        public PrefabSettingsProvider(string path, SettingsScope scope = SettingsScope.User)
-            : base(path, scope) {}
-
-        public static bool IsSettingsAvailable()
-        {
-            return true;
-        }
-
-        public override void OnGUI(string searchContext)
-        {
-            using (new SettingsWindow.GUIScope())
-            {
-                EditorGUILayout.LabelField("Editing in Context", EditorStyles.boldLabel);
-
-                EditorGUI.BeginChangeCheck();
-                var newSelection = (PatchOverridenProperties)EditorGUILayout.EnumPopup(
-                    Styles.patchTransformsOnly,
-                    GetPatchOverridenPropertiesState());
-                if (EditorGUI.EndChangeCheck())
-                    EditorPrefs.SetInt(kPatchOverridenProperties, (int)newSelection);
-
-                EditorGUILayout.Space();
-            }
-        }
-
-        [SettingsProvider]
-        public static SettingsProvider CreatePrefabSettingsProvider()
-        {
-            if (IsSettingsAvailable())
-            {
-                var provider = new PrefabSettingsProvider("Preferences/Prefab Mode", SettingsScope.User);
-
-                // Automatically extract all keywords from the Styles.
-                provider.keywords = GetSearchKeywordsFromGUIContentProperties<Styles>();
-                return provider;
-            }
-
-            // Settings Asset doesn't exist yet; no need to display anything in the Settings window.
-            return null;
         }
     }
 }

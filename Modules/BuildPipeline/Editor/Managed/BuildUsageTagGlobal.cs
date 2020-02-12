@@ -22,6 +22,7 @@ namespace UnityEditor.Build.Content
         internal bool m_ForceInstancingKeep;
         internal bool m_ShadowMasksUsed;
         internal bool m_SubtractiveUsed;
+        internal bool m_HybridRendererPackageUsed;
 
         public static BuildUsageTagGlobal operator|(BuildUsageTagGlobal x, BuildUsageTagGlobal y)
         {
@@ -34,6 +35,7 @@ namespace UnityEditor.Build.Content
             results.m_ForceInstancingKeep = x.m_ForceInstancingKeep | y.m_ForceInstancingKeep;
             results.m_ShadowMasksUsed = x.m_ShadowMasksUsed | y.m_ShadowMasksUsed;
             results.m_SubtractiveUsed = x.m_SubtractiveUsed | y.m_SubtractiveUsed;
+            results.m_HybridRendererPackageUsed = x.m_HybridRendererPackageUsed | y.m_HybridRendererPackageUsed;
             return results;
         }
     }

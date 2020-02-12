@@ -13,23 +13,22 @@ namespace UnityEngine.UIElements
 
         public virtual void DispatchEvent(EventBase evt, IPanel panel)
         {
-            IPointerEvent pointerEvent = evt as IPointerEvent;
+            SetBestTargetForEvent(evt, panel);
+            SendEventToTarget(evt);
+            evt.stopDispatch = true;
+        }
 
-            if (pointerEvent == null)
-                return;
-
-            BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-
-            bool shouldRecomputeTopElementUnderPointer = true;
-            if (evt is IPointerEventInternal)
+        static void SendEventToTarget(EventBase evt)
+        {
+            if (evt.target != null)
             {
-                shouldRecomputeTopElementUnderPointer =
-                    ((IPointerEventInternal)pointerEvent).recomputeTopElementUnderPointer;
+                EventDispatchUtilities.PropagateEvent(evt);
             }
+        }
 
-            VisualElement elementUnderPointer = shouldRecomputeTopElementUnderPointer
-                ? basePanel?.Pick(pointerEvent.position)
-                : basePanel?.GetTopElementUnderPointer(pointerEvent.pointerId);
+        static void SetBestTargetForEvent(EventBase evt, IPanel panel)
+        {
+            UpdateElementUnderPointer(evt, panel, out VisualElement elementUnderPointer);
 
             if (evt.target == null && elementUnderPointer != null)
             {
@@ -47,18 +46,30 @@ namespace UnityEngine.UIElements
             {
                 evt.propagateToIMGUI = false;
             }
+        }
+
+        static void UpdateElementUnderPointer(EventBase evt, IPanel panel, out VisualElement elementUnderPointer)
+        {
+            IPointerEvent pointerEvent = evt as IPointerEvent;
+
+            BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
+
+            bool shouldRecomputeTopElementUnderPointer = true;
+            if (evt is IPointerEventInternal)
+            {
+                shouldRecomputeTopElementUnderPointer =
+                    ((IPointerEventInternal)pointerEvent).recomputeTopElementUnderPointer;
+            }
+
+            elementUnderPointer = shouldRecomputeTopElementUnderPointer
+                ? basePanel?.Pick(pointerEvent.position)
+                : basePanel?.GetTopElementUnderPointer(pointerEvent.pointerId);
+
 
             if (basePanel != null && shouldRecomputeTopElementUnderPointer)
             {
                 basePanel.SetElementUnderPointer(elementUnderPointer, evt);
             }
-
-            if (evt.target != null)
-            {
-                EventDispatchUtilities.PropagateEvent(evt);
-            }
-
-            evt.stopDispatch = true;
         }
     }
 }

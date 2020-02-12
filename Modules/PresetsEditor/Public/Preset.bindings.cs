@@ -95,6 +95,9 @@ namespace UnityEditor.Presets
             return null;
         }
 
+        [FreeFunction("GetAllDefaultTypes")]
+        public static extern PresetType[] GetAllDefaultTypes();
+
         [FreeFunction("GetDefaultPresetsForType")]
         public static extern DefaultPreset[] GetDefaultPresetsForType(PresetType type);
 
@@ -113,7 +116,7 @@ namespace UnityEditor.Presets
         {
             var type = preset.GetPresetType();
             var list = GetDefaultPresetsForType(type);
-            var newList = list.Where(d => d.m_Preset != preset);
+            var newList = list.Where(d => d.preset != preset);
             if (newList.Count() != list.Length)
                 SetDefaultPresetsForType(type, newList.ToArray());
         }

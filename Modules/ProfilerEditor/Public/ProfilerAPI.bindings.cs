@@ -267,6 +267,14 @@ namespace UnityEditorInternal
             NewProfilerFrameRecorded?.Invoke(connectionId, newFrameIndex);
         }
 
+        public static event Action profileLoaded;
+
+        [RequiredByNativeCode]
+        static void InvokeProfileLoaded()
+        {
+            profileLoaded?.Invoke();
+        }
+
         [Obsolete("ResetHistory is deprecated, use ClearAllFrames instead.")]
         static public void ResetHistory()
         {

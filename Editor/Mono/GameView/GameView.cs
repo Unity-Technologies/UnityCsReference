@@ -12,6 +12,8 @@ using System.Linq;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEngine.XR;
+using FrameCapture = UnityEngine.Apple.FrameCapture;
+using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
 
 /*
 The main GameView can be in the following states when entering playmode.
@@ -95,6 +97,7 @@ namespace UnityEditor
             public static GUIContent noCameraWarningContextMenuContent = EditorGUIUtility.TrTextContent("Warn if No Cameras Rendering");
             public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
             public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
+            public static GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
             public static GUIContent renderdocContent;
             public static GUIStyle gameViewBackgroundStyle;
 
@@ -104,7 +107,7 @@ namespace UnityEditor
             static Styles()
             {
                 gameViewBackgroundStyle = "GameViewBackground";
-                renderdocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
+                renderdocContent = EditorGUIUtility.TrIconContent("FrameCapture", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         }
 
@@ -473,8 +476,17 @@ namespace UnityEditor
             scaleContent.tooltip = string.Empty;
         }
 
+        private bool ShouldShowMetalFrameCaptureGUI()
+        {
+            return FrameCapture.IsDestinationSupported(FrameCaptureDestination.DevTools)
+                || FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument);
+        }
+
         private void DoToolbarGUI()
         {
+            if (Event.current.isKey || Event.current.type == EventType.Used)
+                return;
+
             GameViewSizes.instance.RefreshStandaloneAndRemoteDefaultSizes();
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
@@ -530,6 +542,12 @@ namespace UnityEditor
                 }
 
                 GUILayout.FlexibleSpace();
+
+                if (ShouldShowMetalFrameCaptureGUI())
+                {
+                    if (GUILayout.Button(Styles.metalFrameCaptureContent, EditorStyles.toolbarButton))
+                        m_Parent.CaptureMetalScene();
+                }
 
                 if (RenderDoc.IsLoaded())
                 {

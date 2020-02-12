@@ -33,12 +33,12 @@ namespace UnityEditor
 
         SerializedProperty m_MaterialImportMode;
 
-        private bool m_HasEmbeddedMaterials = false;
+        private bool m_CanExtractEmbeddedMaterials = false;
 
         class ExternalObjectCache
         {
-            public Material material = null;
             public int propertyIdx = 0;
+            public SerializedProperty property;
         }
 
         class MaterialCache
@@ -130,32 +130,28 @@ namespace UnityEditor
 #pragma warning restore 618
         }
 
-        private bool HasEmbeddedMaterials()
+        bool CanExtractEmbeddedMaterials()
         {
             if (m_Materials.arraySize == 0)
                 return false;
 
-            // if the m_ExternalObjecs map has any unapplied changes, keep the state of the button as is
+            // If the m_ExternalObjects map has any un-applied changes, keep the state of the button as is
             if (m_ExternalObjects.serializedObject.hasModifiedProperties)
-                return m_HasEmbeddedMaterials;
+                return m_CanExtractEmbeddedMaterials;
 
-            m_HasEmbeddedMaterials = true;
+            //Are there any materials that haven't been extracted?
             foreach (var t in m_ExternalObjects.serializedObject.targetObjects)
             {
                 var importer = t as ModelImporter;
                 var externalObjectMap = importer.GetExternalObjectMap();
                 var materialsList = importer.sourceMaterials;
 
-                int remappedMaterialCount = 0;
-                foreach (var entry in externalObjectMap)
-                {
-                    if (entry.Key.type == typeof(Material) && Array.Exists(materialsList, x => x.name == entry.Key.name))
-                        ++remappedMaterialCount;
-                }
-
-                m_HasEmbeddedMaterials = m_HasEmbeddedMaterials && remappedMaterialCount != materialsList.Length;
+                int mappedMaterialCount = externalObjectMap.Count(x => x.Key.type == typeof(Material) && x.Value != null && Array.Exists(materialsList, y => y.name == x.Key.name));
+                if (mappedMaterialCount != materialsList.Length)
+                    return m_CanExtractEmbeddedMaterials = true;
             }
-            return m_HasEmbeddedMaterials;
+
+            return m_CanExtractEmbeddedMaterials = false;
         }
 
         internal override void OnEnable()
@@ -222,9 +218,9 @@ namespace UnityEditor
                 var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectIdx);
 
                 var cachedObject = new ExternalObjectCache();
-                var materialProp = pair.FindPropertyRelative("second");
-                cachedObject.material = materialProp != null ? materialProp.objectReferenceValue as Material : null;
+                cachedObject.property = pair.FindPropertyRelative("second");
                 cachedObject.propertyIdx = externalObjectIdx;
+
                 var externalName = pair.FindPropertyRelative("first.name").stringValue;
                 var externalType = pair.FindPropertyRelative("first.type").stringValue;
 
@@ -333,7 +329,7 @@ namespace UnityEditor
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.PrefixLabel(Styles.Materials);
-                using (new EditorGUI.DisabledScope(!HasEmbeddedMaterials()))
+                using (new EditorGUI.DisabledScope(!CanExtractEmbeddedMaterials()))
                 {
                     if (GUILayout.Button(Styles.ExtractEmbeddedMaterials))
                     {
@@ -346,13 +342,22 @@ namespace UnityEditor
                             // cancel the extraction if the user did not select a folder
                             return false;
                         }
+
                         destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
+
+                        //Where all the required embedded materials are not in the asset database, we need to reimport them
+                        if (!AllEmbeddedMaterialsAreImported())
+                        {
+                            if (EditorUtility.DisplayDialog(L10n.Tr("Are you sure you want to re-extract the Materials?"), L10n.Tr("In order to re-extract the Materials we'll need to reimport the mesh, this might take a while. Do you want to continue?"), L10n.Tr("Yes"), L10n.Tr("No")))
+                                ReimportEmbeddedMaterials();
+                            else
+                                return false;
+                        }
 
                         try
                         {
                             // batch the extraction of the textures
                             AssetDatabase.StartAssetEditing();
-
                             PrefabUtility.ExtractMaterialsFromAsset(targets, destinationPath);
                         }
                         finally
@@ -367,6 +372,47 @@ namespace UnityEditor
             }
 
             return false;
+        }
+
+        public bool AllEmbeddedMaterialsAreImported()
+        {
+            foreach (ModelImporter modelImporter in m_ExternalObjects.serializedObject.targetObjects)
+            {
+                //Find the names of embedded materials - the source materials that are not re-mapped in the externalObjectsCache
+                IEnumerable<string> namesOfEmbeddedMaterials = modelImporter.sourceMaterials
+                    .Where(x => !m_ExternalObjectsCache.Any(y => y.Key.Item1 == x.name && y.Value.property != null && y.Value.property.objectReferenceValue != null))
+                    .Select(x => x.name);
+
+                //Find the names of embedded materials in the AssetDatabase
+                IEnumerable<string> namesOfMaterialsInAssetDatabase = AssetDatabase.LoadAllAssetsAtPath(modelImporter.assetPath)
+                    .Where(x => x.GetType() == typeof(Material))
+                    .Select(x => x.name);
+
+                //Are there any embedded materials that *arent* in the AssetDatabase?
+                if (namesOfEmbeddedMaterials.Except(namesOfMaterialsInAssetDatabase).Any())
+                    return false;
+            }
+
+            return true;
+        }
+
+        public void ReimportEmbeddedMaterials()
+        {
+            //Select any material properties which are marked as "missing"
+            int[] missingMaterialIndexes = m_ExternalObjectsCache.Values.Select((extObj, index) => new { extObj, index })
+                .Where(x => x.extObj.property != null && x.extObj.property.objectReferenceValue == null && x.extObj.property.objectReferenceInstanceIDValue != 0)
+                .Select(x => x.index)
+                .ToArray();
+
+            //Remove missing materials
+            for (int i = missingMaterialIndexes.Length - 1; i >= 0; i--)
+                m_ExternalObjects.DeleteArrayElementAtIndex(missingMaterialIndexes[i]);
+
+            serializedObject.ApplyModifiedProperties();
+
+            //Force a reimport - any materials marked "None" (including former missing Materials), will now be assigned an embedded material
+            AssetImporter assetImporter = (AssetImporter)target;
+            AssetDatabase.ImportAsset(assetImporter.assetPath, ImportAssetOptions.ForceUpdate);
         }
 
         private bool MaterialRemapOptions()
@@ -479,7 +525,7 @@ namespace UnityEditor
                                 Styles.ExternalMaterialSearchHelp[m_MaterialSearch.intValue].text + "\n" +
                                 Styles.ExternalMaterialHelpEnd.text;
                         }
-                        else if (m_Materials.arraySize > 0 && HasEmbeddedMaterials())
+                        else if (m_Materials.arraySize > 0 && CanExtractEmbeddedMaterials())
                         {
                             // we're generating materials inside the prefab
                             materialHelp = Styles.InternalMaterialHelp.text;
@@ -542,52 +588,72 @@ namespace UnityEditor
             if (m_ExternalObjects.arraySize != m_ExternalObjectsCache.Count())
                 ResetValues();
             // The list of material names is immutable, whereas the map of external objects can change based on user actions.
-            // For each material name, map the external object associated with it.
-            // The complexity comes from the fact that we may not have an external object in the map, so we can't make a property out of it
+            // For each material name, map the external object associated with it where one exists.
             for (int materialIdx = 0; materialIdx < m_MaterialsCache.Count; ++materialIdx)
             {
                 var mat = m_MaterialsCache[materialIdx];
 
-                ExternalObjectCache cachedExternalObject;
+                bool hasMatchingCachedObject = m_ExternalObjectsCache.TryGetValue(new Tuple<string, string>(mat.name, mat.type), out var cachedExternalObject) && cachedExternalObject != null;
 
-                GUIContent nameLabel = EditorGUIUtility.TextContent(mat.name);
-                nameLabel.tooltip = mat.name;
-
-                Material material = m_ExternalObjectsCache.TryGetValue(new Tuple<string, string>(mat.name, mat.type), out cachedExternalObject) ? cachedExternalObject.material : null;
-
-                EditorGUI.BeginChangeCheck();
-                material = EditorGUILayout.ObjectField(nameLabel, material, typeof(Material), false) as Material;
-                if (EditorGUI.EndChangeCheck())
+                if (hasMatchingCachedObject)
                 {
-                    if (cachedExternalObject != null)
-                    {
-                        if (material == null)
-                        {
-                            m_ExternalObjects.DeleteArrayElementAtIndex(cachedExternalObject.propertyIdx);
-                        }
-                        else
-                        {
-                            var pair = m_ExternalObjects.GetArrayElementAtIndex(cachedExternalObject.propertyIdx);
-                            pair.FindPropertyRelative("second").objectReferenceValue = material;
-                        }
-                    }
-                    else if (material != null)
-                    {
-                        m_ExternalObjects.arraySize++;
-                        var pair = m_ExternalObjects.GetArrayElementAtIndex(m_ExternalObjects.arraySize - 1);
-                        pair.FindPropertyRelative("first.name").stringValue = mat.name;
-                        pair.FindPropertyRelative("first.type").stringValue = mat.type;
-                        pair.FindPropertyRelative("first.assembly").stringValue = mat.assembly;
-                        pair.FindPropertyRelative("second").objectReferenceValue = material;
-                        // ExternalObjects is serialized as a map, so items are reordered when deserializing.
-                        // We need to update the serializedObject to trigger the reordering before rebuilding the cache.
-                        serializedObject.ApplyModifiedProperties();
-                        serializedObject.Update();
-                    }
-
-                    BuildExternalObjectsCache();
-                    break;
+                    //The material already has a serialized property, so use it!
+                    MaterialPropertyGUI(mat, cachedExternalObject);
                 }
+                else
+                {
+                    //The material doesn't have a serialized property, so it's going to have to draw the GUI a different way!
+                    MaterialPropertyGUI(mat);
+                }
+            }
+        }
+
+        void MaterialPropertyGUI(MaterialCache materialCache, ExternalObjectCache externalObjectCache)
+        {
+            GUIContent nameLabel = EditorGUIUtility.TextContent(materialCache.name);
+            nameLabel.tooltip = materialCache.name;
+
+            EditorGUI.BeginChangeCheck();
+
+            SerializedProperty property = externalObjectCache.property;
+            EditorGUILayout.PropertyField(property, nameLabel, false);
+            Material material = property.objectReferenceValue != null ? property.objectReferenceValue as Material : null;
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (material == null)
+                    m_ExternalObjects.DeleteArrayElementAtIndex(externalObjectCache.propertyIdx);
+                else
+                {
+                    var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectCache.propertyIdx);
+                    pair.FindPropertyRelative("second").objectReferenceValue = material;
+                }
+
+                BuildExternalObjectsCache();
+            }
+        }
+
+        void MaterialPropertyGUI(MaterialCache materialCache)
+        {
+            GUIContent nameLabel = EditorGUIUtility.TextContent(materialCache.name);
+            nameLabel.tooltip = materialCache.name;
+
+            EditorGUI.BeginChangeCheck();
+            Material material = EditorGUILayout.ObjectField(nameLabel, null, typeof(Material), false) as Material;
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_ExternalObjects.arraySize++;
+                var pair = m_ExternalObjects.GetArrayElementAtIndex(m_ExternalObjects.arraySize - 1);
+                pair.FindPropertyRelative("first.name").stringValue = materialCache.name;
+                pair.FindPropertyRelative("first.type").stringValue = materialCache.type;
+                pair.FindPropertyRelative("first.assembly").stringValue = materialCache.assembly;
+                pair.FindPropertyRelative("second").objectReferenceValue = material;
+
+                // ExternalObjects is serialized as a map, so items are reordered when deserializing.
+                // We need to update the serializedObject to trigger the reordering before rebuilding the cache.
+                serializedObject.ApplyModifiedProperties();
+                serializedObject.Update();
+
+                BuildExternalObjectsCache();
             }
         }
     }

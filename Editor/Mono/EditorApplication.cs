@@ -12,6 +12,7 @@ using UnityEngine.Scripting;
 using UnityEditorInternal;
 using UnityEngine.TestTools;
 using Unity.Profiling;
+using UnityEngine.Profiling;
 
 namespace UnityEditor
 {
@@ -302,17 +303,32 @@ namespace UnityEditor
             return desc.title;
         }
 
+        static int m_UpdateHash;
+        static Delegate[] m_UpdateInvocationList;
+
         static void Internal_CallUpdateFunctions()
         {
             if (update != null)
             {
-                var invocationList = update.GetInvocationList();
-                foreach (var cb in invocationList)
+                if (Profiler.enabled && !ProfilerDriver.deepProfiling)
                 {
-                    var marker = new ProfilerMarker(cb.Method.Name);
-                    marker.Begin();
-                    cb.DynamicInvoke();
-                    marker.End();
+                    var currentUpdateHash = update.GetHashCode();
+                    if (currentUpdateHash != m_UpdateHash)
+                    {
+                        m_UpdateInvocationList = update.GetInvocationList();
+                        m_UpdateHash = currentUpdateHash;
+                    }
+                    foreach (var cb in m_UpdateInvocationList)
+                    {
+                        var marker = new ProfilerMarker(cb.Method.Name);
+                        marker.Begin();
+                        cb.DynamicInvoke(null);
+                        marker.End();
+                    }
+                }
+                else
+                {
+                    update.Invoke();
                 }
             }
         }

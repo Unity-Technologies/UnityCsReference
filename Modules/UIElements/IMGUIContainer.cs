@@ -194,7 +194,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, bool canAffectFocus = true)
+        private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, Action onGUIHandler, bool canAffectFocus = true)
         {
             // Extra checks are needed here because client code might have changed the IMGUIContainer
             // since we enter HandleIMGUIEvent()
@@ -477,7 +477,7 @@ namespace UnityEngine.UIElements
             m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
             m_CachedTransform = offset * worldTransform;
 
-            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, true);
+            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
         }
 
         internal bool SendEventToIMGUI(EventBase evt, bool canAffectFocus = true)
@@ -521,7 +521,7 @@ namespace UnityEngine.UIElements
 
                     if (sendPointerEvent)
                     {
-                        bool result = SendEventToIMGUIPrivate(evt, canAffectFocus);
+                        bool result = SendEventToIMGUIRaw(evt, canAffectFocus);
                         evt.imguiEvent.type = originalEventType;
                         return result;
                     }
@@ -530,10 +530,10 @@ namespace UnityEngine.UIElements
                 return false;
             }
             else
-                return SendEventToIMGUIPrivate(evt, canAffectFocus);
+                return SendEventToIMGUIRaw(evt, canAffectFocus);
         }
 
-        private bool SendEventToIMGUIPrivate(EventBase evt, bool canAffectFocus)
+        internal bool SendEventToIMGUIRaw(EventBase evt, bool canAffectFocus)
         {
             if (!IsRelevantEvent(evt))
                 return false;
@@ -575,12 +575,17 @@ namespace UnityEngine.UIElements
 
         private bool HandleIMGUIEvent(Event e, bool canAffectFocus)
         {
-            GetCurrentTransformAndClip(this, e, out m_CachedTransform, out m_CachedClippingRect);
-
-            return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, canAffectFocus);
+            return HandleIMGUIEvent(e, onGUIHandler, canAffectFocus);
         }
 
-        private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, bool canAffectFocus)
+        internal bool HandleIMGUIEvent(Event e, Action onGUIHandler, bool canAffectFocus)
+        {
+            GetCurrentTransformAndClip(this, e, out m_CachedTransform, out m_CachedClippingRect);
+
+            return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, onGUIHandler, canAffectFocus);
+        }
+
+        private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, Action onGUIHandler, bool canAffectFocus)
         {
             if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.rawType) == false)
             {
@@ -591,10 +596,10 @@ namespace UnityEngine.UIElements
             e.type = EventType.Layout;
 
             // layout event
-            DoOnGUI(e, worldTransform, clippingRect, false, layout, canAffectFocus);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout, onGUIHandler, canAffectFocus);
             // the actual event
             e.type = originalEventType;
-            DoOnGUI(e, worldTransform, clippingRect, false, layout, canAffectFocus);
+            DoOnGUI(e, worldTransform, clippingRect, false, layout, onGUIHandler, canAffectFocus);
 
             if (newKeyboardFocusControlID > 0)
             {
@@ -710,7 +715,7 @@ namespace UnityEngine.UIElements
                 // pass Rect.zero for the clipping rect as this eventually sets the
                 // global GUIClip.visibleRect which IMGUI code could be using to influence
                 // size. See case 1111923 and 1158089.
-                DoOnGUI(evt, m_CachedTransform, m_CachedClippingRect, true, layoutRect, true);
+                DoOnGUI(evt, m_CachedTransform, m_CachedClippingRect, true, layoutRect, onGUIHandler, true);
                 measuredWidth = layoutMeasuredWidth;
                 measuredHeight = layoutMeasuredHeight;
             }

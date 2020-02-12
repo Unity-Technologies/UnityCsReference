@@ -624,7 +624,7 @@ namespace UnityEditor
             AssetPreview.DeletePreviewTextureManagerByID(GetAssetPreviewManagerID());
         }
 
-        void Repaint()
+        public void Repaint()
         {
             if (m_RepaintWantedCallback != null)
                 m_RepaintWantedCallback();
@@ -762,7 +762,14 @@ namespace UnityEditor
             List<string> guids;
             m_LocalAssets.GetAssetReferences(out instanceIDs, out guids);
             if (instanceIDs.Count != 0)
-                InternalEditorUtility.EnsureInstanceIds(instanceIDs, guids, 0, instanceIDs.Count - 1);
+            {
+                var selectedInstanceIDs = InternalEditorUtility.TryGetInstanceIds(instanceIDs, guids, 0, instanceIDs.Count - 1);
+                if (selectedInstanceIDs == null)
+                {
+                    Debug.Log("Cannot select all because some assets being selected are in progress of being imported");
+                    return;
+                }
+            }
             SetSelection(instanceIDs.ToArray(), false);
         }
 
@@ -1604,7 +1611,7 @@ namespace UnityEditor
                     {
                         if (icon)
                         {
-                            ObjectListArea.LocalGroup.DrawIconAndLabel(r, res, label, icon, false, false);
+                            m_LocalAssets.DrawIconAndLabel(r, res, label, icon, false, false);
                         }
                     };
                 }

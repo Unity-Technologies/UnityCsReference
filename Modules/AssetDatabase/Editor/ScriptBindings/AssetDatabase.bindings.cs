@@ -58,6 +58,8 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/ScriptBindings/AssetDatabase.bindings.h")]
+    [NativeHeader("Runtime/Core/PreventExecutionInState.h")]
+    [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabasePreventExecution.h")]
     [NativeHeader("Editor/Src/PackageUtility.h")]
     [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
     [NativeHeader("Editor/Src/Application/ApplicationFunctions.h")]

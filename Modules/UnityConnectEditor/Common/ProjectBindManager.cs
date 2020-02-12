@@ -313,7 +313,7 @@ namespace UnityEditor.Connect
                 return;
             }
 
-            if (m_CurrentRequest.result != UnityWebRequest.Result.ProtocolError)
+            if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_CurrentRequest))
             {
                 var jsonParser = new JSONParser(m_CurrentRequest.downloadHandler.text);
                 var json = jsonParser.Parse();
@@ -442,7 +442,7 @@ namespace UnityEditor.Connect
                 {
                     try
                     {
-                        if (getProjectsRequest.result != UnityWebRequest.Result.ProtocolError)
+                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getProjectsRequest))
                         {
                             var jsonParser = new JSONParser(getProjectsRequest.downloadHandler.text);
                             var json = jsonParser.Parse();
@@ -541,7 +541,7 @@ namespace UnityEditor.Connect
                 {
                     try
                     {
-                        if (getOrganizationsRequest.result != UnityWebRequest.Result.ProtocolError)
+                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getOrganizationsRequest))
                         {
                             try
                             {
@@ -636,7 +636,7 @@ namespace UnityEditor.Connect
                 {
                     try
                     {
-                        if (getOrganizationsRequest.result != UnityWebRequest.Result.ProtocolError)
+                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getOrganizationsRequest))
                         {
                             var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
                             var json = jsonParser.Parse();

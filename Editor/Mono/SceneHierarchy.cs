@@ -157,7 +157,7 @@ namespace UnityEditor
             }
         }
 
-        public bool hasSortMethods { get { return m_SortingObjects.Count > 1; } }
+        public bool hasSortMethods { get { return m_SortingObjects != null && m_SortingObjects.Count > 1; } }
 
         public int treeViewKeyboardControlID { get { return m_TreeViewKeyboardControlID; } }
 
@@ -239,6 +239,9 @@ namespace UnityEditor
         {
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
+
+            if (m_SortingObjects == null)
+                SetUpSortMethodLists();
 
             m_TreeView = new TreeViewController(m_EditorWindow, m_TreeViewState);
             m_TreeView.itemDoubleClickedCallback += TreeViewItemDoubleClicked;
@@ -1783,6 +1786,14 @@ namespace UnityEditor
         public void CollapseAll()
         {
             treeViewState.expandedIDs.Clear();
+            ReloadData();
+        }
+
+        public void ExpandAll()
+        {
+            int[] instanceIDs = treeView.GetRowIDs();
+            foreach (var id in instanceIDs)
+                SetExpandedRecursive(id, true);
             ReloadData();
         }
 

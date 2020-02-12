@@ -19,6 +19,8 @@ namespace UnityEditor.Connect
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.CollabService;
         public override string packageName { get; }
+        public override string serviceFlagName { get; }
+        public override bool shouldSyncOnProjectRebind => true;
 
         static readonly CollabService k_Instance;
 
@@ -57,6 +59,7 @@ namespace UnityEditor.Connect
             projectSettingsPath = "Project/Services/Collaborate";
             displayToggle = true;
             packageName = "com.unity.collab-proxy";
+            serviceFlagName = "collab";
             ServicesRepository.AddService(this);
         }
     }

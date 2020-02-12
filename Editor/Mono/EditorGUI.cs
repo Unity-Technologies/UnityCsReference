@@ -19,7 +19,7 @@ using UnityEditor.Build;
 using UnityEditor.StyleSheets;
 using UnityEditor.VersionControl;
 using UnityEngine.Internal;
-using UnityEngine.Experimental.Rendering;
+using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 
 namespace UnityEditor
 {
@@ -111,6 +111,7 @@ namespace UnityEditor
         internal const int kInspTitlebarIconWidth = 16;
         internal const int kInspTitlebarFoldoutIconWidth = 13;
         internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 21f);
+        internal const int kTabButtonHeight = 22;
         private const string kEnabledPropertyName = "m_Enabled";
         private const string k_MultiEditValueString = "<multi>";
         private const float kDropDownArrowMargin = 2;
@@ -2529,7 +2530,15 @@ namespace UnityEditor
                         false
                     );
                 }
+            }
 
+            // Add copy/paste clipboard operations if available (the entries themselves
+            // will check for GUI enablement; e.g. Copy should be there even for disabled
+            // GUI but Paste should not).
+            ClipboardContextMenu.SetupPropertyCopyPaste(propertyWithPath, menu: pm, evt: null);
+
+            if (GUI.enabled)
+            {
                 // If property is an element in an array, show duplicate and delete menu options
                 if (property.propertyPath.LastIndexOf(']') == property.propertyPath.Length - 1)
                 {
@@ -4572,7 +4581,7 @@ namespace UnityEditor
                                 GUIUtility.keyboardControl = id;
 
                                 var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
-                                var enabled = new[] {true, wasEnabled && ColorClipboard.HasColor()};
+                                var enabled = new[] {true, wasEnabled && Clipboard.hasColor};
                                 var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
@@ -4690,19 +4699,21 @@ namespace UnityEditor
                                 HandleUtility.Repaint();
                                 return ColorPicker.color;
                             case EventCommandNames.Copy:
-                                ColorClipboard.SetColor(value);
+                                Clipboard.colorValue = value;
                                 evt.Use();
                                 break;
 
                             case EventCommandNames.Paste:
-                                Color colorFromClipboard;
-                                if (ColorClipboard.TryGetColor(hdr, out colorFromClipboard))
+                                if (Clipboard.hasColor)
                                 {
+                                    Color pasted = Clipboard.colorValue;
+                                    if (!hdr && pasted.maxColorComponent > 1f)
+                                        pasted = pasted.RGBMultiplied(1f / pasted.maxColorComponent);
                                     // Do not change alpha if color field is not showing alpha
                                     if (!showAlpha)
-                                        colorFromClipboard.a = origColor.a;
+                                        pasted.a = origColor.a;
 
-                                    origColor = colorFromClipboard;
+                                    origColor = pasted;
 
                                     GUI.changed = true;
                                     evt.Use();
@@ -5784,7 +5795,7 @@ namespace UnityEditor
         internal static bool UseVTMaterial(Texture texture)
         {
             Texture2D tex2d = texture as Texture2D;
-            int tileSize = VirtualTexturing.tileSize;
+            int tileSize = VirtualTexturing.EditorHelpers.tileSize;
             return PlayerSettings.GetVirtualTexturingSupportEnabled() && tex2d != null && tex2d.vtOnly && tex2d.width > tileSize && tex2d.height > tileSize;
         }
 
@@ -6046,28 +6057,42 @@ namespace UnityEditor
 
         private static void DoPropertyFieldKeyboardHandling(SerializedProperty property)
         {
-            // Delete & Duplicate commands
-            if (Event.current.type == EventType.ExecuteCommand || Event.current.type == EventType.ValidateCommand)
-            {
-                if (GUIUtility.keyboardControl == EditorGUIUtility.s_LastControlID && (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete))
-                {
-                    if (Event.current.type == EventType.ExecuteCommand)
-                    {
-                        // Wait with deleting the property until the property stack is empty. See EndProperty.
-                        s_PendingPropertyDelete = property.Copy();
-                    }
-                    Event.current.Use();
-                }
-                if (GUIUtility.keyboardControl == EditorGUIUtility.s_LastControlID && Event.current.commandName == EventCommandNames.Duplicate)
-                {
-                    if (Event.current.type == EventType.ExecuteCommand)
-                    {
-                        property.DuplicateCommand();
-                    }
-                    Event.current.Use();
-                }
-            }
             s_PendingPropertyKeyboardHandling = null;
+
+            // Only interested in processing commands if our field has keyboard focus
+            if (GUIUtility.keyboardControl != EditorGUIUtility.s_LastControlID)
+                return;
+
+            var evt = Event.current;
+
+            // Only interested in validate/execute keyboard shortcut commands
+            if (evt.type != EventType.ExecuteCommand && evt.type != EventType.ValidateCommand)
+                return;
+
+            var isExecute = Event.current.type == EventType.ExecuteCommand;
+
+            // Delete
+            if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
+            {
+                if (isExecute)
+                {
+                    // Wait with deleting the property until the property stack is empty. See EndProperty.
+                    s_PendingPropertyDelete = property.Copy();
+                }
+                evt.Use();
+            }
+            // Duplicate
+            if (evt.commandName == EventCommandNames.Duplicate)
+            {
+                if (isExecute)
+                    property.DuplicateCommand();
+                evt.Use();
+            }
+            // Copy & Paste
+            if (evt.commandName == EventCommandNames.Copy || evt.commandName == EventCommandNames.Paste)
+            {
+                ClipboardContextMenu.SetupPropertyCopyPaste(property, menu: null, evt: evt);
+            }
         }
 
         // Make a field for layer masks.
@@ -6266,15 +6291,15 @@ namespace UnityEditor
                     int fallbackMipLevel = (int)Math.Ceiling(Math.Log(factor, 2));
 
                     if (fallbackMipLevel > (int)mipLevel)
-                        VirtualTexturing.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), fallbackMipLevel, 2); //make sure the 128x128 mip is also requested to always have a fallback. Needed for mini thumbnails
+                        VirtualTexturing.System.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), fallbackMipLevel, 2); //make sure the 128x128 mip is also requested to always have a fallback. Needed for mini thumbnails
                 }
 
                 if (mipLevel >= 0) //otherwise we don't know what mip will be sampled in the shader
                 {
-                    VirtualTexturing.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
+                    VirtualTexturing.System.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
                 }
 
-                VirtualTexturing.UpdateSystem();
+                VirtualTexturing.System.Update();
             }
         }
 
@@ -7913,7 +7938,6 @@ namespace UnityEditor
         static GUIStyle s_TabFirst;
         static GUIStyle s_TabMiddle;
         static GUIStyle s_TabLast;
-        const float kTabButtonHeight = 22;
 
         [ExcludeFromDocs]
         public static bool Foldout(bool foldout, string content)
@@ -10125,7 +10149,7 @@ namespace UnityEditor
             float tabWidth = rect.width / tabCount;
             int left = Mathf.RoundToInt(tabIndex * tabWidth);
             int right = Mathf.RoundToInt((tabIndex + 1) * tabWidth);
-            return new Rect(rect.x + left, rect.y, right - left, kTabButtonHeight);
+            return new Rect(rect.x + left, rect.y, right - left, EditorGUI.kTabButtonHeight);
         }
 
         internal static int BeginPlatformGrouping(BuildPlatform[] platforms, GUIContent defaultTab, GUIStyle style)
@@ -10180,7 +10204,7 @@ namespace UnityEditor
             }
 
             // GUILayout.Space doesn't expand to available width, so use GetRect instead
-            GUILayoutUtility.GetRect(10, kTabButtonHeight);
+            GUILayoutUtility.GetRect(10, EditorGUI.kTabButtonHeight);
 
             GUI.enabled = tempEnabled;
 

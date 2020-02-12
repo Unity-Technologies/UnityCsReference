@@ -255,7 +255,6 @@ namespace UnityEditor
             public readonly GUIContent seamlessCubemap = EditorGUIUtility.TrTextContent("Fixup Edge Seams", "Enable if this texture is used for glossy reflections.");
             public readonly GUIContent textureFormat = EditorGUIUtility.TrTextContent("Format");
 
-            public readonly GUIContent defaultPlatform = EditorGUIUtility.TrTextContent("Default");
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
@@ -302,15 +301,6 @@ namespace UnityEditor
             public readonly GUIContent npot = EditorGUIUtility.TrTextContent("Non-Power of 2", "How non-power-of-two textures are scaled on import.");
             public readonly GUIContent generateCubemap = EditorGUIUtility.TrTextContent("Generate Cubemap");
 
-            public readonly GUIContent compressionQuality = EditorGUIUtility.TrTextContent("Compressor Quality");
-            public readonly GUIContent compressionQualitySlider = EditorGUIUtility.TrTextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
-            public readonly GUIContent[] mobileCompressionQualityOptions =
-            {
-                EditorGUIUtility.TrTextContent("Fast"),
-                EditorGUIUtility.TrTextContent("Normal"),
-                EditorGUIUtility.TrTextContent("Best")
-            };
-
             public readonly GUIContent spriteMode = EditorGUIUtility.TrTextContent("Sprite Mode");
             public readonly GUIContent[] spriteModeOptions =
             {
@@ -345,9 +335,6 @@ namespace UnityEditor
             public readonly GUIContent spriteGenerateFallbackPhysicsShape = EditorGUIUtility.TrTextContent("Generate Physics Shape", "Generates a default physics shape from the outline of the Sprite/s when a physics shape has not been set in the Sprite Editor.");
 
             public readonly GUIContent alphaIsTransparency = EditorGUIUtility.TrTextContent("Alpha Is Transparency", "If the provided alpha channel is transparency, enable this to pre-filter the color to avoid texture filtering artifacts. This is not supported for HDR textures.");
-            public readonly GUIContent useAlphaSplitLabel = EditorGUIUtility.TrTextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
-
-            public readonly GUIContent crunchedCompression = EditorGUIUtility.TrTextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.");
 
             public readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
@@ -974,11 +961,8 @@ namespace UnityEditor
             m_ShowGenericSpriteSettings.target = (m_SpriteMode.intValue != 0);
             if (EditorGUILayout.BeginFadeGroup(m_ShowGenericSpriteSettings.faded))
             {
-                if (EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOn ||
-                    EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnly)
-                {
+                using (new EditorGUI.DisabledScope(true))
                     EditorGUILayout.PropertyField(m_SpritePackingTag, s_Styles.spritePackingTag);
-                }
 
                 EditorGUILayout.PropertyField(m_SpritePixelsToUnits, s_Styles.spritePixelsPerUnit);
 
@@ -1102,7 +1086,7 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
 
             if (EditorGUI.EndChangeCheck())
-                SyncPlatformSettings();
+                BaseTextureImportPlatformSettings.SyncPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
         }
 
         bool m_ShowPerAxisWrapModes = false;
@@ -1213,7 +1197,7 @@ namespace UnityEditor
 
                 SetSerializedPropertySettings(settings);
 
-                SyncPlatformSettings();
+                BaseTextureImportPlatformSettings.SyncPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
                 ApplySettingsToTexture();
             }
 
@@ -1281,7 +1265,7 @@ namespace UnityEditor
             // Filter mode, aniso, and wrap mode GUI
             TextureSettingsGUI();
 
-            ShowPlatformSpecificSettings();
+            BaseTextureImportPlatformSettings.ShowPlatformSpecificSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
 
             serializedObject.ApplyModifiedProperties();
 
@@ -1395,12 +1379,6 @@ namespace UnityEditor
             }
         }
 
-        void SyncPlatformSettings()
-        {
-            foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
-                ps.Sync();
-        }
-
         internal static string[] BuildTextureStrings(int[] texFormatValues)
         {
             string[] retval = new string[texFormatValues.Length];
@@ -1417,43 +1395,6 @@ namespace UnityEditor
             return ArrayUtility.Contains<TextureImporterFormat>(TextureImporterInspector.kFormatsWithCompressionSettings, format);
         }
 
-        protected void ShowPlatformSpecificSettings()
-        {
-            BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms().ToArray();
-            GUILayout.Space(10);
-            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, s_Styles.defaultPlatform);
-            TextureImportPlatformSettings realPS = m_PlatformSettings[shownTextureFormatPage + 1];
-
-            if (!realPS.isDefault)
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = realPS.overriddenIsDifferent;
-
-                string title = "Override for " + validPlatforms[shownTextureFormatPage].title.text;
-                bool newOverride = EditorGUILayout.ToggleLeft(title, realPS.overridden);
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    realPS.SetOverriddenForAll(newOverride);
-                    SyncPlatformSettings();
-                }
-            }
-
-            // Disable size and format GUI if not overwritten for all objects
-            bool notAllOverriddenForThisPlatform = (!realPS.isDefault && !realPS.allAreOverridden);
-            using (new EditorGUI.DisabledScope(notAllOverriddenForThisPlatform))
-            {
-                // acquire the platform support module for this platform, and present the appropriate UI
-                ITextureImportSettingsExtension textureSettingsExtension = ModuleManager.GetTextureImportSettingsExtension(realPS.m_Target);
-                textureSettingsExtension.ShowImportSettings(this, realPS);
-
-                //just do this once, regardless of whether things changed
-                SyncPlatformSettings();
-            }
-
-            EditorGUILayout.EndPlatformGrouping();
-        }
-
         private static bool IsPowerOfTwo(int f)
         {
             return ((f & (f - 1)) == 0);
@@ -1463,21 +1404,15 @@ namespace UnityEditor
         {
             foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
             {
-                if (ps.maxTextureSize > TextureImporter.MaxTextureSizeAllowedForReadable)
+                if (ps.model.platformTextureSettings.maxTextureSize > TextureImporter.MaxTextureSizeAllowedForReadable)
                     return false;
             }
             return true;
         }
 
-        public static BuildPlatform[] GetBuildPlayerValidPlatforms()
-        {
-            List<BuildPlatform> validPlatforms = BuildPlatforms.instance.GetValidPlatforms();
-            return validPlatforms.ToArray();
-        }
-
         public virtual void BuildTargetList()
         {
-            BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
+            BuildPlatform[] validPlatforms = BaseTextureImportPlatformSettings.GetBuildPlayerValidPlatforms();
 
             m_PlatformSettings = new List<TextureImportPlatformSettings>();
             m_PlatformSettings.Add(new TextureImportPlatformSettings(s_DefaultPlatformName, BuildTarget.StandaloneWindows, this));
@@ -1493,7 +1428,7 @@ namespace UnityEditor
 
             foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
             {
-                if (ps.HasChanged())
+                if (ps.model.HasChanged())
                     return true;
             }
 
@@ -1514,9 +1449,7 @@ namespace UnityEditor
         protected override void Apply()
         {
             base.Apply();
-            SyncPlatformSettings();
-            foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
-                ps.Apply();
+            BaseTextureImportPlatformSettings.ApplyPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
         }
     }
 }

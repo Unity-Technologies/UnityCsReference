@@ -17,25 +17,25 @@ namespace UnityEditor
     {
         public readonly Label nameLabel;
         public readonly Label progressLabel;
+        public readonly VisualElement descriptionIcon;
         public readonly Label descriptionLabel;
         public readonly Label elapsedTimeLabel;
         public readonly ProgressBar progressBar;
         public readonly Button cancelButton;
-        public readonly Button deleteButton;
         public VisualElement progress;
         public bool isIndefinite;
         public bool isResponding;
         public float lastElapsedTime;
 
-        public DisplayedTask(Label name, Label progress, Label description, Label elapsedTime, ProgressBar progressBar, Button cancelButton, Button deleteButton)
+        public DisplayedTask(Label name, Label progress, VisualElement descriptionIcon, Label description, Label elapsedTime, ProgressBar progressBar, Button cancelButton)
         {
             nameLabel = name;
             progressLabel = progress;
             this.elapsedTimeLabel = elapsedTime;
+            this.descriptionIcon = descriptionIcon;
             this.descriptionLabel = description;
             this.progressBar = progressBar;
             this.cancelButton = cancelButton;
-            this.deleteButton = deleteButton;
             this.progress = this.progressBar.Q(null, "unity-progress-bar__progress");
             isIndefinite = false;
             isResponding = true;
@@ -113,7 +113,7 @@ namespace UnityEditor
 
             var task = new VisualElement() { name = "Task" };
             rootVisualElement.Add(task);
-            var horizontalLayout = new VisualElement();
+            var horizontalLayout = new VisualElement() { name = "TaskOnly" };
             horizontalLayout.style.flexDirection = FlexDirection.Row;
             task.Add(horizontalLayout);
             m_DetailsFoldoutToggle = new Toggle() { visible = false };
@@ -300,19 +300,24 @@ namespace UnityEditor
 
             if (dataSource.status == Progress.Status.Canceled)
             {
-                task.descriptionLabel.text += " (Cancelled)";
-                UpdateProgressCompletion(task, ProgressWindow.kCanceledIcon);
+                task.descriptionLabel.text = "Cancelled";
+                UpdateStatusIcon(task, ProgressWindow.kCanceledIcon);
+                task.progress.AddToClassList("unity-progress-bar__progress__inactive");
             }
             else if (dataSource.status == Progress.Status.Failed)
             {
-                task.descriptionLabel.text += " (Failed)";
-                UpdateProgressCompletion(task, ProgressWindow.kFailedIcon);
+                if (string.IsNullOrEmpty(task.descriptionLabel.text))
+                    task.descriptionLabel.text = "Failed";
+                UpdateStatusIcon(task, ProgressWindow.kFailedIcon);
+                task.progress.AddToClassList("unity-progress-bar__progress__inactive");
             }
             else if (dataSource.status == Progress.Status.Succeeded)
             {
+                if (string.IsNullOrEmpty(task.descriptionLabel.text))
+                    task.descriptionLabel.text = "Done";
                 task.progressBar.value = 100;
                 task.SetProgressStyleFull(true);
-                UpdateProgressCompletion(task, ProgressWindow.kSuccessIcon);
+                UpdateStatusIcon(task, ProgressWindow.kSuccessIcon);
                 task.progressLabel.style.unityBackgroundImageTintColor = new StyleColor(Color.green);
 
                 // Update running time to force elapsed time to show when the task is set to show ETA
@@ -324,18 +329,16 @@ namespace UnityEditor
                 }
             }
 
-            task.deleteButton.style.display = !dataSource.running ? DisplayStyle.Flex : DisplayStyle.None;
             task.cancelButton.style.display = dataSource.running ? DisplayStyle.Flex : DisplayStyle.None;
             task.cancelButton.visible = dataSource.cancellable;
         }
 
-        private static void UpdateProgressCompletion(DisplayedTask task, string iconName)
+        private static void UpdateStatusIcon(DisplayedTask task, string iconName)
         {
-            task.progressLabel.style.backgroundImage = EditorGUIUtility.LoadIcon(iconName);
-            task.progressLabel.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
-            task.progressLabel.text = "";
-            task.progressLabel.style.width = 30;
-            task.progressLabel.style.height = ProgressWindow.kIconSize;
+            task.descriptionIcon.style.backgroundImage = EditorGUIUtility.LoadIcon(iconName);
+            task.descriptionIcon.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+            task.descriptionIcon.style.height = ProgressWindow.kIconSize;
+            task.descriptionIcon.style.width = ProgressWindow.kIconSize;
         }
 
         private void ToggleDetailsFoldout(ChangeEvent<bool> evt)
@@ -360,30 +363,25 @@ namespace UnityEditor
             var displayedTask = new DisplayedTask(
                 parentElement.Q<Label>("BackgroundTaskNameLabel"),
                 parentElement.Q<Label>("ProgressionLabel"),
+                parentElement.Q<VisualElement>("BackgroundTaskStatusIcon"),
                 parentElement.Q<Label>("BackgroundTaskDescriptionLabel"),
                 parentElement.Q<Label>("BackgroundTaskElapsedTimeLabel"),
                 parentElement.Q<ProgressBar>("ProgressBar"),
-                parentElement.Q<Button>("CancelButton"),
-                parentElement.Q<Button>("DeleteButton")
+                parentElement.Q<Button>("CancelButton")
             );
             Assert.IsNotNull(displayedTask.nameLabel);
+            Assert.IsNotNull(displayedTask.descriptionIcon);
             Assert.IsNotNull(displayedTask.descriptionLabel);
             Assert.IsNotNull(displayedTask.elapsedTimeLabel);
             Assert.IsNotNull(displayedTask.progressLabel);
             Assert.IsNotNull(displayedTask.progressBar);
             Assert.IsNotNull(displayedTask.cancelButton);
-            Assert.IsNotNull(displayedTask.deleteButton);
 
             displayedTask.cancelButton.RemoveFromClassList("unity-text-element");
             displayedTask.cancelButton.RemoveFromClassList("unity-button");
-            displayedTask.deleteButton.RemoveFromClassList("unity-text-element");
-            displayedTask.deleteButton.RemoveFromClassList("unity-button");
 
             displayedTask.cancelButton.userData = progressItem;
             displayedTask.cancelButton.clickable.clickedWithEventInfo += CancelButtonClicked;
-
-            displayedTask.deleteButton.userData = progressItem;
-            displayedTask.deleteButton.clickable.clickedWithEventInfo += DeleteButtonClicked;
 
             UpdateDisplay(displayedTask, progressItem);
             UpdateResponsiveness(displayedTask, progressItem);
@@ -407,16 +405,6 @@ namespace UnityEditor
         private void OnCancelled()
         {
             UpdateDisplay(m_MainTask, dataSource);
-        }
-
-        private static void DeleteButtonClicked(EventBase obj)
-        {
-            var sender = obj.target as Button;
-            var ds = sender?.userData as Progress.Item;
-            if (ds != null)
-            {
-                Progress.Remove(ds.id);
-            }
         }
 
         private static string FormatRemainingTime(TimeSpan eta)

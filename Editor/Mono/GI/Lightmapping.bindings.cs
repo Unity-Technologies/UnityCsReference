@@ -661,27 +661,49 @@ namespace UnityEditor.Experimental
         }
 
         [FreeFunction]
-        internal unsafe static extern bool GetAdditionalBakedProbes(int id, void* outBakedProbeSH, void* outBakedProbeValidity, int outBakedProbeCount);
+        internal unsafe static extern bool GetAdditionalBakedProbes(int id, void* outBakedProbeSH, void* outBakedProbeValidity, void* outBakedProbeOctahedralDepth, int outBakedProbeCount);
 
+        [Obsolete("Please use the new GetAdditionalBakedProbes with added octahedral depth map data.", false)]
         public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity)
         {
+            const int octahedralDepthMapTexelCount = 64; // 8*8
+            var outBakedProbeOctahedralDepth = new NativeArray<float>(outBakedProbeSH.Length * octahedralDepthMapTexelCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            bool success = GetAdditionalBakedProbes(id, outBakedProbeSH, outBakedProbeValidity, outBakedProbeOctahedralDepth);
+            outBakedProbeOctahedralDepth.Dispose();
+            return success;
+        }
+
+        public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity, NativeArray<float> outBakedProbeOctahedralDepth)
+        {
             if (outBakedProbeSH == null || !outBakedProbeSH.IsCreated ||
-                outBakedProbeValidity == null || !outBakedProbeValidity.IsCreated)
+                outBakedProbeValidity == null || !outBakedProbeValidity.IsCreated ||
+                outBakedProbeOctahedralDepth == null || !outBakedProbeOctahedralDepth.IsCreated)
             {
                 Debug.LogError("Output arrays need to be properly initialized.");
                 return false;
             }
 
-            if (outBakedProbeSH.Length != outBakedProbeValidity.Length)
+            const int octahedralDepthMapTexelCount = 64; // 8*8
+
+            int numEntries = outBakedProbeSH.Length;
+
+            if (outBakedProbeOctahedralDepth.Length != numEntries * octahedralDepthMapTexelCount)
             {
-                Debug.LogError("Both output arrays must have equal size.");
+                Debug.LogError("Octahedral array must provide " + numEntries * octahedralDepthMapTexelCount + " floats.");
+                return false;
+            }
+
+            if (outBakedProbeValidity.Length != numEntries)
+            {
+                Debug.LogError("All output arrays must have equal size.");
                 return false;
             }
 
             void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeSH);
             void* validityPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeValidity);
+            void* octahedralDepthPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeOctahedralDepth);
 
-            return GetAdditionalBakedProbes(id, shPtr, validityPtr, outBakedProbeSH.Length);
+            return GetAdditionalBakedProbes(id, shPtr, validityPtr, octahedralDepthPtr, outBakedProbeSH.Length);
         }
 
         [FreeFunction]

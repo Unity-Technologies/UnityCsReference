@@ -16,6 +16,13 @@ using System.Collections.Generic;
 namespace UnityEngine.VFX
 {
     [UsedByNativeCode]
+    public struct VFXExposedProperty
+    {
+        public string name;
+        public Type type;
+    }
+
+    [UsedByNativeCode]
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
     [NativeHeader("Modules/VFX/Public/VisualEffectAsset.h")]
     [NativeHeader("VFXScriptingClasses.h")]
@@ -24,7 +31,6 @@ namespace UnityEngine.VFX
     }
 
     [UsedByNativeCode]
-    [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
     [NativeHeader("Modules/VFX/Public/VisualEffectAsset.h")]
     [NativeHeader("VFXScriptingClasses.h")]
     public class VisualEffectAsset : VisualEffectObject
@@ -36,6 +42,14 @@ namespace UnityEngine.VFX
         internal extern uint GetCompilationVersion();
 
         static internal extern uint currentRuntimeDataVersion { get; }
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetTextureDimension", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedProperties", HasExplicitThis = true)] extern public void GetExposedProperties([NotNull] List<VFXExposedProperty> exposedProperties);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetEvents", HasExplicitThis = true)] extern public void GetEvents([NotNull] List<string> names);
+
+        public UnityEngine.Rendering.TextureDimension GetTextureDimension(string name)
+        {
+            return GetTextureDimension(Shader.PropertyToID(name));
+        }
     }
 
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectBindings.h")]

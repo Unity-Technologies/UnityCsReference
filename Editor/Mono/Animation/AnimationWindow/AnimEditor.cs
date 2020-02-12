@@ -264,7 +264,7 @@ namespace UnityEditor
             }
         }
 
-        private void MainContentOnGUI(Rect contentLayoutRect)
+        void MainContentOnGUI(Rect contentLayoutRect)
         {
             //  Bail out if the hierarchy in animator is optimized.
             if (m_State.animatorIsOptimized)
@@ -277,6 +277,7 @@ namespace UnityEditor
                 return;
             }
 
+            var mainAreaControlID = 0;
             if (m_State.disabled)
             {
                 SetupWizardOnGUI(contentLayoutRect);
@@ -298,14 +299,16 @@ namespace UnityEditor
                 if (m_State.showCurveEditor)
                 {
                     CurveEditorOnGUI(contentLayoutRect);
+                    mainAreaControlID = m_CurveEditor.areaControlID;
                 }
                 else
                 {
                     DopeSheetOnGUI(contentLayoutRect);
+                    mainAreaControlID = m_DopeSheet.areaControlID;
                 }
             }
 
-            HandleCopyPaste();
+            HandleMainAreaCopyPaste(mainAreaControlID);
         }
 
         private void OverlayEventOnGUI()
@@ -1267,34 +1270,38 @@ namespace UnityEditor
             UpdateSelectedKeysToCurveEditor();
         }
 
-        private void HandleCopyPaste()
+        void HandleMainAreaCopyPaste(int controlID)
         {
-            if (Event.current.type == EventType.ValidateCommand || Event.current.type == EventType.ExecuteCommand)
-            {
-                switch (Event.current.commandName)
-                {
-                    case EventCommandNames.Copy:
-                        if (Event.current.type == EventType.ExecuteCommand)
-                        {
-                            if (m_State.showCurveEditor)
-                                UpdateSelectedKeysFromCurveEditor();
-                            m_State.CopyKeys();
-                        }
-                        Event.current.Use();
-                        break;
-                    case EventCommandNames.Paste:
-                        if (Event.current.type == EventType.ExecuteCommand)
-                        {
-                            SaveCurveEditorKeySelection();
-                            m_State.PasteKeys();
-                            UpdateSelectedKeysToCurveEditor();
+            if (GUIUtility.keyboardControl != controlID)
+                return;
 
-                            // data is scheduled for an update, bail out now to avoid using out of date data.
-                            EditorGUIUtility.ExitGUI();
-                        }
-                        Event.current.Use();
-                        break;
+            var evt = Event.current;
+            var type = evt.GetTypeForControl(controlID);
+            if (type != EventType.ValidateCommand && type != EventType.ExecuteCommand)
+                return;
+
+            if (evt.commandName == EventCommandNames.Copy)
+            {
+                if (type == EventType.ExecuteCommand)
+                {
+                    if (m_State.showCurveEditor)
+                        UpdateSelectedKeysFromCurveEditor();
+                    m_State.CopyKeys();
                 }
+                evt.Use();
+            }
+            else if (evt.commandName == EventCommandNames.Paste)
+            {
+                if (type == EventType.ExecuteCommand)
+                {
+                    SaveCurveEditorKeySelection();
+                    m_State.PasteKeys();
+                    UpdateSelectedKeysToCurveEditor();
+
+                    // data is scheduled for an update, bail out now to avoid using out of date data.
+                    EditorGUIUtility.ExitGUI();
+                }
+                evt.Use();
             }
         }
 

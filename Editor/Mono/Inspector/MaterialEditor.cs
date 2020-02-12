@@ -13,7 +13,8 @@ using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
+using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 
 namespace UnityEditor
 {
@@ -1971,7 +1972,7 @@ namespace UnityEditor
                                 {
                                     //Get the dimension of the texture stack. This can be different from the texture dimensions.
                                     int width, height;
-                                    if (VirtualTexturing.GetTextureStackSize(mat, stackId, out width, out height))
+                                    if (VirtualTexturing.EditorHelpers.GetTextureStackSize(mat, stackId, out width, out height))
                                         stackTextures[stackId] = Math.Max(width, height);
                                 }
                             }
@@ -2003,13 +2004,13 @@ namespace UnityEditor
                                 }
 
                                 //@TODO use synchronous requesting once it is available.
-                                VirtualTexturing.RequestRegion(mat, stackId, new Rect(0, 0, 1, 1), mipToRequest, 2);
+                                VirtualTexturing.System.RequestRegion(mat, stackId, new Rect(0, 0, 1, 1), mipToRequest, 2);
                             }
 
                             //2 system updates per sleep to make sure we flush the VT system while limiting sleeping.
-                            VirtualTexturing.UpdateSystem();
+                            VirtualTexturing.System.Update();
                             System.Threading.Thread.Sleep(1);
-                            VirtualTexturing.UpdateSystem();
+                            VirtualTexturing.System.Update();
                         }
                     }
                 }
@@ -2186,9 +2187,35 @@ namespace UnityEditor
             if (EditorMaterialUtility.IsBackgroundMaterial((target as Material)))
             {
                 HandleSkybox(go, evt);
+                ClearDragMaterialRendering();
             }
             else if (go && go.GetComponent<Renderer>())
                 HandleRenderer(go.GetComponent<Renderer>(), materialIndex, evt);
+            else
+                ClearDragMaterialRendering();
+        }
+
+        private void TryRevertDragChanges()
+        {
+            if (s_previousDraggedUponRenderer != null)
+            {
+                bool hasRevert = false;
+                if (!s_previousAlreadyHadPrefabModification && PrefabUtility.IsPartOfAnyPrefab(s_previousDraggedUponRenderer))
+                {
+                    var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
+                    PrefabUtility.RevertPropertyOverride(materialRendererSerializedObject, InteractionMode.AutomatedAction);
+                    hasRevert = true;
+                }
+                if (!hasRevert)
+                    s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
+            }
+        }
+
+        private void ClearDragMaterialRendering()
+        {
+            TryRevertDragChanges();
+            s_previousDraggedUponRenderer = null;
+            s_previousMaterialValue = null;
         }
 
         internal void HandleSkybox(GameObject go, Event evt)
@@ -2198,7 +2225,6 @@ namespace UnityEditor
 
             if (!draggingOverBackground || evt.type == EventType.DragExited)
             {
-                // cancel material assignment, if not hovering over background anymore
                 evt.Use();
             }
             else
@@ -2225,6 +2251,9 @@ namespace UnityEditor
             }
         }
 
+        static Renderer s_previousDraggedUponRenderer;
+        static Material[] s_previousMaterialValue;
+        static bool s_previousAlreadyHadPrefabModification;
         internal void HandleRenderer(Renderer r, int materialIndex, Event evt)
         {
             if (r.GetType().GetCustomAttributes(typeof(RejectDragAndDropMaterial), true).Length > 0)
@@ -2241,12 +2270,28 @@ namespace UnityEditor
                 case EventType.DragPerform:
                     DragAndDrop.AcceptDrag();
                     applyAndConsumeEvent = true;
+
+                    ClearDragMaterialRendering();
+                    Undo.RecordObject(r, "Assign Material");
                     break;
             }
-
             if (applyAndConsumeEvent)
             {
-                Undo.RecordObject(r, "Assign Material");
+                if (evt.type != EventType.DragPerform)
+                {
+                    ClearDragMaterialRendering();
+                    s_previousDraggedUponRenderer = r;
+                    s_previousMaterialValue = r.sharedMaterials;
+
+                    // Update prefab modification status cache
+                    s_previousAlreadyHadPrefabModification = false;
+                    if (PrefabUtility.IsPartOfAnyPrefab(s_previousDraggedUponRenderer))
+                    {
+                        var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
+                        s_previousAlreadyHadPrefabModification = materialRendererSerializedObject.prefabOverride;
+                    }
+                }
+
                 var materials = r.sharedMaterials;
 
                 bool altIsDown = evt.alt;

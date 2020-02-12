@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 
 namespace UnityEditor
 {
@@ -643,7 +644,7 @@ namespace UnityEditor
                 //For now, we don't have mipmaps smaller than the tile size when using VT.
                 if (EditorGUI.UseVTMaterial(tex))
                 {
-                    int numMipsOfTile = (int)Mathf.Log(VirtualTexturing.tileSize, 2) + 1;
+                    int numMipsOfTile = (int)Mathf.Log(VirtualTexturing.EditorHelpers.tileSize, 2) + 1;
                     m_MipLevel = Mathf.Min(m_MipLevel, Mathf.Max(mipCount - numMipsOfTile, 0));
                 }
 

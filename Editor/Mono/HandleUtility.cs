@@ -8,8 +8,9 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
+using UnityEditor.SceneManagement;
+using UnityEditor.Experimental.SceneManagement;
 
 namespace UnityEditor
 {
@@ -871,18 +872,55 @@ namespace UnityEditor
         // Casts /ray/ against the scene.
         public static object RaySnap(Ray ray)
         {
-            PhysicsScene physicsScene = Physics.defaultPhysicsScene;
-            Scene customScene = Camera.current.scene;
+            Camera cam = Camera.current;
+            ulong sceneCullingMask = cam.sceneCullingMask;
+            int layerCullingMask = cam.cullingMask;
 
-            if (customScene.IsValid())
+            bool hitAny = false;
+            RaycastHit raycastHit = default(RaycastHit);
+            raycastHit.distance = Mathf.Infinity;
+
+            if (sceneCullingMask == SceneCullingMasks.MainStageSceneViewObjects)
             {
-                physicsScene = customScene.GetPhysicsScene();
+                // Default code path for Scene view that is just displaying the Main Stage.
+                // Note that even if Prefab Mode is open, special Scene views can still show the Main Stage!
+                // We only check against default physics scene here, and shouldn't ignore Prefab instances
+                // that are opened in Prefab Mode in Context.
+                hitAny |= GetNearestHitFromPhysicsScene(ray, Physics.defaultPhysicsScene, layerCullingMask, false, ref raycastHit);
+            }
+            else
+            {
+                // Code path is Scene view is displaying a Prefab Stage.
+                // Here we dig down from the top of the stage history stack and continue
+                // including each stage as long as they are displayed as context. Prefab instances
+                // that are hidden due to being opened in Prefab Mode in Context should be ignored.
+                var stageHistory = StageNavigationManager.instance.stageHistory;
+                for (int i = stageHistory.Count - 1; i >= 0; i--)
+                {
+                    Stage stage = stageHistory[i];
+                    var previewSceneStage = stage as PreviewSceneStage;
+                    PhysicsScene physics = previewSceneStage != null ? previewSceneStage.scene.GetPhysicsScene() : Physics.defaultPhysicsScene;
+                    hitAny |= GetNearestHitFromPhysicsScene(ray, physics, layerCullingMask, true, ref raycastHit);
+                    var prefabStage = previewSceneStage as PrefabStage;
+                    if (prefabStage == null ||
+                        prefabStage.mode == PrefabStage.Mode.InIsolation ||
+                        StageNavigationManager.instance.contextRenderMode == StageUtility.ContextRenderMode.Hidden)
+                        break;
+                }
             }
 
-            int numHits = physicsScene.Raycast(ray.origin, ray.direction, s_RaySnapHits, Mathf.Infinity, Camera.current.cullingMask, QueryTriggerInteraction.Ignore);
+            if (hitAny)
+                return raycastHit;
+            return null;
+        }
+
+        static bool GetNearestHitFromPhysicsScene(Ray ray, PhysicsScene physicsScene, int cullingMask, bool ignorePrefabInstance, ref RaycastHit raycastHit)
+        {
+            float maxDist = raycastHit.distance;
+            int numHits = physicsScene.Raycast(ray.origin, ray.direction, s_RaySnapHits, maxDist, cullingMask, QueryTriggerInteraction.Ignore);
 
             // We are not sure at this point if the hits returned from RaycastAll are sorted or not, so go through them all
-            float nearestHitDist = Mathf.Infinity;
+            float nearestHitDist = maxDist;
             int nearestHitIndex = -1;
             if (ignoreRaySnapObjects != null)
             {
@@ -890,20 +928,24 @@ namespace UnityEditor
                 {
                     if (s_RaySnapHits[i].distance < nearestHitDist)
                     {
+                        Transform tr = s_RaySnapHits[i].transform;
+                        if (ignorePrefabInstance && GameObjectUtility.IsPrefabInstanceHiddenForInContextEditing(tr.gameObject))
+                            continue;
+
                         bool ignore = false;
                         for (int j = 0; j < ignoreRaySnapObjects.Length; j++)
                         {
-                            if (s_RaySnapHits[i].transform == ignoreRaySnapObjects[j])
+                            if (tr == ignoreRaySnapObjects[j])
                             {
                                 ignore = true;
                                 break;
                             }
                         }
-                        if (!ignore)
-                        {
-                            nearestHitDist = s_RaySnapHits[i].distance;
-                            nearestHitIndex = i;
-                        }
+                        if (ignore)
+                            continue;
+
+                        nearestHitDist = s_RaySnapHits[i].distance;
+                        nearestHitIndex = i;
                     }
                 }
             }
@@ -920,8 +962,14 @@ namespace UnityEditor
             }
 
             if (nearestHitIndex >= 0)
-                return s_RaySnapHits[nearestHitIndex];
-            return null;
+            {
+                raycastHit = s_RaySnapHits[nearestHitIndex];
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public delegate bool PlaceObjectDelegate(Vector2 guiPosition, out Vector3 position, out Vector3 normal);

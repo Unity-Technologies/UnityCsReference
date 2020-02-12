@@ -1032,19 +1032,22 @@ namespace UnityEditor
                     switch (evt.commandName)
                     {
                         case EventCommandNames.Copy:
-                            ColorClipboard.SetColor(color);
+                            Clipboard.colorValue = color;
                             evt.Use();
                             break;
 
                         case EventCommandNames.Paste:
-                            Color colorFromClipboard;
-                            if (ColorClipboard.TryGetColor(m_HDR, out colorFromClipboard))
+                            if (Clipboard.hasColor)
                             {
+                                Color pasted = Clipboard.colorValue;
+                                if (!m_HDR && pasted.maxColorComponent > 1f)
+                                    pasted = pasted.RGBMultiplied(1f / pasted.maxColorComponent);
+
                                 // Do not change alpha if color field is not showing alpha
                                 if (!m_ShowAlpha)
-                                    colorFromClipboard.a = m_Color.GetColorChannelNormalized(RgbaChannel.A);
+                                    pasted.a = m_Color.GetColorChannelNormalized(RgbaChannel.A);
 
-                                SetColor(colorFromClipboard);
+                                SetColor(pasted);
 
                                 GUI.changed = true;
                                 evt.Use();

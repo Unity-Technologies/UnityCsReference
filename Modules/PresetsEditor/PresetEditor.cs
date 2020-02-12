@@ -130,7 +130,7 @@ namespace UnityEditor.Presets
             {
                 using (new EditorGUI.DisabledScope(targets.Length != 1 || !preset.GetPresetType().IsValidDefault()))
                 {
-                    var defaultList = Preset.GetDefaultPresetsForType(preset.GetPresetType()).Where(d => d.m_Preset == preset);
+                    var defaultList = Preset.GetDefaultPresetsForType(preset.GetPresetType()).Where(d => d.preset == preset);
                     if (defaultList.Any())
                     {
                         if (GUILayout.Button(GUIContent.Temp(string.Format(Style.removeFromDefault.text, preset.GetTargetTypeName()), Style.removeFromDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
@@ -146,11 +146,7 @@ namespace UnityEditor.Presets
                         {
                             Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
                             var list = Preset.GetDefaultPresetsForType(preset.GetPresetType()).ToList();
-                            list.Insert(0, new DefaultPreset()
-                            {
-                                m_Filter = string.Empty,
-                                m_Preset = preset
-                            });
+                            list.Insert(0, new DefaultPreset(string.Empty, preset));
                             Preset.SetDefaultPresetsForType(preset.GetPresetType(), list.ToArray());
                             Undo.FlushUndoRecordObjects();
                         }

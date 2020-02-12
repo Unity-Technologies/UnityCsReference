@@ -276,7 +276,7 @@ namespace UnityEditor.VersionControl
                 {
                     // It is possible to have a progressTask for getting description text.
                     GUIContent c = GUIContent.Temp("Getting info");
-                    c.image = WindowPending.StatusWheel.image;
+                    c.image = UnityEditorInternal.InternalEditorUtility.animatedProgressImage.image;
                     GUILayout.Label(c);
                     c.image = null;
                 }
@@ -319,7 +319,7 @@ namespace UnityEditor.VersionControl
                 }
                 else if (progressTask != null)
                 {
-                    GUILayout.Label(WindowPending.StatusWheel);
+                    GUILayout.Label(UnityEditorInternal.InternalEditorUtility.animatedProgressImage);
                     msg = progressTask.progressMessage;
                     if (msg.Length == 0)
                         msg = "Running...";

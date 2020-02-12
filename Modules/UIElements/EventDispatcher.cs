@@ -272,18 +272,9 @@ namespace UnityEngine.UIElements
             {
                 evt.PreDispatch(panel);
 
-                foreach (var strategy in m_DispatchingStrategies)
+                if (!evt.stopDispatch && !evt.isPropagationStopped)
                 {
-                    if (strategy.CanDispatchEvent(evt))
-                    {
-                        strategy.DispatchEvent(evt, panel);
-
-                        Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used,
-                            "Unexpected condition: !evt.isPropagationStopped && evt.imguiEvent.rawType == EventType.Used.");
-
-                        if (evt.stopDispatch || evt.isPropagationStopped)
-                            break;
-                    }
+                    ApplyDispatchingStrategies(evt, panel, imguiEventIsInitiallyUsed);
                 }
 
                 if (evt.path != null)
@@ -309,6 +300,23 @@ namespace UnityEngine.UIElements
                 m_ClickDetector.ProcessEvent(evt);
 
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used, "Event is used but not stopped.");
+            }
+        }
+
+        void ApplyDispatchingStrategies(EventBase evt, IPanel panel, bool imguiEventIsInitiallyUsed)
+        {
+            foreach (var strategy in m_DispatchingStrategies)
+            {
+                if (strategy.CanDispatchEvent(evt))
+                {
+                    strategy.DispatchEvent(evt, panel);
+
+                    Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || evt.imguiEvent == null || evt.imguiEvent.rawType != EventType.Used,
+                        "Unexpected condition: !evt.isPropagationStopped && evt.imguiEvent.rawType == EventType.Used.");
+
+                    if (evt.stopDispatch || evt.isPropagationStopped)
+                        break;
+                }
             }
         }
     }

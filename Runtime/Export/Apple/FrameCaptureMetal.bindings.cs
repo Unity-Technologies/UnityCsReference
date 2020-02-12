@@ -39,7 +39,7 @@ namespace UnityEngine.Apple
             return IsDestinationSupportedImpl(dest);
         }
 
-        public static void BeginCapture()
+        public static void BeginCaptureToXcode()
         {
             if (!IsDestinationSupported(FrameCaptureDestination.DevTools))
                 throw new InvalidOperationException("Frame Capture with DevTools is not supported.");

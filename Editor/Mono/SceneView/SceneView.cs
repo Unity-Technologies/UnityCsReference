@@ -24,6 +24,9 @@ using UnityEditor.EditorTools;
 using UnityEditor.Profiling;
 using UnityEditor.Snap;
 using UnityEngine.UIElements;
+using FrameCapture = UnityEngine.Apple.FrameCapture;
+using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
+
 
 namespace UnityEditor
 {
@@ -412,6 +415,10 @@ namespace UnityEditor
         public static event Action<SceneView> duringSceneGui;
 
         internal static event Func<SceneView, VisualElement> addCustomVisualElementToSceneView;
+
+        // Used for performance tests
+        internal static event Action<SceneView> onGUIStarted;
+        internal static event Action<SceneView> onGUIEnded;
 
         [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode m_RenderMode = 0;
@@ -876,6 +883,7 @@ namespace UnityEditor
             public static GUIContent gridZToolbarContent = EditorGUIUtility.TrIconContent("GridAxisZ", "Toggle the visibility of the grid");
             public static GUIContent isolationModeExitButton = EditorGUIUtility.TrTextContent("Exit", "Exit isolation mode");
             public static GUIContent renderDocContent;
+            public static GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
@@ -887,7 +895,7 @@ namespace UnityEditor
             static Styles()
             {
                 gizmoButtonStyle = "GV Gizmo DropDown";
-                renderDocContent = EditorGUIUtility.TrIconContent("renderdoc", UnityEditor.RenderDocUtil.openInRenderDocLabel);
+                renderDocContent = EditorGUIUtility.TrIconContent("FrameCapture", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         }
 
@@ -1401,6 +1409,21 @@ namespace UnityEditor
             }
         }
 
+        void ToolbarMetalCaptureGUI()
+        {
+            bool canCapture = FrameCapture.IsDestinationSupported(FrameCaptureDestination.DevTools)
+                || FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument);
+
+            if (canCapture)
+            {
+                if (GUILayout.Button(Styles.metalFrameCaptureContent, EditorStyles.toolbarButton))
+                {
+                    m_Parent.CaptureMetalScene();
+                    GUIUtility.ExitGUI();
+                }
+            }
+        }
+
         void ToolbarSearchFieldGUI()
         {
             if (m_MainViewControlID != GUIUtility.keyboardControl
@@ -1438,6 +1461,7 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
 
                 ToolbarRenderDocGUI();
+                ToolbarMetalCaptureGUI();
                 ToolbarSceneToolsGUI();
                 ToolbarSceneCameraGUI();
                 ToolbarGizmosDropdownGUI();
@@ -2598,6 +2622,8 @@ namespace UnityEditor
 
         protected virtual void OnGUI()
         {
+            onGUIStarted?.Invoke(this);
+
             s_CurrentDrawingSceneView = this;
 
             Event evt = Event.current;
@@ -2798,6 +2824,7 @@ namespace UnityEditor
             s_CurrentDrawingSceneView = null;
             m_Camera.rect = origCameraRect;
 
+            onGUIEnded?.Invoke(this);
             if (m_StageHandling != null)
                 m_StageHandling.EndOnGUI();
 

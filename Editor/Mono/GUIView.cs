@@ -9,6 +9,10 @@ using UnityEditor.UIElements;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
+using FrameCapture = UnityEngine.Apple.FrameCapture;
+using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
+
+
 namespace UnityEditor
 {
     // This is what we (not users) derive from to create various views. (Main Toolbar, etc.)
@@ -240,6 +244,31 @@ namespace UnityEditor
                 return;
             GUILayoutUtility.EndLayoutGroup();
             GUI.EndGroup();
+        }
+
+        // we already have renderdoc integration done in GUIView but in cpp
+        // for metal we need a bit more convoluted logic and we can push more things to cs
+        internal void CaptureMetalScene()
+        {
+            if (FrameCapture.IsDestinationSupported(FrameCaptureDestination.DevTools))
+            {
+                FrameCapture.BeginCaptureToXcode();
+                RenderCurrentSceneForCapture();
+                FrameCapture.EndCapture();
+            }
+            else if (FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument))
+            {
+                string path = EditorUtility.SaveFilePanel("Save Metal GPU Capture", "", PlayerSettings.productName + ".gputrace", "gputrace");
+                if (System.String.IsNullOrEmpty(path))
+                    return;
+
+                FrameCapture.BeginCaptureToFile(path);
+                RenderCurrentSceneForCapture();
+                FrameCapture.EndCapture();
+
+                System.Console.WriteLine("Metal capture saved to " + path);
+                System.Diagnostics.Process.Start(System.IO.Path.GetDirectoryName(path));
+            }
         }
     }
 } //namespace

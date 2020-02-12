@@ -81,6 +81,8 @@ namespace UnityEngine
 
         public virtual bool supports3DTextures => EditorSystemInfo.supports3DTextures;
 
+        public virtual bool supportsCompressed3DTextures => EditorSystemInfo.supportsCompressed3DTextures;
+
         public virtual bool supports2DArrayTextures => EditorSystemInfo.supports2DArrayTextures;
 
         public virtual bool supports3DRenderTextures => EditorSystemInfo.supports3DRenderTextures;

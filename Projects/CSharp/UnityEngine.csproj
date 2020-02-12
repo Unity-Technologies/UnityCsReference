@@ -2626,6 +2626,9 @@
     <Compile Include="..\..\Runtime\Export\Shaders\ComputeShader.bindings.cs">
       <Link>Runtime\Export\Shaders\ComputeShader.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\HybridV2.bindings.cs">
+      <Link>Runtime\Export\Shaders\HybridV2.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\PlatformKeywordSet.cs">
       <Link>Runtime\Export\Shaders\PlatformKeywordSet.cs</Link>
     </Compile>

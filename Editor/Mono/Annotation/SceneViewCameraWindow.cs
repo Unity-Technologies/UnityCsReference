@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor
@@ -38,6 +37,13 @@ namespace UnityEditor
         GUIContent m_DynamicClip;
         GUIContent m_OcclusionCulling;
         GUIContent m_EasingEnabled;
+        GUIContent m_SceneCameraLabel = EditorGUIUtility.TrTextContent("Scene Camera");
+        GUIContent m_NavigationLabel = EditorGUIUtility.TrTextContent("Navigation");
+        GUIContent m_CopyPlacementLabel = EditorGUIUtility.TrTextContent("Copy Placement");
+        GUIContent m_PastePlacementLabel = EditorGUIUtility.TrTextContent("Paste Placement");
+        GUIContent m_CopySettingsLabel = EditorGUIUtility.TrTextContent("Copy Settings");
+        GUIContent m_PasteSettingsLabel = EditorGUIUtility.TrTextContent("Paste Settings");
+        GUIContent m_ResetSettingsLabel = EditorGUIUtility.TrTextContent("Reset Settings");
 
         const int kFieldCount = 12;
         const int kWindowWidth = 290;
@@ -61,8 +67,6 @@ namespace UnityEditor
             return m_WindowSize;
         }
 
-        SceneViewCameraWindow() {}
-
         public SceneViewCameraWindow(SceneView sceneView)
         {
             m_SceneView = sceneView;
@@ -74,7 +78,7 @@ namespace UnityEditor
             m_OcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Check this to enable occlusion culling in the Scene view. Occlusion culling disables rendering of objects when they\'re not currently seen by the camera because they\'re hidden (occluded) by other objects.");
             m_EasingEnabled = EditorGUIUtility.TrTextContent("Camera Easing", "Check this to enable camera movement easing. This makes the camera ease in when it starts moving and ease out when it stops.");
             m_WindowSize = new Vector2(kWindowWidth, kWindowHeight);
-            m_MinMaxContent = new GUIContent[]
+            m_MinMaxContent = new[]
             {
                 EditorGUIUtility.TrTextContent("Min", "The minimum speed of the camera in the Scene view. Valid values are between [0.001, 98]."),
                 EditorGUIUtility.TrTextContent("Max", "The maximum speed of the camera in the Scene view. Valid values are between [0.002, 99].")
@@ -110,7 +114,7 @@ namespace UnityEditor
             GUILayout.Space(k_HeaderSpacing);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(EditorGUIUtility.TrTextContent("Scene Camera"), EditorStyles.boldLabel);
+            GUILayout.Label(m_SceneCameraLabel, EditorStyles.boldLabel);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(EditorGUI.GUIContents.titleSettingsIcon, EditorStyles.iconButton))
                 ShowContextMenu();
@@ -140,7 +144,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space(k_HeaderSpacing);
 
-            GUILayout.Label(EditorGUIUtility.TrTextContent("Navigation"), EditorStyles.boldLabel);
+            GUILayout.Label(m_NavigationLabel, EditorStyles.boldLabel);
 
             settings.easingEnabled = EditorGUILayout.Toggle(m_EasingEnabled, settings.easingEnabled);
             settings.accelerationEnabled = EditorGUILayout.Toggle(m_AccelerationEnabled, settings.accelerationEnabled);
@@ -211,11 +215,49 @@ namespace UnityEditor
         void ShowContextMenu()
         {
             var menu = new GenericMenu();
-            menu.AddItem(EditorGUIUtility.TrTextContent("Reset"), false, Reset);
+            menu.AddItem(m_CopyPlacementLabel, false, CopyPlacement);
+            if (Clipboard.HasCustomValue<TransformWorldPlacement>())
+                menu.AddItem(m_PastePlacementLabel, false, PastePlacement);
+            else
+                menu.AddDisabledItem(m_PastePlacementLabel);
+            menu.AddItem(m_CopySettingsLabel, false, CopySettings);
+            if (Clipboard.HasCustomValue<SceneView.CameraSettings>())
+                menu.AddItem(m_PasteSettingsLabel, false, PasteSettings);
+            else
+                menu.AddDisabledItem(m_PasteSettingsLabel);
+            menu.AddItem(m_ResetSettingsLabel, false, ResetSettings);
+
             menu.ShowAsContext();
         }
 
-        void Reset()
+        void CopyPlacement()
+        {
+            Clipboard.SetCustomValue(new TransformWorldPlacement(m_SceneView.camera.transform));
+        }
+
+        void PastePlacement()
+        {
+            var tr = m_SceneView.camera.transform;
+            var placement = Clipboard.GetCustomValue<TransformWorldPlacement>();
+            tr.position = placement.position;
+            tr.rotation = placement.rotation;
+            tr.localScale = placement.scale;
+            m_SceneView.AlignViewToObject(tr);
+            m_SceneView.Repaint();
+        }
+
+        void CopySettings()
+        {
+            Clipboard.SetCustomValue(m_SceneView.cameraSettings);
+        }
+
+        void PasteSettings()
+        {
+            m_SceneView.cameraSettings = Clipboard.GetCustomValue<SceneView.CameraSettings>();
+            m_SceneView.Repaint();
+        }
+
+        void ResetSettings()
         {
             m_SceneView.ResetCameraSettings();
             m_SceneView.Repaint();

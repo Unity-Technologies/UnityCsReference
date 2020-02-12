@@ -13,25 +13,54 @@ namespace UnityEngine.UIElements
 
         public void DispatchEvent(EventBase evt, IPanel panel)
         {
-            IMouseEvent mouseEvent = evt as IMouseEvent;
+            SetBestTargetForEvent(evt, panel);
+            SendEventToTarget(evt, panel);
+            evt.stopDispatch = true;
+        }
 
-            if (mouseEvent == null)
+        static void SendEventToTarget(EventBase evt, IPanel panel)
+        {
+            SendEventToRegularTarget(evt, panel);
+
+            if (evt.imguiEvent?.rawType == EventType.Used)
+                evt.StopPropagation();
+
+            if (evt.isPropagationStopped)
                 return;
 
-            BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
+            SendEventToIMGUIContainer(evt, panel);
+        }
 
-            // update element under mouse and fire necessary events
-
-            bool shouldRecomputeTopElementUnderMouse = true;
-            if ((IMouseEventInternal)mouseEvent != null)
+        static void SendEventToRegularTarget(EventBase evt, IPanel panel)
+        {
+            if (evt.target != null)
             {
-                shouldRecomputeTopElementUnderMouse =
-                    ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
+                EventDispatchUtilities.PropagateEvent(evt);
             }
+        }
 
-            VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse
-                ? basePanel?.Pick(mouseEvent.mousePosition)
-                : basePanel?.GetTopElementUnderPointer(PointerId.mousePointerId);
+        static void SendEventToIMGUIContainer(EventBase evt, IPanel panel)
+        {
+            if (panel != null)
+            {
+                if (evt.target != null && evt.target is IMGUIContainer)
+                {
+                    evt.propagateToIMGUI = true;
+                    evt.skipElements.Add(evt.target);
+                }
+                if (evt.propagateToIMGUI ||
+                    evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
+                    evt.eventTypeId == MouseLeaveWindowEvent.TypeId()
+                )
+                {
+                    EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
+                }
+            }
+        }
+
+        static void SetBestTargetForEvent(EventBase evt, IPanel panel)
+        {
+            UpdateElementUnderMouse(evt, panel, out VisualElement elementUnderMouse);
 
             if (evt.target == null && elementUnderMouse != null)
             {
@@ -49,6 +78,23 @@ namespace UnityEngine.UIElements
             {
                 evt.propagateToIMGUI = false;
             }
+        }
+
+        static void UpdateElementUnderMouse(EventBase evt, IPanel panel, out VisualElement elementUnderMouse)
+        {
+            IMouseEvent mouseEvent = evt as IMouseEvent;
+            BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
+
+            bool shouldRecomputeTopElementUnderMouse = true;
+            if ((IMouseEventInternal)mouseEvent != null)
+            {
+                shouldRecomputeTopElementUnderMouse =
+                    ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
+            }
+
+            elementUnderMouse = shouldRecomputeTopElementUnderMouse
+                ? basePanel?.Pick(mouseEvent.mousePosition)
+                : basePanel?.GetTopElementUnderPointer(PointerId.mousePointerId);
 
             if (basePanel != null)
             {
@@ -67,42 +113,6 @@ namespace UnityEngine.UIElements
                     basePanel.SetElementUnderPointer(elementUnderMouse, evt);
                 }
             }
-
-            if (evt.target != null)
-            {
-                EventDispatchUtilities.PropagateEvent(evt);
-                if (evt.target is IMGUIContainer)
-                {
-                    evt.propagateToIMGUI = true;
-                    evt.skipElements.Add(evt.target);
-                }
-            }
-
-            if (!evt.isPropagationStopped && panel != null)
-            {
-                if (evt.propagateToIMGUI ||
-                    evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
-                    evt.eventTypeId == MouseLeaveWindowEvent.TypeId()
-                )
-                {
-                    EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
-                }
-                else if (panel.visualTree.childCount > 0 && panel.visualTree[0] is IMGUIContainer)
-                {
-                    // Send the events to the GUIView container so that it can process them.
-                    // This avoid elements near the edge of the window preventing the dock area splitter to work.
-                    // See case : https://fogbugz.unity3d.com/f/cases/1197851/
-                    var topLevelIMGUI = (IMGUIContainer)panel.visualTree[0];
-                    if (!evt.Skip(topLevelIMGUI) && evt.imguiEvent != null)
-                    {
-                        topLevelIMGUI.SendEventToIMGUI(evt, false);
-                        if (evt.imguiEvent.rawType == EventType.Used)
-                            evt.StopPropagation();
-                    }
-                }
-            }
-
-            evt.stopDispatch = true;
         }
     }
 }

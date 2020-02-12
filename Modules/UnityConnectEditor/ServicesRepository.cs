@@ -139,10 +139,7 @@ namespace UnityEditor.Connect
                     if (op.isDone)
                     {
                         Dictionary<string, bool> serviceFlags = null;
-                        if ((m_ServiceRequest != null) &&
-                            (m_ServiceRequest.result != UnityWebRequest.Result.ConnectionError) &&
-                            (m_ServiceRequest.result != UnityWebRequest.Result.ProtocolError) &&
-                            (m_ServiceRequest.downloadHandler != null))
+                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_ServiceRequest))
                         {
                             if (m_ServiceRequest.downloadHandler.text.Length != 0)
                             {

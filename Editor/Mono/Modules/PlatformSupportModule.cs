@@ -304,7 +304,7 @@ namespace UnityEditor.Modules
     // You probably want to inherit from DefaultTextureImportSettingsExtension
     internal interface ITextureImportSettingsExtension
     {
-        void ShowImportSettings(Editor baseEditor, TextureImportPlatformSettings platformSettings);
+        void ShowImportSettings(BaseTextureImportPlatformSettings editor);
     }
 
     // Interface for target device related operations

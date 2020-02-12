@@ -5,6 +5,9 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
+using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.Rendering
 {
@@ -60,7 +63,6 @@ namespace UnityEngine
         extern private static string GetPropertyTextureDefaultName([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::FindTextureStack")]
         extern private static bool FindTextureStackImpl([NotNull] Shader s, int propertyIdx, out string stackName, out int layerIndex);
-
 
         private static void CheckPropertyIndex(Shader s, int propertyIndex)
         {

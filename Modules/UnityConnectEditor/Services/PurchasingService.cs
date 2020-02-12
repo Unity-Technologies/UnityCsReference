@@ -50,6 +50,8 @@ namespace UnityEditor.Connect
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.PurchasingService;
         public override string packageName { get; }
+        public override string serviceFlagName { get; }
+        public override bool shouldSyncOnProjectRebind => true;
 
         static readonly PurchasingService k_Instance;
 
@@ -91,6 +93,7 @@ namespace UnityEditor.Connect
             projectSettingsPath = "Project/Services/In-App Purchasing";
             displayToggle = true;
             packageName = "com.unity.purchasing";
+            serviceFlagName = "purchasing";
             ServicesRepository.AddService(this);
         }
 
@@ -109,7 +112,7 @@ namespace UnityEditor.Connect
                 EditorAnalytics.SendEventServiceInfo(new PurchasingServiceState() { iap = enable });
                 if (enable && !AnalyticsService.instance.IsServiceEnabled())
                 {
-                    AnalyticsService.instance.EnableService(true);
+                    AnalyticsService.instance.EnableService(true, shouldUpdateApiFlag);
                 }
             }
 

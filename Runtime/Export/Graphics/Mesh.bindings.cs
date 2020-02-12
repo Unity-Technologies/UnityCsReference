@@ -106,10 +106,10 @@ namespace UnityEngine
         extern public VertexAttributeFormat GetVertexAttributeFormat(VertexAttribute attr);
 
         [FreeFunction(Name = "SetMeshComponentFromArrayFromScript", HasExplicitThis = true)]
-        extern private void SetArrayForChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim, System.Array values, int arraySize, int valuesStart, int valuesCount);
+        extern private void SetArrayForChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim, System.Array values, int arraySize, int valuesStart, int valuesCount, UnityEngine.Rendering.MeshUpdateFlags flags);
 
         [FreeFunction(Name = "SetMeshComponentFromNativeArrayFromScript", HasExplicitThis = true)]
-        extern private void SetNativeArrayForChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim, IntPtr values, int arraySize, int valuesStart, int valuesCount);
+        extern private void SetNativeArrayForChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim, IntPtr values, int arraySize, int valuesStart, int valuesCount, UnityEngine.Rendering.MeshUpdateFlags flags);
 
         [FreeFunction(Name = "AllocExtractMeshComponentFromScript", HasExplicitThis = true)]
         extern private System.Array GetAllocArrayFromChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim);
@@ -239,9 +239,9 @@ namespace UnityEngine
         extern public Bounds bounds { get; set; }
 
         [NativeMethod("Clear")]                 extern private void ClearImpl(bool keepVertexLayout);
-        [NativeMethod("RecalculateBounds")]     extern private void RecalculateBoundsImpl();
-        [NativeMethod("RecalculateNormals")]    extern private void RecalculateNormalsImpl();
-        [NativeMethod("RecalculateTangents")]   extern private void RecalculateTangentsImpl();
+        [NativeMethod("RecalculateBounds")]     extern private void RecalculateBoundsImpl(UnityEngine.Rendering.MeshUpdateFlags flags);
+        [NativeMethod("RecalculateNormals")]    extern private void RecalculateNormalsImpl(UnityEngine.Rendering.MeshUpdateFlags flags);
+        [NativeMethod("RecalculateTangents")]   extern private void RecalculateTangentsImpl(UnityEngine.Rendering.MeshUpdateFlags flags);
         [NativeMethod("MarkDynamic")]           extern private void MarkDynamicImpl();
         [NativeMethod("MarkModified")]          extern public  void MarkModified();
         [NativeMethod("UploadMeshData")]        extern private void UploadMeshDataImpl(bool markNoLongerReadable);
@@ -251,7 +251,7 @@ namespace UnityEngine
 
         [NativeMethod("GetMeshMetric")] extern public float GetUVDistributionMetric(int uvSetIndex);
 
-        [FreeFunction(Name = "MeshScripting::CombineMeshes", HasExplicitThis = true)]
+        [NativeMethod(Name = "MeshScripting::CombineMeshes", IsFreeFunction = true, ThrowsException = true, HasExplicitThis = true)]
         extern private void CombineMeshesImpl(CombineInstance[] combine, bool mergeSubMeshes, bool useMatrices, bool hasLightmapData);
 
         [NativeMethod("Optimize")]                    extern private void OptimizeImpl();

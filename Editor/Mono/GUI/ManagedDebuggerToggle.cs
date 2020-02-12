@@ -17,7 +17,7 @@ namespace UnityEditor
 
         private const int k_Width = 36;
         private const int k_Height = 19;
-        private const int k_MarginX = 4;
+        private const int k_MarginX = 0;
         private const int k_MarginY = 0;
 
         public ManagedDebuggerToggle()
@@ -32,9 +32,6 @@ namespace UnityEditor
         {
             using (new EditorGUI.DisabledScope(!ManagedDebugger.isEnabled))
             {
-                GUILayout.BeginVertical();
-                EditorGUILayout.Space();
-
                 var codeOptimization = CompilationPipeline.codeOptimization;
                 var debuggerAttached = ManagedDebugger.isAttached;
                 var debuggerContent = GetDebuggerContent(debuggerAttached, codeOptimization);
@@ -45,9 +42,6 @@ namespace UnityEditor
                     PopupWindow.Show(buttonArea, new ManagedDebuggerWindow(codeOptimization), m_PopupLocation);
                     GUIUtility.ExitGUI();
                 }
-
-                EditorGUILayout.Space();
-                GUILayout.EndVertical();
             }
         }
 

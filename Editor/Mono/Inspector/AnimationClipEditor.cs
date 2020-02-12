@@ -9,6 +9,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Object = UnityEngine.Object;
 using System.Globalization;
+using UnityEditorInternal;
+using AnimatorController = UnityEditor.Animations.AnimatorController;
+using AnimatorControllerLayer = UnityEditor.Animations.AnimatorControllerLayer;
 
 namespace UnityEditor
 {
@@ -37,7 +40,7 @@ namespace UnityEditor
             }
         }
 
-        private static class Styles
+        internal static class Styles
         {
             public static GUIContent StartFrame = EditorGUIUtility.TrTextContent("Start", "Start frame of the clip.");
             public static GUIContent EndFrame = EditorGUIUtility.TrTextContent("End", "End frame of the clip.");
@@ -126,6 +129,12 @@ namespace UnityEditor
             public static GUIContent PrevKeyContent = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Go to previous key frame.");
             public static GUIContent NextKeyContent = EditorGUIUtility.TrIconContent("Animation.NextKey", "Go to next key frame.");
             public static GUIContent AddKeyframeContent = EditorGUIUtility.TrIconContent("Animation.AddKeyframe", "Add Keyframe.");
+
+            public static GUIContent AddEvent = EditorGUIUtility.TrTextContent("Add Animation Event");
+            public static GUIContent DeleteEvents = EditorGUIUtility.TrTextContent("Delete Animation Events");
+            public static GUIContent DeleteEvent = EditorGUIUtility.TrTextContent("Delete Animation Event");
+            public static GUIContent CopyEvents = EditorGUIUtility.TrTextContent("Copy Animation Events");
+            public static GUIContent PasteEvents = EditorGUIUtility.TrTextContent("Paste Animation Events");
         }
 
         static string s_LoopMeterStr = "LoopMeter";
@@ -938,10 +947,12 @@ namespace UnityEditor
             if (m_ClipInfo == null)
                 return;
 
+            var currentTime = Mathf.Clamp01(m_AvatarPreview.timeControl.normalizedTime);
+
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(Styles.AddEventContent, GUILayout.Width(25)))
             {
-                m_ClipInfo.AddEvent(Mathf.Clamp01(m_AvatarPreview.timeControl.normalizedTime));
+                m_ClipInfo.AddEvent(currentTime);
                 m_EventManipulationHandler.SelectEvent(m_ClipInfo.GetEvents(), m_ClipInfo.GetEventCount() - 1, m_ClipInfo);
                 needsToGenerateClipInfo = true;
             }
@@ -963,13 +974,13 @@ namespace UnityEditor
 
                 AnimationEvent[] events = m_ClipInfo.GetEvents();
 
-                if (m_EventManipulationHandler.HandleEventManipulation(localTimeRect, ref events, m_ClipInfo)) // had changed
+                if (m_EventManipulationHandler.HandleEventManipulation(localTimeRect, ref events, m_ClipInfo, currentTime)) // had changed
                 {
                     m_ClipInfo.SetEvents(events);
                 }
 
                 // Current time indicator
-                TimeArea.DrawPlayhead(m_EventTimeArea.TimeToPixel(m_AvatarPreview.timeControl.normalizedTime, localTimeRect), localTimeRect.yMin, localTimeRect.yMax, 2f, 1f);
+                TimeArea.DrawPlayhead(m_EventTimeArea.TimeToPixel(currentTime, localTimeRect), localTimeRect.yMin, localTimeRect.yMax, 2f, 1f);
             }
 
 
@@ -1454,8 +1465,6 @@ namespace UnityEditor
 
         private string m_InstantTooltipText = null;
         private Vector2 m_InstantTooltipPoint = Vector2.zero;
-        private readonly GUIContent m_DeleteAnimationEventText = EditorGUIUtility.TrTextContent("Delete Animation Event");
-        private readonly GUIContent m_DeleteAnimationEventsText = EditorGUIUtility.TrTextContent("Delete Animation Events");
 
         private bool[] m_EventsSelected;
         private AnimationWindowEvent[] m_Events;
@@ -1475,7 +1484,7 @@ namespace UnityEditor
             EditEvents(clipInfo, m_EventsSelected);
         }
 
-        public bool HandleEventManipulation(Rect rect, ref AnimationEvent[] events, AnimationClipInfoProperties clipInfo)
+        public bool HandleEventManipulation(Rect rect, ref AnimationEvent[] events, AnimationClipInfoProperties clipInfo, float currentTime)
         {
             Texture eventMarker = EditorGUIUtility.IconContent("Animation.EventMarker").image;
 
@@ -1567,6 +1576,14 @@ namespace UnityEditor
                     case HighLevelEvent.Delete:
                         hasChanged = DeleteEvents(ref events, m_EventsSelected);
                         break;
+                    case HighLevelEvent.Copy:
+                        AnimationWindowEventsClipboard.CopyEvents(events, m_EventsSelected);
+                        break;
+                    case HighLevelEvent.Paste:
+                        hasChanged = PasteEvents(ref events, ref m_EventsSelected, currentTime);
+                        if (hasChanged)
+                            EditEvents(clipInfo, m_EventsSelected);
+                        break;
                     case HighLevelEvent.Drag:
                         for (int i = events.Length - 1; i >= 0; i--)
                         {
@@ -1595,52 +1612,19 @@ namespace UnityEditor
                         break;
 
                     case HighLevelEvent.ContextClick:
-
-                        int selectedEventsCount = m_EventsSelected.Count(selected => selected);
-
-                        GenericMenu menu = new GenericMenu();
-                        menu.AddItem(
-                            EditorGUIUtility.TrTextContent("Add Animation Event"),
-                            false,
-                            EventLineContextMenuAdd,
-                            new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
-                        menu.AddItem((selectedEventsCount > 1 ?
-                            m_DeleteAnimationEventsText :
-                            m_DeleteAnimationEventText),
-                            false,
-                            EventLineContextMenuDelete,
-                            new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
-                        menu.ShowAsContext();
+                        CreateContextMenu(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected);
                         // Mouse may move while context menu is open - make sure instant tooltip is handled
                         m_InstantTooltipText = null;
                         break;
                 }
             }
 
+            // Bring up menu when context-clicking on an empty timeline area (context-clicking on events is handled above)
             if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition))
             {
                 Event.current.Use();
-
-                int selectedEventsCount = m_EventsSelected.Count(selected => selected);
                 float mousePosTime = Mathf.Max(m_Timeline.PixelToTime(Event.current.mousePosition.x, rect), 0.0f);
-
-                GenericMenu menu = new GenericMenu();
-                menu.AddItem(
-                    EditorGUIUtility.TrTextContent("Add Animation Event"),
-                    false,
-                    EventLineContextMenuAdd,
-                    new EventModificationContextMenuObject(clipInfo, mousePosTime, -1, m_EventsSelected));
-
-                if (selectedEventsCount > 0)
-                {
-                    menu.AddItem((selectedEventsCount > 1 ?
-                        m_DeleteAnimationEventsText :
-                        m_DeleteAnimationEventText),
-                        false,
-                        EventLineContextMenuDelete,
-                        new EventModificationContextMenuObject(clipInfo, mousePosTime, -1, m_EventsSelected));
-                }
-                menu.ShowAsContext();
+                CreateContextMenu(clipInfo, mousePosTime, -1, m_EventsSelected);
                 // Mouse may move while context menu is open - make sure instant tooltip is handled
                 m_InstantTooltipText = null;
             }
@@ -1648,6 +1632,30 @@ namespace UnityEditor
             CheckRectsOnMouseMove(rect, events, hitRects);
 
             return hasChanged;
+        }
+
+        void CreateContextMenu(AnimationClipInfoProperties info, float time, int eventIndex, bool[] selectedEvents)
+        {
+            GenericMenu menu = new GenericMenu();
+            var ctx = new EventModificationContextMenuObject(info, time, eventIndex, selectedEvents);
+            var selectedCount = selectedEvents.Count(selected => selected);
+
+            menu.AddItem(AnimationClipEditor.Styles.AddEvent, false, EventLineContextMenuAdd, ctx);
+            if (selectedCount > 0 || eventIndex != -1)
+            {
+                menu.AddItem(selectedCount > 1 ? AnimationClipEditor.Styles.DeleteEvents : AnimationClipEditor.Styles.DeleteEvent, false, EventLineContextMenuDelete, ctx);
+                menu.AddItem(AnimationClipEditor.Styles.CopyEvents, false, EventLineContextMenuCopy, ctx);
+            }
+            else
+            {
+                menu.AddDisabledItem(AnimationClipEditor.Styles.DeleteEvents);
+                menu.AddDisabledItem(AnimationClipEditor.Styles.CopyEvents);
+            }
+            if (AnimationWindowEventsClipboard.CanPaste())
+                menu.AddItem(AnimationClipEditor.Styles.PasteEvents, false, EventLineContextMenuPaste, ctx);
+            else
+                menu.AddDisabledItem(AnimationClipEditor.Styles.PasteEvents);
+            menu.ShowAsContext();
         }
 
         private class EventModificationContextMenuObject
@@ -1692,6 +1700,26 @@ namespace UnityEditor
                 context.m_Info.RemoveEvent(context.m_Index);
             }
             context.m_Info.ApplyModifiedProperties();
+        }
+
+        static void EventLineContextMenuCopy(object obj)
+        {
+            var ctx = (EventModificationContextMenuObject)obj;
+            AnimationWindowEventsClipboard.CopyEvents(ctx.m_Info.GetEvents(), ctx.m_Selected, ctx.m_Index);
+        }
+
+        void EventLineContextMenuPaste(object obj)
+        {
+            var ctx = (EventModificationContextMenuObject)obj;
+            var events = ctx.m_Info.GetEvents();
+            var changed = PasteEvents(ref events, ref ctx.m_Selected, ctx.m_Time);
+            if (changed)
+            {
+                ctx.m_Info.SetEvents(events);
+                ctx.m_Info.ApplyModifiedProperties();
+                m_EventsSelected = ctx.m_Selected;
+                EditEvents(ctx.m_Info, ctx.m_Selected);
+            }
         }
 
         private void CheckRectsOnMouseMove(Rect eventLineRect, AnimationEvent[] events, Rect[] hitRects)
@@ -1765,6 +1793,16 @@ namespace UnityEditor
             }
 
             return deletedAny;
+        }
+
+        static bool PasteEvents(ref AnimationEvent[] eventList, ref bool[] selected, float time)
+        {
+            var newEvents = AnimationWindowEventsClipboard.AddPastedEvents(eventList, time, out var newSelected);
+            if (newEvents == null)
+                return false;
+            eventList = newEvents;
+            selected = newSelected;
+            return true;
         }
 
         public void EditEvents(AnimationClipInfoProperties clipInfo, bool[] selectedIndices)

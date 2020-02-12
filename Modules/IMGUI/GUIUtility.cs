@@ -147,11 +147,11 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static bool ProcessEvent(int instanceID, IntPtr nativeEventPtr)
+        internal static void ProcessEvent(int instanceID, IntPtr nativeEventPtr, out bool result)
         {
+            result = false;
             if (processEvent != null)
-                return processEvent(instanceID, nativeEventPtr);
-            return false;
+                result = processEvent(instanceID, nativeEventPtr);
         }
 
         internal static void EndContainer()

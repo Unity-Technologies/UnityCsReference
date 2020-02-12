@@ -39,12 +39,14 @@ namespace UnityEditorInternal.Profiling
             None = 0,
             CollapseEditorBoundarySamples = 1 << 0, // Session based override, default to off
             ShowFullScriptingMethodNames = 1 << 1,
+            ShowExecutionFlow = 1 << 2,
         }
 
         static readonly GUIContent[] k_ProfilerViewFilteringOptions =
         {
             EditorGUIUtility.TrTextContent("Collapse EditorOnly Samples", "Samples that are only created due to profiling the editor are collapsed by default, renamed to EditorOnly [<FunctionName>] and any GC Alloc incurred by them will not be accumulated."),
             EditorGUIUtility.TrTextContent("Show Full Scripting Method Names", "Display fully qualified method names including assembly name and namespace."),
+            EditorGUIUtility.TrTextContent("Show Flow Events", "Visualize job scheduling and execution."),
         };
 
         [SerializeField]
@@ -110,6 +112,9 @@ namespace UnityEditorInternal.Profiling
                 {
                     var option = (ProfilerViewFilteringOptions)(1 << i);
                     if (ViewType == ProfilerViewType.Timeline && option == ProfilerViewFilteringOptions.CollapseEditorBoundarySamples)
+                        continue;
+
+                    if (option == ProfilerViewFilteringOptions.ShowExecutionFlow && ViewType != ProfilerViewType.Timeline)
                         continue;
 
                     pm.AddItem(k_ProfilerViewFilteringOptions[i], OptionEnabled(option), () => ToggleOption(option));

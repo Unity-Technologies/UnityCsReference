@@ -92,7 +92,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         // Performs CheckWriteAndThrow and then bumps the secondary version.
         // This allows for example a NativeArray that becomes invalid if the Length of a List
         // is changed to be invalidated, while the NativeList handle itself remains valid.
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static extern void CheckWriteAndBumpSecondaryVersion(AtomicSafetyHandle handle);
 
@@ -119,22 +119,22 @@ namespace Unity.Collections.LowLevel.Unsafe
         public static extern EnforceJobResult EnforceAllBufferJobsHaveCompletedAndDisableReadWrite(AtomicSafetyHandle handle);
 
         // Same as CheckReadAndThrow but the early out has already been performed in the call site for performance reasons.
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static extern void CheckReadAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
         // Same as CheckWriteAndThrow but the early out has already been performed in the call site for performance reasons.
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static extern void CheckWriteAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
         // Checks if the handle can be deallocated.
         // If not (already destroyed, job currently accessing the data) throws an exception.
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static extern void CheckDeallocateAndThrow(AtomicSafetyHandle handle);
 
-        [ThreadSafe]
+        [ThreadSafe(ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static extern void CheckGetSecondaryDataPointerAndThrow(AtomicSafetyHandle handle);
 

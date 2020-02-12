@@ -20,6 +20,8 @@ namespace UnityEditor.Connect
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.BuildService;
         public override string packageName { get; }
+        public override string serviceFlagName { get; }
+        public override bool shouldSyncOnProjectRebind => true;
 
         static readonly BuildService k_Instance;
 
@@ -44,6 +46,7 @@ namespace UnityEditor.Connect
             projectSettingsPath = "Project/Services/Cloud Build";
             displayToggle = true;
             packageName = null;
+            serviceFlagName = "build";
             ServicesRepository.AddService(this);
         }
 

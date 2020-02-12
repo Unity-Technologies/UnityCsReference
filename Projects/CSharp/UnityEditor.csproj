@@ -106,6 +106,9 @@
     <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\AnimationWindowClipPopup.cs">
       <Link>Editor\Mono\Animation\AnimationWindow\AnimationWindowClipPopup.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\AnimationWindowClipboard.cs">
+      <Link>Editor\Mono\Animation\AnimationWindow\AnimationWindowClipboard.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\AnimationWindowControl.cs">
       <Link>Editor\Mono\Animation\AnimationWindow\AnimationWindowControl.cs</Link>
     </Compile>
@@ -703,6 +706,21 @@
     <Compile Include="..\..\Editor\Mono\ChangeTrackerHandle.bindings.cs">
       <Link>Editor\Mono\ChangeTrackerHandle.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Clipboard\Clipboard.cs">
+      <Link>Editor\Mono\Clipboard\Clipboard.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Clipboard\ClipboardContextMenu.cs">
+      <Link>Editor\Mono\Clipboard\ClipboardContextMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Clipboard\ClipboardParser.cs">
+      <Link>Editor\Mono\Clipboard\ClipboardParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Clipboard\ClipboardState.cs">
+      <Link>Editor\Mono\Clipboard\ClipboardState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Clipboard\ParticleSystemClipboard.cs">
+      <Link>Editor\Mono\Clipboard\ParticleSystemClipboard.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\CloudBuild\CloudBuild.cs">
       <Link>Editor\Mono\CloudBuild\CloudBuild.cs</Link>
     </Compile>
@@ -1033,6 +1051,12 @@
     <Compile Include="..\..\Editor\Mono\ExportPackageOptions.cs">
       <Link>Editor\Mono\ExportPackageOptions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ExternalPlayModeView\ExternalPlayModeView.bindings.cs">
+      <Link>Editor\Mono\ExternalPlayModeView\ExternalPlayModeView.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ExternalPlayModeView\ExternalPlayModeView.cs">
+      <Link>Editor\Mono\ExternalPlayModeView\ExternalPlayModeView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\FileUtil.bindings.cs">
       <Link>Editor\Mono\FileUtil.bindings.cs</Link>
     </Compile>
@@ -1141,11 +1165,14 @@
     <Compile Include="..\..\Editor\Mono\GUI\ButtonWithAnimatedIcon.cs">
       <Link>Editor\Mono\GUI\ButtonWithAnimatedIcon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\CacheServerToggle.cs">
+      <Link>Editor\Mono\GUI\CacheServerToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\CacheServerWindow.cs">
+      <Link>Editor\Mono\GUI\CacheServerWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\CallbackController.cs">
       <Link>Editor\Mono\GUI\CallbackController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\ColorClipboard.cs">
-      <Link>Editor\Mono\GUI\ColorClipboard.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\ColorMutator.cs">
       <Link>Editor\Mono\GUI\ColorMutator.cs</Link>
@@ -3523,6 +3550,9 @@
     <Compile Include="..\..\Editor\Mono\Utils\NetCoreProgram.cs">
       <Link>Editor\Mono\Utils\NetCoreProgram.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Utils\NetCoreRunProgram.cs">
+      <Link>Editor\Mono\Utils\NetCoreRunProgram.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Utils\NetStandardFinder.cs">
       <Link>Editor\Mono\Utils\NetStandardFinder.cs</Link>
     </Compile>
@@ -4609,9 +4639,6 @@
     <Compile Include="..\..\Modules\ParticleSystemEditor\ParticleEffectUI.cs">
       <Link>Modules\ParticleSystemEditor\ParticleEffectUI.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ParticleSystemEditor\ParticleSystemClipboard.cs">
-      <Link>Modules\ParticleSystemEditor\ParticleSystemClipboard.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ParticleSystemEditor\ParticleSystemCurveEditor.cs">
       <Link>Modules\ParticleSystemEditor\ParticleSystemCurveEditor.cs</Link>
     </Compile>
@@ -4833,6 +4860,15 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\CPUProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\CPUProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\FlowIndicatorDrawer.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\FlowIndicatorDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\FlowLinesDrawer.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\FlowLinesDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\ProfilerFrameTimingUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\ProfilerFrameTimingUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\ProfilerTimelineGUI.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\CPU\ProfilerTimelineGUI.cs</Link>

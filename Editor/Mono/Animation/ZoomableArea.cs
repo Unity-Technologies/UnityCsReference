@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
 
 namespace UnityEditor
 {
@@ -195,7 +193,8 @@ namespace UnityEditor
         public float vSliderWidth { get { return vSlider ? styles.sliderWidth : 0f; } }
         public float hSliderHeight { get { return hSlider ? styles.sliderWidth : 0f; } }
 
-        // IDs for scrollbars
+        // IDs for controls
+        internal int areaControlID;
         int verticalScrollbarID, horizontalScrollbarID;
 
         [SerializeField] bool m_MinimalGUI;
@@ -647,6 +646,7 @@ namespace UnityEditor
             area.x = 0;
             area.y = 0;
             int id = GUIUtility.GetControlID(zoomableAreaHash, FocusType.Passive, area);
+            areaControlID = id;
 
             switch (Event.current.GetTypeForControl(id))
             {

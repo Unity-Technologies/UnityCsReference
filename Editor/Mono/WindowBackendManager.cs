@@ -44,6 +44,7 @@ namespace UnityEditor
         Action<GenericMenu> onDisplayWindowMenu { get; set; }
 
         Action rootVisualElementCreated { get; set;   }
+        Action onSplitterGUIHandler { get; set; }
     }
 
     internal interface IWindowBackend

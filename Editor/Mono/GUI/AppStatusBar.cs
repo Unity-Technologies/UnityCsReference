@@ -18,25 +18,11 @@ namespace UnityEditor
         {
             public const int spacing = 4;
 
-            public static readonly GUILayoutOption statusRightReservedSpace = GUILayout.Width(280);
             public static readonly GUILayoutOption progressBarWidth = GUILayout.Width(180);
             public static readonly GUILayoutOption progressLabelMaxWidth = GUILayout.MaxWidth(230);
             public static readonly GUIStyle background = "AppToolbar";
             public static readonly GUIStyle statusLabel = EditorStyles.FromUSS(EditorStyles.label, "status-bar-label");
-            public static readonly GUIStyle statusIcon = new GUIStyle()
-            {
-                name = "status-bar-icon",
-                imagePosition = ImagePosition.ImageOnly,
-                alignment = TextAnchor.MiddleLeft,
-                fixedWidth = 18,
-                fixedHeight = 18,
-                contentOffset = new Vector2(-4, 0),
-                padding = new RectOffset(0, 0, 0, 0),
-                margin = new RectOffset(0, 0, 0, 0),
-                richText = false,
-                stretchHeight = false,
-                stretchWidth = false
-            };
+            public static readonly GUIStyle statusIcon = "StatusBarIcon";
 
             public static readonly GUIStyle progressBar = EditorStyles.FromUSS(EditorStyles.progressBarBar, "status-bar-progress");
             public static readonly GUIStyle progressBarAlmostDone = EditorStyles.FromUSS(progressBar, "status-bar-progress-almost-done");
@@ -48,6 +34,8 @@ namespace UnityEditor
             public static readonly GUIContent[] statusWheel;
             public static readonly GUIContent assemblyLock = EditorGUIUtility.IconContent("AssemblyLock", "|Assemblies are currently locked. Compilation will resume once they are unlocked");
             public static readonly GUIContent progressIcon = EditorGUIUtility.IconContent("Progress", "Open progress details...");
+            public static readonly GUIContent autoGenerateLightOn = EditorGUIUtility.IconContent("AutoLightbakingOn", "Auto Generate Lighting On");
+            public static readonly GUIContent autoGenerateLightOff = EditorGUIUtility.IconContent("AutoLightbakingOff", "Auto Generate Lighting Off");
 
             static Styles()
             {
@@ -61,7 +49,7 @@ namespace UnityEditor
         private static AppStatusBar s_AppStatusBar;
 
         private string m_MiniMemoryOverview = "";
-        private GUIContent m_BakeModeContent = new GUIContent();
+        private bool? m_autoLightBakingOn;
         private GUIContent m_ProgressStatus = new GUIContent();
         private GUIContent m_ProgressPercentageStatus = new GUIContent();
         private bool m_CurrentProgressNotResponding = false;
@@ -69,6 +57,7 @@ namespace UnityEditor
         private float m_LastElapsedTime = 0f;
 
         private ManagedDebuggerToggle m_ManagedDebuggerToggle = null;
+        private CacheServerToggle m_CacheServerToggle = null;
 
         private bool showBakeMode
         {
@@ -91,7 +80,9 @@ namespace UnityEditor
         {
             base.OnEnable();
             s_AppStatusBar = this;
+            m_autoLightBakingOn = GetBakeMode();
             m_ManagedDebuggerToggle = new ManagedDebuggerToggle();
+            m_CacheServerToggle = new CacheServerToggle();
 
             Progress.added += RefreshProgressBar;
             Progress.removed += RefreshProgressBar;
@@ -109,12 +100,12 @@ namespace UnityEditor
         protected void OnInspectorUpdate()
         {
             string miniOverview = UnityEditorInternal.ProfilerDriver.miniMemoryOverview;
-            string bakeModeString = GetBakeModeString();
+            bool? autoLightBakingOn = GetBakeMode();
 
-            if ((Unsupported.IsDeveloperMode() && m_MiniMemoryOverview != miniOverview) || (m_BakeModeContent.text != bakeModeString))
+            if ((Unsupported.IsDeveloperMode() && m_MiniMemoryOverview != miniOverview) || (m_autoLightBakingOn != autoLightBakingOn))
             {
                 m_MiniMemoryOverview = miniOverview;
-                m_BakeModeContent = new GUIContent(bakeModeString);
+                m_autoLightBakingOn = autoLightBakingOn;
 
                 Repaint();
             }
@@ -156,9 +147,11 @@ namespace UnityEditor
                 GUILayout.Space(2);
                 DrawStatusText();
                 GUILayout.FlexibleSpace();
-                DrawBakeMode();
+                DrawSpecialModeLabel();
                 DrawProgressBar();
                 DrawDebuggerToggle();
+                DrawCacheServerToggle();
+                DrawBakeMode();
                 DrawRefreshStatus();
             }
             GUILayout.EndHorizontal();
@@ -192,29 +185,39 @@ namespace UnityEditor
                 var buttonRect = GUILayoutUtility.GetLastRect();
                 EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
             }
+        }
 
-            GUILayout.Space(Styles.spacing);
-
+        private string m_SpecialModeLabel = "";
+        private void DrawSpecialModeLabel()
+        {
             if (Unsupported.IsBleedingEdgeBuild())
             {
+                GUILayout.Space(k_SpaceBeforeProgress);
+                m_SpecialModeLabel = "THIS IS AN UNTESTED BLEEDINGEDGE UNITY BUILD";
                 var backup = GUI.color;
                 GUI.color = Color.yellow;
-                GUILayout.Label("THIS IS AN UNTESTED BLEEDINGEDGE UNITY BUILD");
+                GUILayout.Label(m_SpecialModeLabel);
                 GUI.color = backup;
             }
             else if (Unsupported.IsDeveloperMode())
             {
-                GUILayout.Label(m_MiniMemoryOverview, Styles.statusLabel);
+                GUILayout.Space(k_SpaceBeforeProgress);
+                m_SpecialModeLabel = m_MiniMemoryOverview;
+                GUILayout.Label(m_SpecialModeLabel, Styles.statusLabel);
                 EditorGUIUtility.CleanCache(m_MiniMemoryOverview);
             }
+            else
+                m_SpecialModeLabel = "";
         }
 
+        float k_SpaceBeforeProgress = 15;
+        float k_SpaceAfterProgress = 4;
         private void DrawProgressBar()
         {
             if (!showProgress)
                 return;
 
-            GUILayout.Space(15);
+            GUILayout.Space(k_SpaceBeforeProgress);
             if (GUILayout.Button(m_ProgressStatus, Styles.statusLabel))
                 Progress.ShowDetails();
 
@@ -242,7 +245,7 @@ namespace UnityEditor
                 EditorApplication.delayCall += () => Repaint();
 
             EditorGUIUtility.AddCursorRect(progressRect, MouseCursor.Link);
-            GUILayout.Space(4);
+            GUILayout.Space(k_SpaceAfterProgress);
         }
 
         private GUIContent GetProgressBarContent(float globalProgress, GUIContent defaultContent)
@@ -273,7 +276,7 @@ namespace UnityEditor
             if (!showBakeMode)
                 return;
 
-            if (GUILayout.Button(m_BakeModeContent, Styles.statusLabel))
+            if (GUILayout.Button(GetBakeModeIcon(m_autoLightBakingOn), Styles.statusIcon))
             {
                 Event.current.Use();
                 LightingWindow.CreateLightingWindow();
@@ -285,8 +288,14 @@ namespace UnityEditor
 
         private void DrawDebuggerToggle()
         {
-            var rect = EditorGUILayout.GetControlRect(GUILayout.Width(m_ManagedDebuggerToggle.GetWidth()));
+            var rect = EditorGUILayout.GetControlRect(GUILayout.Width(m_ManagedDebuggerToggle.GetWidth() - 3));
             m_ManagedDebuggerToggle.OnGUI(rect.x, 0);
+        }
+
+        private void DrawCacheServerToggle()
+        {
+            var rect = EditorGUILayout.GetControlRect(GUILayout.Width(m_CacheServerToggle.GetWidth()));
+            m_CacheServerToggle.OnGUI(rect.x, 0);
         }
 
         private void DrawStatusText()
@@ -307,7 +316,7 @@ namespace UnityEditor
             GUILayout.BeginVertical();
             GUILayout.Space(1);
 
-            GUILayout.Label(statusText, errorStyle, GetStatusTextLayoutOption(m_ProgressStatus));
+            GUILayout.Label(statusText, errorStyle, GetStatusTextLayoutOption(m_ProgressStatus, (icon != null ? icon.width : 0) + 6));
 
             // Handle status bar click
             if (Event.current.type == EventType.MouseDown)
@@ -403,22 +412,35 @@ namespace UnityEditor
             }
         }
 
-        private GUILayoutOption GetStatusTextLayoutOption(GUIContent progressContent)
+        private GUILayoutOption GetStatusTextLayoutOption(GUIContent progressContent, float consoleIconWidth)
         {
-            float statusRightReservedSpace = (float)Styles.statusRightReservedSpace.value;
+            int iconWidth = 25;
+            float specialModeLabelWidth = Styles.statusLabel.CalcSize(new GUIContent(m_SpecialModeLabel)).x + k_SpaceBeforeProgress + 8;
+            float debugToggleWidth = m_ManagedDebuggerToggle.GetWidth() + 1;
+            float statusRightReservedSpace = specialModeLabelWidth + debugToggleWidth + (showBakeMode ? (iconWidth) : 0) + iconWidth;
             if (!showProgress)
-                return GUILayout.MaxWidth(position.width - statusRightReservedSpace);
+                return GUILayout.MaxWidth(position.width - statusRightReservedSpace - consoleIconWidth);
 
             var progressStatusContentWidth = Styles.statusLabel.CalcSize(progressContent).x;
-            return GUILayout.MaxWidth(position.width - statusRightReservedSpace - progressStatusContentWidth - (float)Styles.progressBarWidth.value);
+            return GUILayout.MaxWidth(position.width - statusRightReservedSpace - k_SpaceBeforeProgress - 8 - progressStatusContentWidth - (float)Styles.progressBarWidth.value - k_SpaceAfterProgress - consoleIconWidth);
         }
 
-        private string GetBakeModeString()
+        private GUIContent GetBakeModeIcon(bool? bakeMode)
+        {
+            if (!bakeMode.HasValue)
+                return new GUIContent();
+            else if (bakeMode.Value)
+                return Styles.autoGenerateLightOn;
+            else
+                return Styles.autoGenerateLightOff;
+        }
+
+        private bool? GetBakeMode()
         {
             if (!showBakeMode)
-                return "";
+                return null;
 
-            return "Auto Generate Lighting " + (Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate ? "On" : "Off");
+            return Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
         }
 
         [RequiredByNativeCode]

@@ -32,6 +32,8 @@ namespace UnityEditor
         internal const float kButtonWidth = 16f, kButtonHeight = 16f;
 
         static internal bool macEditor => Application.platform == RuntimePlatform.OSXEditor;
+        static internal bool linuxEditor => Application.platform == RuntimePlatform.LinuxEditor;
+
         static internal bool s_Modal = false;
 
         private static class Styles
@@ -54,10 +56,10 @@ namespace UnityEditor
             private static SVC<float> osxBorderMargin = new SVC<float>("--container-window-button-left-right-margin-osx");
         }
 
-        private const float kButtonCountOSX = 3;
+        private const float kButtonCountOSX = 0;
         private const float kButtonCountWin = 2;
         static internal float buttonHorizontalSpace => (kButtonWidth + Styles.buttonMargin * 2f);
-        static internal float buttonStackWidth => buttonHorizontalSpace * (macEditor ? kButtonCountOSX : kButtonCountWin) + Styles.borderSize;
+        static internal float buttonStackWidth => buttonHorizontalSpace * (macEditor || linuxEditor ? kButtonCountOSX : kButtonCountWin) + Styles.borderSize;
 
         public ContainerWindow()
         {
@@ -326,6 +328,18 @@ namespace UnityEditor
             Save();
         }
 
+        internal void OnMove()
+        {
+            if (IsMainWindow() && this.rootView is MainView)
+            {
+                MainView mv = (MainView)this.rootView;
+                foreach (HostView view in mv.allChildren.OfType<HostView>())
+                {
+                    view.OnMainWindowMove();
+                }
+            }
+        }
+
         // The title of the window
         public string title
         {
@@ -412,39 +426,36 @@ namespace UnityEditor
 
         public void HandleWindowDecorationStart(Rect windowPosition)
         {
-            bool hasTitleBar = (windowPosition.y == 0 && (showMode != ShowMode.Utility && showMode != ShowMode.MainWindow) && !isPopup);
-
-            if (!hasTitleBar)
-                return;
-
-            bool hasWindowButtons = Mathf.Abs(windowPosition.xMax - position.width) < 2;
-            if (hasWindowButtons)
+            if (!macEditor && !linuxEditor)
             {
-                GUIStyle min = Styles.buttonMin;
-                GUIStyle close = Styles.buttonClose;
-                GUIStyle maxOrRestore = maximized ? Styles.buttonRestore : Styles.buttonMax;
+                bool hasTitleBar = (windowPosition.y == 0 && (showMode != ShowMode.Utility && showMode != ShowMode.MainWindow) && !isPopup);
 
-                if (macEditor && (GUIView.focusedView == null || GUIView.focusedView.window != this))
-                    close = min = maxOrRestore = Styles.buttonInactive;
+                if (!hasTitleBar)
+                    return;
 
-                BeginTitleBarButtons(windowPosition);
-                if (TitleBarButton(close))
+                bool hasWindowButtons = Mathf.Abs(windowPosition.xMax - position.width) < 2;
+                if (hasWindowButtons)
                 {
-                    Close();
-                    GUIUtility.ExitGUI();
+                    GUIStyle min = Styles.buttonMin;
+                    GUIStyle close = Styles.buttonClose;
+                    GUIStyle maxOrRestore = maximized ? Styles.buttonRestore : Styles.buttonMax;
+
+                    BeginTitleBarButtons(windowPosition);
+                    if (TitleBarButton(close))
+                    {
+                        Close();
+                        GUIUtility.ExitGUI();
+                    }
+
+                    var canMaximize = m_MaxSize.x == 0 || m_MaxSize.y == 0 || m_MaxSize.x >= Screen.currentResolution.width || m_MaxSize.y >= Screen.currentResolution.height;
+                    EditorGUI.BeginDisabled(!canMaximize);
+                    if (TitleBarButton(maxOrRestore))
+                        ToggleMaximize();
+                    EditorGUI.EndDisabled();
                 }
 
-                if (macEditor && TitleBarButton(min))
-                    Minimize();
-
-                var canMaximize = m_MaxSize.x == 0 || m_MaxSize.y == 0 || m_MaxSize.x >= Screen.currentResolution.width || m_MaxSize.y >= Screen.currentResolution.height;
-                EditorGUI.BeginDisabled(!canMaximize);
-                if (TitleBarButton(maxOrRestore))
-                    ToggleMaximize();
-                EditorGUI.EndDisabled();
+                DragTitleBar(new Rect(0, 0, position.width, kTitleHeight));
             }
-
-            DragTitleBar(new Rect(0, 0, position.width, kTitleHeight));
         }
 
         private void BeginTitleBarButtons(Rect windowPosition)
@@ -492,20 +503,9 @@ namespace UnityEditor
                     // If the mouse is inside the title bar rect, we say that we're the hot control
                     if (titleBarRect.Contains(evt.mousePosition) && GUIUtility.hotControl == 0 && evt.button == 0)
                     {
-                        if (Application.platform != RuntimePlatform.LinuxEditor)
-                        {
-                            Event.current.Use();
-                            m_DraggingNativeTitleBarCaption = true;
-                            SendCaptionEvent(m_DraggingNativeTitleBarCaption);
-                        }
-                        else
-                        {
-                            GUIUtility.hotControl = id;
-                            Event.current.Use();
-                            s_LastDragMousePos = evt.mousePosition;
-                            startDragDpi = GUIUtility.pixelsPerPoint;
-                            Unsupported.SetAllowCursorLock(false, Unsupported.DisallowCursorLockReasons.SizeMove);
-                        }
+                        Event.current.Use();
+                        m_DraggingNativeTitleBarCaption = true;
+                        SendCaptionEvent(m_DraggingNativeTitleBarCaption);
                     }
                     break;
                 case EventType.MouseUp:

@@ -13,10 +13,6 @@ namespace UnityEditor.StyleSheets
     internal static class StylePainter
     {
         private static readonly int k_EnableHovering = "-unity-enable-hovering".GetHashCode();
-        private static readonly int k_BorderTopLeftRadiusKey = "border-top-left-radius".GetHashCode();
-        private static readonly int k_BorderTopRightRadiusKey = "border-top-right-radius".GetHashCode();
-        private static readonly int k_BorderBottomLeftRadiusKey = "border-bottom-left-radius".GetHashCode();
-        private static readonly int k_BorderBottomRightRadiusKey = "border-bottom-right-radius".GetHashCode();
 
         static Dictionary<StyleState, StyleState[]> s_StatesCache = new Dictionary<StyleState, StyleState[]>();
 
@@ -409,13 +405,9 @@ namespace UnityEditor.StyleSheets
                 if (block.HasValue(StyleCatalogKeyword.border))
                 {
                     var defaultColor = block.GetColor(StyleCatalogKeyword.borderColor);
-                    var borderWidth = block.GetFloat(StyleCatalogKeyword.borderWidth);
 
-                    widths = new Vector4(
-                        block.GetFloat(StyleCatalogKeyword.borderLeftWidth, borderWidth),
-                        block.GetFloat(StyleCatalogKeyword.borderTopWidth, borderWidth),
-                        block.GetFloat(StyleCatalogKeyword.borderRightWidth, borderWidth),
-                        block.GetFloat(StyleCatalogKeyword.borderBottomWidth, borderWidth));
+                    var borderWidths = block.GetRect(StyleCatalogKeyword.borderWidth);
+                    widths = new Vector4(borderWidths.left, borderWidths.top, borderWidths.right, borderWidths.bottom);
                     borderLeftColor = block.GetColor(StyleCatalogKeyword.borderLeftColor, defaultColor);
                     borderTopColor = block.GetColor(StyleCatalogKeyword.borderTopColor, defaultColor);
                     borderRightColor = block.GetColor(StyleCatalogKeyword.borderRightColor, defaultColor);
@@ -427,12 +419,8 @@ namespace UnityEditor.StyleSheets
                     borderLeftColor = borderTopColor = borderRightColor = borderBottomColor = Color.cyan;
                 }
 
-                var defaultRadius = block.GetFloat(StyleCatalogKeyword.borderRadius);
-                radius = new Vector4(
-                    block.GetFloat(k_BorderTopLeftRadiusKey, defaultRadius),
-                    block.GetFloat(k_BorderTopRightRadiusKey, defaultRadius),
-                    block.GetFloat(k_BorderBottomRightRadiusKey, defaultRadius),
-                    block.GetFloat(k_BorderBottomLeftRadiusKey, defaultRadius));
+                var borderRadius = block.GetRect(StyleCatalogKeyword.borderRadius);
+                radius = new Vector4(borderRadius.left, borderRadius.top, borderRadius.right, borderRadius.bottom);
             }
 
             public bool any => widths != Vector4.zero;

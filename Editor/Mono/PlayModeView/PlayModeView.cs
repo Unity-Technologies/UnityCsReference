@@ -370,9 +370,10 @@ namespace UnityEditor
             }
         }
 
-        internal static bool IsPlayModeViewOpen()
+        [RequiredByNativeCode]
+        internal static void IsPlayModeViewOpen(out bool isPlayModeViewOpen)
         {
-            return GetMainPlayModeView() != null;
+            isPlayModeViewOpen = GetMainPlayModeView() != null;
         }
 
         internal static void RepaintAll()

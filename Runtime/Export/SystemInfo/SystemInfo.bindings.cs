@@ -270,6 +270,11 @@ namespace UnityEngine
             get { return Supports3DTextures(); }
         }
 
+        public static bool supportsCompressed3DTextures
+        {
+            get { return SupportsCompressed3DTextures(); }
+        }
+
         public static bool supports2DArrayTextures
         {
             get { return Supports2DArrayTextures(); }
@@ -676,6 +681,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::Supports3DTextures")]
         static extern bool Supports3DTextures();
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportsCompressed3DTextures")]
+        static extern bool SupportsCompressed3DTextures();
+
         [FreeFunction("ScriptingGraphicsCaps::Supports2DArrayTextures")]
         static extern bool Supports2DArrayTextures();
 
@@ -902,6 +910,8 @@ namespace UnityEngine
         public static bool supportsMotionVectors => ShimManager.systemInfoShim.supportsMotionVectors;
 
         public static bool supports3DTextures => ShimManager.systemInfoShim.supports3DTextures;
+
+        public static bool supportsCompressed3DTextures => ShimManager.systemInfoShim.supportsCompressed3DTextures;
 
         public static bool supports2DArrayTextures => ShimManager.systemInfoShim.supports2DArrayTextures;
 

@@ -25,6 +25,7 @@ namespace UnityEditor.Connect
         const int k_NoProgressId = -1;
         const int k_NoProgressAmount = -1;
         const string k_ProgressTitle = "Connecting to services url";
+        const string k_ConfigJsonSessionStateKey = "UnityServiceConfig::ConfigJson";
 
         string m_CurrentUserApiUrl;
         string m_ProjectsApiUrl;
@@ -105,6 +106,10 @@ namespace UnityEditor.Connect
         {
             m_UnityTeamUrl = L10n.Tr("https://unity3d.com/teams"); // Should be https://unity3d.com/fr/teams in French !
             PrepareAdsEnvironment(ConvertStringToServerEnvironment(UnityConnect.instance.GetEnvironment()));
+            if (!string.IsNullOrEmpty(SessionState.GetString(k_ConfigJsonSessionStateKey, null)))
+            {
+                LoadConfigurationsFromSessionState();
+            }
         }
 
         internal void LoadConfigurations(bool forceLoad = false)
@@ -117,7 +122,15 @@ namespace UnityEditor.Connect
                 //We load configurations from most fallback to most relevant.
                 //So we always have some fallback entries if a config only overwrite some of the URLs.
                 LoadDefaultConfigurations();
-                LoadConfigurationsFromCdn();
+
+                if (!forceLoad && !string.IsNullOrEmpty(SessionState.GetString(k_ConfigJsonSessionStateKey, null)))
+                {
+                    LoadConfigurationsFromSessionState();
+                }
+                else
+                {
+                    LoadConfigurationsFromCdn();
+                }
             }
         }
 
@@ -230,6 +243,16 @@ namespace UnityEditor.Connect
             LoadJsonConfiguration(hardCodedConfigs);
         }
 
+        void LoadConfigurationsFromSessionState()
+        {
+            var sessionStateConfigJson = SessionState.GetString(k_ConfigJsonSessionStateKey, null);
+            if (sessionStateConfigJson != null)
+            {
+                LoadJsonConfiguration(sessionStateConfigJson);
+                BuildPaths();
+            }
+        }
+
         void LoadConfigurationsFromCdn()
         {
             try
@@ -259,6 +282,7 @@ namespace UnityEditor.Connect
                         if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_GetServicesUrlsRequest))
                         {
                             LoadJsonConfiguration(m_GetServicesUrlsRequest.downloadHandler.text);
+                            SessionState.SetString(k_ConfigJsonSessionStateKey, m_GetServicesUrlsRequest.downloadHandler.text);
                             BuildPaths();
                         }
                     }
@@ -303,18 +327,18 @@ namespace UnityEditor.Connect
         {
             adsGettingStartedUrl = "https://unityads.unity3d.com/help/index";
             adsLearnMoreUrl = "https://unityads.unity3d.com/help/monetization/getting-started";
-            adsDashboardUrl = "https://operate.dashboard.unity3d.com/organizations/{0}/overview/revenue";
+            adsDashboardUrl = "https://legacy-editor-integration.dashboard.unity3d.com/organizations/{0}/overview/revenue";
 
             switch (environmentType)
             {
                 case ServerEnvironment.Production:
-                    adsOperateApiUrl = "https://operate.dashboard.unity3d.com";
+                    adsOperateApiUrl = "https://legacy-editor-integration.dashboard.unity3d.com";
                     break;
                 case ServerEnvironment.Development:
                     adsOperateApiUrl = "https://ads-selfserve.staging.unityads.unity3d.com";
                     break;
                 case ServerEnvironment.Staging:
-                    adsOperateApiUrl = "https://operate.staging.dashboard.unity3d.com";
+                    adsOperateApiUrl = "https://legacy-editor-integration.staging.dashboard.unity3d.com";
                     break;
                 case ServerEnvironment.Custom:
                     // Do something here !

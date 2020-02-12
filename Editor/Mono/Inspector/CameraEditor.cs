@@ -470,6 +470,8 @@ namespace UnityEditor
 
         private RenderTexture m_PreviewTexture;
 
+        int m_QualitySettingsAntiAliasing = -1;
+
         // should match color in GizmosDrawers.cpp
         private const float kPreviewNormalizedSize = 0.2f;
 
@@ -535,7 +537,7 @@ namespace UnityEditor
             }
         }
 
-        internal void OnDisable()
+        public void OnDisable()
         {
             m_ShowBGColorOptions.valueChanged.RemoveListener(Repaint);
             m_ShowOrthoOptions.valueChanged.RemoveListener(Repaint);
@@ -834,9 +836,10 @@ namespace UnityEditor
 
         private RenderTexture GetPreviewTextureWithSize(int width, int height)
         {
-            if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height)
+            if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height || m_QualitySettingsAntiAliasing != QualitySettings.antiAliasing)
             {
                 m_PreviewTexture = new RenderTexture(width, height, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
+                m_QualitySettingsAntiAliasing = QualitySettings.antiAliasing;
             }
             return m_PreviewTexture;
         }

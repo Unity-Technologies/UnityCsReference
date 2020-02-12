@@ -101,15 +101,34 @@ namespace UnityEditor.Experimental
 
         public extern static AssetDatabaseCounters counters { get; }
 
-        [FreeFunction()]
+        [FreeFunction("AcceleratorClientCanConnectTo")]
         public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
         [FreeFunction()]
         public extern static void RefreshSettings();
 
+        public struct CacheServerConnectionChangedParameters
+        {
+        }
+
+        public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
+        [RequiredByNativeCode]
+        private static void OnCacheServerConnectionChanged()
+        {
+            if (cacheServerConnectionChanged != null)
+            {
+                CacheServerConnectionChangedParameters param;
+                cacheServerConnectionChanged(param);
+            }
+        }
+
         [FreeFunction("IsConnectedToCacheServerV2")]
         public extern static bool IsConnectedToCacheServer();
-        [FreeFunction("ReconnectToCacheServerV2")]
-        public extern static void ReconnectToCacheServer();
+        [Obsolete("Has been replaced by AssetDatabaseExperimental.RefreshSettings", true)]
+        public static void ReconnectToCacheServer()
+        {
+            throw new NotSupportedException("Please use AssetdatabaseExperimental.RefreshSettings instead.");
+        }
+
         [FreeFunction()]
         public extern static string GetCacheServerAddress();
         [FreeFunction()]

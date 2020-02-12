@@ -1016,20 +1016,39 @@ namespace UnityEngine
         extern public ArticulationDrive zDrive { get; set; }
 
         extern public bool immovable { get; set; }
+        extern public bool useGravity { get; set; }
 
         extern public float linearDamping { get; set; }
         extern public float angularDamping { get; set; }
         extern public float jointFriction { get; set; }
 
         extern public void AddForce(Vector3 force);
+        extern public void AddRelativeForce(Vector3 force);
         extern public void AddTorque(Vector3 torque);
+        extern public void AddRelativeTorque(Vector3 torque);
+        extern public void AddForceAtPosition(Vector3 force, Vector3 position);
 
         extern public Vector3 velocity { get; }
         extern public Vector3 angularVelocity { get; }
 
         extern public float mass { get; set; }
-        extern public Vector3 centerOfMass { get; }
-        extern public Vector3 inertiaTensor { get; }
+        extern public Vector3 centerOfMass { get; set; }
+        extern public Vector3 worldCenterOfMass { get; }
+        extern public Vector3 inertiaTensor { get; set; }
+        extern public Quaternion inertiaTensorRotation { get; set; }
+        extern public void ResetCenterOfMass();
+        extern public void ResetInertiaTensor();
+
+        extern public void Sleep();
+        extern public bool IsSleeping();
+        extern public void WakeUp();
+        extern public float sleepThreshold { get; set; }
+
+        extern public int solverIterations { get; set; }
+        extern public int solverVelocityIterations { get; set; }
+
+        extern public float maxAngularVelocity { get; set; }
+        extern public float maxDepenetrationVelocity { get; set; }
 
         extern public ArticulationReducedSpace jointPosition { get; set; }
         extern public ArticulationReducedSpace jointVelocity { get; set; }
@@ -1040,6 +1059,9 @@ namespace UnityEngine
 
         extern public void TeleportRoot(Vector3 position, Quaternion rotation);
         extern public Vector3 GetClosestPoint(Vector3 point);
+
+        extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
+        extern public Vector3 GetPointVelocity(Vector3 worldPoint);
     }
 
     [NativeHeader("Modules/Physics/PhysicsManager.h")]

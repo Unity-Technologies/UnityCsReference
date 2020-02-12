@@ -15,6 +15,13 @@ namespace Unity.Burst.LowLevel
     {
         public delegate bool ExtractCompilerFlags(Type jobType, out string flags);
 
+        public enum BurstLogType
+        {
+            Info,
+            Warning,
+            Error,
+        }
+
         public static void Initialize(string folderRuntime, ExtractCompilerFlags extractCompilerFlags)
         {
             if (folderRuntime == null) throw new ArgumentNullException(nameof(folderRuntime));

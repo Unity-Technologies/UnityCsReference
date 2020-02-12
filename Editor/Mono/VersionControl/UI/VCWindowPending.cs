@@ -49,8 +49,6 @@ namespace UnityEditor.VersionControl
         float s_DeleteChangesetsButtonWidth = 0f;
         string m_SearchText = string.Empty;
 
-        static GUIContent[] sStatusWheel;
-
         DateTime lastRefresh = new DateTime(0);
         private int refreshInterval = 1000; // this is in MS
         private bool scheduleRefresh = false;
@@ -63,27 +61,6 @@ namespace UnityEditor.VersionControl
             if (s_Styles == null)
             {
                 s_Styles = new Styles();
-            }
-        }
-
-        static internal GUIContent StatusWheel
-        {
-            get
-            {
-                if (sStatusWheel == null)
-                {
-                    sStatusWheel = new GUIContent[12];
-                    for (int i = 0; i < 12; i++)
-                    {
-                        GUIContent gc = new GUIContent();
-                        gc.image = EditorGUIUtility.LoadIcon("WaitSpin" + i.ToString("00")) as Texture2D;
-                        gc.image.hideFlags = HideFlags.HideAndDontSave;
-                        gc.image.name = "Spinner";
-                        sStatusWheel[i] = gc;
-                    }
-                }
-                int frame = (int)Mathf.Repeat(Time.realtimeSinceStartup * 10, 11.99f);
-                return sStatusWheel[frame];
             }
         }
 
@@ -706,7 +683,7 @@ namespace UnityEditor.VersionControl
             {
                 string msg = activeTask.progressMessage;
                 Rect sr = rect;
-                GUIContent cont = StatusWheel;
+                GUIContent cont = UnityEditorInternal.InternalEditorUtility.animatedProgressImage;
                 sr.width = sr.height;
                 sr.x += 4;
                 sr.y += 4;

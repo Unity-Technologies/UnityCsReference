@@ -408,4 +408,36 @@ namespace UnityEngine.Bindings
             MarshalAsType = marshalAsType;
         }
     }
+
+    [VisibleToOtherModules]
+    enum PreventExecutionSeverity
+    {
+        PreventExecution_Error,
+        PreventExecution_ManagedException,
+        PreventExecution_NativeException
+    }
+
+    [VisibleToOtherModules]
+    interface IBindingsPreventExecution
+    {
+        object singleFlagValue { get; set; }
+        PreventExecutionSeverity severity { get; set; }
+        string howToFix { get; set; }
+    }
+
+    [VisibleToOtherModules]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = true)]
+    class PreventExecutionInStateAttribute : Attribute, IBindingsPreventExecution
+    {
+        public object singleFlagValue { get; set; }
+        public PreventExecutionSeverity severity { get; set; }
+        public string howToFix { get; set; }
+
+        public PreventExecutionInStateAttribute(object systemAndFlags, PreventExecutionSeverity reportSeverity, string howToString = "")
+        {
+            singleFlagValue = systemAndFlags;
+            severity = reportSeverity;
+            howToFix = howToString;
+        }
+    }
 }

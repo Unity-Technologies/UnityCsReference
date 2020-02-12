@@ -126,15 +126,31 @@ namespace UnityEditor.Presets
             rect.yMax = rect.yMin + EditorGUIUtility.singleLineHeight;
             var defaultProperty = listProperty.GetArrayElementAtIndex(index);
             var presetProperty = defaultProperty.FindPropertyRelative("m_Preset");
+            var disabledProperty = defaultProperty.FindPropertyRelative("m_Disabled");
             var presetObject = (Preset)presetProperty.objectReferenceValue;
 
-            var filterRect = rect;
-            filterRect.xMax = filterRect.xMin + rect.width / 2f;
-            DrawFilterField(filterRect, defaultProperty.FindPropertyRelative("m_Filter"));
+            var enableRect = rect;
+            enableRect.y -= 1f;
+            enableRect.xMax = enableRect.xMin + enableRect.height;
+            using (new EditorGUI.PropertyScope(enableRect, GUIContent.none, disabledProperty))
+            {
+                var toggleValue = EditorGUI.Toggle(enableRect, GUIContent.none, !disabledProperty.boolValue);
+                if (toggleValue == disabledProperty.boolValue)
+                {
+                    disabledProperty.boolValue = !disabledProperty.boolValue;
+                }
+            }
+            rect.xMin += enableRect.width + 2f;
+            using (new EditorGUI.DisabledScope(disabledProperty.boolValue))
+            {
+                var filterRect = rect;
+                filterRect.xMax = filterRect.xMin + rect.width / 2f;
+                DrawFilterField(filterRect, defaultProperty.FindPropertyRelative("m_Filter"));
 
-            var presetFieldRect = rect;
-            presetFieldRect.xMin = presetFieldRect.xMax - rect.width / 2f;
-            DrawPresetField(presetFieldRect, presetProperty, keyType, presetObject);
+                var presetFieldRect = rect;
+                presetFieldRect.xMin = presetFieldRect.xMax - rect.width / 2f;
+                DrawPresetField(presetFieldRect, presetProperty, keyType, presetObject);
+            }
         }
 
         static void DrawPresetField(Rect rect, SerializedProperty presetProperty, PresetType keyType, Preset presetObject)
@@ -179,11 +195,14 @@ namespace UnityEditor.Presets
         {
             var fieldRect = position;
             fieldRect.xMax -= 3f;
-            using (var changed = new EditorGUI.ChangeCheckScope())
+            using (new EditorGUI.PropertyScope(fieldRect, GUIContent.none, filter))
             {
-                var newValue = EditorGUI.ToolbarSearchField(fieldRect, filter.stringValue, false);
-                if (changed.changed)
-                    filter.stringValue = newValue;
+                using (var changed = new EditorGUI.ChangeCheckScope())
+                {
+                    var newValue = EditorGUI.ToolbarSearchField(fieldRect, filter.stringValue, false);
+                    if (changed.changed)
+                        filter.stringValue = newValue;
+                }
             }
         }
     }

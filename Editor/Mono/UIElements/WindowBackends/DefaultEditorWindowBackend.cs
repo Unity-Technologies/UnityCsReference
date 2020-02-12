@@ -45,7 +45,7 @@ namespace UnityEditor.UIElements
             }
 
             editorWindowModel.onRegisterWindow = OnRegisterWindow;
-            editorWindowModel.onUnegisterWindow = OnUnegisterWindow;
+            editorWindowModel.onUnegisterWindow = OnUnregisterWindow;
             editorWindowModel.onDisplayWindowMenu = AddUIElementsDebuggerToMenu;
             editorWindowModel.viewMarginsChanged = ViewMarginsChanged;
             editorWindowModel.rootVisualElementCreated = RootVisualElementCreated;
@@ -58,17 +58,16 @@ namespace UnityEditor.UIElements
 
         void RootVisualElementCreated()
         {
-            if (CurrentWindowHasCompatibleTree())
+            EditorWindow window = editorWindowModel.window;
+
+            var root = window.GetRootVisualElement();
+
+            if (root.hierarchy.parent != m_Panel.visualTree)
             {
-                EditorWindow window = editorWindowModel.window;
-
-                var root = window.GetRootVisualElement();
-
-                if (root.hierarchy.parent != m_Panel.visualTree)
-                    m_Panel.visualTree.Add(root);
-
-                ViewMarginsChanged();
+                AddRootElement(root);
             }
+
+            ViewMarginsChanged();
         }
 
         private void ViewMarginsChanged()
@@ -77,7 +76,7 @@ namespace UnityEditor.UIElements
             {
                 RectOffset margins = editorWindowModel.viewMargins;
 
-                IStyle style = editorWindowModel.window.rootVisualElement.style;
+                IStyle style = editorWindowModel.window.GetRootVisualElement().style;
                 style.top = margins.top;
                 style.bottom = margins.bottom;
                 style.left = margins.left;
@@ -91,10 +90,7 @@ namespace UnityEditor.UIElements
             EditorWindow window = editorWindowModel.window;
 
             // we may delay this until root is first created
-            if (CurrentWindowHasCompatibleTree())
-            {
-                m_Panel.visualTree.Add(window.rootVisualElement);
-            }
+            AddRootElement(window.GetRootVisualElement());
             m_Panel.getViewDataDictionary = window.GetViewDataDictionary;
             m_Panel.saveViewData = window.SaveViewData;
             m_Panel.name = window.GetType().Name;
@@ -102,15 +98,47 @@ namespace UnityEditor.UIElements
             m_NotificationContainer.onGUIHandler = window.DrawNotification;
         }
 
-        private void OnUnegisterWindow()
+        const TrickleDown k_TricklePhase = TrickleDown.TrickleDown;
+
+        private void AddRootElement(VisualElement root)
+        {
+            if (CurrentWindowHasCompatibleTree())
+            {
+                root.RegisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                root.RegisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                root.RegisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                m_Panel.visualTree.Add(root);
+            }
+        }
+
+        private void RemoveRootElement(VisualElement root)
+        {
+            root.RemoveFromHierarchy();
+            root.UnregisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.UnregisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.UnregisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+        }
+
+        private void SendEventToSplitterGUI(EventBase ev)
+        {
+            if (ev.imguiEvent == null || ev.imguiEvent.rawType == EventType.Used)
+                return;
+
+            imguiContainer.HandleIMGUIEvent(ev.imguiEvent, editorWindowModel.onSplitterGUIHandler, false);
+
+            if (ev.imguiEvent.rawType == EventType.Used)
+                ev.StopPropagation();
+        }
+
+        private void OnUnregisterWindow()
         {
             EditorWindow window = editorWindowModel.window;
             if (CurrentWindowHasCompatibleTree())
             {
-                var root = window.rootVisualElement;
+                var root = window.GetRootVisualElement();
                 if (root.hierarchy.parent == m_Panel.visualTree)
                 {
-                    root.RemoveFromHierarchy();
+                    RemoveRootElement(root);
                     m_Panel.getViewDataDictionary = null;
                     m_Panel.saveViewData = null;
                 }

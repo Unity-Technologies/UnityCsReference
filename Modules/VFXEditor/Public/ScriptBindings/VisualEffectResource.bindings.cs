@@ -10,6 +10,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.VFX;
+using UnityEditor;
 
 using UnityObject = UnityEngine.Object;
 
@@ -208,6 +209,11 @@ namespace UnityEditor.VFX
         public T value = default(T);
     }
 
+    internal class VFXExpressionObjectValueContainerDesc<T> : VFXExpressionValueContainerDesc
+    {
+        public int instanceID = 0;
+    }
+
     [NativeType(CodegenOptions.Custom, "ScriptingVFXExpressionDesc")]
     internal struct VFXExpressionDesc
     {
@@ -261,9 +267,9 @@ namespace UnityEditor.VFX
         public uint[] animationCurveValuesExpressions;
         public Gradient[] gradientValues;
         public uint[] gradientValuesExpressions;
-        public Texture[] textureValues;
+        public int[] textureValues;
         public uint[] textureValuesExpressions;
-        public Mesh[] meshValues;
+        public int[] meshValues;
         public uint[] meshValuesExpressions;
         public bool[] boolValues;
         public uint[] boolValuesExpressions;
@@ -280,7 +286,6 @@ namespace UnityEditor.VFX
 
     [UsedByNativeCode]
     [NativeHeader("Modules/VFXEditor/Public/ScriptBindings/VisualEffectResourceBindings.h")]
-    [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectResource.h")]
     [NativeHeader("VFXScriptingClasses.h")]
     internal class VisualEffectResource : UnityObject
@@ -341,16 +346,19 @@ namespace UnityEditor.VFX
                     internalSheet.matrix4x4Values = v.Select(o => o.value).ToArray();
                     internalSheet.matrix4x4ValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Texture>))
+                else if (group.Key == typeof(VFXExpressionObjectValueContainerDesc<Texture>))
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Texture>>().ToArray();
-                    internalSheet.textureValues = v.Select(o => o.value).ToArray();
+                    var v = group.Cast<VFXExpressionObjectValueContainerDesc<Texture>>().ToArray();
+                    internalSheet.textureValues = v.Select(o => o.instanceID).ToArray();
                     internalSheet.textureValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Mesh>))
+                else if (group.Key == typeof(VFXExpressionObjectValueContainerDesc<Mesh>))
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Mesh>>().ToArray();
-                    internalSheet.meshValues = v.Select(o => o.value).ToArray();
+                    var v = group.Cast<VFXExpressionObjectValueContainerDesc<Mesh>>().ToArray();
+                    for (int i = 0; i < v.Length; ++i)
+                    {
+                    }
+                    internalSheet.meshValues = v.Select(o => o.instanceID).ToArray();
                     internalSheet.meshValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
                 }
                 else if (group.Key == typeof(VFXExpressionValueContainerDesc<Gradient>))
@@ -370,6 +378,20 @@ namespace UnityEditor.VFX
                     var v = group.Cast<VFXExpressionValueContainerDesc<bool>>().ToArray();
                     internalSheet.boolValues = v.Select(o => o.value).ToArray();
                     internalSheet.boolValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                }
+                //For backward compatibility, Obsoleted by compile on import PR
+                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Texture>))
+                {
+                    var v = group.Cast<VFXExpressionValueContainerDesc<Texture>>().ToArray();
+                    internalSheet.textureValues = v.Select(o => o.value != null ? o.value.GetInstanceID() : 0).ToArray();
+                    internalSheet.textureValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                }
+                //For backward compatibility, Obsoleted by compile on import PR
+                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Mesh>))
+                {
+                    var v = group.Cast<VFXExpressionValueContainerDesc<Mesh>>().ToArray();
+                    internalSheet.meshValues = v.Select(o => o.value != null ? o.value.GetInstanceID() : 0).ToArray();
+                    internalSheet.meshValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
                 }
                 else
                 {
@@ -508,7 +530,29 @@ namespace UnityEditor.VFX
         extern public int GetShaderIndex(UnityObject shader);
         public extern void ShowGeneratedShaderFile(int index, int line = 0);
 
-        extern public void ClearDependencies();
-        extern public void AddDependency(string dep);
+        extern public void ClearSourceDependencies();
+        extern public void AddSourceDependency(string dep);
+        extern public void ClearImportDependencies();
+        extern public void AddImportDependency(string dep);
+
+        [UsedByNativeCode]
+        internal static string[] AddResourceDependencies(string assetPath)
+        {
+            if (onAddResourceDependencies != null)
+                return onAddResourceDependencies(assetPath);
+
+            return null;
+        }
+
+        internal static Func<string, string[]> onAddResourceDependencies;
+
+        [UsedByNativeCode]
+        internal void CompileResource()
+        {
+            if (onCompileResource != null)
+                onCompileResource(this);
+        }
+
+        internal static Action<VisualEffectResource> onCompileResource;
     }
 }

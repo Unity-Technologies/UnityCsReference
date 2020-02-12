@@ -21,6 +21,8 @@ namespace UnityEditor.Connect
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.CrashService;
         public override string packageName { get; }
+        public override string serviceFlagName { get; }
+        public override bool shouldSyncOnProjectRebind => true;
 
         static readonly CrashService k_Instance;
 
@@ -42,6 +44,7 @@ namespace UnityEditor.Connect
             projectSettingsPath = "Project/Services/Cloud Diagnostics";
             displayToggle = false;
             packageName = null;
+            serviceFlagName = "gameperf";
             ServicesRepository.AddService(this);
         }
 

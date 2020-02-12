@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
@@ -46,6 +47,7 @@ namespace UnityEditor
         internal static event OnAssetLabelDrawDelegate postAssetLabelDrawCallback = null;
 
         private static IDictionary<int, string> s_GUIDCache = null;
+        private readonly Action m_TreeViewRepaintAction;
 
         public AssetsTreeViewGUI(TreeViewController treeView)
             : base(treeView)
@@ -53,6 +55,7 @@ namespace UnityEditor
             iconOverlayGUI += OnIconOverlayGUI;
             labelOverlayGUI += OnLabelOverlayGUI;
             k_TopRowMargin = 4f;
+            m_TreeViewRepaintAction = () => m_TreeView.Repaint();
         }
 
         // ---------------------
@@ -180,10 +183,10 @@ namespace UnityEditor
 
         private void OnIconOverlayGUI(TreeViewItem item, Rect overlayRect)
         {
-            OnIconOverlayGUI(item.id, overlayRect, false);
+            OnIconOverlayGUI(item.id, overlayRect, false, m_TreeViewRepaintAction);
         }
 
-        internal static void OnIconOverlayGUI(int instanceID, Rect overlayRect, bool addPadding)
+        internal static void OnIconOverlayGUI(int instanceID, Rect overlayRect, bool addPadding, Action repaintAction = null)
         {
             if (addPadding)
             {
@@ -201,7 +204,7 @@ namespace UnityEditor
             if (s_VCEnabled && AssetDatabase.IsMainAsset(instanceID))
             {
                 string guid = GetGUIDForInstanceID(instanceID);
-                ProjectHooks.OnProjectWindowItem(guid, overlayRect);
+                ProjectHooks.OnProjectWindowItem(guid, overlayRect, repaintAction);
             }
         }
 

@@ -7,6 +7,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
@@ -33,6 +34,9 @@ namespace UnityEditor
             public static SVC<float> genericMenuFloatingTopOffset = new SVC<float>("--window-floating-generic-menu-top-offset", 20f);
 
             public static readonly GUIStyle tabLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
+            public static readonly GUIStyle dragTab = new GUIStyle("dragtab");
+            public static readonly GUIStyle dragTabFirst = new GUIStyle("dragtab first");
+            public static readonly GUIStyle dockTitleBarStyle = new GUIStyle("dockHeader");
         }
 
         internal const int kFloatingWindowTopBorderWidth = 2;
@@ -61,10 +65,7 @@ namespace UnityEditor
         [SerializeField] internal List<EditorWindow> m_Panes = new List<EditorWindow>();
         [SerializeField] internal int m_Selected;
         [SerializeField] internal int m_LastSelected;
-
         [NonSerialized] internal GUIStyle tabStyle = null;
-        [NonSerialized] internal GUIStyle firstTabStyle = null;
-        [NonSerialized] internal GUIStyle dockTitleBarStyle = null;
 
         private bool m_IsBeingDestroyed;
         private Rect m_ScrollLeftRect;
@@ -163,6 +164,8 @@ namespace UnityEditor
             }
 
             base.OnEnable();
+
+            ((IEditorWindowModel)this).onSplitterGUIHandler = HandleSplitView;
         }
 
         public void AddTab(EditorWindow pane, bool sendPaneEvents = true)
@@ -214,11 +217,22 @@ namespace UnityEditor
             if (m_Selected >= 0 && m_Selected < m_Panes.Count)
                 actualView = m_Panes[m_Selected];
 
+            UpdateWindowTitle(actualView);
+
             Repaint();
             pane.m_Parent = null;
             if (killIfEmpty)
                 KillIfEmpty();
             RegisterSelectedPane(sendEvents: true);
+        }
+
+        private void UpdateWindowTitle(EditorWindow w)
+        {
+            if (w && w.m_Parent && w.m_Parent.window && w.titleContent != null)
+            {
+                var projectName = EditorApplication.isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath));
+                w.m_Parent.window.title = w.titleContent.text + " - " + projectName;
+            }
         }
 
         private void KillIfEmpty()
@@ -370,15 +384,12 @@ namespace UnityEditor
             using (new GUI.ClipScope(clipRect, new Vector2(-m_ScrollOffset - 1f, 0)))
             {
                 if (tabStyle == null)
-                    tabStyle = "dragtab";
+                    tabStyle = Styles.dragTab;
 
-                if (firstTabStyle == null)
-                    firstTabStyle = EditorStyles.s_Current.GetStyle("dragtab first");
-
-                var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle, firstTabStyle);
+                var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle, Styles.dragTabFirst);
                 if (totalTabWidth > 0f)
                     m_TotalTabWidth = totalTabWidth;
-                tabStyle = "dragtab";
+                tabStyle = Styles.dragTab;
             }
         }
 
@@ -411,11 +422,7 @@ namespace UnityEditor
         private void DrawDockTitleBarBackground(Rect titleBarRect)
         {
             if (Event.current.type == EventType.Repaint)
-            {
-                if (dockTitleBarStyle == null)
-                    dockTitleBarStyle = "dockHeader";
-                dockTitleBarStyle.Draw(titleBarRect, GUIContent.none, 0);
-            }
+                Styles.dockTitleBarStyle.Draw(titleBarRect, GUIContent.none, 0);
         }
 
         private void SetupHoldScrollerUpdate(float clickOffset)
@@ -828,6 +835,8 @@ namespace UnityEditor
                                 GUIUtility.GUIToScreenPoint(evt.mousePosition)
                             );
                             EditorApplication.update += CheckDragWindowExists;
+                            Invoke("OnTabDragging", s_DragPane);
+
                             // We just showed a window. Exit the GUI because the window might be
                             // repainting already (esp. on Windows)
                             GUIUtility.ExitGUI();
@@ -899,6 +908,8 @@ namespace UnityEditor
                             {
                                 Invoke("OnTabDetached", s_DragPane);
                                 s_DropInfo.dropArea.PerformDrop(s_DragPane, s_DropInfo, screenMousePos);
+
+                                UpdateWindowTitle(s_DragPane);
                             }
                             else
                             {
@@ -921,6 +932,7 @@ namespace UnityEditor
                                 EditorWindow.CreateNewWindowForEditorWindow(w, loadPosition: false, showImmediately: false, setFocus: false);
 
                                 w.position = w.m_Parent.window.FitWindowRectToScreen(wPos, true, true);
+                                Invoke("OnTabNewWindow", w);
 
                                 GUIUtility.hotControl = 0;
                                 GUIUtility.ExitGUI();
@@ -997,6 +1009,10 @@ namespace UnityEditor
             float roundedWidth = Mathf.Round(tabPositionRect.x + tabPositionRect.width) - roundedPosX;
 
             bool isActive = m_Panes[tabIndex] == EditorWindow.focusedWindow;
+
+            if (isActive)
+                UpdateWindowTitle(m_Panes[tabIndex]);
+
             Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);
             tabStyle.Draw(tabContentRect, tabContentRect.Contains(Event.current.mousePosition), isActive, tabIndex == selected, false);
             GUI.Label(tabPositionRect, GetTruncatedTabContent(tabIndex), Styles.tabLabel);

@@ -397,7 +397,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
         {
-            return EmitExceptionAsError(() => Instance.TickCompilationPipeline(options, platformGroup, platform, extraScriptingDefines), EditorCompilation.CompileStatus.Idle);
+            try
+            {
+                return Instance.TickCompilationPipeline(options, platformGroup, platform, extraScriptingDefines);
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+                return EditorCompilation.CompileStatus.Idle;
+            }
         }
 
         [RequiredByNativeCode]

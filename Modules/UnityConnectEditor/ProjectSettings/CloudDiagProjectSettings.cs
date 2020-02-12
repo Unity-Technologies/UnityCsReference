@@ -97,22 +97,32 @@ namespace UnityEditor.Connect
         void SetupServiceToggle()
         {
             m_CrashServiceToggle.SetProperty(k_ServiceNameProperty, CrashService.instance.name);
-            m_CrashServiceToggle.SetValueWithoutNotify(CrashService.instance.IsServiceEnabled());
-            SetupServiceToggleLabel(m_CrashServiceToggle, CrashService.instance.IsServiceEnabled());
             m_CrashServiceToggle.SetEnabled(false);
-            m_CrashServiceGoToDashboard.style.display = (CrashService.instance.IsServiceEnabled()) ? DisplayStyle.Flex : DisplayStyle.None;
+            UpdateServiceToggleAndDashboardLink(CrashService.instance.IsServiceEnabled());
+
             m_CrashServiceToggle.RegisterValueChangedCallback(evt =>
             {
                 if (currentUserPermission != UserRole.Owner && currentUserPermission != UserRole.Manager)
                 {
-                    m_CrashServiceToggle.SetValueWithoutNotify(evt.previousValue);
-                    SetupServiceToggleLabel(m_CrashServiceToggle, evt.previousValue);
+                    UpdateServiceToggleAndDashboardLink(evt.previousValue);
                     return;
                 }
-                SetupServiceToggleLabel(m_CrashServiceToggle, evt.newValue);
                 CrashService.instance.EnableService(evt.newValue);
-                m_CrashServiceGoToDashboard.style.display = (evt.newValue) ? DisplayStyle.Flex : DisplayStyle.None;
             });
+        }
+
+        void UpdateServiceToggleAndDashboardLink(bool isEnabled)
+        {
+            if (m_CrashServiceGoToDashboard != null)
+            {
+                m_CrashServiceGoToDashboard.style.display = (isEnabled) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (m_CrashServiceToggle != null)
+            {
+                m_CrashServiceToggle.SetValueWithoutNotify(isEnabled);
+                SetupServiceToggleLabel(m_CrashServiceToggle, isEnabled);
+            }
         }
 
         protected override void ToggleRestrictedVisualElementsAvailability(bool enable)
@@ -296,6 +306,8 @@ namespace UnityEditor.Connect
             {
                 var crashContainer = m_Provider.rootVisualElement.Q(k_CloudDiagCrashStateName);
                 crashContainer?.Clear();
+                m_Provider.UpdateServiceToggleAndDashboardLink(CrashService.instance.IsServiceEnabled());
+
                 m_Provider.HandlePermissionRestrictedControls();
             }
 
@@ -366,6 +378,7 @@ namespace UnityEditor.Connect
                                 logBufferSize.SetValueWithoutNotify(newValue);
                             }
                         });
+                        m_Provider.UpdateServiceToggleAndDashboardLink(CrashService.instance.IsServiceEnabled());
                     }
 
                     m_Provider.HandlePermissionRestrictedControls();

@@ -27,19 +27,35 @@ namespace UnityEditor.Build.Content
     {
         [NativeName("guid")]
         internal GUID m_GUID;
-        public GUID guid { get { return m_GUID; } }
+        public GUID guid
+        {
+            get => m_GUID;
+            internal set => m_GUID = value;
+        }
 
         [NativeName("localIdentifierInFile")]
         internal long m_LocalIdentifierInFile;
-        public long localIdentifierInFile { get { return m_LocalIdentifierInFile; } }
+        public long localIdentifierInFile
+        {
+            get => m_LocalIdentifierInFile;
+            internal set => m_LocalIdentifierInFile = value;
+        }
 
         [NativeName("fileType")]
         internal FileType m_FileType;
-        public FileType fileType { get { return m_FileType; } }
+        public FileType fileType
+        {
+            get => m_FileType;
+            internal set => m_FileType = value;
+        }
 
         [NativeName("filePath")]
         internal string m_FilePath;
-        public string filePath { get { return m_FilePath; } }
+        public string filePath
+        {
+            get => m_FilePath;
+            internal set => m_FilePath = value;
+        }
 
         public override string ToString()
         {

@@ -15,9 +15,11 @@ namespace UnityEditor
     internal class ProgressWindow : EditorWindow
     {
         internal const string ussPath = "StyleSheets/ProgressWindow/ProgressWindow.uss";
+        internal const string ussPathDark = "StyleSheets/ProgressWindow/ProgressWindowDark.uss";
+        internal const string ussPathLight = "StyleSheets/ProgressWindow/ProgressWindowLight.uss";
         public const string preferenceKey = "ProgressWindow.";
 
-        public const string kSuccessIcon = "FilterSelectedOnly";
+        public const string kSuccessIcon = "completed_task";
         public const string kRunningIcon = "console.infoicon";
         public const string kFailedIcon = "console.erroricon";
         public const string kCanceledIcon = "console.warnicon";
@@ -31,7 +33,6 @@ namespace UnityEditor
         private int m_LastParentFailedIndex = -1;
         private static ProgressWindow m_Window;
         private Button m_DismissAllBtn;
-        private Toggle m_FilterActive;
         private Toggle m_FilterFailed;
         private Toggle m_FilterSuccess;
         private Toggle m_FilterCancelled;
@@ -96,12 +97,16 @@ namespace UnityEditor
             m_Window = this;
 
             rootVisualElement.AddStyleSheetPath(ussPath);
+            if (EditorGUIUtility.isProSkin)
+                rootVisualElement.AddStyleSheetPath(ussPathDark);
+            else
+                rootVisualElement.AddStyleSheetPath(ussPathLight);
 
             var toolbar = new UIElements.Toolbar();
             m_DismissAllBtn = new UIElements.ToolbarButton(ClearAll)
             {
                 name = "DismissAllBtn",
-                text = "Dismiss All",
+                text = "Clear inactive",
             };
             toolbar.Add(m_DismissAllBtn);
             // This is our friend the spacer
@@ -113,9 +118,7 @@ namespace UnityEditor
                 }
             });
 
-            m_FilterActive = CreateStatusFiler(toolbar, "Active", kRunningIcon);
             m_FilterSuccess = CreateStatusFiler(toolbar, "Success", kSuccessIcon);
-            m_FilterSuccess.Q<VisualElement>("unity-checkmark").style.unityBackgroundImageTintColor = new StyleColor(Color.green);
             m_FilterCancelled = CreateStatusFiler(toolbar, "Canceled", kCanceledIcon);
             m_FilterFailed = CreateStatusFiler(toolbar, "Failed", kFailedIcon);
 
@@ -278,7 +281,6 @@ namespace UnityEditor
         private void UpdateStatusHeaders()
         {
             var countPerStatus = Progress.GetCountPerStatus();
-            UpdateStatusHeader(m_FilterActive, Progress.Status.Running, countPerStatus);
             UpdateStatusHeader(m_FilterCancelled, Progress.Status.Canceled, countPerStatus);
             UpdateStatusHeader(m_FilterFailed, Progress.Status.Failed, countPerStatus);
             UpdateStatusHeader(m_FilterSuccess, Progress.Status.Succeeded, countPerStatus);
@@ -308,10 +310,6 @@ namespace UnityEditor
             else if (el.dataSource.status == Progress.Status.Failed)
             {
                 UpdateStatusFilter(el.rootVisualElement, m_FilterFailed.value);
-            }
-            else if (el.dataSource.status == Progress.Status.Running)
-            {
-                UpdateStatusFilter(el.rootVisualElement, m_FilterActive.value);
             }
             else if (el.dataSource.status == Progress.Status.Succeeded)
             {

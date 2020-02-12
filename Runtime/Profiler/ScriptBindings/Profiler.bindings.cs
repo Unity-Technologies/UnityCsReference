@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -291,6 +292,17 @@ namespace UnityEngine.Profiling
         [StaticAccessor("GetMemoryManager()", StaticAccessorType.Dot)]
         [NativeConditional("ENABLE_MEMORY_MANAGER")]
         public extern static long GetTotalReservedMemoryLong();
+
+        [NativeConditional("ENABLE_MEMORY_MANAGER")]
+        public static unsafe long GetTotalFragmentationInfo(NativeArray<int> stats)
+        {
+            return InternalGetTotalFragmentationInfo((IntPtr)stats.GetUnsafePtr(), stats.Length);
+        }
+
+        [NativeMethod(Name = "GetTotalFragmentationInfo")]
+        [StaticAccessor("GetMemoryManager()", StaticAccessorType.Dot)]
+        [NativeConditional("ENABLE_MEMORY_MANAGER")]
+        private extern static long InternalGetTotalFragmentationInfo(IntPtr pStats, int count);
 
         [NativeMethod(Name = "GetRegisteredGFXDriverMemory")]
         [StaticAccessor("GetMemoryManager()", StaticAccessorType.Dot)]

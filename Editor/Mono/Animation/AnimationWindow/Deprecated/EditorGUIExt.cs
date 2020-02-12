@@ -787,9 +787,17 @@ namespace UnityEditor
                             case EventCommandNames.Delete:
                                 evt.Use();
                                 if (execute)
-                                {
                                     return HighLevelEvent.Delete;
-                                }
+                                break;
+                            case EventCommandNames.Copy:
+                                evt.Use();
+                                if (execute)
+                                    return HighLevelEvent.Copy;
+                                break;
+                            case EventCommandNames.Paste:
+                                evt.Use();
+                                if (execute)
+                                    return HighLevelEvent.Paste;
                                 break;
                         }
                     }
@@ -860,5 +868,7 @@ namespace UnityEditor
         EndDrag,
         Delete,
         SelectionChanged,
+        Copy,
+        Paste
     }
 } //namespace

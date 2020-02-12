@@ -32,7 +32,11 @@ namespace UnityEditor
                 PluginImporterInspector.Compatibility compatibililty = inspector.GetPlatformCompatibility(platformName);
                 if (compatibililty == PluginImporterInspector.Compatibility.Mixed)
                     throw new Exception("Unexpected mixed value for '" + inspector.importer.assetPath + "', platform: " + platformName);
-                return compatibililty == PluginImporterInspector.Compatibility.Compatible;
+                if (compatibililty != PluginImporterInspector.Compatibility.Compatible)
+                    return false;
+
+                var pluginCPU = value as DesktopPluginCPUArchitecture ? ?? DesktopPluginCPUArchitecture.None;
+                return pluginCPU == (DesktopPluginCPUArchitecture)defaultValue || pluginCPU == DesktopPluginCPUArchitecture.AnyCPU;
             }
 
             internal override void OnGUI(PluginImporterInspector inspector)
@@ -223,6 +227,14 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(cpu) && string.Compare(cpu, "AnyCPU", true) != 0)
             {
                 return Path.Combine(cpu, Path.GetFileName(imp.assetPath));
+            }
+
+            if (pluginForWindows)
+            {
+                // Fix case 1185926: plugins for x86_64 are supposed to be copied to Plugins/x86_64
+                // Plugins for x86 are supposed to be copied to Plugins/x86
+                var cpuName = target == BuildTarget.StandaloneWindows ? nameof(DesktopPluginCPUArchitecture.x86) : nameof(DesktopPluginCPUArchitecture.x86_64);
+                return Path.Combine(cpuName, Path.GetFileName(imp.assetPath));
             }
 
             // For files this will return filename, for directories, this will return last path component
