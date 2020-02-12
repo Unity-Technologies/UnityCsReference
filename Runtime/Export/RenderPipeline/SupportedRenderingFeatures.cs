@@ -57,6 +57,7 @@ namespace UnityEngine.Rendering
         public bool receiveShadows { get; set; } = true;
         public bool reflectionProbes { get; set; } = true;
         public bool rendererPriority { get; set; } = false;
+        public bool terrainDetailUnsupported { get; set; } = false;
 
         public bool overridesEnvironmentLighting { get; set; } = false;
         public bool overridesFog { get; set; } = false;

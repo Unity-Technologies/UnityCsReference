@@ -7,7 +7,6 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
 
-
 namespace UnityEngine.XR.WSA
 {
     // Augmented Reality specific origin controls.
@@ -58,4 +57,3 @@ namespace UnityEngine.XR.WSA
         }
     }
 }
-

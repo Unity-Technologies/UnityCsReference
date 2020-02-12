@@ -492,42 +492,17 @@ namespace UnityEditor
         [NativeName("GetPropertyPath")]
         private extern string GetPropertyPathInternal();
 
-        /// <summary>
-        /// This is a more generic and less specialized form as the one below
-        /// 'hashCodeForPropertyPathWithoutArrayIndex' that assumes that
-        /// we dont have managed references.
-        /// </summary>
-        internal int hashCodeForPropertyPath
-        {
-            get
-            {
-                Verify();
-
-                // For managed references we cannot ignore the array index since
-                // instances might change from index to index.
-                if (propertyType == SerializedPropertyType.ManagedReference)
-                {
-                    return GetHashCodeForPropertyPathInternal();
-                }
-
-                return hashCodeForPropertyPathWithoutArrayIndex;
-            }
-        }
-
         internal int hashCodeForPropertyPathWithoutArrayIndex
         {
             get
             {
                 Verify();
-                return GetHasCodeForPropertyPathWithoutArrayIndexInternal();
+                return GetHashCodeForPropertyPathWithoutArrayIndexInternal();
             }
         }
 
-        [NativeName("GetHasCodeForPropertyPathWithoutArrayIndex")]
-        private extern int GetHasCodeForPropertyPathWithoutArrayIndexInternal();
-
-        [NativeName("GetHashCodeForPropertyPath")]
-        private extern int GetHashCodeForPropertyPathInternal();
+        [NativeName("GetHashCodeForPropertyPathWithoutArrayIndex")]
+        private extern int GetHashCodeForPropertyPathWithoutArrayIndexInternal();
 
         // Is this property editable? (RO)
         public bool editable

@@ -15,8 +15,17 @@ namespace UnityEditorInternal.Profiling
     internal class NetworkingOperationsProfilerModule : ProfilerModuleBase
     {
         [SerializeField]
-        SplitterState m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
+        SplitterState m_NetworkSplit;
+
         static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
+
+        public override void OnEnable(IProfilerWindowController profilerWindow)
+        {
+            base.OnEnable(profilerWindow);
+
+            if (m_NetworkSplit == null || m_NetworkSplit.relativeSizes == null || m_NetworkSplit.relativeSizes.Length < 2)
+                m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
+        }
 
         public override void DrawToolbar(Rect position)
         {

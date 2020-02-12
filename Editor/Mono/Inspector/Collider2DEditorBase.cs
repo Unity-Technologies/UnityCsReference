@@ -163,7 +163,7 @@ namespace UnityEditor
         void ShowContacts(Collider2D collider)
         {
             EditorGUI.indentLevel++;
-            m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts");
+            m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowContacts.faded))
             {
                 var contactCount = collider.GetContacts(m_Contacts);

@@ -74,5 +74,17 @@ namespace UnityEngine
         // Writes all modified preferences to disk.
         [NativeMethod("Sync")]
         public extern static void Save();
+
+        // NOTE: DisposeSentinel requires access to EditorPrefs but from UnityEngine.dll
+        //       (Which cant access UnityEditor.dll)
+        //       So we expose the API here. Internal only, users should use the normal EditorPrefs class
+
+        [StaticAccessor("EditorPrefs", StaticAccessorType.DoubleColon)]
+        [NativeMethod("SetInt")]
+        extern internal static void EditorPrefsSetInt(string key, int value);
+
+        [StaticAccessor("EditorPrefs", StaticAccessorType.DoubleColon)]
+        [NativeMethod("GetInt")]
+        extern internal static int EditorPrefsGetInt(string key, int defaultValue);
     }
 }
