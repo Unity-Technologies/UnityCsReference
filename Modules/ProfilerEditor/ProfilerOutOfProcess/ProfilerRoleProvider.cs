@@ -247,8 +247,8 @@ namespace UnityEditor
                 EventService.On(nameof(EventType.UmpProfilerMemRecordModeChanged), OnProfilerMemoryRecordModeChanged);
             }
 
-            [UsedImplicitly, Shortcut("Profiling/Profiler/RecordToggle", KeyCode.F9)]
-            static void RecordToggle()
+            [UsedImplicitly, CommandHandler("ProfilerRecordToggle", CommandHint.Shortcut)]
+            static void RecordToggle(CommandExecuteContext context)
             {
                 if (ProcessService.level == ProcessLevel.UMP_MASTER && ProcessService.IsChannelServiceStarted() && EventService.IsConnected)
                 {
@@ -281,11 +281,12 @@ namespace UnityEditor
                         else
                             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Recording has ended.");
                     });
+
+                    context.result = true;
                 }
                 else
                 {
-                    var profilerWindow = EditorWindow.GetWindow<ProfilerWindow>();
-                    profilerWindow.SetRecordingEnabled(!profilerWindow.IsRecording());
+                    context.result = false;
                 }
             }
 

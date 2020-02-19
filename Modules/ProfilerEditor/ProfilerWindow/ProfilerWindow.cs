@@ -179,6 +179,7 @@ namespace UnityEditor
 
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
+        const string kProfilerEditorTargetModeEnabledSessionKey = "ProfilerTargetMode";
         const string kProfilerDeepProfilingWarningSessionKey = "ProfilerDeepProfilingWarning";
 
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
@@ -244,7 +245,12 @@ namespace UnityEditor
 
         public bool IsRecording()
         {
-            return m_Recording && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
+            return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
+        }
+
+        public bool IsSetToRecord()
+        {
+            return m_Recording;
         }
 
         void OnEnable()
@@ -495,6 +501,8 @@ namespace UnityEditor
 
             // This event gets called every time when some other window is maximized and then unmaximized
             ProfilerDriver.enabled = m_Recording;
+            ProfilerDriver.profileEditor = SessionState.GetBool(kProfilerEditorTargetModeEnabledSessionKey,
+                ProfilerUserSettings.defaultTargetMode == ProfilerEditorTargetMode.Editmode || ProfilerDriver.profileEditor);
 
             m_SelectedMemRecordMode = ProfilerDriver.memoryRecordMode;
         }
@@ -572,6 +580,60 @@ namespace UnityEditor
                 ProfilerRoleProvider.LaunchProfilerSlave();
             else
                 EditorWindow.GetWindow<ProfilerWindow>(false);
+        }
+
+        static string GetRecordingStateName(string defaultName)
+        {
+            if (!String.IsNullOrEmpty(defaultName))
+                return $"of {defaultName}";
+            if (ProfilerDriver.profileEditor)
+                return "editmode";
+            return "playmode";
+        }
+
+        [ShortcutManagement.Shortcut("Profiling/Profiler/RecordToggle", KeyCode.F9)]
+        static void RecordToggle()
+        {
+            var commandHandled = false;
+            if (CommandService.Exists("ProfilerRecordToggle"))
+            {
+                var result = CommandService.Execute("ProfilerRecordToggle", CommandHint.Shortcut);
+                commandHandled = Convert.ToBoolean(result);
+            }
+
+            if (!commandHandled)
+            {
+                if (HasOpenInstances<ProfilerWindow>())
+                {
+                    var profilerWindow = GetWindow<ProfilerWindow>();
+                    profilerWindow.SetRecordingEnabled(!profilerWindow.IsSetToRecord());
+                }
+                else
+                {
+                    ProfilerDriver.enabled = !ProfilerDriver.enabled;
+                }
+
+                using (var state = ConnectionUtility.GetAttachToPlayerState(null, null))
+                {
+                    var connectionName = "";
+                    if (state.connectedToTarget != ConnectionTarget.Editor)
+                        connectionName = state.connectionName;
+                    EditorGUI.hyperLinkClicked -= EditorGUI_HyperLinkClicked;
+                    EditorGUI.hyperLinkClicked += EditorGUI_HyperLinkClicked;
+                    if (ProfilerDriver.enabled)
+                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"Recording {GetRecordingStateName(connectionName)} has started...");
+                    else
+                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Recording has ended.\r\nClick <a openprofiler=\"true\">here</a> to open the profiler window.");
+                }
+            }
+        }
+
+        private static void EditorGUI_HyperLinkClicked(object sender, EventArgs e)
+        {
+            EditorGUILayout.HyperLinkClickedEventArgs args = (EditorGUILayout.HyperLinkClickedEventArgs)e;
+
+            if (args.hyperlinkInfos.ContainsKey("openprofiler"))
+                ShowProfilerWindow();
         }
 
         [RequiredByNativeCode]
@@ -995,7 +1057,6 @@ namespace UnityEditor
             if (settings == null)
             {
                 Debug.LogError("Could not find Preferences for 'Analysis/Profiler'");
-                return;
             }
         }
 
@@ -1227,6 +1288,8 @@ namespace UnityEditor
                         Debug.LogError($"{change} is not implemented!");
                     break;
             }
+
+            SessionState.SetBool(kProfilerEditorTargetModeEnabledSessionKey, ProfilerDriver.profileEditor);
         }
 
         bool IsEditorConnectionTargeted(EditorConnectionTarget connection)

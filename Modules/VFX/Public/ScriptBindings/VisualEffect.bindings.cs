@@ -11,9 +11,18 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace UnityEngine.VFX
 {
+    [UsedByNativeCode]
+    [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
+    public struct VFXExposedProperty
+    {
+        public string name;
+        public Type type;
+    }
+
     [UsedByNativeCode]
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
     [NativeHeader("Modules/VFX/Public/VisualEffectAsset.h")]
@@ -32,6 +41,14 @@ namespace UnityEngine.VFX
         public const string StopEventName = "OnStop";
         public static readonly int PlayEventID = Shader.PropertyToID(PlayEventName);
         public static readonly int StopEventID = Shader.PropertyToID(StopEventName);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetTextureDimension", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedProperties", HasExplicitThis = true)] extern public void GetExposedProperties([NotNull] List<VFXExposedProperty> exposedProperties);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetEvents", HasExplicitThis = true)] extern public void GetEvents([NotNull] List<string> names);
+
+        public UnityEngine.Rendering.TextureDimension GetTextureDimension(string name)
+        {
+            return GetTextureDimension(Shader.PropertyToID(name));
+        }
     }
 
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectBindings.h")]
