@@ -271,6 +271,11 @@ namespace UnityEditor
                 set;
             }
 
+            //
+            [NativeProperty("XboxOneEnableTypeOptimization")]
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static bool EnableTypeOptimization { get; set; }
+
             // Whether we have enabled mono trace logs on xboxOne for debugging purposes.
             [NativeProperty("XboxOneMonoLoggingLevel")]
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]

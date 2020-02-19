@@ -112,7 +112,13 @@ namespace UnityEngine.XR.WSA.Persistence
         public void Dispose()
         {
             if (m_NativePtr != IntPtr.Zero)
+            {
+                if (s_Instance.m_NativePtr == m_NativePtr)
+                {
+                    s_Instance = null;
+                }
                 Internal_Destroy();
+            }
 
             m_NativePtr = IntPtr.Zero;
 

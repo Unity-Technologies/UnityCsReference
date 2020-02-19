@@ -15,12 +15,12 @@ namespace UnityEditor.Profiling
             public static readonly GUIContent k_FrameCountText = EditorGUIUtility.TrTextContent("Frame Count", "Maximum of visible frames in the Profiler Window.");
             public static readonly GUIContent k_FrameCountWarningText = EditorGUIUtility.TrTextContent("Profiler overhead and memory usage can increase significantly the more frames are kept visible in the Profiler Window through the 'Frame Count' setting.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent k_EnableOutOfProcessProfiler = EditorGUIUtility.TrTextContent("Enable Out-Of-Process Profiler (Experimental)", "The out-of-process profiler is a new workflow that spawns the profiler window in its own process. The profiler in its own process has the advantage of not impacting the main editor performances and vice-versa. Spawning the profiler out-of-process can take around 3-4 seconds to launch.");
-            public static readonly GUIContent k_RememberLastRecordState = EditorGUIUtility.TrTextContent("Remember last recording state", "Save/Load recording state between profiling session, even when the editor is closed.");
             public static readonly GUIContent k_DefaultRecordState = EditorGUIUtility.TrTextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.");
             public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default editor target mode");
 
             public static readonly GUIContent[] k_RecordStates =
             {
+                EditorGUIUtility.TrTextContent("Remember", "The profiler will remember the previous recording state."),
                 EditorGUIUtility.TrTextContent("Enabled", "The profiler starts with recording enabled."),
                 EditorGUIUtility.TrTextContent("Disabled", "The profiler starts with recording disabled.")
             };
@@ -48,17 +48,20 @@ namespace UnityEditor.Profiling
                 ProfilerUserSettings.useOutOfProcessProfiler =
                     EditorGUILayout.Toggle(Content.k_EnableOutOfProcessProfiler, ProfilerUserSettings.useOutOfProcessProfiler);
             }
-            ProfilerUserSettings.rememberLastRecordState = EditorGUILayout.Toggle(Content.k_RememberLastRecordState, ProfilerUserSettings.rememberLastRecordState);
             ProfilerUserSettings.showStatsLabelsOnCurrentFrame = EditorGUILayout.Toggle(ProfilerWindow.Styles.showStatsLabelsOnCurrentFrameLabel, ProfilerUserSettings.showStatsLabelsOnCurrentFrame);
 
-            var defaultRecordStateIndex = EditorGUILayout.Popup(Content.k_DefaultRecordState, ProfilerUserSettings.defaultRecordState ? 0 : 1, Content.k_RecordStates);
-            ProfilerUserSettings.defaultRecordState = defaultRecordStateIndex == 0;
-
-            if (ProfilerUserSettings.useOutOfProcessProfiler)
+            var defaultRecordStateIndex = EditorGUILayout.Popup(Content.k_DefaultRecordState,
+                ProfilerUserSettings.rememberLastRecordState ? 0 : (ProfilerUserSettings.defaultRecordState ? 1 : 2), Content.k_RecordStates);
+            if (defaultRecordStateIndex == 0)
+                ProfilerUserSettings.rememberLastRecordState = true;
+            else
             {
-                var defaultModeIndexIndex = EditorGUILayout.Popup(Content.k_DefaultTargetMode, (int)ProfilerUserSettings.defaultTargetMode, Content.k_TargetModes);
-                ProfilerUserSettings.defaultTargetMode = (ProfilerEditorTargetMode)defaultModeIndexIndex;
+                ProfilerUserSettings.rememberLastRecordState = false;
+                ProfilerUserSettings.defaultRecordState = defaultRecordStateIndex == 1;
             }
+
+            var defaultModeIndexIndex = EditorGUILayout.Popup(Content.k_DefaultTargetMode, (int)ProfilerUserSettings.defaultTargetMode, Content.k_TargetModes);
+            ProfilerUserSettings.defaultTargetMode = (ProfilerEditorTargetMode)defaultModeIndexIndex;
         }
 
         [SettingsProvider]
