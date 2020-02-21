@@ -205,11 +205,6 @@ namespace UnityEditor.Experimental.GraphView
                 DrawDottedLine(points[1], points[2], segmentSize, lineColor);
                 DrawDottedLine(points[2], points[3], segmentSize, lineColor);
                 DrawDottedLine(points[3], points[0], segmentSize, lineColor);
-
-                var str = "(" + UnityString.Format("{0:0}", start.x) + ", " + UnityString.Format("{0:0}", start.y) + ")";
-                GUI.skin.label.Draw(new Rect(screenStart.x, screenStart.y - 18.0f, 200.0f, 20.0f), new GUIContent(str), 0);
-                str = "(" + UnityString.Format("{0:0}", end.x) + ", " + UnityString.Format("{0:0}", end.y) + ")";
-                GUI.skin.label.Draw(new Rect(screenEnd.x - 80.0f, screenEnd.y + 5.0f, 200.0f, 20.0f), new GUIContent(str), 0);
             }
 
             private void DrawDottedLine(Vector3 p1, Vector3 p2, float segmentsLength, Color col)

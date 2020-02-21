@@ -297,6 +297,16 @@ namespace UnityEditor
             public bool showParticleSystems = true;
             public bool showVisualEffectGraphs = true;
 
+            internal bool fogEnabled => fxEnabled && showFog;
+            internal bool materialUpdateEnabled => fxEnabled && showMaterialUpdate;
+            internal bool skyboxEnabled => fxEnabled && showSkybox;
+            internal bool flaresEnabled => fxEnabled && showFlares;
+            internal bool imageEffectsEnabled => fxEnabled && showImageEffects;
+            internal bool particleSystemsEnabled => fxEnabled && showParticleSystems;
+            internal bool visualEffectGraphsEnabled => fxEnabled && showVisualEffectGraphs;
+
+            [SerializeField] bool m_FxEnabled;
+
             public SceneViewState()
             {
             }
@@ -348,6 +358,12 @@ namespace UnityEditor
                 showImageEffects = value;
                 showParticleSystems = value;
                 showVisualEffectGraphs = value;
+            }
+
+            internal bool fxEnabled
+            {
+                get { return m_FxEnabled; }
+                set { m_FxEnabled = value; }
             }
         }
 
@@ -1334,15 +1350,15 @@ namespace UnityEditor
                 audioPlay = GUILayout.Toggle(audioPlay, Styles.audioPlayContent, EditorStyles.toolbarButton);
             }
 
-            var allOn = sceneViewState.allEnabled;
-            if (EditorGUILayout.DropDownToggle(ref allOn, Styles.fx, EditorStyles.toolbarDropDownToggle))
+            var enabled = sceneViewState.fxEnabled;
+            if (EditorGUILayout.DropDownToggle(ref enabled, Styles.fx, EditorStyles.toolbarDropDownToggle))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
                 PopupWindow.Show(rect, new SceneFXWindow(this));
                 GUIUtility.ExitGUI();
             }
-            else if (allOn != sceneViewState.allEnabled)
-                sceneViewState.SetAllEnabled(allOn);
+
+            sceneViewState.fxEnabled = enabled;
         }
 
         void ToolbarGridDropdownGUI()
@@ -1780,7 +1796,7 @@ namespace UnityEditor
             oldShadowDistance = QualitySettings.shadowDistance;
             if (Event.current.type == EventType.Repaint)
             {
-                if (!sceneViewState.showFog)
+                if (!sceneViewState.fogEnabled)
                     Unsupported.SetRenderSettingsUseFogNoDirty(false);
                 if (m_Camera.orthographic)
                     Unsupported.SetQualitySettingsShadowDistanceTemporarily(QualitySettings.shadowDistance + 0.5f * cameraDistance);
@@ -3241,13 +3257,13 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                bool enableImageEffects = m_CameraMode.drawMode == DrawCameraMode.Textured && sceneViewState.showImageEffects;
+                bool enableImageEffects = m_CameraMode.drawMode == DrawCameraMode.Textured && sceneViewState.imageEffectsEnabled;
                 UpdateImageEffects(enableImageEffects);
             }
 
-            EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
-            ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.showParticleSystems;
-            UnityEngine.VFX.VFXManager.renderInSceneView = m_SceneViewState.showVisualEffectGraphs;
+            EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.materialUpdateEnabled);
+            ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.particleSystemsEnabled;
+            UnityEngine.VFX.VFXManager.renderInSceneView = m_SceneViewState.visualEffectGraphsEnabled;
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
             ResetIfNaN();
 
@@ -3298,8 +3314,8 @@ namespace UnityEditor
                 m_CameraMode.drawMode == DrawCameraMode.TexturedWire ||
                 m_CameraMode.drawMode == DrawCameraMode.UserDefined)
             {
-                Handles.EnableCameraFlares(m_Camera, sceneViewState.showFlares);
-                Handles.EnableCameraSkybox(m_Camera, sceneViewState.showSkybox);
+                Handles.EnableCameraFlares(m_Camera, sceneViewState.flaresEnabled);
+                Handles.EnableCameraSkybox(m_Camera, sceneViewState.skyboxEnabled);
             }
             else
             {
@@ -3352,7 +3368,7 @@ namespace UnityEditor
 
         void UpdateAnimatedMaterials()
         {
-            if (sceneViewState.showMaterialUpdate && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
+            if (sceneViewState.materialUpdateEnabled && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
             {
                 m_lastRenderedTime = EditorApplication.timeSinceStartup;
                 Repaint();

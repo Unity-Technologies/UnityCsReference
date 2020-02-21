@@ -210,9 +210,9 @@ namespace UnityEngine.Rendering
                 [NativeThrows][ThreadSafe] extern internal static void GetRequestParameters(IntPtr requestHandles, IntPtr requestParameters, int length);
                 [NativeThrows][ThreadSafe] extern internal static void UpdateRequestState(IntPtr requestHandles, IntPtr requestUpdates, int length);
 
-                extern internal static bool BindToMaterialPropertyBlock(ulong handle, [NotNull] MaterialPropertyBlock material, string name);
-                extern internal static bool BindToMaterial(ulong handle, [NotNull] Material material, string name);
-                extern internal static bool BindGlobally(ulong handle, string name);
+                extern internal static void BindToMaterialPropertyBlock(ulong handle, [NotNull] MaterialPropertyBlock material, string name);
+                extern internal static void BindToMaterial(ulong handle, [NotNull] Material material, string name);
+                extern internal static void BindGlobally(ulong handle, string name);
 
                 [NativeThrows] extern public static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
                 [NativeThrows] extern public static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
@@ -548,11 +548,7 @@ namespace UnityEngine.Rendering
                     {
                         throw new InvalidOperationException($"Invalid ProceduralTextureStack {name}");
                     }
-                    bool success = Binding.BindToMaterialPropertyBlock(handle, mpb, name);
-                    if (!success)
-                    {
-                        throw new InvalidOperationException($"ProceduralTextureStack {name} is not fully initialized on the render thread and cannot bind to a MaterialPropertyBlock. Please try again next frame.");
-                    }
+                    Binding.BindToMaterialPropertyBlock(handle, mpb, name);
                 }
 
                 public void BindToMaterial(Material mat)
@@ -565,11 +561,7 @@ namespace UnityEngine.Rendering
                     {
                         throw new InvalidOperationException($"Invalid ProceduralTextureStack {name}");
                     }
-                    bool success = Binding.BindToMaterial(handle, mat, name);
-                    if (!success)
-                    {
-                        throw new InvalidOperationException($"ProceduralTextureStack {name} is not fully initialized on the render thread and cannot bind to a Material. Please try again next frame.");
-                    }
+                    Binding.BindToMaterial(handle, mat, name);
                 }
 
                 public void BindGlobally()
@@ -578,11 +570,7 @@ namespace UnityEngine.Rendering
                     {
                         throw new InvalidOperationException($"Invalid ProceduralTextureStack {name}");
                     }
-                    bool success = Binding.BindGlobally(handle, name);
-                    if (!success)
-                    {
-                        throw new InvalidOperationException($"ProceduralTextureStack {name} is not fully initialized on the render thread and cannot bind globally. Please try again next frame.");
-                    }
+                    Binding.BindGlobally(handle, name);
                 }
 
                 public const int AllMips = int.MaxValue;

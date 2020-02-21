@@ -370,6 +370,16 @@ namespace UnityEditor.PackageManager.UI
             SelectPackageAndFilter(packageNameOrDisplayName);
         }
 
+        [UsedByNativeCode]
+        internal static void OnPackageManagerResolve()
+        {
+            // we don't want to refresh at all if page manager hasn't been initialized before
+            if (!PageManager.instance.isInitialized)
+                return;
+
+            UpmCache.instance.SetInstalledPackageInfos(PackageInfo.GetAll());
+        }
+
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>(typeof(SceneView));

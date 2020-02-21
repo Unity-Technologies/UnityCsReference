@@ -192,7 +192,7 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    OpenDashboardForOrganizationForeignKey(ServicesConfiguration.instance.adsDashboardUrl);
+                    OpenDashboardForOrgKeyAndProjectGuid(ServicesConfiguration.instance.adsDashboardUrl);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }

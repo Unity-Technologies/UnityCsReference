@@ -41,6 +41,9 @@ namespace UnityEditor.Connect
         const string k_KeywordGooglePlay = "Google Play"; //So devs can find where to place their Google Play Public Key
         const string k_KeywordPublicKey = "public key"; //So devs can find where to place their Google Play Public Key
 
+        const string k_GooglePlayKeyBtnUpdateLabel = "Update";
+        const string k_GooglePlayKeyBtnVerifyLabel = "Verify";
+
         const string k_PurchasingPermissionMessage = "You do not have sufficient permissions to enable / disable Purchasing service.";
         const string k_PurchasingPackageName = "In-App Purchasing Package";
         const string k_GoToDashboardLink = "GoToDashboard";
@@ -152,10 +155,7 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    ServicesConfiguration.instance.RequestBasePurchasingDashboardUrl(basePurchasingDashboardUrl =>
-                    {
-                        OpenDashboardForProjectGuid(basePurchasingDashboardUrl);
-                    });
+                    ServicesConfiguration.instance.RequestBasePurchasingDashboardUrl(OpenDashboardForProjectGuid);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -353,7 +353,7 @@ namespace UnityEditor.Connect
             const string k_ImportBtn = "ImportBtn";
             const string k_ReimportBtn = "ReimportBtn";
             const string k_UpdateBtn = "UpdateBtn";
-            const string k_VerifyBtn = "VerifyBtn";
+            const string k_UpdateGooglePlayKeyBtn = "UpdateGooglePlayKeyBtn";
             const string k_GooglePlayLink = "GooglePlayLink";
             const string k_GooglePlayKeyEntry = "GooglePlayKeyEntry";
             const string k_GoToDashboardLink = "GoToDashboard";
@@ -565,7 +565,7 @@ namespace UnityEditor.Connect
             {
                 RequestRetrieveOperation();
 
-                m_IapOptionsBlock.Q<Button>(k_VerifyBtn).clicked += RequestVerifyOperation;
+                m_IapOptionsBlock.Q<Button>(k_UpdateGooglePlayKeyBtn).clicked += RequestUpdateOperation;
 
                 m_IapOptionsBlock.Q<Button>(k_GooglePlayLink).clicked += () =>
                 {
@@ -573,14 +573,30 @@ namespace UnityEditor.Connect
                 };
             }
 
-            static void ToggleGoogleKeyStateVisibility(VisualElement fieldBlock, GooglePlayKeyState importState)
+            void ToggleGoogleKeyStateVisibility(VisualElement fieldBlock, GooglePlayKeyState importState)
             {
                 if (fieldBlock != null)
                 {
                     var verifiedMode = fieldBlock.Q(k_VerifiedMode);
                     if (verifiedMode != null)
                     {
-                        verifiedMode.style.display = (importState == GooglePlayKeyState.Verified) ? DisplayStyle.Flex : DisplayStyle.None;
+                        var updateGooglePlayKeyBtn = m_IapOptionsBlock.Q<Button>(k_UpdateGooglePlayKeyBtn);
+                        if (importState == GooglePlayKeyState.Verified)
+                        {
+                            if (updateGooglePlayKeyBtn != null)
+                            {
+                                updateGooglePlayKeyBtn.text = L10n.Tr(k_GooglePlayKeyBtnUpdateLabel);
+                            }
+                            verifiedMode.style.display = DisplayStyle.Flex;
+                        }
+                        else
+                        {
+                            if (updateGooglePlayKeyBtn != null)
+                            {
+                                updateGooglePlayKeyBtn.text = L10n.Tr(k_GooglePlayKeyBtnVerifyLabel);
+                            }
+                            verifiedMode.style.display = DisplayStyle.None;
+                        }
                     }
 
                     var unVerifiedMode = fieldBlock.Q(k_UnverifiedMode);
@@ -638,7 +654,7 @@ namespace UnityEditor.Connect
                 }
             }
 
-            void RequestVerifyOperation()
+            void RequestUpdateOperation()
             {
                 m_SettingKey = true;
                 if (m_ProjectAuthSignature == null)

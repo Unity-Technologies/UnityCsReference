@@ -22,7 +22,7 @@ namespace UnityEditor.Connect
         PurchasingConfiguration()
         {
             m_PurchasingPackageUrl = "https://public-cdn.cloud.unity3d.com/UnityEngine.Cloud.Purchasing.unitypackage";
-            m_GooglePlayDevConsoleUrl = "https://analytics.cloud.unity3d.com";
+            m_GooglePlayDevConsoleUrl = "https://play.google.com/apps/publish/";
         }
 
         public static PurchasingConfiguration instance => k_Instance;

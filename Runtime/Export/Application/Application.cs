@@ -275,6 +275,8 @@ namespace UnityEngine
 
         public static event Action quitting;
 
+        public static event Action unloading;
+
         [RequiredByNativeCode]
         static bool Internal_ApplicationWantsToQuit()
         {
@@ -301,6 +303,13 @@ namespace UnityEngine
         {
             if (quitting != null)
                 quitting();
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_ApplicationUnload()
+        {
+            if (unloading != null)
+                unloading();
         }
 
         [RequiredByNativeCode]

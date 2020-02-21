@@ -6298,8 +6298,6 @@ namespace UnityEditor
                 {
                     VirtualTexturing.System.RequestRegion(mat, stackNameId, new Rect(0, 0, 1, 1), (int)mipLevel, 1);
                 }
-
-                VirtualTexturing.System.Update();
             }
         }
 

@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements.UIR
         public uint recursiveTransformUpdates, recursiveTransformUpdatesExpanded;
         public uint recursiveOpacityUpdates, recursiveOpacityUpdatesExpanded;
         public uint recursiveVisualUpdates, recursiveVisualUpdatesExpanded, nonRecursiveVisualUpdates;
+        public uint dirtyProcessed;
         public uint nudgeTransformed, boneTransformed, skipTransformed, visualUpdateTransformed;
         public uint updatedMeshAllocations, newMeshAllocations;
         public uint groupTransformElementsChanged;
@@ -315,10 +316,14 @@ namespace UnityEngine.UIElements.UIR
                 RepaintAtlassedElements();
 
 
+            int dirtyClass;
+            RenderDataDirtyTypes dirtyFlags;
+            RenderDataDirtyTypes clearDirty;
+
             m_DirtyTracker.dirtyID++;
-            var dirtyClass = (int)RenderDataDirtyTypeClasses.Clipping;
-            var dirtyFlags = RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy;
-            var clearDirty = ~dirtyFlags;
+            dirtyClass = (int)RenderDataDirtyTypeClasses.Clipping;
+            dirtyFlags = RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy;
+            clearDirty = ~dirtyFlags;
             s_MarkerClipProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
@@ -329,10 +334,12 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            Implementation.RenderEvents.ProcessOnClippingChanged(this, ve, m_DirtyTracker.dirtyID, device, ref m_Stats);
+                            Implementation.RenderEvents.ProcessOnClippingChanged(this, ve, m_DirtyTracker.dirtyID,
+                                ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
+                    m_Stats.dirtyProcessed++;
                 }
             }
             s_MarkerClipProcessing.End();
@@ -355,6 +362,7 @@ namespace UnityEngine.UIElements.UIR
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
+                    m_Stats.dirtyProcessed++;
                 }
             }
             s_MarkerOpacityProcessing.End();
@@ -373,10 +381,11 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            Implementation.RenderEvents.ProcessOnTransformOrSizeChanged(this, ve, m_DirtyTracker.dirtyID, device, ref m_Stats);
+                            Implementation.RenderEvents.ProcessOnTransformOrSizeChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
+                    m_Stats.dirtyProcessed++;
                 }
             }
             s_MarkerTransformProcessing.End();
@@ -400,6 +409,7 @@ namespace UnityEngine.UIElements.UIR
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
+                    m_Stats.dirtyProcessed++;
                 }
             }
             s_MarkerVisualsProcessing.End();
@@ -951,7 +961,7 @@ namespace UnityEngine.UIElements.UIR
             bool realDevice = device as UIRenderDevice != null;
             float y_off = 12;
             var rc = new Rect(30, 60, 1000, 100);
-            GUI.Box(new Rect(20, 40, 200, realDevice ? 368 : 256), "UIElements Draw Stats");
+            GUI.Box(new Rect(20, 40, 200, realDevice ? 380 : 256), "UIElements Draw Stats");
             GUI.Label(rc, "Elements added\t: " + m_Stats.elementsAdded); rc.y += y_off;
             GUI.Label(rc, "Elements removed\t: " + m_Stats.elementsRemoved); rc.y += y_off;
             GUI.Label(rc, "Mesh allocs allocated\t: " + m_Stats.newMeshAllocations); rc.y += y_off;
@@ -969,6 +979,7 @@ namespace UnityEngine.UIElements.UIR
             GUI.Label(rc, "Visual update roots\t: " + m_Stats.recursiveVisualUpdates); rc.y += y_off;
             GUI.Label(rc, "Visual update total\t: " + m_Stats.recursiveVisualUpdatesExpanded); rc.y += y_off;
             GUI.Label(rc, "Visual update flats\t: " + m_Stats.nonRecursiveVisualUpdates); rc.y += y_off;
+            GUI.Label(rc, "Dirty processed\t: " + m_Stats.dirtyProcessed); rc.y += y_off;
             GUI.Label(rc, "Group-xform updates\t: " + m_Stats.groupTransformElementsChanged); rc.y += y_off;
             GUI.Label(rc, "Text regens\t: " + m_Stats.textUpdates); rc.y += y_off;
 
@@ -1043,8 +1054,8 @@ namespace UnityEngine.UIElements.UIR
         internal List<RenderChainTextEntry> textEntries;
 
         internal RenderChainCommand lastClosingOrLastCommand { get { return lastClosingCommand ?? lastCommand; } }
-        static internal bool AllocatesID(BMPAlloc alloc) { return (alloc.owned != 0) && alloc.IsValid(); }
-        static internal bool InheritsID(BMPAlloc alloc) { return (alloc.owned == 0) && alloc.IsValid(); }
+        static internal bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState != 0) && alloc.IsValid(); }
+        static internal bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == 0) && alloc.IsValid(); }
     }
 
     internal struct RenderChainTextEntry

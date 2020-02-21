@@ -80,30 +80,32 @@ namespace UnityEditor.Scripting
                 s_NetCoreAvailableChecked = true;
 
                 var startInfo = CreateDotNetCoreStartInfoForArgs("--version");
-                var getVersionProg = new Program(startInfo);
-                try
+                using (var getVersionProg = new Program(startInfo))
                 {
-                    getVersionProg.Start();
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarningFormat("Disabling CoreCLR, got exception trying to run with --version: {0}", ex);
-                    return false;
-                }
+                    try
+                    {
+                        getVersionProg.Start();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarningFormat("Disabling CoreCLR, got exception trying to run with --version: {0}", ex);
+                        return false;
+                    }
 
-                getVersionProg.WaitForExit(5000);
-                if (!getVersionProg.HasExited)
-                {
-                    getVersionProg.Kill();
-                    Debug.LogWarning("Disabling CoreCLR, timed out trying to run with --version");
-                    return false;
-                }
+                    getVersionProg.WaitForExit(5000);
+                    if (!getVersionProg.HasExited)
+                    {
+                        getVersionProg.Kill();
+                        Debug.LogWarning("Disabling CoreCLR, timed out trying to run with --version");
+                        return false;
+                    }
 
-                if (getVersionProg.ExitCode != 0)
-                {
-                    Debug.LogWarningFormat("Disabling CoreCLR, got non-zero exit code: {0}, stderr: '{1}'",
-                        getVersionProg.ExitCode, getVersionProg.GetErrorOutputAsString());
-                    return false;
+                    if (getVersionProg.ExitCode != 0)
+                    {
+                        Debug.LogWarningFormat("Disabling CoreCLR, got non-zero exit code: {0}, stderr: '{1}'",
+                            getVersionProg.ExitCode, getVersionProg.GetErrorOutputAsString());
+                        return false;
+                    }
                 }
 
                 s_NetCoreAvailable = true;

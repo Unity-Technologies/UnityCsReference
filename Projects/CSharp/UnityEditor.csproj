@@ -4291,9 +4291,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageAssetPostprocessor.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageAssetPostprocessor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>

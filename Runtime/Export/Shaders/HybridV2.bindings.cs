@@ -69,7 +69,7 @@ namespace Unity.Rendering.HybridV2
             int cbCount = 0;
             IntPtr p = GetDOTSInstancingCbuffersPointer(shader, ref cbCount);
 
-            if (p == null)
+            if (p == IntPtr.Zero)
                 return new NativeArray<DOTSInstancingCbuffer>();
 
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<DOTSInstancingCbuffer>(
@@ -89,9 +89,8 @@ namespace Unity.Rendering.HybridV2
             int propertyCount = 0;
             IntPtr p = GetDOTSInstancingPropertiesPointer(shader, ref propertyCount);
 
-            if (p == null)
+            if (p == IntPtr.Zero)
                 return new NativeArray<DOTSInstancingProperty>();
-
 
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<DOTSInstancingProperty>(
                 (void *)p, propertyCount, Allocator.Temp);

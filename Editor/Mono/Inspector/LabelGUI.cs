@@ -54,7 +54,7 @@ namespace UnityEditor
         {
             if (!m_IgnoreNextAssetLabelsChangedCall && m_CurrentAssetsSet != null && m_CurrentAssetsSet.Contains(asset))
             {
-                m_AssetLabels = null; // someone else changed the labels for one of our selected assets, so invalidate cache
+                InvalidateLabels(); // someone else changed the labels for one of our selected assets, so invalidate cache
             }
             m_IgnoreNextAssetLabelsChangedCall = false;
         }

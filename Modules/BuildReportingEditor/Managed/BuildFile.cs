@@ -13,6 +13,7 @@ namespace UnityEditor.Build.Reporting
         public uint id { get; }
         public string path { get; }
         public string role { get; }
+        internal bool isOverridingUnityAssembly { get; }
 
         [NativeName("totalSize")]
         public ulong size { get; }

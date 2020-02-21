@@ -359,13 +359,6 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetupAdvancedMenu()
         {
-            advancedMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Reset Packages to defaults"), a =>
-            {
-                EditorApplication.ExecuteMenuItem(ApplicationUtil.k_ResetPackagesMenuPath);
-                PageManager.instance.Refresh(RefreshOptions.UpmListOffline);
-                PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
-            }, a => DropdownMenuAction.Status.Normal);
-
             advancedMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Show dependencies"), a =>
             {
                 ToggleDependencies();
@@ -377,6 +370,15 @@ namespace UnityEditor.PackageManager.UI
                 TogglePreviewPackages();
                 PackageManagerWindowAnalytics.SendEvent("togglePreview");
             }, a => PackageManagerPrefs.instance.showPreviewPackages ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+            advancedMenu.menu.AppendSeparator();
+
+            advancedMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Reset Packages to defaults"), a =>
+            {
+                EditorApplication.ExecuteMenuItem(ApplicationUtil.k_ResetPackagesMenuPath);
+                PageManager.instance.Refresh(RefreshOptions.UpmListOffline);
+                PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
+            }, a => DropdownMenuAction.Status.Normal);
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {

@@ -1083,7 +1083,7 @@ namespace UnityEditor
                 else
                     doRestart = false;
             }
-            return new ChangeGraphicsApiAction(true, doRestart);
+            return new ChangeGraphicsApiAction(doRestart, doRestart);
         }
 
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action)

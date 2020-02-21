@@ -116,6 +116,15 @@ namespace UnityEditor.UIElements.Debugger
             if (m_SelectedElement.inlineStyleAccess == null)
                 return;
 
+            var inlineRulePropIds = m_SelectedElement.inlineStyleAccess.inlineRule.propertyIds;
+            if (inlineRulePropIds != null)
+            {
+                foreach (var id in inlineRulePropIds)
+                {
+                    m_PropertySpecificityDictionary[id] = StyleDebug.InlineSpecificity;
+                }
+            }
+
             foreach (var sv in m_SelectedElement.inlineStyleAccess.m_Values)
             {
                 m_PropertySpecificityDictionary[sv.id] = StyleDebug.InlineSpecificity;

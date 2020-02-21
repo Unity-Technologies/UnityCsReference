@@ -370,22 +370,24 @@ namespace UnityEditor.Connect
             RefreshCurrentUserRole();
         }
 
-        protected void OpenDashboardForOrganizationForeignKey(string dashboardUrl)
+        protected void OpenDashboardForOrgKeyAndProjectGuid(string dashboardUrl)
         {
-            string orgForeignKey = UnityConnect.instance.GetOrganizationForeignKey();
+            var orgForeignKey = UnityConnect.instance.GetOrganizationForeignKey();
+            var projectGuid = UnityConnect.instance.projectInfo.projectGUID;
 
             EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService()
             {
                 serviceName = GetServiceInstanceName(),
                 url = dashboardUrl,
-                organizationId = orgForeignKey
+                organizationId = orgForeignKey,
+                projectId = projectGuid
             });
-            Application.OpenURL(String.Format(dashboardUrl, orgForeignKey));
+            Application.OpenURL(String.Format(dashboardUrl, orgForeignKey, projectGuid));
         }
 
         protected void OpenDashboardForProjectGuid(string dashboardUrl)
         {
-            string projectGuid = UnityConnect.instance.projectInfo.projectGUID;
+            var projectGuid = UnityConnect.instance.projectInfo.projectGUID;
             EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService()
             {
                 serviceName = GetServiceInstanceName(),
@@ -397,8 +399,8 @@ namespace UnityEditor.Connect
 
         protected void OpenDashboardOrgAndProjectIds(string dashboardUrl)
         {
-            string orgSubUrl = UnityConnect.instance.projectInfo.organizationId;
-            string projectSubUrl = UnityConnect.instance.projectInfo.projectId;
+            var orgSubUrl = UnityConnect.instance.projectInfo.organizationId;
+            var projectSubUrl = UnityConnect.instance.projectInfo.projectId;
             EditorAnalytics.SendOpenDashboardForService(new OpenDashboardForService()
             {
                 serviceName = GetServiceInstanceName(),

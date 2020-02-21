@@ -335,7 +335,7 @@ namespace UnityEditor
         public static float DistanceToArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius)
         {
             Handles.SetDiscSectionPoints(m_ArcPointsBuffer, center, normal, from, angle, radius);
-            return DistanceToPolyLine(m_ArcPointsBuffer);
+            return DistanceToPolyLineOnPlane(m_ArcPointsBuffer, center, normal);
         }
 
         // Get the nearest 3D point.
@@ -364,7 +364,49 @@ namespace UnityEditor
                 if (d < dist)
                     dist = d;
             }
+
             return dist;
+        }
+
+        // Pixel distance from mouse pointer to a polyline on a 2D plane.
+        internal static float DistanceToPolyLineOnPlane(Vector3[] points, Vector3 center, Vector3 normal)
+        {
+            Matrix4x4 handleMatrix = Handles.matrix;
+            var worldPosition = handleMatrix.MultiplyPoint3x4(center);
+            var worldNormal = handleMatrix.MultiplyVector(normal);
+            Plane p = new Plane(worldNormal, worldPosition);
+            Vector2 point = Event.current.mousePosition;
+            Ray r = GUIPointToWorldRay(point);
+
+            float enter;
+
+            if (!p.Raycast(r, out enter))
+                return DistanceToPolyLine(points);
+
+            Vector3 intersect = handleMatrix.inverse.MultiplyPoint3x4(r.GetPoint(enter));
+            Vector3 p1 = points[0];
+            Vector3 p2 = points[1];
+
+            float dist = DistanceToLineInternal(intersect, p1, p2);
+            Vector3 s1 = Vector3.zero, s2 = Vector3.zero;
+
+            for (int i = 2; i < points.Length; i++)
+            {
+                p1 = p2;
+                p2 = points[i];
+                float d = DistanceToLineInternal(intersect, p1, p2);
+
+                if (d < dist)
+                {
+                    dist = d;
+                    s1 = p1;
+                    s2 = p2;
+                }
+            }
+
+            return DistanceToLineInternal(point,
+                WorldToGUIPoint(s1),
+                WorldToGUIPoint(s2));
         }
 
         // Get the nearest 3D point.

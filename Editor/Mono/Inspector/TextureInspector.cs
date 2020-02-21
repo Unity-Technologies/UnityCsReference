@@ -225,9 +225,8 @@ namespace UnityEditor
         public override bool RequiresConstantRepaint()
         {
             //Keep repainting if the texture is rendered with a virtual texturing material because we don't know when all texture tiles will be streamed in
-            foreach (var item in targets)
-                if (EditorGUI.UseVTMaterial(item as Texture))
-                    return true;
+            if (hasTargetUsingVTMaterial)
+                return true;
 
             foreach (TextureMipLevels textureInfo in m_TextureMipLevels)
             {
@@ -656,6 +655,19 @@ namespace UnityEditor
         {
             return (target != null);
         }
+
+        internal bool hasTargetUsingVTMaterial
+        {
+            get
+            {
+                foreach (var t in targets)
+                    if (EditorGUI.UseVTMaterial(t as Texture))
+                        return true;
+
+                return false;
+            }
+        }
+
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {

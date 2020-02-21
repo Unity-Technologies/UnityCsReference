@@ -34,11 +34,18 @@ namespace UnityEditor
             {
                 SavedGUIState oldState = SavedGUIState.Create();
                 var retval = Internal_SendEvent(e);
+                if (retval)
+                    EditorApplication.SignalTick();
                 oldState.ApplyAndForget();
                 return retval;
             }
 
-            return Internal_SendEvent(e);
+            {
+                var retval = Internal_SendEvent(e);
+                if (retval)
+                    EditorApplication.SignalTick();
+                return retval;
+            }
         }
 
         // Call into C++ here to move the underlying NSViews around
@@ -240,8 +247,6 @@ namespace UnityEditor
 
         public static void EndOffsetArea()
         {
-            if (Event.current.type == EventType.Used)
-                return;
             GUILayoutUtility.EndLayoutGroup();
             GUI.EndGroup();
         }

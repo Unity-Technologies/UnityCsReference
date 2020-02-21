@@ -373,6 +373,12 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected bool CopyPlayerFilter(string path, BuildPostProcessArgs args)
     {
+        // Don't copy assemblies that are being overridden by a User assembly.
+        var fileName = Path.GetFileName(path);
+        for (int i = 0; i < args.report.files.Length; ++i)
+            if (Path.GetFileName(args.report.files[i].path) == fileName && args.report.files[i].isOverridingUnityAssembly)
+                return false;
+
         // Don't copy UnityEngine mdb/pdb files
         return (Path.GetExtension(path) != ".mdb"  && Path.GetExtension(path)  != ".pdb") || !Path.GetFileName(path).StartsWith("UnityEngine.");
     }

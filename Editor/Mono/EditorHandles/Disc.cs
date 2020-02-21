@@ -37,6 +37,7 @@ namespace UnityEditorInternal
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                 {
                     float d;
                     if (cutoffPlane)
@@ -116,11 +117,6 @@ namespace UnityEditorInternal
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
-                    break;
-
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
                     break;
 
                 case EventType.KeyDown:

@@ -31,6 +31,12 @@ namespace UnityEditor
         Both
     }
 
+    public enum WebGLWasmArithmeticExceptions
+    {
+        Throw,
+        Ignore
+    }
+
     public sealed partial class PlayerSettings : UnityEngine.Object
     {
         [NativeHeader("Editor/Mono/PlayerSettingsWebGL.bindings.h")]
@@ -144,6 +150,13 @@ namespace UnityEditor
 
             [NativeProperty("webGLDecompressionFallback", TargetType.Field)]
             public extern static bool decompressionFallback
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLWasmArithmeticExceptions", TargetType.Field)]
+            public extern static WebGLWasmArithmeticExceptions wasmArithmeticExceptions
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;

@@ -4,14 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using Unity.Profiling;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements
 {
-    // This is the required interface to UIElementsUtility for Runtime game components.
-    [NativeHeader("Modules/UIElements/UIElementsRuntimeUtility.h")]
     internal static class UIElementsRuntimeUtility
     {
         static EventDispatcher s_RuntimeDispatcher = new EventDispatcher();
@@ -42,6 +39,7 @@ namespace UnityEngine.UIElements
 
         static UIElementsRuntimeUtility()
         {
+            UIElementsRuntimeUtilityNative.RepaintOverlayPanelsCallback = RepaintOverlayPanels;
         }
 
         public static EventBase CreateEvent(Event systemEvent)
@@ -126,7 +124,6 @@ namespace UnityEngine.UIElements
         internal static readonly string s_RepaintProfilerMarkerName = "UIElementsRuntimeUtility.DoDispatch(Repaint Event)";
         private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
 
-        [RequiredByNativeCode]
         public static void RepaintOverlayPanels()
         {
             UIElementsUtility.GetAllPanels(panelsIteration, ContextType.Player);
@@ -139,13 +136,19 @@ namespace UnityEngine.UIElements
                     (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(Event.current);
                 }
             }
-
             // Call the package override of RepaintOverlayPanels, when available
             if (s_onRepaintOverlayPanels != null)
                 s_onRepaintOverlayPanels();
         }
 
-        public extern static void RegisterPlayerloopCallback();
-        public extern static void UnregisterPlayerloopCallback();
+        public static void RegisterPlayerloopCallback()
+        {
+            UIElementsRuntimeUtilityNative.RegisterPlayerloopCallback();
+        }
+
+        public static void UnregisterPlayerloopCallback()
+        {
+            UIElementsRuntimeUtilityNative.RegisterPlayerloopCallback();
+        }
     }
 }

@@ -5,7 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using UnityEditor.Compilation;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -21,23 +24,39 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public AssemblyFlags Flags;
     }
 
-    interface IPrecompiledAssemblyProvider
-    {
-        PrecompiledAssembly[] GetPrecompiledAssemblies(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget);
-    }
-
-    interface IPrecompiledAssemblyProviderCache : IPrecompiledAssemblyProvider
+    interface IPrecompiledAssemblyProviderCache
     {
         PrecompiledAssembly[] CachedEditorPrecompiledAssemblies { get; }
         void Dirty();
     }
 
-    class PrecompiledAssemblyProvider : IPrecompiledAssemblyProviderCache
+    abstract class PrecompiledAssemblyProviderBase : IPrecompiledAssemblyProviderCache
     {
-        private PrecompiledAssembly[] m_EditorPrecompiledAssemblies;
-        public PrecompiledAssembly[] CachedEditorPrecompiledAssemblies => m_EditorPrecompiledAssemblies;
+        public abstract PrecompiledAssembly[] GetPrecompiledAssemblies(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget);
+        public abstract Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget);
+        public abstract PrecompiledAssembly[] CachedEditorPrecompiledAssemblies { get; }
+        public abstract void Dirty();
 
-        public PrecompiledAssembly[] GetPrecompiledAssemblies(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        public virtual PrecompiledAssembly[] GetPrecompiledAssembliesInternal(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target)
+        {
+            return GetPrecompiledAssembliesNative(buildingForEditor, buildTargetGroup, target);
+        }
+
+        [FreeFunction("GetPrecompiledAssembliesManaged")]
+        private static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target);
+    }
+
+    class PrecompiledAssemblyProvider : PrecompiledAssemblyProviderBase
+    {
+        private Dictionary<string, PrecompiledAssembly> m_EditorPrecompiledAssemblies;
+        public override PrecompiledAssembly[] CachedEditorPrecompiledAssemblies => m_EditorPrecompiledAssemblies?.Values.ToArray();
+
+        public override PrecompiledAssembly[] GetPrecompiledAssemblies(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        {
+            return GetPrecompiledAssembliesDictionary(isEditor, buildTargetGroup, buildTarget).Values.ToArray();
+        }
+
+        public override Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {
             if (isEditor && m_EditorPrecompiledAssemblies != null)
             {
@@ -45,20 +64,66 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var precompiledAssembliesInternal = GetPrecompiledAssembliesInternal(isEditor, buildTargetGroup, buildTarget);
+            var fileNameToPrecompiledAssembly = ValidateAndGetNameToPrecompiledAssembly(precompiledAssembliesInternal);
+
             if (isEditor)
             {
-                m_EditorPrecompiledAssemblies = precompiledAssembliesInternal;
+                m_EditorPrecompiledAssemblies = fileNameToPrecompiledAssembly;
             }
 
-            return precompiledAssembliesInternal;
+            return fileNameToPrecompiledAssembly;
         }
 
-        public void Dirty()
+        public override void Dirty()
         {
             m_EditorPrecompiledAssemblies = null;
         }
 
-        [FreeFunction("GetPrecompiledAssembliesManaged")]
-        extern internal static PrecompiledAssembly[] GetPrecompiledAssembliesInternal(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target);
+        private static Dictionary<string, PrecompiledAssembly> ValidateAndGetNameToPrecompiledAssembly(PrecompiledAssembly[] precompiledAssemblies)
+        {
+            if (precompiledAssemblies == null)
+            {
+                return new Dictionary<string, PrecompiledAssembly>(0);
+            }
+
+            Dictionary<string, PrecompiledAssembly> fileNameToUserPrecompiledAssemblies = new Dictionary<string, PrecompiledAssembly>(precompiledAssemblies.Length);
+
+            var sameNamedPrecompiledAssemblies = new Dictionary<string, List<string>>(precompiledAssemblies.Length);
+            for (int i = 0; i < precompiledAssemblies.Length; i++)
+            {
+                var precompiledAssembly = precompiledAssemblies[i];
+
+                var fileName = AssetPath.GetFileName(precompiledAssembly.Path);
+                if (!fileNameToUserPrecompiledAssemblies.ContainsKey(fileName))
+                {
+                    fileNameToUserPrecompiledAssemblies.Add(fileName, precompiledAssembly);
+                }
+                else
+                {
+                    if (!sameNamedPrecompiledAssemblies.ContainsKey(fileName))
+                    {
+                        sameNamedPrecompiledAssemblies.Add(fileName, new List<string>
+                        {
+                            fileNameToUserPrecompiledAssemblies[fileName].Path
+                        });
+                    }
+                    sameNamedPrecompiledAssemblies[fileName].Add(precompiledAssembly.Path);
+                }
+            }
+
+            foreach (var precompiledAssemblyNameToIndexes in sameNamedPrecompiledAssemblies)
+            {
+                string paths = string.Empty;
+                foreach (var precompiledPath in precompiledAssemblyNameToIndexes.Value)
+                {
+                    paths += $"{Environment.NewLine}{precompiledPath}";
+                }
+
+                throw new PrecompiledAssemblyException(
+                    $"Multiple precompiled assemblies with the same name {precompiledAssemblyNameToIndexes.Key} included or the current platform. Only one assembly with the same name is allowed per platform. Assembly paths: {paths}");
+            }
+
+            return fileNameToUserPrecompiledAssemblies;
+        }
     }
 }

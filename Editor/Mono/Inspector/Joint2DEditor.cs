@@ -92,6 +92,7 @@ namespace UnityEditor
             switch (eventType)
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToRectangleInternal(position, Quaternion.identity, Vector2.zero));
                     break;
                 case EventType.Repaint:

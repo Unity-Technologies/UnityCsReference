@@ -312,6 +312,7 @@ namespace UnityEditor
                 switch (evt.GetTypeForControl(id))
                 {
                     case EventType.Layout:
+                    case EventType.MouseMove:
                     {
                         // TODO : This is slow and should be revisited prior to exposing bone handles
                         Vector3[] vertices = BoneRenderer.GetBoneWireVertices(basePoint, endPoint);
@@ -320,10 +321,6 @@ namespace UnityEditor
 
                         break;
                     }
-                    case EventType.MouseMove:
-                        if (id == HandleUtility.nearestControl)
-                            HandleUtility.Repaint();
-                        break;
                     case EventType.MouseDown:
                     {
                         // am I closest to the thingy?

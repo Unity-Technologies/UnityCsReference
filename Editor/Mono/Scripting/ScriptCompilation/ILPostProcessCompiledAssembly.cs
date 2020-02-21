@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
+using UnityEditor;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Profiling;
 
@@ -26,13 +27,17 @@ internal class ILPostProcessCompiledAssembly : ICompiledAssembly
         m_OutputPath = outputPath;
     }
 
-    public ILPostProcessCompiledAssembly(EditorBuildRules.TargetAssembly targetAssembly, string outputPath)
+    public ILPostProcessCompiledAssembly(EditorBuildRules.TargetAssembly targetAssembly, string outputPath, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
     {
         m_AssemblyFilename = targetAssembly.Filename;
 
         Name = Path.GetFileNameWithoutExtension(m_AssemblyFilename);
 
-        var precompiledAssemblyReferences = targetAssembly.ExplicitPrecompiledReferences;
+        var precompiledAssembliesDictionary = precompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(true, BuildTargetGroup.Unknown, BuildTarget.Android);
+
+        var precompiledAssemblyReferences = targetAssembly.ExplicitPrecompiledReferences
+            .Where(x => precompiledAssembliesDictionary.ContainsKey(x))
+            .Select(x => precompiledAssembliesDictionary[x].Path);
         var targetAssemblyReferences = targetAssembly.References.Select(a => a.FullPath(outputPath));
 
         References = precompiledAssemblyReferences.Concat(targetAssemblyReferences).ToArray();

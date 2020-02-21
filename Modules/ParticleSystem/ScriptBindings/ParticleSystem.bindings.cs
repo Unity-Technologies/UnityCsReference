@@ -89,12 +89,12 @@ namespace UnityEngine
         extern internal int GetParticleMeshIndex(ref ParticleSystem.Particle particle);
 
         // Set/get particles
-        [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticles", HasExplicitThis = true)]
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticles", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetParticles([Out] Particle[] particles, int size, int offset);
         public void SetParticles([Out] Particle[] particles, int size) { SetParticles(particles, size, 0); }
         public void SetParticles([Out] Particle[] particles) { SetParticles(particles, -1); }
 
-        [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticles", HasExplicitThis = true)]
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticles", HasExplicitThis = true, ThrowsException = true)]
         extern public int GetParticles([NotNull][Out] Particle[] particles, int size, int offset);
         public int GetParticles([Out] Particle[] particles, int size) { return GetParticles(particles, size, 0); }
         public int GetParticles([Out] Particle[] particles) { return GetParticles(particles, -1); }

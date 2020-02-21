@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 
 namespace UnityEngine.UIElements.UIR.Implementation
@@ -19,13 +20,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal static class RenderEvents
     {
-        internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
+        internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
             bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
             if (hierarchical)
                 stats.recursiveClipUpdates++;
             else stats.nonRecursiveClipUpdates++;
-            DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, hierarchical, true, false, false, false, device, ref stats);
+            DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, hierarchical, true, false, false, false, renderChain.device, ref stats);
         }
 
         internal static void ProcessOnOpacityChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -34,10 +35,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             DepthFirstOnOpacityChanged(renderChain, ve.hierarchy.parent != null ? ve.hierarchy.parent.renderChainData.compositeOpacity : 1.0f, ve, dirtyID, ref stats);
         }
 
-        internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
+        internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
             stats.recursiveTransformUpdates++;
-            DepthFirstOnTransformOrSizeChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, device, false, false, ref stats);
+            DepthFirstOnTransformOrSizeChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, renderChain.device, false, false, ref stats);
         }
 
         internal static void ProcessOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -47,7 +48,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 stats.recursiveVisualUpdates++;
             else stats.nonRecursiveVisualUpdates++;
             var parent = ve.hierarchy.parent;
-            DepthFirstOnVisualsChanged(renderChain, ve, dirtyID, parent != null ? parent.renderChainData.isHierarchyHidden || IsElementHierarchyHidden(parent) : false, hierarchical, ref stats);
+            var parentHierarchyHidden = parent != null &&
+                (parent.renderChainData.isHierarchyHidden || IsElementHierarchyHidden(parent));
+            DepthFirstOnVisualsChanged(renderChain, ve, dirtyID, parentHierarchyHidden, hierarchical, ref stats);
         }
 
         internal static void ProcessRegenText(RenderChain renderChain, VisualElement ve, UIRTextUpdatePainter painter, UIRenderDevice device, ref ChainBuilderStats stats)
@@ -73,7 +76,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID));
             if (ve.renderChainData.groupTransformAncestor == null)
-                return ve.worldClip.ToVector4();
+                return UIRUtility.ToVector4(ve.worldClip);
 
             Rect rect = ve.worldClipMinusGroup;
             // Subtract the transform of the group transform ancestor
@@ -159,7 +162,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         ve.renderChainData.boneTransformAncestor = parent.renderChainData.boneTransformAncestor;
 
                     ve.renderChainData.transformID = parent.renderChainData.transformID;
-                    ve.renderChainData.transformID.owned = 0; // Mark this allocation as not owned by us (inherited)
+                    ve.renderChainData.transformID.ownedState = OwnedState.Inherited; // Mark this allocation as not owned by us (inherited)
                 }
                 else ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
             }
@@ -296,7 +299,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     if ((ve.renderHints & RenderHints.GroupTransform) == 0)
                     {
                         newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
-                        newClipRectID.owned = 0;
+                        newClipRectID.ownedState = OwnedState.Inherited;
                     }
                 }
 
@@ -380,57 +383,80 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
         }
 
-        static void DepthFirstOnOpacityChanged(RenderChain renderChain, float parentCompositeOpacity, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        static void DepthFirstOnOpacityChanged(RenderChain renderChain, float parentCompositeOpacity, VisualElement ve,
+            uint dirtyID, ref ChainBuilderStats stats, bool isDoingFullVertexRegeneration = false)
         {
             if (dirtyID == ve.renderChainData.dirtyID)
                 return;
 
             ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
             stats.recursiveOpacityUpdatesExpanded++;
+            float oldOpacity = ve.renderChainData.compositeOpacity;
             float newOpacity = ve.resolvedStyle.opacity * parentCompositeOpacity;
-            if (newOpacity == ve.renderChainData.compositeOpacity)
-                return; // Nothing changed effectively
 
-            bool becameVisible = (ve.renderChainData.compositeOpacity < Mathf.Epsilon && newOpacity >= Mathf.Epsilon);
-            ve.renderChainData.compositeOpacity = newOpacity;
+            bool compositeOpacityChanged = Mathf.Abs(oldOpacity - newOpacity) > 0.0001f;
+            if (compositeOpacityChanged)
+            {
+                // Avoid updating cached opacity if it changed too little, because we don't want slow changes to
+                // update the cache and never trigger the compositeOpacityChanged condition.
+                ve.renderChainData.compositeOpacity = newOpacity;
+            }
 
             bool changedOpacityID = false;
-            if (newOpacity != parentCompositeOpacity)
+            bool hasDistinctOpacity = newOpacity < parentCompositeOpacity - 0.0001f; //assume 0 <= opacity <= 1
+            if (hasDistinctOpacity)
             {
-                if (ve.renderChainData.opacityID.owned == 0)
+                if (ve.renderChainData.opacityID.ownedState == OwnedState.Inherited)
                 {
                     changedOpacityID = true;
                     ve.renderChainData.opacityID = renderChain.shaderInfoAllocator.AllocOpacity();
                 }
-                if (ve.renderChainData.opacityID.IsValid())
+
+                if ((changedOpacityID || compositeOpacityChanged) && ve.renderChainData.opacityID.IsValid())
                     renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
             }
-            else if (ve.renderChainData.opacityID.owned == 0)
+            else if (ve.renderChainData.opacityID.ownedState == OwnedState.Inherited)
             {
                 // Just follow my parent's alloc
-                if (ve.hierarchy.parent != null && !ve.renderChainData.opacityID.Equals(ve.hierarchy.parent.renderChainData.opacityID))
+                if (ve.hierarchy.parent != null &&
+                    !ve.renderChainData.opacityID.Equals(ve.hierarchy.parent.renderChainData.opacityID))
                 {
                     changedOpacityID = true;
                     ve.renderChainData.opacityID = ve.hierarchy.parent.renderChainData.opacityID;
-                    ve.renderChainData.opacityID.owned = 0;
+                    ve.renderChainData.opacityID.ownedState = OwnedState.Inherited;
                 }
             }
             else
             {
-                // I have an owned allocation, but I must match my paren't opacity, just set the opacity rather than free and inherit our parent's
-                if (ve.renderChainData.opacityID.IsValid())
+                // I have an owned allocation, but I must match my parent's opacity, just set the opacity rather than free and inherit our parent's
+                if (compositeOpacityChanged && ve.renderChainData.opacityID.IsValid())
                     renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
             }
 
-            if (becameVisible)
-                renderChain.UIEOnVisualsChanged(ve, true); // Force a full visuals repaint, as this element was considered as hidden from the hierarchy
+            if (isDoingFullVertexRegeneration)
+            {
+                // A parent already called UIEOnVisualsChanged with hierarchical=true
+            }
+            else if (oldOpacity < Mathf.Epsilon && newOpacity >= Mathf.Epsilon) // became visible
+            {
+                renderChain.UIEOnVisualsChanged(ve, true); // Force a full vertex regeneration, as this element was considered as hidden from the hierarchy
+                isDoingFullVertexRegeneration = true;
+            }
             else if (changedOpacityID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0))
+            {
                 renderChain.UIEOnVisualsChanged(ve, false); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
+            }
 
-            // Recurse on children
-            int childrenCount = ve.hierarchy.childCount;
-            for (int i = 0; i < childrenCount; i++)
-                DepthFirstOnOpacityChanged(renderChain, newOpacity, ve.hierarchy[i], dirtyID, ref stats);
+            if (compositeOpacityChanged || changedOpacityID)
+            {
+                // Recurse on children
+                int childrenCount = ve.hierarchy.childCount;
+                for (int i = 0; i < childrenCount; i++)
+                {
+                    DepthFirstOnOpacityChanged(renderChain, newOpacity, ve.hierarchy[i], dirtyID, ref stats,
+                        isDoingFullVertexRegeneration);
+                }
+            }
         }
 
         static void DepthFirstOnTransformOrSizeChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)

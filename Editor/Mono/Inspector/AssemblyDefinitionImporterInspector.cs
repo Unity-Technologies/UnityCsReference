@@ -153,7 +153,7 @@ namespace UnityEditor
         SerializedProperty m_NoEngineReferences;
 
         Exception initializeException;
-        IPrecompiledAssemblyProvider m_AssemblyProvider;
+        PrecompiledAssemblyProviderBase m_AssemblyProvider;
 
         public override bool showImportedObject => false;
 

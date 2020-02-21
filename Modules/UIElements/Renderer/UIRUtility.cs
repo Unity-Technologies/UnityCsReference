@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
         public const float k_MeshPosZ = 0.0f; // The correct z value to use to draw a shape
         public const float k_MaskPosZ = 1.0f; // The correct z value to use to mark a clipping shape
 
-        public static Vector4 ToVector4(this Rect rc)
+        public static Vector4 ToVector4(Rect rc)
         {
             return new Vector4(rc.xMin, rc.yMin, rc.xMax, rc.yMax);
         }

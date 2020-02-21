@@ -19,6 +19,7 @@ using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using Object = UnityEngine.Object;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEditor.Connect;
+using UnityEditor.Utils;
 
 namespace UnityEditor
 {
@@ -110,8 +111,17 @@ namespace UnityEditor
         static void BuildPlayerAndRun()
         {
             var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            var buildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
-            BuildPlayerAndRun(!BuildLocationIsValid(buildLocation));
+            var lastBuildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
+            bool buildLocationIsValid = BuildLocationIsValid(lastBuildLocation);
+
+            if (buildLocationIsValid && (buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64))
+            {
+                // Case 1208041: Windows Standalone .exe name depends on productName player setting
+                var newBuildLocation = Path.Combine(Path.GetDirectoryName(lastBuildLocation), Paths.MakeValidFileName(PlayerSettings.productName) + ".exe").Replace(Path.DirectorySeparatorChar, '/');
+                EditorUserBuildSettings.SetBuildLocation(buildTarget, newBuildLocation);
+            }
+
+            BuildPlayerAndRun(!buildLocationIsValid);
         }
 
         // This overload is used by the default player window, to always prompt for build location

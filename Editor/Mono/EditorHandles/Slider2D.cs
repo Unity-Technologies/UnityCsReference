@@ -184,6 +184,7 @@ namespace UnityEditorInternal
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     // This is an ugly hack. It would be better if the drawFunc can handle it's own layout.
                     if (drawFunc == Handles.ArrowCap)
                     {
@@ -264,11 +265,6 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
-                    break;
-
                 case EventType.Repaint:
                 {
                     if (drawFunc == null)
@@ -339,6 +335,7 @@ namespace UnityEditorInternal
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     if (capFunction != null)
                         capFunction(id, position, rotation, handleSize, EventType.Layout);
                     else
@@ -395,11 +392,6 @@ namespace UnityEditorInternal
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
-                    break;
-
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
                     break;
 
                 case EventType.Repaint:

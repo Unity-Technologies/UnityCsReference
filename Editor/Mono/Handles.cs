@@ -468,7 +468,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     // TODO: Create DistanceToCube
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
@@ -483,7 +484,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     // TODO: Create DistanceToCube
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
@@ -498,7 +500,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     // TODO: Create DistanceToCone
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
@@ -513,7 +516,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     // TODO: Create DistanceToCylinder
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
@@ -534,7 +538,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     // TODO: Create DistanceToRectangle
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToRectangleInternal(position, rotation, size));
                     break;
@@ -560,7 +565,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToRectangleInternalWorldSpace(position, rotation, size));
                     break;
                 case (EventType.Repaint):
@@ -581,7 +587,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToRectangle(position, rotation, size));
                     break;
                 case (EventType.Repaint):
@@ -609,7 +616,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToRectangle(position, rotation, size));
                     break;
                 case (EventType.Repaint):
@@ -630,7 +638,8 @@ namespace UnityEditor
         {
             switch (eventType)
             {
-                case (EventType.Layout):
+                case EventType.Layout:
+                case EventType.MouseMove:
                 {
                     Vector3 direction = rotation * Vector3.forward;
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToLine(position, position + (direction + coneOffset) * size * .9f));

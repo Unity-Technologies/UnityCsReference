@@ -27,9 +27,6 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            // Start a vertical group which we'll use to note the layout rect as a drag-drop target.
-            EditorGUILayout.BeginVertical();
-
             bool disableEditCollider = !CanEditCollider();
 
             if (disableEditCollider)
@@ -57,8 +54,6 @@ namespace UnityEditor
 
             FinalizeInspectorGUI();
 
-            // End the vertical layout and use the layout rect as the drag-drop target.
-            EditorGUILayout.EndVertical();
             HandleDragAndDrop(GUILayoutUtility.GetLastRect());
         }
 

@@ -49,6 +49,8 @@ namespace UnityEngine
         public override int marginTop => m_MarginTop;
         public override int marginBottom => m_MarginBottom;
 
+        private static readonly GUILayoutEntry none = new GUILayoutEntry(0, 1, 0, 1, GUIStyle.none);
+
         public GUILayoutGroup() : base(0, 0, 0, 0, GUIStyle.none) {}
 
         public GUILayoutGroup(GUIStyle _style, GUILayoutOption[] options) : base(0, 0, 0, 0, _style)
@@ -111,7 +113,9 @@ namespace UnityEngine
                 return e.rect;
             }
 
-            throw new ArgumentException("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.rawType + "\nAborting");
+            if (Event.current.type == EventType.Repaint)
+                throw new ArgumentException("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.rawType + "\nAborting");
+            return kDummyRect;
         }
 
         public GUILayoutEntry GetNext()
@@ -123,7 +127,9 @@ namespace UnityEngine
                 return e;
             }
 
-            throw new ArgumentException("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.rawType + "\nAborting");
+            if (Event.current.type == EventType.Repaint)
+                throw new ArgumentException("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.rawType + "\nAborting");
+            return none;
         }
 
         //* undocumented
@@ -131,7 +137,8 @@ namespace UnityEngine
         {
             if (m_Cursor == 0)
             {
-                Debug.LogError("You cannot call GetLast immediately after beginning a group.");
+                if (Event.current.type == EventType.Repaint)
+                    Debug.LogError("You cannot call GetLast immediately after beginning a group.");
                 return kDummyRect;
             }
 
@@ -141,7 +148,8 @@ namespace UnityEngine
                 return e.rect;
             }
 
-            Debug.LogError("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.type);
+            if (Event.current.type == EventType.Repaint)
+                Debug.LogError("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.rawType);
             return kDummyRect;
         }
 

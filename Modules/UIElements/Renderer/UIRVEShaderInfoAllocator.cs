@@ -8,6 +8,12 @@ using Unity.Collections;
 
 namespace UnityEngine.UIElements.UIR
 {
+    internal enum OwnedState : byte
+    {
+        Inherited = 0,
+        Owned = 1,
+    }
+
     internal struct BMPAlloc
     {
         public static readonly BMPAlloc Invalid = new BMPAlloc() { page = -1 };
@@ -18,7 +24,7 @@ namespace UnityEngine.UIElements.UIR
         public int page;
         public ushort pageLine;
         public byte bitIndex;
-        public byte owned;
+        public OwnedState ownedState;
     }
 
     // The BitmapAllocator32 always scans for allocations from the first page and upwards.
@@ -78,7 +84,7 @@ namespace UnityEngine.UIElements.UIR
                     m_AllocMap[line] = allocBits & (~(1U << allocIndex));
                     pageInfo.freeSlots--;
                     m_Pages[pageIndex] = pageInfo;
-                    return new BMPAlloc() { page = pageIndex, pageLine = (ushort)(line - pageIndex * m_PageHeight), bitIndex = allocIndex, owned = 1 };
+                    return new BMPAlloc() { page = pageIndex, pageLine = (ushort)(line - pageIndex * m_PageHeight), bitIndex = allocIndex, ownedState = OwnedState.Owned };
                 } // For each line
             } // For each page
 
@@ -92,12 +98,12 @@ namespace UnityEngine.UIElements.UIR
                 m_AllocMap.Add(0xFFFFFFFF);
 
             m_Pages.Add(new Page() { x = (UInt16)uvRect.xMin, y = (UInt16)uvRect.yMin, freeSlots = kPageWidth * m_PageHeight - 1 });
-            return new BMPAlloc() { page = m_Pages.Count - 1, owned = 1 };
+            return new BMPAlloc() { page = m_Pages.Count - 1, ownedState = OwnedState.Owned };
         }
 
         public void Free(BMPAlloc alloc)
         {
-            Debug.Assert(alloc.owned == 1);
+            Debug.Assert(alloc.ownedState == OwnedState.Owned);
             int line = alloc.page * m_PageHeight + alloc.pageLine;
             m_AllocMap[line] = m_AllocMap[line] | (1U << alloc.bitIndex);
             var page = m_Pages[alloc.page];

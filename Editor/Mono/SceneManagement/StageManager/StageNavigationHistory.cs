@@ -14,11 +14,15 @@ namespace UnityEditor.SceneManagement
     {
         [SerializeField]
         List<Stage> m_History = new List<Stage>();
+
+        ReadOnlyCollection<Stage> m_ReadOnlyHistory;
+
         [SerializeField]
         int m_CurrentIndex = -1;
 
         internal StageNavigationHistory()
         {
+            m_ReadOnlyHistory = new ReadOnlyCollection<Stage>(m_History);
         }
 
         internal void Init()
@@ -40,7 +44,7 @@ namespace UnityEditor.SceneManagement
 
         public ReadOnlyCollection<Stage> GetHistory()
         {
-            return m_History.AsReadOnly();
+            return m_ReadOnlyHistory;
         }
 
         // Always keeps main stage

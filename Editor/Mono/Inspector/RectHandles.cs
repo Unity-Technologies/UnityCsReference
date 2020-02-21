@@ -59,12 +59,12 @@ namespace UnityEditor
             switch (evt.type)
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     Vector3 sideDir = sideVector.normalized;
                     HandleUtility.AddControl(id, HandleUtility.DistanceToLine(position + sideVector * 0.5f - sideDir * size * 2, position - sideVector * 0.5f + sideDir * size * 2) - bias);
-                    break;
 
-                case EventType.MouseMove:
-                    DetectCursorChange(id);
+                    if (evt.type == EventType.MouseMove)
+                        DetectCursorChange(id);
                     break;
 
                 case EventType.Repaint:
@@ -194,6 +194,7 @@ namespace UnityEditor
             switch (eventType)
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size * .5f));
                     break;
                 case EventType.Repaint:
@@ -210,6 +211,7 @@ namespace UnityEditor
             switch (eventType)
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size * .5f));
                     break;
                 case EventType.Repaint:

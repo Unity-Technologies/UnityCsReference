@@ -820,6 +820,18 @@
     <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
       <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\ImmediateStylePainter.bindings.cs">
+      <Link>Modules\UIElementsNative\ImmediateStylePainter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRenderer\UIRenderer.bindings.cs">
+      <Link>Modules\UIElementsNative\Renderer\UIRenderer\UIRenderer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\TextNative.bindings.cs">
+      <Link>Modules\UIElementsNative\TextNative.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\UIElementsUtility.bindings.cs">
+      <Link>Modules\UIElementsNative\UIElementsUtility.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\BindableElement.cs">
       <Link>Modules\UIElements\BindableElement.cs</Link>
     </Compile>
@@ -1093,9 +1105,6 @@
     <Compile Include="..\..\Modules\UIElements\ImmediateModeElement.cs">
       <Link>Modules\UIElements\ImmediateModeElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\ImmediateStylePainter.bindings.cs">
-      <Link>Modules\UIElements\ImmediateStylePainter.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\InteractionEnums.cs">
       <Link>Modules\UIElements\InteractionEnums.cs</Link>
     </Compile>
@@ -1182,9 +1191,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderDeviceAllocator.cs">
       <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderDeviceAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderer.bindings.cs">
-      <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderer.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderers.cs">
       <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderers.cs</Link>
@@ -1381,14 +1387,11 @@
     <Compile Include="..\..\Modules\UIElements\TextHandle.cs">
       <Link>Modules\UIElements\TextHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\TextNative.bindings.cs">
-      <Link>Modules\UIElements\TextNative.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Transitions.cs">
       <Link>Modules\UIElements\Transitions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\UIElementsUtility.bindings.cs">
-      <Link>Modules\UIElements\UIElementsUtility.bindings.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\UIElementsRuntimeUtility.cs">
+      <Link>Modules\UIElements\UIElementsRuntimeUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\UIElementsUtility.cs">
       <Link>Modules\UIElements\UIElementsUtility.cs</Link>

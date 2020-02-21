@@ -174,10 +174,7 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    ServicesConfiguration.instance.RequestCollabDashboardUrl(baseCollabDashboardUrl =>
-                    {
-                        OpenDashboardOrgAndProjectIds(baseCollabDashboardUrl);
-                    });
+                    ServicesConfiguration.instance.RequestBaseCollabDashboardUrl(OpenDashboardOrgAndProjectIds);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -369,10 +366,7 @@ namespace UnityEditor.Connect
                 {
                     var clickable = new Clickable(() =>
                     {
-                        ServicesConfiguration.instance.RequestBaseCloudUsageDashboardUrl(baseCloudUsageDashboardUrl =>
-                        {
-                            provider.OpenDashboardOrgAndProjectIds(baseCloudUsageDashboardUrl);
-                        });
+                        ServicesConfiguration.instance.RequestBaseCloudUsageDashboardUrl(provider.OpenDashboardOrgAndProjectIds);
                     });
                     gotoWebDashboard.AddManipulator(clickable);
                 }

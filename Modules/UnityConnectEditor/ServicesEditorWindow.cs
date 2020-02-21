@@ -119,11 +119,7 @@ namespace UnityEditor.Connect
 
             var dashboardClickable = new Clickable(() =>
             {
-                if (!ServicesConfiguration.instance.pathsReady)
-                {
-                    NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Error, L10n.Tr(k_ConnectionFailedMessage));
-                }
-                else if (UnityConnect.instance.projectInfo.projectBound)
+                if (UnityConnect.instance.projectInfo.projectBound)
                 {
                     ServicesConfiguration.instance.RequestBaseDashboardUrl(baseDashboardUrl =>
                     {
@@ -133,10 +129,7 @@ namespace UnityEditor.Connect
                             organizationId = UnityConnect.instance.projectInfo.organizationId,
                             projectId = UnityConnect.instance.projectInfo.projectId
                         });
-                        ServicesConfiguration.instance.RequestCurrentProjectDashboardUrl(currentProjectDashboardUrl =>
-                        {
-                            Application.OpenURL(currentProjectDashboardUrl);
-                        });
+                        ServicesConfiguration.instance.RequestCurrentProjectDashboardUrl(Application.OpenURL);
                     });
                 }
                 else

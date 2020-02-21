@@ -37,6 +37,7 @@ namespace UnityEditorInternal
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     // This is an ugly hack. It would be better if the drawFunc can handle it's own layout.
                     if (drawFunc == Handles.ArrowCap)
                     {
@@ -87,11 +88,6 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
-                    break;
-
                 case EventType.Repaint:
                     Color temp = Color.white;
 
@@ -117,11 +113,13 @@ namespace UnityEditorInternal
         internal static Vector3 Do(int id, Vector3 position, Vector3 offset, Vector3 handleDirection, Vector3 slideDirection, float size, Handles.CapFunction capFunction, float snap)
         {
             Event evt = Event.current;
-            switch (evt.GetTypeForControl(id))
+            var eventType = evt.GetTypeForControl(id);
+            switch (eventType)
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     if (capFunction != null)
-                        capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Layout);
+                        capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, eventType);
                     else
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position + offset, size * .2f));
                     break;
@@ -167,11 +165,6 @@ namespace UnityEditorInternal
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
-                    break;
-
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
                     break;
 
                 case EventType.Repaint:

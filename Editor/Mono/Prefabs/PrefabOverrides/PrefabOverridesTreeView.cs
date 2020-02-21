@@ -332,6 +332,9 @@ namespace UnityEditor
             if (shouldAddGameObjectItemToParent)
             {
                 parentItem.AddChild(gameObjectItem);
+                if (maxDepthItem == null || gameObjectItem.depth > maxDepthItem.depth)
+                    maxDepthItem = gameObjectItem;
+
                 return true;
             }
 
@@ -473,6 +476,11 @@ namespace UnityEditor
         }
 
         GameObject m_SelectedGameObject;
+
+        public float maxItemWidth { get { return maxDepthItem != null ? GetContentIndent(maxDepthItem) + k_FixedContentWidth : 0; } }
+
+        const float k_FixedContentWidth = 150f;
+        TreeViewItem maxDepthItem { get; set; }
 
         struct ChangedModification
         {

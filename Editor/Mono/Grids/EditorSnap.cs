@@ -64,6 +64,11 @@ namespace UnityEditor
             get { return !incrementalSnapActive && activeToolSupportsGridSnap && instance.snapEnabled; }
         }
 
+        internal static bool vertexSnapActive
+        {
+            get { return Tools.vertexDragging; }
+        }
+
         public static bool gridSnapEnabled
         {
             get { return instance.snapEnabled; }

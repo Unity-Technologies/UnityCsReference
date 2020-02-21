@@ -69,8 +69,7 @@ namespace UnityEditor
 
         static void Internal_ProjectWasLoaded()
         {
-            if (projectWasLoaded != null)
-                projectWasLoaded();
+            projectWasLoaded?.Invoke();
         }
 
         [RequiredByNativeCode]
@@ -115,11 +114,8 @@ namespace UnityEditor
 
         static void Internal_EditorApplicationQuit()
         {
-            if (quitting != null)
-                quitting();
-
-            if (editorApplicationQuit != null)
-                editorApplicationQuit();
+            quitting?.Invoke();
+            editorApplicationQuit?.Invoke();
         }
 
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.
@@ -154,8 +150,7 @@ namespace UnityEditor
         // Can be used to ensure repaint of the HierarchyWindow.
         public static void RepaintHierarchyWindow()
         {
-            if (refreshHierarchy != null)
-                refreshHierarchy();
+            refreshHierarchy?.Invoke();
         }
 
         // Delegate for dirtying hierarchy sorting.
@@ -163,8 +158,7 @@ namespace UnityEditor
 
         public static void DirtyHierarchyWindowSorting()
         {
-            if (dirtyHierarchySorting != null)
-                dirtyHierarchySorting();
+            dirtyHierarchySorting?.Invoke();
         }
 
         // Delegate to be called from [[EditorApplication]] callbacks.
@@ -181,6 +175,22 @@ namespace UnityEditor
         public static event Action quitting;
 
         public static CallbackFunction delayCall;
+
+        internal static void CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
+        {
+            var startTime = DateTime.Now;
+            CallbackFunction delayedHandler = null;
+            delayedHandler = new CallbackFunction(() =>
+            {
+                if ((DateTime.Now - startTime).TotalSeconds < delaySeconds)
+                    return;
+                update -= delayedHandler;
+                action();
+            });
+            update += delayedHandler;
+            if (delaySeconds == 0f)
+                SignalTick();
+        }
 
         // Each time an object is (or a group of objects are) created, renamed, parented, unparented or destroyed this callback is raised.
         public static event Action hierarchyChanged;
@@ -306,40 +316,39 @@ namespace UnityEditor
         static int m_UpdateHash;
         static Delegate[] m_UpdateInvocationList;
 
+        [RequiredByNativeCode]
         static void Internal_CallUpdateFunctions()
         {
-            if (update != null)
+            if (update == null)
+                return;
+            if (Profiler.enabled && !ProfilerDriver.deepProfiling)
             {
-                if (Profiler.enabled && !ProfilerDriver.deepProfiling)
+                var currentUpdateHash = update.GetHashCode();
+                if (currentUpdateHash != m_UpdateHash)
                 {
-                    var currentUpdateHash = update.GetHashCode();
-                    if (currentUpdateHash != m_UpdateHash)
-                    {
-                        m_UpdateInvocationList = update.GetInvocationList();
-                        m_UpdateHash = currentUpdateHash;
-                    }
-                    foreach (var cb in m_UpdateInvocationList)
-                    {
-                        var marker = new ProfilerMarker(cb.Method.Name);
-                        marker.Begin();
-                        cb.DynamicInvoke(null);
-                        marker.End();
-                    }
+                    m_UpdateInvocationList = update.GetInvocationList();
+                    m_UpdateHash = currentUpdateHash;
                 }
-                else
+                foreach (var cb in m_UpdateInvocationList)
                 {
-                    update.Invoke();
+                    var marker = new ProfilerMarker(cb.Method.Name);
+                    marker.Begin();
+                    cb.DynamicInvoke(null);
+                    marker.End();
                 }
+            }
+            else
+            {
+                update.Invoke();
             }
         }
 
+        [RequiredByNativeCode]
         static void Internal_CallDelayFunctions()
         {
             CallbackFunction delay = delayCall;
             delayCall = null;
-
-            if (delay != null)
-                delay();
+            delay?.Invoke();
         }
 
         static void Internal_SwitchSkin()
@@ -356,95 +365,62 @@ namespace UnityEditor
         static void Internal_CallHierarchyHasChanged()
         {
             #pragma warning disable 618
-            if (hierarchyWindowChanged != null)
-                hierarchyWindowChanged();
+            hierarchyWindowChanged?.Invoke();
             #pragma warning restore 618
 
-            if (hierarchyChanged != null)
-                hierarchyChanged();
+            hierarchyChanged?.Invoke();
         }
 
         static void Internal_CallProjectHasChanged()
         {
             #pragma warning disable 618
-            if (projectWindowChanged != null)
-                projectWindowChanged();
+            projectWindowChanged?.Invoke();
             #pragma warning restore 618
 
-            if (projectChanged != null)
-                projectChanged();
+            projectChanged?.Invoke();
         }
 
         internal static void Internal_CallSearchHasChanged()
         {
-            if (searchChanged != null)
-                searchChanged();
+            searchChanged?.Invoke();
         }
 
         internal static void Internal_CallAssetLabelsHaveChanged()
         {
-            if (assetLabelsChanged != null)
-                assetLabelsChanged();
+            assetLabelsChanged?.Invoke();
         }
 
         internal static void Internal_CallAssetBundleNameChanged()
         {
-            if (assetBundleNameChanged != null)
-                assetBundleNameChanged();
-        }
-
-        // Single use case for now ONLY!
-        internal static void CallDelayed(CallbackFunction function, float timeFromNow)
-        {
-            delayedCallback = function;
-            s_DelayedCallbackTime = Time.realtimeSinceStartup + timeFromNow;
-            update += CheckCallDelayed;
-        }
-
-        static CallbackFunction delayedCallback;
-        static float s_DelayedCallbackTime = 0.0f;
-
-        static void CheckCallDelayed()
-        {
-            if (Time.realtimeSinceStartup > s_DelayedCallbackTime)
-            {
-                update -= CheckCallDelayed;
-                delayedCallback();
-            }
+            assetBundleNameChanged?.Invoke();
         }
 
         static void Internal_PauseStateChanged(PauseState state)
         {
             #pragma warning disable 618
-            if (playmodeStateChanged != null)
-                playmodeStateChanged();
+            playmodeStateChanged?.Invoke();
             #pragma warning restore 618
 
-            if (pauseStateChanged != null)
-                pauseStateChanged(state);
+            pauseStateChanged?.Invoke(state);
         }
 
         static void Internal_PlayModeStateChanged(PlayModeStateChange state)
         {
             #pragma warning disable 618
-            if (playmodeStateChanged != null)
-                playmodeStateChanged();
+            playmodeStateChanged?.Invoke();
             #pragma warning restore 618
 
-            if (playModeStateChanged != null)
-                playModeStateChanged(state);
+            playModeStateChanged?.Invoke(state);
         }
 
         static void Internal_CallKeyboardModifiersChanged()
         {
-            if (modifierKeysChanged != null)
-                modifierKeysChanged();
+            modifierKeysChanged?.Invoke();
         }
 
         static void Internal_CallWindowsReordered()
         {
-            if (windowsReordered != null)
-                windowsReordered();
+            windowsReordered?.Invoke();
         }
 
         [RequiredByNativeCode]
@@ -458,8 +434,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void Internal_CallGlobalEventHandler()
         {
-            if (globalEventHandler != null)
-                globalEventHandler();
+            globalEventHandler?.Invoke();
 
             // Ensure this is called last in order to make sure no null current events are passed to other handlers
             WindowLayout.MaximizeGestureHandler();

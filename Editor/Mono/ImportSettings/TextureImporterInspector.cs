@@ -13,6 +13,7 @@ using System;
 using UnityEditor.Experimental.AssetImporters;
 using Object = UnityEngine.Object;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
+using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 
 namespace UnityEditor
 {
@@ -1450,6 +1451,17 @@ namespace UnityEditor
         {
             base.Apply();
             BaseTextureImportPlatformSettings.ApplyPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+        }
+
+        public override void DrawPreview(Rect previewArea)
+        {
+            base.DrawPreview(previewArea);
+
+            //Drawing texture previewers for VT only textures will have generated texture tile request.
+            //We need to update the VT system to actually stream these tiles into VRAM and render the textures correctly.
+            var ti = preview as TextureInspector;
+            if (ti != null && ti.hasTargetUsingVTMaterial)
+                VirtualTexturing.System.Update();
         }
     }
 }

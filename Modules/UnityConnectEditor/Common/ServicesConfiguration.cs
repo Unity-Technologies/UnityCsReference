@@ -327,7 +327,7 @@ namespace UnityEditor.Connect
         {
             adsGettingStartedUrl = "https://unityads.unity3d.com/help/index";
             adsLearnMoreUrl = "https://unityads.unity3d.com/help/monetization/getting-started";
-            adsDashboardUrl = "https://legacy-editor-integration.dashboard.unity3d.com/organizations/{0}/overview/revenue";
+            adsDashboardUrl = "https://operate.dashboard.unity3d.com/organizations/{0}/projects/{1}/overview/revenue";
 
             switch (environmentType)
             {
@@ -716,44 +716,12 @@ namespace UnityEditor.Connect
 
         public void RequestBasePurchasingDashboardUrl(Action<string> callback)
         {
-            RequestAsyncUrl(AsyncUrlId.ProjectDashboardUrl, callback);
+            RequestAsyncUrl(AsyncUrlId.PurchasingDashboardUrl, callback);
         }
 
         public string adsGettingStartedUrl { get; private set; }
         public string adsLearnMoreUrl { get; private set; }
         public string adsDashboardUrl { get; private set; }
         public string adsOperateApiUrl { get; private set; }
-
-        public void RequestCloudDiagCrashesDashboardUrl(Action<string> callback)
-        {
-            RequestBaseCloudDiagCrashesDashboardUrl(baseCloudDiagCrashesDashboardUrl =>
-            {
-                callback(string.Format(baseCloudDiagCrashesDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId));
-            });
-        }
-
-        public void RequestCollabDashboardUrl(Action<string> callback)
-        {
-            RequestBaseCollabDashboardUrl(baseCollabDashboardUrl =>
-            {
-                callback(string.Format(baseCollabDashboardUrl, UnityConnect.instance.projectInfo.organizationId, UnityConnect.instance.projectInfo.projectId));
-            });
-        }
-
-        public void RequestPurchasingDashboardUrl(Action<string> callback)
-        {
-            RequestBasePurchasingDashboardUrl(basePurchasingDashboardUrl =>
-            {
-                callback(string.Format(m_PurchasingDashboardUrl, UnityConnect.instance.projectInfo.projectGUID));
-            });
-        }
-
-        public void RequestAnalyticsDashboardUrl(Action<string> callback)
-        {
-            RequestBaseAnalyticsDashboardUrl(baseAnalyticsDashboardUrl =>
-            {
-                callback(string.Format(m_AnalyticsDashboardUrl, UnityConnect.instance.projectInfo.projectGUID));
-            });
-        }
     }
 }

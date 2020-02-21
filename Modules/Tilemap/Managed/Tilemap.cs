@@ -51,7 +51,15 @@ namespace UnityEngine.Tilemaps
 
         private void SendTilemapTileChangedCallback(SyncTile[] syncTiles)
         {
-            Tilemap.tilemapTileChanged(this, syncTiles);
+            try
+            {
+                Tilemap.tilemapTileChanged(this, syncTiles);
+            }
+            catch (Exception e)
+            {
+                // Case 1215834: Log user exception/s and ensure engine code continues to run
+                Debug.LogException(e, this);
+            }
         }
 
         internal static void SetSyncTileCallback(Action<Tilemap, SyncTile[]> callback)

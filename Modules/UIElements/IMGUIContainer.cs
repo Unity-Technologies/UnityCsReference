@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+//#define DEBUG_IMGUI_CONTAINER_EVENTS
 using System;
 using System.Collections.Generic;
 
@@ -70,6 +71,7 @@ namespace UnityEngine.UIElements
             set { m_CullingEnabled = value; IncrementVersion(VersionChangeType.Repaint); }
         }
 
+        private bool m_RefreshCachedLayout = true;
         private GUILayoutUtility.LayoutCache m_Cache = null;
         private GUILayoutUtility.LayoutCache cache
         {
@@ -108,9 +110,9 @@ namespace UnityEngine.UIElements
         public ContextType contextType { get; set; }
 
         // The following 2 flags indicate the following :
-        // 1) lostFocus : a blur event occured and we need to make sure the actual keyboard focus from IMGUI is really un-focused
+        // 1) lostFocus : a blur event occurred and we need to make sure the actual keyboard focus from IMGUI is really un-focused
         bool lostFocus = false;
-        // 2) receivedFocus : a Focus event occured and we need to focus the actual IMGUIContainer as being THE element focused.
+        // 2) receivedFocus : a Focus event occurred and we need to focus the actual IMGUIContainer as being THE element focused.
         bool receivedFocus = false;
         FocusChangeDirection focusChangeDirection = FocusChangeDirection.unspecified;
         bool hasFocusableControls = false;
@@ -434,6 +436,7 @@ namespace UnityEngine.UIElements
 
         public void MarkDirtyLayout()
         {
+            m_RefreshCachedLayout = true;
             IncrementVersion(VersionChangeType.Layout);
         }
 
@@ -480,7 +483,7 @@ namespace UnityEngine.UIElements
             HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
         }
 
-        internal bool SendEventToIMGUI(EventBase evt, bool canAffectFocus = true)
+        internal bool SendEventToIMGUI(EventBase evt, bool canAffectFocus = true, bool verifyBounds = true)
         {
             if (evt is IPointerEvent)
             {
@@ -521,7 +524,7 @@ namespace UnityEngine.UIElements
 
                     if (sendPointerEvent)
                     {
-                        bool result = SendEventToIMGUIRaw(evt, canAffectFocus);
+                        bool result = SendEventToIMGUIRaw(evt, canAffectFocus, verifyBounds);
                         evt.imguiEvent.type = originalEventType;
                         return result;
                     }
@@ -529,13 +532,13 @@ namespace UnityEngine.UIElements
                 // If not touch then we should not handle PointerEvents on IMGUI, we will handle the MouseEvent sent right after
                 return false;
             }
-            else
-                return SendEventToIMGUIRaw(evt, canAffectFocus);
+
+            return SendEventToIMGUIRaw(evt, canAffectFocus, verifyBounds);
         }
 
-        internal bool SendEventToIMGUIRaw(EventBase evt, bool canAffectFocus)
+        private bool SendEventToIMGUIRaw(EventBase evt, bool canAffectFocus, bool verifyBounds)
         {
-            if (!IsRelevantEvent(evt))
+            if (verifyBounds && !VerifyBounds(evt))
                 return false;
 
             bool result;
@@ -546,7 +549,7 @@ namespace UnityEngine.UIElements
             return result;
         }
 
-        private bool IsRelevantEvent(EventBase evt)
+        private bool VerifyBounds(EventBase evt)
         {
             return IsContainerCapturingTheMouse() || !IsLocalEvent(evt) || IsEventInsideLocalWindow(evt);
         }
@@ -585,6 +588,14 @@ namespace UnityEngine.UIElements
             return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, onGUIHandler, canAffectFocus);
         }
 
+        private bool IsIMGUILayoutPassRequired(Event e, bool wantsMouseMove)
+        {
+            return m_RefreshCachedLayout || e.rawType == EventType.Repaint
+                // We are handling these event types because of some legacy IMGUI editor window doing funky stuff in the layout pass.
+                || e.rawType == EventType.MouseUp || (wantsMouseMove && e.rawType == EventType.MouseDown)
+                || e.rawType == EventType.ExecuteCommand || e.rawType == EventType.ValidateCommand;
+        }
+
         private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, Action onGUIHandler, bool canAffectFocus)
         {
             if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.rawType) == false)
@@ -593,12 +604,23 @@ namespace UnityEngine.UIElements
             }
 
             EventType originalEventType = e.rawType;
-            e.type = EventType.Layout;
+            if (originalEventType != EventType.Layout)
+            {
+                if (IsIMGUILayoutPassRequired(e, elementPanel.IMGUIEventInterests.wantsMouseMove))
+                {
+                    // Only update the layout in-between repaint events.
+                    e.type = EventType.Layout;
+                    DoOnGUI(e, worldTransform, clippingRect, false, layout, onGUIHandler, canAffectFocus);
+                    m_RefreshCachedLayout = false;
+                    e.type = originalEventType;
+                }
+                else
+                {
+                    // Reuse layout cache for other events.
+                    cache.ResetCursor();
+                }
+            }
 
-            // layout event
-            DoOnGUI(e, worldTransform, clippingRect, false, layout, onGUIHandler, canAffectFocus);
-            // the actual event
-            e.type = originalEventType;
             DoOnGUI(e, worldTransform, clippingRect, false, layout, onGUIHandler, canAffectFocus);
 
             if (newKeyboardFocusControlID > 0)

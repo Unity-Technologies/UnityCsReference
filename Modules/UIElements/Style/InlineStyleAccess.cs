@@ -116,8 +116,9 @@ namespace UnityEngine.UIElements
         private StyleCursor m_InlineCursor;
 
         private InlineRule m_InlineRule;
+        public InlineRule inlineRule => m_InlineRule;
 
-        private struct InlineRule
+        internal struct InlineRule
         {
             public StyleSheet sheet;
             public StyleProperty[] properties;

@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements.UIR
         public void Reset()
         {
             view.Clear();
-            view.Push(new ViewTransform { transform = Matrix4x4.identity, clipRect = k_FullNormalizedRect.ToVector4() });
+            view.Push(new ViewTransform { transform = Matrix4x4.identity, clipRect = UIRUtility.ToVector4(k_FullNormalizedRect) });
             scissor.Clear();
             scissor.Push(k_UnlimitedRect);
         }

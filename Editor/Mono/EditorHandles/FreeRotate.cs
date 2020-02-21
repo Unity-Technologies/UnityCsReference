@@ -26,6 +26,7 @@ namespace UnityEditorInternal
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
+                case EventType.MouseMove:
                     // We only want the position to be affected by the Handles.matrix.
                     Handles.matrix = Matrix4x4.identity;
                     HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(worldPosition, size) + HandleUtility.kPickDistance);
@@ -88,10 +89,6 @@ namespace UnityEditorInternal
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
-                    break;
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
                     break;
                 case EventType.KeyDown:
                     if (evt.keyCode == KeyCode.Escape && GUIUtility.hotControl == id)

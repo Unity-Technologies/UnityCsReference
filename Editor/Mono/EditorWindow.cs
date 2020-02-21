@@ -1121,15 +1121,12 @@ namespace UnityEditor
 
         internal static void UpdateWindowMenuListing()
         {
-            EditorApplication.delayCall -= EditorWindow.BuildWindowMenuListing;
-            EditorApplication.delayCall += EditorWindow.BuildWindowMenuListing;
+            EditorApplication.CallDelayed(EditorWindow.BuildWindowMenuListing);
         }
 
         internal static void BuildWindowMenuListing()
         {
             const string k_RootMenuItemName = "Window/Panels";
-
-            EditorApplication.delayCall -= EditorWindow.BuildWindowMenuListing;
 
             Menu.RemoveMenuItem(k_RootMenuItemName);
             var editorWindows = Resources.FindObjectsOfTypeAll<EditorWindow>();

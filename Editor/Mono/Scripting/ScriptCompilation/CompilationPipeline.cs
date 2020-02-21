@@ -344,7 +344,7 @@ namespace UnityEditor.Compilation
             return GetPrecompiledAssemblyNames(precompiledAssemblyProvider);
         }
 
-        internal static string[] GetPrecompiledAssemblyNames(IPrecompiledAssemblyProvider precompiledAssemblyProvider)
+        internal static string[] GetPrecompiledAssemblyNames(PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
         {
             return precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly)
@@ -373,7 +373,7 @@ namespace UnityEditor.Compilation
             return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider);
         }
 
-        internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, IPrecompiledAssemblyProvider precompiledAssemblyProvider)
+        internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
         {
             HashSet<string> assemblyNames = new HashSet<string>();
             sc.AssemblyFlags flags = sc.AssemblyFlags.None;
@@ -407,7 +407,7 @@ namespace UnityEditor.Compilation
             return GetPrecompiledAssemblyPathFromAssemblyName(assemblyName, precompiledAssemblyProvider);
         }
 
-        internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, IPrecompiledAssemblyProvider precompiledAssemblyProvider)
+        internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
         {
             var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
 
@@ -433,7 +433,7 @@ namespace UnityEditor.Compilation
             var target = EditorUserBuildSettings.activeBuildTarget;
 
             PrecompiledAssembly[] unityAssemblies = InternalEditorUtility.GetUnityAssemblies(false, group, target);
-            PrecompiledAssembly[] precompiledAssemblies = InternalEditorUtility.GetPrecompiledAssemblies(false, group, target);
+            var precompiledAssemblies = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(false, group, target);
 
             var scriptAssemblies = editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
             return ToAssemblies(scriptAssemblies);

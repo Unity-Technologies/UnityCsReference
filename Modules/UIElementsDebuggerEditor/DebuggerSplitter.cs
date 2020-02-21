@@ -43,6 +43,7 @@ namespace UnityEditor.UIElements.Debugger
 
         override internal void OnViewDataReady()
         {
+            base.OnViewDataReady();
             OverwriteFromViewData(this, viewDataKey);
             leftPane.style.width = leftPaneWidth;
         }
