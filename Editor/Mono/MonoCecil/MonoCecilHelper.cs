@@ -85,7 +85,16 @@ namespace UnityEditor
                 AssemblyResolver = assemblyResolver,
                 ReadingMode = ReadingMode.Deferred
             };
-            return AssemblyDefinition.ReadAssembly(assemblyPath, readerParameters);
+
+            try
+            {
+                return AssemblyDefinition.ReadAssembly(assemblyPath, readerParameters);
+            }
+            catch (Exception exception)
+            {
+                Debug.Log(exception.Message);
+                return null;
+            }
         }
 
         private static IEnumerable<TypeDefinition> AggregateAllTypeDefinitions(IEnumerable<TypeDefinition> types)
