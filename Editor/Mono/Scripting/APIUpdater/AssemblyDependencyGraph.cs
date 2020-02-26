@@ -133,6 +133,8 @@ namespace UnityEditor.Scripting.APIUpdater
 
             var array = m_Graph.ToArray();
 
+            CheckForCycles(array);
+
             bool exchangeElementsInLastPass;
             do
             {
@@ -195,12 +197,36 @@ namespace UnityEditor.Scripting.APIUpdater
             return false;
         }
 
+        static void CheckForCycles(IList<DependencyEntry> entries)
+        {
+            var seen = new Stack<DependencyEntry>(entries.Count);
+            foreach (var entry in entries)
+            {
+                CheckForCycles(seen, entry.Dependencies);
+            }
+        }
+
+        static void CheckForCycles(Stack<DependencyEntry> seen, IList<DependencyEntry> entries)
+        {
+            foreach (var entry in entries)
+            {
+                if (seen.Contains(entry))
+                {
+                    throw new InvalidOperationException($"[APIUpdater] Cycle detected in assembly references: {string.Join("->", seen.Reverse().Select(s => s.Name).ToArray())}->{entry.Name}");
+                }
+
+                seen.Push(entry);
+                CheckForCycles(seen, entry.Dependencies);
+                seen.Pop();
+            }
+        }
+
         /// <summary>
         /// Serialized format:
         ///
-        /// +--------------+------------------+-----------------------------+
-        /// |   Hash Lengh | Hash of Payload  | Payload (serialized data)   |
-        /// +--------------+------------------+-----------------------------+
+        /// +---------------+------------------+-----------------------------+
+        /// |   Hash Length | Hash of Payload  | Payload (serialized data)   |
+        /// +---------------+------------------+-----------------------------+
         /// </summary>
         public void SaveTo(Stream stream)
         {
