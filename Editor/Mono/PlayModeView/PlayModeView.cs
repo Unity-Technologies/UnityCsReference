@@ -164,7 +164,8 @@ namespace UnityEditor
                     currentTargetDisplay = targetDisplay;
                 }
 
-                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, playModeViewName);
+                bool hdr = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
+                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, playModeViewName, hdr);
 
                 if (Event.current == null || Event.current.type != EventType.Repaint)
                     return m_TargetTexture;
@@ -256,19 +257,24 @@ namespace UnityEditor
             }
         }
 
-        private void ConfigureTargetTexture(int width, int height, bool clearTexture, string name)
+        private void ConfigureTargetTexture(int width, int height, bool clearTexture, string name, bool hdr)
         {
+            // make sure we actually support R16G16B16A16_SFloat
+            GraphicsFormat format = (hdr && SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Render)) ? GraphicsFormat.R16G16B16A16_SFloat : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
+
             // Requires destroying the entire RT object and recreating it if
             // 1. color space is changed;
             // 2. using mipmap is changed.
-            if (m_TargetTexture && (m_CurrentColorSpace != QualitySettings.activeColorSpace || m_TargetTexture.useMipMap != m_UseMipMap))
+            // 3. HDR backbuffer mode for the view has changed
+
+            if (m_TargetTexture && (m_CurrentColorSpace != QualitySettings.activeColorSpace || m_TargetTexture.useMipMap != m_UseMipMap || m_TargetTexture.graphicsFormat != format))
             {
                 UnityEngine.Object.DestroyImmediate(m_TargetTexture);
             }
             if (!m_TargetTexture)
             {
                 m_CurrentColorSpace = QualitySettings.activeColorSpace;
-                m_TargetTexture = new RenderTexture(0, 0, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
+                m_TargetTexture = new RenderTexture(0, 0, 24, format);
                 m_TargetTexture.name = name + " RT";
                 m_TargetTexture.filterMode = textureFilterMode;
                 m_TargetTexture.hideFlags = textureHideFlags;

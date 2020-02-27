@@ -2724,7 +2724,9 @@ namespace UnityEditor
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all
             //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
-            if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat))
+
+            bool hdrDisplayActive = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
+            if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat) && !hdrDisplayActive)
             {
                 var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;

@@ -36,6 +36,7 @@ namespace UnityEditor
         internal extern bool mouseRayInvisible {[NativeMethod("IsMouseRayInvisible")] get; [NativeMethod("SetMouseRayInvisible")] set; }
         internal extern bool disableInputEvents {[NativeMethod("AreInputEventsDisabled")] get; [NativeMethod("SetDisableInputEvents")] set; }
 
+        internal extern bool hdrActive {[NativeMethod("IsHDRActive")] get; }
 
         internal extern void SetTitle(string title);
         internal extern void AddToAuxWindowList();

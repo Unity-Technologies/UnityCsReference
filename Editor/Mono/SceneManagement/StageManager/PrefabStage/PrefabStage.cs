@@ -1626,7 +1626,6 @@ namespace UnityEditor.Experimental.SceneManagement
                 }
             }
 
-            using (new EditorGUI.DisabledScope(temporarilyDisableAutoSave))
             {
                 bool autoSaveForScene = autoSave;
                 EditorGUI.BeginChangeCheck();
