@@ -9,6 +9,7 @@ using UnityEditor.Experimental.U2D;
 using UnityEngine.Experimental.U2D;
 using UnityEditorInternal;
 using UnityEngine;
+using System.IO;
 
 namespace UnityEditor.U2D
 {
@@ -29,7 +30,7 @@ namespace UnityEditor.U2D
         {
             var ti = so.targetObject as TextureImporter;
             var texture = AssetDatabase.LoadAssetAtPath<Texture>(ti.assetPath);
-            name = texture.name;
+            name = texture != null ? texture.name : Path.GetFileNameWithoutExtension(ti.assetPath);
             alignment = (SpriteAlignment)so.FindProperty("m_Alignment").intValue;
             border = ti.spriteBorder;
             pivot = SpriteEditorUtility.GetPivotValue(alignment, ti.spritePivot);

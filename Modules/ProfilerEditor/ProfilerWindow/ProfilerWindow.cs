@@ -345,6 +345,7 @@ namespace UnityEditor
             m_ProfilerWindows.Add(this);
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
+            ProfilerDriver.profileLoaded += OnProfileLoaded;
         }
 
         void InitializeIfNeeded()
@@ -443,6 +444,13 @@ namespace UnityEditor
                 chart.LoadAndBindSettings();
 
             m_Initialized = true;
+        }
+
+        void OnProfileLoaded()
+        {
+            // Reset frame state to trigger a redraw.
+            m_PrevLastFrame = -1;
+            m_LastFrameFromTick = -1;
         }
 
         void OnToggleCPUChartSeries(bool wasToggled)
@@ -551,6 +559,7 @@ namespace UnityEditor
             m_UISystemProfiler.CurrentAreaChanged(null);
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged -= Initialize;
+            ProfilerDriver.profileLoaded -= OnProfileLoaded;
         }
 
         void Awake()
