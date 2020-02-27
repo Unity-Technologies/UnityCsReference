@@ -25,8 +25,9 @@ namespace UnityEngine.XR.WSA
         private bool m_LoggedLastConnectionFailure = false;
         private HolographicStreamerConnectionState m_LastConnectionState = HolographicStreamerConnectionState.Disconnected;
 
+        // EmulationMode is internal so that it can be accessed for WindowsMR automation tests
         [SerializeField]
-        private EmulationMode m_Mode = EmulationMode.None;
+        internal EmulationMode m_Mode = EmulationMode.None;
         [SerializeField]
         private RemoteDeviceVersion m_DeviceVersion = RemoteDeviceVersion.V1;
         [SerializeField]

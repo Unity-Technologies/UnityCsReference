@@ -195,6 +195,14 @@ namespace UnityEditorInternal
         [NativeMethod("GetStatisticsValuesBatch")]
         static public extern void GetStatisticsValues(int identifier, int firstFrame, float scale, [Out] float[] buffer, out float maxValue);
 
+        public static event Action profileLoaded;
+
+        [RequiredByNativeCode]
+        static void InvokeProfileLoaded()
+        {
+            profileLoaded?.Invoke();
+        }
+
         [Obsolete("ResetHistory is deprecated, use ClearAllFrames instead.")]
         static public void ResetHistory()
         {

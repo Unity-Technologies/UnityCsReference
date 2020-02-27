@@ -3215,12 +3215,34 @@ namespace UnityEditor
                 || enumData.underlyingType == typeof(ushort)
                 || enumData.underlyingType == typeof(uint)
                 || enumData.underlyingType == typeof(ulong);
-            var enumFields = enumType.GetFields(BindingFlags.Static | BindingFlags.Public)
-                .Where(f => CheckObsoleteAddition(f, excludeObsolete))
-                .OrderBy(f => f.MetadataToken).ToList();
-            enumData.displayNames = enumFields.Select(f => EnumNameFromEnumField(f)).ToArray();
-            enumData.tooltip = enumFields.Select(f => EnumTooltipFromEnumField(f)).ToArray();
-            enumData.values = enumFields.Select(f => (Enum)Enum.Parse(enumType, f.Name)).ToArray();
+
+            var enumFields = enumType.GetFields(BindingFlags.Static | BindingFlags.Public);
+            List<FieldInfo> enumfieldlist = new List<FieldInfo>();
+            int enumFieldslen = enumFields.Length;
+            for (int j = 0; j < enumFieldslen; j++)
+            {
+                if (CheckObsoleteAddition(enumFields[j], excludeObsolete))
+                    enumfieldlist.Add(enumFields[j]);
+            }
+            // For Empty List Scenario
+            if (!enumfieldlist.Any())
+            {
+                string[] defaultstr = { "" };
+                Enum[] defaultenum = {};
+                int[] defaultarr = { 0 };
+                enumData.values = defaultenum;
+                enumData.flagValues = defaultarr;
+                enumData.displayNames = defaultstr;
+                enumData.tooltip = defaultstr;
+                enumData.flags = true;
+                enumData.serializable = true;
+                return enumData;
+            }
+            enumfieldlist.OrderBy(f => f.MetadataToken);
+            enumData.displayNames = enumfieldlist.Select(f => EnumNameFromEnumField(f)).ToArray();
+            enumData.tooltip = enumfieldlist.Select(f => EnumTooltipFromEnumField(f)).ToArray();
+            enumData.values = enumfieldlist.Select(f => (Enum)f.GetValue(null)).ToArray();
+
             enumData.flagValues = enumData.unsigned ?
                 enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
                 enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
