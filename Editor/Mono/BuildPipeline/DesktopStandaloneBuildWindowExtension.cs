@@ -16,8 +16,8 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
 
-    private bool m_HasIl2CppPlayers;
-    private bool m_IsRunningOnHostPlatform;
+    protected bool m_HasIl2CppPlayers;
+    protected bool m_IsRunningOnHostPlatform;
 
     public DesktopStandaloneBuildWindowExtension(bool hasIl2CppPlayers)
     {

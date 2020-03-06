@@ -383,12 +383,15 @@ namespace UnityEditor
 
         void ToggleFromInt(SerializedProperty property, GUIContent label)
         {
+            var content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), label, property);
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
-            int value = EditorGUILayout.Toggle(label, property.intValue > 0) ? 1 : 0;
+            int value = EditorGUILayout.Toggle(content, property.intValue > 0) ? 1 : 0;
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 property.intValue = value;
+            EditorGUILayout.EndHorizontal();
+            EditorGUI.EndProperty();
         }
 
         void EnumPopup(SerializedProperty property, System.Type type, GUIContent label)
