@@ -1177,8 +1177,11 @@ namespace UnityEditor
 
             SceneHierarchyHooks.AddCustomGameObjectContextMenuItems(menu, contextClickedItemID == 0 ? null : (GameObject)EditorUtility.InstanceIDToObject(contextClickedItemID));
 
-            menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Properties..."), false, () => PropertyEditor.OpenPropertyEditorOnSelection());
+            if (selectedGameObjects.Length > 0)
+            {
+                menu.AddSeparator("");
+                menu.AddItem(new GUIContent("Properties..."), false, () => PropertyEditor.OpenPropertyEditorOnSelection());
+            }
 
             menu.ShowAsContext();
         }

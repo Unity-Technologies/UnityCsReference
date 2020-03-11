@@ -314,7 +314,10 @@ namespace UnityEditor
             if (m_DeleteLevel >= 0)
             {
                 if (m_DeleteLevel < selectedLevel || m_DeleteLevel == m_QualitySettingsProperty.arraySize - 1)
+                {
                     selectedLevel = Mathf.Max(0, selectedLevel - 1);
+                    QualitySettings.SetQualityLevel(selectedLevel);
+                }
 
                 //Always ensure there is one quality setting
                 if (m_QualitySettingsProperty.arraySize > 1 && m_DeleteLevel >= 0 && m_DeleteLevel < m_QualitySettingsProperty.arraySize)
@@ -474,6 +477,10 @@ namespace UnityEditor
             var settings = GetQualitySettings();
             var defaults = GetDefaultQualityForPlatforms();
             var selectedLevel = QualitySettings.GetQualityLevel();
+            if (selectedLevel >= m_QualitySettingsProperty.arraySize)
+            {
+                selectedLevel = m_QualitySettingsProperty.arraySize - 1;
+            }
 
             EditorGUI.BeginChangeCheck();
             selectedLevel = DoQualityLevelSelection(selectedLevel, settings, defaults);

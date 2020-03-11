@@ -10,6 +10,7 @@ namespace UnityEngine
     {
         public bool wantsMouseMove { get; set; }
         public bool wantsMouseEnterLeaveWindow { get; set; }
+        public bool wantsLessLayoutEvents { get; set; }
 
         public bool WantsEvent(EventType type)
         {

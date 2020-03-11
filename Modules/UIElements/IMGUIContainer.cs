@@ -588,12 +588,11 @@ namespace UnityEngine.UIElements
             return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, onGUIHandler, canAffectFocus);
         }
 
-        private bool IsIMGUILayoutPassRequired(Event e, bool wantsMouseMove)
+        private bool IsIMGUILayoutPassRequired(Event e, EventInterests ei)
         {
-            return m_RefreshCachedLayout || e.rawType == EventType.Repaint
+            return m_RefreshCachedLayout || e.rawType == EventType.Repaint || !ei.wantsLessLayoutEvents
                 // We are handling these event types because of some legacy IMGUI editor window doing funky stuff in the layout pass.
-                || e.rawType == EventType.MouseUp || (wantsMouseMove && e.rawType == EventType.MouseDown)
-                || e.rawType == EventType.ExecuteCommand || e.rawType == EventType.ValidateCommand;
+                || e.rawType == EventType.MouseUp || (ei.wantsMouseMove && e.rawType == EventType.MouseDown);
         }
 
         private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, Action onGUIHandler, bool canAffectFocus)
@@ -606,7 +605,7 @@ namespace UnityEngine.UIElements
             EventType originalEventType = e.rawType;
             if (originalEventType != EventType.Layout)
             {
-                if (IsIMGUILayoutPassRequired(e, elementPanel.IMGUIEventInterests.wantsMouseMove))
+                if (IsIMGUILayoutPassRequired(e, elementPanel.IMGUIEventInterests))
                 {
                     // Only update the layout in-between repaint events.
                     e.type = EventType.Layout;

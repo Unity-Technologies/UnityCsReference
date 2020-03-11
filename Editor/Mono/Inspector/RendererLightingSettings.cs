@@ -134,7 +134,7 @@ namespace UnityEditor
         private float CalcLODScale(bool isMeshRenderer)
         {
             float lodScale = 1.0f;
-            if (isMeshRenderer)
+            if (isMeshRenderer && (m_Renderers != null) && (m_Renderers.Length > 0))
             {
                 lodScale = LightmapVisualization.GetLightmapLODLevelScale(m_Renderers[0]);
                 for (int i = 1; i < m_Renderers.Length; i++)
@@ -288,24 +288,27 @@ namespace UnityEditor
                         RendererUVSettings();
                     }
 
-                    ShowAtlasGUI(m_Renderers[0].GetInstanceID());
-                    ShowRealtimeLMGUI(m_Renderers[0]);
-
-                    if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
-                        EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
-
-                    DisplayMeshWarning();
-
-                    if (showEnlightenSettings)
+                    if ((m_Renderers != null) && (m_Renderers.Length > 0))
                     {
-                        if (Lightmapping.HasClampedResolution(m_Renderers[0]))
-                            EditorGUILayout.HelpBox(Styles.ClampedPackingResolution.text, MessageType.Warning);
-                    }
+                        ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true);
+                        ShowRealtimeLMGUI(m_Renderers[0]);
 
-                    if (showProgressiveSettings)
-                    {
-                        if (Lightmapping.HasUVOverlaps(m_Renderers[0]))
-                            EditorGUILayout.HelpBox(Styles.UVOverlap.text, MessageType.Warning);
+                        if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
+                            EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
+
+                        DisplayMeshWarning();
+
+                        if (showEnlightenSettings)
+                        {
+                            if (Lightmapping.HasClampedResolution(m_Renderers[0]))
+                                EditorGUILayout.HelpBox(Styles.ClampedPackingResolution.text, MessageType.Warning);
+                        }
+
+                        if (showProgressiveSettings)
+                        {
+                            if (Lightmapping.HasUVOverlaps(m_Renderers[0]))
+                                EditorGUILayout.HelpBox(Styles.UVOverlap.text, MessageType.Warning);
+                        }
                     }
 
                     EditorGUI.indentLevel -= 1;
@@ -369,11 +372,14 @@ namespace UnityEditor
 
                     LightmapParametersGUI(m_LightmapParameters, Styles.LightmapParameters);
 
-                    if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
-                        ShowBakePerformanceWarning(m_Terrains[0]);
+                    if ((m_Terrains != null) && (m_Terrains.Length > 0))
+                    {
+                        if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
+                            ShowBakePerformanceWarning(m_Terrains[0]);
 
-                    ShowAtlasGUI(m_Terrains[0].GetInstanceID());
-                    ShowRealtimeLMGUI(m_Terrains[0]);
+                        ShowAtlasGUI(m_Terrains[0].GetInstanceID(), false);
+                        ShowRealtimeLMGUI(m_Terrains[0]);
+                    }
 
                     EditorGUI.indentLevel -= 1;
                 }
@@ -441,14 +447,14 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(Styles.ClampedSize.text, MessageType.Info);
         }
 
-        void LightmapScaleGUI(bool meshRenderer, GUIContent title, bool isSSD)
+        void LightmapScaleGUI(bool isMeshRenderer, GUIContent title, bool isSSD)
         {
             // SSDs (with the exception of those being computed with Enlighten) do not end up in a lightmap,
             // therefore we do not show clamping information.
             if (isSSD && Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
                 return;
 
-            float lodScale = CalcLODScale(meshRenderer);
+            float lodScale = CalcLODScale(isMeshRenderer);
             float lightmapScale = lodScale * m_LightmapScale.floatValue;
 
             Rect rect = EditorGUILayout.GetControlRect();
@@ -459,26 +465,32 @@ namespace UnityEditor
                 m_LightmapScale.floatValue = Mathf.Max(lightmapScale / Mathf.Max(lodScale, float.Epsilon), 0.0f);
             EditorGUI.EndProperty();
 
-            float cachedSurfaceArea;
+            float cachedSurfaceArea = 0.0f;
 
-            if (meshRenderer)
+            if (isMeshRenderer)
             {
-                lightmapScale = lightmapScale * LightmapVisualization.GetLightmapLODLevelScale(m_Renderers[0]);
+                if ((m_Renderers != null) && (m_Renderers.Length > 0))
+                {
+                    lightmapScale = lightmapScale * LightmapVisualization.GetLightmapLODLevelScale(m_Renderers[0]);
 
-                // tell the user if the object's size in lightmap has reached the max atlas size
-                cachedSurfaceArea = InternalMeshUtil.GetCachedMeshSurfaceArea((MeshRenderer)m_Renderers[0]);
+                    // tell the user if the object's size in lightmap has reached the max atlas size
+                    cachedSurfaceArea = InternalMeshUtil.GetCachedMeshSurfaceArea((MeshRenderer)m_Renderers[0]);
+                }
             }
             else //terrain
             {
                 // tell the user if the object's size in lightmap has reached the max atlas size
-                var terrainData = m_Terrains[0].terrainData;
-                cachedSurfaceArea = terrainData != null ? terrainData.size.x * terrainData.size.z : 0;
+                if ((m_Terrains != null) && (m_Terrains.Length > 0))
+                {
+                    var terrainData = m_Terrains[0].terrainData;
+                    cachedSurfaceArea = terrainData != null ? terrainData.size.x * terrainData.size.z : 0.0f;
+                }
             }
 
             ShowClampedSizeInLightmapGUI(lightmapScale, cachedSurfaceArea, isSSD);
         }
 
-        void ShowAtlasGUI(int instanceID)
+        void ShowAtlasGUI(int instanceID, bool isMeshRenderer)
         {
             if (m_LightmapIndex == null)
                 return;
@@ -513,11 +525,15 @@ namespace UnityEditor
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
 
-            float lightmapResolution = settings.lightmapResolution * CalcLODScale(true) * m_LightmapScale.floatValue;
-            Transform transform = m_Renderers[0].GetComponent<Transform>();
-            float lightmapObjectScale = System.Math.Min(System.Math.Min(transform.localScale.x, transform.localScale.y), transform.localScale.z);
-            GUILayout.Label(Styles.LightmapResolution.text + ": " + lightmapResolution.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.LightmapObjectScale.text + ": " + lightmapObjectScale.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            float lightmapResolution = settings.lightmapResolution * CalcLODScale(isMeshRenderer) * m_LightmapScale.floatValue;
+
+            if (isMeshRenderer && (m_Renderers != null) && (m_Renderers.Length > 0))
+            {
+                Transform transform = m_Renderers[0].GetComponent<Transform>();
+                float lightmapObjectScale = System.Math.Min(System.Math.Min(transform.localScale.x, transform.localScale.y), transform.localScale.z);
+                GUILayout.Label(Styles.LightmapResolution.text + ": " + lightmapResolution.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                GUILayout.Label(Styles.LightmapObjectScale.text + ": " + lightmapObjectScale.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            }
 
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
@@ -828,6 +844,9 @@ namespace UnityEditor
 
         void ShowTerrainChunks(Terrain[] terrains)
         {
+            if (terrains == null)
+                return;
+
             int terrainChunksX = 0, terrainChunksY = 0;
             foreach (var terrain in terrains)
             {

@@ -2456,24 +2456,7 @@ namespace UnityEngine
             return this;
         }
 
-        private void CheckConsistency()
-        {
-            // Clamp depth-range bounds specified as +- infinity to real values.
-            minDepth = (minDepth == -Mathf.Infinity || minDepth == Mathf.Infinity || Single.IsNaN(minDepth)) ? Single.MinValue : minDepth;
-            maxDepth = (maxDepth == -Mathf.Infinity || maxDepth == Mathf.Infinity || Single.IsNaN(maxDepth)) ? Single.MaxValue : maxDepth;
-            if (minDepth > maxDepth)
-            {
-                var temp = minDepth; minDepth = maxDepth; maxDepth = temp;
-            }
-
-            // Clamp normal-range bounds specified as +- infinity to real values.
-            minNormalAngle = Single.IsNaN(minNormalAngle) ? 0.0f : Mathf.Clamp(minNormalAngle, 0.0f, NormalAngleUpperLimit);
-            maxNormalAngle = Single.IsNaN(maxNormalAngle) ? NormalAngleUpperLimit : Mathf.Clamp(maxNormalAngle, 0.0f, NormalAngleUpperLimit);
-            if (minNormalAngle > maxNormalAngle)
-            {
-                var temp = minNormalAngle; minNormalAngle = maxNormalAngle; maxNormalAngle = temp;
-            }
-        }
+        extern private void CheckConsistency();
 
         public void ClearLayerMask() { useLayerMask = false; }
         public void SetLayerMask(LayerMask layerMask) { this.layerMask = layerMask; useLayerMask = true; }
@@ -2519,28 +2502,14 @@ namespace UnityEngine
             return result;
         }
 
-        public bool IsFilteringNormalAngle(Vector2 normal)
-        {
-            var angle = Mathf.Atan2(normal.y, normal.x) * Mathf.Rad2Deg;
-            return IsFilteringNormalAngle(angle);
-        }
+        extern public bool IsFilteringNormalAngle(Vector2 normal);
 
         public bool IsFilteringNormalAngle(float angle)
         {
-            angle -= Mathf.Floor(angle / NormalAngleUpperLimit) * NormalAngleUpperLimit;
-            var minRange = Mathf.Clamp(minNormalAngle, 0.0f, NormalAngleUpperLimit);
-            var maxRange = Mathf.Clamp(maxNormalAngle, 0.0f, NormalAngleUpperLimit);
-            if (minRange > maxRange)
-            {
-                var temp = minRange; minRange = maxRange; maxRange = temp;
-            }
-
-            var result = angle<minRange || angle> maxRange;
-            if (useOutsideNormalAngle)
-                return !result;
-
-            return result;
+            return IsFilteringNormalAngleUsingAngle(angle);
         }
+
+        extern private bool IsFilteringNormalAngleUsingAngle(float angle);
 
         [NativeName("m_UseTriggers")]
         public bool useTriggers;

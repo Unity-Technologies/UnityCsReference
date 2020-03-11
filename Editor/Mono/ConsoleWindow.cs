@@ -303,6 +303,7 @@ namespace UnityEditor
             // Update the filter on enable for DomainReload(keep current filter) and window opening(reset filter because m_searchText is null)
             SetFilter(LogEntries.GetFilteringText());
 
+            wantsLessLayoutEvents = true;
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;
             m_DevBuild = Unsupported.IsDeveloperMode();

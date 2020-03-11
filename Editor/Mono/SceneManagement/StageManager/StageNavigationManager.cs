@@ -190,13 +190,6 @@ namespace UnityEditor.SceneManagement
                 return false;
             }
 
-            if (stage.isAssetMissing)
-            {
-                Debug.LogError($"Cannot switch to new stage. Asset does not exist so stage cannot be reconstructed: {stage.assetPath}");
-                DestroyImmediate(stage);
-                return false;
-            }
-
             bool setPreviousSelection = stage.opened;
 
             StopAnimationPlaybackAndPreviewing();
@@ -255,6 +248,7 @@ namespace UnityEditor.SceneManagement
                 }
                 else
                 {
+                    stage.OnReturnToStage();
                     success = stage.isValid;
                 }
 

@@ -22,7 +22,11 @@ namespace UnityEngine.Rendering
             extern public static void Update();
 
             public const int AllMips = int.MaxValue;
+
+            [NativeThrows]
             extern public static void RequestRegion([NotNull] Material mat, int stackNameId, Rect r, int mipMap, int numMips);
+            [NativeThrows]
+            extern public static void GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
 
             // Apply the virtualtexturing settings to the renderer. This may be an expensive operation so it should be done very sparingly (e.g. during a level load/startup).
             [NativeThrows]
@@ -38,8 +42,6 @@ namespace UnityEngine.Rendering
 
             [NativeThrows]
             extern public static bool ValidateTextureStack([NotNull] Texture[] textures, out string errorMessage);
-
-            extern internal static bool GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
 
             [NativeConditional("UNITY_EDITOR", "{}")]
             extern public static GraphicsFormat[] QuerySupportedFormats();

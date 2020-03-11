@@ -2026,6 +2026,9 @@
     <Compile Include="..\..\Runtime\Export\GI\GIDebugVisualisation.bindings.cs">
       <Link>Runtime\Export\GI\GIDebugVisualisation.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\GI\LightingSettings.bindings.cs">
+      <Link>Runtime\Export\GI\LightingSettings.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\GI\Lightmapping.cs">
       <Link>Runtime\Export\GI\Lightmapping.cs</Link>
     </Compile>

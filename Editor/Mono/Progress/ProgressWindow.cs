@@ -43,6 +43,17 @@ namespace UnityEditor
             ShowDetails(false);
         }
 
+        internal static bool canHideDetails => m_Window && !m_Window.docked;
+
+        internal static void HideDetails()
+        {
+            if (canHideDetails)
+            {
+                m_Window.Close();
+                m_Window = null;
+            }
+        }
+
         internal static void ShowDetails(bool shouldReposition)
         {
             if (m_Window && m_Window.docked)
@@ -154,12 +165,15 @@ namespace UnityEditor
 
         private void CheckUnresponsive()
         {
+            EditorApplication.delayCall -= CheckUnresponsive;
+
             foreach (var progressElement in m_Elements)
             {
                 progressElement.CheckUnresponsive();
             }
 
-            EditorApplication.delayCall += CheckUnresponsive;
+            if (Progress.running)
+                EditorApplication.delayCall += CheckUnresponsive;
         }
 
         private void OperationWasAdded(Progress.Item[] ops)
@@ -169,6 +183,7 @@ namespace UnityEditor
             UpdateNbTasks();
             UpdateStatusHeaders();
             UpdateStatusFilter(el);
+            CheckUnresponsive();
         }
 
         private void OperationWasRemoved(Progress.Item[] ops)
@@ -198,6 +213,7 @@ namespace UnityEditor
             {
                 UpdateStatusHeaders();
                 UpdateNbTasks();
+                CheckUnresponsive();
             };
         }
 
@@ -242,6 +258,7 @@ namespace UnityEditor
                 UpdateStatusFilter(m_Elements[parentElementIndex]);
             }
             m_DismissAllBtn.SetEnabled(m_Elements.Any(el => !el.dataSource.running));
+            CheckUnresponsive();
         }
 
         private int FindIndexFirstSucceededOrCanceledElement(List<ProgressElement> elements)

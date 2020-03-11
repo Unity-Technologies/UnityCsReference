@@ -61,6 +61,7 @@ namespace UnityEditor
             m_StageHandling.OnEnable();
 
             titleContent = GetLocalizedTitleContent();
+            wantsLessLayoutEvents = true;
         }
 
         public override void OnDisable()

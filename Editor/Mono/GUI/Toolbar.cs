@@ -135,6 +135,8 @@ namespace UnityEditor
             }
 
             PositionChanged(this);
+
+            m_EventInterests.wantsLessLayoutEvents = true;
         }
 
         protected override void OnDisable()

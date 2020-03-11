@@ -45,7 +45,7 @@ namespace UnityEditorInternal
                 case "mixer": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Audio.AudioMixerController));
                 case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.UIElements.VisualTreeAsset));
                 case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
-                case "lighting": return EditorGUIUtility.FindTexture(typeof(UnityEditor.LightingSettings));
+                case "lighting": return EditorGUIUtility.FindTexture(typeof(UnityEngine.LightingSettings));
 
                 case "ttf": case "otf": case "fon": case "fnt":
                     return EditorGUIUtility.FindTexture(typeof(Font));

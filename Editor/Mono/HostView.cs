@@ -173,6 +173,10 @@ namespace UnityEditor
             EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
+            // Host views are destroyed in the middle of an OnGUI loop, so we need to ensure that we're not invoking
+            // OnGUI on destroyed instances.
+            m_OnGUI = null;
+            m_Update = null;
         }
 
         private void HandleSplitView()
@@ -406,6 +410,9 @@ namespace UnityEditor
 
         public void InvokeOnGUI(Rect onGUIPosition, Rect viewRect)
         {
+            if (!this)
+                return;
+
             DoWindowDecorationStart();
 
             BeginOffsetArea(viewRect, GUIContent.none, Styles.tabWindowBackground);

@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
@@ -1074,16 +1075,51 @@ namespace UnityEditor
             // If we're changing the first API for relevant editor, this will cause editor to switch: ask for scene save & confirmation
             if (firstEntryChanged && WillEditorUseFirstGraphicsAPI(target))
             {
-                if (EditorUtility.DisplayDialog("Changing editor graphics device",
-                    "You've changed the active graphics API. This requires a restart of the Editor.",
-                    "Restart Editor", "Not now"))
+                // If we have dirty scenes we need to save or discard changes before we restart editor.
+                // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
+                var dirtyScenes = new List<Scene>();
+                for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
                 {
-                    doRestart = true;
+                    var scene = EditorSceneManager.GetSceneAt(i);
+                    if (scene.isDirty)
+                        dirtyScenes.Add(scene);
+                }
+                if (dirtyScenes.Count != 0)
+                {
+                    var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
+                        "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
+                        "Save and Restart", "Discard Changes and Restart", "Cancel Changing API");
+                    if (result == 2)
+                    {
+                        doRestart = false; // Cancel was selected
+                    }
+                    else
+                    {
+                        doRestart = true;
+                        if (result == 0) // Save and Restart was selected
+                        {
+                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                                EditorSceneManager.SaveScene(dirtyScenes[i]);
+                        }
+                        else // Discard Changes and Restart was selected
+                        {
+                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                                EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                        }
+                    }
                 }
                 else
-                    doRestart = false;
+                {
+                    doRestart = EditorUtility.DisplayDialog("Changing editor graphics API",
+                        "You've changed the active graphics API. This requires a restart of the Editor.",
+                        "Restart Editor", "Not now");
+                }
+                return new ChangeGraphicsApiAction(doRestart, doRestart);
             }
-            return new ChangeGraphicsApiAction(doRestart, doRestart);
+            else
+            {
+                return new ChangeGraphicsApiAction(true, false);
+            }
         }
 
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action)

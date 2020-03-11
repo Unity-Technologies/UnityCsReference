@@ -100,6 +100,10 @@ namespace UnityEngine.iOS
             get;
         }
 
+        // please note that we check both advertisingIdentifier/advertisingTrackingEnabled
+        //   usage in scripts to decide if we should enable UNITY_USES_IAD macro (i.e. code that uses iAD and related things)
+        // that's why it is VERY important that you use private extern functions instead of properties in internal/implementation code
+
         [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
         [FreeFunction("UnityAdvertisingIdentifier")]
         extern private static string GetAdvertisingIdentifier();
@@ -109,15 +113,21 @@ namespace UnityEngine.iOS
             get
             {
                 string advertisingId = GetAdvertisingIdentifier();
-                Application.InvokeOnAdvertisingIdentifierCallback(advertisingId, advertisingTrackingEnabled);
+                Application.InvokeOnAdvertisingIdentifierCallback(advertisingId, IsAdvertisingTrackingEnabled());
                 return advertisingId;
             }
         }
 
-        extern public static bool advertisingTrackingEnabled
+        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [FreeFunction("IOSScripting::IsAdvertisingTrackingEnabled")]
+        extern private static bool IsAdvertisingTrackingEnabled();
+
+        public static bool advertisingTrackingEnabled
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
-            [FreeFunction("IOSScripting::IsAdvertisingTrackingEnabled")] get;
+            get
+            {
+                return IsAdvertisingTrackingEnabled();
+            }
         }
 
         extern public static bool hideHomeButton

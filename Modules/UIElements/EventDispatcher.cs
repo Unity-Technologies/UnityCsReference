@@ -169,6 +169,10 @@ namespace UnityEngine.UIElements
 
         internal void PushDispatcherContext()
         {
+            // Drain the event queue before pushing a new context.  This allows some important events
+            // (such as AttachToPanel events) to be processed before showing a modal window. (Fixes case 1215148).
+            ProcessEventQueue();
+
             m_DispatchContexts.Push(new DispatchContext() {m_GateCount = m_GateCount, m_Queue = m_Queue});
             m_GateCount = 0;
             m_Queue = k_EventQueuePool.Get();

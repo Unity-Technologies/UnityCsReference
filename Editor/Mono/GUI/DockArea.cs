@@ -229,10 +229,7 @@ namespace UnityEditor
         private void UpdateWindowTitle(EditorWindow w)
         {
             if (w && w.m_Parent && w.m_Parent.window && w.titleContent != null)
-            {
-                var projectName = EditorApplication.isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath));
-                w.m_Parent.window.title = w.titleContent.text + " - " + projectName;
-            }
+                w.m_Parent.window.title = w.titleContent.text;
         }
 
         private void KillIfEmpty()

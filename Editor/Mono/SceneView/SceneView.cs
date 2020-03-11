@@ -1053,6 +1053,7 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            wantsLessLayoutEvents = true;
             titleContent = GetLocalizedTitleContent();
             m_RectSelection = new RectSelection(this);
 

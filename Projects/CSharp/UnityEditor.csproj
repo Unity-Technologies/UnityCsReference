@@ -1072,9 +1072,6 @@
     <Compile Include="..\..\Editor\Mono\GI\LightingDataAsset.bindings.cs">
       <Link>Editor\Mono\GI\LightingDataAsset.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GI\LightingSettings.bindings.cs">
-      <Link>Editor\Mono\GI\LightingSettings.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GI\LightmapEditorSettings.bindings.cs">
       <Link>Editor\Mono\GI\LightmapEditorSettings.bindings.cs</Link>
     </Compile>

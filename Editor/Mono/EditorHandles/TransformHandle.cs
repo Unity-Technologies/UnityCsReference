@@ -539,7 +539,6 @@ namespace UnityEditor
             {
                 if (ids.position.Has(GUIUtility.hotControl))
                 {
-                    workingRotation = TransformManipulator.mouseDownHandleRotation;
                     position = DoPositionHandle_Internal(ids.position, position, workingRotation, pParam);
                 }
                 else if (ids.rotation.Has(GUIUtility.hotControl))

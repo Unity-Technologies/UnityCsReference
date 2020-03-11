@@ -140,8 +140,9 @@ namespace UnityEditor.Experimental.SceneManagement
                 prefabStage = PrefabStage.CreatePrefabStage(prefabAssetPath, openedFromInstance, prefabStageMode, contextStage);
             if (StageNavigationManager.instance.SwitchToStage(prefabStage, setAsFirstItemAfterMainStage, changeTypeAnalytics))
             {
-                // If selection did not change by switching stage (by us or user) then handle automatic selection in new prefab mode
-                if (Selection.activeGameObject == previousSelection)
+                // If selection did not change by switching stage by us or user (or if current selection is not part of
+                // the opened prefab stage) then handle automatic selection in new prefab mode.
+                if (Selection.activeGameObject == previousSelection || !prefabStage.IsPartOfPrefabContents(Selection.activeGameObject))
                 {
                     HandleSelectionWhenSwithingToNewPrefabMode(GetCurrentPrefabStage().prefabContentsRoot, previousFileID);
                 }
@@ -304,7 +305,7 @@ namespace UnityEditor.Experimental.SceneManagement
             return Unsupported.GetFileIDHint(gameObject);
         }
 
-        static GameObject FindFirstGameObjectThatMatchesFileID(Transform searchRoot, UInt64 fileID, bool generate)
+        internal static GameObject FindFirstGameObjectThatMatchesFileID(Transform searchRoot, UInt64 fileID, bool generate)
         {
             GameObject result = null;
             var transformVisitor = new TransformVisitor();

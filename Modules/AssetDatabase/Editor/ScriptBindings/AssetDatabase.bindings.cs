@@ -255,6 +255,9 @@ namespace UnityEditor
         extern public static string GUIDToAssetPath(string guid);
         extern public static Hash128 GetAssetDependencyHash(string path);
 
+        extern internal static Hash128 GetSourceAssetFileHash(string guid);
+        extern internal static Hash128 GetSourceAssetMetaFileHash(string guid);
+
         [FreeFunction("AssetDatabase::SaveAssets")]
         extern public static void SaveAssets();
 

@@ -56,29 +56,31 @@ namespace UnityEngine.tvOS
             get { return tvOSVendorIdentifier; }
         }
 
+        // please note that we check both advertisingIdentifier/advertisingTrackingEnabled
+        //   usage in scripts to decide if we should enable UNITY_USES_IAD macro (i.e. code that uses iAD and related things)
+        // that's why it is VERY important that you use private extern functions instead of properties in internal/implementation code
+
         [NativeConditional("PLATFORM_TVOS")]
         [FreeFunction("UnityAdvertisingIdentifier")]
-        extern private static string GettvOSAdvertisingIdentifier();
+        extern private static string GetTVOSAdvertisingIdentifier();
 
         public static string advertisingIdentifier
         {
             get
             {
-                string advertisingId = GettvOSAdvertisingIdentifier();
-                Application.InvokeOnAdvertisingIdentifierCallback(advertisingId, advertisingTrackingEnabled);
+                string advertisingId = GetTVOSAdvertisingIdentifier();
+                Application.InvokeOnAdvertisingIdentifierCallback(advertisingId, IsTVOSAdvertisingTrackingEnabled());
                 return advertisingId;
             }
         }
 
-        extern private static bool tvOSadvertisingTrackingEnabled
-        {
-            [NativeConditional("PLATFORM_TVOS")]
-            [FreeFunction("IOSScripting::IsAdvertisingTrackingEnabled")] get;
-        }
+        [NativeConditional("PLATFORM_TVOS")]
+        [FreeFunction("IOSScripting::IsAdvertisingTrackingEnabled")]
+        extern private static bool IsTVOSAdvertisingTrackingEnabled();
 
         public static bool advertisingTrackingEnabled
         {
-            get { return tvOSadvertisingTrackingEnabled; }
+            get { return IsTVOSAdvertisingTrackingEnabled(); }
         }
 
 

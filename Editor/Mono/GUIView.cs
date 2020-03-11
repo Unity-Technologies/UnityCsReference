@@ -23,9 +23,10 @@ namespace UnityEditor
 
         int m_DepthBufferBits = 0;
         int m_AntiAliasing = 1;
-        EventInterests m_EventInterests;
         bool m_AutoRepaintOnSceneChange = false;
         private IWindowBackend m_WindowBackend;
+
+        protected EventInterests m_EventInterests;
 
         internal bool SendEvent(Event e)
         {

@@ -276,6 +276,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            wantsLessLayoutEvents = true;
             prevSizeGroupType = (int)currentSizeGroupType;
             titleContent = GetLocalizedTitleContent();
             UpdateZoomAreaAndParent();
@@ -715,16 +716,6 @@ namespace UnityEditor
             showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
 
             Repaint();
-        }
-
-        protected override string SerializeView()
-        {
-            return EditorJsonUtility.ToJson(this);
-        }
-
-        protected override void DeserializeView(string serializedView)
-        {
-            EditorJsonUtility.FromJsonOverwrite(serializedView, this);
         }
 
         private void OnGUI()

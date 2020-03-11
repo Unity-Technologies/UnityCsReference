@@ -1971,9 +1971,15 @@ namespace UnityEditor
                                 if (!stackTextures.ContainsKey(stackId))
                                 {
                                     //Get the dimension of the texture stack. This can be different from the texture dimensions.
-                                    int width, height;
-                                    if (VirtualTexturing.EditorHelpers.GetTextureStackSize(mat, stackId, out width, out height))
+                                    try
+                                    {
+                                        int width, height;
+                                        VirtualTexturing.System.GetTextureStackSize(mat, stackId, out width, out height);
                                         stackTextures[stackId] = Math.Max(width, height);
+                                    }
+                                    catch
+                                    {
+                                    }
                                 }
                             }
                         }

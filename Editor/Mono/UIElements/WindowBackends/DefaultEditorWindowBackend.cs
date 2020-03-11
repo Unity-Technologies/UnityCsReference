@@ -53,7 +53,7 @@ namespace UnityEditor.UIElements
 
         bool CurrentWindowHasCompatibleTree()
         {
-            return editorWindowModel.window.uiRootElement is VisualElement;
+            return editorWindowModel?.window.uiRootElement is VisualElement;
         }
 
         void RootVisualElementCreated()
@@ -100,29 +100,49 @@ namespace UnityEditor.UIElements
 
         const TrickleDown k_TricklePhase = TrickleDown.TrickleDown;
 
+        private VisualElement m_RegisteredRoot;
+
         private void AddRootElement(VisualElement root)
         {
             if (CurrentWindowHasCompatibleTree())
             {
+                RemoveRootElement(m_RegisteredRoot);
+
+                m_RegisteredRoot = root;
                 root.RegisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
                 root.RegisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
                 root.RegisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+
                 m_Panel.visualTree.Add(root);
             }
         }
 
         private void RemoveRootElement(VisualElement root)
         {
+            if (root == null)
+                return;
+
             root.RemoveFromHierarchy();
-            root.UnregisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
-            root.UnregisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
-            root.UnregisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+
+            if (root == m_RegisteredRoot)
+            {
+                m_RegisteredRoot = null;
+                root.UnregisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                root.UnregisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                root.UnregisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            }
         }
 
         private void SendEventToSplitterGUI(EventBase ev)
         {
             if (ev.imguiEvent == null || ev.imguiEvent.rawType == EventType.Used)
                 return;
+
+            if (imguiContainer == null || editorWindowModel == null)
+            {
+                RemoveRootElement(m_RegisteredRoot);
+                return;
+            }
 
             imguiContainer.HandleIMGUIEvent(ev.imguiEvent, editorWindowModel.onSplitterGUIHandler, false);
 
@@ -171,6 +191,8 @@ namespace UnityEditor.UIElements
 
             m_NotificationContainer.onGUIHandler = null;
             m_NotificationContainer.RemoveFromHierarchy();
+
+            RemoveRootElement(m_RegisteredRoot);
 
             base.OnDestroy(model);
         }

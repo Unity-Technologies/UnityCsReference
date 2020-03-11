@@ -170,6 +170,20 @@ namespace UnityEditor
             }
         }
 
+        // Indicates that the editor window will only receive a layout pass before a repaint event.
+        public bool wantsLessLayoutEvents
+        {
+            get
+            {
+                return m_EventInterests.wantsLessLayoutEvents;
+            }
+            set
+            {
+                m_EventInterests.wantsLessLayoutEvents = value;
+                MakeParentsSettingsMatchMe();
+            }
+        }
+
         internal void CheckForWindowRepaint()
         {
             double time = EditorApplication.timeSinceStartup;
