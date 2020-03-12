@@ -48,14 +48,24 @@ namespace UnityEditorInternal.VersionControl
         {
             var task = Provider.Status(fromPath);
             task.Wait();
-            return task.assetList.Count > 0 ? task.assetList[0] : null;
+            var taskResultList = task.assetList;
+            return taskResultList.Count > 0 ? taskResultList[0] : null;
         }
 
         static AssetList GetStatusForceUpdate(List<string> fromPaths)
         {
             var task = Provider.Status(fromPaths.ToArray());
             task.Wait();
-            return task.success ? task.assetList : null;
+            if (!task.success)
+                return null;
+
+            // Status task might return more items in the list (e.g. meta files),
+            // and return them out of order too. Make sure to return proper sized
+            // and in-order list back.
+            var taskResultList = task.assetList;
+            var result = new AssetList {Capacity = fromPaths.Count};
+            result.AddRange(fromPaths.Select(path => taskResultList.SingleOrDefault(a => a.path == path)));
+            return result;
         }
 
         // Handle asset moving

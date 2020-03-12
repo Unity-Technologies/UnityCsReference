@@ -33,7 +33,7 @@ namespace UnityEditor
                         clipIndex = i;
                 }
 
-                EditorPrefs.SetInt("ModelImporterClipEditor.ActiveClipIndex", clipIndex);
+                EditorPrefs.SetInt(ModelImporterClipEditor.ActiveClipIndex, clipIndex);
             }
         }
 

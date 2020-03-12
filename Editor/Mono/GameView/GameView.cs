@@ -9,7 +9,9 @@ using UnityEditor.Modules;
 using System.Globalization;
 using UnityEngine.Rendering;
 using System.Linq;
+using System.Collections.Generic;
 using JetBrains.Annotations;
+using UnityEngine.XR;
 using UnityEditorInternal.VR;
 
 /*
@@ -78,6 +80,8 @@ namespace UnityEditor
         [SerializeField] RenderTexture m_RenderTexture;
 
         int m_SizeChangeID = int.MinValue;
+
+        List<XRDisplaySubsystem> m_DisplaySubsystems = new List<XRDisplaySubsystem>();
 
         internal static class Styles
         {
@@ -541,11 +545,21 @@ namespace UnityEditor
                     }
                 }
 
+                SubsystemManager.GetInstances<XRDisplaySubsystem>(m_DisplaySubsystems);
+                XRDisplaySubsystem xrDisplay = GetActiveXRDisplay(m_DisplaySubsystems);
                 // Allow the user to select how the XR device will be rendered during "Play In Editor"
-                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)))
+                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) || xrDisplay != null)
                 {
-                    int selectedRenderMode = EditorGUILayout.Popup(m_XRRenderMode, Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
-                    SetXRRenderMode(selectedRenderMode);
+                    GUIContent[] renderingModes = Styles.xrRenderingModes;
+                    if (xrDisplay != null)
+                        renderingModes = GetSupportedBlitModeContent(xrDisplay);
+                    EditorGUI.BeginChangeCheck();
+                    GameViewRenderMode currentGameViewRenderMode = UnityEngine.XR.XRSettings.gameViewRenderMode;
+                    int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(((int)currentGameViewRenderMode) - 1, 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
+                    if (EditorGUI.EndChangeCheck() && currentGameViewRenderMode != GameViewRenderMode.None)
+                    {
+                        SetXRRenderMode(selectedRenderMode);
+                    }
                 }
 
                 maximizeOnPlay = GUILayout.Toggle(maximizeOnPlay, Styles.maximizeOnPlayContent, EditorStyles.toolbarButton);
@@ -564,6 +578,43 @@ namespace UnityEditor
                 }
             }
             GUILayout.EndHorizontal();
+        }
+
+        private GUIContent[] GetSupportedBlitModeContent(XRDisplaySubsystem display)
+        {
+            List<GUIContent> supportedBlitModesGUIContent =  new List<GUIContent>();
+            //at least add left eye as it is the default if the xr subsystem does not support main screen blitting
+            supportedBlitModesGUIContent.Add(Styles.xrRenderingModes[(int)UnityEngine.XR.GameViewRenderMode.LeftEye - 1]);
+
+            XRMirrorViewBlitModeDesc blitModeDesc;
+            for (int i = 0; i < display.SubsystemDescriptor.GetAvailableMirrorBlitModeCount(); i++)
+            {
+                display.SubsystemDescriptor.GetMirrorBlitModeByIndex(i, out blitModeDesc);
+                switch (blitModeDesc.blitMode)
+                {
+                    case XRMirrorViewBlitMode.RightEye:
+                        supportedBlitModesGUIContent.Add(Styles.xrRenderingModes[(int)UnityEngine.XR.GameViewRenderMode.RightEye - 1]);
+                        break;
+                    case XRMirrorViewBlitMode.SideBySide:
+                        supportedBlitModesGUIContent.Add(Styles.xrRenderingModes[(int)UnityEngine.XR.GameViewRenderMode.BothEyes - 1]);
+                        break;
+                    case XRMirrorViewBlitMode.SideBySideOcclusionMesh:
+                        supportedBlitModesGUIContent.Add(Styles.xrRenderingModes[(int)UnityEngine.XR.GameViewRenderMode.OcclusionMesh - 1]);
+                        break;
+                }
+            }
+            return supportedBlitModesGUIContent.ToArray();
+        }
+
+        private XRDisplaySubsystem GetActiveXRDisplay(List<XRDisplaySubsystem> displays)
+        {
+            for (int i = 0; i < displays.Count; i++)
+            {
+                if (displays[i].running)
+                    return displays[i];
+            }
+
+            return null;
         }
 
         private void SetXRRenderMode(int mode)

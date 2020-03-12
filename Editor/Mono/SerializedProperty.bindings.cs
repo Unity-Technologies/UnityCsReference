@@ -921,10 +921,19 @@ namespace UnityEditor
                 var fieldInfo = UnityEditor.ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(this, out type);
                 var propertyBaseType = type;
 
-                if (value != null && !propertyBaseType.IsAssignableFrom(value.GetType()))
+                if (value != null)
                 {
-                    throw new System.InvalidOperationException(
-                        $"Cannot assign an object of type '{value.GetType().Name}' to a managed reference with a base type of '{propertyBaseType.Name}': types are not compatible");
+                    var valueType = value.GetType();
+                    if (valueType == typeof(UnityObject) || valueType.IsSubclassOf(typeof(UnityObject)))
+                    {
+                        throw new System.InvalidOperationException(
+                            $"Cannot assign an object deriving from UnityEngine.Object to a managed reference. This is not supported.");
+                    }
+                    else if (!propertyBaseType.IsAssignableFrom(valueType))
+                    {
+                        throw new System.InvalidOperationException(
+                            $"Cannot assign an object of type '{valueType.Name}' to a managed reference with a base type of '{propertyBaseType.Name}': types are not compatible");
+                    }
                 }
 
                 Verify(VerifyFlags.IteratorNotAtEnd);

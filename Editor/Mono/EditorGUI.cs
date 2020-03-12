@@ -7537,14 +7537,16 @@ namespace UnityEditor
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
                 var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
+                var typeHash = property.serializedObject.targetObject.GetType().GetHashCode();
+                var hashCode = typeHash ^ propertyHash;
                 GUIContent[] result;
-                if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(propertyHash, out result))
+                if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(hashCode, out result))
                 {
                     return result;
                 }
 
                 result = EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
-                s_SerializedPropertyEnumLocalizedGUIContents[propertyHash] = result;
+                s_SerializedPropertyEnumLocalizedGUIContents[hashCode] = result;
                 return result;
             }
 

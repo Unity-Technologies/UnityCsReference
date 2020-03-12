@@ -33,7 +33,7 @@ namespace UnityEditor.Experimental.AssetImporters
             var shader = Shader.Find("Standard");
             if (shader == null)
             {
-                context.LogImportError("ThreeDSMaterialDescriptionPreprocessor cannot find a shader named 'Standard'.");
+                context.LogImportError("SketchupMaterialDescriptionPreprocessor cannot find a shader named 'Standard'.");
                 return;
             }
             material.shader = shader;
