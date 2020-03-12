@@ -265,6 +265,7 @@ namespace UnityEditor
         void OnMixedModeSelected(object userData)
         {
             m_MixedBakeMode.intValue = (int)userData;
+            m_LightmapSettingsSO.ApplyModifiedProperties();
         }
 
         void MixedLightingGUI()
@@ -396,16 +397,19 @@ namespace UnityEditor
         void OnDirectDenoiserSelected(object userData)
         {
             m_PVRDenoiserTypeDirect.intValue = (int)userData;
+            m_LightmapSettingsSO.ApplyModifiedProperties();
         }
 
         void OnIndirectDenoiserSelected(object userData)
         {
             m_PVRDenoiserTypeIndirect.intValue = (int)userData;
+            m_LightmapSettingsSO.ApplyModifiedProperties();
         }
 
         void OnAODenoiserSelected(object userData)
         {
             m_PVRDenoiserTypeAO.intValue = (int)userData;
+            m_LightmapSettingsSO.ApplyModifiedProperties();
         }
 
         public enum DenoiserTarget
@@ -472,6 +476,7 @@ namespace UnityEditor
         void OnBakeBackedSelected(object userData)
         {
             m_BakeBackend.intValue = (int)userData;
+            m_LightmapSettingsSO.ApplyModifiedProperties();
         }
 
         void BakeBackendGUI()
@@ -500,7 +505,9 @@ namespace UnityEditor
                 menu.DropDown(rect);
             }
             if (EditorGUI.EndChangeCheck())
+            {
                 InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
+            }
 
             EditorGUI.EndProperty();
 
@@ -796,8 +803,8 @@ namespace UnityEditor
                 InitSettings();
             }
 
-            m_LightmapSettingsSO.UpdateIfRequiredOrScript();
-            m_RenderSettingsSO.UpdateIfRequiredOrScript();
+            m_LightmapSettingsSO.Update();
+            m_RenderSettingsSO.Update();
 
             RealtimeLightingGUI();
             MixedLightingGUI();

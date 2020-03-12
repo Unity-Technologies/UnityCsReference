@@ -40,6 +40,12 @@ namespace UnityEditorInternal
         internal const string kBoolArgument = "m_BoolArgument";
         internal const string kObjectArgumentAssemblyTypeName = "m_ObjectArgumentAssemblyTypeName";
 
+        //property path splits and separators
+        private const string kDotString = ".";
+        private const string kArrayDataString = "Array.data[";
+        private static readonly char[] kDotSeparator = { '.' };
+        private static readonly char[] kClosingSquareBraceSeparator = { ']' };
+
         string m_Text;
         UnityEventBase m_DummyEvent;
         SerializedProperty m_Prop;
@@ -408,16 +414,18 @@ namespace UnityEditorInternal
 
         private static UnityEventBase GetDummyEventHelper(string propPath, Type targetObjectType, BindingFlags flags)
         {
+            if (targetObjectType == null)
+                return null;
             while (propPath.Length != 0)
             {
                 //we could have a leftover '.' if the previous iteration handled an array element
-                if (propPath.StartsWith("."))
+                if (propPath.StartsWith(kDotString))
                     propPath = propPath.Substring(1);
 
-                var splits = propPath.Split(new[] { '.' }, 2);
+                var splits = propPath.Split(kDotSeparator, 2);
                 var newField = targetObjectType.GetField(splits[0], flags);
                 if (newField == null)
-                    break;
+                    return GetDummyEventHelper(propPath, targetObjectType.BaseType, flags);
 
                 targetObjectType = newField.FieldType;
                 if (targetObjectType.IsArrayOrList())
@@ -429,8 +437,8 @@ namespace UnityEditorInternal
                     break;
 
                 propPath = splits[1];
-                if (propPath.StartsWith("Array.data["))
-                    propPath = propPath.Split(new[] { ']' }, 2)[1];
+                if (propPath.StartsWith(kArrayDataString))
+                    propPath = propPath.Split(kClosingSquareBraceSeparator, 2)[1];
             }
             if (targetObjectType.IsSubclassOf(typeof(UnityEventBase)))
                 return Activator.CreateInstance(targetObjectType) as UnityEventBase;

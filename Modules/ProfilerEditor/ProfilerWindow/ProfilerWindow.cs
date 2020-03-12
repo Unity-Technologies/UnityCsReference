@@ -263,6 +263,7 @@ namespace UnityEditor
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += OnSettingsChanged;
             ProfilerUserSettings.settingsChanged += OnSettingsChanged;
+            ProfilerDriver.profileLoaded += OnProfileLoaded;
 
             foreach (var module in m_ProfilerModules)
             {
@@ -382,6 +383,13 @@ namespace UnityEditor
             Initialize();
         }
 
+        void OnProfileLoaded()
+        {
+            // Reset frame state to trigger a redraw.
+            m_PrevLastFrame = -1;
+            m_LastFrameFromTick = -1;
+        }
+
         void OnToggleCPUChartSeries(bool wasToggled)
         {
             if (wasToggled)
@@ -472,6 +480,7 @@ namespace UnityEditor
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged -= OnSettingsChanged;
             ProfilerUserSettings.settingsChanged -= OnSettingsChanged;
+            ProfilerDriver.profileLoaded -= OnProfileLoaded;
         }
 
         void SaveViewSettings()

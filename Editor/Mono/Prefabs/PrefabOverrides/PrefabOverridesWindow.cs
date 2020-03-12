@@ -174,6 +174,9 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
+            const float k_MaxAllowedTreeViewWidth = 1800f;
+            const float k_MaxAllowedTreeViewHeight = 1000f;
+            var width = 300f;
             var height = k_HeaderHeight;
 
             if (!IsShowingActionButton())
@@ -183,7 +186,10 @@ namespace UnityEditor
             else
             {
                 if (DisplayingTreeView())
-                    height += k_TreeViewPadding.top + m_TreeView.totalHeight + k_TreeViewPadding.bottom;
+                {
+                    height += k_TreeViewPadding.top + Mathf.Min(k_MaxAllowedTreeViewHeight, m_TreeView.totalHeight) + k_TreeViewPadding.bottom;
+                    width = Mathf.Max(Mathf.Min(m_TreeView.maxItemWidth, k_MaxAllowedTreeViewWidth), width);
+                }
 
                 height += k_ApplyButtonHeight + k_HelpBoxHeight;
 
@@ -193,7 +199,7 @@ namespace UnityEditor
 
             // Width should be no smaller than minimum width, but we could potentially improve
             // width handling by making it expand if needed based on tree view content.
-            return new Vector2(300, height);
+            return new Vector2(width, height);
         }
 
         Color headerBgColor { get { return EditorGUIUtility.isProSkin ? new Color(0.5f, 0.5f, 0.5f, 0.2f) : new Color(0.9f, 0.9f, 0.9f, 0.6f); } }
@@ -251,7 +257,7 @@ namespace UnityEditor
                 }
                 else if (m_AnyOverrides)
                 {
-                    Rect treeViewRect = GUILayoutUtility.GetRect(100, 1000, 0, 1000);
+                    Rect treeViewRect = GUILayoutUtility.GetRect(100, 10000, 0, 10000);
                     m_TreeView.OnGUI(treeViewRect);
 
                     // Display info message telling user they can click on individual items for more detailed actions.

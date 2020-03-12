@@ -784,8 +784,6 @@ namespace UnityEditor
 
         internal static IEnumerable<Object> DuplicateAssets(IEnumerable<Object> assets)
         {
-            AssetDatabase.Refresh();
-
             var copiedPaths = new List<string>();
             Object firstDuplicatedObjectToFail = null;
 
@@ -846,8 +844,6 @@ namespace UnityEditor
 
                 Debug.LogError(errString, firstDuplicatedObjectToFail);
             }
-
-            AssetDatabase.Refresh();
 
             return copiedPaths.Select(AssetDatabase.LoadMainAssetAtPath);
         }

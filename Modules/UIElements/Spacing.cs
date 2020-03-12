@@ -45,8 +45,8 @@ namespace UnityEngine.UIElements
         {
             r.x += a.left;
             r.y += a.top;
-            r.width -= a.horizontal;
-            r.height -= a.vertical;
+            r.width = Mathf.Max(0, r.width - a.horizontal);
+            r.height = Mathf.Max(0, r.height - a.vertical);
             return r;
         }
     }
