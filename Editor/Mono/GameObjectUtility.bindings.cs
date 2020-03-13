@@ -96,6 +96,14 @@ namespace UnityEditor
                 SetLayerRecursively(t.GetChild(i).gameObject, layer);
         }
 
+        // *undocumented*
+        [FreeFunction]
+        public static extern int GetMonoBehavioursWithMissingScriptCount(GameObject go);
+
+        // *undocumented*
+        [FreeFunction]
+        public static extern int RemoveMonoBehavioursWithMissingScript(GameObject go);
+
         [System.Obsolete("GetNavMeshArea instead.")]
         public static int GetNavMeshLayer(GameObject go)
         {
