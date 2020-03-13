@@ -51,8 +51,7 @@ namespace UnityEditor
         private void DrawMarkerLabels(ChartViewData cdata, Rect r, EventMarker[] markers, string[] markerNames)
         {
             Color cc = GUI.contentColor;
-            Vector2 domain = cdata.GetDataDomain();
-            int length = (int)(domain.y - domain.x);
+            int length = cdata.GetDataDomainLength();
             float frameWidth = r.width / length;
 
             const int labelPositions = 12;

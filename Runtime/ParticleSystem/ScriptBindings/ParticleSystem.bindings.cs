@@ -9,6 +9,8 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -242,10 +244,22 @@ namespace UnityEngine
         public void SetParticles([Out] ParticleSystem.Particle[] particles, int size) { SetParticles(particles, size, 0); }
         public void SetParticles([Out] ParticleSystem.Particle[] particles) { SetParticles(particles, -1); }
 
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticlesWithNativeArray", HasExplicitThis = true)]
+        extern private void SetParticlesWithNativeArray(IntPtr particles, int particlesLength, int size, int offset);
+        unsafe public void SetParticles([Out] NativeArray<Particle> particles, int size, int offset) { SetParticlesWithNativeArray((IntPtr)particles.GetUnsafeReadOnlyPtr(), particles.Length, size, 0); }
+        public void SetParticles([Out] NativeArray<Particle> particles, int size) { SetParticles(particles, size, 0); }
+        public void SetParticles([Out] NativeArray<Particle> particles) { SetParticles(particles, -1); }
+
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticles", HasExplicitThis = true)]
         extern public int GetParticles([NotNull][Out] ParticleSystem.Particle[] particles, int size, int offset);
         public int GetParticles([Out] ParticleSystem.Particle[] particles, int size) { return GetParticles(particles, size, 0); }
         public int GetParticles([Out] ParticleSystem.Particle[] particles) { return GetParticles(particles, -1); }
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticlesWithNativeArray", HasExplicitThis = true)]
+        extern private int GetParticlesWithNativeArray(IntPtr particles, int particlesLength, int size, int offset);
+        unsafe public int GetParticles([Out] NativeArray<Particle> particles, int size, int offset) { return GetParticlesWithNativeArray((IntPtr)particles.GetUnsafeReadOnlyPtr(), particles.Length, size, 0); }
+        public int GetParticles([Out] NativeArray<Particle> particles, int size) { return GetParticles(particles, size, 0); }
+        public int GetParticles([Out] NativeArray<Particle> particles) { return GetParticles(particles, -1); }
 
         // Playback
         [FreeFunction(Name = "ParticleSystemScriptBindings::Simulate", HasExplicitThis = true)]

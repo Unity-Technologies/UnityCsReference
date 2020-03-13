@@ -286,6 +286,12 @@ namespace UnityEditor
         internal delegate void SelectionChangedCallback(string selectedPropertyPath);
         public event SelectionChangedCallback selectionChanged;
 
+        // use this when iterating over arrays of history length. This + iterationIndex < 0 means no data for this frame, for anything else, this is the same as ProfilerDriver.firstFrame.
+        int firstFrameIndexWithHistoryOffset
+        {
+            get { return ProfilerDriver.lastFrameIndex + 1 - ProfilerDriver.maxHistoryLength; }
+        }
+
         public void SetSelectedPropertyPath(string path)
         {
             if (ProfilerDriver.selectedPropertyPath != path)
@@ -314,7 +320,9 @@ namespace UnityEditor
         public ProfilerProperty CreateProperty(ProfilerColumn sortType)
         {
             int targetedFrame = GetActiveVisibleFrameIndex();
-            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerDriver.maxHistoryLength)
+            if (targetedFrame < 0)
+                targetedFrame = ProfilerDriver.lastFrameIndex;
+            if (targetedFrame < Math.Max(0, ProfilerDriver.firstFrameIndex))
             {
                 return null;
             }
@@ -362,7 +370,7 @@ namespace UnityEditor
             if (m_AttachProfilerState == null)
                 m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, (player) => ClearFramesCallback());
 
-            int historySize = ProfilerDriver.maxHistoryLength - 1;
+            int historySize = ProfilerDriver.maxHistoryLength;
 
             m_Charts = new ProfilerChart[Profiler.areaCount];
 
@@ -458,7 +466,7 @@ namespace UnityEditor
             if (wasToggled)
             {
                 int historyLength = ProfilerDriver.maxHistoryLength - 1;
-                int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+                int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
                 int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
                 ComputeChartScaleValue(ProfilerArea.CPU, historyLength, firstEmptyFrame, firstFrame);
@@ -623,7 +631,7 @@ namespace UnityEditor
             menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
         }
 
-        private void OnToggleColorBlindMode()
+        void OnToggleColorBlindMode()
         {
             UserAccessiblitySettings.colorBlindCondition = UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default
                 ? ColorBlindCondition.Deuteranopia
@@ -1151,8 +1159,8 @@ namespace UnityEditor
 
         private void UpdateCharts()
         {
-            int historyLength = ProfilerDriver.maxHistoryLength - 1;
-            int firstEmptyFrame = ProfilerDriver.lastFrameIndex - historyLength;
+            int historyLength = ProfilerDriver.maxHistoryLength;
+            int firstEmptyFrame = firstFrameIndexWithHistoryOffset;
             int firstFrame = Mathf.Max(ProfilerDriver.firstFrameIndex, firstEmptyFrame);
 
             // Collect chart values
