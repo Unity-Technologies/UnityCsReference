@@ -71,6 +71,8 @@ namespace UnityEditor.Collaboration
 
         public extern void SetSeat(bool value);
 
+        public extern void RefreshSeatAvailabilityAsync();
+
         public extern string GetProjectGUID();
 
         public extern bool ShouldDoInitialCommit();

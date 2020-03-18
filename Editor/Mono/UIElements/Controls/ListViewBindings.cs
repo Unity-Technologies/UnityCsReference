@@ -11,7 +11,7 @@ using System.Collections;
 
 namespace UnityEditor.UIElements
 {
-    class ListViewSerializedObjectBinding : BindingExtensions.SerializedObjectBindingBase
+    class ListViewSerializedObjectBinding : DefaultSerializedObjectBindingImplementation.SerializedObjectBindingBase
     {
         ListView listView { get { return boundElement as ListView; } set { boundElement = value; } }
 
@@ -21,7 +21,7 @@ namespace UnityEditor.UIElements
         int m_ListViewArraySize;
 
         public static void CreateBind(ListView listView,
-            BindingExtensions.SerializedObjectUpdateWrapper objWrapper,
+            DefaultSerializedObjectBindingImplementation.SerializedObjectUpdateWrapper objWrapper,
             SerializedProperty prop)
         {
             var newBinding = new ListViewSerializedObjectBinding();
@@ -29,7 +29,7 @@ namespace UnityEditor.UIElements
         }
 
         protected void SetBinding(ListView listView,
-            BindingExtensions.SerializedObjectUpdateWrapper objWrapper,
+            DefaultSerializedObjectBindingImplementation.SerializedObjectUpdateWrapper objWrapper,
             SerializedProperty prop)
         {
             boundObject = objWrapper;
@@ -77,7 +77,7 @@ namespace UnityEditor.UIElements
             object item = listView.itemsSource[index];
             var itemProp = item as SerializedProperty;
             field.bindingPath = itemProp.propertyPath;
-            BindingExtensions.Bind(ve, boundObject, itemProp);
+            BindingExtensions.bindingImpl.Bind(ve, boundObject, itemProp);
         }
 
         void UpdateArraySize()

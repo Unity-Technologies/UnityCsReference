@@ -305,7 +305,7 @@ namespace UnityEditor
             internal bool particleSystemsEnabled => fxEnabled && showParticleSystems;
             internal bool visualEffectGraphsEnabled => fxEnabled && showVisualEffectGraphs;
 
-            [SerializeField] bool m_FxEnabled;
+            [SerializeField] bool m_FxEnabled = true;
 
             public SceneViewState()
             {
@@ -1053,7 +1053,6 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
-            wantsLessLayoutEvents = true;
             titleContent = GetLocalizedTitleContent();
             m_RectSelection = new RectSelection(this);
 
@@ -1077,6 +1076,7 @@ namespace UnityEditor
             sceneViewGrids.gridVisibilityChanged += GridOnGridVisibilityChanged;
 
             wantsMouseMove = true;
+            wantsLessLayoutEvents = true;
             wantsMouseEnterLeaveWindow = true;
             s_SceneViews.Add(this);
 
@@ -2651,15 +2651,15 @@ namespace UnityEditor
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
             }
 
+            sceneViewGrids.UpdateGridColor();
+
             Color origColor = GUI.color;
             Rect origCameraRect = m_Camera.rect;
             Rect windowSpaceCameraRect = cameraRect;
 
             HandleClickAndDragToFocus();
 
-            if (evt.type == EventType.Layout)
-                m_ShowSceneViewWindows = (lastActiveSceneView == this);
-
+            m_ShowSceneViewWindows = (lastActiveSceneView == this);
             m_SceneViewOverlay.Begin();
 
             bool oldFog;

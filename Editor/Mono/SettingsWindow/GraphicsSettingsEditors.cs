@@ -372,10 +372,11 @@ namespace UnityEditor
 
             internal void OnFieldLabelsGUI(bool vertical)
             {
+                bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
+
                 if (!vertical)
                     EditorGUILayout.LabelField(Styles.standardShaderSettings, EditorStyles.boldLabel);
 
-                bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
                 if (!usingSRP)
                 {
                     EditorGUILayout.LabelField(Styles.standardShaderQuality);
@@ -399,12 +400,7 @@ namespace UnityEditor
                     EditorGUILayout.LabelField(Styles.cascadedShadowMaps);
                     EditorGUILayout.LabelField(Styles.prefer32BitShadowMaps);
                     EditorGUILayout.LabelField(Styles.useHDR);
-                }
-
-                EditorGUILayout.LabelField(Styles.hdrMode);
-
-                if (!usingSRP)
-                {
+                    EditorGUILayout.LabelField(Styles.hdrMode);
                     EditorGUILayout.LabelField(Styles.renderingPath);
                 }
 
@@ -490,12 +486,9 @@ namespace UnityEditor
                     ts.cascadedShadowMaps = EditorGUILayout.Toggle(ts.cascadedShadowMaps);
                     ts.prefer32BitShadowMaps = EditorGUILayout.Toggle(ts.prefer32BitShadowMaps);
                     ts.hdr = EditorGUILayout.Toggle(ts.hdr);
-                }
-
-                ts.hdrMode = HDRModePopup(ts.hdrMode);
-
-                if (!usingSRP)
+                    ts.hdrMode = HDRModePopup(ts.hdrMode);
                     ts.renderingPath = RenderingPathPopup(ts.renderingPath);
+                }
 
                 if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
                     ts.realtimeGICPUUsage = RealtimeGICPUUsagePopup(ts.realtimeGICPUUsage);
@@ -562,6 +555,7 @@ namespace UnityEditor
                         autoSettings = EditorGUILayout.Toggle(Styles.autoSettings, autoSettings);
                         GUILayout.EndHorizontal();
                     }
+
                     if (EditorGUI.EndChangeCheck())
                     {
                         EditorGraphicsSettings.RegisterUndo();

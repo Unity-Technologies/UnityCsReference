@@ -93,7 +93,12 @@ namespace UnityEditor.UIElements
             var types = TypeCache.GetTypesDerivedFrom<IUxmlFactory>();
             foreach (var type in types)
             {
-                if (type.IsAbstract || !userAssemblies.Contains(type.Assembly.GetName().Name + ".dll"))
+                if (type.IsAbstract
+                    || !userAssemblies.Contains(type.Assembly.GetName().Name + ".dll")
+                    || !typeof(IUxmlFactory).IsAssignableFrom(type)
+                    || type.IsInterface
+                    || type.IsGenericType
+                    || type.Assembly.GetName().Name == "UnityEngine.UIElementsModule")
                     continue;
 
                 var factory = (IUxmlFactory)Activator.CreateInstance(type);

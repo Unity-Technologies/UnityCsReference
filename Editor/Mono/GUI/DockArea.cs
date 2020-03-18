@@ -1094,7 +1094,8 @@ namespace UnityEditor
             if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition) && !ContainerWindow.s_Modal)
                 PopupGenericMenu(actualView, new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 0, 0));
 
-            ShowGenericMenu(position.width - GetGenericMenuLeftOffset(true), backRect.yMin + Styles.genericMenuTopOffset);
+            // GetGenericMenuLeftOffset false because maximized window are not floating windows
+            ShowGenericMenu(position.width - GetGenericMenuLeftOffset(false), backRect.yMin + Styles.genericMenuTopOffset);
 
             const float topBottomPadding = 0f;
             Rect viewRect = maximizedViewRect;

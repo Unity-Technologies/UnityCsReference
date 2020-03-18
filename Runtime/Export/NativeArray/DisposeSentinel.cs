@@ -76,7 +76,11 @@ namespace Unity.Collections.LowLevel.Unsafe
             // If the safety handle is for a temp allocation, create a new safety handle for this instance which can be marked as invalid
             // Setting it to new AtomicSafetyHandle is not enough since the handle needs a valid node pointer in order to give the correct errors
             if (AtomicSafetyHandle.IsTempMemoryHandle(safety))
+            {
+                int staticSafetyId = safety.staticSafetyId;
                 safety = AtomicSafetyHandle.Create();
+                safety.staticSafetyId = staticSafetyId;
+            }
             AtomicSafetyHandle.Release(safety);
             Clear(ref sentinel);
         }

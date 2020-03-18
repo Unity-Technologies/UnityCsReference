@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Text;
 using System.Diagnostics;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -181,10 +182,21 @@ namespace Unity.Collections.LowLevel.Unsafe
         public static extern string GetWriterName(AtomicSafetyHandle handle);
 
         [ThreadSafe]
-        public static extern int NewStaticSafetyId(string ownerTypeName);
+        public static unsafe extern int NewStaticSafetyId(byte* ownerTypeNameBytes, int byteCount);
+
+        public static unsafe int NewStaticSafetyId<T>()
+        {
+            var ownerTypeName = typeof(T).ToString();
+            var bytes = Encoding.UTF8.GetBytes(ownerTypeName);
+            fixed(byte* pBytes = bytes)
+            {
+                return NewStaticSafetyId(pBytes, bytes.Length);
+            }
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [NativeThrows, ThreadSafe]
-        public static extern void SetCustomErrorMessage(int staticSafetyId, AtomicSafetyErrorType errorType, string message);
+        public static unsafe extern void SetCustomErrorMessage(int staticSafetyId, AtomicSafetyErrorType errorType, byte* messageBytes, int byteCount);
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [NativeThrows, ThreadSafe]
         public static extern void SetStaticSafetyId(ref AtomicSafetyHandle handle, int staticSafetyId);

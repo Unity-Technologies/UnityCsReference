@@ -452,7 +452,15 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel++;
 
+                EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_MaterialsSize);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    serializedObject.ApplyModifiedProperties();
+                    GUIUtility.ExitGUI();
+                    // stop processing the current event as the size of the list has changed
+                }
 
                 for (int i = 0; i < m_MaterialsSize.intValue; i++)
                 {

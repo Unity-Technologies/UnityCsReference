@@ -648,9 +648,6 @@ namespace UnityEditor
         internal const float k_iconMargin = 1f;
         protected void ShowGenericMenu(float leftOffset, float topOffset)
         {
-            if (Event.current.isKey)
-                return;
-
             Rect paneMenu = new Rect(leftOffset, topOffset, Styles.paneOptions.fixedWidth, Styles.paneOptions.fixedHeight);
             if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, Styles.paneOptions))
                 PopupGenericMenu(m_ActualView, paneMenu);

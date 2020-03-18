@@ -38,16 +38,17 @@ namespace Unity.Collections
         internal AtomicSafetyHandle       m_Safety;
         [NativeSetClassTypeToNullOnSchedule]
         internal DisposeSentinel          m_DisposeSentinel;
-        static int                        s_staticSafetyId;
 
+        // TODO: Once Burst supports internal/external functions in static initializers, this can become
+        //   static readonly int s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeArray<T>>();
+        // and InitStaticSafetyId() can be replaced with a call to AtomicSafetyHandle.SetStaticSafetyId();
+        static int                        s_staticSafetyId;
         [BurstDiscard]
-        static void AssignStaticSafetyId(ref AtomicSafetyHandle safetyHandle)
+        static void InitStaticSafetyId(ref AtomicSafetyHandle handle)
         {
             if (s_staticSafetyId == 0)
-            {
-                s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId($"NativeArray<{typeof(T).Name}>");
-            }
-            AtomicSafetyHandle.SetStaticSafetyId(ref safetyHandle, s_staticSafetyId);
+                s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeArray<T>>();
+            AtomicSafetyHandle.SetStaticSafetyId(ref handle, s_staticSafetyId);
         }
 
 
@@ -101,7 +102,7 @@ namespace Unity.Collections
             array.m_MinIndex = 0;
             array.m_MaxIndex = length - 1;
             DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
-            AssignStaticSafetyId(ref array.m_Safety);
+            InitStaticSafetyId(ref array.m_Safety);
         }
 
         public int Length => m_Length;

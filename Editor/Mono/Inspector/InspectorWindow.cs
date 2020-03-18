@@ -399,7 +399,7 @@ namespace UnityEditor
             m_Tracker.SetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
             // since this method likely got called during OnEnable, and rebuilding the tracker could call OnDisable on all Editors,
             // some of which might not have gotten their enable yet, the rebuilding needs to happen delayed in EditorApplication.update
-            new DelayedCallback(tracker.RebuildIfNecessary, 0f);
+            EditorApplication.CallDelayed(tracker.RebuildIfNecessary, 0f);
         }
 
         internal static bool AddInspectorWindow(InspectorWindow window)
