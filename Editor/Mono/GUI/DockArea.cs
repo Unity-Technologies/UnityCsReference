@@ -152,6 +152,7 @@ namespace UnityEditor
             base.OnDestroy();
         }
 
+        private VisualElement m_SplitterGUIRoot;
         protected override void OnEnable()
         {
             if (m_Panes != null)
@@ -173,7 +174,48 @@ namespace UnityEditor
                 imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
                 imguiContainer.tabIndex = -1;
                 imguiContainer.focusOnlyIfHasFocusableControls = false;
+
+                var root = panel.visualTree;
+                RegisterSplitterEvents(root);
+                m_SplitterGUIRoot = root;
             }
+        }
+
+        protected override void OnDisable()
+        {
+            var root = m_SplitterGUIRoot;
+            if (root != null)
+                UnregisterSplitterEvents(root);
+            m_SplitterGUIRoot = null;
+
+            base.OnDisable();
+        }
+
+        const TrickleDown k_TricklePhase = TrickleDown.TrickleDown;
+
+        private void RegisterSplitterEvents(VisualElement root)
+        {
+            root.RegisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.RegisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.RegisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+        }
+
+        private void UnregisterSplitterEvents(VisualElement root)
+        {
+            root.UnregisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.UnregisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.UnregisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+        }
+
+        private void SendEventToSplitterGUI(EventBase ev)
+        {
+            if (ev.imguiEvent == null || ev.imguiEvent.rawType == EventType.Used)
+                return;
+
+            imguiContainer.HandleIMGUIEvent(ev.imguiEvent, HandleSplitView, false);
+
+            if (ev.imguiEvent.rawType == EventType.Used)
+                ev.StopPropagation();
         }
 
         public void AddTab(EditorWindow pane, bool sendPaneEvents = true)

@@ -302,6 +302,9 @@ namespace UnityEditor
             if (m_ConsoleAttachToPlayerState == null)
                 m_ConsoleAttachToPlayerState = new ConsoleAttachToPlayerState(this);
 
+            // Update the filter on enable for DomainReload(keep current filter) and window opening(reset filter because m_searchText is null)
+            SetFilter(LogEntries.GetFilteringText());
+
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;
             m_DevBuild = Unsupported.IsDeveloperMode();
@@ -737,10 +740,7 @@ namespace UnityEditor
             var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
             if (m_SearchText != filteringText)
             {
-                m_SearchText = filteringText;
-                LogEntries.SetFilteringText(filteringText);
-                // Reset the active entry when we change the filtering text
-                SetActiveEntry(null);
+                SetFilter(filteringText);
             }
         }
 
@@ -912,6 +912,21 @@ namespace UnityEditor
         {
             var outputEntry = new LogEntry {message = message, file = file, mode = mode, instanceID = instanceID};
             LogEntries.AddMessageWithDoubleClickCallback(outputEntry);
+        }
+
+        private void SetFilter(string filteringText)
+        {
+            if (filteringText == null)
+            {
+                m_SearchText = "";
+                LogEntries.SetFilteringText("");
+            }
+            else
+            {
+                m_SearchText = filteringText;
+                LogEntries.SetFilteringText(filteringText); // Reset the active entry when we change the filtering text
+            }
+            SetActiveEntry(null);
         }
     }
 

@@ -31,6 +31,9 @@ namespace UnityEngine.XR
         extern public bool singlePassRenderingDisabled { get; set; }
         extern public bool displayOpaque { get; }
         extern public bool contentProtectionEnabled { get; set; }
+        extern public float zNear { get; set; }
+        extern public float zFar { get; set; }
+        extern public bool  sRGB { get; set; }
 
 
         public enum ReprojectionMode

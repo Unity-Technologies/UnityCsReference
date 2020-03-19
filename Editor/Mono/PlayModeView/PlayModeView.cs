@@ -166,7 +166,8 @@ namespace UnityEditor
                 GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
                 SavedGUIState oldState = SavedGUIState.Create();
 
-                EditorGUIUtility.RenderPlayModeViewCamerasInternal(m_TargetTexture, currentTargetDisplay, mousePosition, showGizmos, renderIMGUI);
+                if (m_TargetTexture.IsCreated())
+                    EditorGUIUtility.RenderPlayModeViewCamerasInternal(m_TargetTexture, currentTargetDisplay, mousePosition, showGizmos, renderIMGUI);
 
                 oldState.ApplyAndForget();
                 GUIUtility.s_EditorScreenPointOffset = oldOffset;
