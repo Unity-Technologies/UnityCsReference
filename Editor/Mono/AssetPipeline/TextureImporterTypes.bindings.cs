@@ -167,6 +167,10 @@ namespace UnityEditor
         [SerializeField]
         private int m_TextureFormatSet;
 
+        //For backward compatibility for an incorrectly applied gamma decoding step (bug)
+        [SerializeField]
+        int m_ApplyGammaDecoding;
+
         public TextureImporterType textureType
         {
             get {return (TextureImporterType)m_TextureType; }

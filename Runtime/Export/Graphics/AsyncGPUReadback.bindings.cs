@@ -83,16 +83,22 @@ namespace UnityEngine.Rendering
 
         static public AsyncGPUReadbackRequest Request(ComputeBuffer src, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src, null, 0);
+                SetUpScriptingRequest(request, callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(ComputeBuffer src, int size, int offset, Action<AsyncGPUReadbackRequest> callback = null)
         {
-            AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_2(src, size, offset);
-            SetUpScriptingRequest(request, callback);
-            return request;
+            unsafe
+            {
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_2(src, size, offset, null, 0);
+                SetUpScriptingRequest(request, callback);
+                return request;
+            }
         }
 
         static public AsyncGPUReadbackRequest Request(Texture src, int mipIndex = 0, Action<AsyncGPUReadbackRequest> callback = null)
@@ -139,7 +145,7 @@ namespace UnityEngine.Rendering
         {
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_3(src, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
                 SetUpScriptingRequest(request, callback);
                 return request;
             }
@@ -149,7 +155,7 @@ namespace UnityEngine.Rendering
         {
             unsafe
             {
-                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_4(src, size, offset, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
+                AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_2(src, size, offset, output.GetUnsafePtr(), output.Length * UnsafeUtility.SizeOf<T>());
                 SetUpScriptingRequest(request, callback);
                 return request;
             }
@@ -198,16 +204,11 @@ namespace UnityEngine.Rendering
         }
 
         [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_1([NotNull] ComputeBuffer buffer);
-        [NativeMethod("Request")]
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_2([NotNull] ComputeBuffer src, int size, int offset);
-
+        unsafe
+        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_1([NotNull] ComputeBuffer buffer, void* output, int allocationSize);
         [NativeMethod("Request")]
         unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_3([NotNull] ComputeBuffer buffer, void* output, int allocationSize);
-        [NativeMethod("Request")]
-        unsafe
-        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_4([NotNull] ComputeBuffer src, int size, int offset, void* output, int allocationSize);
+        static private extern AsyncGPUReadbackRequest Request_Internal_ComputeBuffer_2([NotNull] ComputeBuffer src, int size, int offset, void* output, int allocationSize);
 
         [NativeMethod("Request")]
         static private extern AsyncGPUReadbackRequest Request_Internal_Texture_1([NotNull] Texture src, int mipIndex);

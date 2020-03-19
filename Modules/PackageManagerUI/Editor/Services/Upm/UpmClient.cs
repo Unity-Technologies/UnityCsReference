@@ -533,18 +533,24 @@ namespace UnityEditor.PackageManager.UI
             private static bool IsDifferent(PackageInfo oldInfo, PackageInfo newInfo)
             {
                 if (oldInfo.packageId != newInfo.packageId ||
+                    oldInfo.version != newInfo.version ||
                     oldInfo.source != newInfo.source ||
                     oldInfo.resolvedPath != newInfo.resolvedPath ||
                     oldInfo.isDirectDependency != newInfo.isDirectDependency ||
-                    oldInfo.entitlements.isAllowed != newInfo.entitlements.isAllowed)
+                    oldInfo.entitlements.isAllowed != newInfo.entitlements.isAllowed ||
+                    oldInfo.name != newInfo.name ||
+                    oldInfo.category != newInfo.category ||
+                    oldInfo.displayName != newInfo.displayName ||
+                    oldInfo.description != newInfo.description)
                     return true;
 
-                var oldVersions = oldInfo.versions.compatible;
-                var newVersions = newInfo.versions.compatible;
-                if (oldVersions.Length != newVersions.Length || !oldVersions.SequenceEqual(newVersions))
+                if (oldInfo.versions.compatible.Length != newInfo.versions.compatible.Length || !oldInfo.versions.compatible.SequenceEqual(newInfo.versions.compatible))
                     return true;
 
                 if (oldInfo.errors.Length != newInfo.errors.Length || !oldInfo.errors.SequenceEqual(newInfo.errors))
+                    return true;
+
+                if (oldInfo.dependencies.Length != newInfo.dependencies.Length || !oldInfo.dependencies.SequenceEqual(newInfo.dependencies))
                     return true;
 
                 return false;

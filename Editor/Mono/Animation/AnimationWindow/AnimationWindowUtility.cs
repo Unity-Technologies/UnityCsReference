@@ -826,29 +826,32 @@ namespace UnityEditorInternal
 
         public static float GetNextKeyframeTime(AnimationWindowCurve[] curves, float currentTime, float frameRate)
         {
-            float candidate = float.MaxValue;
+            AnimationKeyTime candidateKeyTime = AnimationKeyTime.Frame(int.MaxValue, frameRate);
             AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
             AnimationKeyTime nextTime = AnimationKeyTime.Frame(time.frame + 1, frameRate);
-
             bool found = false;
 
             foreach (AnimationWindowCurve curve in curves)
             {
                 foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                 {
-                    if (keyframe.time < candidate && keyframe.time >= nextTime.time)
+                    AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
+                    if (keyTime.frame <= candidateKeyTime.frame && keyTime.frame >= nextTime.frame)
                     {
-                        candidate = keyframe.time;
-                        found = true;
+                        if (keyframe.time <= candidateKeyTime.time)
+                        {
+                            candidateKeyTime = keyTime;
+                            found = true;
+                        }
                     }
                 }
             }
-            return found ? candidate : time.time;
+            return found ? candidateKeyTime.time : time.time;
         }
 
         public static float GetPreviousKeyframeTime(AnimationWindowCurve[] curves, float currentTime, float frameRate)
         {
-            float candidate = float.MinValue;
+            AnimationKeyTime candidateKeyTime = AnimationKeyTime.Time(float.MinValue, frameRate);
             AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
             AnimationKeyTime previousTime = AnimationKeyTime.Frame(time.frame - 1, frameRate);
 
@@ -859,17 +862,18 @@ namespace UnityEditorInternal
                 foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                 {
                     AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
-                    if (keyTime.frame == previousTime.frame)
+                    if (keyTime.frame >= candidateKeyTime.frame && keyTime.frame <= previousTime.frame)
                     {
-                        if (keyTime.time > candidate)
+                        if (keyTime.time >= candidateKeyTime.time)
                         {
-                            candidate = keyTime.time;
+                            candidateKeyTime = keyTime;
                             found = true;
                         }
                     }
                 }
             }
-            return found ? candidate : time.time;
+
+            return found ? candidateKeyTime.time : time.time;
         }
 
         // Add animator, controller and clip to gameobject if they are missing to make this gameobject animatable

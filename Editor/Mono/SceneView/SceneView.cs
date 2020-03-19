@@ -347,6 +347,7 @@ namespace UnityEditor
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void OnSceneFunc(SceneView sceneView);
 
+        // Marked obsolete 2018-11-28
         [Obsolete("onSceneGUIDelegate has been deprecated. Use duringSceneGui instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static OnSceneFunc onSceneGUIDelegate;
@@ -3484,7 +3485,12 @@ namespace UnityEditor
                 if (!drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
                     continue;
 
-                MethodInfo method = editor.GetType().GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+                MethodInfo method = editor.GetType().GetMethod(
+                    "OnSceneGUI",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
+                    null,
+                    Type.EmptyTypes,
+                    null);
 
                 if (method != null)
                 {

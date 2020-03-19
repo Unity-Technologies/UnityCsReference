@@ -350,7 +350,7 @@ namespace UnityEditor
                             EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
                             using (var changed = new EditorGUI.ChangeCheckScope())
                             {
-                                var newValue = EditorGUILayout.IntSlider(propertyScope.content, (int)Mathf.Clamp(property.floatValue * 100.0f, 1.0f, 100.0f), 1, 100);
+                                var newValue = EditorGUILayout.IntSlider(propertyScope.content, (int)Mathf.Clamp(property.floatValue * 100.0f + 0.5f, 1.0f, 100.0f), 1, 100);
                                 if (changed.changed)
                                 {
                                     property.floatValue = 0.01f * newValue;

@@ -1152,6 +1152,13 @@ namespace UnityEditor
                 m_SerializedObject.Update();
             m_SerializedObject.inspectorMode = inspectorMode;
 
+            return CanBeExpandedViaAFoldoutWithoutUpdate();
+        }
+
+        internal bool CanBeExpandedViaAFoldoutWithoutUpdate()
+        {
+            if (m_SerializedObject == null)
+                CreateSerializedObject();
             SerializedProperty property = m_SerializedObject.GetIterator();
 
             bool analyzePropertyChildren = true;
