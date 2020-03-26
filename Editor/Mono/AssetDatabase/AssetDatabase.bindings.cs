@@ -28,6 +28,7 @@ namespace UnityEditor
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
     [NativeHeader("Editor/Src/PackageUtility.h")]
+    [NativeHeader("Editor/Src/Application/ApplicationFunctions.h")]
     public partial class AssetDatabase
     {
         [FreeFunction("AssetDatabase::ReSerializeAssetsForced")]
@@ -127,5 +128,11 @@ namespace UnityEditor
         {
             return ImportPackage(packagePath, ImportPackageOptions.NoGUI);
         }
+
+        [FreeFunction("ApplicationDisallowAutoRefresh")]
+        public static extern void DisallowAutoRefresh();
+
+        [FreeFunction("ApplicationAllowAutoRefresh")]
+        public static extern void AllowAutoRefresh();
     }
 }
