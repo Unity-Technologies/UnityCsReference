@@ -364,7 +364,13 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerRender.End();
 
             if (immediateException != null)
-                throw immediateException;
+            {
+                if (GUIUtility.IsExitGUIException(immediateException))
+                    throw immediateException;
+
+                // Wrap the exception, this plays more nicely with the callstack logging.
+                throw new ImmediateModeException(immediateException);
+            }
 
             if (drawStats)
                 DrawStats();

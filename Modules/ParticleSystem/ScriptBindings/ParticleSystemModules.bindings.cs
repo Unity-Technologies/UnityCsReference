@@ -205,9 +205,9 @@ namespace UnityEngine
             extern public float limitYMultiplier { get; set; }
             extern public MinMaxCurve limitZ { get; set; }
             extern public float limitZMultiplier { get; set; }
-            [NativeName("LimitX")]
+            [NativeName("Magnitude")]
             extern public MinMaxCurve limit { get; set; }
-            [NativeName("LimitXMultiplier")]
+            [NativeName("MagnitudeMultiplier")]
             extern public float limitMultiplier { get; set; }
             extern public float dampen { get; set; }
             extern public bool separateAxes { get; set; }

@@ -28,6 +28,7 @@ namespace UnityEditor
             public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all scripting method calls to investigate scripts");
             public static readonly GUIContent deepProfileNotSupported = EditorGUIUtility.TrTextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.");
             public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available");
+            public static readonly GUIContent noActiveModules = EditorGUIUtility.TrTextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.");
 
             public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling");
             public static readonly string enableDeepProfilingWarningDialogContent = L10n.Tr("Enabling deep profiling requires reloading scripts.");
@@ -1225,12 +1226,13 @@ namespace UnityEditor
             }
 
             int newCurrentFrame = m_CurrentFrame;
+            bool noActiveModules = true;
             for (int c = 0; c < m_Charts.Length; ++c)
             {
                 var chart = m_Charts[c];
                 if (!chart.active)
                     continue;
-
+                noActiveModules = false;
                 newCurrentFrame = chart.DoChartGUI(newCurrentFrame, m_CurrentArea == chart.m_Area);
             }
 
@@ -1239,6 +1241,16 @@ namespace UnityEditor
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
                 GUIUtility.ExitGUI();
+            }
+            if (noActiveModules)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(Styles.noActiveModules);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
             }
 
             EditorGUILayout.EndScrollView();

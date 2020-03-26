@@ -603,7 +603,7 @@ namespace UnityEditor
             if (m_Texture.hasMultipleDifferentValues || m_Texture.objectReferenceValue != null)
             {
                 EditorGUILayout.Space();
-                GUIObject(s_Texts.texture, m_Texture);
+                GUIObject(s_Texts.texture, m_Texture, typeof(Texture2D));
                 GUIPopup(s_Texts.textureClipChannel, m_TextureClipChannel, s_Texts.textureClipChannels);
                 GUIFloat(s_Texts.textureClipThreshold, m_TextureClipThreshold);
                 GUIToggle(s_Texts.textureColorAffectsParticles, m_TextureColorAffectsParticles);
@@ -618,7 +618,7 @@ namespace UnityEditor
             }
             else
             {
-                GUIObject(s_Texts.texture, m_Texture);
+                GUIObject(s_Texts.texture, m_Texture, typeof(Texture2D));
             }
         }
 
