@@ -111,7 +111,6 @@ namespace UnityEditor.Scripting
         private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
             var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed") + ","
-                + "+" + Path.Combine(EditorApplication.applicationContentsPath, "UnityExtensions/Unity") + ","
                 + "+" + Application.dataPath;
 
             if (configurationSourceDirectories != null)

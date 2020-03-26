@@ -91,7 +91,10 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct SpriteAtlasManagerUpdate {}
         [RequiredByNativeCode]
+        [Obsolete("TangoUpdate has been deprecated. Use ARCoreUpdate instead (UnityUpgradable) -> UnityEngine.PlayerLoop.EarlyUpdate/ARCoreUpdate", false)]
         public struct TangoUpdate {}
+        [RequiredByNativeCode]
+        public struct ARCoreUpdate {}
         [RequiredByNativeCode]
         public struct PerformanceAnalyticsUpdate {}
     }

@@ -313,6 +313,7 @@ namespace UnityEditor
 
             public SceneViewState(SceneViewState other)
             {
+                fxEnabled = other.fxEnabled;
                 showFog = other.showFog;
                 showMaterialUpdate = other.showMaterialUpdate;
                 showSkybox = other.showSkybox;

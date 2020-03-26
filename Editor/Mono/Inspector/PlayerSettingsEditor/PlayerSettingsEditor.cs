@@ -79,6 +79,7 @@ namespace UnityEditor
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
             public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Stack Trace*");
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
+            public static readonly GUIContent legacyXRTitle = EditorGUIUtility.TrTextContent("XR Settings (Deprecated)");
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
 
             public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TrTextContent("Prebake Collision Meshes*", "Bake collision data into the meshes on build time");
@@ -2364,6 +2365,8 @@ namespace UnityEditor
             // ARCore - legacy way to enable
             if (BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, BuildTargetDiscovery.VRAttributes.SupportTango))
             {
+                EditorGUILayout.Space();
+                GUILayout.Label(SettingsContent.legacyXRTitle, EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
             }
 

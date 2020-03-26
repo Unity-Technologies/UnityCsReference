@@ -171,6 +171,12 @@ namespace UnityEditor
 
         private void DoListOfSpritesGUI()
         {
+            if (m_Sprites.hasMultipleDifferentValues)
+            {
+                EditorGUILayout.HelpBox("Sprite editing is only available when all selected Particle Systems contain the same number of Sprites.", MessageType.Info, true);
+                return;
+            }
+
             for (int i = 0; i < m_Sprites.arraySize; i++)
             {
                 GUILayout.BeginHorizontal();
@@ -203,6 +209,8 @@ namespace UnityEditor
 
         private void ValidateSpriteList()
         {
+            if (m_Sprites.hasMultipleDifferentValues)
+                return;
             if (m_Sprites.arraySize <= 1)
                 return;
 

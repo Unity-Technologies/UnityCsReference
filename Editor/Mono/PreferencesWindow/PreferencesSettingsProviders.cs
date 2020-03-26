@@ -82,6 +82,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Monitor Refresh Rate", "The editor will wait up to the monitor refresh rate in milliseconds (i.e. ~16 ms)."),
                 EditorGUIUtility.TrTextContent("Custom", "Specify how many milliseconds at most the application will be idle per frame."),
             };
+            public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
         }
 
         internal class ExternalProperties
@@ -185,6 +186,7 @@ namespace UnityEditor
         private bool m_EnableCodeCoverage = false;
         private bool m_EnableCodeCoverageChangedInThisSession = false;
         private bool m_Create3DObjectsAtOrigin = false;
+        private float m_ProgressDialogDelay = 3.0f;
 
         private string[] m_ScriptApps;
         private string[] m_ScriptAppsEditions;
@@ -596,6 +598,17 @@ namespace UnityEditor
             }
 
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
+
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                var progressDialogDelay = EditorGUILayout.DelayedFloatField(GeneralProperties.progressDialogDelay, m_ProgressDialogDelay);
+                progressDialogDelay = Mathf.Clamp(progressDialogDelay, 0.1f, 1000.0f);
+                if (progressDialogDelay != m_ProgressDialogDelay)
+                {
+                    EditorUtility.BusyProgressDialogDelayChanged(progressDialogDelay);
+                    m_ProgressDialogDelay = progressDialogDelay;
+                }
+            }
 
             ApplyChangesToPrefs();
 
@@ -1045,6 +1058,7 @@ namespace UnityEditor
             }
 
             EditorPrefs.SetBool("Create3DObject.PlaceAtWorldOrigin", m_Create3DObjectsAtOrigin);
+            EditorPrefs.SetFloat("EditorBusyProgressDialogDelay", m_ProgressDialogDelay);
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
@@ -1153,6 +1167,7 @@ namespace UnityEditor
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
             m_EnableCodeCoverage = EditorPrefs.GetBool("CodeCoverageEnabled", false);
             m_Create3DObjectsAtOrigin = EditorPrefs.GetBool("Create3DObject.PlaceAtWorldOrigin", false);
+            m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");

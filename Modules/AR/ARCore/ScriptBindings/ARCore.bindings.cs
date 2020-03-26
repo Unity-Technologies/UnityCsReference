@@ -45,7 +45,7 @@ namespace UnityEngine.XR.Tango
         }
     }
 
-    [NativeHeader("Modules/AR/Tango/TangoScriptApi.h")]
+    [NativeHeader("Modules/AR/ARCore/ARCoreScriptApi.h")]
     [NativeConditional("PLATFORM_ANDROID")]
     internal static partial class TangoInputTracking
     {

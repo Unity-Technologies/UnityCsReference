@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -32,6 +33,8 @@ namespace UnityEditor.UIElements
             imguiContainer.focusOnlyIfHasFocusableControls = false;
 
             m_Panel.visualTree.Insert(0, imguiContainer);
+            Assert.IsNull(m_Panel.rootIMGUIContainer);
+            m_Panel.rootIMGUIContainer = imguiContainer;
 
             m_Model.sizeChanged = OnSizeChanged;
             m_Model.eventInterestsChanged = OnEventsInterestsChanged;
@@ -54,13 +57,15 @@ namespace UnityEditor.UIElements
                 if (imguiContainer.HasMouseCapture())
                     imguiContainer.ReleaseMouse();
                 imguiContainer.RemoveFromHierarchy();
+                Assert.AreEqual(imguiContainer, m_Panel.rootIMGUIContainer);
+                m_Panel.rootIMGUIContainer = null;
                 imguiContainer = null;
             }
 
             if (m_Model != null)
             {
-                m_Model.sizeChanged = OnSizeChanged;
-                m_Model.eventInterestsChanged = OnEventsInterestsChanged;
+                m_Model.sizeChanged = null;
+                m_Model.eventInterestsChanged = null;
                 m_Model = null;
             }
             m_Panel.Dispose();

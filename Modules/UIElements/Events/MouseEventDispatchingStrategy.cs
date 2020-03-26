@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Assertions;
+
 namespace UnityEngine.UIElements
 {
     class MouseEventDispatchingStrategy : IEventDispatchingStrategy
@@ -11,54 +13,64 @@ namespace UnityEngine.UIElements
             return evt is IMouseEvent;
         }
 
-        public void DispatchEvent(EventBase evt, IPanel panel)
+        public void DispatchEvent(EventBase evt, IPanel iPanel)
         {
-            SetBestTargetForEvent(evt, panel);
-            SendEventToTarget(evt, panel);
+            if (iPanel != null)
+            {
+                Assert.IsTrue(iPanel is BaseVisualElementPanel);
+                var panel = (BaseVisualElementPanel)iPanel;
+                SetBestTargetForEvent(evt, panel);
+                SendEventToTarget(evt, panel);
+            }
             evt.stopDispatch = true;
         }
 
-        static void SendEventToTarget(EventBase evt, IPanel panel)
+        static bool SendEventToTarget(EventBase evt, BaseVisualElementPanel panel)
         {
-            SendEventToRegularTarget(evt, panel);
-
-            if (evt.imguiEvent?.rawType == EventType.Used)
-                evt.StopPropagation();
-
-            if (evt.isPropagationStopped)
-                return;
-
-            SendEventToIMGUIContainer(evt, panel);
+            return SendEventToRegularTarget(evt, panel) ||
+                SendEventToIMGUIContainer(evt, panel);
         }
 
-        static void SendEventToRegularTarget(EventBase evt, IPanel panel)
+        static bool SendEventToRegularTarget(EventBase evt, BaseVisualElementPanel panel)
         {
-            if (evt.target != null)
+            if (evt.target == null)
+                return false;
+
+            EventDispatchUtilities.PropagateEvent(evt);
+            if (evt.target is IMGUIContainer)
             {
-                EventDispatchUtilities.PropagateEvent(evt);
+                evt.propagateToIMGUI = true;
+                evt.skipElements.Add(evt.target);
             }
+
+            return IsDone(evt);
         }
 
-        static void SendEventToIMGUIContainer(EventBase evt, IPanel panel)
+        static bool SendEventToIMGUIContainer(EventBase evt, BaseVisualElementPanel panel)
         {
-            if (panel != null)
+            if (evt.propagateToIMGUI ||
+                evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
+                evt.eventTypeId == MouseLeaveWindowEvent.TypeId()
+            )
             {
-                if (evt.target != null && evt.target is IMGUIContainer)
+                EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
+            }
+            else
+            {
+                // Send the events to the GUIView container so that it can process them.
+                // This is necessary for some behaviors like dropdown menus in IMGUI.
+                // See case : https://fogbugz.unity3d.com/f/cases/1223087/
+                var topLevelIMGUI = panel.rootIMGUIContainer;
+                if (topLevelIMGUI != null && !evt.Skip(topLevelIMGUI) && evt.imguiEvent != null)
                 {
-                    evt.propagateToIMGUI = true;
-                    evt.skipElements.Add(evt.target);
-                }
-                if (evt.propagateToIMGUI ||
-                    evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
-                    evt.eventTypeId == MouseLeaveWindowEvent.TypeId()
-                )
-                {
-                    EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
+                    topLevelIMGUI.SendEventToIMGUI(evt, false);
                 }
             }
+
+            return IsDone(evt);
         }
 
-        static void SetBestTargetForEvent(EventBase evt, IPanel panel)
+        static void SetBestTargetForEvent(EventBase evt, BaseVisualElementPanel panel)
         {
             UpdateElementUnderMouse(evt, panel, out VisualElement elementUnderMouse);
 
@@ -80,39 +92,35 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static void UpdateElementUnderMouse(EventBase evt, IPanel panel, out VisualElement elementUnderMouse)
+        static void UpdateElementUnderMouse(EventBase evt, BaseVisualElementPanel panel, out VisualElement elementUnderMouse)
         {
-            IMouseEvent mouseEvent = evt as IMouseEvent;
-            BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-
-            bool shouldRecomputeTopElementUnderMouse = true;
-            if ((IMouseEventInternal)mouseEvent != null)
-            {
-                shouldRecomputeTopElementUnderMouse =
-                    ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
-            }
+            bool shouldRecomputeTopElementUnderMouse = (evt as IMouseEventInternal)?.recomputeTopElementUnderMouse ?? true;
 
             elementUnderMouse = shouldRecomputeTopElementUnderMouse
-                ? basePanel?.Pick(mouseEvent.mousePosition)
-                : basePanel?.GetTopElementUnderPointer(PointerId.mousePointerId);
+                ? panel.Pick(((IMouseEvent)evt).mousePosition)
+                : panel.GetTopElementUnderPointer(PointerId.mousePointerId);
 
-            if (basePanel != null)
+            // If mouse leaves the window, make sure element under mouse is null.
+            // However, if pressed button != 0, we are getting a MouseLeaveWindowEvent as part of
+            // of a drag and drop operation, at the very beginning of the drag. Since
+            // we are not really exiting the window, we do not want to set the element
+            // under mouse to null in this case.
+            if (evt.eventTypeId == MouseLeaveWindowEvent.TypeId() &&
+                (evt as MouseLeaveWindowEvent).pressedButtons == 0)
             {
-                // If mouse leaves the window, make sure element under mouse is null.
-                // However, if pressed button != 0, we are getting a MouseLeaveWindowEvent as part of
-                // of a drag and drop operation, at the very beginning of the drag. Since
-                // we are not really exiting the window, we do not want to set the element
-                // under mouse to null in this case.
-                if (evt.eventTypeId == MouseLeaveWindowEvent.TypeId() &&
-                    (evt as MouseLeaveWindowEvent).pressedButtons == 0)
-                {
-                    basePanel.SetElementUnderPointer(null, evt);
-                }
-                else if (shouldRecomputeTopElementUnderMouse)
-                {
-                    basePanel.SetElementUnderPointer(elementUnderMouse, evt);
-                }
+                panel.SetElementUnderPointer(null, evt);
             }
+            else if (shouldRecomputeTopElementUnderMouse)
+            {
+                panel.SetElementUnderPointer(elementUnderMouse, evt);
+            }
+        }
+
+        static bool IsDone(EventBase evt)
+        {
+            if (evt.imguiEvent?.rawType == EventType.Used)
+                evt.StopPropagation();
+            return evt.isPropagationStopped;
         }
     }
 }

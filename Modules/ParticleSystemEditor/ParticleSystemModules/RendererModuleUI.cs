@@ -353,7 +353,7 @@ namespace UnityEditor
                     if (renderMode == RenderMode.Billboard)
                         GUIToggle(s_Texts.allowRoll, m_AllowRoll);
 
-                    if (renderMode == RenderMode.Mesh)
+                    if (renderMode == RenderMode.Mesh && SupportedRenderingFeatures.active.particleSystemInstancing)
                         GUIToggle(s_Texts.enableGPUInstancing, m_EnableGPUInstancing);
                 }
 

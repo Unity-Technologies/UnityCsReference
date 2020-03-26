@@ -139,11 +139,8 @@
     <Compile Include="..\..\Modules\AI\Public\NavMeshBuildSettings.bindings.cs">
       <Link>Modules\AI\Public\NavMeshBuildSettings.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AR\ScriptBindings\ARBackgroundRenderer.cs">
-      <Link>Modules\AR\ScriptBindings\ARBackgroundRenderer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AR\Tango\ScriptBindings\Tango.bindings.cs">
-      <Link>Modules\AR\Tango\ScriptBindings\Tango.bindings.cs</Link>
+    <Compile Include="..\..\Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs">
+      <Link>Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>

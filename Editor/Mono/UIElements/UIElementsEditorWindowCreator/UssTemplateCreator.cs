@@ -9,6 +9,7 @@ namespace UnityEditor.UIElements
 {
     static partial class UIElementsTemplate
     {
+
         // Add submenu after GUI Skin
         [MenuItem("Assets/Create/UIElements/USS File", false, 603, false)]
         public static void CreateUSSFile()
@@ -16,13 +17,17 @@ namespace UnityEditor.UIElements
             if (CommandService.Exists(nameof(CreateUSSFile)))
                 CommandService.Execute(nameof(CreateUSSFile), CommandHint.Menu);
             else
-            {
-                var folder = GetCurrentFolder();
-                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUSSFile.uss");
-                var contents = "VisualElement {}";
-                var icon = EditorGUIUtility.IconContent<StyleSheet>().image as Texture2D;
-                ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
-            }
+                CreateUSSAsset();
+        }
+
+
+        private static void CreateUSSAsset()
+        {
+            var folder = GetCurrentFolder();
+            var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUSSFile.uss");
+            var contents = "VisualElement {}";
+            var icon = EditorGUIUtility.IconContent<StyleSheet>().image as Texture2D;
+            ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
         }
     }
 }

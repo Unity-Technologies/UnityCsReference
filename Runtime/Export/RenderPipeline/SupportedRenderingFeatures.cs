@@ -66,6 +66,8 @@ namespace UnityEngine.Rendering
         public bool overridesLODBias { get; set; } = false;
         public bool overridesMaximumLODLevel { get; set; } = false;
         public bool rendererProbes { get; set; } = true;
+        public bool particleSystemInstancing { get; set; } = true;
+
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {
             MixedLightingMode fallbackMode;

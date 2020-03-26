@@ -1106,7 +1106,8 @@ namespace UnityEditor
                 lodRenderers.Add(new LODLightmapScale(pixelHeight, renderersAtLOD));
             }
 
-            for (var i = 0; i < m_NumberOfLODs; i++)
+            // set from least detailed to most detailed, as renderers can be in multiple layers
+            for (var i = m_NumberOfLODs - 1; i >= 0; i--)
             {
                 SetLODLightmapScale(lodRenderers[i]);
             }

@@ -14,7 +14,19 @@ namespace UnityEditor.UIElements
     {
         public new class UxmlFactory : UxmlFactory<LayerMaskField, UxmlTraits> {}
 
-        public new class UxmlTraits : MaskField.UxmlTraits {}
+        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
+        {
+            readonly UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                var layerMaskField = (LayerMaskField)ve;
+
+                // The mask is simply an int
+                layerMaskField.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
+                base.Init(ve, bag, cc);
+            }
+        }
 
         public override Func<string, string> formatSelectedValueCallback
         {

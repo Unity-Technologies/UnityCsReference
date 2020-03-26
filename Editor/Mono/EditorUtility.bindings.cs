@@ -143,6 +143,9 @@ namespace UnityEditor
         [FreeFunction("ClearProgressbar")]
         public static extern void ClearProgressBar();
 
+        [FreeFunction("BusyProgressDialogDelayChanged")]
+        internal static extern void BusyProgressDialogDelayChanged(float delay);
+
         [FreeFunction("GetObjectEnabled")]
         public static extern int GetObjectEnabled(Object target);
 

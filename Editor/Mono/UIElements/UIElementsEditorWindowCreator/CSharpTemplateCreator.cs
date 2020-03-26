@@ -2,14 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 namespace UnityEditor.UIElements
 {
     static partial class UIElementsTemplate
     {
         public static string CreateCSharpTemplate(string cSharpName, string uxmlName, string ussName, string folder)
         {
-            string csTemplate = string.Format(@"using UnityEditor;
+            var csTemplate = string.Format(@"using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -33,7 +32,7 @@ public class {0} : EditorWindow
         VisualElement label = new Label(""Hello World! From C#"");
         root.Add(label);", cSharpName);
 
-            if (uxmlName != String.Empty)
+            if (uxmlName != string.Empty)
             {
                 csTemplate = csTemplate + string.Format(@"
 
@@ -43,7 +42,7 @@ public class {0} : EditorWindow
         root.Add(labelFromUXML);", folder, uxmlName);
             }
 
-            if (ussName != String.Empty)
+            if (ussName != string.Empty)
             {
                 csTemplate += string.Format(@"
 
