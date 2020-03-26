@@ -105,7 +105,7 @@ namespace UnityEditor.Experimental
 
             fontDef.SetFont(Style.Small, "Fonts/System/System Small.ttf", new string[] {fontName});
             fontDef.SetFont(Style.Normal, "Fonts/System/System Normal.ttf", new string[] { fontName });
-            fontDef.SetFont(Style.Bold, "Fonts/System/System Normal Bold.ttf", new string[] { fontName + "Bold"});
+            fontDef.SetFont(Style.Bold, "Fonts/System/System Normal Bold.ttf", new string[] { fontName + " Bold"});
             return fontDef;
         }
     }

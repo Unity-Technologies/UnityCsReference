@@ -89,6 +89,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var transform = ve.renderChainData.groupTransformAncestor.worldTransform.inverse;
             var min = transform.MultiplyPoint3x4(new Vector3(rect.xMin, rect.yMin, 0));
             var max = transform.MultiplyPoint3x4(new Vector3(rect.xMax, rect.yMax, 0));
+
             return new Vector4(Mathf.Min(min.x, max.x), Mathf.Min(min.y, max.y), Mathf.Max(min.x, max.x), Mathf.Max(min.y, max.y));
         }
 
@@ -734,6 +735,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                         // Copy vertices, transforming them as necessary
                         var targetVerticesSlice = verts.Slice(vertsFilled, entry.vertices.Length);
+
                         if (entry.uvIsDisplacement)
                         {
                             if (firstDisplacementUV < 0)
@@ -1935,12 +1937,17 @@ namespace UnityEngine.UIElements.UIR.Implementation
             var oldVertexAlloc = ve.renderChainData.data.allocVerts;
             var oldVertexData = ve.renderChainData.data.allocPage.vertices.cpuData.Slice((int)oldVertexAlloc.start, (int)oldVertexAlloc.size);
             device.Update(ve.renderChainData.data, ve.renderChainData.data.allocVerts.size, out m_MeshDataVerts);
-            if (ve.renderChainData.textEntries.Count > 1 || ve.renderChainData.textEntries[0].vertexCount != m_MeshDataVerts.Length)
+            RenderChainTextEntry firstTextEntry = ve.renderChainData.textEntries[0];
+            if (ve.renderChainData.textEntries.Count > 1 || firstTextEntry.vertexCount != m_MeshDataVerts.Length)
                 m_MeshDataVerts.CopyFrom(oldVertexData); // Preserve old data because we're not just updating the text vertices, but the entire mesh surrounding it though we won't touch but the text vertices
 
-            m_XFormClipPages = oldVertexData[0].xformClipPages;
-            m_IDsFlags = oldVertexData[0].idsFlags;
-            m_OpacityPagesSettingsIndex = oldVertexData[0].opacityPageSVGSettingIndex;
+            // Case 1222517: Background and border are clipped by the parent, which implies that they may have a
+            // different clip id when compared to the content, if overflow-clip-box is set to content-box. As a result,
+            // we must NOT use the "first vertex" but rather the "first vertex of the first text entry".
+            int first = firstTextEntry.firstVertex;
+            m_XFormClipPages = oldVertexData[first].xformClipPages;
+            m_IDsFlags = oldVertexData[first].idsFlags;
+            m_OpacityPagesSettingsIndex = oldVertexData[first].opacityPageSVGSettingIndex;
         }
 
         public void End()

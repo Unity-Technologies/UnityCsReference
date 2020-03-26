@@ -643,7 +643,10 @@ namespace UnityEngine.UIElements
 
                 if (ShouldClip())
                 {
-                    var wb = worldBound;
+                    // Case 1222517: We must substract before intersection. Otherwise, if the parent world clip
+                    // boundary happens to be overlapping the element, we may be over-substracting. Also clamping must
+                    // be the last operation that's performed.
+                    Rect wb = SubstractBorderPadding(worldBound);
 
                     float x1 = Mathf.Max(wb.xMin, m_WorldClip.xMin);
                     float x2 = Mathf.Min(wb.xMax, m_WorldClip.xMax);
@@ -651,7 +654,7 @@ namespace UnityEngine.UIElements
                     float y2 = Mathf.Min(wb.yMax, m_WorldClip.yMax);
                     float width = Mathf.Max(x2 - x1, 0);
                     float height = Mathf.Max(y2 - y1, 0);
-                    m_WorldClip = SubstractBorderPadding(new Rect(x1, y1, width, height));
+                    m_WorldClip = new Rect(x1, y1, width, height);
 
                     x1 = Mathf.Max(wb.xMin, m_WorldClipMinusGroup.xMin);
                     x2 = Mathf.Min(wb.xMax, m_WorldClipMinusGroup.xMax);
@@ -659,7 +662,7 @@ namespace UnityEngine.UIElements
                     y2 = Mathf.Min(wb.yMax, m_WorldClipMinusGroup.yMax);
                     width = Mathf.Max(x2 - x1, 0);
                     height = Mathf.Max(y2 - y1, 0);
-                    m_WorldClipMinusGroup = SubstractBorderPadding(new Rect(x1, y1, width, height));
+                    m_WorldClipMinusGroup = new Rect(x1, y1, width, height);
                 }
             }
             else
@@ -668,22 +671,26 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private Rect SubstractBorderPadding(Rect rect)
+        private Rect SubstractBorderPadding(Rect worldRect)
         {
-            rect.x += resolvedStyle.borderLeftWidth;
-            rect.y += resolvedStyle.borderTopWidth;
-            rect.width -= resolvedStyle.borderLeftWidth + resolvedStyle.borderRightWidth;
-            rect.height -= resolvedStyle.borderTopWidth + resolvedStyle.borderBottomWidth;
+            // Case 1222517: We must take the scaling into consideration when applying local changes to the world rect.
+            float xScale = worldTransform.m00;
+            float yScale = worldTransform.m11;
+
+            worldRect.x += resolvedStyle.borderLeftWidth * xScale;
+            worldRect.y += resolvedStyle.borderTopWidth * yScale;
+            worldRect.width -= (resolvedStyle.borderLeftWidth + resolvedStyle.borderRightWidth) * xScale;
+            worldRect.height -= (resolvedStyle.borderTopWidth + resolvedStyle.borderBottomWidth) * yScale;
 
             if (computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
             {
-                rect.x += resolvedStyle.paddingLeft;
-                rect.y += resolvedStyle.paddingTop;
-                rect.width -= resolvedStyle.paddingLeft + resolvedStyle.paddingRight;
-                rect.height -= resolvedStyle.paddingTop + resolvedStyle.paddingBottom;
+                worldRect.x += resolvedStyle.paddingLeft * xScale;
+                worldRect.y += resolvedStyle.paddingTop * yScale;
+                worldRect.width -= (resolvedStyle.paddingLeft + resolvedStyle.paddingRight) * xScale;
+                worldRect.height -= (resolvedStyle.paddingTop + resolvedStyle.paddingBottom) * yScale;
             }
 
-            return rect;
+            return worldRect;
         }
 
         // get the AA aligned bound
