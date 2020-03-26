@@ -33,6 +33,7 @@ namespace UnityEditor
             public static readonly GUIContent frameDebugger = EditorGUIUtility.TrTextContent("Open Frame Debugger", "Frame Debugger for current game view");
             public static readonly GUIContent noFrameDebugger = EditorGUIUtility.TrTextContent("Frame Debugger", "Open Frame Debugger (Current frame needs to be selected)");
             public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TrTextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory");
+            public static readonly GUIContent noActiveModules = EditorGUIUtility.TrTextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.");
 
             public static readonly GUIContent memRecord = EditorGUIUtility.TrTextContent("Mem Record", "Record activity in the native memory system");
             public static readonly GUIContent profilerRecord = EditorGUIUtility.TrTextContentWithIcon("Record", "Record profiling information", "Profiler.Record");
@@ -1554,6 +1555,7 @@ namespace UnityEditor
             SplitterGUILayout.BeginVerticalSplit(m_VertSplit);
 
             m_GraphPos = EditorGUILayout.BeginScrollView(m_GraphPos, Styles.profilerGraphBackground);
+            m_GraphPos.x = 0;
 
             if (m_PrevLastFrame != ProfilerDriver.lastFrameIndex)
             {
@@ -1562,12 +1564,13 @@ namespace UnityEditor
             }
 
             int newCurrentFrame = m_CurrentFrame;
+            bool noActiveModules = true;
             for (int c = 0; c < m_Charts.Length; ++c)
             {
                 ProfilerChart chart = m_Charts[c];
                 if (!chart.active)
                     continue;
-
+                noActiveModules = false;
                 newCurrentFrame = chart.DoChartGUI(newCurrentFrame, m_CurrentArea == chart.m_Area);
             }
 
@@ -1576,6 +1579,17 @@ namespace UnityEditor
                 SetCurrentFrame(newCurrentFrame);
                 Repaint();
                 GUIUtility.ExitGUI();
+            }
+            if (noActiveModules)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(Chart.kSideWidth);
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(Styles.noActiveModules);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
             }
 
             EditorGUILayout.EndScrollView();
