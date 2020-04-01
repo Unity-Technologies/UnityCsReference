@@ -50,8 +50,11 @@ namespace UnityEditor.Connect
         SortedList<string, SingleService> m_SortedServices;
         PackageCollection m_PackageCollection;
 
-        static ServicesEditorWindow s_Instance;
 
+        // LoadWindow guard
+        bool m_LoadWindowInProgress;
+
+        static ServicesEditorWindow s_Instance;
         public static ServicesEditorWindow instance => s_Instance;
         public UIElementsNotificationSubscriber notificationSubscriber { get; private set; }
 
@@ -77,13 +80,28 @@ namespace UnityEditor.Connect
             EditorAnalytics.SendEventShowService(new ServicesProjectSettings.ShowServiceState() { service = k_WindowTitle, page = "", referrer = "window_menu_item"});
         }
 
+        void OnStateRefreshRequired(ProjectInfo state)
+        {
+            // Reload the window to reflect the latest information...
+            LoadWindow();
+        }
+
         void OnDestroy()
         {
             EditorAnalytics.SendEventCloseServiceWindow(new CloseServiceWindowState() { availableServices = m_StatusLabelByServiceName.Count });
         }
 
+        public void OnDisable()
+        {
+            // Make sure to pair the removal of the delegate with the OnEnable()
+            UnityConnect.instance.ProjectStateChanged -= OnStateRefreshRequired;
+        }
+
         public void OnEnable()
         {
+            // Make sure the project is up-to-date
+            UnityConnect.instance.ProjectStateChanged += OnStateRefreshRequired;
+
             if (s_Instance == null)
             {
                 s_Instance = this;
@@ -93,6 +111,13 @@ namespace UnityEditor.Connect
 
         void LoadWindow()
         {
+            // Do not reenter if already in progress...
+            if (m_LoadWindowInProgress)
+            {
+                return;
+            }
+            m_LoadWindowInProgress = true;
+
             rootVisualElement.Clear();
 
             var mainTemplate = EditorGUIUtility.Load(k_ServicesWindowUxmlPath) as VisualTreeAsset;
@@ -160,6 +185,7 @@ namespace UnityEditor.Connect
             else
             {
                 FinalizeServiceSetup();
+                m_LoadWindowInProgress = false;
             }
         }
 
@@ -173,6 +199,7 @@ namespace UnityEditor.Connect
                     m_PackageCollection = m_ListRequestOfPackage.Result;
                 }
                 FinalizeServiceSetup();
+                m_LoadWindowInProgress = false;
             }
         }
 
@@ -184,6 +211,9 @@ namespace UnityEditor.Connect
             var footer = scrollContainer.Q(k_FooterName);
             scrollContainer.Remove(footer);
 
+            // Make sure to clear the dictionary if previously filled-up
+            m_ClickableByServiceName.Clear();
+            m_StatusLabelByServiceName.Clear();
             foreach (var singleCloudService in m_SortedServices.Values)
             {
                 SetupService(scrollContainer, serviceTemplate, singleCloudService);

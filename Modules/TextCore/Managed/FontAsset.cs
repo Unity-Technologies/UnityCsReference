@@ -546,7 +546,7 @@ namespace UnityEngine.TextCore
             fontAsset.freeGlyphRects = new List<GlyphRect>() { new GlyphRect(0, 0, atlasWidth - packingModifier, atlasHeight - packingModifier) };
             fontAsset.usedGlyphRects = new List<GlyphRect>();
 
-            fontAsset.InitializeDictionaryLookupTables();
+            fontAsset.ReadFontAssetDefinition();
 
             return fontAsset;
         }

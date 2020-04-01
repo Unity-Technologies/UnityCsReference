@@ -58,6 +58,7 @@ namespace UnityEditor.PackageManager.UI
         long GetRefreshTimestamp(PackageFilterTab? tab = null);
         UIError GetRefreshError(PackageFilterTab? tab = null);
         bool IsRefreshInProgress(PackageFilterTab? tab = null);
+        bool IsInitialFetchingDone(PackageFilterTab? tab = null);
 
         void LoadMore(int numberOfPackages);
 

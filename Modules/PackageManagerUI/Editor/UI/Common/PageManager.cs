@@ -533,10 +533,10 @@ namespace UnityEditor.PackageManager.UI
             {
                 UnregisterEvents();
 
-                ClearPages();
-
                 m_RefreshTimestamps.Clear();
                 InitializeRefreshTimestamps();
+
+                ClearPages();
 
                 m_RefreshErrors.Clear();
                 m_RefreshOperationsInProgress.Clear();
@@ -604,6 +604,18 @@ namespace UnityEditor.PackageManager.UI
                 return m_RefreshOperationsInProgress.Any(operation => (operation.refreshOptions & option) != 0);
             }
 
+            public bool IsInitialFetchingDone(RefreshOptions option)
+            {
+                foreach (var item in m_RefreshTimestamps)
+                {
+                    if ((option & item.Key) == 0)
+                        continue;
+                    if (item.Value == 0)
+                        return false;
+                }
+                return true;
+            }
+
             public long GetRefreshTimestamp(RefreshOptions option)
             {
                 var result = 0L;
@@ -644,6 +656,12 @@ namespace UnityEditor.PackageManager.UI
             {
                 var filterTab = tab ?? PackageFiltering.instance.currentFilterTab;
                 return IsRefreshInProgress(GetRefreshOptionsByTab(filterTab));
+            }
+
+            public bool IsInitialFetchingDone(PackageFilterTab? tab = null)
+            {
+                var filterTab = tab ?? PackageFiltering.instance.currentFilterTab;
+                return IsInitialFetchingDone(GetRefreshOptionsByTab(filterTab));
             }
         }
     }

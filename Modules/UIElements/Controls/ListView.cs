@@ -27,6 +27,7 @@ namespace UnityEngine.UIElements
             private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
             private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
             private readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = false };
+            private readonly UxmlBoolAttributeDescription m_ShowBoundCollectionSize = new UxmlBoolAttributeDescription { name = "show-bound-collection-size", defaultValue = true };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -50,6 +51,7 @@ namespace UnityEngine.UIElements
                 listView.showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
                 listView.selectionType = m_SelectionType.GetValueFromBag(bag, cc);
                 listView.showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
+                listView.showBoundCollectionSize = m_ShowBoundCollectionSize.GetValueFromBag(bag, cc);
             }
         }
 
@@ -211,6 +213,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+
         // Persisted.
         [SerializeField]
         private float m_ScrollOffset;
@@ -271,6 +274,8 @@ namespace UnityEngine.UIElements
                 Refresh();
             }
         }
+
+        public bool showBoundCollectionSize { get; set; } = true;
 
         internal static readonly int s_DefaultItemHeight = 30;
         internal static CustomStyleProperty<int> s_ItemHeightProperty = new CustomStyleProperty<int>("--unity-item-height");
@@ -800,6 +805,12 @@ namespace UnityEngine.UIElements
                 m_Dragger = new ListViewDragger(this);
 
             m_Dragger.dragAndDropController = dragAndDropController;
+        }
+
+        //Used for unit testing
+        internal IListViewDragAndDropController GetDragAndDropController()
+        {
+            return m_Dragger?.dragAndDropController;
         }
 
         internal override void OnViewDataReady()

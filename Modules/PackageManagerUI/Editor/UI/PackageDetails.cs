@@ -147,7 +147,7 @@ namespace UnityEditor.PackageManager.UI
             AssetStoreDownloadManager.instance.onDownloadProgress += UpdateDownloadProgressBar;
             AssetStoreDownloadManager.instance.onDownloadFinalized += StopDownloadProgressBar;
 
-            PageManager.instance.onListRebuild += page => OnSelectionChanged(PageManager.instance.GetSelectedVersion());
+            PageManager.instance.onListRebuild += OnListRebuild;
             PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
             PackageManagerPrefs.instance.onShowDependenciesChanged += (value) => RefreshDependencies();
@@ -165,6 +165,7 @@ namespace UnityEditor.PackageManager.UI
             AssetStoreDownloadManager.instance.onDownloadProgress -= UpdateDownloadProgressBar;
             AssetStoreDownloadManager.instance.onDownloadFinalized -= StopDownloadProgressBar;
 
+            PageManager.instance.onListRebuild -= OnListRebuild;
             PageManager.instance.onSelectionChanged -= OnSelectionChanged;
 
             ClearSupportingImages();
@@ -196,9 +197,14 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(packageToolbarLeftArea, visible);
         }
 
+        private void OnListRebuild(IPage page)
+        {
+            OnSelectionChanged(PageManager.instance.GetSelectedVersion());
+        }
+
         internal void OnSelectionChanged(IPackageVersion version)
         {
-            if (version != null)
+            if (version != null && PageManager.instance.IsInitialFetchingDone())
                 SetPackage(PackageDatabase.instance.GetPackage(version), version);
             else
                 SetPackage(null);
@@ -561,6 +567,16 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetPackage(IPackage package, IPackageVersion version = null)
         {
+            // This is added to avoid the selection issues caused by the selection system.
+            // To be addressed in https://jira.unity3d.com/browse/PAX-1308
+            var isAssetStore = PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore;
+            var isLoggedIn = ApplicationUtil.instance.isUserLoggedIn;
+            if (isAssetStore && !isLoggedIn)
+            {
+                package = null;
+                version = null;
+            }
+
             version = version ?? package?.versions.primary;
             this.package = package;
 

@@ -1814,23 +1814,29 @@ namespace UnityEngine
         {
             bool m_Disposed;
 
-            protected abstract void CloseScope();
+            internal virtual void Dispose(bool disposing)
+            {
+                if (m_Disposed)
+                    return;
+                if (disposing && !GUIUtility.guiIsExiting)
+                    CloseScope();
+                m_Disposed = true;
+            }
+
             ~Scope()
             {
-                if (!m_Disposed)
-                    // Can warn again because we have the ExitingGUI hint
-                    Debug.LogError("Scope was not disposed! You should use the 'using' keyword or manually call Dispose.");
-                // ...but can't actually close scope because we can't do gui stuff from finalizer thread :-|
+                if (!m_Disposed && !GUIUtility.guiIsExiting)
+                    Console.WriteLine($"{GetType().Name} was not disposed! You should use the 'using' keyword or manually call Dispose.");
+                Dispose(false);
             }
 
             public void Dispose()
             {
-                if (m_Disposed)
-                    return;
-                m_Disposed = true;
-                if (!GUIUtility.guiIsExiting)
-                    CloseScope();
+                Dispose(true);
+                GC.SuppressFinalize(this);
             }
+
+            protected abstract void CloseScope();
         }
 
         public class GroupScope : Scope

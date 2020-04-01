@@ -89,6 +89,11 @@ namespace UnityEditor.PackageManager.UI
 
             if (!isOfflineMode)
                 m_Timestamp = DateTime.Now.Ticks;
+            // Usually the timestamp for an offline operation is the last success timestamp of its online equivalence (to indicate the freshness of the data)
+            // But in the rare case where we start an offline operation before an online one, we use the start timestamp of the editor instead of 0,
+            // because we consider a `0` refresh timestamp as `not initialized`/`no refreshes have been done`.
+            else if (m_Timestamp == 0)
+                m_Timestamp = DateTime.Now.Ticks - (long)(EditorApplication.timeSinceStartup * TimeSpan.TicksPerSecond);
             m_Request = CreateRequest();
             error = null;
             EditorApplication.update += Progress;

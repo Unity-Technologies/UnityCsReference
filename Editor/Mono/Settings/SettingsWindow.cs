@@ -27,6 +27,7 @@ namespace UnityEditor
         private VisualSplitter m_Splitter;
         private VisualElement m_SettingsPanel;
         private VisualElement m_TreeViewContainer;
+        private VisualElement m_Toolbar;
         private string m_SearchText;
         private bool m_SearchFieldGiveFocus;
         const string k_SearchField = "SearchField";
@@ -56,7 +57,6 @@ namespace UnityEditor
         {
             m_Scope = scope;
             titleContent.text = scope == SettingsScope.Project ? "Project Settings" : "Preferences";
-            m_SearchFieldGiveFocus = true;
         }
 
         internal SettingsProvider[] GetProviders()
@@ -287,8 +287,8 @@ namespace UnityEditor
 
             root.style.flexDirection = FlexDirection.Column;
 
-            var toolbar = new IMGUIContainer(DrawToolbar);
-            root.Add(toolbar);
+            m_Toolbar = new IMGUIContainer(DrawToolbar);
+            root.Add(m_Toolbar);
 
             m_Splitter = new VisualSplitter { splitSize = Styles.window.GetInt("-unity-splitter-size") };
             m_Splitter.AddToClassList("settings-splitter");
@@ -349,6 +349,12 @@ namespace UnityEditor
 
             GUI.SetNextControlName(k_SearchField);
             var searchText = EditorGUILayout.ToolbarSearchField(m_SearchText);
+            if (m_SearchFieldGiveFocus)
+            {
+                m_SearchFieldGiveFocus = false;
+                EditorGUI.FocusTextInControl(k_SearchField);
+            }
+
             if (searchText != m_SearchText)
             {
                 m_SearchText = searchText;
@@ -421,11 +427,6 @@ namespace UnityEditor
                 m_PosLeft = scrollViewScope.scrollPosition;
                 m_TreeView.OnGUI(new Rect(0, Styles.window.GetFloat("margin-top"), treeWidth, position.height - ImguiStyles.searchFieldHeight - Styles.window.GetFloat("margin-top")));
             }
-            if (m_SearchFieldGiveFocus)
-            {
-                m_SearchFieldGiveFocus = false;
-                GUI.FocusControl(k_SearchField);
-            }
         }
 
         private void HandleSearchFiltering()
@@ -462,6 +463,12 @@ namespace UnityEditor
             {
                 settingsWindow.SelectProviderByName(settingsPath);
             }
+
+            EditorApplication.delayCall += () =>
+            {
+                settingsWindow.Focus();
+                settingsWindow.m_SearchFieldGiveFocus = true;
+            };
 
             return settingsWindow;
         }
