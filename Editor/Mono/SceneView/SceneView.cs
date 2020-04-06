@@ -2331,6 +2331,8 @@ namespace UnityEditor
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
             }
 
+            sceneViewGrids.UpdateGridColor();
+
             Color origColor = GUI.color;
             Rect origCameraRect = m_Camera.rect;
             Rect windowSpaceCameraRect = cameraRect;

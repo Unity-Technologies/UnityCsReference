@@ -136,10 +136,85 @@ namespace UnityEngine
 
         extern public Shader shader { get; set; }
 
-        public Color color { get { return GetColor("_Color"); } set { SetColor("_Color", value); } }
-        public Texture mainTexture       { get { return GetTexture("_MainTex"); }       set { SetTexture("_MainTex", value); } }
-        public Vector2 mainTextureOffset { get { return GetTextureOffset("_MainTex"); } set { SetTextureOffset("_MainTex", value); } }
-        public Vector2 mainTextureScale  { get { return GetTextureScale("_MainTex"); }  set { SetTextureScale("_MainTex", value); } }
+        public Color color
+        {
+            get
+            {
+                // Try to find property with [MainColor] attribute and use that, otherwise fallback to old hardcoded one.
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainColor);
+                if (nameId >= 0)
+                    return GetColor(nameId);
+                else
+                    return GetColor("_Color");
+            }
+            set
+            {
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainColor);
+                if (nameId >= 0)
+                    SetColor(nameId, value);
+                else
+                    SetColor("_Color", value);
+            }
+        }
+        public Texture mainTexture
+        {
+            get
+            {
+                // Try to find property with [MainTexture] attribute and use that, otherwise fallback to old hardcoded one.
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainTexture);
+                if (nameId >= 0)
+                    return GetTexture(nameId);
+                else
+                    return GetTexture("_MainTex");
+            }
+            set
+            {
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainTexture);
+                if (nameId >= 0)
+                    SetTexture(nameId, value);
+                else
+                    SetTexture("_MainTex", value);
+            }
+        }
+        public Vector2 mainTextureOffset
+        {
+            get
+            {
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainTexture);
+                if (nameId >= 0)
+                    return GetTextureOffset(nameId);
+                else
+                    return GetTextureOffset("_MainTex");
+            }
+            set
+            {
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainTexture);
+                if (nameId >= 0)
+                    SetTextureOffset(nameId, value);
+                else
+                    SetTextureOffset("_MainTex", value);
+            }
+        }
+        public Vector2 mainTextureScale
+        {
+            get
+            {
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainTexture);
+                if (nameId >= 0)
+                    return GetTextureScale(nameId);
+                else
+                    return GetTextureScale("_MainTex");
+            }
+            set
+            {
+                int nameId = GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags.MainTexture);
+                if (nameId >= 0)
+                    SetTextureScale(nameId, value);
+                else
+                    SetTextureScale("_MainTex", value);
+            }
+        }
+        [NativeName("GetFirstPropertyNameIdByAttributeFromScript")] extern private int GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags attributeFlag);
 
         [NativeName("HasPropertyFromScript")] extern public bool HasProperty(int nameID);
         public bool HasProperty(string name) { return HasProperty(Shader.PropertyToID(name)); }

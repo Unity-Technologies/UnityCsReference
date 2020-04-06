@@ -15,11 +15,25 @@ namespace UnityEditor
 {
     internal class HostView : GUIView
     {
+        static class Styles
+        {
+            public static readonly GUIStyle background = new GUIStyle("hostview");
+            public static readonly GUIStyle overlay = "dockareaoverlay";
+            public static readonly GUIStyle paneOptions = "PaneOptions";
+            public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
+
+            static Styles()
+            {
+                // Fix annoying GUILayout issue: When using GUILayout in Utility windows there
+                // was always padded 10 px at the top! Todo: Fix this in EditorResources
+                background.padding.top = 0;
+            }
+        }
+
         static string kPlayModeDarkenKey = "Playmode tint";
         internal static PrefColor kPlayModeDarken = new PrefColor(kPlayModeDarkenKey, .8f, .8f, .8f, 1);
         internal static event Action<HostView> actualViewChanged;
 
-        internal GUIStyle background;
         [SerializeField] private EditorWindow m_ActualView;
 
         [System.NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
@@ -28,6 +42,7 @@ namespace UnityEditor
         Color m_PlayModeDarkenColor;
 
         private IMGUIContainer m_NotificationContainer;
+        private bool m_HasExtraDockAreaButton = false;
 
         internal EditorWindow actualView
         {
@@ -41,10 +56,14 @@ namespace UnityEditor
                 return;
             DeregisterSelectedPane(clearActualView: true, sendEvents: true);
             m_ActualView = value;
+            m_ActualViewName = null;
+
             name = GetViewName();
             SetActualViewName(name);
             RegisterSelectedPane(sendEvents);
             actualViewChanged?.Invoke(this);
+
+            m_HasExtraDockAreaButton = GetPaneMethod("ShowButton", m_ActualView) != null;
         }
 
         internal void ResetActiveView()
@@ -105,7 +124,6 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
             EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
-            background = null;
             m_NotificationContainer = new IMGUIContainer();
             m_NotificationContainer.StretchToParentSize();
             m_NotificationContainer.pickingMode = PickingMode.Ignore;
@@ -125,14 +143,8 @@ namespace UnityEditor
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
             DoWindowDecorationStart();
-            if (background == null)
-            {
-                background = "hostview";
-                // Fix annoying GUILayout issue: When using guilayout in Utility windows there was always padded 10 px at the top! Todo: Fix this in EditorResources
-                background.padding.top = 0;
-            }
 
-            using (new GUILayout.VerticalScope(background))
+            using (new GUILayout.VerticalScope(Styles.background))
             {
                 if (actualView)
                     actualView.m_Pos = screenPosition;
@@ -312,27 +324,28 @@ namespace UnityEditor
             GUI.BeginGroup(screenRect, content, style);
         }
 
-        static class HostViewStyles
+        private string m_ActualViewName;
+        private string GetActualViewName()
         {
-            public static readonly GUIStyle overlay = "dockareaoverlay";
+            if (m_ActualViewName != null)
+                return m_ActualViewName;
+            m_ActualViewName = actualView != null ? actualView.GetType().Name : GetType().Name;
+            return m_ActualViewName;
         }
 
         public void InvokeOnGUI(Rect onGUIPosition, Rect viewRect)
         {
             DoWindowDecorationStart();
 
-            BeginOffsetArea(viewRect, GUIContent.none, "TabWindowBackground");
+            BeginOffsetArea(viewRect, GUIContent.none, Styles.tabWindowBackground);
 
             EditorGUIUtility.ResetGUIState();
 
             bool isExitGUIException = false;
             try
             {
-                var viewName = actualView != null ? actualView.GetType().Name : GetType().Name;
-                using (new PerformanceTracker(viewName + ".OnGUI." + Event.current.type))
-                {
+                using (new PerformanceTracker($"{GetActualViewName()}.OnGUI.{Event.current.type}"))
                     Invoke("OnGUI");
-                }
             }
             catch (TargetInvocationException e)
             {
@@ -354,7 +367,7 @@ namespace UnityEditor
                     DoWindowDecorationEnd();
 
                     if (Event.current != null && Event.current.type == EventType.Repaint)
-                        HostViewStyles.overlay.Draw(onGUIPosition, GUIContent.none, 0);
+                        Styles.overlay.Draw(onGUIPosition, GUIContent.none, 0);
                 }
             }
         }
@@ -495,15 +508,13 @@ namespace UnityEditor
 
         protected bool HasExtraDockAreaButton()
         {
-            MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
-            return mi != null;
+            return m_HasExtraDockAreaButton;
         }
 
         protected void ShowGenericMenu(float leftOffset, float topOffset)
         {
-            GUIStyle gs = "PaneOptions";
-            Rect paneMenu = new Rect(leftOffset, topOffset, gs.fixedWidth, gs.fixedHeight);
-            if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, "PaneOptions"))
+            Rect paneMenu = new Rect(leftOffset, topOffset, Styles.paneOptions.fixedWidth, Styles.paneOptions.fixedHeight);
+            if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, Styles.paneOptions))
                 PopupGenericMenu(m_ActualView, paneMenu);
 
             // Give panes an option of showing a small button next to the generic menu (used for inspector lock icon
@@ -518,7 +529,7 @@ namespace UnityEditor
             // Developer-mode render doc button to enable capturing any HostView content/panels
             if (Unsupported.IsDeveloperMode() && UnityEditorInternal.RenderDoc.IsLoaded() && UnityEditorInternal.RenderDoc.IsSupported())
             {
-                Rect renderDocRect = new Rect(leftOffset - (mi == null ? 16 : 32), Mathf.Floor(background.margin.top + 4), 17, 16);
+                Rect renderDocRect = new Rect(leftOffset - (mi == null ? 16 : 32), Mathf.Floor(Styles.background.margin.top + 4), 17, 16);
                 RenderDocCaptureButton(renderDocRect);
             }
         }

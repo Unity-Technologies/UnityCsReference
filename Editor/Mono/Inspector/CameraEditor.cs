@@ -761,7 +761,6 @@ namespace UnityEditor
             {
                 // setup camera and render
                 previewCamera.CopyFrom(c);
-                previewCamera.cameraType = CameraType.Preview;
 
                 // make sure the preview camera is rendering the same stage as the SceneView is
                 previewCamera.scene = sceneView.customScene;
