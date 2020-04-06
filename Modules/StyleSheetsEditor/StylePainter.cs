@@ -13,45 +13,53 @@ namespace UnityEditor.StyleSheets
     internal static class StylePainter
     {
         private static readonly int k_EnableHovering = "-unity-enable-hovering".GetHashCode();
-        private static readonly int k_BorderTopLeftRadiusKey = "border-top-left-radius".GetHashCode();
-        private static readonly int k_BorderTopRightRadiusKey = "border-top-right-radius".GetHashCode();
-        private static readonly int k_BorderBottomLeftRadiusKey = "border-bottom-left-radius".GetHashCode();
-        private static readonly int k_BorderBottomRightRadiusKey = "border-bottom-right-radius".GetHashCode();
 
         static Dictionary<StyleState, StyleState[]> s_StatesCache = new Dictionary<StyleState, StyleState[]>();
 
         internal static bool DrawStyle(GUIStyle gs, Rect position, GUIContent content, DrawStates states)
         {
-            if (gs == GUIStyle.none || String.IsNullOrEmpty(gs.name) || gs.normal.background != null)
+            if (gs == GUIStyle.none || gs.blockId == -1 || String.IsNullOrEmpty(gs.name) || gs.normal.background != null)
                 return false;
 
             if (!GUIClip.visibleRect.Overlaps(position))
                 return true;
 
             if (gs.blockId == 0)
-            {
-                var blockName = GUIStyleExtensions.StyleNameToBlockName(gs.name, false);
-                gs.blockId = blockName.GetHashCode();
-            }
+                gs.blockId = GUIStyleExtensions.StyleNameToBlockName(gs.name, false).GetHashCode();
 
             var block = FindBlock(gs.blockId, states);
             if (!block.IsValid())
+            {
+                gs.blockId = -1;
                 return false;
+            }
 
             DrawBlock(gs, block, position, content, states);
 
             return true;
         }
 
+        private static bool IsMouseOverGUIView()
+        {
+            return GUIView.mouseOverView == GUIView.current;
+        }
+
         internal static StyleBlock FindBlock(int name, DrawStates drawStates)
         {
-            bool isEnabled = GUI.enabled;
             StyleState stateFlags = 0;
-            if (isEnabled && drawStates.hasKeyboardFocus && GUIView.current.hasFocus) stateFlags |= StyleState.focus;
-            if (isEnabled && (drawStates.isActive || GUI.HasMouseControl(drawStates.controlId))) stateFlags |= StyleState.active;
-            if (isEnabled && drawStates.isHover) stateFlags |= StyleState.hover;
-            if (drawStates.on) stateFlags |= StyleState.@checked;
-            if (!isEnabled) stateFlags |= StyleState.disabled;
+            if (GUI.enabled)
+            {
+                if (drawStates.hasKeyboardFocus && GUIView.current.hasFocus) stateFlags |= StyleState.focus;
+                if (drawStates.isActive || GUI.HasMouseControl(drawStates.controlId)) stateFlags |= StyleState.active;
+                if (drawStates.isHover && GUIUtility.hotControl == 0 && IsMouseOverGUIView()) stateFlags |= StyleState.hover;
+            }
+            else
+            {
+                stateFlags |= StyleState.disabled;
+            }
+
+            if (drawStates.on)
+                stateFlags |= StyleState.@checked;
 
             StyleState[] states;
             if (!s_StatesCache.TryGetValue(stateFlags, out states))
@@ -70,14 +78,15 @@ namespace UnityEditor.StyleSheets
         }
 
         private static readonly Dictionary<long, Texture2D> s_Gradients = new Dictionary<long, Texture2D>();
-        private static Texture2D GenerateGradient(Rect rect, IList<StyleSheetResolver.Value[]> args)
+        private static Texture2D GenerateGradient(StyleFunctionCall call, Rect rect)
         {
-            long key = (long)rect.width * 30 + (long)rect.height * 8;
-            foreach (var arg in args)
+            if (call.args.Count < 2)
             {
-                for (int i = 0; i < arg.Length; ++i)
-                    key += arg[i].GetHashCode() * i + 1;
+                Debug.LogError("Not enough linear gradient arguments.");
+                return null;
             }
+
+            int key = call.blockKey ^ call.valueKey ^ ((int)rect.width * 30 + (int)rect.height * 8);
 
             if (s_Gradients.ContainsKey(key) && s_Gradients[key] != null)
                 return s_Gradients[key];
@@ -92,24 +101,35 @@ namespace UnityEditor.StyleSheets
             var height = (int)rect.height;
             Gradient gradient = new Gradient();
             var gt = new Texture2D(width, height) {alphaIsTransparency = true};
+            float angle = 0.0f;
+            int valueStartIndex = 0;
 
-            var colorKeys = new GradientColorKey[args.Count];
-            var alphaKeys = new GradientAlphaKey[args.Count];
-
-            float increment = args.Count <= 1 ? 1f : 1f / (args.Count - 1);
-            float autoStep = 0;
-            for (int i = 0; i < args.Count; ++i)
+            if (call.GetValueType(0, 0) == StyleValue.Type.Number)
             {
-                var values = args[i];
-                if (values.Length == 1)
+                angle = call.GetNumber(0, 0);
+                valueStartIndex = 1;
+            }
+
+            var valueCount = call.args.Count - valueStartIndex;
+
+            var colorKeys = new GradientColorKey[valueCount];
+            var alphaKeys = new GradientAlphaKey[valueCount];
+
+            float increment = valueCount <= 1 ? 1f : 1f / (valueCount - 1);
+            float autoStep = 0;
+            for (int i = 0; i < valueCount; ++i)
+            {
+                var valueIndex = valueStartIndex + i;
+                var values = call.args[valueIndex];
+                if (values.Length == 1 && values[0].type == StyleValue.Type.Color)
                 {
-                    colorKeys[i].color = values[0].AsColor();
+                    colorKeys[i].color = call.GetColor(valueIndex, 0);
                     colorKeys[i].time = autoStep;
                 }
-                else if (values.Length == 2)
+                else if (values.Length == 2 && values[0].type == StyleValue.Type.Color && values[1].type == StyleValue.Type.Number)
                 {
-                    colorKeys[i].color = values[0].AsColor();
-                    colorKeys[i].time = values[1].AsFloat();
+                    colorKeys[i].color = call.GetColor(valueIndex, 0);
+                    colorKeys[i].time = call.GetNumber(valueIndex, 1);
                 }
                 else
                 {
@@ -124,18 +144,85 @@ namespace UnityEditor.StyleSheets
 
             gradient.SetKeys(colorKeys, alphaKeys);
 
-            float yStep = 1F / height;
+            var ratio = height / (float)width;
+            var rad = Mathf.Deg2Rad * angle;
+            float CosRad = Mathf.Cos(rad);
+            float SinRad = Mathf.Sin(rad);
+
+            var matrix = GetGradientRotMatrix(angle);
 
             for (int y = height - 1; y >= 0; --y)
             {
-                Color color = gradient.Evaluate(1f - (y * yStep));
                 for (int x = width - 1; x >= 0; --x)
+                {
+                    var pixelPosition = new Vector2(x, y);
+                    var recenteredPos = GetGradientCenterFrame(pixelPosition, width, height);
+                    var scaleVec = GetGradientScaleVector(matrix, angle, width, height);
+                    var scaledMatrix = GetGradientScaleMatrix(matrix, scaleVec);
+                    var posInGradient = scaledMatrix.MultiplyVector(recenteredPos);
+                    Color color = gradient.Evaluate(1f - (posInGradient.y / 2 + 0.5f));
                     gt.SetPixel(x, y, color);
+                }
             }
 
             gt.Apply();
             s_Gradients[key] = gt;
             return gt;
+        }
+
+        private static Matrix4x4 GetGradientRotMatrix(float deg)
+        {
+            var radian = Mathf.Deg2Rad * deg;
+            var matrix = new Matrix4x4();
+            matrix[1, 1] = matrix[0, 0] = Mathf.Cos(radian);
+            matrix[0, 1] = Mathf.Sin(radian);
+            matrix[1, 0] = -matrix[0, 1];
+            return matrix;
+        }
+
+        private static Matrix4x4 GetGradientScaleMatrix(Matrix4x4 matrix, Vector2 scaleVec)
+        {
+            var scaledMatrix = new Matrix4x4();
+            for (var i = 0; i < 2; ++i)
+                for (var j = 0; j < 2; ++j)
+                    scaledMatrix[i, j] = matrix[i, j] * scaleVec[i];
+            return scaledMatrix;
+        }
+
+        private static Vector2 GetGradientScaleVector(Matrix4x4 matrix, float deg, float width, float height)
+        {
+            float halfHeight = height / 2f;
+            float halfWidth = width / 2f;
+            Vector2 extent1;
+            Vector2 extent2;
+            if (deg < 90)
+            {
+                extent1 = new Vector2(-halfWidth, halfHeight);
+                extent2 = new Vector2(halfWidth, halfHeight);
+            }
+            else if (deg < 180)
+            {
+                extent1 = new Vector2(-halfWidth, -halfHeight);
+                extent2 = new Vector2(-halfWidth, halfHeight);
+            }
+            else if (deg < 270)
+            {
+                extent1 = new Vector2(halfWidth, -halfHeight);
+                extent2 = new Vector2(-halfWidth, -halfHeight);
+            }
+            else
+            {
+                extent1 = new Vector2(halfWidth, halfHeight);
+                extent2 = new Vector2(halfWidth, -halfHeight);
+            }
+            var vec1 = matrix.MultiplyVector(extent1);
+            var vec2 = matrix.MultiplyVector(extent2);
+            return new Vector2(1f / Math.Abs(vec2[0]), 1f / Math.Abs(vec1[1]));
+        }
+
+        private static Vector2 GetGradientCenterFrame(Vector2 pos, float width, float height)
+        {
+            return new Vector2(pos.x - width / 2f, height / 2f - pos.y);
         }
 
         internal struct GradientParams
@@ -154,20 +241,9 @@ namespace UnityEditor.StyleSheets
 
         internal static void DrawBlock(GUIStyle basis, StyleBlock block, Rect drawRect, GUIContent content, DrawStates states)
         {
-            Color colorTint = GUI.color;
-            if (!GUI.enabled)
-                colorTint.a *= block.GetFloat(StyleCatalogKeyword.opacity, 0.5f);
-
-            StyleRect offset = new StyleRect
-            {
-                top = block.GetFloat(StyleCatalogKeyword.top),
-                left = block.GetFloat(StyleCatalogKeyword.left),
-                bottom = block.GetFloat(StyleCatalogKeyword.bottom),
-                right = block.GetFloat(StyleCatalogKeyword.right)
-            };
-
             var userRect = drawRect;
 
+            StyleRect offset = block.GetRect(StyleCatalogKeyword.position);
             drawRect.xMin += offset.left;
             drawRect.yMin += offset.top;
             drawRect.yMax += offset.bottom;
@@ -177,20 +253,19 @@ namespace UnityEditor.StyleSheets
             drawRect.width = basis.fixedWidth == 0f ? drawRect.width : basis.fixedWidth;
             drawRect.height = basis.fixedHeight == 0f ? drawRect.height : basis.fixedHeight;
 
+            Color colorTint = GUI.color;
+            if (!GUI.enabled)
+                colorTint.a *= block.GetFloat(StyleCatalogKeyword.opacity, 0.5f);
             var border = new StyleBorder(block);
-
-            var guiBgColor = GUI.backgroundColor;
-            var guiContentColor = GUI.contentColor;
-            var bgColorTint = guiBgColor * colorTint;
+            var bgColorTint = GUI.backgroundColor * colorTint;
 
             if (!block.Execute(StyleCatalogKeyword.background, DrawGradient, new GradientParams(drawRect, border.radius, bgColorTint)))
             {
-                var smoothCorners = !border.all;
-
                 // Draw background color
                 var backgroundColor = block.GetColor(StyleCatalogKeyword.backgroundColor);
                 if (backgroundColor.a > 0f)
                 {
+                    var smoothCorners = !border.all;
                     GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, backgroundColor * bgColorTint, Vector4.zero, border.radius, smoothCorners);
                 }
             }
@@ -201,6 +276,8 @@ namespace UnityEditor.StyleSheets
 
             if (content != null)
             {
+                var guiContentColor = GUI.contentColor;
+
                 // Compute content rect
                 Rect contentRect = drawRect;
                 if (block.GetKeyword(StyleCatalogKeyword.padding) == StyleValue.Keyword.Auto)
@@ -240,12 +317,12 @@ namespace UnityEditor.StyleSheets
         }
 
         // Note: Assign lambda to local variable to avoid the allocation caused by method group.
-        private static readonly Func<StyleBlock, string, List<StyleSheetResolver.Value[]>, GradientParams, bool> DrawGradient = (block, funcName, args, gp) =>
+        private static readonly Func<StyleFunctionCall, GradientParams, bool> DrawGradient = (call, gp) =>
         {
-            if (funcName != "linear-gradient")
+            if (call.name != "linear-gradient")
                 return false;
 
-            var gradientTexture = GenerateGradient(gp.rect, args);
+            var gradientTexture = GenerateGradient(call, gp.rect);
             if (gradientTexture == null)
                 return false;
             GUI.DrawTexture(gp.rect, gradientTexture, ScaleMode.ScaleAndCrop, true, 0f, gp.colorTint, Vector4.zero, gp.radius);
@@ -311,12 +388,12 @@ namespace UnityEditor.StyleSheets
 
         private struct StyleBackgroundPosition
         {
-#pragma warning disable 0649
+            #pragma warning disable 0649
             public int xEdge;
             public float xOffset;
             public int yEdge;
             public float yOffset;
-#pragma warning restore 0649
+            #pragma warning restore 0649
         }
 
         private struct StyleBorder
@@ -325,39 +402,28 @@ namespace UnityEditor.StyleSheets
             // borderRadiuses The radiuses for rounded corners (top-left, top-right, bottom-right and bottom-left). If Vector4.zero, corners will not be rounded.
             public StyleBorder(StyleBlock block)
             {
-                var defaultColor = block.GetColor(StyleCatalogKeyword.borderColor);
-                var defaultRadius = block.GetFloat(StyleCatalogKeyword.borderRadius);
-                var borderWidth = block.GetFloat(StyleCatalogKeyword.borderWidth);
-                widths = new Vector4(
-                    block.GetFloat(StyleCatalogKeyword.borderLeftWidth, borderWidth),
-                    block.GetFloat(StyleCatalogKeyword.borderTopWidth, borderWidth),
-                    block.GetFloat(StyleCatalogKeyword.borderRightWidth, borderWidth),
-                    block.GetFloat(StyleCatalogKeyword.borderBottomWidth, borderWidth));
-                radius = new Vector4(
-                    block.GetFloat(k_BorderTopLeftRadiusKey, defaultRadius),
-                    block.GetFloat(k_BorderTopRightRadiusKey, defaultRadius),
-                    block.GetFloat(k_BorderBottomRightRadiusKey, defaultRadius),
-                    block.GetFloat(k_BorderBottomLeftRadiusKey, defaultRadius));
-
-                borderLeftColor = block.GetColor(StyleCatalogKeyword.borderLeftColor, defaultColor);
-                borderTopColor = block.GetColor(StyleCatalogKeyword.borderTopColor, defaultColor);
-                borderRightColor = block.GetColor(StyleCatalogKeyword.borderRightColor, defaultColor);
-                borderBottomColor = block.GetColor(StyleCatalogKeyword.borderBottomColor, defaultColor);
-            }
-
-            public bool any
-            {
-                get
+                if (block.HasValue(StyleCatalogKeyword.border))
                 {
-                    for (int i = 0; i < 4; ++i)
-                    {
-                        if (widths[i] >= 1f)
-                            return true;
-                    }
+                    var defaultColor = block.GetColor(StyleCatalogKeyword.borderColor);
 
-                    return false;
+                    var borderWidths = block.GetRect(StyleCatalogKeyword.borderWidth);
+                    widths = new Vector4(borderWidths.left, borderWidths.top, borderWidths.right, borderWidths.bottom);
+                    borderLeftColor = block.GetColor(StyleCatalogKeyword.borderLeftColor, defaultColor);
+                    borderTopColor = block.GetColor(StyleCatalogKeyword.borderTopColor, defaultColor);
+                    borderRightColor = block.GetColor(StyleCatalogKeyword.borderRightColor, defaultColor);
+                    borderBottomColor = block.GetColor(StyleCatalogKeyword.borderBottomColor, defaultColor);
                 }
+                else
+                {
+                    widths = Vector4.zero;
+                    borderLeftColor = borderTopColor = borderRightColor = borderBottomColor = Color.cyan;
+                }
+
+                var borderRadius = block.GetRect(StyleCatalogKeyword.borderRadius);
+                radius = new Vector4(borderRadius.left, borderRadius.top, borderRadius.right, borderRadius.bottom);
             }
+
+            public bool any => widths != Vector4.zero;
 
             public bool all
             {

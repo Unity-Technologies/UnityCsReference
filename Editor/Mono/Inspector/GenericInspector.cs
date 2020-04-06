@@ -64,9 +64,9 @@ namespace UnityEditor
             while (property.NextVisible(childrenAreExpanded))
             {
                 var handler = ScriptAttributeUtility.GetHandler(property);
-                height += handler.GetHeight(property, null, false) + EditorGUI.kControlVerticalSpacing;
-
-                childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
+                var hasPropertyDrawer = handler.propertyDrawer != null;
+                height += handler.GetHeight(property, null, hasPropertyDrawer) + EditorGUI.kControlVerticalSpacing;
+                childrenAreExpanded = !hasPropertyDrawer && property.isExpanded && EditorGUI.HasVisibleChildFields(property);
             }
 
             m_LastHeight = height;
@@ -99,16 +99,16 @@ namespace UnityEditor
                 while (property.NextVisible(childrenAreExpanded))
                 {
                     var handler = ScriptAttributeUtility.GetHandler(property);
-                    contentRect.height = handler.GetHeight(property, null, false);
+                    var hasPropertyDrawer = handler.propertyDrawer != null;
+                    childrenAreExpanded = !hasPropertyDrawer && property.isExpanded && EditorGUI.HasVisibleChildFields(property);
+                    contentRect.height = handler.GetHeight(property, null, hasPropertyDrawer);
 
                     if (contentRect.Overlaps(visibleRect))
                     {
                         EditorGUI.indentLevel = property.depth;
                         using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
-                            childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect) && property.isExpanded;
+                            childrenAreExpanded &= handler.OnGUI(contentRect, property, null, false, visibleRect);
                     }
-                    else
-                        childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                     contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
                 }

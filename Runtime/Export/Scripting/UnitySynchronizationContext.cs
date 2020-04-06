@@ -79,10 +79,13 @@ namespace UnityEngine
                 m_AsyncWorkQueue.Clear();
             }
 
-            foreach (var work in m_CurrentFrameWork)
+            // When you invoke work, remove it from the list to stop it being triggered again (case 1213602)
+            while (m_CurrentFrameWork.Count > 0)
+            {
+                WorkRequest work = m_CurrentFrameWork[0];
+                m_CurrentFrameWork.Remove(work);
                 work.Invoke();
-
-            m_CurrentFrameWork.Clear();
+            }
         }
 
         private bool HasPendingTasks()

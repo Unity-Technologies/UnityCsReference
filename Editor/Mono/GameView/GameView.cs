@@ -477,6 +477,9 @@ namespace UnityEditor
 
         private void DoToolbarGUI()
         {
+            if (Event.current.isKey || Event.current.type == EventType.Used)
+                return;
+
             GameViewSizes.instance.RefreshStandaloneAndRemoteDefaultSizes();
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);

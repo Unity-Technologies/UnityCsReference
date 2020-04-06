@@ -20,6 +20,7 @@ namespace UnityEditor
         private static class Styles
         {
             private static readonly StyleBlock tab = EditorResources.GetStyle("tab");
+            public static readonly GUIStyle background = "dockarea";
             public static readonly float tabMinWidth = tab.GetFloat(StyleCatalogKeyword.minWidth, 50.0f);
             public static readonly float tabMaxWidth = tab.GetFloat(StyleCatalogKeyword.maxWidth, 150.0f);
             public static readonly float tabWidthPadding = tab.GetFloat(StyleCatalogKeyword.paddingRight);
@@ -35,6 +36,9 @@ namespace UnityEditor
             public static SVC<float> genericMenuFloatingTopOffset = new SVC<float>("--window-floating-generic-menu-top-offset", 20f);
 
             public static readonly GUIStyle tabLabel = new GUIStyle("dragtab") { name = "dragtab-label" };
+            public static readonly GUIStyle dragTab = new GUIStyle("dragtab");
+            public static readonly GUIStyle dragTabFirst = new GUIStyle("dragtab first");
+            public static readonly GUIStyle dockTitleBarStyle = new GUIStyle("dockHeader");
         }
 
         internal const int kFloatingWindowTopBorderWidth = 2;
@@ -65,8 +69,6 @@ namespace UnityEditor
         [SerializeField] internal int m_LastSelected;
 
         [NonSerialized] internal GUIStyle tabStyle = null;
-        [NonSerialized] internal GUIStyle firstTabStyle = null;
-        [NonSerialized] internal GUIStyle dockTitleBarStyle = null;
 
         private bool m_IsBeingDestroyed;
         private Rect m_ScrollLeftRect;
@@ -301,9 +303,7 @@ namespace UnityEditor
             r.height = kDockHeight;
             if (r.Contains(mouseScreenPosition))
             {
-                if (background == null)
-                    background = "hostview";
-                Rect scr = background.margin.Remove(screenPosition);
+                Rect scr = Styles.background.margin.Remove(screenPosition);
                 Vector2 pos = mouseScreenPosition - new Vector2(scr.x, scr.y);
 
                 Rect tr = new Rect(0, 0, m_TotalTabWidth, kTabHeight);
@@ -360,8 +360,6 @@ namespace UnityEditor
 
             var borderSize = GetBorderSize();
 
-            background = "dockarea";
-
             Rect dockAreaRect = new Rect(0, 0, position.width, position.height);
             Rect wPos = windowPosition;
             Rect containerWindowPosition = window.position;
@@ -417,15 +415,12 @@ namespace UnityEditor
             using (new GUI.ClipScope(clipRect, new Vector2(-m_ScrollOffset - 1f, 0)))
             {
                 if (tabStyle == null)
-                    tabStyle = "dragtab";
+                    tabStyle = Styles.dragTab;
 
-                if (firstTabStyle == null)
-                    firstTabStyle = EditorStyles.s_Current.GetStyle("dragtab first");
-
-                var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle, firstTabStyle);
+                var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle, Styles.dragTabFirst);
                 if (totalTabWidth > 0f)
                     m_TotalTabWidth = totalTabWidth;
-                tabStyle = "dragtab";
+                tabStyle = Styles.dragTab;
             }
         }
 
@@ -451,18 +446,14 @@ namespace UnityEditor
             {
                 var backgroundRect = dockAreaRect;
                 backgroundRect.y = 0;
-                background.Draw(backgroundRect, GUIContent.none, 0);
+                Styles.background.Draw(backgroundRect, GUIContent.none, 0);
             }
         }
 
         private void DrawDockTitleBarBackground(Rect titleBarRect)
         {
             if (Event.current.type == EventType.Repaint)
-            {
-                if (dockTitleBarStyle == null)
-                    dockTitleBarStyle = "dockHeader";
-                dockTitleBarStyle.Draw(titleBarRect, GUIContent.none, 0);
-            }
+                Styles.dockTitleBarStyle.Draw(titleBarRect, GUIContent.none, 0);
         }
 
         private void SetupHoldScrollerUpdate(float clickOffset)

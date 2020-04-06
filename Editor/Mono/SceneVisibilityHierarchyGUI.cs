@@ -101,6 +101,9 @@ namespace UnityEditor
 
         public static void DoItemGUI(Rect rect, GameObjectTreeViewItem goItem, bool isSelected, bool isHovered, bool isFocused, bool isDragging)
         {
+            if (Event.current.isKey || Event.current.type == EventType.Layout)
+                return;
+
             Rect iconRect = rect;
             iconRect.xMin += k_VisibilityIconPadding;
             iconRect.width = k_IconWidth;
@@ -147,25 +150,25 @@ namespace UnityEditor
 
         private static void DrawItemBackground(Rect rect, bool isScene, bool isSelected, bool isHovered, bool isFocused)
         {
-            if (Event.current.type == EventType.Repaint)
-            {
-                rect.width = utilityBarWidth;
+            if (Event.current.type != EventType.Repaint)
+                return;
 
-                if (isScene)
+            rect.width = utilityBarWidth;
+
+            if (isScene)
+            {
+                if (isSelected)
                 {
-                    if (isSelected)
-                    {
-                        TreeViewGUI.Styles.selectionStyle.Draw(rect, false, false, true, isFocused);
-                    }
+                    TreeViewGUI.Styles.selectionStyle.Draw(rect, false, false, true, isFocused);
                 }
-                else
+            }
+            else
+            {
+                using (new GUI.BackgroundColorScope(Styles.GetItemBackgroundColor(isHovered, isSelected, isFocused))
+                )
                 {
-                    using (new GUI.BackgroundColorScope(Styles.GetItemBackgroundColor(isHovered, isSelected, isFocused))
-                    )
-                    {
-                        GUI.Label(rect, GUIContent.none,
-                            GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
-                    }
+                    GUI.Label(rect, GUIContent.none,
+                        GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
                 }
             }
         }
