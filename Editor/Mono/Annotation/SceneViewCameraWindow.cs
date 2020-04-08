@@ -109,7 +109,7 @@ namespace UnityEditor
             // fov isn't applicable in orthographic mode, and orthographic size is controlled by the user zoom
             using (new EditorGUI.DisabledScope(m_SceneView.orthographic))
             {
-                settings.fieldOfView = EditorGUILayout.Slider(m_FieldOfView, settings.fieldOfView, 4f, 179f);
+                settings.fieldOfView = EditorGUILayout.Slider(m_FieldOfView, settings.fieldOfView, 4f, 120f);
             }
 
             settings.dynamicClip = EditorGUILayout.Toggle(m_DynamicClip, settings.dynamicClip);

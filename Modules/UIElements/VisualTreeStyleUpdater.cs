@@ -226,7 +226,6 @@ namespace UnityEngine.UIElements
             }
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetStack.Count;
-            int originalVariableCount = m_ProcessVarContext.count;
 
             if (element.styleSheetList != null)
             {
@@ -282,11 +281,6 @@ namespace UnityEngine.UIElements
             {
                 m_StyleMatchingContext.styleSheetStack.RemoveRange(originalStyleSheetCount, m_StyleMatchingContext.styleSheetStack.Count - originalStyleSheetCount);
             }
-
-            if (m_ProcessVarContext.count > originalVariableCount)
-            {
-                m_ProcessVarContext.RemoveRange(originalVariableCount, m_ProcessVarContext.count - originalVariableCount);
-            }
         }
 
         bool ShouldSkipElement(VisualElement element)
@@ -319,7 +313,13 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            int variablesHash = customPropertiesCount > 0 ? m_ProcessVarContext.GetVariableHash() : oldVariablesHash;
+            int variablesHash = oldVariablesHash;
+            if (customPropertiesCount > 0)
+            {
+                // Element defines new variables, add the parents variables at the beginning of the processing context
+                m_ProcessVarContext.InsertRange(0, m_StyleMatchingContext.variableContext);
+                variablesHash = m_ProcessVarContext.GetVariableHash();
+            }
             matchingRulesHash = (matchingRulesHash * 397) ^ variablesHash;
 
             if (oldVariablesHash != variablesHash)
@@ -334,6 +334,7 @@ namespace UnityEngine.UIElements
                 m_StyleMatchingContext.variableContext = ctx;
             }
             element.variableContext = m_StyleMatchingContext.variableContext;
+            m_ProcessVarContext.Clear();
 
             VisualElementStylesData resolvedStyles;
             if (StyleCache.TryGetValue(matchingRulesHash, out resolvedStyles))

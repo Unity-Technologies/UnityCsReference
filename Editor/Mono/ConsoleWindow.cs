@@ -150,6 +150,9 @@ namespace UnityEditor
 
             public ConsoleAttachToPlayerState(EditorWindow parentWindow, Action<string> connectedCallback = null) : base(parentWindow, connectedCallback)
             {
+                // This is needed to force initialize the instance and the state so that messages from players are received and printed to the console (if that is the serialized state)
+                // on creation of the ConsoleWindow UI instead of when the uer first clicks on the dropdown, and triggers AddItemsToMenu.
+                PlayerConnectionLogReceiver.instance.State = PlayerConnectionLogReceiver.instance.State;
             }
 
             bool IsConnected()

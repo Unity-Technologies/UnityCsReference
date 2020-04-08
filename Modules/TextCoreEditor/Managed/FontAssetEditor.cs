@@ -47,7 +47,6 @@ namespace UnityEditor.TextCore
     {
         private struct UI_PanelState
         {
-            public static bool faceInfoPanel = true;
             public static bool generationSettingsPanel = true;
             public static bool fontAtlasInfoPanel = true;
             public static bool fontWeightPanel = true;
@@ -1588,7 +1587,6 @@ namespace UnityEditor.TextCore
                 if (secondGlyph.ToString().Contains(searchPattern))
                 {
                     searchResults.Add(i);
-                    continue;
                 }
 
                 //if (secondGlyph.ToString("x").Contains(searchPattern))

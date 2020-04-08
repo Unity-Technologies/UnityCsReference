@@ -608,7 +608,7 @@ namespace Unity.SerializationLogic
                 }
                 else
                 {
-                    return (resolvedTypeDeclaration.IsSerializable && !resolvedTypeDeclaration.IsAbstract && !resolvedTypeDeclaration.CustomAttributes.Any(a => a.AttributeType.FullName.Contains("System.Runtime.CompilerServices.CompilerGenerated"))) ||
+                    return (resolvedTypeDeclaration.IsSerializable && !resolvedTypeDeclaration.CustomAttributes.Any(a => a.AttributeType.FullName.Contains("System.Runtime.CompilerServices.CompilerGenerated"))) ||
                         resolvedTypeDeclaration.IsSubclassOf(UnityEngineTypePredicates.MonoBehaviour, UnityEngineTypePredicates.ScriptableObject);
                 }
             }

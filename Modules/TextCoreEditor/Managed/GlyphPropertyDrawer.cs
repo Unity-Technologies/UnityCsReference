@@ -52,21 +52,26 @@ namespace UnityEditor.TextCore
 
         void DrawGlyph(Rect position, SerializedProperty property)
         {
-            // Get a reference to the sprite texture
-            FontAsset fontAsset = property.serializedObject.targetObject as FontAsset;
+            // Serialized object can either be a FontAsset or a TMP_FontAsset
+            SerializedObject so = property.serializedObject;
 
-            if (fontAsset == null)
+            if (so == null)
                 return;
 
-            // Get reference to atlas texture.
+            // Get reference to the atlas texture for the given atlas index.
             int atlasIndex = property.FindPropertyRelative("m_AtlasIndex").intValue;
-            Texture2D atlasTexture = fontAsset.atlasTextures.Length > atlasIndex ? fontAsset.atlasTextures[atlasIndex] : null;
 
+            SerializedProperty atlasTextureProperty = so.FindProperty("m_AtlasTextures");
+            Texture2D atlasTexture = atlasTextureProperty.GetArrayElementAtIndex(atlasIndex).objectReferenceValue as Texture2D;
             if (atlasTexture == null)
                 return;
 
             Material mat;
-            if (((GlyphRasterModes)fontAsset.atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
+
+            GlyphRenderMode atlasRenderMode = (GlyphRenderMode)so.FindProperty("m_AtlasRenderMode").intValue;
+            int atlasPadding = so.FindProperty("m_AtlasPadding").intValue;
+
+            if (((GlyphRasterModes)atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
             {
                 mat = FontAssetEditor.internalBitmapMaterial;
 
@@ -84,20 +89,27 @@ namespace UnityEditor.TextCore
                     return;
 
                 mat.mainTexture = atlasTexture;
-                mat.SetFloat(ShaderUtilities.ID_GradientScale, fontAsset.atlasPadding + 1);
+                mat.SetFloat(ShaderUtilities.ID_GradientScale, atlasPadding + 1);
             }
 
             // Draw glyph from atlas texture.
             Rect glyphDrawPosition = new Rect(position.x, position.y + 2, 64, 80);
 
-            SerializedProperty prop_GlyphRect = property.FindPropertyRelative("m_GlyphRect");
+            SerializedProperty glyphRectProperty = property.FindPropertyRelative("m_GlyphRect");
 
-            int glyphOriginX = prop_GlyphRect.FindPropertyRelative("m_X").intValue;
-            int glyphOriginY = prop_GlyphRect.FindPropertyRelative("m_Y").intValue;
-            int glyphWidth = prop_GlyphRect.FindPropertyRelative("m_Width").intValue;
-            int glyphHeight = prop_GlyphRect.FindPropertyRelative("m_Height").intValue;
+            int padding = atlasPadding;
+            int padding2X = padding * 2;
 
-            float normalizedHeight = fontAsset.faceInfo.ascentLine - fontAsset.faceInfo.descentLine;
+            int glyphOriginX = glyphRectProperty.FindPropertyRelative("m_X").intValue - padding;
+            int glyphOriginY = glyphRectProperty.FindPropertyRelative("m_Y").intValue - padding;
+            int glyphWidth = glyphRectProperty.FindPropertyRelative("m_Width").intValue + padding2X;
+            int glyphHeight = glyphRectProperty.FindPropertyRelative("m_Height").intValue + padding2X;
+
+            SerializedProperty faceInfoProperty = so.FindProperty("m_FaceInfo");
+            float ascentLine = faceInfoProperty.FindPropertyRelative("m_AscentLine").floatValue;
+            float descentLine = faceInfoProperty.FindPropertyRelative("m_DescentLine").floatValue;
+
+            float normalizedHeight = ascentLine - descentLine;
             float scale = glyphDrawPosition.width / normalizedHeight;
 
             // Compute the normalized texture coordinates

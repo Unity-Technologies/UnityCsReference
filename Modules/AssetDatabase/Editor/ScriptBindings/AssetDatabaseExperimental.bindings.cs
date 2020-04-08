@@ -128,6 +128,11 @@ namespace UnityEditor.Experimental
             [FreeFunction("GetOnDemandModeV2")] get;
             [FreeFunction("SetOnDemandModeV2")] set;
         }
+        [NativeHeader("Modules/AssetDatabase/Editor/V2/Virtualization/Virtualization.h")]
+        internal extern static bool VirtualizationEnabled
+        {
+            [FreeFunction("Virtualization_IsEnabled")] get;
+        }
         private extern static Hash128 GetArtifactHash_Internal_Guid_SelectImporter(string guid, ImportSyncMode mode);
         private extern static Hash128 GetArtifactHash_Internal_Guid(string guid, Type importerType, ImportSyncMode mode);
         private extern static Hash128[] GetArtifactHashes_Internal_Guids_SelectImporter(string[] guid, ImportSyncMode mode);
