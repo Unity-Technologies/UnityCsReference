@@ -706,13 +706,28 @@ namespace UnityEditor
             var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(group);
             var percentage = Mathf.Max(desiredPercentage / QualitySettings.lodBias, 0.000001f);
 
+            var sceneView = SceneView.lastActiveSceneView;
+            var sceneCamera = sceneView.camera;
+
             // Figure out a distance based on the percentage
-            var distance = LODUtility.CalculateDistance(SceneView.lastActiveSceneView.camera, percentage, group);
+            var distance = LODUtility.CalculateDistance(sceneCamera, percentage, group);
 
-            if (SceneView.lastActiveSceneView.camera.orthographic)
-                distance *= Mathf.Sqrt(2 * SceneView.lastActiveSceneView.camera.aspect);
+            // We need to do inverse of SceneView.cameraDistance:
+            // given the distance, need to figure out "size" to focus the scene view on.
+            float size;
+            if (sceneCamera.orthographic)
+            {
+                size = distance;
+                if (sceneCamera.aspect < 1.0)
+                    size *= sceneCamera.aspect;
+            }
+            else
+            {
+                var fov = sceneCamera.fieldOfView;
+                size = distance * Mathf.Sin(fov * 0.5f * Mathf.Deg2Rad);
+            }
 
-            SceneView.lastActiveSceneView.LookAtDirect(worldReferencePoint, SceneView.lastActiveSceneView.camera.transform.rotation, distance);
+            SceneView.lastActiveSceneView.LookAtDirect(worldReferencePoint, sceneCamera.transform.rotation, size);
         }
 
         private void UpdateSelectedLODFromCamera(IEnumerable<LODGroupGUI.LODInfo> lods, float cameraPercent)

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.LowLevel;
@@ -155,32 +156,35 @@ namespace UnityEditor.TextCore
 
         void DrawGlyph(Rect position, SerializedProperty property)
         {
-            // Get a reference to the atlas texture
-            FontAsset fontAsset = property.serializedObject.targetObject as FontAsset;
-
-            if (fontAsset == null)
+            // Serialized object can either be a FontAsset or a TMP_FontAsset
+            SerializedObject so = property.serializedObject;
+            if (so == null)
                 return;
 
-            // Get a reference to the Glyph Table
-            SerializedProperty prop_GlyphTable = property.serializedObject.FindProperty("m_GlyphTable");
+            // Search the glyph table for the glyph referenced by this character
+            SerializedProperty glyphTableProperty = property.serializedObject.FindProperty("m_GlyphTable");
             int glyphIndex = property.FindPropertyRelative("m_GlyphIndex").intValue;
-            int elementIndex = fontAsset.glyphTable.FindIndex(item => item.index == glyphIndex);
 
-            // Return if we can't find the glyph
+            // Find the element index for this glyph in the glyph table.
+            int elementIndex = GetElementIndex(glyphTableProperty, glyphIndex);
             if (elementIndex == -1)
                 return;
 
-            SerializedProperty prop_Glyph = prop_GlyphTable.GetArrayElementAtIndex(elementIndex);
+            SerializedProperty glyphProperty = glyphTableProperty.GetArrayElementAtIndex(elementIndex);
 
             // Get reference to atlas texture.
-            int atlasIndex = prop_Glyph.FindPropertyRelative("m_AtlasIndex").intValue;
-            Texture2D atlasTexture = fontAsset.atlasTextures.Length > atlasIndex ? fontAsset.atlasTextures[atlasIndex] : null;
-
+            int atlasIndex = glyphProperty.FindPropertyRelative("m_AtlasIndex").intValue;
+            SerializedProperty atlasTextureProperty = so.FindProperty("m_AtlasTextures");
+            Texture2D atlasTexture = atlasTextureProperty.GetArrayElementAtIndex(atlasIndex).objectReferenceValue as Texture2D;
             if (atlasTexture == null)
                 return;
 
             Material mat;
-            if (((GlyphRasterModes)fontAsset.atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
+
+            GlyphRenderMode atlasRenderMode = (GlyphRenderMode)so.FindProperty("m_AtlasRenderMode").intValue;
+            int atlasPadding = so.FindProperty("m_AtlasPadding").intValue;
+
+            if (((GlyphRasterModes)atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
             {
                 mat = FontAssetEditor.internalBitmapMaterial;
 
@@ -198,20 +202,27 @@ namespace UnityEditor.TextCore
                     return;
 
                 mat.mainTexture = atlasTexture;
-                mat.SetFloat(ShaderUtilities.ID_GradientScale, fontAsset.atlasPadding + 1);
+                mat.SetFloat(ShaderUtilities.ID_GradientScale, atlasPadding + 1);
             }
 
             // Draw glyph
             Rect glyphDrawPosition = new Rect(position.x, position.y, 48, 58);
 
-            SerializedProperty prop_GlyphRect = prop_Glyph.FindPropertyRelative("m_GlyphRect");
+            SerializedProperty glyphRectProperty = glyphProperty.FindPropertyRelative("m_GlyphRect");
 
-            int glyphOriginX = prop_GlyphRect.FindPropertyRelative("m_X").intValue;
-            int glyphOriginY = prop_GlyphRect.FindPropertyRelative("m_Y").intValue;
-            int glyphWidth = prop_GlyphRect.FindPropertyRelative("m_Width").intValue;
-            int glyphHeight = prop_GlyphRect.FindPropertyRelative("m_Height").intValue;
+            int padding = atlasPadding;
+            int padding2X = padding * 2;
 
-            float normalizedHeight = fontAsset.faceInfo.ascentLine - fontAsset.faceInfo.descentLine;
+            int glyphOriginX = glyphRectProperty.FindPropertyRelative("m_X").intValue - padding;
+            int glyphOriginY = glyphRectProperty.FindPropertyRelative("m_Y").intValue - padding;
+            int glyphWidth = glyphRectProperty.FindPropertyRelative("m_Width").intValue + padding2X;
+            int glyphHeight = glyphRectProperty.FindPropertyRelative("m_Height").intValue + padding2X;
+
+            SerializedProperty faceInfoProperty = so.FindProperty("m_FaceInfo");
+            float ascentLine = faceInfoProperty.FindPropertyRelative("m_AscentLine").floatValue;
+            float descentLine = faceInfoProperty.FindPropertyRelative("m_DescentLine").floatValue;
+
+            float normalizedHeight = ascentLine - descentLine;
             float scale = glyphDrawPosition.width / normalizedHeight;
 
             // Compute the normalized texture coordinates
@@ -227,6 +238,21 @@ namespace UnityEditor.TextCore
                 // Could switch to using the default material of the font asset which would require passing scale to the shader.
                 Graphics.DrawTexture(glyphDrawPosition, atlasTexture, texCoords, 0, 0, 0, 0, new Color(1f, 1f, 1f), mat);
             }
+        }
+
+        int GetElementIndex(SerializedProperty glyphTableProperty, int glyphIndex)
+        {
+            int elementCount = glyphTableProperty.arraySize;
+
+            for (int i = 0; i < elementCount; i++)
+            {
+                SerializedProperty glyphProperty = glyphTableProperty.GetArrayElementAtIndex(i);
+
+                if (glyphIndex == glyphProperty.FindPropertyRelative("m_Index").intValue)
+                    return i;
+            }
+
+            return -1;
         }
     }
 }

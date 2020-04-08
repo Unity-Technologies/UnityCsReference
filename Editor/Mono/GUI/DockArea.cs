@@ -352,6 +352,7 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.ResetGUIState();
 
             // Exit if the window was destroyed after entering play mode or on domain-reload.
@@ -393,6 +394,7 @@ namespace UnityEditor
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);
+            EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
         private void DrawView(Rect viewRect, Rect dockAreaRect)

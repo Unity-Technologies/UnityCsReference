@@ -203,6 +203,7 @@ namespace UnityEditor
             [NativeProperty("ps4UseAudio3dBackend", false, TargetType.Field)] extern public static bool useAudio3dBackend { get; set; }
             [NativeProperty("ps4Audio3dVirtualSpeakerCount", false, TargetType.Field)] extern public static int audio3dVirtualSpeakerCount { get; set; }
             [NativeProperty("ps4ScriptOptimizationLevel", false, TargetType.Field)] extern public static int scriptOptimizationLevel { get; set; }
+            [NativeProperty("ps4UseLowGarlicFragmentationMode", true, TargetType.Field)] extern public static bool useLowGarlicFragmentationMode { get; set; }
             [NativeProperty("ps4SocialScreenEnabled", false, TargetType.Field)] extern public static int socialScreenEnabled { get; set; }
             [NativeProperty("ps4attribUserManagement", false, TargetType.Field)] extern public static bool attribUserManagement { get; set; }
             [NativeProperty("ps4attribMoveSupport", false, TargetType.Field)] extern public static bool attribMoveSupport { get; set; }

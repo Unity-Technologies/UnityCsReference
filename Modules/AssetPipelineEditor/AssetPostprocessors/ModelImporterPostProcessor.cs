@@ -17,7 +17,7 @@ namespace UnityEditor
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPath)
         {
-            if (UnityEditor.Experimental.AssetDatabaseExperimental.ActiveOnDemandMode != UnityEditor.Experimental.AssetDatabaseExperimental.OnDemandMode.Off)
+            if (UnityEditor.Experimental.AssetDatabaseExperimental.ActiveOnDemandMode != UnityEditor.Experimental.AssetDatabaseExperimental.OnDemandMode.Off || UnityEditor.Experimental.AssetDatabaseExperimental.VirtualizationEnabled)
             {
                 // This PostProcessAllAssets will forcefully import everything in on-demand mode
                 // We need to find a better way of filtering on asset type without forcing an import

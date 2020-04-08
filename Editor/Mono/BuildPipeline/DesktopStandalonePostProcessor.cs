@@ -92,24 +92,19 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.AddKey("nolog");
     }
 
-    private void CopyNativePlugins(BuildPostProcessArgs args, out List<string> cppPlugins)
+    private void CopyNativePlugins(BuildPostProcessArgs args, BuildTarget buildTarget, out List<string> cppPlugins)
     {
-        string buildTargetName = BuildPipeline.GetBuildTargetName(args.target);
+        string buildTargetName = BuildPipeline.GetBuildTargetName(buildTarget);
         IPluginImporterExtension pluginImpExtension = new DesktopPluginImporterExtension();
 
         string pluginsFolder = GetStagingAreaPluginsFolder(args);
-        string subDir32Bit = Path.Combine(pluginsFolder, "x86");
-        string subDir64Bit = Path.Combine(pluginsFolder, "x86_64");
 
         bool haveCreatedPluginsFolder = false;
-        bool haveCreatedSubDir32Bit = false;
-        bool haveCreatedSubDir64Bit = false;
+        var createdFolders = new HashSet<string>();
         cppPlugins = new List<string>();
 
-        foreach (PluginImporter imp in PluginImporter.GetImporters(args.target))
+        foreach (PluginImporter imp in PluginImporter.GetImporters(buildTarget))
         {
-            BuildTarget t = args.target;
-
             // Skip .cpp files. They get copied to il2cpp output folder just before code compilation
             if (DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
             {
@@ -124,7 +119,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             // HACK: This should never happen.
             if (string.IsNullOrEmpty(imp.assetPath))
             {
-                UnityEngine.Debug.LogWarning("Got empty plugin importer path for " + args.target.ToString());
+                UnityEngine.Debug.LogWarning("Got empty plugin importer path for " + buildTarget);
                 continue;
             }
 
@@ -134,45 +129,21 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
                 haveCreatedPluginsFolder = true;
             }
 
+
             bool isDirectory = Directory.Exists(imp.assetPath);
-            string cpu = imp.GetPlatformData(t, "CPU");
-            switch (cpu)
-            {
-                case "x86":
-                    if (t == BuildTarget.StandaloneWindows64 ||
-                        t == BuildTarget.StandaloneLinux64)
-                    {
-                        continue;
-                    }
-                    if (!haveCreatedSubDir32Bit)
-                    {
-                        Directory.CreateDirectory(subDir32Bit);
-                        haveCreatedSubDir32Bit = true;
-                    }
-                    break;
-                case "x86_64":
-                    if (t != BuildTarget.StandaloneOSX &&
-                        t != BuildTarget.StandaloneWindows64 &&
-                        t != BuildTarget.StandaloneLinux64)
-                    {
-                        continue;
-                    }
-                    if (!haveCreatedSubDir64Bit)
-                    {
-                        Directory.CreateDirectory(subDir64Bit);
-                        haveCreatedSubDir64Bit = true;
-                    }
-                    break;
-                // This is a special case for CPU targets, means no valid CPU is selected
-                case "None":
-                    continue;
-            }
 
             string destinationPath = pluginImpExtension.CalculateFinalPluginPath(buildTargetName, imp);
             if (string.IsNullOrEmpty(destinationPath))
                 continue;
 
             string finalDestinationPath = Path.Combine(pluginsFolder, destinationPath);
+
+            var finalDestinationFolder = Path.GetDirectoryName(finalDestinationPath);
+            if (!createdFolders.Contains(finalDestinationFolder))
+            {
+                Directory.CreateDirectory(finalDestinationFolder);
+                createdFolders.Add(finalDestinationFolder);
+            }
 
             if (isDirectory)
             {
@@ -186,7 +157,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
 
         // TODO: Move all plugins using GetExtensionPlugins to GetImporters and remove GetExtensionPlugins
-        foreach (UnityEditorInternal.PluginDesc pluginDesc in PluginImporter.GetExtensionPlugins(args.target))
+        foreach (UnityEditorInternal.PluginDesc pluginDesc in PluginImporter.GetExtensionPlugins(buildTarget))
         {
             if (!haveCreatedPluginsFolder)
             {
@@ -225,7 +196,18 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     private void SetupStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
     {
         List<string> cppPlugins;
-        CopyNativePlugins(args, out cppPlugins);
+
+        if (GetCreateSolution(args) && (args.target == BuildTarget.StandaloneWindows || args.target == BuildTarget.StandaloneWindows64))
+        {
+            // For Windows Standalone player solution build, we want to copy plugins for all architectures as
+            // the ultimate CPU architecture choice can be made from Visual Studio
+            CopyNativePlugins(args, BuildTarget.StandaloneWindows, out cppPlugins);
+            CopyNativePlugins(args, BuildTarget.StandaloneWindows64, out cppPlugins);
+        }
+        else
+        {
+            CopyNativePlugins(args, args.target, out cppPlugins);
+        }
 
         CreateApplicationData(args);
 

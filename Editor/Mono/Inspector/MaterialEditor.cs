@@ -2098,9 +2098,35 @@ namespace UnityEditor
             if (EditorMaterialUtility.IsBackgroundMaterial((target as Material)))
             {
                 HandleSkybox(go, evt);
+                ClearDragMaterialRendering();
             }
             else if (go && go.GetComponent<Renderer>())
                 HandleRenderer(go.GetComponent<Renderer>(), materialIndex, evt);
+            else
+                ClearDragMaterialRendering();
+        }
+
+        private void TryRevertDragChanges()
+        {
+            if (s_previousDraggedUponRenderer != null)
+            {
+                bool hasRevert = false;
+                if (!s_previousAlreadyHadPrefabModification && PrefabUtility.IsPartOfAnyPrefab(s_previousDraggedUponRenderer))
+                {
+                    var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
+                    PrefabUtility.RevertPropertyOverride(materialRendererSerializedObject, InteractionMode.AutomatedAction);
+                    hasRevert = true;
+                }
+                if (!hasRevert)
+                    s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
+            }
+        }
+
+        private void ClearDragMaterialRendering()
+        {
+            TryRevertDragChanges();
+            s_previousDraggedUponRenderer = null;
+            s_previousMaterialValue = null;
         }
 
         internal void HandleSkybox(GameObject go, Event evt)
@@ -2137,6 +2163,9 @@ namespace UnityEditor
             }
         }
 
+        static Renderer s_previousDraggedUponRenderer;
+        static Material[] s_previousMaterialValue;
+        static bool s_previousAlreadyHadPrefabModification;
         internal void HandleRenderer(Renderer r, int materialIndex, Event evt)
         {
             if (r.GetType().GetCustomAttributes(typeof(RejectDragAndDropMaterial), true).Length > 0)
@@ -2153,12 +2182,29 @@ namespace UnityEditor
                 case EventType.DragPerform:
                     DragAndDrop.AcceptDrag();
                     applyAndConsumeEvent = true;
+
+                    ClearDragMaterialRendering();
+                    Undo.RecordObject(r, "Assign Material");
                     break;
             }
 
             if (applyAndConsumeEvent)
             {
-                Undo.RecordObject(r, "Assign Material");
+                if (evt.type != EventType.DragPerform)
+                {
+                    ClearDragMaterialRendering();
+                    s_previousDraggedUponRenderer = r;
+                    s_previousMaterialValue = r.sharedMaterials;
+
+                    // Update prefab modification status cache
+                    s_previousAlreadyHadPrefabModification = false;
+                    if (PrefabUtility.IsPartOfAnyPrefab(s_previousDraggedUponRenderer))
+                    {
+                        var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
+                        s_previousAlreadyHadPrefabModification = materialRendererSerializedObject.prefabOverride;
+                    }
+                }
+
                 var materials = r.sharedMaterials;
 
                 bool altIsDown = evt.alt;

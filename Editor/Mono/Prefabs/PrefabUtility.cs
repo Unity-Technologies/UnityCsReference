@@ -638,10 +638,32 @@ namespace UnityEditor
                 return;
             }
 
+            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
+            if (sourceProperty == null)
+            {
+                bool cancel;
+                var instanceArrayProperty = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(instanceProperty, prefabSourceSerializedObject, InteractionMode.AutomatedAction, out cancel);
+                if (instanceArrayProperty != null)
+                {
+                    prefabSourceSerializedObject.CopyFromSerializedProperty(instanceArrayProperty);
+                    sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
+                    if (sourceProperty == null)
+                    {
+                        Debug.LogError($"ApplySingleProperty full array copy error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
+                        return;
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"ApplySingleProperty copy state error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
+                    return;
+                }
+            }
+
+            // Copy overridden property value to asset
             prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
 
             // Abort if property has reference to object in scene.
-            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
             if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
             {
                 MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, assetPath);
@@ -688,11 +710,21 @@ namespace UnityEditor
                     outerPrefabSerializedObject = serializedObjects[sourceIndex];
                 }
 
+                // Case 1172835: When applying a new array size to an inner Prefab, this change won't yet have propogated to the outer Prefabs.
+                // This means properties inside the array may not yet exist here.
+                // To handle this, we first copy the serialized value (which correctly handles array size changes)
+                // before we clear the overrides below (by setting outerPrefabProp.prefabOverride = false).
+                var propertyType = instanceProperty.propertyType;
+                if (propertyType == SerializedPropertyType.ArraySize)
+                    outerPrefabSerializedObject.CopyFromSerializedProperty(instanceProperty);
+
                 SerializedProperty outerPrefabProp = outerPrefabSerializedObject.FindProperty(instanceProperty.propertyPath);
-                if (outerPrefabProp.prefabOverride)
+                if (outerPrefabProp != null && outerPrefabProp.prefabOverride)
                 {
                     outerPrefabProp.prefabOverride = false;
                 }
+                if (outerPrefabProp == null)
+                    Debug.LogError($"ApplySingleProperty clear overrides error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
 
                 outerPrefabObject = PrefabUtility.GetCorrespondingObjectFromSource(outerPrefabObject);
                 sourceIndex++;

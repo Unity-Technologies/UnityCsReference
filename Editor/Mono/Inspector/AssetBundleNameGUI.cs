@@ -33,6 +33,7 @@ namespace UnityEditor
 
         public void OnAssetBundleNameGUI(IEnumerable<Object> assets)
         {
+            float oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 90f;
 
             Rect bundleRect  = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
@@ -56,6 +57,8 @@ namespace UnityEditor
                 AssetBundleTextField(variantRect, id, assets, true);
             else
                 AssetBundlePopup(variantRect, id, assets, true);
+
+            EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
         private void ShowNewAssetBundleField(bool isVariant)

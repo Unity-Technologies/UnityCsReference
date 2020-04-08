@@ -486,7 +486,7 @@ namespace UnityEditor
             bool m_AccelerationEnabled;
 
             [SerializeField]
-            float m_FieldOfView;
+            float m_FieldOfViewHorizontalOrVertical; // either horizontal or vertical depending on aspect ratio
             [SerializeField]
             float m_NearClip;
             [SerializeField]
@@ -504,7 +504,7 @@ namespace UnityEditor
                 m_SpeedMax = 2f;
                 m_EasingEnabled = true;
                 m_EasingDuration = defaultEasingDuration;
-                fieldOfView = kPerspectiveFov;
+                fieldOfView = kDefaultPerspectiveFov;
                 m_DynamicClip = true;
                 m_OcclusionCulling = false;
                 m_NearClip = .03f;
@@ -622,8 +622,8 @@ namespace UnityEditor
 
             public float fieldOfView
             {
-                get { return m_FieldOfView; }
-                set { m_FieldOfView = value; }
+                get { return m_FieldOfViewHorizontalOrVertical; }
+                set { m_FieldOfViewHorizontalOrVertical = value; }
             }
 
             public float nearClip
@@ -711,16 +711,39 @@ namespace UnityEditor
                 s_MouseRects.Add(new CursorRect(rect, cursor));
         }
 
+        static float GetPerspectiveCameraDistance(float objectSize, float fov)
+        {
+            //        A
+            //        |\        We want to place camera at a
+            //        | \       distance that, at the given FOV,
+            //        |  \      would enclose a sphere of radius
+            //     _..+.._\     "size". Here |BC|=size, and we
+            //   .'   |   '\    need to find |AB|. ACB is a right
+            //  /     |    _C   angle, andBAC is half the FOV. So
+            // |      | _-   |  that gives: sin(BAC)=|BC|/|AB|,
+            // |      B      |  and thus |AB|=|BC|/sin(BAC).
+            // |             |
+            //  \           /
+            //   '._     _.'
+            //      `````
+            return objectSize / Mathf.Sin(fov * 0.5f * Mathf.Deg2Rad);
+        }
+
         public float cameraDistance
         {
             get
             {
-                float fov = m_Ortho.Fade(kPerspectiveFov, 0);
-
+                float res;
                 if (!camera.orthographic)
-                    return size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
+                {
+                    float fov = m_Ortho.Fade(perspectiveFov, 0);
+                    res = GetPerspectiveCameraDistance(size, fov);
+                }
+                else
+                    res = size * 2f;
 
-                return size * 2f;
+                // clamp to allowed range in case scene view size was huge
+                return Mathf.Clamp(res, -k_MaxSceneViewSize, k_MaxSceneViewSize);
             }
         }
 
@@ -731,7 +754,7 @@ namespace UnityEditor
 
         RectSelection m_RectSelection;
 
-        const float kPerspectiveFov = 90;
+        const float kDefaultPerspectiveFov = 60;
 
         static ArrayList s_SceneViews = new ArrayList();
         public static ArrayList sceneViews { get { return s_SceneViews; } }
@@ -2809,10 +2832,10 @@ namespace UnityEditor
 
             if (size < 0)
             {
-                float distance = size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
+                float distance = GetPerspectiveCameraDistance(size, fov);
                 Vector3 p = m_Position.value + rotation * new Vector3(0, 0, -distance);
                 size = -size;
-                distance = size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
+                distance = GetPerspectiveCameraDistance(size, fov);
                 m_Position.value = p + rotation * new Vector3(0, 0, distance);
             }
         }
@@ -2820,11 +2843,10 @@ namespace UnityEditor
         float CalcCameraDist()
         {
             float fov = m_Ortho.Fade(perspectiveFov, 0);
-
             if (fov > kOrthoThresholdAngle)
             {
                 m_Camera.orthographic = false;
-                return size / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
+                return GetPerspectiveCameraDistance(size, fov);
             }
             return 0;
         }
@@ -2940,20 +2962,11 @@ namespace UnityEditor
             if (fov > kOrthoThresholdAngle)
             {
                 m_Camera.orthographic = false;
-
-                // Old calculations were strange and were more zoomed in for tall aspect ratios than for wide ones.
-                //m_Camera.fieldOfView = Mathf.Sqrt((fov * fov) / (1 + aspect));
-                // 1:1: Sqrt((90*90) / (1+1))   = 63.63 degrees = atan(0.6204)  -  means we have 0.6204 x 0.6204 in tangents
-                // 2:1: Sqrt((90*90) / (1+2))   = 51.96 degrees = atan(0.4873)  -  means we have 0.9746 x 0.4873 in tangents
-                // 1:2: Sqrt((90*90) / (1+0.5)) = 73.48 degrees = atan(0.7465)  -  means we have 0.3732 x 0.7465 in tangents - 25% more zoomed in!
-
                 m_Camera.fieldOfView = GetVerticalFOV(fov);
             }
             else
             {
                 m_Camera.orthographic = true;
-
-                //m_Camera.orthographicSize = Mathf.Sqrt((size * size) / (1 + aspect));
                 m_Camera.orthographicSize = GetVerticalOrthoSize();
             }
 
@@ -3057,13 +3070,26 @@ namespace UnityEditor
 
         internal float GetVerticalFOV(float aspectNeutralFOV)
         {
-            float verticalHalfFovTangent = Mathf.Tan(aspectNeutralFOV * 0.5f * Mathf.Deg2Rad) * kOneOverSqrt2 / Mathf.Sqrt(m_Camera.aspect);
-            return Mathf.Atan(verticalHalfFovTangent) * 2 * Mathf.Rad2Deg;
+            // We want Scene view camera "FOV" to be the vertical FOV if the
+            // Scene view is wider than tall, and the horizontal FOV otherwise.
+            float multiplier = 1.0f;
+            if (m_Camera.aspect < 1)
+                multiplier /= m_Camera.aspect;
+            float halfFovRad = aspectNeutralFOV * 0.5f * Mathf.Deg2Rad;
+            float halfFovTan = Mathf.Tan(halfFovRad) * multiplier;
+            return Mathf.Atan(halfFovTan) * 2 * Mathf.Rad2Deg;
         }
 
         internal float GetVerticalOrthoSize()
         {
-            return size * kOneOverSqrt2 / Mathf.Sqrt(m_Camera.aspect);
+            // We want scene view ortho size to enclose sphere of
+            // radius "size". If scene view is more tall than wide,
+            // we want to take that into account so that the bounds
+            // fit in horizontally.
+            float res = size;
+            if (m_Camera.aspect < 1.0)
+                res /= m_Camera.aspect;
+            return res;
         }
 
         // Look at a specific point.
@@ -3429,7 +3455,7 @@ namespace UnityEditor
 
         public bool Frame(Bounds bounds, bool instant = true)
         {
-            float newSize = bounds.extents.magnitude * 1.5f;
+            float newSize = bounds.extents.magnitude;
 
             if (float.IsInfinity(newSize))
                 return false;
@@ -3438,7 +3464,7 @@ namespace UnityEditor
                 newSize = 10;
 
             // We snap instantly into target on playmode, because things might be moving fast and lerping lags behind
-            LookAt(bounds.center, m_Rotation.target, newSize * 2.2f, m_Ortho.value, instant);
+            LookAt(bounds.center, m_Rotation.target, newSize, m_Ortho.value, instant);
 
             return true;
         }

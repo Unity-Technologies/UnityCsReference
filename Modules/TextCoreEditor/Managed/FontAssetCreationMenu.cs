@@ -54,15 +54,22 @@ namespace UnityEditor.TextCore
 
             string newAssetFilePathWithName = AssetDatabase.GenerateUniqueAssetPath(folderPath + "/" + assetName + " SDF.asset");
 
-            //// Create new TM Font Asset.
+            // Initialize FontEngine
+            FontEngine.InitializeFontEngine();
+
+            // Load Font Face
+            if (FontEngine.LoadFontFace(sourceFont, 90) != FontEngineError.Success)
+            {
+                Debug.LogWarning("Unable to load font face for [" + sourceFont.name + "].", sourceFont);
+                return;
+            }
+
+            // Create new Font Asset
             FontAsset fontAsset = ScriptableObject.CreateInstance<FontAsset>();
             AssetDatabase.CreateAsset(fontAsset, newAssetFilePathWithName);
 
             fontAsset.version = "1.1.0";
 
-            // Set face information
-            FontEngine.InitializeFontEngine();
-            FontEngine.LoadFontFace(sourceFont, 90);
             fontAsset.faceInfo = FontEngine.GetFaceInfo();
 
             // Set font reference and GUID

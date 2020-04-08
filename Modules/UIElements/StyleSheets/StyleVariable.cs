@@ -42,6 +42,24 @@ namespace UnityEngine.UIElements
             m_Variables.Add(sv);
         }
 
+        public void InsertRange(int index, StyleVariableContext other)
+        {
+            if (other.m_Variables.Count > 0)
+            {
+                m_DirtyVariableHash = true;
+                m_Variables.InsertRange(index, other.m_Variables);
+            }
+        }
+
+        public void Clear()
+        {
+            if (m_Variables.Count > 0)
+            {
+                m_DirtyVariableHash = true;
+                m_Variables.Clear();
+            }
+        }
+
         public void RemoveRange(int i, int c)
         {
             m_DirtyVariableHash = true;
