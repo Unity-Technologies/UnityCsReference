@@ -519,6 +519,10 @@ namespace UnityEditor.StyleSheets
                         // env(--my-variable, "pow");
                         variableValues = functionValue.args[1];
                     }
+                    else
+                    {
+                        throw new Exception($"Cannot resolve variable: \"{functionValue.args[0][0].AsString()}\"");
+                    }
                 }
                 else
                 {
@@ -825,9 +829,10 @@ namespace UnityEditor.StyleSheets
                                 helper.builder.AddValue(value.AsString(), StyleValueType.FunctionSeparator);
                             }
                         }
-
                         break;
-
+                    case StyleValueType.ScalableImage:
+                        helper.builder.AddValue(value.AsScalableImage().normalImage);
+                        break;
                     case StyleValueType.AssetReference:
                         helper.builder.AddValue(value.AsAssetReference());
                         break;

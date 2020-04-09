@@ -314,7 +314,9 @@ namespace UnityEngine
         extern public Mesh additionalVertexStreams { get; set; }
         extern public Mesh enlightenVertexStream { get; set; }
         extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
+        extern public float scaleInLightmap { get; set; }
         extern public ReceiveGI receiveGI { get; set; }
+        extern public bool stitchLightmapSeams { get; set; }
     }
 
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]

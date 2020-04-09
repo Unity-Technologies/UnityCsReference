@@ -106,21 +106,22 @@ namespace UnityEditor.PackageManager.UI
                 if (package == null)
                     return null;
 
-                var packageSelectionObject = m_PackageSelectionObjects.Get(version?.uniqueId ?? package.versions.primary.uniqueId);
+                version = version ?? package.versions.primary;
+                var packageSelectionObject = m_PackageSelectionObjects.Get(version.uniqueId);
                 if (packageSelectionObject != null)
                     return packageSelectionObject;
 
                 packageSelectionObject = CreateInstance<PackageSelectionObject>();
-                packageSelectionObject.name = version?.uniqueId ?? package.versions.primary.uniqueId;
+                packageSelectionObject.name = version.uniqueId;
                 packageSelectionObject.m_Data = new PackageSelectionObject.Data
                 {
-                    name = packageSelectionObject.name,
-                    displayName = version?.displayName ?? package.versions.primary.displayName,
+                    name = version.uniqueId,
+                    displayName = version.displayName,
                     packageUniqueId = package.uniqueId,
-                    versionUniqueId = version?.uniqueId ?? package.versions.primary.uniqueId
+                    versionUniqueId = version.uniqueId
                 };
 
-                m_PackageSelectionObjects[packageSelectionObject.m_Data.name] = packageSelectionObject;
+                m_PackageSelectionObjects[version.uniqueId] = packageSelectionObject;
                 return packageSelectionObject;
             }
 
@@ -219,7 +220,7 @@ namespace UnityEditor.PackageManager.UI
 
             private void RegisterPageEvents(IPage page)
             {
-                page.onSelectionChanged += TriggerOnSelectionChanged;
+                page.onSelectionChanged += OnPageSelectionChanged;
                 page.onVisualStateChange += TriggerOnVisualStateChange;
                 page.onListUpdate += TriggerOnPageUpdate;
                 page.onListRebuild += TriggerOnPageRebuild;
@@ -227,15 +228,17 @@ namespace UnityEditor.PackageManager.UI
 
             private void UnregisterPageEvents(IPage page)
             {
-                page.onSelectionChanged -= TriggerOnSelectionChanged;
+                page.onSelectionChanged -= OnPageSelectionChanged;
                 page.onVisualStateChange -= TriggerOnVisualStateChange;
                 page.onListUpdate -= TriggerOnPageUpdate;
                 page.onListRebuild -= TriggerOnPageRebuild;
             }
 
-            private void TriggerOnSelectionChanged(IPackageVersion version)
+            private void OnPageSelectionChanged(IPackageVersion version)
             {
                 onSelectionChanged?.Invoke(version);
+
+                SelectInInspector(PackageDatabase.instance.GetPackage(version), version, false);
             }
 
             private void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
@@ -278,9 +281,24 @@ namespace UnityEditor.PackageManager.UI
                 SetSelected(null);
             }
 
-            public void SetSelected(IPackage package, IPackageVersion version = null)
+            public void SetSelected(IPackage package, IPackageVersion version = null, bool forceSelectInInspector = false)
             {
                 GetPageFromTab().SetSelected(package, version);
+                SelectInInspector(package, version, forceSelectInInspector);
+            }
+
+            private void SelectInInspector(IPackage package, IPackageVersion version, bool forceSelectInInspector)
+            {
+                // There are two situations when we want to select a package in the inspector
+                // 1) we explicitly/force to select it as a result of an manual action (in this case, forceSelectInInspector should be set to true)
+                // 2) currently another package is selected in inspector, hence we are sure that we are not stealing selection from some other window
+                var currentPackageSelection = ApplicationUtil.instance.activeSelection as PackageSelectionObject;
+                if (forceSelectInInspector || currentPackageSelection != null)
+                {
+                    var packageSelectionObject = CreatePackageSelectionObject(package, version);
+                    if (ApplicationUtil.instance.activeSelection != packageSelectionObject)
+                        ApplicationUtil.instance.activeSelection = packageSelectionObject;
+                }
             }
 
             public void SetSeeAllVersions(IPackage package, bool value)
@@ -296,21 +314,10 @@ namespace UnityEditor.PackageManager.UI
                 GetPageFromTab().SetExpanded(package, value);
             }
 
-            public PackageFilterTab FindTab(string versionUniqueIdOrDisplayName)
+            public PackageFilterTab FindTab(IPackage package, IPackageVersion version = null)
             {
-                if (string.IsNullOrEmpty(versionUniqueIdOrDisplayName))
-                    return PackageFiltering.instance.currentFilterTab;
-
-                var packageUniqueId = versionUniqueIdOrDisplayName.Split('@')[0];
                 var page = GetPageFromTab();
-
-                IPackageVersion version;
-                IPackage package;
-                PackageDatabase.instance.GetPackageAndVersion(packageUniqueId, versionUniqueIdOrDisplayName, out package, out version);
-                if (package == null)
-                    package = PackageDatabase.instance.GetPackage(versionUniqueIdOrDisplayName) ?? PackageDatabase.instance.GetPackageByDisplayName(versionUniqueIdOrDisplayName);
-
-                if (page.Contains(packageUniqueId) || page.Contains(package?.uniqueId))
+                if (page.Contains(package?.uniqueId))
                     return page.tab;
 
                 if (package?.Is(PackageType.BuiltIn) == true)
@@ -348,6 +355,10 @@ namespace UnityEditor.PackageManager.UI
                     Refresh(filterTab);
                 page.Rebuild();
                 UpdateSearchTextOnPage(page, PackageFiltering.instance.currentSearchText);
+
+                // When the filter tab is changed, on a page level, the selection hasn't changed because selection is kept for each filter
+                // However, if you look at package manager as a whole
+                OnPageSelectionChanged(page.GetSelectedVersion());
             }
 
             private static void UpdateSearchTextOnPage(IPage page, string searchText)
@@ -466,6 +477,23 @@ namespace UnityEditor.PackageManager.UI
                     Refresh(RefreshOptions.Purchased, PackageManagerWindow.instance?.packageList?.CalculateNumberOfPackagesToDisplay() ?? k_DefaultPageSize);
             }
 
+            private void OnEditorSelectionChanged()
+            {
+                var packageSelectionObject = ApplicationUtil.instance.activeSelection as PackageSelectionObject;
+                if (packageSelectionObject == null)
+                    return;
+
+                IPackage package;
+                IPackageVersion version;
+                PackageDatabase.instance.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out package, out version);
+                if (package == null || version == null)
+                    return;
+
+                var tab = FindTab(package, version);
+                PackageFiltering.instance.currentFilterTab = tab;
+                SetSelected(package, version);
+            }
+
             public void Setup()
             {
                 m_Initialized = true;
@@ -499,6 +527,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageManagerPrefs.instance.onShowDependenciesChanged += OnShowDependenciesChanged;
 
                 ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
+                ApplicationUtil.instance.onEditorSelectionChanged += OnEditorSelectionChanged;
             }
 
             public void UnregisterEvents()
@@ -525,6 +554,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageManagerPrefs.instance.onShowDependenciesChanged -= OnShowDependenciesChanged;
 
                 ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
+                ApplicationUtil.instance.onEditorSelectionChanged -= OnEditorSelectionChanged;
 
                 PackageDatabase.instance.UnregisterEvents();
             }
@@ -561,6 +591,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 foreach (var page in m_Pages.Values)
                 {
+                    page.SetSelected(null);
                     page.Rebuild();
                     UnregisterPageEvents(page);
                 }

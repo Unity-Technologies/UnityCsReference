@@ -1387,6 +1387,9 @@
     <Compile Include="..\..\Modules\UIElements\Transitions.cs">
       <Link>Modules\UIElements\Transitions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\UIElementsPackageUtility.cs">
+      <Link>Modules\UIElements\UIElementsPackageUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\UIElementsRuntimeUtility.cs">
       <Link>Modules\UIElements\UIElementsRuntimeUtility.cs</Link>
     </Compile>

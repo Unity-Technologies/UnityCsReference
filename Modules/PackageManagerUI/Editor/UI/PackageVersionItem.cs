@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI
             this.package = package;
             this.version = version;
             RefreshLabel();
-            this.OnLeftClick(() => PageManager.instance.SetSelected(package, version));
+            this.OnLeftClick(() => PageManager.instance.SetSelected(package, version, true));
         }
 
         public IPackageVersion targetVersion { get { return version; } }

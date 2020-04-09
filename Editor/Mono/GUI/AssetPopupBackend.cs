@@ -116,15 +116,22 @@ namespace UnityEditor
                 }
             }
 
-            // Create item
-            gm.AddSeparator("");
-            gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
+            var target = serializedProperty.serializedObject.targetObject;
+            bool isPreset = target is Component ? ((int)(target as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(target);
+
+            // the preset object is destroyed with the inspector, and nothing new can be created that needs this link. Fix for case 1208437
+            if (!isPreset)
             {
-                var newAsset = Activator.CreateInstance<T>();
-                var doCreate = ScriptableObject.CreateInstance<DoCreateNewAsset>();
-                doCreate.SetProperty(serializedProperty);
-                ProjectWindowUtil.StartNameEditingIfProjectWindowExists(newAsset.GetInstanceID(), doCreate, "New " + typeName + "." + fileExtension, AssetPreview.GetMiniThumbnail(newAsset), null);
-            });
+                // Create item
+                gm.AddSeparator("");
+                gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
+                {
+                    var newAsset = Activator.CreateInstance<T>();
+                    var doCreate = ScriptableObject.CreateInstance<DoCreateNewAsset>();
+                    doCreate.SetProperty(serializedProperty);
+                    ProjectWindowUtil.StartNameEditingIfProjectWindowExists(newAsset.GetInstanceID(), doCreate, "New " + typeName + "." + fileExtension, AssetPreview.GetMiniThumbnail(newAsset), null);
+                });
+            }
 
             gm.DropDown(buttonRect);
         }

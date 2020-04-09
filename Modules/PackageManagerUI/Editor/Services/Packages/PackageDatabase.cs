@@ -69,9 +69,31 @@ namespace UnityEditor.PackageManager.UI
                 return UpmClient.instance.IsAddInProgress(version.uniqueId) || UpmClient.instance.IsEmbedInProgress(version.uniqueId);
             }
 
-            public IPackage GetPackageByDisplayName(string displayName)
+            // In some situations, we only know an id (could be package unique id, or version unique id) or just a name (package Name, or display name)
+            // but we still might be able to find a package and a version that matches the criteria
+            public void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version)
             {
-                return m_Packages.Values.FirstOrDefault(p => p.displayName == displayName);
+                // GetPackage by packageUniqueId itself is not an expensive operation, so we want to try and see if the input string is a packageUniqueId first.
+                package = GetPackage(idOrName);
+                if (package != null)
+                {
+                    version = null;
+                    return;
+                }
+
+                // if we are able to break the string into two by looking at '@' sign, it's possible that the input idOrDisplayName is a versionId
+                var idOrDisplayNameSplit = idOrName?.Split(new[] { '@' }, 2);
+                if (idOrDisplayNameSplit?.Length == 2)
+                {
+                    var packageUniqueId = idOrDisplayNameSplit[0];
+                    GetPackageAndVersion(packageUniqueId, idOrName, out package, out version);
+                    if (package != null)
+                        return;
+                }
+
+                // If none of those find-by-index options work, we'll just have to find it the brute force way by matching the name & display name
+                package = m_Packages.Values.FirstOrDefault(p => p.name == idOrName || p.displayName == idOrName);
+                version = null;
             }
 
             public IPackage GetPackage(string uniqueId)

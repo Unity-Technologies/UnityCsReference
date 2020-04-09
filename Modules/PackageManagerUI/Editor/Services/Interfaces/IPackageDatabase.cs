@@ -53,7 +53,7 @@ namespace UnityEditor.PackageManager.UI
         void AddPackageError(IPackage package, UIError error);
         void ClearPackageErrors(IPackage package);
 
-        IPackage GetPackageByDisplayName(string displayName);
+        void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version);
 
         IPackage GetPackage(string uniqueId);
         IPackage GetPackage(IPackageVersion version);

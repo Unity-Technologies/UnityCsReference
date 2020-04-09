@@ -101,12 +101,6 @@ namespace UnityEditor.PackageManager.UI
 
             root.StretchToParentSize();
 
-            SetContentVisibility(false);
-            SetUpdateVisibility(false);
-            removeButton.visible = false;
-            importButton.visible = false;
-            downloadButton.visible = false;
-
             detailAuthorLink.clickable.clicked += AuthorClick;
             updateButton.clickable.clicked += UpdateClick;
             removeButton.clickable.clicked += RemoveClick;
@@ -124,6 +118,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 t.isReadOnly = true;
             });
+
+            RefreshContent();
         }
 
         public UnityEngine.Object GetDisplayPackageManifestAsset()
@@ -147,7 +143,6 @@ namespace UnityEditor.PackageManager.UI
             AssetStoreDownloadManager.instance.onDownloadProgress += UpdateDownloadProgressBar;
             AssetStoreDownloadManager.instance.onDownloadFinalized += StopDownloadProgressBar;
 
-            PageManager.instance.onListRebuild += OnListRebuild;
             PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
             PackageManagerPrefs.instance.onShowDependenciesChanged += (value) => RefreshDependencies();
@@ -165,7 +160,6 @@ namespace UnityEditor.PackageManager.UI
             AssetStoreDownloadManager.instance.onDownloadProgress -= UpdateDownloadProgressBar;
             AssetStoreDownloadManager.instance.onDownloadFinalized -= StopDownloadProgressBar;
 
-            PageManager.instance.onListRebuild -= OnListRebuild;
             PageManager.instance.onSelectionChanged -= OnSelectionChanged;
 
             ClearSupportingImages();
@@ -197,14 +191,9 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(packageToolbarLeftArea, visible);
         }
 
-        private void OnListRebuild(IPage page)
-        {
-            OnSelectionChanged(PageManager.instance.GetSelectedVersion());
-        }
-
         internal void OnSelectionChanged(IPackageVersion version)
         {
-            if (version != null && PageManager.instance.IsInitialFetchingDone())
+            if (version != null)
                 SetPackage(PackageDatabase.instance.GetPackage(version), version);
             else
                 SetPackage(null);
@@ -213,11 +202,6 @@ namespace UnityEditor.PackageManager.UI
         private void RefreshDependencies()
         {
             dependencies.SetPackageVersion(displayVersion);
-        }
-
-        private void SetUpdateVisibility(bool value)
-        {
-            UIUtils.SetElementDisplay(updateButton, value);
         }
 
         void RefreshExtensions(IPackageVersion version)
@@ -233,12 +217,12 @@ namespace UnityEditor.PackageManager.UI
             });
         }
 
-        private void SetDisplayVersion(IPackageVersion version)
+        private void RefreshContent()
         {
-            displayVersion = version;
             detailScrollView.scrollOffset = new Vector2(0, 0);
 
             var detailVisible = package != null && displayVersion != null;
+            var detailEnabled = displayVersion == null || displayVersion.isFullyFetched;
             if (!detailVisible)
             {
                 UIUtils.SetElementDisplay(customContainer, false);
@@ -247,8 +231,6 @@ namespace UnityEditor.PackageManager.UI
             else
             {
                 var isBuiltIn = package.Is(PackageType.BuiltIn);
-
-                SetUpdateVisibility(true);
 
                 detailTitle.SetValueWithoutNotify(displayVersion.displayName);
 
@@ -284,10 +266,14 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshPackageActionButtons();
                 RefreshImportAndDownloadButtons();
+
+                RefreshPurchasedDate();
+                RefreshLabels();
             }
 
             // Set visibility
             SetContentVisibility(detailVisible);
+            SetEnabled(detailEnabled);
             RefreshErrorDisplay();
         }
 
@@ -567,30 +553,13 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetPackage(IPackage package, IPackageVersion version = null)
         {
-            // This is added to avoid the selection issues caused by the selection system.
-            // To be addressed in https://jira.unity3d.com/browse/PAX-1308
-            var isAssetStore = PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore;
-            var isLoggedIn = ApplicationUtil.instance.isUserLoggedIn;
-            if (isAssetStore && !isLoggedIn)
-            {
-                package = null;
-                version = null;
-            }
-
-            version = version ?? package?.versions.primary;
             this.package = package;
+            displayVersion = version ?? package?.versions.primary;
 
-            SetEnabled(true);
-
-            if (version != null && !version.isFullyFetched)
-            {
-                SetEnabled(false);
+            if (version?.isFullyFetched == false)
                 PackageDatabase.instance.FetchExtraInfo(version);
-            }
 
-            SetDisplayVersion(version);
-            RefreshPurchasedDate();
-            RefreshLabels();
+            RefreshContent();
         }
 
         internal void OnPackagesUpdated(IEnumerable<IPackage> updatedPackages)
@@ -952,7 +921,6 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache cache { get; set; }
 
-        private VisualElement detailDescContainer { get { return cache.Get<VisualElement>("detailDescContainer"); } }
         private VisualElement detailNameContainer { get { return cache.Get<VisualElement>("detailNameContainer"); } }
         private TextField detailName { get { return cache.Get<TextField>("detailName"); } }
         private TextField detailDesc { get { return cache.Get<TextField>("detailDesc"); } }

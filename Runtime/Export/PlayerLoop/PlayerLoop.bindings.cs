@@ -225,6 +225,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct UpdateAllRenderers {}
         [RequiredByNativeCode]
+        public struct UpdateLightProbeProxyVolumes {}
+        [RequiredByNativeCode]
         public struct EnlightenRuntimeUpdate {}
         [RequiredByNativeCode]
         public struct UpdateAllSkinnedMeshes {}

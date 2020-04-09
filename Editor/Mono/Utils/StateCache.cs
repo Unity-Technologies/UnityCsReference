@@ -65,7 +65,7 @@ namespace UnityEditor
             m_Cache[key] = obj;
         }
 
-        public T GetState(Hash128 key)
+        public T GetState(Hash128 key, T defaultValue = default(T))
         {
             ThrowIfInvalid(key);
 
@@ -84,7 +84,7 @@ namespace UnityEditor
                 catch (Exception e)
                 {
                     Debug.LogError(string.Format("Error loading file {0}. Error: {1}", filePath, e));
-                    return default(T);
+                    return defaultValue;
                 }
 
                 try
@@ -95,14 +95,14 @@ namespace UnityEditor
                 {
                     Debug.LogError(string.Format("Invalid file content for {0}. Removing file. Error: {1}", filePath, exception));
                     RemoveState(key);
-                    return default(T);
+                    return defaultValue;
                 }
 
                 m_Cache[key] = obj;
                 return obj;
             }
 
-            return default(T);
+            return defaultValue;
         }
 
         public void RemoveState(Hash128 key)

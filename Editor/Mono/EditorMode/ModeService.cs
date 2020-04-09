@@ -30,7 +30,8 @@ namespace UnityEditor
         LayoutSwitching,
         LayoutWindowMenu,
         Playbar,
-        GameViewToolbar
+        GameViewToolbar,
+        StatusBarExtraFeatures
     }
 
     [Serializable]

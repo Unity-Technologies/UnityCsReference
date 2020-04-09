@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI
 
         void ClearSelection();
 
-        void SetSelected(IPackage package, IPackageVersion version = null);
+        void SetSelected(IPackage package, IPackageVersion version = null, bool forceSelectInInspector = false);
 
         void SetSeeAllVersions(IPackage package, bool value);
 
@@ -53,7 +53,7 @@ namespace UnityEditor.PackageManager.UI
 
         IPage GetPage(PackageFilterTab tab);
 
-        PackageFilterTab FindTab(string packageIdOrDisplayName);
+        PackageFilterTab FindTab(IPackage package, IPackageVersion version = null);
 
         long GetRefreshTimestamp(PackageFilterTab? tab = null);
         UIError GetRefreshError(PackageFilterTab? tab = null);

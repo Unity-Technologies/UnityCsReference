@@ -957,6 +957,8 @@ namespace UnityEditor
 
         public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow)
         {
+            Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={keepMainWindow}");
+
             Rect mainWindowPosition = new Rect();
             UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             foreach (ContainerWindow window in containers)
@@ -1100,6 +1102,10 @@ namespace UnityEditor
                 }
 
                 mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
+
+                // Make sure to restore the save to layout flag when loading a layout from a file.
+                if (keepMainWindow)
+                    mainWindow.m_DontSaveToLayout = false;
 
                 // Show other windows
                 for (int i = 0; i < newWindows.Count; i++)
@@ -1245,6 +1251,7 @@ namespace UnityEditor
 
         public static void SaveWindowLayout(string path)
         {
+            Console.WriteLine($"[LAYOUT] About to save layout {path}");
             TooltipView.Close();
 
             ArrayList all = new ArrayList();

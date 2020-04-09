@@ -108,9 +108,25 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(scrollView, true);
             UIUtils.SetElementDisplay(emptyArea, false);
 
+            var page = PageManager.instance.GetCurrentPage();
+            var selectedVersion = page.GetSelectedVersion();
+            var selectedVisualState = selectedVersion != null ? page.GetVisualState(selectedVersion.packageUniqueId) : null;
+            if (selectedVisualState?.visible != true)
+            {
+                var firstVisible = page.visualStates.FirstOrDefault(v => v.visible);
+                if (firstVisible != null)
+                {
+                    IPackage package;
+                    IPackageVersion version;
+                    PackageDatabase.instance.GetPackageAndVersion(firstVisible.packageUniqueId, firstVisible.selectedVersionId, out package, out version);
+                    PageManager.instance.SetSelected(package, version);
+                }
+                else
+                    PageManager.instance.ClearSelection();
+            }
+
             if (updateScrollPosition)
                 ScrollIfNeeded();
-            UpdateActiveSelection();
         }
 
         private void HidePackagesShowLogin()
@@ -168,13 +184,12 @@ namespace UnityEditor.PackageManager.UI
             }
 
             var page = PageManager.instance.GetCurrentPage();
-            var isListEmpty = !page.items.Any(item => page.GetVisualState(item).visible);
-            var isRefreshInProgress = PageManager.instance.IsRefreshInProgress();
+            var isListEmpty = !page.visualStates.Any(v => v.visible);
             var isInitialFetchingDone = PageManager.instance.IsInitialFetchingDone();
 
-            if (isListEmpty || (!isAssetStore && isRefreshInProgress && !isInitialFetchingDone))
+            if (isListEmpty || !isInitialFetchingDone)
             {
-                HidePackagesShowMessage(isRefreshInProgress, isInitialFetchingDone);
+                HidePackagesShowMessage(PageManager.instance.IsRefreshInProgress(), isInitialFetchingDone);
                 return;
             }
 
@@ -216,7 +231,6 @@ namespace UnityEditor.PackageManager.UI
         internal void OnFocus()
         {
             ScrollIfNeeded();
-            UpdateActiveSelection();
         }
 
         private void ScrollIfNeeded(ScrollView container = null, VisualElement target = null)
@@ -246,6 +260,9 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnKeyDownShortcut(KeyDownEvent evt)
         {
+            if (!UIUtils.IsElementVisible(scrollView))
+                return;
+
             if (evt.keyCode == KeyCode.RightArrow)
             {
                 SetSelectedItemExpanded(true);
@@ -312,11 +329,11 @@ namespace UnityEditor.PackageManager.UI
             itemsList.Clear();
             m_PackageItemsLookup.Clear();
 
-            foreach (var id in page.items)
+            foreach (var visualState in page.visualStates)
             {
-                var package = PackageDatabase.instance.GetPackage(id);
+                var package = PackageDatabase.instance.GetPackage(visualState.packageUniqueId);
                 var packageItem = AddOrUpdatePackageItem(package);
-                packageItem?.UpdateVisualState(page.GetVisualState(id));
+                packageItem?.UpdateVisualState(visualState);
             }
 
             RefreshList(true);
@@ -346,8 +363,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 // re-order if there are any added or updated items
                 itemsList.Clear();
-                foreach (var id in page.items)
-                    itemsList.Add(GetPackageItem(id));
+                foreach (var state in page.visualStates)
+                    itemsList.Add(GetPackageItem(state.packageUniqueId));
                 m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
             }
 
@@ -385,27 +402,13 @@ namespace UnityEditor.PackageManager.UI
                         ++numVisibleElement;
                 }
 
-                PageManager.instance.SetSelected(nextElement.package, nextElement.targetVersion);
+                PageManager.instance.SetSelected(nextElement.package, nextElement.targetVersion, true);
 
                 foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
                     ScrollIfNeeded(scrollView, nextElement.element);
             }
 
             return true;
-        }
-
-        private void UpdateActiveSelection()
-        {
-            if (EditorWindow.focusedWindow as PackageManagerWindow != PackageManagerWindow.instance)
-                return;
-
-            IPackage package;
-            IPackageVersion version;
-            PageManager.instance.GetSelectedPackageAndVersion(out package, out version);
-
-            var packageSelectionObject = PageManager.instance.CreatePackageSelectionObject(package, version);
-            if (packageSelectionObject != null && ApplicationUtil.instance.activeSelection != packageSelectionObject)
-                ApplicationUtil.instance.activeSelection = packageSelectionObject;
         }
 
         internal int CalculateNumberOfPackagesToDisplay()

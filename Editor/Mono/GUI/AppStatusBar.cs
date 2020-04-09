@@ -51,6 +51,7 @@ namespace UnityEditor
 
         private string m_MiniMemoryOverview = "";
         private bool? m_autoLightBakingOn;
+        private bool m_DrawExtraFeatures;
         private GUIContent m_ProgressStatus = new GUIContent();
         private GUIContent m_ProgressPercentageStatus = new GUIContent();
         private bool m_CurrentProgressNotResponding = false;
@@ -84,6 +85,7 @@ namespace UnityEditor
             m_autoLightBakingOn = GetBakeMode();
             m_ManagedDebuggerToggle = new ManagedDebuggerToggle();
             m_CacheServerToggle = new CacheServerToggle();
+            m_DrawExtraFeatures = ModeService.HasCapability(ModeCapability.StatusBarExtraFeatures, true);
             m_EventInterests.wantsLessLayoutEvents = true;
 
             Progress.added += RefreshProgressBar;
@@ -149,11 +151,15 @@ namespace UnityEditor
                 GUILayout.Space(2);
                 DrawStatusText();
                 GUILayout.FlexibleSpace();
-                DrawSpecialModeLabel();
+                if (m_DrawExtraFeatures)
+                    DrawSpecialModeLabel();
                 DrawProgressBar();
-                DrawDebuggerToggle();
-                DrawCacheServerToggle();
-                DrawBakeMode();
+                if (m_DrawExtraFeatures)
+                {
+                    DrawDebuggerToggle();
+                    DrawCacheServerToggle();
+                    DrawBakeMode();
+                }
                 DrawRefreshStatus();
             }
             GUILayout.EndHorizontal();

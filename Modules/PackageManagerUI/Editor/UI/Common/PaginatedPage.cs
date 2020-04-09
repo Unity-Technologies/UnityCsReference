@@ -21,7 +21,7 @@ namespace UnityEditor.PackageManager.UI
 
         public bool morePackagesToFetch => numCurrentItems < numTotalItems;
 
-        public override IEnumerable<string> items => m_VisualStateList.Select(v => v.packageUniqueId);
+        public override IEnumerable<VisualState> visualStates => m_VisualStateList;
 
         public PaginatedPage(PackageFilterTab tab, PageCapability capability) : base(tab, capability)
         {
@@ -95,8 +95,6 @@ namespace UnityEditor.PackageManager.UI
 
             if (changedVisualStates.Any())
                 TriggerOnVisualStateChange(changedVisualStates);
-
-            RefreshSelected();
         }
 
         private PurchasesQueryArgs BuildQueryFromFilter(int startIndex, int limit)

@@ -103,11 +103,13 @@ namespace UnityEditor.PackageManager.UI
                 mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
 
                 EditorApplication.focusChanged += OnFocusChanged;
-                ApplicationUtil.instance.onEditorSelectionChanged += OnEditorSelectionChanged;
+                ApplicationUtil.instance.onEditorSelectionChanged += RefreshSelectedInInspectorClass;
 
                 rootVisualElement.focusable = true;
                 rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
                 rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+                RefreshSelectedInInspectorClass();
             }
         }
 
@@ -178,7 +180,7 @@ namespace UnityEditor.PackageManager.UI
             packageStatusbar.OnDisable();
 
             EditorApplication.focusChanged -= OnFocusChanged;
-            ApplicationUtil.instance.onEditorSelectionChanged -= OnEditorSelectionChanged;
+            ApplicationUtil.instance.onEditorSelectionChanged -= RefreshSelectedInInspectorClass;
         }
 
         public void OnDestroy()
@@ -214,13 +216,7 @@ namespace UnityEditor.PackageManager.UI
             IPackageVersion version = null;
             IPackage package = null;
             if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
-            {
-                var packageUniqueId = m_PackageToSelectOnLoaded.Split('@')[0];
-
-                PackageDatabase.instance.GetPackageAndVersion(packageUniqueId, m_PackageToSelectOnLoaded, out package, out version);
-                if (package == null)
-                    package = PackageDatabase.instance.GetPackage(m_PackageToSelectOnLoaded) ?? PackageDatabase.instance.GetPackageByDisplayName(m_PackageToSelectOnLoaded);
-            }
+                PackageDatabase.instance.GetPackageAndVersionByIdOrName(m_PackageToSelectOnLoaded, out package, out version);
 
             if (m_FilterToSelectAfterLoad == PackageFilterTab.AssetStore)
             {
@@ -251,7 +247,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageFiltering.instance.currentFilterTab = tab;
                 if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
                 {
-                    PageManager.instance.GetPage(tab).SetSelected(package, version);
+                    PageManager.instance.SetSelected(package, version, true);
                     packageList.OnFocus();
                 }
 
@@ -262,42 +258,25 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnFocus()
         {
+            rootVisualElement.AddToClassList("focus");
+
             if (cache == null)
                 return;
 
-            packageList.AddToClassList("focus");
-            packageDetails.AddToClassList("focus");
             packageList.OnFocus();
         }
 
         private void OnLostFocus()
         {
-            if (cache == null)
-                return;
-
-            packageList.RemoveFromClassList("focus");
-            packageDetails.RemoveFromClassList("focus");
+            rootVisualElement.RemoveFromClassList("focus");
         }
 
-        private void OnEditorSelectionChanged()
+        private void RefreshSelectedInInspectorClass()
         {
-            if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded) || m_FilterToSelectAfterLoad != null)
-                return;
-
             if (ApplicationUtil.instance.activeSelection is PackageSelectionObject)
-            {
-                var packageSelectionObject = (PackageSelectionObject)ApplicationUtil.instance.activeSelection;
-                IPackage package;
-                IPackageVersion version;
-
-                PackageDatabase.instance.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out package, out version);
-                if (package == null || version == null)
-                    return;
-
-                var tab = PageManager.instance.FindTab(package.Is(PackageType.AssetStore) ? packageSelectionObject.packageUniqueId : packageSelectionObject.versionUniqueId);
-                PackageFiltering.instance.currentFilterTab = tab;
-                PageManager.instance.GetPage(tab).SetSelected(package, version);
-            }
+                rootVisualElement.AddToClassList("selectedInInspector");
+            else
+                rootVisualElement.RemoveFromClassList("selectedInInspector");
         }
 
         private void OnRefreshOperationStart()
@@ -354,13 +333,9 @@ namespace UnityEditor.PackageManager.UI
                 string packageId = null;
                 if (!string.IsNullOrEmpty(packageNameOrDisplayName))
                 {
-                    var packageUniqueId = packageNameOrDisplayName.Split('@')[0];
-
                     IPackageVersion version;
                     IPackage package;
-                    PackageDatabase.instance.GetPackageAndVersion(packageUniqueId, packageNameOrDisplayName, out package, out version);
-                    if (package == null)
-                        package = PackageDatabase.instance.GetPackage(packageNameOrDisplayName) ?? PackageDatabase.instance.GetPackageByDisplayName(packageNameOrDisplayName);
+                    PackageDatabase.instance.GetPackageAndVersionByIdOrName(packageNameOrDisplayName, out package, out version);
 
                     packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? string.Format(ApplicationUtil.instance.GetTranslationForText("{0}@primary"), packageNameOrDisplayName);
                 }
@@ -387,7 +362,12 @@ namespace UnityEditor.PackageManager.UI
             if (!string.IsNullOrEmpty(packageIdOrDisplayName) || filterTab != null)
             {
                 if (filterTab == null)
-                    filterTab = PageManager.instance.FindTab(packageIdOrDisplayName);
+                {
+                    IPackageVersion version;
+                    IPackage package;
+                    PackageDatabase.instance.GetPackageAndVersionByIdOrName(packageIdOrDisplayName, out package, out version);
+                    filterTab = PageManager.instance.FindTab(package, version);
+                }
 
                 instance.m_FilterToSelectAfterLoad = filterTab;
                 instance.m_PackageToSelectOnLoaded = packageIdOrDisplayName;

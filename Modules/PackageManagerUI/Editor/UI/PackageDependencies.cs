@@ -33,6 +33,7 @@ namespace UnityEditor.PackageManager.UI
             textfield.SetValueWithoutNotify(text);
             textfield.AddToClassList(clazz);
             textfield.tooltip = text;
+            textfield.isReadOnly = true;
             return textfield;
         }
 
@@ -62,7 +63,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetPackageVersion(IPackageVersion version)
         {
-            var dependencies = version?.isInstalled == true ? version?.resolvedDependencies : version?.dependencies;
+            var dependencies = version?.dependencies;
             var reverseDependencies = PackageDatabase.instance.GetReverseDependencies(version);
             var showDependency = PackageManagerPrefs.instance.showPackageDependencies && (dependencies != null || reverseDependencies != null);
             UIUtils.SetElementDisplay(this, showDependency);

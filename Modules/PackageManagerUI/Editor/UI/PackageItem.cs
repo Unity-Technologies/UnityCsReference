@@ -205,7 +205,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void SelectMainItem()
         {
-            PageManager.instance.SetSelected(package);
+            PageManager.instance.SetSelected(package, null, true);
         }
 
         private void ToggleExpansion(ChangeEvent<bool> evt)

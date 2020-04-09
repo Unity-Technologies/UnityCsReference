@@ -3104,7 +3104,7 @@ namespace UnityEditor
 
         static float ValidateSceneSize(float value)
         {
-            if (value == 0f)
+            if (value == 0f || float.IsNaN(value))
                 return float.Epsilon;
             if (value > k_MaxSceneViewSize)
                 return k_MaxSceneViewSize;
@@ -3443,7 +3443,7 @@ namespace UnityEditor
             FixNegativeSize();
             m_Position.target = point;
             m_Rotation.target = direction;
-            m_Size.target = Mathf.Abs(newSize);
+            m_Size.target = ValidateSceneSize(Mathf.Abs(newSize));
             // Update name in the top-right handle
             svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
@@ -3483,7 +3483,7 @@ namespace UnityEditor
             {
                 m_Position.target = point;
                 m_Rotation.target = direction;
-                m_Size.target = Mathf.Abs(newSize);
+                m_Size.target = ValidateSceneSize(Mathf.Abs(newSize));
                 m_Ortho.target = ortho;
             }
 

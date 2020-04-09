@@ -14,4 +14,9 @@ namespace UnityEditor.Collaboration
         void MergeDownloadedFiles(bool isFullDownload);
         Collab.CollabStates GetAssetState(string assetGuid, string assetPath);
     }
+
+    internal interface IVersionControl_V2 : IVersionControl
+    {
+        void RefreshAvailableLocalChangesSynchronous();
+    }
 }

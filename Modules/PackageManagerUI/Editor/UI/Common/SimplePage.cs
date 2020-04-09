@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI
 
         public override long numCurrentItems => m_VisualStateList.numItems;
 
-        public override IEnumerable<string> items => m_VisualStateList.Select(v => v.packageUniqueId);
+        public override IEnumerable<VisualState> visualStates => m_VisualStateList;
 
         public SimplePage(PackageFilterTab tab, PageCapability capability) : base(tab, capability)
         {
@@ -98,8 +98,6 @@ namespace UnityEditor.PackageManager.UI
 
             if (changedVisualStates.Any())
                 TriggerOnVisualStateChange(changedVisualStates);
-
-            RefreshSelected();
         }
 
         public override VisualState GetVisualState(string packageUniqueId)
