@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using UnityEditorInternal;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -17,6 +16,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public const string Or = "||";
 
         public static readonly char[] k_ValidWhitespaces = { ' ', '\t' };
+
+        static Regex s_SplitAndKeep = new Regex("(\\|\\|)", RegexOptions.Compiled);
 
         public enum DefineConstraintStatus
         {
@@ -52,7 +53,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static DefineConstraintStatus GetDefineConstraintCompatibility(string[] defines, string defineConstraints)
         {
             // Split by "||" (OR) and keep it in the resulting array
-            var splitDefines = Regex.Split(defineConstraints, "(\\|\\|)");
+            var splitDefines = s_SplitAndKeep.Split(defineConstraints);
 
             // Trim what we consider valid space characters
             for (var i = 0; i < splitDefines.Length; ++i)
@@ -69,8 +70,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not) && x != Or).Select(x => x.Substring(1)));
-            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not) && x != Or));
+            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not, StringComparison.Ordinal) && x != Or).Select(x => x.Substring(1)));
+            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not, StringComparison.Ordinal) && x != Or));
 
             if (defines == null)
             {
@@ -105,13 +106,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 notExpectedDefines.ExceptWith(complement);
             }
 
-            var expectedDefinesResult = expectedDefines.Any(defines.Contains) ? DefineConstraintStatus.Compatible : DefineConstraintStatus.Incompatible;
+            var expectedDefinesResult = DefineConstraintStatus.Incompatible;
+            foreach (var define in expectedDefines)
+            {
+                if (defines.Contains(define))
+                {
+                    expectedDefinesResult = DefineConstraintStatus.Compatible;
+                    break;
+                }
+            }
+
             if (expectedDefines.Count > 0 && notExpectedDefines.Count == 0)
             {
                 return expectedDefinesResult;
             }
 
-            var notExpectedDefinesResult = notExpectedDefines.Any(defines.Contains) ? DefineConstraintStatus.Incompatible : DefineConstraintStatus.Compatible;
+            var notExpectedDefinesResult = DefineConstraintStatus.Compatible;
+            foreach (var define in notExpectedDefines)
+            {
+                if (defines.Contains(define))
+                {
+                    notExpectedDefinesResult = DefineConstraintStatus.Incompatible;
+                    break;
+                }
+            }
+
             if (notExpectedDefines.Count > 0 && expectedDefines.Count == 0)
             {
                 return notExpectedDefinesResult;
@@ -136,7 +155,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var splitDefines = define.Split(new[] { Or }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var d in splitDefines)
             {
-                var finalDefine = (d.StartsWith(Not) ? d.Substring(1) : d).Trim();
+                var finalDefine = (d.StartsWith(Not, StringComparison.Ordinal) ? d.Substring(1) : d).Trim();
                 if (!SymbolNameRestrictions.IsValid(finalDefine))
                 {
                     return false;

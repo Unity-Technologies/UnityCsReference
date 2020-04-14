@@ -440,4 +440,18 @@ namespace UnityEngine.Bindings
             howToFix = howToString;
         }
     }
+
+    /// <summary>
+    ///  Use this attribute on a class if there is a need to be able to make Read-only instances.
+    ///  Any Setters will check if the HideFlags.NotEditable is set to true, and if so, an exception will be thrown to prevent data modification.
+    ///  Only works on classes that can create an instance (not static or abstract classes) and that contain Setters.
+    /// </summary>
+    [VisibleToOtherModules]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    class PreventReadOnlyInstanceModificationAttribute : Attribute
+    {
+        public PreventReadOnlyInstanceModificationAttribute()
+        {
+        }
+    }
 }

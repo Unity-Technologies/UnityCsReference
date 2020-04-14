@@ -258,7 +258,7 @@ namespace UnityEditor.ShortcutManagement
 
             //We need to delay this action, since actions can depend on the right view having focus, and when closing a window
             //that will change the current focused view to null.
-            new DelayedCallback(() => {
+            EditorApplication.CallDelayed(() => {
                 m_PreviouslyFocusedView?.Focus();
 
                 switch (m_CloseBehaviour)

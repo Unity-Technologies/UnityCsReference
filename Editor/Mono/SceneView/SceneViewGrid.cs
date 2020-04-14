@@ -202,9 +202,14 @@ namespace UnityEditor
             }
         }
 
-        internal void OnEnable(SceneView view)
+        internal void UpdateGridColor()
         {
             xGrid.color = yGrid.color = zGrid.color = kViewGridColor;
+        }
+
+        internal void OnEnable(SceneView view)
+        {
+            UpdateGridColor();
 
             GridSettings.sizeChanged += GridSizeChanged;
 

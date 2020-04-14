@@ -63,7 +63,20 @@ namespace UnityEditor
                 enumData.serializable = true;
                 return enumData;
             }
-            enumfieldlist.OrderBy(f => f.MetadataToken);
+
+            // We can't order the enum from its MetadataToken if its Assembly Dynamic because of a bug in .NET
+            try
+            {
+                var location = enumfieldlist.First().Module.Assembly.Location;
+                if (!string.IsNullOrEmpty(location))
+                {
+                    enumfieldlist = enumfieldlist.OrderBy(f => f.MetadataToken).ToList();
+                }
+            }
+            catch
+            {
+                // ignored
+            }
             enumData.displayNames = enumfieldlist.Select(f => EnumNameFromEnumField(f)).ToArray();
             if (enumData.displayNames.Distinct().Count() != enumData.displayNames.Length)
             {

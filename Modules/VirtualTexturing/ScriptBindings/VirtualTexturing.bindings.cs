@@ -22,7 +22,11 @@ namespace UnityEngine.Rendering
             extern public static void Update();
 
             public const int AllMips = int.MaxValue;
+
+            [NativeThrows]
             extern public static void RequestRegion([NotNull] Material mat, int stackNameId, Rect r, int mipMap, int numMips);
+            [NativeThrows]
+            extern public static void GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
 
             // Apply the virtualtexturing settings to the renderer. This may be an expensive operation so it should be done very sparingly (e.g. during a level load/startup).
             [NativeThrows]
@@ -34,12 +38,19 @@ namespace UnityEngine.Rendering
         [NativeConditional("UNITY_EDITOR")]
         public static class EditorHelpers
         {
+            [NativeHeader("Runtime/Shaders/SharedMaterialData.h")]
+            internal struct StackValidationResult
+            {
+                public string stackName;
+                public string errorMessage;
+            }
+
             extern internal static int tileSize { get; }
 
             [NativeThrows]
             extern public static bool ValidateTextureStack([NotNull] Texture[] textures, out string errorMessage);
 
-            extern internal static bool GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
+            extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
 
             [NativeConditional("UNITY_EDITOR", "{}")]
             extern public static GraphicsFormat[] QuerySupportedFormats();
@@ -254,6 +265,11 @@ namespace UnityEngine.Rendering
                     };
                     for (int i = 0; i < layers.Length; ++i)
                     {
+                        if (SystemInfo.GetCompatibleFormat(layers[i], FormatUsage.Render) != layers[i])
+                        {
+                            throw new ArgumentException($"Requested format {layers[i]} on layer {i} is not supported on this platform");
+                        }
+
                         bool valid = false;
                         for (int j = 0; j < supportedFormats.Length; ++j)
                         {

@@ -64,16 +64,24 @@ namespace UnityEditor.PackageManager.UI
         /// </value>
         public bool isImported
         {
-            get { return !string.IsNullOrEmpty(importPath) && Directory.Exists(importPath); }
+            get { return !string.IsNullOrEmpty(importPath) && m_IOProxy.DirectoryExists(importPath); }
         }
 
-        internal Sample(string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
+        [NonSerialized]
+        private IOProxy m_IOProxy;
+        internal void ResolveDependencies(IOProxy ioProxy)
+        {
+            m_IOProxy = ioProxy;
+        }
+
+        internal Sample(IOProxy ioProxy, string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
         {
             this.displayName = displayName;
             this.description = description;
             this.resolvedPath = resolvedPath;
             this.importPath = importPath;
             this.interactiveImport = interactiveImport;
+            this.m_IOProxy = ioProxy;
         }
 
         /// <summary>
@@ -84,7 +92,8 @@ namespace UnityEditor.PackageManager.UI
         /// <returns>A list of samples in the given package</returns>
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
-            var package = PackageDatabase.instance.GetPackage(packageName);
+            var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
+            var package = packageDatabase.GetPackage(packageName);
             if (package != null)
             {
                 var version = package.versions.installed;
@@ -109,7 +118,7 @@ namespace UnityEditor.PackageManager.UI
         {
             string[] unityPackages;
             var interactive = (options & ImportOptions.HideImportWindow) != ImportOptions.None ? false : interactiveImport;
-            if ((unityPackages = Directory.GetFiles(resolvedPath, "*.unitypackage")).Length == 1)
+            if ((unityPackages = m_IOProxy.DirectoryGetFiles(resolvedPath, "*.unitypackage")).Length == 1)
                 AssetDatabase.ImportPackage(unityPackages[0], interactive);
             else
             {
@@ -117,9 +126,9 @@ namespace UnityEditor.PackageManager.UI
                 if (prevImports.Count > 0 && (options & ImportOptions.OverridePreviousImports) == ImportOptions.None)
                     return false;
                 foreach (var v in prevImports)
-                    IOUtils.RemovePathAndMeta(v, true);
+                    m_IOProxy.RemovePathAndMeta(v, true);
 
-                IOUtils.DirectoryCopy(resolvedPath, importPath, true);
+                m_IOProxy.DirectoryCopy(resolvedPath, importPath, true);
                 AssetDatabase.Refresh();
             }
             return true;
@@ -138,8 +147,8 @@ namespace UnityEditor.PackageManager.UI
                         var versionDirs = importDirectoryInfo.Parent.Parent.GetDirectories();
                         foreach (var d in versionDirs)
                         {
-                            var p = System.IO.Path.Combine(d.ToString(), importDirectoryInfo.Name);
-                            if (Directory.Exists(p))
+                            var p = Path.Combine(d.ToString(), importDirectoryInfo.Name);
+                            if (m_IOProxy.DirectoryExists(p))
                                 result.Add(p);
                         }
                     }
@@ -152,9 +161,9 @@ namespace UnityEditor.PackageManager.UI
         {
             get
             {
-                if (string.IsNullOrEmpty(resolvedPath) || !Directory.Exists(resolvedPath))
+                if (string.IsNullOrEmpty(resolvedPath) || !m_IOProxy.DirectoryExists(resolvedPath))
                     return "0 KB";
-                var sizeInBytes = IOUtils.DirectorySizeInBytes(resolvedPath);
+                var sizeInBytes = m_IOProxy.DirectorySizeInBytes(resolvedPath);
                 return UIUtils.ConvertToHumanReadableSize(sizeInBytes);
             }
         }

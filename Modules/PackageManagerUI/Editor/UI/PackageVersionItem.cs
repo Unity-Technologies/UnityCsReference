@@ -11,12 +11,21 @@ namespace UnityEditor.PackageManager.UI
         public IPackage package { get; set; }
         public IPackageVersion version { get; set; }
 
+        private PageManager m_PageManager;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_PageManager = container.Resolve<PageManager>();
+        }
+
         public PackageVersionItem(IPackage package, IPackageVersion version)
         {
+            ResolveDependencies();
+
             this.package = package;
             this.version = version;
             RefreshLabel();
-            this.OnLeftClick(() => PageManager.instance.SetSelected(package, version));
+            this.OnLeftClick(() => m_PageManager.SetSelected(package, version, true));
         }
 
         public IPackageVersion targetVersion { get { return version; } }

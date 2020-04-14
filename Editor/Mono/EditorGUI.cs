@@ -2254,7 +2254,7 @@ namespace UnityEditor
                 {
                     if (!s_DelayedTextEditor.IsEditingControl(id))
                     {
-                        if (value != str)
+                        if ((value != str) && (!showMixedValue || (showMixedValue && k_MultiEditValueString != str)))
                         {
                             GUI.changed = true;
                             value = str;
@@ -5475,19 +5475,11 @@ namespace UnityEditor
                 eventType = Event.current.rawType;
             }
 
-            Rect clickRect = position;
-            if (!toggleOnLabelClick)
-            {
-                clickRect = origPosition;
-                clickRect.width += style.padding.right;
-                clickRect.x += indent;
-            }
-
             switch (eventType)
             {
                 case EventType.MouseDown:
                     // If the mouse is inside the button, we say that we're the hot control
-                    if (clickRect.Contains(Event.current.mousePosition) && Event.current.button == 0)
+                    if (position.Contains(Event.current.mousePosition) && Event.current.button == 0)
                     {
                         GUIUtility.keyboardControl = GUIUtility.hotControl = id;
                         Event.current.Use();
@@ -5503,6 +5495,13 @@ namespace UnityEditor
                         Event.current.Use();
 
                         // toggle the passed-in value if the mouse was over the button & return true
+                        Rect clickRect = position;
+                        if (!toggleOnLabelClick)
+                        {
+                            clickRect.width = style.padding.left;
+                            clickRect.x += indent;
+                        }
+
                         if (clickRect.Contains(Event.current.mousePosition))
                         {
                             GUI.changed = true;
@@ -6029,9 +6028,6 @@ namespace UnityEditor
 
         internal static void DrawOverrideBackground(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
         {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
             if (fixupRectForHeadersAndBackgrounds)
             {
                 // Tweaks to match the specifics of how the horizontal lines between components are drawn.
@@ -6039,17 +6035,17 @@ namespace UnityEditor
                 position.yMax += 1;
             }
 
-            Color oldColor = GUI.backgroundColor;
-            bool oldEnabled = GUI.enabled;
-            GUI.enabled = true;
+            DrawMarginLineForRect(position, k_OverrideMarginColor);
+        }
 
-            GUI.backgroundColor = k_OverrideMarginColor;
-            position.x = 0;
+        internal static void DrawMarginLineForRect(Rect position, Color color)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            position.x = EditorGUIUtility.leftMarginCoord - Mathf.Max(0f, GUIClip.topmostRect.xMin);
             position.width = 2;
-            EditorStyles.overrideMargin.Draw(position, false, false, false, false);
-
-            GUI.enabled = oldEnabled;
-            GUI.backgroundColor = oldColor;
+            Graphics.DrawTexture(position, EditorGUIUtility.whiteTexture, new Rect(), 0, 0, 0, 0, color, guiTextureClipVerticallyMaterial);
         }
 
         private static SerializedProperty s_PendingPropertyKeyboardHandling = null;
@@ -6093,6 +6089,11 @@ namespace UnityEditor
             {
                 ClipboardContextMenu.SetupPropertyCopyPaste(property, menu: null, evt: evt);
             }
+        }
+
+        internal static void LayerMaskField(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
+        {
+            LayerMaskField(position, unchecked((uint)property.intValue), property, label, style);
         }
 
         // Make a field for layer masks.
@@ -6352,6 +6353,7 @@ namespace UnityEditor
 
         private static Material s_ColorMaterial, s_ColorVTMaterial, s_AlphaMaterial, s_AlphaVTMaterial, s_TransparentMaterial, s_TransparentVTMaterial, s_NormalmapMaterial, s_NormalmapVTMaterial;
         private static Material s_LightmapRGBMMaterial, s_LightmapDoubleLDRMaterial, s_LightmapFullHDRMaterial;
+        private static Material s_GUITextureClipVertically;
 
         internal static Material colorMaterial
         {
@@ -6396,6 +6398,10 @@ namespace UnityEditor
         internal static Material lightmapFullHDRMaterial
         {
             get { return GetPreviewMaterial(ref s_LightmapFullHDRMaterial, "Previews/PreviewEncodedLightmapFullHDR.shader"); }
+        }
+        internal static Material guiTextureClipVerticallyMaterial
+        {
+            get { return GetPreviewMaterial(ref s_GUITextureClipVertically, "Inspectors/Internal-GUITextureClipVertically.shader"); }
         }
 
         private static void SetExpandedRecurse(SerializedProperty property, bool expanded)
@@ -7835,14 +7841,16 @@ namespace UnityEditor
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
                 var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
+                var typeHash = property.serializedObject.targetObject.GetType().GetHashCode();
+                var hashCode = typeHash ^ propertyHash;
                 GUIContent[] result;
-                if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(propertyHash, out result))
+                if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(hashCode, out result))
                 {
                     return result;
                 }
 
                 result = EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
-                s_SerializedPropertyEnumLocalizedGUIContents[propertyHash] = result;
+                s_SerializedPropertyEnumLocalizedGUIContents[hashCode] = result;
                 return result;
             }
 
@@ -9484,7 +9492,7 @@ namespace UnityEditor
             EditorGUI.InspectorTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), targetObjs);
         }
 
-        // Make an foldout with a toggle and title
+        // Make a foldout with a toggle and title
         internal static bool ToggleTitlebar(bool foldout, GUIContent label, ref bool toggleValue)
         {
             return EditorGUI.ToggleTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), label, foldout, ref toggleValue);

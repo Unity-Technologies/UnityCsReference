@@ -39,6 +39,19 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private List<string> m_Labels;
 
+        private AssetStoreClient m_AssetStoreClient;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_AssetStoreClient = container.Resolve<AssetStoreClient>();
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            ResolveDependencies();
+        }
+
         protected override Vector2 GetSize()
         {
             var height = k_FoldOutHeight + k_Statuses.Length * k_ToggleHeight;
@@ -60,11 +73,11 @@ namespace UnityEditor.PackageManager.UI
 
         protected override void Init(Rect rect, PageFilters filters)
         {
-            AssetStoreClient.instance.ListCategories(categories =>
+            m_AssetStoreClient.ListCategories(categories =>
             {
                 m_Categories = categories ?? new List<string>();
 
-                AssetStoreClient.instance.ListLabels(labels =>
+                m_AssetStoreClient.ListLabels(labels =>
                 {
                     m_Labels = labels ?? new List<string>();
 

@@ -50,7 +50,7 @@ namespace UnityEditorInternal.VersionControl
             {
                 if (s_DefaultIcon == null)
                 {
-                    s_DefaultIcon = EditorGUIUtility.LoadIcon("vcs_document");
+                    s_DefaultIcon = EditorGUIUtility.LoadIcon("VersionControl/File");
                     s_DefaultIcon.hideFlags = HideFlags.HideAndDontSave;
                 }
 

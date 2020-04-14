@@ -89,7 +89,7 @@ namespace UnityEditor
             };
         }
 
-        private bool IsLightProbeVolumeProxyEditMode(EditMode.SceneViewEditMode editMode)
+        private static bool IsLightProbeVolumeProxyEditMode(EditMode.SceneViewEditMode editMode)
         {
             return editMode == EditMode.SceneViewEditMode.LightProbeProxyVolumeBox ||
                 editMode == EditMode.SceneViewEditMode.LightProbeProxyVolumeOrigin;
@@ -325,6 +325,11 @@ namespace UnityEditor
                 Gizmos.matrix = oldMatrix;
                 Gizmos.color = oldColor;
             }
+        }
+
+        public static bool IsSceneGUIEnabled()
+        {
+            return IsLightProbeVolumeProxyEditMode(EditMode.editMode);
         }
 
         public void OnSceneGUI()

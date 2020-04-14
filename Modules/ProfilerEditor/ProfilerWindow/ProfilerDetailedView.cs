@@ -19,8 +19,8 @@ namespace UnityEditorInternal.Profiling
             public static GUIContent selectLineText = EditorGUIUtility.TrTextContent("Select Line for the detailed information");
 
             public static readonly GUIStyle expandedArea = new GUIStyle();
-            public static readonly GUIStyle callstackScroll = new GUIStyle();
-            public static readonly GUIStyle callstackTextArea = new GUIStyle(EditorStyles.textArea);
+            public static readonly GUIStyle callstackScroll = new GUIStyle("CN Box");
+            public static readonly GUIStyle callstackTextArea = new GUIStyle("CN Message");
 
             static Styles()
             {
@@ -59,6 +59,7 @@ namespace UnityEditorInternal.Profiling
         }
 
         public abstract void SaveViewSettings();
+        public abstract void OnEnable(CPUorGPUProfilerModule cpuModule);
         public abstract void OnDisable();
     }
 }

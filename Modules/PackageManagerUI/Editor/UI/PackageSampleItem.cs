@@ -12,8 +12,17 @@ namespace UnityEditor.PackageManager.UI
         private IPackageVersion m_Version;
         private Sample m_Sample;
 
+        private SelectionProxy m_Selection;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_Selection = container.Resolve<SelectionProxy>();
+        }
+
         public PackageSampleItem(IPackageVersion version, Sample sample)
         {
+            ResolveDependencies();
+
             m_Version = version;
             m_Sample = sample;
             nameLabel.text = sample.displayName;
@@ -33,27 +42,27 @@ namespace UnityEditor.PackageManager.UI
             var warningMessage = string.Empty;
             if (previousImports.Count > 1)
             {
-                warningMessage = ApplicationUtil.instance.GetTranslationForText("Different versions of the sample are already imported at") + "\n\n"
-                    + previousImportPaths + "\n" + ApplicationUtil.instance.GetTranslationForText("They will be deleted when you update.");
+                warningMessage = L10n.Tr("Different versions of the sample are already imported at") + "\n\n"
+                    + previousImportPaths + "\n" + L10n.Tr("They will be deleted when you update.");
             }
             else if (previousImports.Count == 1)
             {
                 if (m_Sample.isImported)
                 {
-                    warningMessage = ApplicationUtil.instance.GetTranslationForText("The sample is already imported at") + "\n\n"
-                        + previousImportPaths + "\n" + ApplicationUtil.instance.GetTranslationForText("Importing again will override all changes you have made to it.");
+                    warningMessage = L10n.Tr("The sample is already imported at") + "\n\n"
+                        + previousImportPaths + "\n" + L10n.Tr("Importing again will override all changes you have made to it.");
                 }
                 else
                 {
-                    warningMessage = ApplicationUtil.instance.GetTranslationForText("A different version of the sample is already imported at") + "\n\n"
-                        + previousImportPaths + "\n" + ApplicationUtil.instance.GetTranslationForText("It will be deleted when you update.");
+                    warningMessage = L10n.Tr("A different version of the sample is already imported at") + "\n\n"
+                        + previousImportPaths + "\n" + L10n.Tr("It will be deleted when you update.");
                 }
             }
 
             if (!string.IsNullOrEmpty(warningMessage) &&
-                EditorUtility.DisplayDialog(ApplicationUtil.instance.GetTranslationForText("Unity Package Manager"),
-                    warningMessage + ApplicationUtil.instance.GetTranslationForText(" Are you sure you want to continue?"),
-                    ApplicationUtil.instance.GetTranslationForText("No"), ApplicationUtil.instance.GetTranslationForText("Yes")))
+                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"),
+                    warningMessage + L10n.Tr(" Are you sure you want to continue?"),
+                    L10n.Tr("No"), L10n.Tr("Yes")))
             {
                 return;
             }
@@ -68,7 +77,7 @@ namespace UnityEditor.PackageManager.UI
                     // Highlight import path
                     var importRelativePath = m_Sample.importPath.Replace(Application.dataPath, "Assets");
                     Object obj = AssetDatabase.LoadAssetAtPath(importRelativePath, typeof(Object));
-                    ApplicationUtil.instance.activeSelection = obj;
+                    m_Selection.activeObject = obj;
                     EditorGUIUtility.PingObject(obj);
                 }
             }
@@ -79,17 +88,17 @@ namespace UnityEditor.PackageManager.UI
             if (m_Sample.isImported)
             {
                 importStatus.AddToClassList("imported");
-                importButton.text = ApplicationUtil.instance.GetTranslationForText("Import again");
+                importButton.text = L10n.Tr("Import again");
             }
             else if (m_Sample.previousImports.Count != 0)
             {
                 importStatus.AddToClassList("imported");
-                importButton.text = ApplicationUtil.instance.GetTranslationForText("Update");
+                importButton.text = L10n.Tr("Update");
             }
             else
             {
                 importStatus.RemoveFromClassList("imported");
-                importButton.text = ApplicationUtil.instance.GetTranslationForText("Import into Project");
+                importButton.text = L10n.Tr("Import into Project");
             }
         }
 

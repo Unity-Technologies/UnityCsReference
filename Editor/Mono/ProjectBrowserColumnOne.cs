@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.IO;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -201,9 +200,10 @@ namespace UnityEditor
     //------------------------------------------------
     // DataSource section
 
-    internal class ProjectBrowserColumnOneTreeViewDataSource : TreeViewDataSource
+    internal class ProjectBrowserColumnOneTreeViewDataSource : LazyTreeViewDataSource
     {
         static string kProjectBrowserString = "ProjectBrowser";
+        static Texture2D s_FolderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
 
         public bool skipHiddenPackages { get; set; }
 
@@ -213,25 +213,6 @@ namespace UnityEditor
             rootIsCollapsable = false;
             skipHiddenPackages = skipHidden;
             SavedSearchFilters.AddChangeListener(ReloadData); // We reload on change
-        }
-
-        public override bool SetExpanded(int id, bool expand)
-        {
-            if (base.SetExpanded(id, expand))
-            {
-                // Persist expanded state for ProjectBrowsers
-                InternalEditorUtility.expandedProjectWindowItems = expandedIDs.ToArray();
-
-                if (m_RootItem.hasChildren)
-                {
-                    // Set global expanded state of roots (Assets folder and Favorites root)
-                    foreach (TreeViewItem item in m_RootItem.children)
-                        if (item.id == id)
-                            EditorPrefs.SetBool(kProjectBrowserString + item.displayName, expand);
-                }
-                return true;
-            }
-            return false;
         }
 
         public override bool IsExpandable(TreeViewItem item)
@@ -274,86 +255,187 @@ namespace UnityEditor
 
         public override void FetchData()
         {
+            bool firstInitialize = !isInitialized;
             m_RootItem = new TreeViewItem(0, 0, null, "Invisible Root Item");
             SetExpanded(m_RootItem, true); // ensure always visible
 
-            Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
-
-            // We want three roots: Favorites, Assets, and Saved Filters
+            // We want three roots: Favorites, Assets, and Packages
             List<TreeViewItem> visibleRoots = new List<TreeViewItem>();
 
-            // Fetch asset folders
+            // Favorites root
+            TreeViewItem savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView();
+            visibleRoots.Add(savedFiltersRootItem);
+
+            // Assets root
             int assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
             int depth = 0;
-            string displayName = "Assets"; //CreateDisplayName (assetsFolderInstanceID);
+            string displayName = "Assets";
             AssetsTreeViewDataSource.RootTreeItem assetRootItem = new AssetsTreeViewDataSource.RootTreeItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
-            assetRootItem.icon = folderIcon;
-            ReadAssetDatabase("Assets", assetRootItem, depth + 1);
+            assetRootItem.icon = s_FolderIcon;
+            visibleRoots.Add(assetRootItem);
 
-            // Fetch packages folder
+            // Packages root
             displayName = PackageManager.Folders.GetPackagesPath();
             AssetsTreeViewDataSource.RootTreeItem packagesRootItem = new AssetsTreeViewDataSource.RootTreeItem(ProjectBrowser.kPackagesFolderInstanceId, depth, m_RootItem, displayName);
-            depth++;
-
-            packagesRootItem.icon = folderIcon;
-
-            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(skipHiddenPackages);
-            foreach (var package in packages)
-            {
-                var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
-
-                displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
-                AssetsTreeViewDataSource.PackageTreeItem packageItem = new AssetsTreeViewDataSource.PackageTreeItem(packageFolderInstanceId, depth, packagesRootItem, displayName);
-                packageItem.icon = folderIcon;
-                packagesRootItem.AddChild(packageItem);
-                ReadAssetDatabase(package.assetPath, packageItem, depth + 1);
-            }
-
-            // Fetch saved filters
-            TreeViewItem savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView();
-            savedFiltersRootItem.parent = m_RootItem;
-
-            // Order
-            visibleRoots.Add(savedFiltersRootItem);
-            visibleRoots.Add(assetRootItem);
+            packagesRootItem.icon = s_FolderIcon;
             visibleRoots.Add(packagesRootItem);
 
             m_RootItem.children = visibleRoots;
 
-            // Get global expanded state of roots
-            foreach (TreeViewItem item in m_RootItem.children)
+            // Set global expanded state for roots from EditorPrefs (must be before building the rows)
+            if (firstInitialize)
             {
-                // Do not expand Packages root item
-                if (item.id == ProjectBrowser.kPackagesFolderInstanceId)
-                    continue;
-                bool expanded = EditorPrefs.GetBool(kProjectBrowserString + item.displayName, true);
-                SetExpanded(item, expanded);
+                foreach (TreeViewItem item in m_RootItem.children)
+                {
+                    // Do not expand Packages root item
+                    if (item.id == ProjectBrowser.kPackagesFolderInstanceId)
+                        continue;
+                    bool expanded = EditorPrefs.GetBool(kProjectBrowserString + item.displayName, true);
+                    SetExpanded(item, expanded);
+                }
             }
 
-            m_NeedRefreshRows = true;
+            // Build rows
+            //-----------
+            m_Rows = new List<TreeViewItem>(100);
+
+            // Favorites
+            savedFiltersRootItem.parent = m_RootItem;
+            m_Rows.Add(savedFiltersRootItem);
+            if (IsExpanded(savedFiltersRootItem))
+            {
+                foreach (var f in savedFiltersRootItem.children)
+                    m_Rows.Add(f);
+            }
+            else
+            {
+                savedFiltersRootItem.children = CreateChildListForCollapsedParent();
+            }
+
+            // Asset folders
+            m_Rows.Add(assetRootItem);
+            ReadAssetDatabase("Assets", assetRootItem, depth + 1, m_Rows);
+
+            // Individual Package folders (under the Packages root item)
+            m_Rows.Add(packagesRootItem);
+            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(skipHiddenPackages);
+            if (IsExpanded(packagesRootItem))
+            {
+                depth++;
+                foreach (var package in packages)
+                {
+                    var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
+
+                    displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
+                    AssetsTreeViewDataSource.PackageTreeItem packageItem = new AssetsTreeViewDataSource.PackageTreeItem(packageFolderInstanceId, depth, packagesRootItem, displayName);
+                    packageItem.icon = s_FolderIcon;
+                    packagesRootItem.AddChild(packageItem);
+                    m_Rows.Add(packageItem);
+                    ReadAssetDatabase(package.assetPath, packageItem, depth + 1, m_Rows);
+                }
+            }
+            else
+            {
+                if (packages.Length > 0)
+                    packagesRootItem.children = CreateChildListForCollapsedParent();
+            }
+
+            m_NeedRefreshRows = false;
         }
 
-        private void ReadAssetDatabase(string assetFolderRootPath, TreeViewItem parent, int baseDepth)
+        static bool HasSubFolders(IHierarchyProperty property)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(property.guid);
+            var subFolders = AssetDatabase.GetSubFolders(path);
+            return subFolders.Length > 0;
+        }
+
+        private void ReadAssetDatabase(string assetFolderRootPath, TreeViewItem parent, int baseDepth, IList<TreeViewItem> allRows)
         {
             // Read from Assets directory
             IHierarchyProperty property = new HierarchyProperty(assetFolderRootPath);
             property.Reset();
 
+            if (!IsExpanded(parent))
+            {
+                if (HasSubFolders(property))
+                    parent.children = CreateChildListForCollapsedParent();
+                return;
+            }
+
             Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
 
             List<TreeViewItem> allFolders = new List<TreeViewItem>();
-            while (property.Next(null))
+            var expandedIDs = m_TreeView.state.expandedIDs.ToArray();
+            while (property.Next(expandedIDs))
             {
                 if (property.isFolder)
                 {
                     AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, !property.hasChildren, property.GetInstanceIDIfImported(), baseDepth + property.depth, null, property.name);
                     folderItem.icon = folderIcon;
                     allFolders.Add(folderItem);
+                    allRows.Add(folderItem);
+                    if (!IsExpanded(folderItem))
+                    {
+                        if (HasSubFolders(property))
+                            folderItem.children = CreateChildListForCollapsedParent();
+                    }
                 }
             }
 
             // Fix references
             TreeViewUtility.SetChildParentReferences(allFolders, parent);
+        }
+
+        public override void SetExpandedWithChildren(int id, bool expand)
+        {
+            base.SetExpandedWithChildren(id, expand);
+            PersistExpandedState(id, expand);
+        }
+
+        public override bool SetExpanded(int id, bool expand)
+        {
+            if (base.SetExpanded(id, expand))
+            {
+                PersistExpandedState(id, expand);
+                return true;
+            }
+            return false;
+        }
+
+        void PersistExpandedState(int id, bool expand)
+        {
+            // Persist expanded state for ProjectBrowsers
+            InternalEditorUtility.expandedProjectWindowItems = expandedIDs.ToArray();
+
+            if (m_RootItem.hasChildren)
+            {
+                // Set global expanded state of roots (Assets folder and Favorites root)
+                foreach (TreeViewItem item in m_RootItem.children)
+                    if (item.id == id)
+                        EditorPrefs.SetBool(kProjectBrowserString + item.displayName, expand);
+            }
+        }
+
+        protected override void GetParentsAbove(int id, HashSet<int> parentsAbove)
+        {
+            if (SavedSearchFilters.IsSavedFilter(id))
+            {
+                parentsAbove.Add(SavedSearchFilters.GetRootInstanceID());
+            }
+            else
+            {
+                // AssetDatabase folders (in Assets or Packages)
+                var path = AssetDatabase.GetAssetPath(id);
+                if (Directory.Exists(path))
+                    parentsAbove.UnionWith(ProjectWindowUtil.GetAncestors(id));
+            }
+        }
+
+        protected override void GetParentsBelow(int id, HashSet<int> parentsBelow)
+        {
+            var extra = GetParentsBelow(id);
+            parentsBelow.UnionWith(extra);
         }
 
         private HashSet<int> GetParentsBelow(int id)
@@ -365,18 +447,17 @@ namespace UnityEditor
             if (id == ProjectBrowser.kPackagesFolderInstanceId)
             {
                 parentsBelow.Add(id);
-                var item = m_TreeView.FindItem(id);
-                foreach (var child in item.children)
+                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(skipHiddenPackages);
+                foreach (var package in packages)
                 {
-                    if (child.hasChildren)
-                        parentsBelow.UnionWith(GetParentsBelow(child.id));
+                    var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
+                    parentsBelow.UnionWith(GetParentsBelow(packageFolderInstanceId));
                 }
                 return parentsBelow;
             }
 
             var path = AssetDatabase.GetAssetPath(id);
-            var pathComponents = path.Split('/');
-            IHierarchyProperty search = new HierarchyProperty(pathComponents[0]);
+            IHierarchyProperty search = new HierarchyProperty(path);
             if (search.Find(id, null))
             {
                 parentsBelow.Add(id);
@@ -384,24 +465,11 @@ namespace UnityEditor
                 int depth = search.depth;
                 while (search.Next(null) && search.depth > depth)
                 {
-                    if (search.hasChildren)
+                    if (search.isFolder && search.hasChildren)
                         parentsBelow.Add(search.instanceID);
                 }
             }
             return parentsBelow;
-        }
-
-        override public void SetExpandedWithChildren(int id, bool expand)
-        {
-            HashSet<int> oldExpandedSet = new HashSet<int>(expandedIDs);
-            HashSet<int> candidates = GetParentsBelow(id);
-
-            if (expand)
-                oldExpandedSet.UnionWith(candidates);
-            else
-                oldExpandedSet.ExceptWith(candidates);
-
-            SetExpandedIDs(oldExpandedSet.ToArray());
         }
     }
 
@@ -451,7 +519,7 @@ namespace UnityEditor
             else
             {
                 // Check if we are dragging a single folder
-                if (targetItem is SearchFilterTreeItem && parentItem is SearchFilterTreeItem)
+                if (targetItem is SearchFilterTreeItem)
                 {
                     string genericData = DragAndDrop.GetGenericData(ProjectWindowUtil.k_IsFolderGenericData) as string;
                     if (genericData == "isFolder")

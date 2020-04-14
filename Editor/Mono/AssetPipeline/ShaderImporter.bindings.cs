@@ -8,8 +8,6 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     [NativeHeader("Editor/Src/AssetPipeline/ShaderImporter.h")]
-
-
     public sealed partial class ShaderImporter : AssetImporter
     {
         public extern Shader GetShader();
@@ -21,5 +19,7 @@ namespace UnityEditor
         public extern void SetNonModifiableTextures(string[] name, Texture[] textures);
 
         public extern Texture GetNonModifiableTexture(string name);
+
+        [NativeProperty("PreprocessorOverride")] extern public PreprocessorOverride preprocessorOverride { get; set; }
     }
 }

@@ -117,7 +117,10 @@ namespace UnityEditor.UIElements
                         // Here, just check and make sure the text is updated in the basic field and is the same as the value...
                         // For example, backspace done on a selected value will empty the field (text == "") but the value will be 0.
                         // Or : a text of "2+3" is valid until enter is pressed, so not equal to a value of "5".
-                        if (e.newValue.ToString() != ((TField)e.currentTarget).text)
+                        var valueString = e.newValue.ToString();
+                        var textString = ((TField)e.currentTarget).text;
+                        // If text is different or value changed because of an explicit value set
+                        if (valueString != textString || field.CanTryParse(textString))
                         {
                             m_ShouldUpdateDisplay = false;
                         }

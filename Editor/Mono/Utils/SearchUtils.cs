@@ -93,5 +93,18 @@ namespace UnityEditor
 
             return startIndex != -1 && endIndex != -1;
         }
+
+        // Faster version of String.EndsWith
+        public static bool EndsWith(string a, string b)
+        {
+            int ap = a.Length - 1;
+            int bp = b.Length - 1;
+            while (ap >= 0 && bp >= 0 && char.ToUpperInvariant(a[ap]) == char.ToUpperInvariant(b[bp]))
+            {
+                ap--;
+                bp--;
+            }
+            return (bp < 0 && a.Length >= b.Length) || (ap < 0 && b.Length >= a.Length);
+        }
     }
 }

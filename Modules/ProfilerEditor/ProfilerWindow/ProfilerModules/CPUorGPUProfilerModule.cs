@@ -22,6 +22,15 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         protected ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
 
+        // internal because it is used by performance tests
+        [SerializeField]
+        internal bool updateViewLive;
+
+        protected bool fetchData
+        {
+            get { return !(m_ProfilerWindow == null || (m_ProfilerWindow.IsRecording() && (ProfilerDriver.IsConnectionEditor()))) || updateViewLive; }
+        }
+
         const string k_ViewTypeSettingsKey = "ViewType";
         const string k_HierarchyViewSettingsKeyPrefix = "HierarchyView.";
         protected abstract string SettingsKeyPrefix { get; }
@@ -72,7 +81,7 @@ namespace UnityEditorInternal.Profiling
             base.OnEnable(profilerWindow);
             if (m_FrameDataHierarchyView == null)
                 m_FrameDataHierarchyView = new ProfilerFrameDataHierarchyView(HierarchyViewSettingsKeyPrefix);
-            m_FrameDataHierarchyView.OnEnable(this, false);
+            m_FrameDataHierarchyView.OnEnable(this, profilerWindow, false);
             m_FrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_FrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
             m_ProfilerWindow.selectionChanged += m_FrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
@@ -137,7 +146,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawView(Rect position)
         {
-            m_FrameDataHierarchyView.DoGUI(GetFrameDataView());
+            m_FrameDataHierarchyView.DoGUI(fetchData ? GetFrameDataView() : null, fetchData, ref updateViewLive);
         }
 
         HierarchyFrameDataView GetFrameDataView()

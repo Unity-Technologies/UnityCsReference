@@ -53,7 +53,7 @@ namespace UnityEditorInternal
             if (lowerCasePath.EndsWith("devenv.exe"))
                 return ScriptEditor.VisualStudio;
 
-            if (lowerCasePath.EndsWith("vcsexpress.exe"))
+            if (lowerCasePath.EndsWith("vcsexpress.exe") || lowerCasePath.EndsWith("wdexpress.exe"))
                 return ScriptEditor.VisualStudioExpress;
 
             // Visual Studio for Mac is based on MonoDevelop

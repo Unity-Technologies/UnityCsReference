@@ -1426,7 +1426,14 @@ namespace UnityEditor.StyleSheets
 
         public void Load(IEnumerable<string> paths)
         {
-            var sheets = paths.Select(p => EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet)
+            var sheets = paths.Select(p =>
+            {
+                var x = EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet;
+
+                if (x == null)
+                    Debug.Log("Could not load " + p);
+                return x;
+            })
                 .Where(s => s != null).Distinct();
 
             Load(sheets);

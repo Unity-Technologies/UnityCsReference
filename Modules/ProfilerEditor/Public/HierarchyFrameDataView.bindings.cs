@@ -105,17 +105,25 @@ namespace UnityEditor.Profiling
         [ThreadSafe]
         public extern double GetItemColumnDataAsDouble(int id, int column);
 
-        [ThreadSafe]
-        public extern int GetItemMetadataCount(int id);
+        public int GetItemMetadataCount(int id) { return GetItemMergedSamplesMetadataCount(id, 0); }
 
-        [ThreadSafe]
-        public extern string GetItemMetadata(int id, int index);
+        public string GetItemMetadata(int id, int index) { return GetItemMergedSamplesMetadata(id, 0, index); }
 
-        [ThreadSafe]
-        public extern float GetItemMetadataAsFloat(int id, int index);
+        public float GetItemMetadataAsFloat(int id, int index) { return GetItemMergedSamplesMetadataAsFloat(id, 0, index); }
 
-        [ThreadSafe]
-        public extern long GetItemMetadataAsLong(int id, int index);
+        public long GetItemMetadataAsLong(int id, int index) { return GetItemMergedSamplesMetadataAsLong(id, 0, index); }
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int GetItemMergedSamplesMetadataCount(int id, int sampleIndex);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern string GetItemMergedSamplesMetadata(int id, int sampleIndex, int metadataIndex);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern float GetItemMergedSamplesMetadataAsFloat(int id, int sampleIndex, int metadataIndex);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern long GetItemMergedSamplesMetadataAsLong(int id, int sampleIndex, int metadataIndex);
 
         [ThreadSafe]
         internal extern string GetItemTooltip(int id, int column);
@@ -156,6 +164,18 @@ namespace UnityEditor.Profiling
         [NativeMethod("GetItemMergedSamplesColumnDataAsFloats")]
         [ThreadSafe]
         extern void GetItemMergedSamplesColumnDataAsFloatsInternal(int id, int column, List<float> outValues);
+
+        public void GetItemMergedSamplesColumnDataAsDoubles(int id, int column, List<double> outValues)
+        {
+            if (outValues == null)
+                throw new ArgumentNullException(nameof(outValues));
+
+            GetItemMergedSamplesColumnDataAsDoublesInternal(id, column, outValues);
+        }
+
+        [NativeMethod("GetItemMergedSamplesColumnDataAsDoubles")]
+        [ThreadSafe]
+        extern void GetItemMergedSamplesColumnDataAsDoublesInternal(int id, int column, List<double> outValues);
 
         public void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds)
         {

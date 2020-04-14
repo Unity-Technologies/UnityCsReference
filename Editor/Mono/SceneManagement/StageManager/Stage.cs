@@ -26,6 +26,9 @@ namespace UnityEditor.SceneManagement
         // Only called if OnOpenStage was called.
         protected abstract void OnCloseStage();
 
+        // Called when returning to a previous open stage (e.g by clicking a non-current breadcrumb)
+        protected internal virtual void OnReturnToStage() {}
+
         internal bool opened { get; set; }
 
         internal virtual bool isValid { get { return true; } }

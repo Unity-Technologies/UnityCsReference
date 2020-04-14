@@ -205,6 +205,12 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.String:
                     str = $"\"{sheet.ReadString(handle)}\"";
                     break;
+                case StyleValueType.Variable:
+                    str = sheet.ReadVariable(handle);
+                    break;
+                case StyleValueType.Function:
+                    str = sheet.ReadFunctionName(handle);
+                    break;
                 default:
                     throw new ArgumentException("Unhandled type " + handle.valueType);
             }

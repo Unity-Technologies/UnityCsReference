@@ -21,10 +21,25 @@ namespace UnityEditor.PackageManager.UI
 
         public bool morePackagesToFetch => numCurrentItems < numTotalItems;
 
-        public override IEnumerable<string> items => m_VisualStateList.Select(v => v.packageUniqueId);
+        public override IEnumerable<VisualState> visualStates => m_VisualStateList;
 
-        public PaginatedPage(PackageFilterTab tab, PageCapability capability) : base(tab, capability)
+        [NonSerialized]
+        private AssetStoreClient m_AssetStoreClient;
+        [NonSerialized]
+        private PackageFiltering m_PackageFiltering;
+        [NonSerialized]
+        private PackageManagerPrefs m_PackageManagerPrefs;
+        public void ResolveDependencies(PackageDatabase packageDatabase, AssetStoreClient assetStoreClient, PackageFiltering packageFiltering, PackageManagerPrefs packageManagerPrefs)
         {
+            ResolveDependencies(packageDatabase);
+            m_AssetStoreClient = assetStoreClient;
+            m_PackageFiltering = packageFiltering;
+            m_PackageManagerPrefs = packageManagerPrefs;
+        }
+
+        public PaginatedPage(PackageDatabase packageDatabase, AssetStoreClient assetStoreClient, PackageFiltering packageFiltering, PackageManagerPrefs packageManagerPrefs, PackageFilterTab tab, PageCapability capability) : base(packageDatabase, tab, capability)
+        {
+            ResolveDependencies(packageDatabase, assetStoreClient, packageFiltering, packageManagerPrefs);
         }
 
         public override VisualState GetVisualState(string packageUniqueId)
@@ -38,8 +53,8 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             m_Filters = filters.Clone();
-            var queryArgs = BuildQueryFromFilter(0, PackageManagerWindow.instance?.packageList?.CalculateNumberOfPackagesToDisplay() ?? PageManager.k_DefaultPageSize);
-            AssetStoreClient.instance.ListPurchases(queryArgs, false);
+            var queryArgs = BuildQueryFromFilter(0, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
+            m_AssetStoreClient.ListPurchases(queryArgs, false);
 
             m_VisualStateList.ClearList();
             m_VisualStateList.ClearExtraItems();
@@ -56,7 +71,7 @@ namespace UnityEditor.PackageManager.UI
             var removeList = removed.Where(Contains).ToList();
             foreach (var package in added.Concat(postUpdate))
             {
-                if (PackageFiltering.instance.FilterByCurrentTab(package))
+                if (m_PackageFiltering.FilterByCurrentTab(package))
                     addOrUpdateList.Add(package);
                 else if (Contains(package))
                     removeList.Add(package);
@@ -81,10 +96,10 @@ namespace UnityEditor.PackageManager.UI
             var changedVisualStates = new List<VisualState>();
             foreach (var state in m_VisualStateList ?? Enumerable.Empty<VisualState>())
             {
-                var package = PackageDatabase.instance.GetPackage(state.packageUniqueId);
+                var package = m_PackageDatabase.GetPackage(state.packageUniqueId);
                 if (package != null)
                 {
-                    var visible = PackageFiltering.instance.FilterByCurrentSearchText(package);
+                    var visible = tab == PackageFilterTab.AssetStore ? true : m_PackageFiltering.FilterByCurrentSearchText(package);
                     if (state.visible != visible)
                     {
                         state.visible = visible;
@@ -95,8 +110,6 @@ namespace UnityEditor.PackageManager.UI
 
             if (changedVisualStates.Any())
                 TriggerOnVisualStateChange(changedVisualStates);
-
-            RefreshSelected();
         }
 
         private PurchasesQueryArgs BuildQueryFromFilter(int startIndex, int limit)
@@ -120,7 +133,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var queryArgs = BuildQueryFromFilter((int)numCurrentItems, numberOfPackages);
-            AssetStoreClient.instance.ListPurchases(queryArgs, false);
+            m_AssetStoreClient.ListPurchases(queryArgs, false);
         }
 
         public override void Load(IPackage package, IPackageVersion version = null)
@@ -145,9 +158,9 @@ namespace UnityEditor.PackageManager.UI
 
             m_VisualStateList.AddExtraItem(productId.ToString());
 
-            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
             {
-                var package = PackageDatabase.instance.GetPackage(uniqueId);
+                var package = m_PackageDatabase.GetPackage(uniqueId);
                 TriggerOnListUpdate(new[] { package }, Enumerable.Empty<IPackage>(), false);
                 SetSelected(package?.uniqueId, package?.versions.primary?.uniqueId);
             }
@@ -163,7 +176,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 // if a new page has arrived but the total has changed or the searchText has changed, do a re-fetch
                 var queryArgs = BuildQueryFromFilter((int)numCurrentItems, purchases.startIndex + purchases.list.Count);
-                AssetStoreClient.instance.ListPurchases(queryArgs);
+                m_AssetStoreClient.ListPurchases(queryArgs);
                 return;
             }
 
@@ -189,11 +202,11 @@ namespace UnityEditor.PackageManager.UI
             }
 
             if (!fetchDetailsCalled && purchases.list.Any())
-                AssetStoreClient.instance.FetchDetails(purchases.productIds);
+                m_AssetStoreClient.FetchDetails(purchases.productIds);
 
             // only try to rebuild the list immediately if we are already on the `AssetStore` tab.
             // if not we'll just wait for tab switch which will trigger the rebuild as well
-            if (PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore)
+            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
             {
                 HashSet<string> removed = null;
                 List<string> added = null;
@@ -214,8 +227,8 @@ namespace UnityEditor.PackageManager.UI
                     added = newPackageIds;
                 }
 
-                var addedPackages = added?.Select(id => PackageDatabase.instance.GetPackage(id));
-                var removedPackages = removed?.Select(id => PackageDatabase.instance.GetPackage(id));
+                var addedPackages = added?.Select(id => m_PackageDatabase.GetPackage(id));
+                var removedPackages = removed?.Select(id => m_PackageDatabase.GetPackage(id));
                 TriggerOnListUpdate(addedPackages, removedPackages, false);
             }
 

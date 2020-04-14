@@ -46,9 +46,9 @@ namespace UnityEditorInternal
         ComputeDispatch,
         PluginEvent,
         InstancedMesh,
-        BeginRenderpass,
-        NextSubpass,
-        EndSubpass
+        BeginSubpass,
+        SRPBatch,
+        HierarchyLevelBreak
         // ReSharper restore InconsistentNaming
     }
 
@@ -150,8 +150,17 @@ namespace UnityEditorInternal
         public int rtFormat;
         public int rtDim;
         public int rtFace;
+        public int rtLoadAction;
+        public int rtStoreAction;
+        public float rtClearColorR;
+        public float rtClearColorG;
+        public float rtClearColorB;
+        public float rtClearColorA;
+        public float rtClearDepth;
+        public uint rtClearStencil;
         public short rtCount;
-        public short rtHasDepthTexture;
+        public sbyte rtHasDepthTexture;
+        public sbyte rtMemoryless;
 
         // shader state and properties
         public FrameDebuggerBlendState blendState;
@@ -252,10 +261,9 @@ namespace UnityEditor
             "Compute Shader",
             "Plugin Event",
             "Draw Mesh (instanced)",
-            "Begin Renderpass",
-            "Next Subpass",
-            "End Renderpass",
-            "SRP Batch"
+            "Begin Subpass",
+            "SRP Batch",
+            ""
         };
 
         // Cached strings built from FrameDebuggerEventData.
@@ -322,6 +330,7 @@ namespace UnityEditor
 
         // Render target view options
         [NonSerialized] int m_RTIndex;
+        [NonSerialized] int m_RTIndexLastSet = int.MaxValue;
         [NonSerialized] int m_RTChannel;
 
         [NonSerialized] private float m_RTBlackLevel;
@@ -809,7 +818,6 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             // MRT to show
-            bool rtWasClamped;
             EditorGUI.BeginChangeCheck();
             using (new EditorGUI.DisabledScope(showableRTCount <= 1))
             {
@@ -821,9 +829,13 @@ namespace UnityEditor
                 if (hasShowableDepth)
                     rtNames[cur.rtCount] = Styles.depthLabel;
 
-                var clampedIndex = Mathf.Clamp(m_RTIndex, 0, showableRTCount - 1);
-                rtWasClamped = (clampedIndex != m_RTIndex);
-                m_RTIndex = clampedIndex;
+                // if we showed depth before then try to keep showing depth
+                // otherwise try to keep showing color
+                if (m_RTIndexLastSet == -1)
+                    m_RTIndex = hasShowableDepth ? showableRTCount - 1 : 0;
+                else if (m_RTIndex >= cur.rtCount)
+                    m_RTIndex = 0;
+
                 m_RTIndex = EditorGUILayout.Popup(m_RTIndex, rtNames, EditorStyles.toolbarPopupLeft, GUILayout.Width(70));
             }
 
@@ -838,7 +850,12 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(styles.toolbarLabelSliderGroup);
             GUILayout.Label(Styles.levelsHeader);
             EditorGUILayout.MinMaxSlider(ref m_RTBlackLevel, ref m_RTWhiteLevel, 0.0f, 1.0f, GUILayout.MaxWidth(200.0f));
-            if (EditorGUI.EndChangeCheck() || rtWasClamped)
+
+            int rtIndexToSet = m_RTIndex;
+            if (hasShowableDepth && rtIndexToSet == (showableRTCount - 1))
+                rtIndexToSet = -1;
+
+            if (EditorGUI.EndChangeCheck() || rtIndexToSet != m_RTIndexLastSet)
             {
                 Vector4 mask = Vector4.zero;
                 if (m_RTChannel == 1)
@@ -851,10 +868,9 @@ namespace UnityEditor
                     mask.w = 1f;
                 else
                     mask = Vector4.one;
-                int rtIndexToSet = m_RTIndex;
-                if (rtIndexToSet >= cur.rtCount)
-                    rtIndexToSet = -1;
+
                 FrameDebuggerUtility.SetRenderTargetDisplayOptions(rtIndexToSet, mask, m_RTBlackLevel, m_RTWhiteLevel);
+                m_RTIndexLastSet = rtIndexToSet;
                 RepaintAllNeededThings();
             }
 
@@ -862,10 +878,39 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            GUILayout.Label(string.Format("{0}x{1} {2}",
-                cur.rtWidth,
-                cur.rtHeight,
-                (GraphicsFormat)cur.rtFormat));
+            string attachmentInfo = "";
+            if (cur.rtLoadAction >= 0 || cur.rtStoreAction >= 0 || cur.rtMemoryless != 0)
+            {
+                var sl = new List<string>();
+                if (cur.rtLoadAction >= 0)
+                    sl.Add(String.Format("LoadAction: {0}", (RenderBufferLoadAction)cur.rtLoadAction));
+                if (cur.rtStoreAction >= 0)
+                    sl.Add(String.Format("StoreAction: {0}", (RenderBufferStoreAction)cur.rtStoreAction));
+                if (cur.rtMemoryless != 0)
+                    sl.Add("memoryless");
+
+                attachmentInfo = String.Format("({0})", String.Join(", ", sl.ToArray()));
+            }
+
+            GUILayout.Label(string.Format("{0}x{1} {2} {3}", cur.rtWidth, cur.rtHeight, (GraphicsFormat)cur.rtFormat, attachmentInfo));
+
+            if (cur.rtLoadAction == (int)RenderBufferLoadAction.Clear)
+            {
+                bool isDepthFormat = GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)cur.rtFormat);
+                bool isStencilFormat = GraphicsFormatUtility.IsStencilFormat((GraphicsFormat)cur.rtFormat);
+                if (!isDepthFormat && !isStencilFormat)
+                {
+                    GUILayout.Label(string.Format("Clear Color ({0}, {1}, {2}, {3})", cur.rtClearColorR, cur.rtClearColorG, cur.rtClearColorB, cur.rtClearColorA));
+                }
+                else
+                {
+                    if (isDepthFormat)
+                        GUILayout.Label(string.Format("Clear Depth {0}", cur.rtClearDepth));
+                    if (isStencilFormat)
+                        GUILayout.Label(string.Format("Clear Stencil {0:X}", cur.rtClearStencil));
+                }
+            }
+
             if (cur.rtDim == (int)UnityEngine.Rendering.TextureDimension.Cube)
                 GUILayout.Label("Rendering into cubemap");
         }

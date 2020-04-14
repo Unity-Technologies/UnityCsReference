@@ -5,14 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
     internal class PackageItem : VisualElement, ISelectableItem
     {
-        internal new class UxmlFactory : UxmlFactory<PackageItem> {}
+        internal const float k_ElementHeight = 25.0f;
 
         private string m_CurrentStateClass;
 
@@ -34,16 +33,20 @@ namespace UnityEditor.PackageManager.UI
 
         internal IEnumerable<PackageVersionItem> versionItems { get { return versionList.Children().Cast<PackageVersionItem>(); } }
 
-        // the item is only expandable when there are more than one versions
-        private bool expandable { get { return package?.versions.Skip(1).Any() ?? false; } }
-
-        public PackageItem() : this(null)
+        private ResourceLoader m_ResourceLoader;
+        private PageManager m_PageManager;
+        private void ResolveDependencies()
         {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+            m_PageManager = container.Resolve<PageManager>();
         }
 
         public PackageItem(IPackage package)
         {
-            var root = Resources.GetTemplate("PackageItem.uxml");
+            ResolveDependencies();
+
+            var root = m_ResourceLoader.GetTemplate("PackageItem.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 
@@ -107,7 +110,7 @@ namespace UnityEditor.PackageManager.UI
                 // if the primary version was selected but there is a new primary version
                 // select the new primary version to keep the main item selected
                 if (visualState.selectedVersionId == oldDisplayVersion?.uniqueId && oldDisplayVersion?.uniqueId != displayVersion.uniqueId)
-                    PageManager.instance.SetSelected(package, displayVersion);
+                    m_PageManager.SetSelected(package, displayVersion);
             }
 
             nameLabel.text = displayVersion.displayName;
@@ -205,7 +208,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void SelectMainItem()
         {
-            PageManager.instance.SetSelected(package);
+            m_PageManager.SetSelected(package, null, true);
         }
 
         private void ToggleExpansion(ChangeEvent<bool> evt)
@@ -221,7 +224,7 @@ namespace UnityEditor.PackageManager.UI
             if (!value || string.IsNullOrEmpty(visualState.selectedVersionId))
                 SelectMainItem();
 
-            PageManager.instance.SetExpanded(package, value);
+            m_PageManager.SetExpanded(package, value);
         }
 
         internal void UpdateExpanderUI(bool expanded)
@@ -232,7 +235,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void SeeAllVersionsClick()
         {
-            PageManager.instance.SetSeeAllVersions(package, true);
+            m_PageManager.SetSeeAllVersions(package, true);
         }
 
         private void StartSpinner()
@@ -282,9 +285,9 @@ namespace UnityEditor.PackageManager.UI
             "There are errors with this package. Please read the package details for further guidance."
         };
 
-        public static string GetTooltipByState(PackageState state)
+        public string GetTooltipByState(PackageState state)
         {
-            return ApplicationUtil.instance.GetTranslationForText(k_TooltipsByState[(int)state]);
+            return L10n.Tr(k_TooltipsByState[(int)state]);
         }
 
         private static readonly string[] k_TooltipsByProgress =
@@ -292,13 +295,15 @@ namespace UnityEditor.PackageManager.UI
             "",
             "Package refreshing in progress.",
             "Package downloading in progress.",
+            "Package pausing in progress.",
+            "Package resuming in progress.",
             "Package installing in progress.",
             "Package removing in progress."
         };
 
-        public static string GetTooltipByProgress(PackageProgress progress)
+        public string GetTooltipByProgress(PackageProgress progress)
         {
-            return ApplicationUtil.instance.GetTranslationForText(k_TooltipsByProgress[(int)progress]);
+            return L10n.Tr(k_TooltipsByProgress[(int)progress]);
         }
 
         public static string GetVersionText(IPackageVersion version, bool simplified = false)
@@ -310,17 +315,17 @@ namespace UnityEditor.PackageManager.UI
             if (!simplified)
             {
                 if (version.HasTag(PackageTag.Local))
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("local - {0}"), label);
+                    label = string.Format(L10n.Tr("local - {0}"), label);
                 if (version.HasTag(PackageTag.Git))
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("git - {0}"), label);
+                    label = string.Format(L10n.Tr("git - {0}"), label);
                 if (version.HasTag(PackageTag.Verified))
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("verified - {0}"), label);
+                    label = string.Format(L10n.Tr("verified - {0}"), label);
                 if (version.isInstalled)
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("current - {0}"), label);
+                    label = string.Format(L10n.Tr("current - {0}"), label);
             }
             if (version.HasTag(PackageTag.Preview))
             {
-                var previewLabel = string.IsNullOrEmpty(version.version?.Prerelease) ? ApplicationUtil.instance.GetTranslationForText("preview") : version.version?.Prerelease;
+                var previewLabel = string.IsNullOrEmpty(version.version?.Prerelease) ? L10n.Tr("preview") : version.version?.Prerelease;
                 label = $"{previewLabel} - {label}";
             }
             return label;

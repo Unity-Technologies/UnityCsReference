@@ -79,11 +79,7 @@ namespace UnityEditor
 
                 if (m_MainToolbar.rootVisualElement != null)
                 {
-                    if (!EditorWindowBackendManager.IsBackendCompatible(windowBackend, this))
-                    {
-                        //We create a new compatible backend
-                        windowBackend = EditorWindowBackendManager.GetBackend(this);
-                    }
+                    ValidateWindowBackendForCurrentView();
 
                     var visualTree = windowBackend.visualTree as UnityEngine.UIElements.VisualElement;
 
@@ -135,6 +131,8 @@ namespace UnityEditor
             }
 
             PositionChanged(this);
+
+            m_EventInterests.wantsLessLayoutEvents = true;
         }
 
         protected override void OnDisable()

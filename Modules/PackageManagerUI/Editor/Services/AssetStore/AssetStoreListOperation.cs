@@ -28,6 +28,8 @@ namespace UnityEditor.PackageManager.UI
         protected bool m_IsInProgress = false;
         public bool isInProgress => m_IsInProgress;
 
+        public bool isProgressVisible => false;
+
         public RefreshOptions refreshOptions => RefreshOptions.Purchased;
 
         public bool isProgressTrackable => false;
@@ -47,23 +49,42 @@ namespace UnityEditor.PackageManager.UI
         private AssetStorePurchases m_Result;
         public AssetStorePurchases result => m_Result;
 
+        [NonSerialized]
+        private UnityConnectProxy m_UnityConnect;
+        [NonSerialized]
+        private AssetStoreRestAPI m_AssetStoreRestAPI;
+        public void ResolveDependencies(UnityConnectProxy unityConnect, AssetStoreRestAPI assetStoreRestAPI)
+        {
+            m_UnityConnect = unityConnect;
+            m_AssetStoreRestAPI = assetStoreRestAPI;
+        }
+
+        private AssetStoreListOperation()
+        {
+        }
+
+        public AssetStoreListOperation(UnityConnectProxy unityConnect, AssetStoreRestAPI assetStoreRestAPI)
+        {
+            ResolveDependencies(unityConnect, assetStoreRestAPI);
+        }
+
         public void Start(PurchasesQueryArgs queryArgs = null)
         {
             m_QueryArgs = queryArgs;
             m_IsInProgress = true;
             m_Timestamp = DateTime.Now.Ticks;
 
-            if (!ApplicationUtil.instance.isUserLoggedIn)
+            if (!m_UnityConnect.isUserLoggedIn)
             {
-                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, ApplicationUtil.instance.GetTranslationForText("User not logged in")));
+                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
                 return;
             }
 
-            AssetStoreRestAPI.instance.GetPurchases(queryArgs.ToString(), result =>
+            m_AssetStoreRestAPI.GetPurchases(queryArgs.ToString(), result =>
             {
-                if (!ApplicationUtil.instance.isUserLoggedIn)
+                if (!m_UnityConnect.isUserLoggedIn)
                 {
-                    OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, ApplicationUtil.instance.GetTranslationForText("User not logged in")));
+                    OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
                     return;
                 }
 

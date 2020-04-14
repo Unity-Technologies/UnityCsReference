@@ -814,7 +814,11 @@ namespace UnityEditorInternal.VersionControl
                 if (selected)
                 {
                     Texture activeIcon = EditorUtility.GetIconInActiveState(icon);
-                    if (activeIcon != null) icon = activeIcon;
+                    if (activeIcon != null)
+                    {
+                        activeIcon.filterMode = FilterMode.Bilinear;
+                        icon = activeIcon;
+                    }
                 }
 
                 if (icon != null)

@@ -347,10 +347,12 @@ namespace UnityEditorInternal
                 //Case 639025.
                 foreach (var targetObject in m_ListenersArray.serializedObject.targetObjects)
                 {
-                    var temSerialziedObject = new SerializedObject(targetObject);
-                    var listenerArrayProperty = temSerialziedObject.FindProperty(m_ListenersArray.propertyPath);
-                    listenerArrayProperty.arraySize += 1;
-                    temSerialziedObject.ApplyModifiedProperties();
+                    using (var temSerialziedObject = new SerializedObject(targetObject))
+                    {
+                        var listenerArrayProperty = temSerialziedObject.FindProperty(m_ListenersArray.propertyPath);
+                        listenerArrayProperty.arraySize += 1;
+                        temSerialziedObject.ApplyModifiedProperties();
+                    }
                 }
                 m_ListenersArray.serializedObject.SetIsDifferentCacheDirty();
                 m_ListenersArray.serializedObject.Update();

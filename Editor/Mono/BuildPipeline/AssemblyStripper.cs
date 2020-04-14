@@ -72,6 +72,11 @@ namespace UnityEditorInternal
             }
         }
 
+        private static string GetFullPath(string path)
+        {
+            return IL2CPPBuilder.GetShortPathName(Path.GetFullPath(path));
+        }
+
         private static bool StripAssembliesTo(string outputFolder, out string output, out string error, IEnumerable<string> linkXmlFiles, UnityLinkerRunInformation runInformation)
         {
             if (!Directory.Exists(outputFolder))
@@ -91,7 +96,7 @@ namespace UnityEditorInternal
 
             args.AddRange(linkXmlFiles.Select(path => $"-x={CommandLineFormatter.PrepareFileName(path)}"));
             args.AddRange(runInformation.SearchDirectories.Select(d => $"-d={CommandLineFormatter.PrepareFileName(d)}"));
-            args.AddRange(assemblies.Select(assembly => $"--include-unity-root-assembly={CommandLineFormatter.PrepareFileName(Path.GetFullPath(assembly))}"));
+            args.AddRange(assemblies.Select(assembly => $"--include-unity-root-assembly={CommandLineFormatter.PrepareFileName(GetFullPath(assembly))}"));
             args.Add($"--dotnetruntime={runInformation.argumentProvider.Runtime}");
             args.Add($"--dotnetprofile={runInformation.argumentProvider.Profile}");
             args.Add("--use-editor-options");
@@ -178,7 +183,7 @@ namespace UnityEditorInternal
         internal static void StripAssemblies(string managedAssemblyFolderPath, BaseUnityLinkerPlatformProvider unityLinkerPlatformProvider, IIl2CppPlatformProvider il2cppPlatformProvider,
             RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel)
         {
-            var runInformation = new UnityLinkerRunInformation(managedAssemblyFolderPath, unityLinkerPlatformProvider, il2cppPlatformProvider.target, rcr, managedStrippingLevel, il2cppPlatformProvider);
+            var runInformation = new UnityLinkerRunInformation(IL2CPPBuilder.GetShortPathName(managedAssemblyFolderPath), unityLinkerPlatformProvider, il2cppPlatformProvider.target, rcr, managedStrippingLevel, il2cppPlatformProvider);
             RunAssemblyStripper(runInformation);
         }
 
@@ -290,7 +295,7 @@ namespace UnityEditorInternal
                 linkXmlFiles.AddRange(runInformation.GetModuleBlacklistFiles());
             }
 
-            var tempStripPath = Path.GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempStrip"));
+            var tempStripPath = GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempStrip"));
 
             ProcessBuildPipelineOnBeforeRun(runInformation);
 
@@ -334,7 +339,7 @@ namespace UnityEditorInternal
             while (addedMoreBlacklists && !UseUnityLinkerEngineModuleStripping);
 
             // keep unstripped files for debugging purposes
-            var tempUnstrippedPath = Path.GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempUnstripped"));
+            var tempUnstrippedPath = GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempUnstripped"));
             if (debugUnstripped)
                 Directory.CreateDirectory(tempUnstrippedPath);
             foreach (var file in Directory.GetFiles(managedAssemblyFolderPath))
@@ -578,7 +583,7 @@ namespace UnityEditorInternal
             var il2cppPlatformProvider = new MonoBackendIl2CppPlatformProvider(buildTarget, Path.Combine(stagingAreaData, "Libraries"), report);
             var platformProvider = new MonoBackendUnityLinkerPlatformProvider(buildTarget);
 
-            var managedAssemblyFolderPath = Path.GetFullPath(Path.Combine(stagingAreaData, "Managed"));
+            var managedAssemblyFolderPath = GetFullPath(Path.Combine(stagingAreaData, "Managed"));
             AssemblyStripper.StripAssemblies(managedAssemblyFolderPath, platformProvider, il2cppPlatformProvider, usedClasses, managedStrippingLevel);
         }
 

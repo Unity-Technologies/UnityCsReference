@@ -13,38 +13,26 @@ namespace UnityEditor
     internal interface IWindowModel
     {
         Vector2 size { get; }
-        Action sizeChanged { get; set; }
 
         EventInterests eventInterests { get; }
-        Action eventInterestsChanged { get; set; }
 
         Action onGUIHandler { get; }
+
+        IWindowBackend windowBackend { get; set; }
     }
 
     internal interface IEditorWindowModel : IWindowModel
     {
         EditorWindow window { get; }
 
-        Action onRegisterWindow { get; set; }
-        Action onUnegisterWindow { get; set; }
-
         RectOffset viewMargins { get; }
-        Action viewMarginsChanged { get; set; }
-
         bool notificationVisible { get; }
 
         Color playModeTintColor { get; }
-        Action playModeTintColorChanged { get; set; }
 
-        Action notificationVisibilityChanged { get; set; }
-
-        Action focused { get; set; }
-        Action blurred { get; set; }
-
-        Action<GenericMenu> onDisplayWindowMenu { get; set; }
-
-        Action rootVisualElementCreated { get; set;   }
         Action onSplitterGUIHandler { get; set; }
+
+        IEditorWindowBackend editorWindowBackend { get; set; }
     }
 
     internal interface IWindowBackend
@@ -55,8 +43,22 @@ namespace UnityEditor
         bool GetTooltip(Vector2 windowMouseCoordinates, out string tooltip, out Rect screenRectPosition);
 
         object visualTree { get; }
+
+        void SizeChanged();
+        void EventInterestsChanged();
     }
 
+    internal interface IEditorWindowBackend : IWindowBackend
+    {
+        void PlayModeTintColorChanged();
+        void NotificationVisibilityChanged();
+        void Focused();
+        void Blurred();
+        void OnRegisterWindow();
+        void OnUnregisterWindow();
+        void OnDisplayWindowMenu(GenericMenu menu);
+        void ViewMarginsChanged();
+    }
 
     internal interface IEditorWindowBackendSystem
     {
@@ -70,6 +72,11 @@ namespace UnityEditor
         static internal void RegisterWindowSystem(IEditorWindowBackendSystem system)
         {
             sRegisteredSystems.Add(system);
+        }
+
+        static internal void UnregisterWindowSystem(IEditorWindowBackendSystem system)
+        {
+            sRegisteredSystems.Remove(system);
         }
 
         internal static bool IsBackendCompatible(IWindowBackend backend, IWindowModel model)

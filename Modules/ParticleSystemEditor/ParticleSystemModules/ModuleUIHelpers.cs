@@ -255,7 +255,7 @@ namespace UnityEditor
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
             guiContent = EditorGUI.BeginProperty(rect, guiContent, layerMaskProp);
             rect = PrefixLabel(rect, guiContent);
-            EditorGUI.LayerMaskField(rect, layerMaskProp, null);
+            EditorGUI.LayerMaskField(rect, layerMaskProp, GUIContent.none, ParticleSystemStyles.Get().popup);
             EditorGUI.EndProperty();
         }
 

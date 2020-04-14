@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI
 
         void AddError(UIError error);
 
-        void ClearErrors();
+        void ClearErrors(Predicate<UIError> match = null);
 
         IPackage Clone();
 

@@ -1388,6 +1388,12 @@ namespace UnityEditor
                 m_FilteredHierarchy.SetResults(instanceIDs);
             }
 
+            internal void ShowObjectsInList(int[] instanceIDs, string[] rootPaths)
+            {
+                m_FilteredHierarchy = new FilteredHierarchy(HierarchyType.Assets);
+                m_FilteredHierarchy.SetResults(instanceIDs, rootPaths);
+            }
+
             public void DrawIconAndLabel(Rect rect, FilteredHierarchy.FilterResult filterItem, string label, Texture2D icon, bool selected, bool focus)
             {
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;

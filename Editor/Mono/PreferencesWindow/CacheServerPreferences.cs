@@ -24,10 +24,6 @@ namespace UnityEditor
             public static readonly GUIContent cleanCache = EditorGUIUtility.TrTextContent("Clean Cache");
             public static readonly GUIContent enumerateCache = EditorGUIUtility.TrTextContent("Check Cache Size", "Check the size of the local asset cache server - can take a while");
             public static readonly GUIContent browseCacheLocation = EditorGUIUtility.TrTextContent("Browse for local asset cache server location");
-            public static readonly GUIContent assetPipelineVersion2 = EditorGUIUtility.TrTextContent("Asset pipeline v2");
-            public static readonly GUIContent activeAssetPipelineVersionLabel = EditorGUIUtility.TrTextContent("Asset Pipeline active version", activeAssetPipelineVersionTooltip);
-            public static readonly GUIContent activeAssetPipelineVersion = new GUIContent("2", activeAssetPipelineVersionTooltip);
-            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources by priority: Environment variable, command line argument (-adb2), local per project editor settings, builtin default. In the case of creating a new project, the default pipeline is selected by the dropdown above and will have a priority one higher than the builtin default.";
             public static readonly GUIContent cacheServerDefaultMode = new GUIContent("Cache Server Default Mode", "Specifies if cache server should be enabled or disabled by default. This can be overridden per project in editor settings.");
             public static readonly GUIContent cacheServerIPLabel = new GUIContent("Default IP address", "This IP address is used for the cache server if not overridden in the editor settings per project.");
         }
@@ -215,7 +211,6 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
 
-                EditorGUILayout.LabelField(Properties.activeAssetPipelineVersionLabel, Properties.activeAssetPipelineVersion);
                 var overrideAddress = GetCommandLineRemoteAddressOverride();
                 bool allowCacheServerChanges = overrideAddress == null;
 
@@ -250,8 +245,6 @@ namespace UnityEditor
 
         static void CacheServerVersion2GUI(bool allowCacheServerChanges, string overrideAddress)
         {
-            GUILayout.Label(Properties.assetPipelineVersion2, EditorStyles.boldLabel);
-
             GUILayout.Space(5);
 
             bool changeStateBeforeControls = GUI.changed;

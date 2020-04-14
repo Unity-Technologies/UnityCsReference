@@ -444,9 +444,9 @@ namespace UnityEngine.Networking
         public extern bool isModifiable {[NativeMethod("IsModifiable")] get; }
         public bool isDone { get { return result != Result.InProgress; } }
         // These two are referenced by packages, deprecate after packages get updated
-        //[System.Obsolete("UnityWebRequest.isNetworkError is deprecated. Use (UnityWebRequest.result == UnityWebRequest.Result.ConnectionError) instead.", false)]
+        [System.Obsolete("UnityWebRequest.isNetworkError is deprecated. Use (UnityWebRequest.result == UnityWebRequest.Result.ConnectionError) instead.", false)]
         public bool isNetworkError { get { return result == Result.ConnectionError; } }
-        //[System.Obsolete("UnityWebRequest.isHttpError is deprecated. Use (UnityWebRequest.result == UnityWebRequest.Result.ProtocolError) instead.", false)]
+        [System.Obsolete("UnityWebRequest.isHttpError is deprecated. Use (UnityWebRequest.result == UnityWebRequest.Result.ProtocolError) instead.", false)]
         public bool isHttpError { get { return result == Result.ProtocolError; } }
         public extern Result result { [NativeMethod("GetResult")] get; }
 

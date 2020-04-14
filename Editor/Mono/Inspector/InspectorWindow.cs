@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 using Object = UnityEngine.Object;
@@ -66,6 +67,10 @@ namespace UnityEditor
 
         protected override void OnEnable()
         {
+            // Enable MSAA for UIElements inspectors, which is the only supported
+            // antialiasing solution for UIElements.
+            this.SetAntiAliasing(4);
+
             RefreshTitle();
             AddInspectorWindow(this);
 
@@ -399,7 +404,7 @@ namespace UnityEditor
             m_Tracker.SetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
             // since this method likely got called during OnEnable, and rebuilding the tracker could call OnDisable on all Editors,
             // some of which might not have gotten their enable yet, the rebuilding needs to happen delayed in EditorApplication.update
-            new DelayedCallback(tracker.RebuildIfNecessary, 0f);
+            EditorApplication.CallDelayed(tracker.RebuildIfNecessary, 0f);
         }
 
         internal static bool AddInspectorWindow(InspectorWindow window)

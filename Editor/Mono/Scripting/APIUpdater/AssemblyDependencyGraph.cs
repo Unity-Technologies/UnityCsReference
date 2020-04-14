@@ -133,13 +133,17 @@ namespace UnityEditor.Scripting.APIUpdater
 
             var array = m_Graph.ToArray();
 
-            CheckForCycles(array);
+            m_Processed = new HashSet<string>();
+            LogCycles(array, m_Processed);
+
+            m_Processed.Clear();
 
             bool exchangeElementsInLastPass;
+            var arrayLength = array.Length - 1;
             do
             {
                 exchangeElementsInLastPass = false;
-                for (int i = 0; i < array.Length - 1; i++)
+                for (int i = 0; i < arrayLength; i++)
                 {
                     if (CompareElements(array[i], array[i + 1]) > 0)
                     {
@@ -150,6 +154,8 @@ namespace UnityEditor.Scripting.APIUpdater
                         exchangeElementsInLastPass = true;
                     }
                 }
+
+                arrayLength--;
             }
             while (exchangeElementsInLastPass);
 
@@ -163,46 +169,56 @@ namespace UnityEditor.Scripting.APIUpdater
          */
         private int CompareElements(DependencyEntry lhs, DependencyEntry rhs)
         {
-            var rshDependsOnLhs = HasDirectOrIndirectDependency(lhs, rhs);
-            if (rshDependsOnLhs)
+            var lhsDependsOnRhs = HasDirectOrIndirectDependency(lhs, rhs);
+            if (lhsDependsOnRhs)
                 return 1;
 
-            var lhsDependsOnRhs = HasDirectOrIndirectDependency(rhs, lhs);
-            if (lhsDependsOnRhs)
+            var rshDependsOnLhs = HasDirectOrIndirectDependency(rhs, lhs);
+            if (rshDependsOnLhs)
                 return -1;
 
             return 0;
         }
 
-        private static bool HasDirectOrIndirectDependency(DependencyEntry lhs, DependencyEntry rhs)
+        private bool HasDirectOrIndirectDependency(DependencyEntry lhs, DependencyEntry rhs)
         {
             var lhsDependsOnRhs = lhs.m_Dependencies.Contains(rhs);
             if (lhsDependsOnRhs)
                 return true;
 
+            m_Processed.Clear();
             return HasDirectOrIndirectDependencyRecursive(rhs, lhs.m_Dependencies);
         }
 
-        private static bool HasDirectOrIndirectDependencyRecursive(DependencyEntry toBeLookedUp, IList<DependencyEntry> dependencies)
+        bool HasDirectOrIndirectDependencyRecursive(DependencyEntry toBeLookedUp, IList<DependencyEntry> dependencies)
         {
             foreach (var entry in dependencies)
             {
                 if (entry == toBeLookedUp)
                     return true;
 
-                if (HasDirectOrIndirectDependencyRecursive(toBeLookedUp, entry.m_Dependencies))
-                    return true;
+                if (m_Processed.Contains(entry.Name))
+                {
+                    // We've found a cycle in the assemblies (which has already been logged)
+                    return false;
+                }
+
+                m_Processed.Add(entry.Name);
+                try
+                {
+                    if (HasDirectOrIndirectDependencyRecursive(toBeLookedUp, entry.m_Dependencies))
+                        return true;
+                }
+                finally
+                {
+                    m_Processed.Remove(entry.Name);
+                }
             }
 
             return false;
         }
 
-        static void CheckForCycles(IEnumerable<DependencyEntry> entries)
-        {
-            CheckForCycles(entries, new HashSet<string>());
-        }
-
-        static void CheckForCycles(IEnumerable<DependencyEntry> entries, HashSet<string> seen)
+        static void LogCycles(IEnumerable<DependencyEntry> entries, HashSet<string> seen)
         {
             foreach (var entry in entries)
             {
@@ -211,11 +227,13 @@ namespace UnityEditor.Scripting.APIUpdater
 
                 if (seen.Contains(entry.Name))
                 {
-                    throw new InvalidOperationException($"[APIUpdater] Cycle detected in assembly references: {string.Join("->", seen.Reverse().ToArray())}->{entry.Name}");
+                    Console.WriteLine($"[APIUpdater] Warning: Cycle detected in assembly references: {string.Join("->", seen.ToArray())}->{entry.Name}. This is not supported and AssemblyUpdater may not work as expected.");
+                    continue;
                 }
 
                 seen.Add(entry.Name);
-                CheckForCycles(entry.Dependencies, seen);
+
+                LogCycles(entry.Dependencies, seen);
                 entry.Status |= AssemblyStatus.NoCyclesDetected;
 
                 seen.Remove(entry.Name);
@@ -245,10 +263,10 @@ namespace UnityEditor.Scripting.APIUpdater
 
             var endOfStream = stream.Position;
 
-            stream.Position = hash.Length + h.Length; // Position the stream in the first byte of the serialized data (i.e, skip *hash lenght* and *hash*
+            stream.Position = hash.Length + h.Length; // Position the stream in the first byte of the serialized data (i.e, skip *hash length* and *hash*
             hash = hasher.ComputeHash(stream);
 
-            stream.Position = h.Length; // position the stream past the *hash lenght* (i.e, *hash first byte*)
+            stream.Position = h.Length; // position the stream past the *hash length* (i.e, *hash first byte*)
             stream.Write(hash, 0, hash.Length);
 
             stream.Position = endOfStream;
@@ -327,7 +345,8 @@ namespace UnityEditor.Scripting.APIUpdater
             }
         }
 
-        private List<DependencyEntry> m_Graph;
+        List<DependencyEntry> m_Graph;
+        HashSet<string> m_Processed; // used to ignore cycles.
     }
 
     [Flags]

@@ -8,6 +8,22 @@ using UnityEngine.Events;
 
 namespace UnityEditor.AnimatedValues
 {
+    public abstract class BaseAnimValueNonAlloc<T> : BaseAnimValue<T> where T : IEquatable<T>
+    {
+        protected BaseAnimValueNonAlloc(T value) : base(value)
+        {
+        }
+
+        protected BaseAnimValueNonAlloc(T value, UnityAction callback) : base(value, callback)
+        {
+        }
+
+        protected override bool AreEqual(T a, T b)
+        {
+            return a.Equals(b);
+        }
+    }
+
     public abstract class BaseAnimValue<T> : ISerializationCallbackReceiver
     {
         T m_Start;
@@ -43,6 +59,11 @@ namespace UnityEditor.AnimatedValues
             m_Target = value;
             valueChanged = new UnityEvent();
             valueChanged.AddListener(callback);
+        }
+
+        protected virtual bool AreEqual(T a, T b)
+        {
+            return a.Equals(b);
         }
 
         static T2 Clamp<T2>(T2 val, T2 min, T2 max) where T2 : IComparable<T2>
@@ -116,7 +137,7 @@ namespace UnityEditor.AnimatedValues
             // If the new value is different, or we might be in the middle of a fade, we need to refresh.
             // Checking GetValue is not reliable on its own, since for e.g. bool it'll return the "closest" value,
             // but that doesn't mean the fade is done.
-            bool invoke = (!newValue.Equals(GetValue()) || m_LerpPosition < 1) && valueChanged != null;
+            bool invoke = (!AreEqual(newValue, GetValue()) || m_LerpPosition < 1) && valueChanged != null;
 
             m_Target = newValue;
             m_Start = newValue;
@@ -137,14 +158,14 @@ namespace UnityEditor.AnimatedValues
             get { return m_Target; }
             set
             {
-                if (!m_Target.Equals(value))
+                if (!AreEqual(m_Target, value))
                     BeginAnimating(value, this.value);
             }
         }
 
         internal void SetTarget(T newTarget, float animationSpeed)
         {
-            if (!m_Target.Equals(newTarget))
+            if (!AreEqual(m_Target, value))
                 BeginAnimating(newTarget, value, animationSpeed);
         }
 
@@ -178,7 +199,7 @@ namespace UnityEditor.AnimatedValues
     }
 
     [Serializable]
-    public class AnimFloat : BaseAnimValue<float>
+    public class AnimFloat : BaseAnimValueNonAlloc<float>
     {
         [SerializeField]
         private float m_Value;
@@ -198,7 +219,7 @@ namespace UnityEditor.AnimatedValues
     }
 
     [Serializable]
-    public class AnimVector3 : BaseAnimValue<Vector3>
+    public class AnimVector3 : BaseAnimValueNonAlloc<Vector3>
     {
         [SerializeField]
         private Vector3 m_Value;
@@ -223,7 +244,7 @@ namespace UnityEditor.AnimatedValues
     }
 
     [Serializable]
-    public class AnimBool : BaseAnimValue<bool>
+    public class AnimBool : BaseAnimValueNonAlloc<bool>
     {
         [SerializeField]
         private float m_Value;
@@ -270,7 +291,7 @@ namespace UnityEditor.AnimatedValues
     }
 
     [Serializable]
-    public class AnimQuaternion : BaseAnimValue<Quaternion>
+    public class AnimQuaternion : BaseAnimValueNonAlloc<Quaternion>
     {
         [SerializeField]
         private Quaternion m_Value;

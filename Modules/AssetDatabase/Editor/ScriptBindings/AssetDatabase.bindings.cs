@@ -251,9 +251,39 @@ namespace UnityEditor
             return allOpened;
         }
 
-        extern public static string AssetPathToGUID(string path);
-        extern public static string GUIDToAssetPath(string guid);
-        extern public static Hash128 GetAssetDependencyHash(string path);
+        extern internal static string GUIDToAssetPath_Internal(GUID guid);
+        extern internal static GUID AssetPathToGUID_Internal(string path);
+
+        public static string GUIDToAssetPath(string guid)
+        {
+            return GUIDToAssetPath_Internal(new GUID(guid));
+        }
+
+        public static string GUIDToAssetPath(GUID guid)
+        {
+            return GUIDToAssetPath_Internal(guid);
+        }
+
+        public static GUID GUIDFromAssetPath(string path)
+        {
+            return AssetPathToGUID_Internal(path);
+        }
+
+        public static string AssetPathToGUID(string path)
+        {
+            var guid = AssetPathToGUID_Internal(path);
+            return guid.Empty() ? "" : guid.ToString();
+        }
+
+        extern public static Hash128 GetAssetDependencyHash(GUID guid);
+
+        public static Hash128 GetAssetDependencyHash(string path)
+        {
+            return GetAssetDependencyHash(GUIDFromAssetPath(path));
+        }
+
+        extern internal static Hash128 GetSourceAssetFileHash(string guid);
+        extern internal static Hash128 GetSourceAssetMetaFileHash(string guid);
 
         [FreeFunction("AssetDatabase::SaveAssets")]
         extern public static void SaveAssets();
@@ -454,7 +484,7 @@ namespace UnityEditor
                 if (validPath && (rootFolder || readOnly))
                     continue;
 
-                GUID guid = new GUID(AssetPathToGUID(path));
+                GUID guid = GUIDFromAssetPath(path);
 
                 if (!guid.Empty())
                 {
@@ -510,10 +540,7 @@ namespace UnityEditor
 
         public static bool TryGetGUIDAndLocalFileIdentifier<T>(LazyLoadReference<T> assetRef, out string guid, out long localId) where T : UnityEngine.Object
         {
-            GUID uguid;
-            bool res = GetGUIDAndLocalIdentifierInFile(assetRef.instanceID, out uguid, out localId);
-            guid = uguid.ToString();
-            return res;
+            return TryGetGUIDAndLocalFileIdentifier(assetRef.instanceID, out guid, out localId);
         }
 
         public static void ForceReserializeAssets()

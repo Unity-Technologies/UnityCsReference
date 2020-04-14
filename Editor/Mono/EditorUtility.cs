@@ -483,15 +483,17 @@ namespace UnityEditor
                 }
                 else
                 {
-                    SerializedObject so = new SerializedObject(targetObject);
-                    SerializedProperty property = so.GetIterator();
                     bool hasPrefabOverride = false;
-                    while (property.Next(property.hasChildren))
+                    using (var so = new SerializedObject(targetObject))
                     {
-                        if (property.isInstantiatedPrefab && property.prefabOverride && !property.isDefaultOverride)
+                        SerializedProperty property = so.GetIterator();
+                        while (property.Next(property.hasChildren))
                         {
-                            hasPrefabOverride = true;
-                            break;
+                            if (property.isInstantiatedPrefab && property.prefabOverride && !property.isDefaultOverride)
+                            {
+                                hasPrefabOverride = true;
+                                break;
+                            }
                         }
                     }
 

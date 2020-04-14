@@ -14,7 +14,8 @@ namespace UnityEditor
     {
         [NonSerialized]
         static bool s_Initialized;
-        static SceneView s_SceneView;
+        static SceneView s_CurrentSceneView; // The SceneView that is calling OnGUI
+        static SceneView s_ActiveSceneView; // The SceneView that is being navigated
         static Vector3 s_Motion;
         internal static float k_FlySpeed = 9f;
         static float s_FlySpeedTarget = 0f;
@@ -54,7 +55,11 @@ namespace UnityEditor
         {
             Init();
 
-            s_SceneView = view;
+            s_CurrentSceneView = view;
+
+            // If a SceneView is currently taking input, don't let other views accept input
+            if (s_ActiveSceneView != null && s_CurrentSceneView != s_ActiveSceneView)
+                return;
 
             Event evt = Event.current;
 
@@ -112,14 +117,14 @@ namespace UnityEditor
         {
             s_Moving = s_Motion.sqrMagnitude > 0f;
             var deltaTime = CameraFlyModeContext.deltaTime;
-            var speedModifier = s_SceneView.cameraSettings.speed;
+            var speedModifier = s_CurrentSceneView.cameraSettings.speed;
 
             if (Event.current.shift)
                 speedModifier *= 5f;
 
             if (s_Moving)
             {
-                if (s_SceneView.cameraSettings.accelerationEnabled)
+                if (s_CurrentSceneView.cameraSettings.accelerationEnabled)
                     s_FlySpeedTarget = s_FlySpeedTarget < Mathf.Epsilon ? k_FlySpeed : s_FlySpeedTarget * Mathf.Pow(k_FlySpeedAcceleration, deltaTime);
                 else
                     s_FlySpeedTarget = k_FlySpeed;
@@ -129,9 +134,9 @@ namespace UnityEditor
                 s_FlySpeedTarget = 0f;
             }
 
-            if (s_SceneView.cameraSettings.easingEnabled)
+            if (s_CurrentSceneView.cameraSettings.easingEnabled)
             {
-                s_FlySpeed.speed = 1f / s_SceneView.cameraSettings.easingDuration;
+                s_FlySpeed.speed = 1f / s_CurrentSceneView.cameraSettings.easingDuration;
                 s_FlySpeed.target = s_Motion.normalized * s_FlySpeedTarget * speedModifier;
             }
             else
@@ -170,7 +175,7 @@ namespace UnityEditor
                     if (Toolbar.get)
                         Toolbar.get.Repaint();
                     EditorGUIUtility.SetWantsMouseJumping(1);
-
+                    s_ActiveSceneView = s_CurrentSceneView;
                     evt.Use();
 
                     // we're not dragging yet, but enter this state so we can cleanup correctly
@@ -182,15 +187,24 @@ namespace UnityEditor
             }
         }
 
-        private static void ResetDragState()
+        internal static void ResetDragState()
         {
+            s_ActiveSceneView = null;
+            if (GUIUtility.hotControl == s_ViewToolID)
+                GUIUtility.hotControl = 0;
             s_CurrentState = MotionState.kInactive;
             Tools.s_LockedViewTool = ViewTool.None;
             Tools.s_ButtonDown = -1;
-            s_Motion = Vector3.zero;
             if (Toolbar.get)
                 Toolbar.get.Repaint();
             EditorGUIUtility.SetWantsMouseJumping(0);
+        }
+
+        internal static void ResetMotion()
+        {
+            s_Motion = Vector3.zero;
+            s_FlySpeed.value = Vector3.zero;
+            s_Moving = false;
         }
 
         private static void HandleMouseUp(SceneView view, int id, int button, int clickCount)
@@ -442,7 +456,7 @@ namespace UnityEditor
 
                 GUIContent cameraSpeedContent = EditorGUIUtility.TempContent(string.Format("{0}{1}",
                     cameraSpeedDisplayValue,
-                    s_SceneView.cameraSettings.accelerationEnabled ? "x" : ""));
+                    s_CurrentSceneView.cameraSettings.accelerationEnabled ? "x" : ""));
 
                 view.ShowNotification(cameraSpeedContent, .5f);
             }
@@ -487,13 +501,6 @@ namespace UnityEditor
             }
 
             Event.current.Use();
-        }
-
-        public static void ResetMotion()
-        {
-            s_Motion = Vector3.zero;
-            s_FlySpeed.value = Vector3.zero;
-            s_Moving = false;
         }
 
         public static void DeactivateFlyModeContext()

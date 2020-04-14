@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using UnityEditor.AnimatedValues;
@@ -74,6 +75,9 @@ namespace UnityEditor
         ObjectTreeForSelector m_ObjectTreeWithSearch = new ObjectTreeForSelector();
         UnityObject m_ObjectBeingEdited;
 
+        int m_LastSelectedInstanceId = 0;
+        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.ObjectSelector.searchType);
+
         // Layout
         const float kMinTopSize = 250;
         const float kMinWidth = 200;
@@ -137,7 +141,7 @@ namespace UnityEditor
             return m_ObjectTreeWithSearch.IsInitialized();
         }
 
-        int GetSelectedInstanceID()
+        int GetInternalSelectedInstanceID()
         {
             if (m_ListArea == null)
                 InitIfNeeded();
@@ -145,6 +149,11 @@ namespace UnityEditor
             if (selection.Length >= 1)
                 return selection[0];
             return 0;
+        }
+
+        int GetSelectedInstanceID()
+        {
+            return m_LastSelectedInstanceId;
         }
 
         [UsedImplicitly]
@@ -182,17 +191,7 @@ namespace UnityEditor
         [UsedImplicitly]
         void OnDisable()
         {
-            if (m_ObjectSelectorReceiver != null)
-            {
-                m_ObjectSelectorReceiver.OnSelectionClosed(GetCurrentObject());
-            }
-
-            if (m_OnObjectSelectorClosed != null)
-            {
-                m_OnObjectSelectorClosed(GetCurrentObject());
-            }
-
-            SendEvent(ObjectSelectorClosedCommand, false);
+            NotifySelectorClosed(false);
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
 
@@ -218,6 +217,7 @@ namespace UnityEditor
 
         void ListAreaItemSelectedCallback(bool doubleClicked)
         {
+            m_LastSelectedInstanceId = GetInternalSelectedInstanceID();
             if (doubleClicked)
             {
                 ItemWasDoubleClicked();
@@ -225,17 +225,7 @@ namespace UnityEditor
             else
             {
                 m_FocusSearchFilter = false;
-                if (m_ObjectSelectorReceiver != null)
-                {
-                    m_ObjectSelectorReceiver.OnSelectionChanged(GetCurrentObject());
-                }
-
-                if (m_OnObjectSelectorUpdated != null)
-                {
-                    m_OnObjectSelectorUpdated(GetCurrentObject());
-                }
-
-                SendEvent(ObjectSelectorUpdatedCommand, true);
+                NotifySelectionChanged(true);
             }
         }
 
@@ -318,7 +308,13 @@ namespace UnityEditor
                 filter.skipHidden = m_SkipHiddenPackages;
             }
 
-            m_ListArea.Init(listPosition, hierarchyType, filter, true);
+            var requiredType = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>()
+                .FirstOrDefault(t => t.Name == m_RequiredType) ?? typeof(UnityObject);
+            m_ListArea.InitForSearch(listPosition, hierarchyType, filter, true, s =>
+            {
+                var asset = AssetDatabase.LoadAssetAtPath(s, requiredType);
+                return asset?.GetInstanceID() ?? 0;
+            });
         }
 
         static bool ShouldTreeViewBeUsed(String typeStr)
@@ -359,6 +355,7 @@ namespace UnityEditor
             m_SkipHiddenPackages = true;
             m_AllowedIDs = allowedInstanceIDs;
             m_ObjectBeingEdited = objectBeingEdited;
+            m_LastSelectedInstanceId = obj?.GetInstanceID() ?? 0;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
             m_OnObjectSelectorUpdated = onObjectSelectedUpdated;
@@ -397,6 +394,41 @@ namespace UnityEditor
             m_SearchFilter = "";
             m_OriginalSelection = obj;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
+
+            // Show custom selector if available
+            m_SearchSessionHandler.BeginSession(() =>
+            {
+                return new SearchService.ObjectSelector.SearchContext
+                {
+                    currentObject = obj,
+                    editedObject = objectBeingEdited,
+                    requiredTypes = new[] { requiredType },
+                    requiredTypeNames = new[] { m_RequiredType },
+                    allowedInstanceIds = allowedInstanceIDs,
+                    showedTypes = allowSceneObjects ? SearchService.ObjectSelector.ShowedTypes.All : SearchService.ObjectSelector.ShowedTypes.Assets
+                };
+            });
+            var searchContext = (SearchService.ObjectSelector.SearchContext)m_SearchSessionHandler.context;
+            Action<UnityObject> onSelectionChanged = selectedObj =>
+            {
+                m_LastSelectedInstanceId = selectedObj == null ? 0 : selectedObj.GetInstanceID();
+                NotifySelectionChanged(false);
+            };
+            Action<UnityObject, bool> onSelectorClosed = (selectedObj, canceled) =>
+            {
+                m_SearchSessionHandler.EndSession();
+                if (canceled)
+                {
+                    // Undo changes we have done in the ObjectSelector
+                    Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+                    m_LastSelectedInstanceId = 0;
+                }
+                else
+                    m_LastSelectedInstanceId = selectedObj == null ? 0 : selectedObj.GetInstanceID();
+                NotifySelectorClosed(false);
+            };
+            if (SearchService.ObjectSelector.SelectObject(searchContext, onSelectorClosed, onSelectionChanged))
+                return;
 
             // Freeze to prevent flicker on OSX.
             // Screen will be updated again when calling
@@ -464,17 +496,8 @@ namespace UnityEditor
 
         void TreeViewSelection(TreeViewItem item)
         {
-            if (m_ObjectSelectorReceiver != null)
-            {
-                m_ObjectSelectorReceiver.OnSelectionChanged(GetCurrentObject());
-            }
-
-            if (m_OnObjectSelectorUpdated != null)
-            {
-                m_OnObjectSelectorUpdated(GetCurrentObject());
-            }
-
-            SendEvent(ObjectSelectorUpdatedCommand, true);
+            m_LastSelectedInstanceId = GetInternalSelectedInstanceID();
+            NotifySelectionChanged(true);
         }
 
         // Grid Section
@@ -829,6 +852,7 @@ namespace UnityEditor
             // Clear selection so that object field doesn't grab it
             m_ListArea?.InitSelection(new int[0]);
             m_ObjectTreeWithSearch.Clear();
+            m_LastSelectedInstanceId = 0;
 
             Close();
             GUI.changed = true;
@@ -902,6 +926,32 @@ namespace UnityEditor
         {
             int listKeyboardControlID = GUIUtility.GetControlID(FocusType.Keyboard);
             m_ListArea.OnGUI(listPosition, listKeyboardControlID);
+        }
+
+        void NotifySelectionChanged(bool exitGUI)
+        {
+            var currentObject = GetCurrentObject();
+            if (m_ObjectSelectorReceiver != null)
+            {
+                m_ObjectSelectorReceiver.OnSelectionChanged(currentObject);
+            }
+
+            m_OnObjectSelectorUpdated?.Invoke(currentObject);
+
+            SendEvent(ObjectSelectorUpdatedCommand, exitGUI);
+        }
+
+        void NotifySelectorClosed(bool exitGUI)
+        {
+            var currentObject = GetCurrentObject();
+            if (m_ObjectSelectorReceiver != null)
+            {
+                m_ObjectSelectorReceiver.OnSelectionClosed(currentObject);
+            }
+
+            m_OnObjectSelectorClosed?.Invoke(currentObject);
+
+            SendEvent(ObjectSelectorClosedCommand, exitGUI);
         }
     }
 }

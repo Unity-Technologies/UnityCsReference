@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI
                 if (packageSelectionObject == null)
                     return base.targetTitle;
 
-                return string.Format(ApplicationUtil.instance.GetTranslationForText("Package '{0}' Manifest"), m_Version != null ?
+                return string.Format(L10n.Tr("Package '{0}' Manifest"), m_Version != null ?
                     string.IsNullOrEmpty(m_Version.displayName) ? m_Version.name : m_Version.displayName :
                     packageSelectionObject.displayName);
             }
@@ -57,24 +57,46 @@ namespace UnityEditor.PackageManager.UI
         private IPackage m_Package;
 
         [NonSerialized]
+        private bool m_ShouldBeEnabled;
+
+        [NonSerialized]
         private IPackageVersion m_Version;
+
+        private SelectionProxy m_Selection;
+        private PackageDatabase m_PackageDatabase;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_Selection = container.Resolve<SelectionProxy>();
+            m_PackageDatabase = container.Resolve<PackageDatabase>();
+        }
+
+        void OnEnable()
+        {
+            ResolveDependencies();
+        }
 
         public override void OnInspectorGUI()
         {
             if (packageSelectionObject == null)
             {
-                EditorGUILayout.HelpBox(ApplicationUtil.instance.GetTranslationForText("This package is not accessible anymore."), MessageType.Error);
+                EditorGUILayout.HelpBox(L10n.Tr("This package is not accessible anymore."), MessageType.Error);
                 return;
             }
 
             if (m_Package == null || m_Version == null)
             {
-                PackageDatabase.instance.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
+                m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
                 if (m_Package == null || m_Version == null)
                 {
-                    EditorGUILayout.HelpBox(ApplicationUtil.instance.GetTranslationForText("This package is not accessible anymore."), MessageType.Error);
+                    EditorGUILayout.HelpBox(L10n.Tr("This package is not accessible anymore."), MessageType.Error);
                     return;
                 }
+
+                var immutable = true;
+                m_ShouldBeEnabled = true;
+                if (!m_Version.isInstalled || AssetDatabase.GetAssetFolderInfo("Packages/" + m_Package.name, out var rootFolder, out immutable))
+                    m_ShouldBeEnabled = !immutable;
             }
 
             var dependencies = new List<DependencyInfo>();
@@ -87,6 +109,9 @@ namespace UnityEditor.PackageManager.UI
                 elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing
             };
 
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = m_ShouldBeEnabled;
+
             // Package information
             GUILayout.Label(Styles.information, EditorStyles.boldLabel);
             DoPackageInformationLayout();
@@ -98,6 +123,8 @@ namespace UnityEditor.PackageManager.UI
             // Package dependencies
             GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
             m_List.DoLayoutList();
+
+            GUI.enabled = previousEnabled;
         }
 
         internal override void OnHeaderControlsGUI()
@@ -111,12 +138,12 @@ namespace UnityEditor.PackageManager.UI
                 var path = m_Version.packageInfo.assetPath;
                 var manifest = AssetDatabase.LoadAssetAtPath<PackageManifest>($"{path}/package.json");
                 if (manifest != null)
-                    ApplicationUtil.instance.activeSelection = manifest;
+                    m_Selection.activeObject = manifest;
             }
             GUI.enabled = targets.Length == 1 && m_Package != null && m_Version != null;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                PackageManagerWindow.SelectPackageAndFilter(m_Package.Is(PackageType.AssetStore) ? m_Version.packageUniqueId : m_Version.uniqueId);
+                PackageManagerWindow.SelectPackageAndFilterStatic(m_Package.Is(PackageType.AssetStore) ? m_Version.packageUniqueId : m_Version.uniqueId);
             }
             GUI.enabled = previousEnabled;
         }
@@ -125,8 +152,9 @@ namespace UnityEditor.PackageManager.UI
         {
             base.OnForceReloadInspector();
 
+            var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
             if (packageSelectionObject != null && (m_Package == null || m_Version == null))
-                PackageDatabase.instance.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
+                packageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
         }
 
         internal override bool HasLargeHeader()

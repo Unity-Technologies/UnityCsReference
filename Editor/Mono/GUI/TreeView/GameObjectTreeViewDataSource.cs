@@ -12,6 +12,7 @@ using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Assertions;
 using UnityEngine.Profiling;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -28,6 +29,7 @@ namespace UnityEditor
 
         int m_RootInstanceID;
         string m_SearchString = "";
+        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.Scene.searchType);
         SearchableEditorWindow.SearchModeHierarchyWindow m_SearchMode = 0; // 0 = All
         double m_LastFetchTime = 0.0;
         int m_DelayedFetches = 0;
@@ -236,6 +238,8 @@ namespace UnityEditor
         {
             var property = CreateHierarchyProperty();
             property.SetSearchFilter("", 0); // 0 = All
+
+            m_SearchSessionHandler.EndSession();
         }
 
         public override void FetchData()
@@ -267,11 +271,14 @@ namespace UnityEditor
 
             bool subTreeWanted = m_RootInstanceID != 0;
             bool isSearching = !string.IsNullOrEmpty(m_SearchString);
+
+            if (isSearching)
+            {
+                m_SearchSessionHandler.BeginSession(() => new HierarchySearchContext {rootProperty = property});
+            }
+
             if (isSearching || subTreeWanted)
             {
-                if (isSearching)
-                    property.SetSearchFilter(m_SearchString, (int)m_SearchMode);
-
                 InitializeProgressivly(property, subTreeWanted, isSearching);
             }
             else
@@ -422,10 +429,23 @@ namespace UnityEditor
             const int kItemDepth = 0;
             int currentSceneHandle = -1;
             int row = 0;
+            var searchFilter = SearchableEditorWindow.CreateFilter(searchString, (SearchableEditorWindow.SearchMode)m_SearchMode);
+            var searchContext = (HierarchySearchContext)m_SearchSessionHandler.context;
+            searchContext.filter = searchFilter;
+            searchContext.rootProperty = property;
+
+            m_SearchSessionHandler.BeginSearch(searchString);
 
             var headerRows = new List<int>();
             while (property.NextWithDepthCheck(null, minAllowedDepth))
             {
+                if (!SearchService.Scene.Filter(m_SearchString, property, searchContext))
+                {
+                    property.SetFilteredVisibility(false);
+                    continue;
+                }
+
+                property.SetFilteredVisibility(true);
                 var item = EnsureCreatedItem(row);
                 // Add scene headers when encountering a new scene (and it's not a header in itself)
                 if (AddSceneHeaderToSearchIfNeeded(item, property, ref currentSceneHandle))
@@ -441,6 +461,8 @@ namespace UnityEditor
                 InitTreeViewItem(item, property, kShowItemHasChildren, kItemDepth);
                 row++;
             }
+
+            m_SearchSessionHandler.EndSearch();
 
             int numRows = row;
 

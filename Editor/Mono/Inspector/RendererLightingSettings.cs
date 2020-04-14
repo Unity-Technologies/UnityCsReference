@@ -15,71 +15,72 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIContent OptimizeRealtimeUVs = EditorGUIUtility.TrTextContent("Optimize Realtime UVs", "Specifies whether the authored mesh UVs get optimized for Realtime Global Illumination or not. When enabled, the authored UVs can get merged, and are scaled and packed for optimization purposes. When disabled, the authored UVs are scaled and packed, but not merged.");
-            public static readonly GUIContent IgnoreNormalsForChartDetection = EditorGUIUtility.TrTextContent("Ignore Normals", "When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.");
-            public static readonly int[] MinimumChartSizeValues = { 2, 4 };
-            public static readonly GUIContent[] MinimumChartSizeStrings =
+            public static readonly GUIContent optimizeRealtimeUVs = EditorGUIUtility.TrTextContent("Optimize Realtime UVs", "Specifies whether the authored mesh UVs get optimized for Realtime Global Illumination or not. When enabled, the authored UVs can get merged, and are scaled and packed for optimization purposes. When disabled, the authored UVs are scaled and packed, but not merged.");
+            public static readonly GUIContent ignoreNormalsForChartDetection = EditorGUIUtility.TrTextContent("Ignore Normals", "When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.");
+            public static readonly int[] minimumChartSizeValues = { 2, 4 };
+            public static readonly GUIContent[] minimumChartSizeStrings =
             {
                 EditorGUIUtility.TrTextContent("2 (Minimum)"),
                 EditorGUIUtility.TrTextContent("4 (Stitchable)"),
             };
 
-            public static readonly int[] ReceiveGILightmapValues = { (int)ReceiveGI.Lightmaps, (int)ReceiveGI.LightProbes };
-            public static readonly GUIContent[] ReceiveGILightmapStrings =
+            public static readonly int[] receiveGILightmapValues = { (int)ReceiveGI.Lightmaps, (int)ReceiveGI.LightProbes };
+            public static readonly GUIContent[] receiveGILightmapStrings =
             {
                 EditorGUIUtility.TrTextContent("Lightmaps"),
                 EditorGUIUtility.TrTextContent("Light Probes")
             };
 
-            public static readonly GUIContent LightingSettings = EditorGUIUtility.TrTextContent("Lighting");
-            public static readonly GUIContent Lighting = new GUIContent(EditorGUIUtility.TrTextContent("Lighting").text); // prevent the Lighting window icon from being added
-            public static readonly GUIContent MinimumChartSize = EditorGUIUtility.TrTextContent("Min Chart Size", "Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
-            public static readonly GUIContent ImportantGI = EditorGUIUtility.TrTextContent("Prioritize Illumination", "When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
-            public static readonly GUIContent StitchLightmapSeams = EditorGUIUtility.TrTextContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
-            public static readonly GUIContent AutoUVMaxDistance = EditorGUIUtility.TrTextContent("Max Distance", "Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance, they will be simplified for optimization purposes.");
-            public static readonly GUIContent AutoUVMaxAngle = EditorGUIUtility.TrTextContent("Max Angle", "Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
-            public static readonly GUIContent LightmapParameters = EditorGUIUtility.TrTextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
-            public static readonly GUIContent AtlasTilingX = EditorGUIUtility.TrTextContent("Tiling X");
-            public static readonly GUIContent AtlasTilingY = EditorGUIUtility.TrTextContent("Tiling Y");
-            public static readonly GUIContent AtlasOffsetX = EditorGUIUtility.TrTextContent("Offset X");
-            public static readonly GUIContent AtlasOffsetY = EditorGUIUtility.TrTextContent("Offset Y");
-            public static readonly GUIContent ClampedSize = EditorGUIUtility.TrTextContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightingSettings class.");
-            public static readonly GUIContent ClampedPackingResolution = EditorGUIUtility.TrTextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
-            public static readonly GUIContent ZeroAreaPackingMesh = EditorGUIUtility.TrTextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
-            public static readonly GUIContent NoNormalsNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
-            public static readonly GUIContent NoVerticesNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have vertices. Vertices are needed for lightmapping.");
-            public static readonly GUIContent UnsupportedTopology = EditorGUIUtility.TrTextContent("Mesh with point, strip or line topology is not supported by lightmapping.");
-            public static readonly GUIContent UVOverlap = EditorGUIUtility.TrTextContent("This GameObject has overlapping UVs. Please adjust Mesh Importer settings or increase chart padding in your modeling package.");
-            public static readonly GUIContent Atlas = EditorGUIUtility.TrTextContent("Baked Lightmap");
-            public static readonly GUIContent RealtimeLM = EditorGUIUtility.TrTextContent("Realtime Lightmap");
-            public static readonly GUIContent ScaleInLightmap = EditorGUIUtility.TrTextContent("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.");
-            public static readonly GUIContent AlbedoScale = EditorGUIUtility.TrTextContent("Albedo Scale", "Specifies the relative size of object's UVs within its albedo texture that is used when calculating the influence on surrounding objects.");
-            public static readonly GUIContent AtlasIndex = EditorGUIUtility.TrTextContent("Lightmap Index");
-            public static readonly GUIContent LightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution");
-            public static readonly GUIContent LightmapObjectScale = EditorGUIUtility.TrTextContent("Lightmap Object Scale");
-            public static readonly GUIContent PVRInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the baked GI instance.");
-            public static readonly GUIContent PVRAtlasHash = EditorGUIUtility.TrTextContent("Atlas Hash", "The hash of the atlas this baked GI instance is a part of.");
-            public static readonly GUIContent PVRAtlasInstanceOffset = EditorGUIUtility.TrTextContent("Atlas Instance Offset", "The offset into the transform array instances of this atlas start at.");
-            public static readonly GUIContent RealtimeLMResolution = EditorGUIUtility.TrTextContent("System Resolution", "The resolution in texels of the realtime lightmap that this renderer belongs to.");
-            public static readonly GUIContent RealtimeLMInstanceResolution = EditorGUIUtility.TrTextContent("Instance Resolution", "The resolution in texels of the realtime lightmap packed instance.");
-            public static readonly GUIContent RealtimeLMInputSystemHash = EditorGUIUtility.TrTextContent("System Hash", "The hash of the realtime system that the renderer belongs to.");
-            public static readonly GUIContent RealtimeLMInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the realtime GI instance.");
-            public static readonly GUIContent RealtimeLMGeometryHash = EditorGUIUtility.TrTextContent("Geometry Hash", "The hash of the realtime GI geometry that the renderer is using.");
-            public static readonly GUIContent UVCharting = EditorGUIUtility.TrTextContent("Realtime UVs");
-            public static readonly GUIContent LightmapSettings = EditorGUIUtility.TrTextContent("Lightmapping");
-            public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
-            public static readonly GUIContent ReceiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.");
-            public static readonly GUIContent ShadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
-            public static readonly GUIContent ContributeGI = EditorGUIUtility.TrTextContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
-            public static readonly GUIContent ReceiveGITitle = EditorGUIUtility.TrTextContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
+            public static readonly GUIContent lightingSettings = EditorGUIUtility.TrTextContent("Lighting");
+            public static readonly GUIContent lighting = new GUIContent(EditorGUIUtility.TrTextContent("Lighting").text); // prevent the Lighting window icon from being added
+            public static readonly GUIContent minimumChartSize = EditorGUIUtility.TrTextContent("Min Chart Size", "Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
+            public static readonly GUIContent importantGI = EditorGUIUtility.TrTextContent("Prioritize Illumination", "When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
+            public static readonly GUIContent stitchLightmapSeams = EditorGUIUtility.TrTextContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
+            public static readonly GUIContent autoUVMaxDistance = EditorGUIUtility.TrTextContent("Max Distance", "Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance, they will be simplified for optimization purposes.");
+            public static readonly GUIContent autoUVMaxAngle = EditorGUIUtility.TrTextContent("Max Angle", "Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
+            public static readonly GUIContent lightmapParameters = EditorGUIUtility.TrTextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
+            public static readonly GUIContent atlasTilingX = EditorGUIUtility.TrTextContent("Tiling X");
+            public static readonly GUIContent atlasTilingY = EditorGUIUtility.TrTextContent("Tiling Y");
+            public static readonly GUIContent atlasOffsetX = EditorGUIUtility.TrTextContent("Offset X");
+            public static readonly GUIContent atlasOffsetY = EditorGUIUtility.TrTextContent("Offset Y");
+            public static readonly GUIContent clampedSize = EditorGUIUtility.TrTextContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightingSettings class.");
+            public static readonly GUIContent clampedPackingResolution = EditorGUIUtility.TrTextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
+            public static readonly GUIContent zeroAreaPackingMesh = EditorGUIUtility.TrTextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
+            public static readonly GUIContent noNormalsNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
+            public static readonly GUIContent noVerticesNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have vertices. Vertices are needed for lightmapping.");
+            public static readonly GUIContent unsupportedTopology = EditorGUIUtility.TrTextContent("Mesh with point, strip or line topology is not supported by lightmapping.");
+            public static readonly GUIContent uvOverlap = EditorGUIUtility.TrTextContent("This GameObject has overlapping UVs. Please adjust Mesh Importer settings or increase chart padding in your modeling package.");
+            public static readonly GUIContent atlas = EditorGUIUtility.TrTextContent("Baked Lightmap");
+            public static readonly GUIContent realtimeLM = EditorGUIUtility.TrTextContent("Realtime Lightmap");
+            public static readonly GUIContent scaleInLightmap = EditorGUIUtility.TrTextContent("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.");
+            public static readonly GUIContent albedoScale = EditorGUIUtility.TrTextContent("Albedo Scale", "Specifies the relative size of object's UVs within its albedo texture that is used when calculating the influence on surrounding objects.");
+            public static readonly GUIContent atlasIndex = EditorGUIUtility.TrTextContent("Lightmap Index");
+            public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution");
+            public static readonly GUIContent lightmapObjectScale = EditorGUIUtility.TrTextContent("Lightmap Object Scale");
+            public static readonly GUIContent pvrInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the baked GI instance.");
+            public static readonly GUIContent pvrAtlasHash = EditorGUIUtility.TrTextContent("Atlas Hash", "The hash of the atlas this baked GI instance is a part of.");
+            public static readonly GUIContent pvrAtlasInstanceOffset = EditorGUIUtility.TrTextContent("Atlas Instance Offset", "The offset into the transform array instances of this atlas start at.");
+            public static readonly GUIContent realtimeLMResolution = EditorGUIUtility.TrTextContent("System Resolution", "The resolution in texels of the realtime lightmap that this renderer belongs to.");
+            public static readonly GUIContent realtimeLMInstanceResolution = EditorGUIUtility.TrTextContent("Instance Resolution", "The resolution in texels of the realtime lightmap packed instance.");
+            public static readonly GUIContent realtimeLMInputSystemHash = EditorGUIUtility.TrTextContent("System Hash", "The hash of the realtime system that the renderer belongs to.");
+            public static readonly GUIContent realtimeLMInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the realtime GI instance.");
+            public static readonly GUIContent realtimeLMGeometryHash = EditorGUIUtility.TrTextContent("Geometry Hash", "The hash of the realtime GI geometry that the renderer is using.");
+            public static readonly GUIContent uvCharting = EditorGUIUtility.TrTextContent("Realtime UVs");
+            public static readonly GUIContent lightmapSettings = EditorGUIUtility.TrTextContent("Lightmapping");
+            public static readonly GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
+            public static readonly GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.");
+            public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
+            public static readonly GUIContent contributeGI = EditorGUIUtility.TrTextContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
+            public static readonly GUIContent receiveGITitle = EditorGUIUtility.TrTextContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
+            public static readonly GUIContent lightmapParametersDefault = EditorGUIUtility.TrTextContent("Scene Default Parameters");
 
-            public static readonly GUIContent ResolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
-            public static readonly GUIContent ResolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
-            public static readonly GUIContent GINotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
-            public static readonly GUIContent OpenPreview = EditorGUIUtility.TrTextContent("Open Preview");
-            public static readonly GUIStyle OpenPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
-            public static readonly int PreviewPadding = 30;
-            public static readonly int PreviewWidth = 104;
+            public static readonly GUIContent resolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
+            public static readonly GUIContent resolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
+            public static readonly GUIContent giNotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
+            public static readonly GUIContent openPreview = EditorGUIUtility.TrTextContent("Open Preview");
+            public static readonly GUIStyle openPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
+            public static readonly int previewPadding = 30;
+            public static readonly int previewWidth = 104;
         }
 
         private SavedBool m_ShowLightingSettings;
@@ -134,7 +135,7 @@ namespace UnityEditor
         private float CalcLODScale(bool isMeshRenderer)
         {
             float lodScale = 1.0f;
-            if (isMeshRenderer)
+            if (isMeshRenderer && (m_Renderers != null) && (m_Renderers.Length > 0))
             {
                 lodScale = LightmapVisualization.GetLightmapLODLevelScale(m_Renderers[0]);
                 for (int i = 1; i < m_Renderers.Length; i++)
@@ -176,7 +177,7 @@ namespace UnityEditor
             m_StaticEditorFlags = m_GameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
         }
 
-        public void RenderSettings(bool showLightmapSettings, bool showshadowBias)
+        public void RenderSettings(bool showLightmapSettings)
         {
             if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjectsCount == 0)
                 return;
@@ -196,19 +197,19 @@ namespace UnityEditor
             // In this case we still have to mark it as "multiple values" even though both have "Lightmaps" as the value, but one is showing a grayed out "Light Probes" in the UI
             bool showMixedGIValue = m_ReceiveGI.hasMultipleDifferentValues || ((m_StaticEditorFlags.hasMultipleDifferentValuesBitwise & (int)StaticEditorFlags.ContributeGI) != 0);
 
-            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.LightingSettings);
+            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.lightingSettings);
 
             if (m_ShowLightingSettings.value)
             {
                 EditorGUI.indentLevel += 1;
 
-                EditorGUILayout.PropertyField(m_CastShadows, Styles.CastShadows, true);
+                EditorGUILayout.PropertyField(m_CastShadows, Styles.castShadows, true);
                 bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
 
                 if (SupportedRenderingFeatures.active.receiveShadows)
                 {
                     using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
-                        EditorGUILayout.PropertyField(m_ReceiveShadows, Styles.ReceiveShadows, true);
+                        EditorGUILayout.PropertyField(m_ReceiveShadows, Styles.receiveShadows, true);
                 }
 
                 if (!showLightmapSettings)
@@ -224,7 +225,7 @@ namespace UnityEditor
 
                 if (!(bakedGI || realtimeGI) && !isPrefabAsset && contributeGI)
                 {
-                    EditorGUILayout.HelpBox(Styles.GINotEnabledInfo.text, MessageType.Info);
+                    EditorGUILayout.HelpBox(Styles.giNotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
 
                     EditorGUILayout.EndFoldoutHeaderGroup();
@@ -234,21 +235,23 @@ namespace UnityEditor
 
                 if (contributeGI)
                 {
+                    var rect = EditorGUILayout.GetControlRect();
+                    EditorGUI.BeginProperty(rect, Styles.receiveGITitle, m_ReceiveGI);
                     EditorGUI.BeginChangeCheck();
 
-                    EditorGUI.showMixedValue = showMixedGIValue;
-                    receiveGI = (ReceiveGI)EditorGUILayout.IntPopup(Styles.ReceiveGITitle, (int)receiveGI, Styles.ReceiveGILightmapStrings, Styles.ReceiveGILightmapValues);
-                    EditorGUI.showMixedValue = false;
+                    receiveGI = (ReceiveGI)EditorGUI.IntPopup(rect, Styles.receiveGITitle, (int)receiveGI, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
 
                     if (EditorGUI.EndChangeCheck())
                         m_ReceiveGI.intValue = (int)receiveGI;
 
+                    EditorGUI.EndProperty();
+
                     if (showEnlightenSettings)
-                        EditorGUILayout.PropertyField(m_ImportantGI, Styles.ImportantGI);
+                        EditorGUILayout.PropertyField(m_ImportantGI, Styles.importantGI);
 
                     if (receiveGI == ReceiveGI.LightProbes && !showMixedGIValue)
                     {
-                        LightmapScaleGUI(true, Styles.AlbedoScale, true);
+                        LightmapScaleGUI(true, Styles.albedoScale, true);
                     }
                 }
                 else
@@ -256,7 +259,7 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(true))
                     {
                         EditorGUI.showMixedValue = showMixedGIValue;
-                        receiveGI = (ReceiveGI)EditorGUILayout.IntPopup(Styles.ReceiveGITitle, (int)ReceiveGI.LightProbes, Styles.ReceiveGILightmapStrings, Styles.ReceiveGILightmapValues);
+                        receiveGI = (ReceiveGI)EditorGUILayout.IntPopup(Styles.receiveGITitle, (int)ReceiveGI.LightProbes, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
                         EditorGUI.showMixedValue = false;
                     }
                 }
@@ -268,7 +271,7 @@ namespace UnityEditor
 
             if (showLightmapSettings && contributeGI && receiveGI == ReceiveGI.Lightmaps && !showMixedGIValue)
             {
-                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.LightmapSettings);
+                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.lightmapSettings);
 
                 if (m_ShowLightmapSettings.value)
                 {
@@ -276,36 +279,39 @@ namespace UnityEditor
 
                     bool showProgressiveSettings = isPrefabAsset || (bakedGI && lightmapper != LightingSettings.Lightmapper.Enlighten);
 
-                    LightmapScaleGUI(true, Styles.ScaleInLightmap, false);
+                    LightmapScaleGUI(true, Styles.scaleInLightmap, false);
 
                     if (showProgressiveSettings)
-                        EditorGUILayout.PropertyField(m_StitchLightmapSeams, Styles.StitchLightmapSeams);
+                        EditorGUILayout.PropertyField(m_StitchLightmapSeams, Styles.stitchLightmapSeams);
 
-                    LightmapParametersGUI(m_LightmapParameters, Styles.LightmapParameters);
+                    LightmapParametersGUI(m_LightmapParameters, Styles.lightmapParameters);
 
                     if (showEnlightenSettings)
                     {
                         RendererUVSettings();
                     }
 
-                    ShowAtlasGUI(m_Renderers[0].GetInstanceID());
-                    ShowRealtimeLMGUI(m_Renderers[0]);
-
-                    if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
-                        EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
-
-                    DisplayMeshWarning();
-
-                    if (showEnlightenSettings)
+                    if ((m_Renderers != null) && (m_Renderers.Length > 0))
                     {
-                        if (Lightmapping.HasClampedResolution(m_Renderers[0]))
-                            EditorGUILayout.HelpBox(Styles.ClampedPackingResolution.text, MessageType.Warning);
-                    }
+                        ShowAtlasGUI(m_Renderers[0].GetInstanceID(), true);
+                        ShowRealtimeLMGUI(m_Renderers[0]);
 
-                    if (showProgressiveSettings)
-                    {
-                        if (Lightmapping.HasUVOverlaps(m_Renderers[0]))
-                            EditorGUILayout.HelpBox(Styles.UVOverlap.text, MessageType.Warning);
+                        if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
+                            EditorGUILayout.HelpBox(Styles.zeroAreaPackingMesh.text, MessageType.Warning);
+
+                        DisplayMeshWarning();
+
+                        if (showEnlightenSettings)
+                        {
+                            if (Lightmapping.HasClampedResolution(m_Renderers[0]))
+                                EditorGUILayout.HelpBox(Styles.clampedPackingResolution.text, MessageType.Warning);
+                        }
+
+                        if (showProgressiveSettings)
+                        {
+                            if (Lightmapping.HasUVOverlaps(m_Renderers[0]))
+                                EditorGUILayout.HelpBox(Styles.uvOverlap.text, MessageType.Warning);
+                        }
                     }
 
                     EditorGUI.indentLevel -= 1;
@@ -328,7 +334,7 @@ namespace UnityEditor
 
             bool contributeGI = (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
 
-            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.LightingSettings);
+            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.lightingSettings);
 
             if (m_ShowLightingSettings.value)
             {
@@ -338,14 +344,14 @@ namespace UnityEditor
 
                 if (!(bakedGI || realtimeGI) && !isPrefabAsset && contributeGI)
                 {
-                    EditorGUILayout.HelpBox(Styles.GINotEnabledInfo.text, MessageType.Info);
+                    EditorGUILayout.HelpBox(Styles.giNotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
                     return;
                 }
 
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUILayout.IntPopup(Styles.ReceiveGITitle, (int)ReceiveGI.Lightmaps, Styles.ReceiveGILightmapStrings, Styles.ReceiveGILightmapValues);
+                    EditorGUILayout.IntPopup(Styles.receiveGITitle, 1, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
                 }
 
                 EditorGUI.indentLevel -= 1;
@@ -356,7 +362,7 @@ namespace UnityEditor
 
             if (contributeGI)
             {
-                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.LightmapSettings);
+                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.lightmapSettings);
 
                 if (m_ShowLightmapSettings.value)
                 {
@@ -365,15 +371,18 @@ namespace UnityEditor
                     if (GUI.enabled)
                         ShowTerrainChunks(m_Terrains);
 
-                    LightmapScaleGUI(false, Styles.ScaleInLightmap, false);
+                    LightmapScaleGUI(false, Styles.scaleInLightmap, false);
 
-                    LightmapParametersGUI(m_LightmapParameters, Styles.LightmapParameters);
+                    LightmapParametersGUI(m_LightmapParameters, Styles.lightmapParameters);
 
-                    if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
-                        ShowBakePerformanceWarning(m_Terrains[0]);
+                    if ((m_Terrains != null) && (m_Terrains.Length > 0))
+                    {
+                        if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
+                            ShowBakePerformanceWarning(m_Terrains[0]);
 
-                    ShowAtlasGUI(m_Terrains[0].GetInstanceID());
-                    ShowRealtimeLMGUI(m_Terrains[0]);
+                        ShowAtlasGUI(m_Terrains[0].GetInstanceID(), false);
+                        ShowRealtimeLMGUI(m_Terrains[0]);
+                    }
 
                     EditorGUI.indentLevel -= 1;
                 }
@@ -391,7 +400,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = mixedValue;
 
             EditorGUI.BeginChangeCheck();
-            contributeGI = EditorGUILayout.Toggle(Styles.ContributeGI, contributeGI);
+            contributeGI = EditorGUILayout.Toggle(Styles.contributeGI, contributeGI);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -410,27 +419,31 @@ namespace UnityEditor
             // TODO: This is very temporary and the flag needs to be changed.
             bool optimizeRealtimeUVs = !m_PreserveUVs.boolValue;
 
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, Styles.optimizeRealtimeUVs, m_PreserveUVs);
             EditorGUI.BeginChangeCheck();
-            optimizeRealtimeUVs = EditorGUILayout.Toggle(Styles.OptimizeRealtimeUVs, optimizeRealtimeUVs);
+
+            optimizeRealtimeUVs = EditorGUI.Toggle(rect, Styles.optimizeRealtimeUVs, optimizeRealtimeUVs);
 
             if (EditorGUI.EndChangeCheck())
             {
                 m_PreserveUVs.boolValue = !optimizeRealtimeUVs;
             }
+            EditorGUI.EndProperty();
 
             if (optimizeRealtimeUVs)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(m_AutoUVMaxDistance, Styles.AutoUVMaxDistance);
+                EditorGUILayout.PropertyField(m_AutoUVMaxDistance, Styles.autoUVMaxDistance);
                 if (m_AutoUVMaxDistance.floatValue < 0.0f)
                     m_AutoUVMaxDistance.floatValue = 0.0f;
-                EditorGUILayout.Slider(m_AutoUVMaxAngle, 0, 180, Styles.AutoUVMaxAngle);
+                EditorGUILayout.Slider(m_AutoUVMaxAngle, 0, 180, Styles.autoUVMaxAngle);
                 EditorGUI.indentLevel--;
             }
 
-            EditorGUILayout.PropertyField(m_IgnoreNormalsForChartDetection, Styles.IgnoreNormalsForChartDetection);
+            EditorGUILayout.PropertyField(m_IgnoreNormalsForChartDetection, Styles.ignoreNormalsForChartDetection);
 
-            EditorGUILayout.IntPopup(m_MinimumChartSize, Styles.MinimumChartSizeStrings, Styles.MinimumChartSizeValues, Styles.MinimumChartSize);
+            EditorGUILayout.IntPopup(m_MinimumChartSize, Styles.minimumChartSizeStrings, Styles.minimumChartSizeValues, Styles.minimumChartSize);
         }
 
         void ShowClampedSizeInLightmapGUI(float lightmapScale, float cachedSurfaceArea, bool isSSD)
@@ -438,47 +451,53 @@ namespace UnityEditor
             float sizeInLightmap = Mathf.Sqrt(cachedSurfaceArea) * Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapResolution * lightmapScale;
 
             if (sizeInLightmap > Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapMaxSize)
-                EditorGUILayout.HelpBox(Styles.ClampedSize.text, MessageType.Info);
+                EditorGUILayout.HelpBox(Styles.clampedSize.text, MessageType.Info);
         }
 
-        void LightmapScaleGUI(bool meshRenderer, GUIContent title, bool isSSD)
+        void LightmapScaleGUI(bool isMeshRenderer, GUIContent title, bool isSSD)
         {
             // SSDs (with the exception of those being computed with Enlighten) do not end up in a lightmap,
             // therefore we do not show clamping information.
             if (isSSD && Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
                 return;
 
-            float lodScale = CalcLODScale(meshRenderer);
+            float lodScale = CalcLODScale(isMeshRenderer);
             float lightmapScale = lodScale * m_LightmapScale.floatValue;
 
             Rect rect = EditorGUILayout.GetControlRect();
-            EditorGUI.BeginProperty(rect, Styles.ScaleInLightmap, m_LightmapScale);
+            EditorGUI.BeginProperty(rect, Styles.scaleInLightmap, m_LightmapScale);
             EditorGUI.BeginChangeCheck();
             lightmapScale = EditorGUI.FloatField(rect, title, lightmapScale);
             if (EditorGUI.EndChangeCheck())
                 m_LightmapScale.floatValue = Mathf.Max(lightmapScale / Mathf.Max(lodScale, float.Epsilon), 0.0f);
             EditorGUI.EndProperty();
 
-            float cachedSurfaceArea;
+            float cachedSurfaceArea = 0.0f;
 
-            if (meshRenderer)
+            if (isMeshRenderer)
             {
-                lightmapScale = lightmapScale * LightmapVisualization.GetLightmapLODLevelScale(m_Renderers[0]);
+                if ((m_Renderers != null) && (m_Renderers.Length > 0))
+                {
+                    lightmapScale = lightmapScale * LightmapVisualization.GetLightmapLODLevelScale(m_Renderers[0]);
 
-                // tell the user if the object's size in lightmap has reached the max atlas size
-                cachedSurfaceArea = InternalMeshUtil.GetCachedMeshSurfaceArea((MeshRenderer)m_Renderers[0]);
+                    // tell the user if the object's size in lightmap has reached the max atlas size
+                    cachedSurfaceArea = InternalMeshUtil.GetCachedMeshSurfaceArea((MeshRenderer)m_Renderers[0]);
+                }
             }
             else //terrain
             {
                 // tell the user if the object's size in lightmap has reached the max atlas size
-                var terrainData = m_Terrains[0].terrainData;
-                cachedSurfaceArea = terrainData != null ? terrainData.size.x * terrainData.size.z : 0;
+                if ((m_Terrains != null) && (m_Terrains.Length > 0))
+                {
+                    var terrainData = m_Terrains[0].terrainData;
+                    cachedSurfaceArea = terrainData != null ? terrainData.size.x * terrainData.size.z : 0.0f;
+                }
             }
 
             ShowClampedSizeInLightmapGUI(lightmapScale, cachedSurfaceArea, isSSD);
         }
 
-        void ShowAtlasGUI(int instanceID)
+        void ShowAtlasGUI(int instanceID, bool isMeshRenderer)
         {
             if (m_LightmapIndex == null)
                 return;
@@ -492,7 +511,7 @@ namespace UnityEditor
             if (m_CachedBakedTexture.texture == null)
                 return;
 
-            m_ShowBakedLM.value = EditorGUILayout.Foldout(m_ShowBakedLM.value, Styles.Atlas, true);
+            m_ShowBakedLM.value = EditorGUILayout.Foldout(m_ShowBakedLM.value, Styles.atlas, true);
 
             if (!m_ShowBakedLM.value)
                 return;
@@ -505,19 +524,23 @@ namespace UnityEditor
 
             GUILayout.BeginVertical();
 
-            GUILayout.Label(Styles.AtlasIndex.text + ": " + m_LightmapIndex.intValue);
-            GUILayout.Label(Styles.AtlasTilingX.text + ": " + m_LightmapTilingOffsetX.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.AtlasTilingY.text + ": " + m_LightmapTilingOffsetY.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.AtlasOffsetX.text + ": " + m_LightmapTilingOffsetZ.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.AtlasOffsetY.text + ": " + m_LightmapTilingOffsetW.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasIndex.text + ": " + m_LightmapIndex.intValue);
+            GUILayout.Label(Styles.atlasTilingX.text + ": " + m_LightmapTilingOffsetX.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasTilingY.text + ": " + m_LightmapTilingOffsetY.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasOffsetX.text + ": " + m_LightmapTilingOffsetZ.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            GUILayout.Label(Styles.atlasOffsetY.text + ": " + m_LightmapTilingOffsetW.floatValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
 
-            float lightmapResolution = settings.lightmapResolution * CalcLODScale(true) * m_LightmapScale.floatValue;
-            Transform transform = m_Renderers[0].GetComponent<Transform>();
-            float lightmapObjectScale = System.Math.Min(System.Math.Min(transform.localScale.x, transform.localScale.y), transform.localScale.z);
-            GUILayout.Label(Styles.LightmapResolution.text + ": " + lightmapResolution.ToString(CultureInfo.InvariantCulture.NumberFormat));
-            GUILayout.Label(Styles.LightmapObjectScale.text + ": " + lightmapObjectScale.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            float lightmapResolution = settings.lightmapResolution * CalcLODScale(isMeshRenderer) * m_LightmapScale.floatValue;
+
+            if (isMeshRenderer && (m_Renderers != null) && (m_Renderers.Length > 0))
+            {
+                Transform transform = m_Renderers[0].GetComponent<Transform>();
+                float lightmapObjectScale = System.Math.Min(System.Math.Min(transform.localScale.x, transform.localScale.y), transform.localScale.z);
+                GUILayout.Label(Styles.lightmapResolution.text + ": " + lightmapResolution.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                GUILayout.Label(Styles.lightmapObjectScale.text + ": " + lightmapObjectScale.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            }
 
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
@@ -529,15 +552,15 @@ namespace UnityEditor
             {
                 Hash128 instanceHash;
                 Lightmapping.GetPVRInstanceHash(instanceID, out instanceHash);
-                EditorGUILayout.LabelField(Styles.PVRInstanceHash, GUIContent.Temp(instanceHash.ToString()));
+                EditorGUILayout.LabelField(Styles.pvrInstanceHash, GUIContent.Temp(instanceHash.ToString()));
 
                 Hash128 atlasHash;
                 Lightmapping.GetPVRAtlasHash(instanceID, out atlasHash);
-                EditorGUILayout.LabelField(Styles.PVRAtlasHash, GUIContent.Temp(atlasHash.ToString()));
+                EditorGUILayout.LabelField(Styles.pvrAtlasHash, GUIContent.Temp(atlasHash.ToString()));
 
                 int atlasInstanceOffset;
                 Lightmapping.GetPVRAtlasInstanceOffset(instanceID, out atlasInstanceOffset);
-                EditorGUILayout.LabelField(Styles.PVRAtlasInstanceOffset, GUIContent.Temp(atlasInstanceOffset.ToString()));
+                EditorGUILayout.LabelField(Styles.pvrAtlasInstanceOffset, GUIContent.Temp(atlasInstanceOffset.ToString()));
             }
             EditorGUI.indentLevel -= 1;
 
@@ -553,7 +576,7 @@ namespace UnityEditor
             if (!UpdateRealtimeTexture(inputSystemHash, terrain.GetInstanceID()))
                 return;
 
-            m_ShowRealtimeLM.value = EditorGUILayout.Foldout(m_ShowRealtimeLM.value, Styles.RealtimeLM, true);
+            m_ShowRealtimeLM.value = EditorGUILayout.Foldout(m_ShowRealtimeLM.value, Styles.realtimeLM, true);
 
             if (!m_ShowRealtimeLM.value)
                 return;
@@ -574,7 +597,7 @@ namespace UnityEditor
                 var str = width + "x" + height;
                 if (numChunksInX > 1 || numChunksInY > 1)
                     str += string.Format(" ({0}x{1} chunks)", numChunksInX, numChunksInY);
-                GUILayout.Label(Styles.RealtimeLMResolution.text + ": " + str);
+                GUILayout.Label(Styles.realtimeLMResolution.text + ": " + str);
             }
 
             GUILayout.EndVertical();
@@ -595,7 +618,7 @@ namespace UnityEditor
             if (!UpdateRealtimeTexture(inputSystemHash, renderer.GetInstanceID()))
                 return;
 
-            m_ShowRealtimeLM.value = EditorGUILayout.Foldout(m_ShowRealtimeLM.value, Styles.RealtimeLM, true);
+            m_ShowRealtimeLM.value = EditorGUILayout.Foldout(m_ShowRealtimeLM.value, Styles.realtimeLM, true);
 
             if (!m_ShowRealtimeLM.value)
                 return;
@@ -611,13 +634,13 @@ namespace UnityEditor
             int instWidth, instHeight;
             if (Lightmapping.GetInstanceResolution(renderer, out instWidth, out instHeight))
             {
-                GUILayout.Label(Styles.RealtimeLMInstanceResolution.text + ": " + instWidth + "x" + instHeight);
+                GUILayout.Label(Styles.realtimeLMInstanceResolution.text + ": " + instWidth + "x" + instHeight);
             }
 
             int width, height;
             if (Lightmapping.GetSystemResolution(renderer, out width, out height))
             {
-                GUILayout.Label(Styles.RealtimeLMResolution.text + ": " + width + "x" + height);
+                GUILayout.Label(Styles.realtimeLMResolution.text + ": " + width + "x" + height);
             }
 
             GUILayout.EndVertical();
@@ -629,16 +652,16 @@ namespace UnityEditor
                 Hash128 instanceHash;
                 if (Lightmapping.GetInstanceHash(renderer, out instanceHash))
                 {
-                    EditorGUILayout.LabelField(Styles.RealtimeLMInstanceHash, GUIContent.Temp(instanceHash.ToString()));
+                    EditorGUILayout.LabelField(Styles.realtimeLMInstanceHash, GUIContent.Temp(instanceHash.ToString()));
                 }
 
                 Hash128 geometryHash;
                 if (Lightmapping.GetGeometryHash(renderer, out geometryHash))
                 {
-                    EditorGUILayout.LabelField(Styles.RealtimeLMGeometryHash, GUIContent.Temp(geometryHash.ToString()));
+                    EditorGUILayout.LabelField(Styles.realtimeLMGeometryHash, GUIContent.Temp(geometryHash.ToString()));
                 }
 
-                EditorGUILayout.LabelField(Styles.RealtimeLMInputSystemHash, GUIContent.Temp(inputSystemHash.ToString()));
+                EditorGUILayout.LabelField(Styles.realtimeLMInputSystemHash, GUIContent.Temp(inputSystemHash.ToString()));
             }
 
             EditorGUI.indentLevel -= 1;
@@ -665,9 +688,9 @@ namespace UnityEditor
 
         private void DrawLightmapPreview(Texture2D texture, bool realtimeLightmap, int instanceId)
         {
-            GUILayout.Space(Styles.PreviewPadding);
+            GUILayout.Space(Styles.previewPadding);
 
-            int previewWidth = Styles.PreviewWidth - 4; // padding
+            int previewWidth = Styles.previewWidth - 4; // padding
 
             Rect rect = GUILayoutUtility.GetRect(previewWidth, previewWidth, EditorStyles.objectField);
             Rect buttonRect = new Rect(rect.xMax - 70, rect.yMax - 14, 70, 14);
@@ -698,10 +721,10 @@ namespace UnityEditor
                 rect = EditorStyles.objectFieldThumb.padding.Remove(rect);
                 EditorGUI.DrawPreviewTexture(rect, texture);
 
-                Styles.OpenPreviewStyle.Draw(rect, Styles.OpenPreview, false, false, false, false);
+                Styles.openPreviewStyle.Draw(rect, Styles.openPreview, false, false, false, false);
             }
 
-            float spacing = Mathf.Max(5.0f, EditorGUIUtility.labelWidth - Styles.PreviewPadding - Styles.PreviewWidth);
+            float spacing = Mathf.Max(5.0f, EditorGUIUtility.labelWidth - Styles.previewPadding - Styles.previewWidth);
             GUILayout.Space(spacing);
         }
 
@@ -714,19 +737,19 @@ namespace UnityEditor
 
             if (!HasSupportedTopologyForGI(mesh))
             {
-                EditorGUILayout.HelpBox(Styles.UnsupportedTopology.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.unsupportedTopology.text, MessageType.Warning);
                 return;
             }
 
             if (!HasVertices(mesh))
             {
-                EditorGUILayout.HelpBox(Styles.NoVerticesNoLightmapping.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.noVerticesNoLightmapping.text, MessageType.Warning);
                 return;
             }
 
             if (!HasNormals(mesh))
             {
-                EditorGUILayout.HelpBox(Styles.NoNormalsNoLightmapping.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.noNormalsNoLightmapping.text, MessageType.Warning);
                 return;
             }
 
@@ -734,7 +757,7 @@ namespace UnityEditor
             {
                 if (Lightmapping.HasZeroAreaMesh(m_Renderers[0]))
                 {
-                    EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
+                    EditorGUILayout.HelpBox(Styles.zeroAreaPackingMesh.text, MessageType.Warning);
                 }
             }
         }
@@ -779,55 +802,58 @@ namespace UnityEditor
             return false;
         }
 
-        static public bool LightmapParametersGUI(SerializedProperty prop, GUIContent content)
+        static public void LightmapParametersGUI(SerializedProperty prop, GUIContent content)
         {
             EditorGUILayout.BeginHorizontal();
 
-            EditorGUIInternal.AssetPopup<LightmapParameters>(prop, content, "giparams", "Scene Default Parameters");
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, content, prop);
 
-            string label = "Edit...";
+            rect = EditorGUI.PrefixLabel(rect, content);
 
-            if (isBuiltIn(prop))
-                label = "View";
+            GUIContent buttonContent = prop.hasMultipleDifferentValues ? EditorGUI.mixedValueContent : (prop.objectReferenceValue != null ? GUIContent.Temp(prop.objectReferenceStringValue) : Styles.lightmapParametersDefault);
 
-            bool editClicked = false;
+            if (EditorGUI.DropdownButton(rect, buttonContent, FocusType.Passive, EditorStyles.popup))
+                AssetPopupBackend.ShowAssetsPopupMenu<LightmapParameters>(rect, prop.objectReferenceTypeString, prop, "giparams", Styles.lightmapParametersDefault.text);
+
+            string label = isBuiltIn(prop) ? "View" : "Edit...";
 
             // If object is null, then get the scene parameter setting and view this instead.
-            if (prop.objectReferenceValue == null)
+            using (new EditorGUI.DisabledScope(prop.hasMultipleDifferentValues))
             {
-                SerializedObject so = new SerializedObject(Lightmapping.GetLightingSettingsOrDefaultsFallback());
-                SerializedProperty lightmapParameters = so.FindProperty("m_LightmapParameters");
-
-                using (new EditorGUI.DisabledScope(lightmapParameters == null))
+                if (prop.objectReferenceValue == null)
                 {
-                    if (isBuiltIn(lightmapParameters))
-                        label = "View";
-                    else
-                        label = "Edit...";
+                    SerializedObject so = new SerializedObject(Lightmapping.GetLightingSettingsOrDefaultsFallback());
+                    SerializedProperty lightmapParameters = so.FindProperty("m_LightmapParameters");
 
-                    if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    using (new EditorGUI.DisabledScope(lightmapParameters == null))
                     {
-                        Selection.activeObject = lightmapParameters.objectReferenceValue;
-                        editClicked = true;
+                        label = isBuiltIn(lightmapParameters) ? "View" : "Edit...";
+
+                        if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                        {
+                            Selection.activeObject = lightmapParameters.objectReferenceValue;
+                        }
                     }
                 }
-            }
-            else
-            {
-                if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                else
                 {
-                    Selection.activeObject = prop.objectReferenceValue;
-                    editClicked = true;
+                    if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    {
+                        Selection.activeObject = prop.objectReferenceValue;
+                    }
                 }
             }
 
             EditorGUILayout.EndHorizontal();
-
-            return editClicked;
+            EditorGUI.EndProperty();
         }
 
         void ShowTerrainChunks(Terrain[] terrains)
         {
+            if (terrains == null)
+                return;
+
             int terrainChunksX = 0, terrainChunksY = 0;
             foreach (var terrain in terrains)
             {
@@ -860,7 +886,7 @@ namespace UnityEditor
             const int kTerrainTexelsThreshold = 64 * 8;
             if (terrainSystemTexelsInWidth > kTerrainTexelsThreshold || terrainSystemTexelsInHeight > kTerrainTexelsThreshold)
             {
-                EditorGUILayout.HelpBox(Styles.ResolutionTooHighWarning.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.resolutionTooHighWarning.text, MessageType.Warning);
             }
 
             var terrainClustersInWidth = terrainSystemTexelsInWidth * lightmapParameters.clusterResolution;
@@ -870,7 +896,7 @@ namespace UnityEditor
             const float kTerrainClusterTriDensityThreshold = 256.0f / 5.0f;
             if (terrainTrisPerClusterInWidth > kTerrainClusterTriDensityThreshold || terrainTrisPerClusterInHeight > kTerrainClusterTriDensityThreshold)
             {
-                EditorGUILayout.HelpBox(Styles.ResolutionTooLowWarning.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.resolutionTooLowWarning.text, MessageType.Warning);
             }
         }
     }

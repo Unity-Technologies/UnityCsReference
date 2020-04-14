@@ -14,9 +14,18 @@ namespace UnityEditor.PackageManager.UI
         public Action<string> actionClicked { get; set; }
         private readonly string m_PlaceHolderText;
 
+        private ResourceLoader m_ResourceLoader;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+        }
+
         public PackagesAction(string actionButtonText, string defaultText = "")
         {
-            var root = Resources.GetTemplate("PackagesAction.uxml");
+            ResolveDependencies();
+
+            var root = m_ResourceLoader.GetTemplate("PackagesAction.uxml");
             Add(root);
 
             m_PlaceHolderText = defaultText;

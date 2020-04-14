@@ -834,7 +834,7 @@ namespace UnityEditor.Experimental.GraphView
             if (p != null)
             {
                 if (graphViewShader == null)
-                    graphViewShader = EditorGUIUtility.LoadRequired("GraphView/GraphViewUIE.shader") as Shader;
+                    graphViewShader = Shader.Find("Hidden/GraphView/GraphViewUIE");
                 p.standardShader = graphViewShader;
                 HostView ownerView = p.ownerObject as HostView;
                 if (ownerView != null && ownerView.actualView != null)
@@ -1039,7 +1039,7 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         protected internal virtual bool canCopySelection =>
-            selection.Any(s => s is Node || s is Group || s is Placemat);
+            selection.Any(s => s is Node || s is Group || s is Placemat || s is StickyNote);
 
         public static void CollectElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
         {
@@ -1085,7 +1085,7 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         protected internal virtual bool canCutSelection =>
-            selection.Any(s => s is Node || s is Group || s is Placemat);
+            selection.Any(s => s is Node || s is Group || s is Placemat || s is StickyNote);
 
         protected internal void CutSelectionCallback()
         {

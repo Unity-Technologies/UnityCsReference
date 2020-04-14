@@ -30,9 +30,19 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion primary => importAvailable ?? latest;
 
-        public AssetStoreVersionList()
+        public AssetStoreVersionList(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
         {
+            ResolveDependencies(assetStoreUtils, ioProxy);
+
             m_Versions = new List<AssetStorePackageVersion>();
+        }
+
+        public void ResolveDependencies(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
+        {
+            if (m_Versions == null)
+                return;
+            foreach (var version in m_Versions)
+                version.ResolveDependencies(assetStoreUtils, ioProxy);
         }
 
         public void AddVersion(AssetStorePackageVersion version)

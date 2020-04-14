@@ -56,7 +56,7 @@ namespace UnityEditor
 
         public void OnGUI()
         {
-            lightingSettings.UpdateIfRequiredOrScript();
+            lightingSettings.Update();
 
             using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode))
             {

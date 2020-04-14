@@ -11,11 +11,42 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageSampleList> {}
 
+        private ResourceLoader m_ResourceLoader;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            float newWidth = evt.newRect.width;
+            ToggleLowWidthDependencyView(newWidth);
+        }
+
+        private void ToggleLowWidthDependencyView(float width)
+        {
+            if (width <= 340)
+            {
+                UIUtils.SetElementDisplay(samplesListLowWidth, true);
+                UIUtils.SetElementDisplay(samplesContainer, false);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(samplesListLowWidth, false);
+                UIUtils.SetElementDisplay(samplesContainer, true);
+            }
+        }
+
         public PackageSampleList()
         {
-            var root = Resources.GetTemplate("PackageSampleList.uxml");
+            ResolveDependencies();
+
+            var root = m_ResourceLoader.GetTemplate("PackageSampleList.uxml");
             Add(root);
             cache = new VisualElementCache(root);
+
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         public void SetPackageVersion(IPackageVersion version)
@@ -24,6 +55,7 @@ namespace UnityEditor.PackageManager.UI
             nameLabelContainer.Clear();
             sizeLabelContainer.Clear();
             importButtonContainer.Clear();
+            samplesListLowWidth.Clear();
 
             if (version == null || version.samples == null || !version.samples.Any())
             {
@@ -39,11 +71,16 @@ namespace UnityEditor.PackageManager.UI
                 sizeLabelContainer.Add(sampleItem.sizeLabel);
                 importButtonContainer.Add(sampleItem.importButton);
                 sampleItem.importButton.SetEnabled(version.isInstalled);
+
+                var sampleVisualItemLowWidth = new PackageDependencySampleItemLowWidth(version, sample);
+                samplesListLowWidth.Add(sampleVisualItemLowWidth);
             }
         }
 
         private VisualElementCache cache { get; set; }
 
+        internal VisualElement samplesListLowWidth { get { return cache.Get<VisualElement>("samplesListLowWidth"); } }
+        internal VisualElement samplesContainer { get { return cache.Get<VisualElement>("samplesContainer"); } }
         internal VisualElement importStatusContainer { get { return cache.Get<VisualElement>("importStatusContainer"); } }
         internal VisualElement nameLabelContainer { get { return cache.Get<VisualElement>("nameLabelContainer"); } }
         internal VisualElement sizeLabelContainer { get { return cache.Get<VisualElement>("sizeLabelContainer"); } }

@@ -127,6 +127,14 @@ namespace UnityEditor.PackageManager
         private string m_DocumentationUrl = "";
 
         [SerializeField]
+        [NativeName("changelogUrl")]
+        private string m_ChangelogUrl = "";
+
+        [SerializeField]
+        [NativeName("licensesUrl")]
+        private string m_LicensesUrl = "";
+
+        [SerializeField]
         [NativeName("hasRepository")]
         private bool m_HasRepository;
 
@@ -158,6 +166,8 @@ namespace UnityEditor.PackageManager
         internal EntitlementsInfo entitlements { get { return m_Entitlements; } }
         internal bool isAssetStorePackage { get { return m_IsAssetStorePackage;  } }
         public string documentationUrl { get { return m_DocumentationUrl; } }
+        public string changelogUrl { get { return m_ChangelogUrl; } }
+        public string licensesUrl { get { return m_LicensesUrl; } }
 
         public RegistryInfo registry
         {

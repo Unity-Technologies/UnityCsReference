@@ -86,7 +86,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static void GameViewStatsGUI()
         {
-            float w = 300, h = 204;
+            float w = 300, h = 229;
 
             GUILayout.BeginArea(new Rect(GUIView.current.position.width - w - 10, 27, w, h), "Statistics", GUI.skin.window);
 
@@ -129,7 +129,9 @@ namespace UnityEditor
             gfxStats.Append(UnityString.Format("  Tris: {0} \tVerts: {1} \n", FormatNumber(UnityStats.trianglesLong), FormatNumber(UnityStats.verticesLong)));
             gfxStats.Append(UnityString.Format("  Screen: {0} - {1}\n", UnityStats.screenRes, EditorUtility.FormatBytes(screenBytes)));
             gfxStats.Append(UnityString.Format("  SetPass calls: {0} \tShadow casters: {1} \n", UnityStats.setPassCalls, UnityStats.shadowCasters));
-            gfxStats.Append(UnityString.Format("  Visible skinned meshes: {0}  Animations: {1}", UnityStats.visibleSkinnedMeshes, UnityStats.visibleAnimations));
+            gfxStats.Append(UnityString.Format("  Visible skinned meshes: {0}\n", UnityStats.visibleSkinnedMeshes));
+            gfxStats.Append(UnityString.Format("  Animation components playing: {0} \n", UnityStats.animationComponentsPlaying));
+            gfxStats.Append(UnityString.Format("  Animator components playing: {0}", UnityStats.animatorComponentsPlaying));
             GUILayout.Label(gfxStats.ToString(), labelStyle);
 
             GUILayout.EndArea();

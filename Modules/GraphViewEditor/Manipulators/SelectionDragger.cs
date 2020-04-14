@@ -14,6 +14,11 @@ namespace UnityEditor.Experimental.GraphView
     {
         IDropTarget m_PrevDropTarget;
 
+        bool m_ShiftClicked = false;
+        bool m_Dragging = false;
+        Snapper m_Snapper = new Snapper();
+        internal bool snapEnabled { get; set; }
+
         // selectedElement is used to store a unique selection candidate for cases where user clicks on an item not to
         // drag it but just to reset the selection -- we only know this after the manipulation has ended
         GraphElement selectedElement { get; set; }
@@ -25,7 +30,7 @@ namespace UnityEditor.Experimental.GraphView
         IDropTarget GetDropTargetAt(Vector2 mousePosition, IEnumerable<VisualElement> exclusionList)
         {
             Vector2 pickPoint = mousePosition;
-            var pickList = m_DropTargetPickList;
+            List<VisualElement> pickList = m_DropTargetPickList;
             pickList.Clear();
             target.panel.PickAll(pickPoint, pickList);
 
@@ -36,7 +41,7 @@ namespace UnityEditor.Experimental.GraphView
                 if (pickList[i] == target && target != m_GraphView)
                     continue;
 
-                var picked = pickList[i];
+                VisualElement picked = pickList[i];
 
                 dropTarget = picked as IDropTarget;
 
@@ -56,6 +61,7 @@ namespace UnityEditor.Experimental.GraphView
 
         public SelectionDragger()
         {
+            snapEnabled = EditorPrefs.GetBool("GraphSnapping", true);
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
@@ -88,6 +94,7 @@ namespace UnityEditor.Experimental.GraphView
 
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
             target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
+            m_Dragging = false;
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -166,6 +173,10 @@ namespace UnityEditor.Experimental.GraphView
                 selectedElement = null;
                 m_PrevDropTarget = null;
                 m_Active = false;
+                if (snapEnabled  && m_GraphView.selection.Any())
+                {
+                    m_Snapper.EndSnap(m_GraphView);
+                }
             }
         }
 
@@ -253,7 +264,21 @@ namespace UnityEditor.Experimental.GraphView
                     m_PanSchedule.Pause();
                 }
 
+                // Checking if the Graph Element we are moving has the snappable Capability
+                if ((selectedElement.capabilities & Capabilities.Snappable) == 0)
+                {
+                    snapEnabled = false;
+                }
+                else
+                {
+                    snapEnabled = EditorPrefs.GetBool("GraphSnapping", true);
+                }
+
+                if (snapEnabled)
+                    m_Snapper.BeginSnap(m_GraphView);
+
                 m_Active = true;
+
                 target.CaptureMouse(); // We want to receive events even when mouse is not over ourself.
                 e.StopImmediatePropagation();
             }
@@ -270,6 +295,7 @@ namespace UnityEditor.Experimental.GraphView
         private Vector3 m_PanDiff = Vector3.zero;
         private Vector3 m_ItemPanDiff = Vector3.zero;
         private Vector2 m_MouseDiff = Vector2.zero;
+        float m_XScale;
 
         internal Vector2 GetEffectivePanSpeed(Vector2 mousePos)
         {
@@ -288,6 +314,17 @@ namespace UnityEditor.Experimental.GraphView
             effectiveSpeed = Vector2.ClampMagnitude(effectiveSpeed, k_MaxPanSpeed);
 
             return effectiveSpeed;
+        }
+
+        void ComputeSnappedRect(ref Rect selectedElementProposedGeom, float scale)
+        {
+            // Let the snapper compute a snapped position using the precomputed position relatively to the geometries of all unselected
+            // GraphElements in the GraphView.contentViewContainer's space.
+            Rect geometryInContentViewContainerSpace = selectedElement.parent.ChangeCoordinatesTo(m_GraphView.contentViewContainer, selectedElementProposedGeom);
+            geometryInContentViewContainerSpace = m_Snapper.GetSnappedRect(geometryInContentViewContainerSpace, scale);
+            // Once the snapped position is computed in the GraphView.contentViewContainer's space then
+            // translate it into the local space of the parent of the selected element.
+            selectedElementProposedGeom = m_GraphView.contentViewContainer.ChangeCoordinatesTo(selectedElement.parent, geometryInContentViewContainerSpace);
         }
 
         protected new void OnMouseMove(MouseMoveEvent e)
@@ -317,6 +354,22 @@ namespace UnityEditor.Experimental.GraphView
             m_MouseDiff = m_originalMouse - e.mousePosition;
 
             var groupElementsDraggedOut = e.shiftKey ? new Dictionary<Group, List<GraphElement>>() : null;
+
+            // Handle the selected element
+            Rect selectedElementGeom = GetSelectedElementGeom();
+
+            m_ShiftClicked = e.shiftKey;
+
+            if (snapEnabled && !m_ShiftClicked)
+            {
+                ComputeSnappedRect(ref selectedElementGeom, m_XScale);
+            }
+
+            if (snapEnabled && m_ShiftClicked)
+            {
+                m_Snapper.ClearSnapLines();
+            }
+
             foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
             {
                 GraphElement ce = v.Key;
@@ -347,7 +400,7 @@ namespace UnityEditor.Experimental.GraphView
                     v.Value.dragStarted = true;
                 }
 
-                MoveElement(ce, v.Value.pos);
+                SnapOrMoveElement(v, selectedElementGeom);
             }
 
             // Needed to ensure nodes can be dragged out of multiple groups all at once.
@@ -389,7 +442,7 @@ namespace UnityEditor.Experimental.GraphView
 
             m_PrevDropTarget = dropTarget;
 
-            selectedElement = null;
+            m_Dragging = true;
             e.StopPropagation();
         }
 
@@ -398,10 +451,45 @@ namespace UnityEditor.Experimental.GraphView
             m_GraphView.viewTransform.position -= m_PanDiff;
             m_ItemPanDiff += m_PanDiff;
 
+            // Handle the selected element
+            Rect selectedElementGeom = GetSelectedElementGeom();
+
+            if (snapEnabled && !m_ShiftClicked)
+            {
+                ComputeSnappedRect(ref selectedElementGeom, m_XScale);
+            }
+
             foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
             {
-                MoveElement(v.Key, v.Value.pos);
+                SnapOrMoveElement(v, selectedElementGeom);
             }
+        }
+
+        void SnapOrMoveElement(KeyValuePair<GraphElement, OriginalPos> v, Rect selectedElementGeom)
+        {
+            GraphElement ce = v.Key;
+            if (EditorPrefs.GetBool("GraphSnapping"))
+            {
+                Vector2 geomDiff = selectedElementGeom.position - m_OriginalPos[selectedElement].pos.position;
+                Rect ceLayout = ce.GetPosition();
+                ce.SetPosition(new Rect(v.Value.pos.x + geomDiff.x, v.Value.pos.y + geomDiff.y, ceLayout.width, ceLayout.height));
+            }
+            else
+            {
+                MoveElement(ce, v.Value.pos);
+            }
+        }
+
+        Rect GetSelectedElementGeom()
+        {
+            // Handle the selected element
+            Matrix4x4 g = selectedElement.worldTransform;
+            m_XScale = g.m00; //The scale on x is equal to the scale on y because the graphview is not distorted
+            Rect selectedElementGeom = m_OriginalPos[selectedElement].pos;
+            // Compute the new position of the selected element using the mouse delta position and panning info
+            selectedElementGeom.x = selectedElementGeom.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / m_XScale;
+            selectedElementGeom.y = selectedElementGeom.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / m_XScale;
+            return selectedElementGeom;
         }
 
         void MoveElement(GraphElement element, Rect originalPos)
@@ -427,6 +515,7 @@ namespace UnityEditor.Experimental.GraphView
                     target.ReleaseMouse();
                     selectedElement = null;
                     m_Active = false;
+                    m_Dragging = false;
                     m_PrevDropTarget = null;
                 }
 
@@ -439,10 +528,8 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (m_Active)
                 {
-                    if (selectedElement == null)
+                    if (m_Dragging)
                     {
-                        m_MovedElements.Clear();
-
                         foreach (IGrouping<StackNode, GraphElement> grouping in m_OriginalPos.GroupBy(v => v.Value.stack, v => v.Key))
                         {
                             if (grouping.Key != null && m_GraphView.elementsRemovedFromStackNode != null)
@@ -461,6 +548,7 @@ namespace UnityEditor.Experimental.GraphView
                             m_GraphViewChange.moveDelta = firstPos.Key.GetPosition().position - firstPos.Value.pos.position;
                             graphView.graphViewChanged(m_GraphViewChange);
                         }
+                        m_MovedElements.Clear();
                     }
 
                     m_PanSchedule.Pause();
@@ -490,11 +578,17 @@ namespace UnityEditor.Experimental.GraphView
                         }
                     }
 
+                    if (snapEnabled && selection.Any())
+                        m_Snapper.EndSnap(m_GraphView);
+
                     target.ReleaseMouse();
                     evt.StopPropagation();
                 }
+
                 selectedElement = null;
                 m_Active = false;
+                m_PrevDropTarget = null;
+                m_Dragging = false;
                 m_PrevDropTarget = null;
             }
         }

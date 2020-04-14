@@ -46,6 +46,8 @@ namespace UnityEditor.UIElements
             AddLabelDragger<float>();
         }
 
+        internal override bool CanTryParse(string textString) => float.TryParse(textString, out _);
+
         public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, float startValue)
         {
             floatInput.ApplyInputDeviceDelta(delta, speed, startValue);

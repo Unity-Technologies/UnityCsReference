@@ -4,32 +4,57 @@
 
 using System;
 using System.Linq;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 
 namespace UnityEditor
 {
     static class GOCreationCommands
     {
+        internal static SavedBool s_PlaceObjectsAtWorldOrigin = new SavedBool("Create3DObject.PlaceAtWorldOrigin", false);
+
+        // This is here because we can't pass Scenes around with the MenuCommand context. SceneHierarchy toggles this
+        // flag when add object context menu items are invoked from a context click on Scene headers. If you make use of
+        // this, be sure to return it's value to 'false' as soon as your operation is out of scope.
+        internal static bool forcePlaceObjectsAtWorldOrigin;
+
+        static bool placeObjectsAtWorldOrigin
+        {
+            get { return s_PlaceObjectsAtWorldOrigin.value || forcePlaceObjectsAtWorldOrigin; }
+        }
+
+        private static void SetGameObjectParent(GameObject go, Transform parentTransform)
+        {
+            var transform = go.transform;
+            Undo.SetTransformParent(transform, parentTransform, "Reparenting");
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
+            go.layer = parentTransform.gameObject.layer;
+
+            if (parentTransform.GetComponent<RectTransform>())
+                ObjectFactory.AddComponent<RectTransform>(go);
+        }
+
         internal static void Place(GameObject go, GameObject parent)
         {
+            Transform defaultObjectTransform = SceneView.GetDefaultParentObjectIfSet();
+
             if (parent != null)
             {
-                var transform = go.transform;
-                Undo.SetTransformParent(transform, parent.transform, "Reparenting");
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale = Vector3.one;
-                go.layer = parent.layer;
-
-                if (parent.GetComponent<RectTransform>())
-                    ObjectFactory.AddComponent<RectTransform>(go);
+                SetGameObjectParent(go, parent.transform);
+            }
+            else if (defaultObjectTransform != null)
+            {
+                SetGameObjectParent(go, defaultObjectTransform);
             }
             else
             {
                 // When creating a 3D object without a parent, this option puts it at the world origin instead of scene pivot.
-                if (EditorPrefs.GetBool("Create3DObject.PlaceAtWorldOrigin", false))
+                if (placeObjectsAtWorldOrigin)
                     go.transform.position = Vector3.zero;
                 else
                     SceneView.PlaceGameObjectInFrontOfSceneView(go);
@@ -71,6 +96,104 @@ namespace UnityEditor
 
             var go = ObjectFactory.CreateGameObject("GameObject");
             Place(go, parent);
+        }
+
+        // Avoiding executing this method per-object, by adding menu item manually in SceneHierarchy
+        [MenuItem("GameObject/Create Empty Parent %#g", priority = 0)]
+        internal static void CreateEmptyParent()
+        {
+            Transform[] selected = Selection.transforms;
+
+            // If selected object is a prefab, get the its root object
+            if (selected.Length > 0)
+            {
+                for (int i = 0; i < selected.Length; i++)
+                {
+                    if (PrefabUtility.GetPrefabAssetType(selected[i].gameObject) != PrefabAssetType.NotAPrefab)
+                    {
+                        selected[i] = PrefabUtility.GetOutermostPrefabInstanceRoot(selected[i].gameObject).transform;
+                    }
+                }
+            }
+
+            // Selection.transform does not provide correct list order, so we have to do it manually
+            selected = selected.ToList().OrderBy(g => g.GetSiblingIndex()).ToArray();
+
+            GameObject parent = Selection.activeTransform != null ? Selection.activeTransform.gameObject : null;
+            Transform sibling = null;
+
+            if (parent != null)
+            {
+                sibling = parent.transform;
+                parent = parent.transform.parent != null ? parent.transform.parent.gameObject : null;
+            }
+
+            GameObject go = ObjectFactory.CreateGameObject("GameObject");
+
+            Place(go, parent);
+
+            if (parent == null && sibling != null)
+            {
+                Undo.MoveGameObjectToScene(go,  sibling.gameObject.scene, "Move To Scene");
+            }
+
+            if (parent == null && sibling == null)
+            {
+                go.transform.SetAsLastSibling();
+            }
+            else
+            {
+                go.transform.MoveAfterSibling(sibling, true);
+            }
+
+            // Put gameObjects under a created parent
+            if (selected.Length > 0)
+            {
+                foreach (var gameObject in selected)
+                {
+                    if (gameObject != null)
+                    {
+                        Undo.SetTransformParent(gameObject.transform, go.transform, "Reparenting");
+                        gameObject.transform.SetAsLastSibling();
+                    }
+                }
+
+                SceneHierarchyWindow.lastInteractedHierarchyWindow.SetExpanded(go.GetInstanceID(), true);
+            }
+        }
+
+        [MenuItem("GameObject/Create Empty Parent %#g", true, priority = 0)]
+        internal static bool ValidateCreateEmptyParent()
+        {
+            GameObject[] selected = Selection.gameObjects;
+            if (selected.Length == 0)
+            {
+                return false;
+            }
+            else
+            {
+                // Check if selected objects are under the same parent and in the same scene
+                Scene targetScene = selected[0].scene;
+                Transform parent = selected[0].transform.parent;
+                foreach (var go in selected)
+                {
+                    if (go.transform.parent != parent || go.scene != targetScene)
+                        return false;
+                }
+
+                // Check if we are not trying to create parent object for root object if we are in prefab stage
+                if (StageNavigationManager.instance.currentStage is PrefabStage)
+                {
+                    GameObject rootGameObject = PrefabStageUtility.GetCurrentPrefabStage().prefabContentsRoot.gameObject;
+                    foreach (var go in selected)
+                    {
+                        if (go.gameObject == rootGameObject)
+                            return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         static void CreateAndPlacePrimitive(PrimitiveType type, GameObject parent)

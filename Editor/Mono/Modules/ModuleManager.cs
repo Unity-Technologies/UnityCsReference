@@ -621,8 +621,9 @@ namespace UnityEditor.Modules
         internal static bool ShouldShowMultiDisplayOption()
         {
             GUIContent[] platformDisplayNames = Modules.ModuleManager.GetDisplayNames(EditorUserBuildSettings.activeBuildTarget.ToString());
-            return (BuildTargetGroup.Standalone == BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) ||
-                (BuildTargetGroup.WSA == BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) || (platformDisplayNames != null);
+            BuildTargetGroup curPlatform = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
+            return curPlatform == BuildTargetGroup.Standalone || curPlatform == BuildTargetGroup.WSA || curPlatform == BuildTargetGroup.iOS
+                || platformDisplayNames != null;
         }
 
         internal static GUIContent[] GetDisplayNames(string target)

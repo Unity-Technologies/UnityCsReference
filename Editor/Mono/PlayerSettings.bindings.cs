@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -722,6 +724,11 @@ namespace UnityEditor
         [NativeMethod("GetUserScriptingDefineSymbolsForGroup")]
         public static extern string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup);
 
+        public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines)
+        {
+            defines = GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
+        }
+
         internal static readonly char[] defineSplits = new[] { ';', ',', ' ' };
 
         // Set user-specified symbols for script compilation for the given build target group.
@@ -730,6 +737,27 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(defines))
                 defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
             SetScriptingDefineSymbolsForGroupInternal(targetGroup, defines);
+        }
+
+        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        {
+            // Remove duplicates
+            defines = defines.Distinct().ToArray();
+
+            var joined = new StringBuilder();
+            foreach (var define in defines)
+            {
+                var trimmed = define?.Trim(' ', ';');
+                if (!string.IsNullOrEmpty(trimmed))
+                {
+                    if (joined.Length != 0)
+                        joined.Append(';');
+
+                    joined.Append(trimmed);
+                }
+            }
+
+            SetScriptingDefineSymbolsForGroup(targetGroup, joined.ToString());
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]

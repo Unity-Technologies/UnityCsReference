@@ -15,6 +15,7 @@ namespace UnityEditor
     {
         int m_SelectedBrush = 0;
         Brush[] m_BrushList = null;
+        Hash128[] m_BrushHashes = null;
         UnityEngine.Object[] m_FoldoutContent = new UnityEngine.Object[1];
         GUIContent[] m_Thumnails;
         Editor m_BrushEditor = null;
@@ -43,6 +44,8 @@ namespace UnityEditor
         {
             // Load the textures;
             var arr = new List<Brush>();
+            var hashes = new List<Hash128>();
+
             int idx = 1;
             Texture2D t = null;
             Brush brush = null;
@@ -55,6 +58,7 @@ namespace UnityEditor
                 {
                     brush.readOnly = true;
                     arr.Add(brush);
+                    hashes.Add(brush.thumbnail.imageContentsHash);
                 }
 
                 idx++;
@@ -67,19 +71,28 @@ namespace UnityEditor
             {
                 t = EditorGUIUtility.FindTexture("brush_" + idx + ".png");
                 if (t)
-                    arr.Add(Brush.CreateInstance(t, AnimationCurve.Constant(0, 1, 1), Brush.kMaxRadiusScale, true));
+                {
+                    Brush b = Brush.CreateInstance(t, AnimationCurve.Constant(0, 1, 1), Brush.kMaxRadiusScale, true);
+                    arr.Add(b);
+                    hashes.Add(b.thumbnail.imageContentsHash);
+                }
                 idx++;
             }
             while (t);
 
             // Load .brush files
-            arr.AddRange(
-                AssetDatabase.FindAssets($"t:{typeof(Brush).Name}")
-                    .Select(p => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(p), typeof(Brush)) as Brush)
-                    .Where(b => b != null && b.texture != null)
-            );
+            foreach (string assetPath in AssetDatabase.FindAssets($"t:{typeof(Brush).Name}"))
+            {
+                var b = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(assetPath), typeof(Brush)) as Brush;
+                if (b != null && b.texture != null)
+                {
+                    arr.Add(b);
+                    hashes.Add(b.thumbnail.imageContentsHash);
+                }
+            }
 
             m_BrushList = arr.ToArray();
+            m_BrushHashes = hashes.ToArray();
         }
 
         public void SelectPrevBrush()
@@ -117,6 +130,20 @@ namespace UnityEditor
         public bool ShowGUI()
         {
             bool repaint = false;
+
+            // check if we need to update our thumbnail list
+            if (m_Thumnails != null)
+            {
+                for (int x = 0; x < m_BrushList.Length; x++)
+                {
+                    Hash128 thumbnailHash = m_BrushList[x].thumbnail.imageContentsHash;
+                    if (m_BrushHashes[x] != thumbnailHash)
+                    {
+                        m_BrushHashes[x] = thumbnailHash;
+                        m_Thumnails = null;
+                    }
+                }
+            }
 
             GUILayout.Label(Styles.brushes, EditorStyles.boldLabel);
 

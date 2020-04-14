@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI
 
         [SerializeField]
         private string m_PackageNameOrId;
+
         private void SetPackageNameOrId(string packageNameOrId)
         {
             m_PackageNameOrId = packageNameOrId;

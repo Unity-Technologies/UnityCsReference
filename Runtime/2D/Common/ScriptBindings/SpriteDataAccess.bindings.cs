@@ -204,8 +204,23 @@ namespace UnityEngine.U2D
             SetDeformableBuffer(spriteRenderer, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
+        internal unsafe static void SetBatchDeformableBufferAndLocalAABBArray(SpriteRenderer[] spriteRenderers, NativeArray<IntPtr> buffers, NativeArray<int> bufferSizes, NativeArray<Bounds> bounds)
+        {
+            int count = spriteRenderers.Length;
+            if (count != buffers.Length
+                || count != bufferSizes.Length
+                || count != bounds.Length)
+            {
+                throw new ArgumentException("Input array sizes are not the same.");
+            }
+
+            SetBatchDeformableBufferAndLocalAABBArray(spriteRenderers, buffers.GetUnsafeReadOnlyPtr(), bufferSizes.GetUnsafeReadOnlyPtr(), bounds.GetUnsafeReadOnlyPtr(), count);
+        }
+
         extern public static void DeactivateDeformableBuffer([NotNull] this SpriteRenderer renderer);
         extern internal static void SetLocalAABB([NotNull] this SpriteRenderer renderer, Bounds aabb);
         extern private unsafe static void SetDeformableBuffer([NotNull] SpriteRenderer spriteRenderer, void* src, int count);
+
+        extern private unsafe static void SetBatchDeformableBufferAndLocalAABBArray(SpriteRenderer[] spriteRenderers, void* buffers, void* bufferSizes, void* bounds, int count);
     }
 }

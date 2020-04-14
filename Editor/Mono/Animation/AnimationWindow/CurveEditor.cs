@@ -131,6 +131,8 @@ namespace UnityEditor
             return curve.MoveKey(index, key);
         }
 
+        internal Bounds ComputeBoundsBetweenTime(float start, float end) => renderer.GetBounds(start, end);
+
         // An additional vertical min / max range clamp when editing multiple curves with different ranges
         public float vRangeMin = -Mathf.Infinity;
         public float vRangeMax = Mathf.Infinity;
@@ -520,6 +522,7 @@ namespace UnityEditor
 
         private bool m_BoundsAreDirty = true;
         private bool m_SelectionBoundsAreDirty = true;
+        private bool m_SelectionWithCurvesBoundsAreDirty = true;
 
         private bool m_EnableCurveGroups = false;
 
@@ -530,6 +533,16 @@ namespace UnityEditor
             {
                 RecalculateSelectionBounds();
                 return m_SelectionBounds;
+            }
+        }
+
+        Bounds m_SelectionWithCurvesBounds = new Bounds(Vector3.zero, Vector3.zero);
+        public Bounds selectionWithCurvesBounds
+        {
+            get
+            {
+                RecalculateSelectionWithCurvesBounds();
+                return m_SelectionWithCurvesBounds;
             }
         }
 
@@ -830,6 +843,7 @@ namespace UnityEditor
         public void InvalidateSelectionBounds()
         {
             m_SelectionBoundsAreDirty = true;
+            m_SelectionWithCurvesBoundsAreDirty = true;
         }
 
         private void RecalculateSelectionBounds()
@@ -858,6 +872,37 @@ namespace UnityEditor
             m_SelectionBoundsAreDirty = false;
         }
 
+        private void RecalculateSelectionWithCurvesBounds()
+        {
+            if (!m_SelectionWithCurvesBoundsAreDirty)
+                return;
+
+            m_SelectionWithCurvesBounds = m_SelectionBounds;
+
+            //Aggregate selected key in between curves.
+            if (hasSelection)
+            {
+                CurveSelection[] selected = selectedCurves.OrderBy(p => p.curveID).ThenBy(p => p.key).ToArray();
+                int currentCurveId = selected.First().curveID;
+                CurveWrapper currentCurveWrapper = GetCurveWrapperFromID(currentCurveId);
+                for (int i = 0; i < selected.Length - 1; i++)
+                {
+                    if (currentCurveId != selected[i + 1].curveID)
+                    {
+                        currentCurveId = selected[i + 1].curveID;
+                        currentCurveWrapper = GetCurveWrapperFromID(currentCurveId);
+                        continue;
+                    }
+                    Keyframe keyframeStart = GetKeyframeFromSelection(selected[i]);
+                    Keyframe keyframeEnd = GetKeyframeFromSelection(selected[i + 1]);
+                    Bounds inBetweenBounds = currentCurveWrapper.ComputeBoundsBetweenTime(keyframeStart.time, keyframeEnd.time);
+                    m_SelectionWithCurvesBounds.Encapsulate(inBetweenBounds);
+                }
+            }
+
+            m_SelectionWithCurvesBoundsAreDirty = false;
+        }
+
         public Bounds GetClipBounds()
         {
             return curveBounds;
@@ -884,10 +929,16 @@ namespace UnityEditor
                     frameBounds.Encapsulate(new Vector2(cw.curve[cs.key - 1].time, cw.curve[cs.key - 1].value));
                 if (cs.key + 1 < cw.curve.length)
                     frameBounds.Encapsulate(new Vector2(cw.curve[cs.key + 1].time, cw.curve[cs.key + 1].value));
+
+                //Include neighboring curves in bounds
+                if (cs.key - 1 >= 0)
+                    frameBounds.Encapsulate(cw.ComputeBoundsBetweenTime(cw.curve[cs.key - 1].time, cw.curve[cs.key].time));
+                if (cs.key + 1 < cw.curve.length)
+                    frameBounds.Encapsulate(cw.ComputeBoundsBetweenTime(cw.curve[cs.key].time, cw.curve[cs.key + 1].time));
             }
             else
             {
-                frameBounds = selectionBounds;
+                frameBounds = selectionWithCurvesBounds;
             }
 
             // Enforce minimum size of bounds

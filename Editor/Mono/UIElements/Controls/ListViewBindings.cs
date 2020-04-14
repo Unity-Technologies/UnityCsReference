@@ -11,7 +11,7 @@ using System.Collections;
 
 namespace UnityEditor.UIElements
 {
-    class ListViewSerializedObjectBinding : BindingExtensions.SerializedObjectBindingBase
+    class ListViewSerializedObjectBinding : DefaultSerializedObjectBindingImplementation.SerializedObjectBindingBase
     {
         ListView listView { get { return boundElement as ListView; } set { boundElement = value; } }
 
@@ -21,7 +21,7 @@ namespace UnityEditor.UIElements
         int m_ListViewArraySize;
 
         public static void CreateBind(ListView listView,
-            BindingExtensions.SerializedObjectUpdateWrapper objWrapper,
+            DefaultSerializedObjectBindingImplementation.SerializedObjectUpdateWrapper objWrapper,
             SerializedProperty prop)
         {
             var newBinding = new ListViewSerializedObjectBinding();
@@ -29,14 +29,14 @@ namespace UnityEditor.UIElements
         }
 
         protected void SetBinding(ListView listView,
-            BindingExtensions.SerializedObjectUpdateWrapper objWrapper,
+            DefaultSerializedObjectBindingImplementation.SerializedObjectUpdateWrapper objWrapper,
             SerializedProperty prop)
         {
             boundObject = objWrapper;
             boundProperty = prop;
             boundPropertyPath = prop.propertyPath;
 
-            m_DataList = new SerializedObjectList(prop, true);
+            m_DataList = new SerializedObjectList(prop, listView.showBoundCollectionSize);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
             this.listView = listView;
@@ -52,6 +52,8 @@ namespace UnityEditor.UIElements
             }
 
             listView.itemsSource = m_DataList;
+
+            listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
         }
 
         VisualElement MakeListViewItem()
@@ -77,12 +79,12 @@ namespace UnityEditor.UIElements
             object item = listView.itemsSource[index];
             var itemProp = item as SerializedProperty;
             field.bindingPath = itemProp.propertyPath;
-            BindingExtensions.Bind(ve, boundObject, itemProp);
+            BindingExtensions.bindingImpl.Bind(ve, boundObject, itemProp);
         }
 
         void UpdateArraySize()
         {
-            m_DataList.RefreshProperties(boundProperty, true);
+            m_DataList.RefreshProperties(boundProperty, listView.showBoundCollectionSize);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;
             listView.Refresh();
@@ -145,8 +147,86 @@ namespace UnityEditor.UIElements
         }
     }
 
+    class SerializedObjectListReorderableDragAndDropController : ListViewReorderableDragAndDropController
+    {
+        private SerializedObjectList objectList => m_ListView.itemsSource as SerializedObjectList;
+        public SerializedObjectListReorderableDragAndDropController(ListView listView) : base(listView)
+        {
+        }
+
+        public override void OnDrop(IListDragAndDropArgs args)
+        {
+            switch (args.dragAndDropPosition)
+            {
+                case DragAndDropPosition.OutsideItems:
+                case DragAndDropPosition.BetweenItems:
+                    // we're ok'
+                    break;
+                default:
+                    throw new ArgumentException($"{args.dragAndDropPosition} is not supported by {nameof(SerializedObjectListReorderableDragAndDropController)}.");
+            }
+
+            var array = objectList;
+            var selection = m_ListView.selectedIndices.OrderBy((i) => i).ToArray();
+
+            var baseOffset = 0;
+            if (m_ListView.showBoundCollectionSize)
+            {
+                //we must offset everything by 1
+                baseOffset = -1;
+            }
+
+            var insertIndex = args.insertAtIndex + baseOffset;
+
+            int insertIndexShift = 0;
+            int srcIndexShift = 0;
+            for (int i = selection.Length - 1; i >= 0; --i)
+            {
+                var index = selection[i] + baseOffset;
+
+                if (index < 0)
+                    continue;
+
+                var newIndex = insertIndex - insertIndexShift;
+
+                if (index > insertIndex)
+                {
+                    index += srcIndexShift;
+                    srcIndexShift++;
+                }
+                else if (index < newIndex)
+                {
+                    insertIndexShift++;
+                    newIndex--;
+                }
+
+                array.Move(index, newIndex);
+
+                onItemMoved?.Invoke(new ItemMoveArgs<object>
+                {
+                    item = objectList[index],
+                    newIndex = newIndex,
+                    previousIndex = index
+                });
+            }
+
+            array.ApplyChanges();
+
+            var newSelection = new List<int>();
+
+            for (int i = 0; i < selection.Length; ++i)
+            {
+                newSelection.Add(insertIndex - insertIndexShift + i - baseOffset);
+            }
+
+            m_ListView.SetSelectionWithoutNotify(newSelection);
+        }
+    }
+
+
     internal class SerializedObjectList : IList
     {
+        public SerializedProperty ArrayProperty { get; private set; }
         public SerializedProperty ArraySize {get; private set;}
 
         List<SerializedProperty> properties;
@@ -157,7 +237,8 @@ namespace UnityEditor.UIElements
 
         public void RefreshProperties(SerializedProperty parentProperty, bool includeArraySize)
         {
-            var property = parentProperty.Copy();
+            ArrayProperty = parentProperty.Copy();
+            var property = ArrayProperty.Copy();
             var endProperty = property.GetEndProperty();
 
             property.NextVisible(true); // Expand the first child.
@@ -253,6 +334,16 @@ namespace UnityEditor.UIElements
             return -1;
         }
 
+        public void Move(int srcIndex, int destIndex)
+        {
+            ArrayProperty.MoveArrayElement(srcIndex, destIndex);
+        }
+
+        public void ApplyChanges()
+        {
+            ArrayProperty.serializedObject.ApplyModifiedProperties();
+        }
+
         public void Insert(int index, object value)
         {
             throw new NotImplementedException();
@@ -260,12 +351,16 @@ namespace UnityEditor.UIElements
 
         public void Remove(object value)
         {
-            throw new NotImplementedException();
+            var index = IndexOf(value);
+            if (index >= 0)
+            {
+                RemoveAt(index);
+            }
         }
 
         public void RemoveAt(int index)
         {
-            throw new NotImplementedException();
+            ArrayProperty.DeleteArrayElementAtIndex(index);
         }
     }
 }

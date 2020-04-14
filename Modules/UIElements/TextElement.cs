@@ -59,7 +59,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        private string m_Text;
+        private string m_Text = String.Empty;
         public virtual string text
         {
             get { return ((INotifyValueChanged<string>) this).value; }

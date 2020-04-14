@@ -10,6 +10,7 @@ using UnityEditor.Profiling;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.StyleSheets;
+using UnityEditor.UIElements;
 
 namespace UnityEditor
 {
@@ -69,11 +70,6 @@ namespace UnityEditor
             m_ActualView = value;
             m_ActualViewName = null;
 
-            if (m_ActualView != null)
-            {
-                m_ActualView.uiRootElementCreated = ValidateWindowBackendForCurrentView;
-            }
-
             CreateDelegates();
 
             name = GetViewName();
@@ -115,10 +111,6 @@ namespace UnityEditor
 
         RectOffset IEditorWindowModel.viewMargins => GetBorderSize();
 
-        Action IEditorWindowModel.viewMarginsChanged { get; set; }
-
-        Action IEditorWindowModel.rootVisualElementCreated { get; set; }
-
         Action IEditorWindowModel.onSplitterGUIHandler { get; set; }
 
         protected void UpdateViewMargins(EditorWindow view)
@@ -126,7 +118,7 @@ namespace UnityEditor
             if (view == null)
                 return;
 
-            ((IEditorWindowModel)this).viewMarginsChanged?.Invoke();
+            editorWindowBackend?.ViewMarginsChanged();
         }
 
         protected override void SetPosition(Rect newPos)
@@ -160,11 +152,6 @@ namespace UnityEditor
             EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
 
-            if (m_ActualView != null)
-            {
-                m_ActualView.uiRootElementCreated = ValidateWindowBackendForCurrentView;
-            }
-
             RegisterSelectedPane(sendEvents: true);
         }
 
@@ -173,6 +160,10 @@ namespace UnityEditor
             EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
             DeregisterSelectedPane(clearActualView: false, sendEvents: true);
+            // Host views are destroyed in the middle of an OnGUI loop, so we need to ensure that we're not invoking
+            // OnGUI on destroyed instances.
+            m_OnGUI = null;
+            m_Update = null;
         }
 
         private void HandleSplitView()
@@ -247,9 +238,6 @@ namespace UnityEditor
             }
         }
 
-        Action IEditorWindowModel.focused { get; set; }
-        Action IEditorWindowModel.blurred { get; set; }
-
         protected override bool OnFocus()
         {
             m_OnFocus?.Invoke();
@@ -258,7 +246,7 @@ namespace UnityEditor
             if (!this)
                 return false;
 
-            ((IEditorWindowModel)this).focused?.Invoke();
+            editorWindowBackend?.Focused();
 
             Repaint();
             return true;
@@ -273,7 +261,7 @@ namespace UnityEditor
             if (!this)
                 return;
 
-            ((IEditorWindowModel)this).blurred?.Invoke();
+            editorWindowBackend?.Blurred();
 
             Repaint();
         }
@@ -406,6 +394,9 @@ namespace UnityEditor
 
         public void InvokeOnGUI(Rect onGUIPosition, Rect viewRect)
         {
+            if (!this)
+                return;
+
             DoWindowDecorationStart();
 
             BeginOffsetArea(viewRect, GUIContent.none, Styles.tabWindowBackground);
@@ -459,18 +450,10 @@ namespace UnityEditor
 
         EditorWindow IEditorWindowModel.window => m_ActualView;
 
-        Action IEditorWindowModel.onRegisterWindow { get; set; }
-        Action IEditorWindowModel.onUnegisterWindow { get; set; }
-
-        private void ValidateWindowBackendForCurrentView()
+        public IEditorWindowBackend editorWindowBackend
         {
-            if (!EditorWindowBackendManager.IsBackendCompatible(windowBackend, this))
-            {
-                //We create a new compatible backend
-                windowBackend = EditorWindowBackendManager.GetBackend(this);
-            }
-
-            ((IEditorWindowModel)this).rootVisualElementCreated?.Invoke();
+            get { return windowBackend as IEditorWindowBackend; }
+            set { windowBackend = value; }
         }
 
         protected void RegisterSelectedPane(bool sendEvents)
@@ -480,13 +463,9 @@ namespace UnityEditor
 
             m_ActualView.m_Parent = this;
 
-            if (!EditorWindowBackendManager.IsBackendCompatible(windowBackend, this))
-            {
-                //We create a new compatible backend
-                windowBackend = EditorWindowBackendManager.GetBackend(this);
-            }
+            ValidateWindowBackendForCurrentView();
 
-            ((IEditorWindowModel)this).onRegisterWindow?.Invoke();
+            editorWindowBackend?.OnRegisterWindow();
 
             if (GetPaneMethod("Update") != null)
             {
@@ -531,7 +510,7 @@ namespace UnityEditor
             if (!m_ActualView)
                 return;
 
-            ((IEditorWindowModel)this).onUnegisterWindow?.Invoke();
+            editorWindowBackend?.OnUnregisterWindow();
 
             if (m_Update != null)
                 EditorApplication.update -= SendUpdate;
@@ -546,14 +525,8 @@ namespace UnityEditor
 
             if (clearActualView)
             {
-                EditorWindow oldActualView = m_ActualView;
                 var onLostFocus = m_OnLostFocus;
                 var onBecameInvisible = m_OnBecameInvisible;
-
-                if (oldActualView.uiRootElementCreated == ValidateWindowBackendForCurrentView)
-                {
-                    oldActualView.uiRootElementCreated = null;
-                }
 
                 m_ActualView = null;
                 if (sendEvents)
@@ -568,8 +541,6 @@ namespace UnityEditor
 
         bool IEditorWindowModel.notificationVisible => m_NotificationIsVisible;
 
-        Action IEditorWindowModel.notificationVisibilityChanged { get; set; }
-
         protected void CheckNotificationStatus()
         {
             if (m_ActualView != null && m_ActualView.m_FadeoutTime != 0)
@@ -577,13 +548,13 @@ namespace UnityEditor
                 if (!m_NotificationIsVisible)
                 {
                     m_NotificationIsVisible = true;
-                    ((IEditorWindowModel)this).notificationVisibilityChanged?.Invoke();
+                    editorWindowBackend?.NotificationVisibilityChanged();
                 }
             }
             else if (m_NotificationIsVisible)
             {
                 m_NotificationIsVisible = false;
-                ((IEditorWindowModel)this).notificationVisibilityChanged?.Invoke();
+                editorWindowBackend?.NotificationVisibilityChanged();
             }
         }
 
@@ -641,9 +612,6 @@ namespace UnityEditor
         internal const float k_iconMargin = 1f;
         protected void ShowGenericMenu(float leftOffset, float topOffset)
         {
-            if (Event.current.isKey)
-                return;
-
             Rect paneMenu = new Rect(leftOffset, topOffset, Styles.paneOptions.fixedWidth, Styles.paneOptions.fixedHeight);
             if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, Styles.paneOptions))
                 PopupGenericMenu(m_ActualView, paneMenu);
@@ -793,16 +761,13 @@ namespace UnityEditor
         }
 
         Color IEditorWindowModel.playModeTintColor => kPlayModeDarken.Color;
-        Action IEditorWindowModel.playModeTintColorChanged { get; set; }
 
         private void PlayModeTintColorChangedCallback(string key)
         {
             if (key == kPlayModeDarkenKey)
             {
-                ((IEditorWindowModel)this).playModeTintColorChanged?.Invoke();
+                editorWindowBackend?.PlayModeTintColorChanged();
             }
         }
-
-        Action<GenericMenu> IEditorWindowModel.onDisplayWindowMenu { get; set; }
     }
 }

@@ -18,6 +18,17 @@ namespace UnityEditor
             ProjectWindowUtil.CreateAsset(b, "New Brush.brush");
         }
 
+        public void Reset()
+        {
+            m_Mask = DefaultMask();
+            m_Falloff = AnimationCurve.Linear(0, 0, 1, 1);
+            m_RadiusScale = 1.0f;
+            m_BlackWhiteRemapMin = 0.0f;
+            m_BlackWhiteRemapMax = 1.0f;
+            m_InvertRemapRange = false;
+            readOnly = false;
+        }
+
         // Don't instantiate directly, use Brush.CreateInstance()
         protected Brush() {}
 

@@ -10,95 +10,14 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    internal class SerializedObjectBindEvent : EventBase<SerializedObjectBindEvent>
+    internal class DefaultSerializedObjectBindingImplementation : ISerializedObjectBindingImplementation
     {
-        private SerializedObject m_BindObject;
-        public SerializedObject bindObject
-        {
-            get
-            {
-                return m_BindObject;
-            }
-        }
-
-        protected override void Init()
-        {
-            base.Init();
-            LocalInit();
-        }
-
-        void LocalInit()
-        {
-            this.propagation = EventPropagation.Cancellable; // Also makes it not propagatable.
-            m_BindObject = null;
-        }
-
-        public static SerializedObjectBindEvent GetPooled(SerializedObject obj)
-        {
-            SerializedObjectBindEvent e = GetPooled();
-            e.m_BindObject = obj;
-            return e;
-        }
-
-        public SerializedObjectBindEvent()
-        {
-            LocalInit();
-        }
-    }
-
-    internal class SerializedPropertyBindEvent : EventBase<SerializedPropertyBindEvent>
-    {
-        private SerializedProperty m_BindProperty;
-        public SerializedProperty bindProperty
-        {
-            get
-            {
-                return m_BindProperty;
-            }
-        }
-
-        protected override void Init()
-        {
-            base.Init();
-            LocalInit();
-        }
-
-        void LocalInit()
-        {
-            this.propagation = EventPropagation.Cancellable; // Also makes it not propagatable.
-            m_BindProperty = null;
-        }
-
-        public static SerializedPropertyBindEvent GetPooled(SerializedProperty obj)
-        {
-            SerializedPropertyBindEvent e = GetPooled();
-            e.m_BindProperty = obj;
-            return e;
-        }
-
-        public SerializedPropertyBindEvent()
-        {
-            LocalInit();
-        }
-    }
-
-    public static class BindingExtensions
-    {
-        // visual element style changes wrt its property state
-        public static readonly string prefabOverrideUssClassName = "unity-binding--prefab-override";
-        internal static readonly string prefabOverrideBarName = "unity-binding-prefab-override-bar";
-        internal static readonly string prefabOverrideBarContainerName = "unity-prefab-override-bars-container";
-        internal static readonly string prefabOverrideBarUssClassName = "unity-binding__prefab-override-bar";
-        internal static readonly string animationAnimatedUssClassName = "unity-binding--animation-animated";
-        internal static readonly string animationRecordedUssClassName = "unity-binding--animation-recorded";
-        internal static readonly string animationCandidateUssClassName = "unity-binding--animation-candidate";
-
-        public static void Bind(this VisualElement element, SerializedObject obj)
+        public void Bind(VisualElement element, SerializedObject obj)
         {
             Bind(element, new SerializedObjectUpdateWrapper(obj), null);
         }
 
-        public static void Unbind(this VisualElement element)
+        public void Unbind(VisualElement element)
         {
             if (element == null)
             {
@@ -114,7 +33,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public static SerializedProperty BindProperty(this IBindable field, SerializedObject obj)
+        public SerializedProperty BindProperty(IBindable field, SerializedObject obj)
         {
             var property = obj?.FindProperty(field.bindingPath);
 
@@ -126,7 +45,7 @@ namespace UnityEditor.UIElements
             return property;
         }
 
-        public static void BindProperty(this IBindable field, SerializedProperty property)
+        public void BindProperty(IBindable field, SerializedProperty property)
         {
             if (property == null)
             {
@@ -137,6 +56,7 @@ namespace UnityEditor.UIElements
             Bind(field as VisualElement, new SerializedObjectUpdateWrapper(property.serializedObject), null);
         }
 
+        // visual element style changes wrt its property state
         private static void DoBindProperty(IBindable field, SerializedObjectUpdateWrapper obj, SerializedProperty property)
         {
             var fieldElement = field as VisualElement;
@@ -163,7 +83,12 @@ namespace UnityEditor.UIElements
             CreateBindingObjectForProperty(fieldElement, obj, property);
         }
 
-        internal static void Bind(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
+        void ISerializedObjectBindingImplementation.Bind(VisualElement element, object objWrapper, SerializedProperty parentProperty)
+        {
+            Bind(element, objWrapper as SerializedObjectUpdateWrapper, parentProperty);
+        }
+
+        private void Bind(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
         {
             IBindable field = element as IBindable;
 
@@ -194,7 +119,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private static SerializedProperty BindPropertyWithParent(IBindable field, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
+        private SerializedProperty BindPropertyWithParent(IBindable field, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
         {
             var property = parentProperty?.FindPropertyRelative(field.bindingPath);
 
@@ -365,7 +290,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal static void HandleStyleUpdate(VisualElement element)
+        public void HandleStyleUpdate(VisualElement element)
         {
             var bindable = element as IBindable;
             var binding = bindable?.binding as SerializedObjectBindingBase;
@@ -688,7 +613,7 @@ namespace UnityEditor.UIElements
                 if (container == null)
                     return;
 
-                var barContainer = container.Q(prefabOverrideBarContainerName);
+                var barContainer = container.Q(BindingExtensions.prefabOverrideBarContainerName);
                 if (barContainer == null)
                     return;
 
@@ -762,12 +687,12 @@ namespace UnityEditor.UIElements
                 // Handle prefab state.
                 if (handlePrefabState)
                 {
-                    if (!element.ClassListContains(prefabOverrideUssClassName))
+                    if (!element.ClassListContains(BindingExtensions.prefabOverrideUssClassName))
                     {
                         var container = FindPrefabOverrideBarCompatibleParent(element);
                         var barContainer = container?.prefabOverrideBlueBarsContainer;
 
-                        element.AddToClassList(prefabOverrideUssClassName);
+                        element.AddToClassList(BindingExtensions.prefabOverrideUssClassName);
 
                         if (container != null && barContainer != null)
                         {
@@ -779,12 +704,12 @@ namespace UnityEditor.UIElements
                             // and move them down beside their respective field.
 
                             var prefabOverrideBar = new VisualElement();
-                            prefabOverrideBar.name = prefabOverrideBarName;
+                            prefabOverrideBar.name = BindingExtensions.prefabOverrideBarName;
                             prefabOverrideBar.userData = element;
-                            prefabOverrideBar.AddToClassList(prefabOverrideBarUssClassName);
+                            prefabOverrideBar.AddToClassList(BindingExtensions.prefabOverrideBarUssClassName);
                             barContainer.Add(prefabOverrideBar);
 
-                            element.SetProperty(prefabOverrideBarName, prefabOverrideBar);
+                            element.SetProperty(BindingExtensions.prefabOverrideBarName, prefabOverrideBar);
 
                             // We need to try and set the bar style right away, even if the container
                             // didn't compute its layout yet. This is for when the override is done after
@@ -797,16 +722,16 @@ namespace UnityEditor.UIElements
                         }
                     }
                 }
-                else if (element.ClassListContains(prefabOverrideUssClassName))
+                else if (element.ClassListContains(BindingExtensions.prefabOverrideUssClassName))
                 {
-                    element.RemoveFromClassList(prefabOverrideUssClassName);
+                    element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
 
                     var container = FindPrefabOverrideBarCompatibleParent(element);
                     var barContainer = container?.prefabOverrideBlueBarsContainer;
 
                     if (container != null && barContainer != null)
                     {
-                        var prefabOverrideBar = element.GetProperty(prefabOverrideBarName) as VisualElement;
+                        var prefabOverrideBar = element.GetProperty(BindingExtensions.prefabOverrideBarName) as VisualElement;
                         if (prefabOverrideBar != null)
                             prefabOverrideBar.RemoveFromHierarchy();
                     }
@@ -827,9 +752,9 @@ namespace UnityEditor.UIElements
                 bool candidate = AnimationMode.IsPropertyCandidate(prop.serializedObject.targetObject, prop.propertyPath);
                 bool recording = AnimationMode.InAnimationRecording();
 
-                inputElement.EnableInClassList(animationRecordedUssClassName, animated && recording);
-                inputElement.EnableInClassList(animationCandidateUssClassName, animated && !recording && candidate);
-                inputElement.EnableInClassList(animationAnimatedUssClassName, animated && !recording && !candidate);
+                inputElement.EnableInClassList(BindingExtensions.animationRecordedUssClassName, animated && recording);
+                inputElement.EnableInClassList(BindingExtensions.animationCandidateUssClassName, animated && !recording && candidate);
+                inputElement.EnableInClassList(BindingExtensions.animationAnimatedUssClassName, animated && !recording && !candidate);
             }
 
             protected bool IsPropertyValid()

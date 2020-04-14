@@ -111,8 +111,11 @@ namespace UnityEditor
 
             if (GUILayout.Button(Styles.newLightingSettings, GUILayout.Width(170)))
             {
-                Lightmapping.lightingSettingsInternal = new LightingSettings();
-                Lightmapping.lightingSettingsInternal.CreateAsset();
+                var ls = new LightingSettings();
+                ls.name = "New Lighting Settings";
+                Undo.RecordObject(m_LightmapSettings.targetObject, "New Lighting Settings");
+                Lightmapping.lightingSettingsInternal = ls;
+                ProjectWindowUtil.CreateAsset(ls, (ls.name + ".lighting"));
             }
 
             GUILayout.EndHorizontal();

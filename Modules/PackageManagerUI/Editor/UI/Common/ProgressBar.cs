@@ -12,11 +12,20 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<ProgressBar> {}
 
+        private ResourceLoader m_ResourceLoader;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+        }
+
         public ProgressBar()
         {
+            ResolveDependencies();
+
             SetDisplay(false);
 
-            var root = Resources.GetTemplate("ProgressBar.uxml");
+            var root = m_ResourceLoader.GetTemplate("ProgressBar.uxml");
             Add(root);
             root.StretchToParentSize();
 
@@ -33,7 +42,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void UpdateProgress(IOperation operation)
         {
-            var showProgressBar = operation != null && operation.isProgressTrackable && operation.isInProgress;
+            var showProgressBar = operation != null && operation.isProgressTrackable && operation.isProgressVisible;
             SetDisplay(showProgressBar);
             if (showProgressBar)
             {

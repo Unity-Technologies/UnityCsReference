@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI
         long numCurrentItems { get; }
 
         // an ordered list of `packageUniqueIds`
-        IEnumerable<string> items { get; }
+        IEnumerable<VisualState> visualStates { get; }
         bool isFullyLoaded { get; }
 
         VisualState GetVisualState(string packageUniqueId);

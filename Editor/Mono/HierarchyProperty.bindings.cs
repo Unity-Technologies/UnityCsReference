@@ -211,5 +211,7 @@ namespace UnityEditor
         public static extern void ClearSceneObjectsFilter();
         [FreeFunction("HierarchyPropertyBindings::FilterSingleSceneObject")]
         public static extern void FilterSingleSceneObject(int instanceID, bool otherVisibilityState);
+        [FreeFunction("HierarchyPropertyBindings::SetFilteredVisibility", HasExplicitThis = true)]
+        internal extern void SetFilteredVisibility(bool visible);
     }
 }

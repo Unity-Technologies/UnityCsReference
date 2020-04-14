@@ -134,8 +134,8 @@ namespace UnityEditor
 //        [Obsolete("Lightmapping.giWorkflowMode is obsolete, use Lightmapping.lightingSettings.autoGenerate instead. ", false)]
         public static GIWorkflowMode giWorkflowMode
         {
-            get { return GetLightingSettingsOrDefaultsFallback().giWorkflowMode; }
-            set { GetOrCreateLightingsSettings().giWorkflowMode = value; }
+            get { return (GIWorkflowMode)GetLightingSettingsOrDefaultsFallback().giWorkflowMode; }
+            set { GetOrCreateLightingsSettings().giWorkflowMode = (LightingSettings.GIWorkflowMode)value; }
         }
 
 //        [Obsolete("Lightmapping.realtimeGI is obsolete, use Lightmapping.lightingSettings.realtimeGI instead. ", false)]

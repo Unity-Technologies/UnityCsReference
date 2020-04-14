@@ -19,10 +19,19 @@ namespace UnityEditor.PackageManager.UI
 
         public override long numCurrentItems => m_VisualStateList.numItems;
 
-        public override IEnumerable<string> items => m_VisualStateList.Select(v => v.packageUniqueId);
+        public override IEnumerable<VisualState> visualStates => m_VisualStateList;
 
-        public SimplePage(PackageFilterTab tab, PageCapability capability) : base(tab, capability)
+        [NonSerialized]
+        private PackageFiltering m_PackageFiltering;
+        public void ResolveDependencies(PackageDatabase packageDatabase, PackageFiltering packageFiltering)
         {
+            ResolveDependencies(packageDatabase);
+            m_PackageFiltering = packageFiltering;
+        }
+
+        public SimplePage(PackageDatabase packageDatabase, PackageFiltering packageFiltering, PackageFilterTab tab, PageCapability capability) : base(packageDatabase, tab, capability)
+        {
+            ResolveDependencies(packageDatabase, packageFiltering);
         }
 
         public override void UpdateFilters(PageFilters filters)
@@ -40,7 +49,7 @@ namespace UnityEditor.PackageManager.UI
             var removeList = removed.Where(p => Contains(p)).ToList();
             foreach (var package in added.Concat(postUpdate))
             {
-                if (PackageFiltering.instance.FilterByCurrentTab(package))
+                if (m_PackageFiltering.FilterByCurrentTab(package))
                     addOrUpdateList.Add(package);
                 else if (Contains(package))
                     removeList.Add(package);
@@ -65,8 +74,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void RebuildOrderedVisualStates()
         {
-            var packages = PackageDatabase.instance.allPackages
-                .Where(p => PackageFiltering.instance.FilterByCurrentTab(p));
+            var packages = m_PackageDatabase.allPackages
+                .Where(p => m_PackageFiltering.FilterByCurrentTab(p));
 
             IOrderedEnumerable<IPackage> orderedPackages;
             if (m_Filters.orderBy == "name")
@@ -87,8 +96,8 @@ namespace UnityEditor.PackageManager.UI
             var changedVisualStates = new List<VisualState>();
             foreach (var state in m_VisualStateList)
             {
-                var package = PackageDatabase.instance.GetPackage(state.packageUniqueId);
-                var visible = PackageFiltering.instance.FilterByCurrentSearchText(package);
+                var package = m_PackageDatabase.GetPackage(state.packageUniqueId);
+                var visible = m_PackageFiltering.FilterByCurrentSearchText(package);
                 if (state.visible != visible)
                 {
                     state.visible = visible;
@@ -98,8 +107,6 @@ namespace UnityEditor.PackageManager.UI
 
             if (changedVisualStates.Any())
                 TriggerOnVisualStateChange(changedVisualStates);
-
-            RefreshSelected();
         }
 
         public override VisualState GetVisualState(string packageUniqueId)

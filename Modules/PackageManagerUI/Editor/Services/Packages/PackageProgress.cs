@@ -9,6 +9,8 @@ namespace UnityEditor.PackageManager.UI
         None = 0,
         Refreshing,
         Downloading,
+        Pausing,
+        Resuming,
         Installing,
         Removing
     }

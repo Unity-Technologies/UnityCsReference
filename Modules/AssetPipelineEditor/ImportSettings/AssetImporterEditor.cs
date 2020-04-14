@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -123,6 +124,10 @@ namespace UnityEditor.Experimental.AssetImporters
             public static string revertButton = L10n.Tr("Revert");
             public static string unappliedSettingSingleAsset = L10n.Tr("Unapplied import settings for \'{0}\'");
             public static string unappliedSettingMultipleAssets = L10n.Tr("Unapplied import settings for \'{0}\' files");
+            public static string unableToAppliedMessage = L10n.Tr("Your changes might contain errors and cannot be applied. \nYou can either \'Revert\' the changes, or hit \'Cancel\' to go back and fix the errors.");
+
+            public static GUIContent ImporterSelection = EditorGUIUtility.TrTextContent("Importer");
+            public static string defaultImporterName = L10n.Tr("{0} (Default)");
         }
 
         // list of asset hashes. We need to force reload the inspector in case the asset changed on disk.
@@ -190,6 +195,13 @@ namespace UnityEditor.Experimental.AssetImporters
         InspectorWindow m_Inspector;
         bool m_HasInspectorBeenSeenLocked = false;
         bool m_TargetsReloaded = false;
+
+        // Support for importer overrides
+        List<Type> m_AvailableImporterTypes;
+        const int k_MultipleSelectedImporterTypes = -1;
+        int m_SelectedImporterType = k_MultipleSelectedImporterTypes;
+        string[] m_AvailableImporterTypesOptions;
+        List<string> m_SelectedAssetsPath = new List<string>();
 
         // Called from ActiveEditorTracker.cpp to setup the target editor once created before Awake and OnEnable of the Editor.
         internal void InternalSetAssetImporterTargetEditor(Object editor)
@@ -404,6 +416,93 @@ namespace UnityEditor.Experimental.AssetImporters
         //If you want to use the Importer DrawPreview, then override useAssetDrawPreview to false.
         protected virtual bool useAssetDrawPreview { get { return true; } }
 
+        private void DrawImporterSelectionPopup()
+        {
+            if (m_AvailableImporterTypesOptions.Length < 2)
+                return;
+            var mixed = EditorGUI.showMixedValue;
+            EditorGUI.showMixedValue = m_SelectedImporterType == k_MultipleSelectedImporterTypes;
+            GUILayout.Label(Styles.ImporterSelection);
+            var newSelection = EditorGUILayout.Popup(m_SelectedImporterType, m_AvailableImporterTypesOptions);
+            if (newSelection != m_SelectedImporterType)
+            {
+                if (CheckForApplyOnClose(false))
+                {
+                    // TODO : this should probably be handled by the AssetDatabase code when restoring selection?
+                    m_SelectedAssetsPath = assetTargets.Select(AssetDatabase.GetAssetPath).ToList();
+                    EditorApplication.delayCall += () =>
+                    {
+                        var loaded = m_SelectedAssetsPath.Select(AssetDatabase.LoadMainAssetAtPath);
+                        if (m_HasInspectorBeenSeenLocked)
+                            m_Inspector.SetObjectsLocked(loaded.ToList());
+                        else
+                            Selection.objects = loaded.ToArray();
+                    };
+                    AssetDatabase.StartAssetEditing();
+                    foreach (var importer in targets.Cast<AssetImporter>())
+                    {
+                        Undo.RegisterImporterUndo(importer.assetPath, string.Empty);
+                        AssetDatabaseExperimental.SetImporterOverrideInternal(importer.assetPath, m_AvailableImporterTypes[newSelection]);
+                    }
+                    AssetDatabase.StopAssetEditing();
+                    GUIUtility.ExitGUI();
+                }
+            }
+            EditorGUI.showMixedValue = mixed;
+        }
+
+        void InitializeAvailableImporters()
+        {
+            if (assetTarget == null)
+            {
+                m_AvailableImporterTypes = new List<Type>(0);
+                m_AvailableImporterTypesOptions = new string[0];
+                return;
+            }
+
+            var typeLists = targets.OfType<AssetImporter>()
+                .Select(t => t.assetPath)
+                .Select(AssetDatabaseExperimental.GetAvailableImporterTypes);
+            m_AvailableImporterTypes = typeLists
+                .Aggregate(new HashSet<Type>(typeLists.First()),
+                (h, e) =>
+                {
+                    h.IntersectWith(e);
+                    return h;
+                })
+                .Where(t => !t.IsAbstract && t != typeof(AssetImporter))
+                .ToList();
+            var assetExtension = Path.GetExtension(((AssetImporter)target).assetPath).Substring(1);
+            m_AvailableImporterTypesOptions = m_AvailableImporterTypes.Select(a =>
+            {
+                if (!a.IsSubclassOf(typeof(ScriptedImporter)))
+                {
+                    return string.Format(Styles.defaultImporterName, a.FullName);
+                }
+
+                var attribute = a.GetCustomAttributes(typeof(ScriptedImporterAttribute), false).Cast<ScriptedImporterAttribute>().First();
+#pragma warning disable 618
+                // we have to check on AutoSelect value until this is Obsolete with error to keep the same behaviour with non upgraded user scripts.
+                if (attribute.fileExtensions != null && attribute.AutoSelect && attribute.fileExtensions.Contains(assetExtension))
+                    return string.Format(Styles.defaultImporterName, a.FullName);
+#pragma warning restore 618
+                return a.FullName;
+            }).ToArray();
+        }
+
+        internal override void OnHeaderControlsGUI()
+        {
+            DrawImporterSelectionPopup();
+
+            GUILayout.FlexibleSpace();
+
+            if (!ShouldHideOpenButton())
+            {
+                var assets = assetTargets;
+                ShowOpenButton(assets, assetTarget != null);
+            }
+        }
+
         // Make the Importer use the icon of the asset
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
@@ -421,6 +520,24 @@ namespace UnityEditor.Experimental.AssetImporters
             EditorApplication.wantsToQuit += ApplicationWantsToQuit;
             AssemblyReloadEvents.afterAssemblyReload += FixInspectorCache;
             AssetImporterEditorPostProcessAsset.OnAssetbundleNameChanged += FixImporterAssetbundleName;
+
+            InitializeAvailableImporters();
+            if (m_AvailableImporterTypes.Count > 0)
+            {
+                var selection = targets
+                    .Select(t => t.GetType())
+                    .Select(t => m_AvailableImporterTypes.IndexOf(t))
+                    .Distinct();
+                if (selection.Count() > 1)
+                {
+                    m_SelectedImporterType = k_MultipleSelectedImporterTypes;
+                }
+                else
+                {
+                    m_SelectedImporterType = selection.First();
+                }
+            }
+
             m_OnEnableCalled = true;
             // Forces the inspector as dirty allows us to make sure the OnInspectorGUI has been called
             // at least once in the OnDisable in order to show the ApplyRevertGUI error.
@@ -537,8 +654,7 @@ namespace UnityEditor.Experimental.AssetImporters
                 }
             }
 
-            var unappliedAssets = assetPaths.Count;
-            if (unappliedAssets > 0 && HasModified())
+            if (assetPaths.Count > 0 && HasModified())
             {
                 // Forces the Reset button action when in batchmode instead of cancel, or the application may not leave when running tests...
                 if (Application.isBatchMode || !Application.isHumanControllingUs)
@@ -546,15 +662,25 @@ namespace UnityEditor.Experimental.AssetImporters
                     ResetValues();
                     return true;
                 }
-                var dialogText = unappliedAssets == 1
-                    ? string.Format(Styles.unappliedSettingSingleAsset, assetPaths[0])
-                    : string.Format(Styles.unappliedSettingMultipleAssets, unappliedAssets);
 
+                return ShowUnappliedAssetsPopup(assetPaths);
+            }
+            return true;
+        }
+
+        bool ShowUnappliedAssetsPopup(List<string> assetPaths)
+        {
+            var dialogText = assetPaths.Count == 1
+                ? string.Format(Styles.unappliedSettingSingleAsset, assetPaths[0])
+                : string.Format(Styles.unappliedSettingMultipleAssets, assetPaths.Count);
+
+            if (CanApply())
+            {
                 var userChoice = EditorUtility.DisplayDialogComplex(Styles.unappliedSettingTitle, dialogText, Styles.applyButton, Styles.cancelButton, Styles.revertButton);
                 switch (userChoice)
                 {
                     case 0:
-                        Apply(); // we need to call Apply before re-importing in case the user overriden it.
+                        Apply(); // we need to call Apply before re-importing in case the user overridden it.
                         ImportAssets(assetPaths.ToArray());
                         break;
                     case 1:
@@ -563,6 +689,16 @@ namespace UnityEditor.Experimental.AssetImporters
                         ResetValues();
                         break;
                 }
+            }
+            else
+            {
+                dialogText = dialogText + "\n" + Styles.unableToAppliedMessage;
+                if (EditorUtility.DisplayDialog(Styles.unappliedSettingTitle, dialogText, Styles.revertButton, Styles.cancelButton))
+                {
+                    ResetValues();
+                    return true;
+                }
+                return false;
             }
             return true;
         }
@@ -614,6 +750,11 @@ namespace UnityEditor.Experimental.AssetImporters
                 if (!IsSerializedDataEqual(targets[i]))
                     return true;
             return false;
+        }
+
+        protected virtual bool CanApply()
+        {
+            return true;
         }
 
         protected virtual void Apply()

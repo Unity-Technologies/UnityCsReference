@@ -61,6 +61,7 @@ namespace UnityEditor
             m_StageHandling.OnEnable();
 
             titleContent = GetLocalizedTitleContent();
+            wantsLessLayoutEvents = true;
         }
 
         public override void OnDisable()
@@ -257,6 +258,11 @@ namespace UnityEditor
             m_SceneHierarchy.SetExpandedRecursive(id, expand);
         }
 
+        internal void SetExpanded(int id, bool expand)
+        {
+            m_SceneHierarchy.ExpandTreeViewItem(id, expand);
+        }
+
         public void FrameObject(int instanceID, bool ping)
         {
             // To be able to frame the object we need to clear the search filter
@@ -295,13 +301,13 @@ namespace UnityEditor
         [MenuItem("Edit/Paste As Child %#V", false, 103)]
         static void PasteAsChild()
         {
-            lastInteractedHierarchyWindow?.m_SceneHierarchy?.PasteGOAsChild();
+            CutCopyPasteUtility.PasteGOAsChild();
         }
 
         [MenuItem("Edit/Paste As Child %#V", true, 103)]
         static bool ValidatePasteAsChild()
         {
-            return lastInteractedHierarchyWindow?.m_SceneHierarchy?.CanPasteAsChild() ?? false;
+            return CutCopyPasteUtility.CanPasteAsChild();
         }
     }
 

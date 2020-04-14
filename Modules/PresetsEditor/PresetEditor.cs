@@ -352,22 +352,7 @@ namespace UnityEditor.Presets
             var propertyPath = property.propertyPath;
             var state = GetPropertyState(propertyPath);
             if ((state & PropertyState.Excluded) == PropertyState.Excluded && Event.current.type == EventType.Repaint)
-            {
-                Color oldColor = GUI.backgroundColor;
-                bool oldEnabled = GUI.enabled;
-                GUI.enabled = true;
-
-                Rect highlightRect = totalPosition;
-                highlightRect.xMin += EditorGUI.indent;
-
-                GUI.backgroundColor = new Color(240f / 255f, 81f / 255f, 60f / 255f);
-                highlightRect.x = 0;
-                highlightRect.width = 2;
-                EditorStyles.overrideMargin.Draw(highlightRect, false, false, false, false);
-
-                GUI.enabled = oldEnabled;
-                GUI.backgroundColor = oldColor;
-            }
+                EditorGUI.DrawMarginLineForRect(totalPosition, new Color(240f / 255f, 81f / 255f, 60f / 255f));
 
             GUI.enabled &= (state & PropertyState.Included) == PropertyState.Included;
         }

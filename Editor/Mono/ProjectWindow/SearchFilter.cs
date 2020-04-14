@@ -63,6 +63,8 @@ namespace UnityEditor
         private string[] m_Folders = new string[0];
         [SerializeField]
         private string[] m_Globs = new string[0];
+        [SerializeField]
+        private string m_OriginalText = "";
 
         // Interface
         public string nameFilter { get { return m_NameFilter; } set { m_NameFilter = value; }}
@@ -78,10 +80,12 @@ namespace UnityEditor
         public string[] folders { get { return m_Folders; } set { m_Folders = value; }}
         public SearchArea searchArea {  get { return m_SearchArea; } set { m_SearchArea = value; }}
         public string[] globs { get { return m_Globs; } set { m_Globs = value; }}
+        public string originalText { get => m_OriginalText; set => m_OriginalText = value; }
 
         public void ClearSearch()
         {
             m_NameFilter = "";
+            m_OriginalText = "";
             m_ClassNames = new string[0];
             m_AssetLabels = new string[0];
             m_AssetBundleNames = new string[0];
@@ -155,6 +159,12 @@ namespace UnityEditor
             if (newFilter.m_NameFilter != m_NameFilter)
             {
                 m_NameFilter = newFilter.m_NameFilter;
+                changed = true;
+            }
+
+            if (newFilter.m_OriginalText != m_OriginalText)
+            {
+                m_OriginalText = newFilter.m_OriginalText;
                 changed = true;
             }
 

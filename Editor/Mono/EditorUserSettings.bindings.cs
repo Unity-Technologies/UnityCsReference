@@ -49,8 +49,14 @@ namespace UnityEditor
         [NativeProperty("VCOverwriteFailedCheckoutAssets")]
         public static extern bool overwriteFailedCheckoutAssets { get; set; }
 
-        [NativeProperty("VCOverlayIcons")]
+        [NativeProperty("VCProjectOverlayIcons")]
         public static extern bool overlayIcons { get; set; }
+
+        [NativeProperty("VCHierarchyOverlayIcons")]
+        internal static extern bool hierarchyOverlayIcons { get; set; }
+
+        [NativeProperty("VCOtherOverlayIcons")]
+        internal static extern bool otherOverlayIcons { get; set; }
 
         [NativeProperty("VCAllowAsyncUpdate")]
         public static extern bool allowAsyncStatusUpdate { get; set; }

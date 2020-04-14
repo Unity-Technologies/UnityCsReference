@@ -8,7 +8,8 @@ namespace UnityEditor.PackageManager
 {
     internal static class PackageValidation
     {
-        private static readonly Regex s_NameRegEx = new Regex(@"^([a-z][a-z\d\-\._]{0,213})$");
+        private static readonly Regex s_NameRegEx = new Regex(@"^([a-z][a-z\d\-\._]{0,99})$");
+        private static readonly Regex s_OrganizationNameRegEx = new Regex(@"^([a-z][a-z\d\-_]{0,99})$");
         private static readonly Regex s_AllowedSemverRegEx = new Regex(@"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(\-.+)?$");
         private static readonly Regex s_UnityMajorVersionRegEx = new Regex(@"^([1-9][0-9]{3})$");
         private static readonly Regex s_UnityMinorVersionRegEx = new Regex(@"^([1-9])$");
@@ -17,6 +18,11 @@ namespace UnityEditor.PackageManager
         public static bool ValidateName(string name)
         {
             return !string.IsNullOrEmpty(name) && s_NameRegEx.IsMatch(name);
+        }
+
+        public static bool ValidateOrganizationName(string organizationName)
+        {
+            return !string.IsNullOrEmpty(organizationName) && s_OrganizationNameRegEx.IsMatch(organizationName);
         }
 
         public static bool ValidateVersion(string version)

@@ -111,6 +111,9 @@ namespace UnityEditor
             return AddComponent(gameObject, typeof(T)) as T;
         }
 
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
+        public static extern void RegisterImporterUndo(string path, string name);
+
         [FreeFunction("RegisterFullObjectHierarchyUndo")]
         public static extern void RegisterFullObjectHierarchyUndo([NotNull] Object objectToUndo, string name);
 

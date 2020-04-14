@@ -30,8 +30,17 @@ namespace UnityEngine
 
         [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
         [RequiredByNativeCode]
-        static public string ExtractStackTrace()
+        static unsafe public string ExtractStackTrace()
         {
+            int bufMax = 16384;
+            byte* buf = stackalloc byte[bufMax];
+
+            int quickSize = Debug.ExtractStackTraceNoAlloc(buf, bufMax, projectFolder);
+            if (quickSize > 0)
+            {
+                return new string((sbyte*)buf, 0, quickSize, Encoding.UTF8);
+            }
+
             StackTrace trace = new StackTrace(1, true);
             string traceString = ExtractFormattedStackTrace(trace);
             return traceString;
@@ -87,6 +96,7 @@ namespace UnityEngine
             stackTrace = sb.ToString();
         }
 
+        // NB if you change this formatting/code there is a separate Mono quick path in MonoManager.cpp that must be updated as well.
         [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
         static internal string ExtractFormattedStackTrace(StackTrace stackTrace)
         {

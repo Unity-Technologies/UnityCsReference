@@ -171,6 +171,9 @@ namespace UnityEditorInternal
             Rect headerRect = position;
             GUIContent headerLabel = legendHeaderLabel ?? GUIContent.none;
             headerRect.height = Styles.legendHeaderLabel.CalcSize(headerLabel).y;
+            // Leave space for the GPU Profiler's Warning Icon, 16 pixels wide, 2 pixels margin = 20 pixels.
+            // Without this spacer, the tooltip of the header would be displayed instead of the one for the Warning Icon.
+            headerRect.xMax -= 20;
             GUI.Label(headerRect, headerLabel, Styles.legendHeaderLabel);
 
             position.yMin += headerRect.height + Styles.legendHeaderLabel.margin.bottom;

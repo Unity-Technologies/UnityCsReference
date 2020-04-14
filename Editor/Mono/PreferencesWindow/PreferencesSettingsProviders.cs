@@ -61,7 +61,6 @@ namespace UnityEditor
             public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
             public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Assets on Import");
-            public static readonly GUIContent osxColorPicker = EditorGUIUtility.TrTextContent("macOS Color Picker");
             public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
             public static readonly GUIContent showAssetStoreSearchHits = EditorGUIUtility.TrTextContent("Show Asset Store search hits");
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets");
@@ -82,6 +81,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Monitor Refresh Rate", "The editor will wait up to the monitor refresh rate in milliseconds (i.e. ~16 ms)."),
                 EditorGUIUtility.TrTextContent("Custom", "Specify how many milliseconds at most the application will be idle per frame."),
             };
+            public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
+            public static readonly GUIContent enableSnapping = EditorGUIUtility.TrTextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.");
         }
 
         internal class ExternalProperties
@@ -142,7 +143,6 @@ namespace UnityEditor
 
         private bool m_ReopenLastUsedProjectOnStartup;
         private bool m_CompressAssetsOnImport;
-        private bool m_UseOSColorPicker;
         private bool m_EnableEditorAnalytics;
         private bool m_ShowAssetStoreSearchHits;
         private bool m_VerifySavingAssets;
@@ -185,6 +185,8 @@ namespace UnityEditor
         private bool m_EnableCodeCoverage = false;
         private bool m_EnableCodeCoverageChangedInThisSession = false;
         private bool m_Create3DObjectsAtOrigin = false;
+        private float m_ProgressDialogDelay = 3.0f;
+        private bool m_GraphSnapping;
 
         private string[] m_ScriptApps;
         private string[] m_ScriptAppsEditions;
@@ -497,9 +499,6 @@ namespace UnityEditor
             if (GUI.changed && m_CompressAssetsOnImport != oldCompressOnImport)
                 Unsupported.SetApplicationSettingCompressAssetsOnImport(m_CompressAssetsOnImport);
 
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                m_UseOSColorPicker = EditorGUILayout.Toggle(GeneralProperties.osxColorPicker, m_UseOSColorPicker);
-
             bool pro = UnityEngine.Application.HasProLicense();
             using (new EditorGUI.DisabledScope(!pro))
             {
@@ -595,8 +594,17 @@ namespace UnityEditor
                 m_EnableCodeCoverageChangedInThisSession = true;
             }
 
-            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
-
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                var progressDialogDelay = EditorGUILayout.DelayedFloatField(GeneralProperties.progressDialogDelay, m_ProgressDialogDelay);
+                progressDialogDelay = Mathf.Clamp(progressDialogDelay, 0.1f, 1000.0f);
+                if (progressDialogDelay != m_ProgressDialogDelay)
+                {
+                    EditorUtility.BusyProgressDialogDelayChanged(progressDialogDelay);
+                    m_ProgressDialogDelay = progressDialogDelay;
+                }
+            }
+            m_GraphSnapping = EditorGUILayout.Toggle(GeneralProperties.enableSnapping, m_GraphSnapping);
             ApplyChangesToPrefs();
 
             if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
@@ -785,8 +793,13 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
 
+            GUILayout.Label("General", EditorStyles.boldLabel);
+            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
+
+            GUILayout.Label("Search", EditorStyles.boldLabel);
             SceneView.s_PreferenceEnableFilteringWhileSearching.value = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileSearching, SceneView.s_PreferenceEnableFilteringWhileSearching);
             SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing.value  = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileLodGroupEditing, SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing);
+
             if (EditorGUI.EndChangeCheck())
                 WritePreferences();
         }
@@ -1014,7 +1027,6 @@ namespace UnityEditor
             }
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
-            EditorPrefs.SetBool("UseOSColorPicker", m_UseOSColorPicker);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
             EditorPrefs.SetBool("ShowAssetStoreSearchHits", m_ShowAssetStoreSearchHits);
             EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
@@ -1044,7 +1056,8 @@ namespace UnityEditor
                 m_EnableCodeCoverageChangedInThisSession = false;
             }
 
-            EditorPrefs.SetBool("Create3DObject.PlaceAtWorldOrigin", m_Create3DObjectsAtOrigin);
+            EditorPrefs.SetFloat("EditorBusyProgressDialogDelay", m_ProgressDialogDelay);
+            GOCreationCommands.s_PlaceObjectsAtWorldOrigin.value = m_Create3DObjectsAtOrigin;
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
@@ -1059,6 +1072,8 @@ namespace UnityEditor
                 extension.WritePreferences();
             }
             UnityEditor.Lightmapping.UpdateCachePath();
+
+            EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
         }
 
         private int CurrentEditorScalingValue
@@ -1133,8 +1148,8 @@ namespace UnityEditor
 
             m_ReopenLastUsedProjectOnStartup = EditorPrefs.GetBool("ReopenLastUsedProjectOnStartup");
 
-            m_UseOSColorPicker = EditorPrefs.GetBool("UseOSColorPicker");
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
+
             m_ShowAssetStoreSearchHits = EditorPrefs.GetBool("ShowAssetStoreSearchHits", true);
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
@@ -1152,7 +1167,8 @@ namespace UnityEditor
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
             m_EnableCodeCoverage = EditorPrefs.GetBool("CodeCoverageEnabled", false);
-            m_Create3DObjectsAtOrigin = EditorPrefs.GetBool("Create3DObject.PlaceAtWorldOrigin", false);
+            m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
+            m_Create3DObjectsAtOrigin = GOCreationCommands.s_PlaceObjectsAtWorldOrigin;
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
@@ -1172,6 +1188,8 @@ namespace UnityEditor
             {
                 extension.ReadPreferences();
             }
+
+            m_GraphSnapping = EditorPrefs.GetBool("GraphSnapping", true);
         }
 
         private string StripMicrosoftFromVisualStudioName(string arg)

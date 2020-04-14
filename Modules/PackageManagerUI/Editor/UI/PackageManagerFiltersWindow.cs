@@ -26,23 +26,28 @@ namespace UnityEditor.PackageManager.UI
         private long m_ChangeTimestamp;
         private bool m_DelayedUpdate;
 
-        private void OnEnable()
+        private ResourceLoader m_ResourceLoader;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+        }
+
+        protected virtual void OnEnable()
         {
             hideFlags = HideFlags.DontSave;
             this.SetAntiAliasing(4);
 
-            var windowResource = Resources.GetVisualTreeAsset("PackageManagerFiltersWindow.uxml");
-            if (windowResource != null)
-            {
-                var root = windowResource.Instantiate();
-                root.styleSheets.Add(Resources.GetFiltersWindowStyleSheet());
-                cache = new VisualElementCache(root);
+            ResolveDependencies();
 
-                rootVisualElement.Add(root);
-                root.StretchToParentSize();
+            var root = m_ResourceLoader.GetTemplate("PackageManagerFiltersWindow.uxml");
+            root.styleSheets.Add(m_ResourceLoader.GetFiltersWindowStyleSheet());
+            cache = new VisualElementCache(root);
 
-                m_Container = cache.Get<VisualElement>("mainContainer");
-            }
+            rootVisualElement.Add(root);
+            root.StretchToParentSize();
+
+            m_Container = cache.Get<VisualElement>("mainContainer");
         }
 
         private void OnLostFocus()

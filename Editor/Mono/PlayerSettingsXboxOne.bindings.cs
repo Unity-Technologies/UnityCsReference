@@ -138,6 +138,10 @@ namespace UnityEditor
             [NativeProperty("XboxOneOverrideIdentityName", false, TargetType.Function)]
             extern public static string OverrideIdentityName { get; set; }
 
+            // Xbox One override auto generated identity publisher in app manifest (does not work with app manifest override).
+            [NativeProperty("XboxOneOverrideIdentityPublisher", false, TargetType.Function)]
+            extern public static string OverrideIdentityPublisher { get; set; }
+
             // Optional override path for app manifest.
             [NativeProperty("XboxOneAppManifestOverridePath", false, TargetType.Function)]
             extern public static string AppManifestOverridePath { get; set; }
@@ -271,7 +275,7 @@ namespace UnityEditor
                 set;
             }
 
-            //
+            // Enable/Disable Type Optimization in C++ Compiler 'Master' build, applies to LTCG.
             [NativeProperty("XboxOneEnableTypeOptimization")]
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static bool EnableTypeOptimization { get; set; }

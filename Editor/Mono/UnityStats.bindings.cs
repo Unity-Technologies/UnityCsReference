@@ -168,11 +168,19 @@ namespace UnityEditor
             get;
         }
 
-        public extern static int visibleAnimations
+        public extern static int animationComponentsPlaying
         {
             [NativeConditional("ENABLE_PROFILER")]
-            [FreeFunction("GetAnimationManager().GetUpdatedAnimationCount")]
+            [FreeFunction("GetAnimationManager().GetAnimationComponentsPlayingCount")]
             [NativeHeader("Modules/Animation/AnimationManager.h")]
+            get;
+        }
+
+        public extern static int animatorComponentsPlaying
+        {
+            [NativeConditional("ENABLE_PROFILER")]
+            [FreeFunction("GetAnimatorStatistics().GetAnimatorComponentsPlayingCount")]
+            [NativeHeader("Modules/Animation/AnimatorStatistics.h")]
             get;
         }
     }

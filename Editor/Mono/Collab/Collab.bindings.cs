@@ -71,6 +71,8 @@ namespace UnityEditor.Collaboration
 
         public extern void SetSeat(bool value);
 
+        public extern void RefreshSeatAvailabilityAsync();
+
         public extern string GetProjectGUID();
 
         public extern bool ShouldDoInitialCommit();
@@ -220,6 +222,9 @@ namespace UnityEditor.Collaboration
 
         [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
         extern ChangeItem[] GetSelectedChangeItemsInternal_V2();
+
+        [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
+        extern void UpdateChangesToPublish();
 
         [NativeMethod(Name = "GetJobProgress", HasExplicitThis = true, ThrowsException = true)]
         extern bool GetJobProgressInternal([Out] ProgressInfo info, int jobId);

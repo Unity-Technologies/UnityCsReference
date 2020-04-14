@@ -248,6 +248,7 @@ namespace UnityEditor
             if (saveLocation != "")
             {
                 WriteRaw(saveLocation);
+                AssetDatabase.Refresh();
             }
         }
 

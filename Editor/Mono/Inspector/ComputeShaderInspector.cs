@@ -92,7 +92,8 @@ namespace UnityEditor
 
         private void ShowCompiledCodeSection(ComputeShader cs)
         {
-            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor))
+            ComputeShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(cs.GetInstanceID())) as ComputeShaderImporter;
+            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor && importer && importer.preprocessorOverride != PreprocessorOverride.ForceCachingPreprocessor))
                 m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
             GUILayout.Space(kSpace);
             if (GUILayout.Button(Styles.showCompiled, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))

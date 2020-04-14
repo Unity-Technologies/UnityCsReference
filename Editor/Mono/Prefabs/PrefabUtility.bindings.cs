@@ -168,18 +168,22 @@ namespace UnityEditor
         extern private static GameObject CreateVariant_Internal([NotNull] GameObject original, string path);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
         extern private static GameObject SavePrefab_Internal([NotNull] GameObject root, string path, bool connectToInstance, out bool success);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static GameObject ApplyPrefabInstance_Internal([NotNull] GameObject root);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
         extern private static GameObject SaveAsPrefabAsset_Internal([NotNull] GameObject root, string path, out bool success);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
         extern private static GameObject SaveAsPrefabAssetAndConnect_Internal([NotNull] GameObject root, string path, out bool success);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
         extern private static GameObject SavePrefabAsset_Internal([NotNull] GameObject root, out bool success);
 
         internal static void AddGameObjectsToPrefabAndConnect(GameObject[] gameObjects, Object targetPrefab)

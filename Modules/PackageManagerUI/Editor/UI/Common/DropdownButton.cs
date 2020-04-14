@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI
 {
-    enum DropdownStatus { None = 0, Success, Error }
+    enum DropdownStatus { None = 0, Success, Error, Refresh }
 
     class DropdownButton : Button
     {
@@ -51,6 +51,7 @@ namespace UnityEditor.PackageManager.UI
                 StatusIcon.RemoveFromClassList("none");
                 StatusIcon.RemoveFromClassList("success");
                 StatusIcon.RemoveFromClassList("error");
+                StatusIcon.RemoveFromClassList("refresh");
 
                 StatusIcon.AddToClassList(status.ToString().ToLower());
 

@@ -48,6 +48,8 @@ namespace UnityEditor.UIElements
             AddLabelDragger<long>();
         }
 
+        internal override bool CanTryParse(string textString) => long.TryParse(textString, out _);
+
         public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, long startValue)
         {
             longInput.ApplyInputDeviceDelta(delta, speed, startValue);

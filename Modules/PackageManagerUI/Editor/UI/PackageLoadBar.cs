@@ -25,9 +25,24 @@ namespace UnityEditor.PackageManager.UI
         private bool m_DoShowLoadMoreLabel;
         private bool m_LoadMoreInProgress;
 
+        private ResourceLoader m_ResourceLoader;
+        private ApplicationProxy m_Application;
+        private UnityConnectProxy m_UnityConnect;
+        private PageManager m_PageManager;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+            m_Application = container.Resolve<ApplicationProxy>();
+            m_UnityConnect = container.Resolve<UnityConnectProxy>();
+            m_PageManager = container.Resolve<PageManager>();
+        }
+
         public PackageLoadBar()
         {
-            var root = Resources.GetTemplate("PackageLoadBar.uxml");
+            ResolveDependencies();
+
+            var root = m_ResourceLoader.GetTemplate("PackageLoadBar.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 
@@ -37,21 +52,21 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnEnable()
         {
-            ApplicationUtil.instance.onUserLoginStateChange += OnUserLoginStateChange;
-            ApplicationUtil.instance.onInternetReachabilityChange += OnInternetReachabilityChange;
-            PageManager.instance.onRefreshOperationFinish += Refresh;
+            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+            m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+            m_PageManager.onRefreshOperationFinish += Refresh;
             Refresh();
 
-            loadMinLabel.SetEnabled(ApplicationUtil.instance.isInternetReachable);
-            loadMaxLabel.SetEnabled(ApplicationUtil.instance.isInternetReachable);
+            loadMinLabel.SetEnabled(m_Application.isInternetReachable);
+            loadMaxLabel.SetEnabled(m_Application.isInternetReachable);
         }
 
         public void OnDisable()
         {
-            ApplicationUtil.instance.onUserLoginStateChange -= OnUserLoginStateChange;
-            ApplicationUtil.instance.onInternetReachabilityChange -= OnInternetReachabilityChange;
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+            m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
-            PageManager.instance.onRefreshOperationFinish -= Refresh;
+            m_PageManager.onRefreshOperationFinish -= Refresh;
         }
 
         private void OnUserLoginStateChange(bool value)
@@ -67,7 +82,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void Refresh()
         {
-            var page = PageManager.instance.GetCurrentPage();
+            var page = m_PageManager.GetCurrentPage();
             Set(page?.numTotalItems ?? 0, page?.numCurrentItems ?? 0);
         }
 
@@ -95,7 +110,7 @@ namespace UnityEditor.PackageManager.UI
             loadMinLabel.SetEnabled(false);
             loadMaxLabel.SetEnabled(false);
             m_LoadMoreInProgress = true;
-            PageManager.instance.LoadMore((int)m_Min);
+            m_PageManager.LoadMore((int)m_Min);
         }
 
         public void LoadMaxItemsClicked()
@@ -103,12 +118,12 @@ namespace UnityEditor.PackageManager.UI
             loadMinLabel.SetEnabled(false);
             loadMaxLabel.SetEnabled(false);
             m_LoadMoreInProgress = true;
-            PageManager.instance.LoadMore((int)m_Max);
+            m_PageManager.LoadMore((int)m_Max);
         }
 
         private void UpdateLoadBarMessage()
         {
-            if (!ApplicationUtil.instance.isUserLoggedIn || m_Total == 0 || m_NumberOfPackagesShown == 0)
+            if (!m_UnityConnect.isUserLoggedIn || m_Total == 0 || m_NumberOfPackagesShown == 0)
             {
                 UIUtils.SetElementDisplay(loadBarContainer, false);
                 return;

@@ -6,11 +6,12 @@ using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    class DefaultEditorWindowBackend : DefaultWindowBackend
+    class DefaultEditorWindowBackend : DefaultWindowBackend, IEditorWindowBackend
     {
         private IMGUIContainer m_NotificationContainer;
 
@@ -33,96 +34,123 @@ namespace UnityEditor.UIElements
             m_NotificationContainer.StretchToParentSize();
             m_NotificationContainer.pickingMode = PickingMode.Ignore;
 
-            editorWindowModel.notificationVisibilityChanged = NotificationVisibilityChanged;
-            editorWindowModel.blurred = Blured;
-            editorWindowModel.focused = Focused;
-            editorWindowModel.playModeTintColorChanged = PlayModeTintColorChanged;
+            RegisterImguiContainerGUICallbacks();
 
+            // Window is non-null when set by deserialization; it's usually null when OnCreate is called.
             if (editorWindowModel.window != null)
             {
-                OnRegisterWindow();
-                ViewMarginsChanged();
+                RegisterWindow();
             }
-
-            editorWindowModel.onRegisterWindow = OnRegisterWindow;
-            editorWindowModel.onUnegisterWindow = OnUnregisterWindow;
-            editorWindowModel.onDisplayWindowMenu = AddUIElementsDebuggerToMenu;
-            editorWindowModel.viewMarginsChanged = ViewMarginsChanged;
-            editorWindowModel.rootVisualElementCreated = RootVisualElementCreated;
         }
 
-        bool CurrentWindowHasCompatibleTree()
+        void IEditorWindowBackend.ViewMarginsChanged()
         {
-            return editorWindowModel.window.uiRootElement is VisualElement;
+            UpdateStyleMargins();
         }
 
-        void RootVisualElementCreated()
+        void UpdateStyleMargins()
         {
+            RectOffset margins = editorWindowModel.viewMargins;
+            IStyle style = editorWindowModel.window.rootVisualElement.style;
+            style.top = margins.top;
+            style.bottom = margins.bottom;
+            style.left = margins.left;
+            style.right = margins.right;
+            style.position = Position.Absolute;
+        }
+
+        void IEditorWindowBackend.OnRegisterWindow()
+        {
+            RegisterWindow();
+        }
+
+        void IEditorWindowBackend.OnUnregisterWindow()
+        {
+            UnregisterWindow();
+        }
+
+        private bool m_WindowRegistered;
+        void RegisterWindow()
+        {
+            if (m_WindowRegistered)
+                return;
+
             EditorWindow window = editorWindowModel.window;
 
-            var root = window.GetRootVisualElement();
-
+            var root = window.rootVisualElement;
             if (root.hierarchy.parent != m_Panel.visualTree)
             {
                 AddRootElement(root);
             }
 
-            ViewMarginsChanged();
-        }
-
-        private void ViewMarginsChanged()
-        {
-            if (CurrentWindowHasCompatibleTree())
-            {
-                RectOffset margins = editorWindowModel.viewMargins;
-
-                IStyle style = editorWindowModel.window.GetRootVisualElement().style;
-                style.top = margins.top;
-                style.bottom = margins.bottom;
-                style.left = margins.left;
-                style.right = margins.right;
-                style.position = Position.Absolute;
-            }
-        }
-
-        private void OnRegisterWindow()
-        {
-            EditorWindow window = editorWindowModel.window;
-
-            // we may delay this until root is first created
-            AddRootElement(window.GetRootVisualElement());
             m_Panel.getViewDataDictionary = window.GetViewDataDictionary;
             m_Panel.saveViewData = window.SaveViewData;
             m_Panel.name = window.GetType().Name;
-
             m_NotificationContainer.onGUIHandler = window.DrawNotification;
+
+            UpdateStyleMargins();
+            m_WindowRegistered = true;
+        }
+
+        void UnregisterWindow()
+        {
+            if (!m_WindowRegistered)
+                return;
+
+            var root = editorWindowModel.window.rootVisualElement;
+            if (root.hierarchy.parent == m_Panel.visualTree)
+            {
+                RemoveRootElement(root);
+                m_Panel.getViewDataDictionary = null;
+                m_Panel.saveViewData = null;
+            }
+
+            m_NotificationContainer.onGUIHandler = null;
+            m_WindowRegistered = false;
         }
 
         const TrickleDown k_TricklePhase = TrickleDown.TrickleDown;
 
+        private VisualElement m_RegisteredRoot;
+
         private void AddRootElement(VisualElement root)
         {
-            if (CurrentWindowHasCompatibleTree())
-            {
-                root.RegisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
-                root.RegisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
-                root.RegisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
-                m_Panel.visualTree.Add(root);
-            }
+            m_Panel.visualTree.Add(root);
         }
 
         private void RemoveRootElement(VisualElement root)
         {
             root.RemoveFromHierarchy();
-            root.UnregisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
-            root.UnregisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
-            root.UnregisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+        }
+
+        private void RegisterImguiContainerGUICallbacks()
+        {
+            var root = m_Panel.visualTree;
+            root.RegisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.RegisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.RegisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            m_RegisteredRoot = root;
+        }
+
+        private void UnregisterImguiContainerGUICallbacks()
+        {
+            var root = m_Panel.visualTree;
+            if (root == m_RegisteredRoot)
+            {
+                m_RegisteredRoot = null;
+                root.UnregisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                root.UnregisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                root.UnregisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            }
         }
 
         private void SendEventToSplitterGUI(EventBase ev)
         {
-            if (ev.imguiEvent == null || ev.imguiEvent.rawType == EventType.Used)
+            if (ev.imguiEvent == null || ev.imguiEvent.rawType == EventType.Used || ev.target == imguiContainer)
                 return;
+
+            // This will only be called after OnCreate and before OnDestroy, so
+            // we assume imguiContainer != null && editorWindowModel != null
 
             imguiContainer.HandleIMGUIEvent(ev.imguiEvent, editorWindowModel.onSplitterGUIHandler, false);
 
@@ -130,24 +158,7 @@ namespace UnityEditor.UIElements
                 ev.StopPropagation();
         }
 
-        private void OnUnregisterWindow()
-        {
-            EditorWindow window = editorWindowModel.window;
-            if (CurrentWindowHasCompatibleTree())
-            {
-                var root = window.GetRootVisualElement();
-                if (root.hierarchy.parent == m_Panel.visualTree)
-                {
-                    RemoveRootElement(root);
-                    m_Panel.getViewDataDictionary = null;
-                    m_Panel.saveViewData = null;
-                }
-            }
-
-            m_NotificationContainer.onGUIHandler = null;
-        }
-
-        private void PlayModeTintColorChanged()
+        void IEditorWindowBackend.PlayModeTintColorChanged()
         {
             UpdatePlayModeColor(EditorApplication.isPlayingOrWillChangePlaymode
                 ? editorWindowModel.playModeTintColor
@@ -160,22 +171,16 @@ namespace UnityEditor.UIElements
             AnimationMode.onAnimationRecordingStart -= RefreshStylesAfterExternalEvent;
             AnimationMode.onAnimationRecordingStop -= RefreshStylesAfterExternalEvent;
 
-            editorWindowModel.notificationVisibilityChanged = null;
-            editorWindowModel.blurred = null;
-            editorWindowModel.focused = null;
-            editorWindowModel.playModeTintColorChanged = null;
-            editorWindowModel.onRegisterWindow = null;
-            editorWindowModel.onUnegisterWindow = null;
-            editorWindowModel.onDisplayWindowMenu = null;
-            editorWindowModel.viewMarginsChanged = null;
-
             m_NotificationContainer.onGUIHandler = null;
             m_NotificationContainer.RemoveFromHierarchy();
+
+            UnregisterImguiContainerGUICallbacks();
+            UnregisterWindow();
 
             base.OnDestroy(model);
         }
 
-        private void NotificationVisibilityChanged()
+        void IEditorWindowBackend.NotificationVisibilityChanged()
         {
             if (editorWindowModel.notificationVisible)
             {
@@ -233,17 +238,22 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private void Focused()
+        void IEditorWindowBackend.Focused()
         {
             m_Panel.Focus();
         }
 
-        private void Blured()
+        void IEditorWindowBackend.Blurred()
         {
             m_Panel.Blur();
         }
 
-        protected void AddUIElementsDebuggerToMenu(GenericMenu menu)
+        void IEditorWindowBackend.OnDisplayWindowMenu(GenericMenu menu)
+        {
+            AddUIElementsDebuggerToMenu(menu);
+        }
+
+        private void AddUIElementsDebuggerToMenu(GenericMenu menu)
         {
             var itemContent = UIElementsDebugger.WindowName;
             var shortcut = ShortcutIntegration.instance.directory.FindShortcutEntry(UIElementsDebugger.k_WindowPath);

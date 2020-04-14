@@ -14,11 +14,6 @@ namespace UnityEditor
         private readonly GUIContent m_CacheServerConnectedContent;
         private readonly PopupLocation[] m_PopupLocation;
 
-        private const int k_Width = 36;
-        private const int k_Height = 19;
-        private const int k_MarginX = 4;
-        private const int k_MarginY = 0;
-
         static CacheServerToggle()
         {
             AssetDatabaseExperimental.cacheServerConnectionChanged += OnCacherServerConnectionChanged;
@@ -26,38 +21,22 @@ namespace UnityEditor
 
         public CacheServerToggle()
         {
-            m_CacheServerNotEnabledContent = EditorGUIUtility.TrIconContent("CacheServerDisabled");
-            m_CacheServerDisconnectedContent = EditorGUIUtility.TrIconContent("CacheServerDisconnected");
-            m_CacheServerConnectedContent = EditorGUIUtility.TrIconContent("CacheServerConnected");
+            m_CacheServerNotEnabledContent = EditorGUIUtility.TrIconContent("CacheServerDisabled", "Cache Server disabled");
+            m_CacheServerDisconnectedContent = EditorGUIUtility.TrIconContent("CacheServerDisconnected", "Cache Server disconnected");
+            m_CacheServerConnectedContent = EditorGUIUtility.TrIconContent("CacheServerConnected", "Cache Server connected");
             m_PopupLocation = new[] { PopupLocation.AboveAlignRight };
         }
 
-        public void OnGUI(float x, float y)
+        public void OnGUI()
         {
-            GUILayout.BeginVertical();
-            EditorGUILayout.Space();
-
-            var statusContent = GetStatusContent();
-            var buttonArea = new Rect(x + k_MarginX, y + k_MarginY, k_Width, k_Height);
-
-            if (EditorGUI.DropdownButton(buttonArea, statusContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            var content = GetStatusContent();
+            var style = AppStatusBar.Styles.statusIcon;
+            var rect = GUILayoutUtility.GetRect(content, style);
+            if (GUI.Button(rect, content, style))
             {
-                PopupWindow.Show(buttonArea, new CacheServerWindow(), m_PopupLocation);
+                PopupWindow.Show(rect, new CacheServerWindow(), m_PopupLocation);
                 GUIUtility.ExitGUI();
             }
-
-            EditorGUILayout.Space();
-            GUILayout.EndVertical();
-        }
-
-        public float GetWidth()
-        {
-            return k_Width + (k_MarginX << 1);
-        }
-
-        public float GetHeight()
-        {
-            return k_Height + (k_MarginY << 1);
         }
 
         private GUIContent GetStatusContent()

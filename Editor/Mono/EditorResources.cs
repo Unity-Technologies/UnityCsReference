@@ -105,7 +105,7 @@ namespace UnityEditor.Experimental
 
             fontDef.SetFont(Style.Small, "Fonts/System/System Small.ttf", new string[] {fontName});
             fontDef.SetFont(Style.Normal, "Fonts/System/System Normal.ttf", new string[] { fontName });
-            fontDef.SetFont(Style.Bold, "Fonts/System/System Normal Bold.ttf", new string[] { fontName + "Bold"});
+            fontDef.SetFont(Style.Bold, "Fonts/System/System Normal Bold.ttf", new string[] { fontName + " Bold"});
             return fontDef;
         }
     }
@@ -144,9 +144,10 @@ namespace UnityEditor.Experimental
 
         private static bool IsEditorStyleSheet(string path)
         {
+            if (!SearchUtils.EndsWith(path, ".uss"))
+                return false;
             return path.IndexOf("/stylesheets/extensions/", StringComparison.OrdinalIgnoreCase) != -1 &&
-                (path.EndsWith("common.uss", StringComparison.OrdinalIgnoreCase) ||
-                    path.EndsWith(Constants.isDarkTheme ? "dark.uss" : "light.uss", StringComparison.OrdinalIgnoreCase));
+                (SearchUtils.EndsWith(path, "common.uss") || SearchUtils.EndsWith(path, Constants.isDarkTheme ? "dark.uss" : "light.uss"));
         }
 
         internal static string GetDefaultFont()
@@ -260,6 +261,7 @@ namespace UnityEditor.Experimental
             var catalogFiles = new List<string>
             {
                 "StyleSheets/Extensions/base/common.uss",
+                "StyleSheets/Variables/Public/common.uss",
                 "StyleSheets/Northstar/common.uss"
             };
 
@@ -271,7 +273,7 @@ namespace UnityEditor.Experimental
             }
 
             catalogFiles.Add(useDarkTheme ? "StyleSheets/Extensions/base/dark.uss" : "StyleSheets/Extensions/base/light.uss");
-
+            catalogFiles.Add(useDarkTheme ? "StyleSheets/Northstar/Palette/dark.uss" : "StyleSheets/Northstar/Palette/light.uss");
             return catalogFiles;
         }
 
@@ -304,25 +306,33 @@ namespace UnityEditor.Experimental
             {
                 s_StyleCatalog = new StyleCatalog();
 
-                var paths = GetDefaultStyleCatalogPaths();
-                foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet").Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
-                    paths.Add(editorUssPath);
-
-                var forceRebuild = s_RefreshGlobalStyleCatalog;
-                s_RefreshGlobalStyleCatalog = false;
-
                 bool rebuildCatalog = true;
-                string catalogHash = ComputeCatalogHash(paths);
+                List<string> paths = new List<string>();
+                string catalogHash = "";
                 const string k_GlobalStyleCatalogCacheFilePath = "Library/Style.catalog";
-                if (!forceRebuild && File.Exists(k_GlobalStyleCatalogCacheFilePath))
+
+                if (!EditorApplication.isBuildingAnyResources)
                 {
-                    using (var cacheCatalogStream = new FileStream(k_GlobalStyleCatalogCacheFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    paths = GetDefaultStyleCatalogPaths();
+                    foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet")
+                             .Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
+                        paths.Add(editorUssPath);
+
+                    var forceRebuild = s_RefreshGlobalStyleCatalog;
+                    s_RefreshGlobalStyleCatalog = false;
+
+                    catalogHash = ComputeCatalogHash(paths);
+                    if (!forceRebuild && File.Exists(k_GlobalStyleCatalogCacheFilePath))
                     {
-                        using (var ccReader = new BinaryReader(cacheCatalogStream))
+                        using (var cacheCatalogStream = new FileStream(k_GlobalStyleCatalogCacheFilePath, FileMode.Open,
+                            FileAccess.Read, FileShare.Read))
                         {
-                            string cacheHash = ccReader.ReadString();
-                            if (cacheHash == catalogHash)
-                                rebuildCatalog = !styleCatalog.Load(ccReader);
+                            using (var ccReader = new BinaryReader(cacheCatalogStream))
+                            {
+                                string cacheHash = ccReader.ReadString();
+                                if (cacheHash == catalogHash)
+                                    rebuildCatalog = !styleCatalog.Load(ccReader);
+                            }
                         }
                     }
                 }
@@ -332,7 +342,11 @@ namespace UnityEditor.Experimental
                     Console.WriteLine($"Loading style catalogs ({paths.Count})\r\n\t{String.Join("\r\n\t", paths.ToArray())}");
 
                     styleCatalog.Load(paths);
-                    SaveCatalogToDisk(styleCatalog, catalogHash, k_GlobalStyleCatalogCacheFilePath);
+
+                    if (paths.Count != 0)
+                    {
+                        SaveCatalogToDisk(styleCatalog, catalogHash, k_GlobalStyleCatalogCacheFilePath);
+                    }
                 }
             }
         }
@@ -483,12 +497,8 @@ namespace UnityEditor.Experimental
                 if (styleCatalog == null)
                     return;
 
-                foreach (var assetPath in importedAssets.Concat(deletedAssets))
-                {
-                    if (!IsEditorStyleSheet(assetPath))
-                        continue;
+                if (importedAssets.Concat(deletedAssets).Any(path => IsEditorStyleSheet(path)))
                     s_RefreshGlobalStyleCatalog = true;
-                }
             }
         }
     }

@@ -340,6 +340,8 @@ namespace UnityEditor.Connect
             const string k_BulletCharacter = "\u2022 ";
 
             VisualElement m_ImportIapBlock;
+            VisualElement m_MigrateIapBlock;
+            Label m_MigratePackageVersionLabel;
             VisualElement m_IapOptionsBlock;
 
             //uss class names
@@ -349,14 +351,17 @@ namespace UnityEditor.Connect
             //uxml element names
             const string k_WelcomeToIapBlock = "WelcomeToIapBlock";
             const string k_ImportIapBlock = "ImportIapBlock";
+            const string k_MigrateIapBlock = "MigrateIapBlock";
             const string k_IapOptionsBlock = "IapOptionsBlock";
             const string k_ImportBtn = "ImportBtn";
             const string k_ReimportBtn = "ReimportBtn";
             const string k_UpdateBtn = "UpdateBtn";
+            const string k_MigrateBtn = "MigrateBtn";
             const string k_UpdateGooglePlayKeyBtn = "UpdateGooglePlayKeyBtn";
             const string k_GooglePlayLink = "GooglePlayLink";
             const string k_GooglePlayKeyEntry = "GooglePlayKeyEntry";
             const string k_GoToDashboardLink = "GoToDashboard";
+            const string k_MigrateVersionInfo = "MigrateVersionInfo";
 
             //Package Import status blocks
             const string k_UnimportedMode = "unimported-mode";
@@ -375,9 +380,17 @@ namespace UnityEditor.Connect
             //WebResponse JSON utils
             const string k_JsonKeyAuthSignature = "auth_signature";
 
+            //Popup Messages
+            const string k_PackageMigrationHeadsup = "You are about to migrate to the more modern {0}. This will modify your project files. Be sure to make a backup first.\nDo you want to continue?";
+
             //Notification Messages
             const string k_AuthSignatureExceptionMessage = "Exception occurred trying to obtain authentication signature for project {0} and was not handled. Message: {1}";
             const string k_KeyParsingExceptionMessage = "Exception occurred trying to parse Google Play Key and was not handled. Message: {0}";
+
+            string packageMigrationHeadsup { get; set; }
+            string m_LatestPreMigrationPackageVersion;
+            bool m_LookForAssetStoreImport;
+            bool m_EligibleForMigration;
 
             bool m_SettingKey;
             string m_GooglePlayKey;
@@ -410,6 +423,7 @@ namespace UnityEditor.Connect
                 topicForNotifications = Notification.Topic.PurchasingService;
                 notLatestPackageInstalledInfo = string.Format(k_NotLatestPackageInstalledInfo, k_PurchasingPackageName);
                 packageInstallationHeadsup = string.Format(k_PackageInstallationHeadsup, k_PurchasingPackageName);
+                packageMigrationHeadsup = string.Format(k_PackageMigrationHeadsup, k_PurchasingPackageName);
                 duplicateInstallWarning = null;
                 packageInstallationDialogTitle = string.Format(k_PackageInstallationDialogTitle, k_PurchasingPackageName);
 
@@ -421,10 +435,12 @@ namespace UnityEditor.Connect
                 LoadTemplateIntoScrollContainer(k_TemplatePath);
 
                 m_ImportIapBlock = provider.rootVisualElement.Q(k_ImportIapBlock);
+                m_MigrateIapBlock = provider.rootVisualElement.Q(k_MigrateIapBlock);
                 m_IapOptionsBlock = provider.rootVisualElement.Q(k_IapOptionsBlock);
 
                 SetupWelcomeIapBlock();
                 SetupImportIapBlock();
+                SetupMigrateIapBlock();
                 SetupIapOptionsBlock();
                 var scrollContainer = provider.rootVisualElement.Q(className: k_ScrollContainerClass);
                 scrollContainer.Add(ServicesUtils.SetupSupportedPlatformsBlock(GetSupportedPlatforms()));
@@ -435,6 +451,7 @@ namespace UnityEditor.Connect
 
                 // Prepare the package section and update the package information
                 PreparePackageSection(provider.rootVisualElement);
+                m_LatestPreMigrationPackageVersion = string.Empty;
                 UpdatePackageInformation();
             }
 
@@ -483,6 +500,21 @@ namespace UnityEditor.Connect
                 PurchasingService.instance.GetLatestETag(PurchasingService.instance.OnGetLatestETag);
             }
 
+            //Begin Import Block
+            void SetupMigrateIapBlock()
+            {
+                m_MigrateIapBlock.Q<Button>(k_MigrateBtn).clicked += InstallMigratePackage;
+
+                m_MigratePackageVersionLabel = m_MigrateIapBlock.Q<Label>(k_MigrateVersionInfo);
+                // Make sure version texts are upper case...
+                if (m_MigratePackageVersionLabel != null)
+                {
+                    m_MigratePackageVersionLabel.text = m_MigratePackageVersionLabel.text.ToUpper();
+                }
+
+                ToggleMigrateModeVisibility(m_MigrateIapBlock, m_EligibleForMigration);
+            }
+
             void VerifyImportTag()
             {
                 string importTag = PurchasingService.instance.GetInstalledETag();
@@ -505,7 +537,7 @@ namespace UnityEditor.Connect
                     importState = ImportState.OutOfDate;
                 }
 
-                ToggleImportModeVisibility(m_ImportIapBlock, importState);
+                ToggleImportModeVisibility(m_ImportIapBlock, importState, m_LookForAssetStoreImport);
 
                 if (importState == ImportState.VersionCheck)
                 {
@@ -513,39 +545,134 @@ namespace UnityEditor.Connect
                 }
             }
 
-            void ToggleImportModeVisibility(VisualElement fieldBlock, ImportState importState)
+            void ToggleImportModeVisibility(VisualElement fieldBlock, ImportState importState, bool canImport)
             {
                 if (fieldBlock != null)
                 {
-                    var unimportedMode = fieldBlock.Q(k_UnimportedMode);
-                    if (unimportedMode != null)
+                    if (canImport)
                     {
-                        unimportedMode.style.display = (importState == ImportState.Unimported) ? DisplayStyle.Flex : DisplayStyle.None;
-                    }
+                        fieldBlock.style.display = DisplayStyle.Flex;
 
-                    var versionCheckMode = fieldBlock.Q(k_VersionCheckMode);
-                    if (versionCheckMode != null)
-                    {
-                        versionCheckMode.style.display = (importState == ImportState.VersionCheck) ? DisplayStyle.Flex : DisplayStyle.None;
-                    }
+                        var unimportedMode = fieldBlock.Q(k_UnimportedMode);
+                        if (unimportedMode != null)
+                        {
+                            unimportedMode.style.display = (importState == ImportState.Unimported)
+                                ? DisplayStyle.Flex
+                                : DisplayStyle.None;
+                        }
 
-                    var upToDateMode = fieldBlock.Q(k_UpToDataMode);
-                    if (upToDateMode != null)
-                    {
-                        upToDateMode.style.display = (importState == ImportState.UpToDate) ? DisplayStyle.Flex : DisplayStyle.None;
-                    }
+                        var versionCheckMode = fieldBlock.Q(k_VersionCheckMode);
+                        if (versionCheckMode != null)
+                        {
+                            versionCheckMode.style.display = (importState == ImportState.VersionCheck)
+                                ? DisplayStyle.Flex
+                                : DisplayStyle.None;
+                        }
 
-                    var outOfDateMode = fieldBlock.Q(k_OutOfDateMode);
-                    if (outOfDateMode != null)
+                        var upToDateMode = fieldBlock.Q(k_UpToDataMode);
+                        if (upToDateMode != null)
+                        {
+                            upToDateMode.style.display = (importState == ImportState.UpToDate)
+                                ? DisplayStyle.Flex
+                                : DisplayStyle.None;
+                        }
+
+                        var outOfDateMode = fieldBlock.Q(k_OutOfDateMode);
+                        if (outOfDateMode != null)
+                        {
+                            outOfDateMode.style.display = (importState == ImportState.OutOfDate)
+                                ? DisplayStyle.Flex
+                                : DisplayStyle.None;
+                        }
+                    }
+                    else
                     {
-                        outOfDateMode.style.display = (importState == ImportState.OutOfDate) ? DisplayStyle.Flex : DisplayStyle.None;
+                        fieldBlock.style.display = DisplayStyle.None;
                     }
                 }
+            }
+
+            void ToggleMigrateModeVisibility(VisualElement fieldBlock, bool canMigrate)
+            {
+                if (fieldBlock != null)
+                {
+                    fieldBlock.style.display = canMigrate ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+            }
+
+            protected override string GetUpdatablePackageVersion()
+            {
+                if (!m_EligibleForMigration)
+                {
+                    return base.GetUpdatablePackageVersion();
+                }
+                else
+                {
+                    return m_LatestPreMigrationPackageVersion;
+                }
+            }
+
+            protected override void OnSearchPackageFound(PackageManager.PackageInfo package)
+            {
+                base.OnSearchPackageFound(package);
+
+                foreach (var version in package.versions.compatible.Reverse())
+                {
+                    if (TryGetMajorVersion(version, out var currentMajorVer))
+                    {
+                        if (currentMajorVer <= 2)
+                        {
+                            m_LatestPreMigrationPackageVersion = version;
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            protected override void PackageInformationUpdated()
+            {
+                m_LookForAssetStoreImport = false;
+                m_EligibleForMigration = false;
+
+                if (packmanPackageInstalled && TryGetMajorVersion(currentPackageVersion, out var currentMajorVer))
+                {
+                    if (currentMajorVer <= 2)
+                    {
+                        m_LookForAssetStoreImport = true;
+
+                        if (TryGetMajorVersion(latestPackageVersion, out var latestMajorVer))
+                        {
+                            if (latestMajorVer >= 3)
+                            {
+                                m_EligibleForMigration = true;
+
+                                m_MigratePackageVersionLabel.text = latestPackageVersion;
+                            }
+                        }
+                    }
+                }
+
+                VerifyImportTag();
+                ToggleMigrateModeVisibility(m_MigrateIapBlock, m_EligibleForMigration);
+            }
+
+            bool TryGetMajorVersion(string versionName, out int majorVersion)
+            {
+                return int.TryParse(versionName.Split('.')[0], out majorVersion);
             }
 
             void RequestImportOperation()
             {
                 PurchasingService.instance.InstallUnityPackage(OnImportComplete);
+            }
+
+            void InstallMigratePackage()
+            {
+                var messageForDialog = L10n.Tr(packageMigrationHeadsup);
+                installPackageVersion = latestPackageVersion;
+
+                InstallPackage(messageForDialog);
             }
 
             void OnImportComplete()

@@ -740,50 +740,51 @@ namespace UnityEditor
 
             EditorGUILayout.MultiSelectionObjectTitleBar(components);
 
-            var so = new SerializedObject(gos);
-
-            using (new EditorGUI.DisabledScope(!SceneModeUtility.StaticFlagField("Navigation Static", so.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.NavigationStatic)))
+            using (var so = new SerializedObject(gos))
             {
-                SceneModeUtility.StaticFlagField("Generate OffMeshLinks", so.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.OffMeshLinkGeneration);
-
-                var property = so.FindProperty("m_NavMeshLayer");
-
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
-                var navAreaNames = GameObjectUtility.GetNavMeshAreaNames();
-                var currentAbsoluteIndex = GameObjectUtility.GetNavMeshArea(gos[0]);
-
-                var navAreaIndex = -1;
-
-                // Need to find the index as the list of names will compress out empty area
-                for (var i = 0; i < navAreaNames.Length; i++)
+                using (new EditorGUI.DisabledScope(!SceneModeUtility.StaticFlagField("Navigation Static", so.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.NavigationStatic)))
                 {
-                    if (GameObjectUtility.GetNavMeshAreaFromName(navAreaNames[i]) == currentAbsoluteIndex)
+                    SceneModeUtility.StaticFlagField("Generate OffMeshLinks", so.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.OffMeshLinkGeneration);
+
+                    var property = so.FindProperty("m_NavMeshLayer");
+
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
+                    var navAreaNames = GameObjectUtility.GetNavMeshAreaNames();
+                    var currentAbsoluteIndex = GameObjectUtility.GetNavMeshArea(gos[0]);
+
+                    var navAreaIndex = -1;
+
+                    // Need to find the index as the list of names will compress out empty area
+                    for (var i = 0; i < navAreaNames.Length; i++)
                     {
-                        navAreaIndex = i;
-                        break;
+                        if (GameObjectUtility.GetNavMeshAreaFromName(navAreaNames[i]) == currentAbsoluteIndex)
+                        {
+                            navAreaIndex = i;
+                            break;
+                        }
+                    }
+
+                    var navMeshArea = EditorGUILayout.Popup("Navigation Area", navAreaIndex, navAreaNames);
+                    EditorGUI.showMixedValue = false;
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        //Convert the selected index into absolute index...
+                        var newNavAreaIndex = GameObjectUtility.GetNavMeshAreaFromName(navAreaNames[navMeshArea]);
+
+                        GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(Selection.gameObjects,
+                            "Change Navigation Area", "Do you want change the navigation area to " + navAreaNames[navMeshArea] + " for all the child objects as well?");
+                        if (includeChildren != GameObjectUtility.ShouldIncludeChildren.Cancel)
+                        {
+                            property.intValue = newNavAreaIndex;
+                            SetNavMeshArea(newNavAreaIndex, includeChildren == 0);
+                        }
                     }
                 }
 
-                var navMeshArea = EditorGUILayout.Popup("Navigation Area", navAreaIndex, navAreaNames);
-                EditorGUI.showMixedValue = false;
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    //Convert the selected index into absolute index...
-                    var newNavAreaIndex = GameObjectUtility.GetNavMeshAreaFromName(navAreaNames[navMeshArea]);
-
-                    GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(Selection.gameObjects,
-                        "Change Navigation Area", "Do you want change the navigation area to " + navAreaNames[navMeshArea] + " for all the child objects as well?");
-                    if (includeChildren != GameObjectUtility.ShouldIncludeChildren.Cancel)
-                    {
-                        property.intValue = newNavAreaIndex;
-                        SetNavMeshArea(newNavAreaIndex, includeChildren == 0);
-                    }
-                }
+                so.ApplyModifiedProperties();
             }
-
-            so.ApplyModifiedProperties();
         }
 
         private void SceneBakeSettings()

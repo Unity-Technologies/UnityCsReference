@@ -33,6 +33,9 @@ namespace UnityEditor
 
         extern internal static  void SetIconEnabled(int classID, string scriptClass, int iconEnabled);
 
+        [StaticAccessor("GizmoManager::Get()", StaticAccessorType.Dot)]
+        extern internal static  int SetGizmosDirty();
+
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
         extern internal static  string[] GetPresetList();
 

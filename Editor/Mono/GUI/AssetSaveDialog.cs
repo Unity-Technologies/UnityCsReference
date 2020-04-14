@@ -84,7 +84,6 @@ namespace UnityEditor
             win.minSize = new Vector2(400, 100);
             win.maxSize = new Vector2(550, 550);
 
-            win.ShowModalUtility();
             win.ShowModal();
 
             assetsThatShouldBeSaved = new string[win.m_AssetsToSave.Count + numMetaFiles];

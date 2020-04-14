@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -9,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
-    internal static class Resources
+    internal class ResourceLoader
     {
         private const string k_TemplateRoot = "UXML/PackageManager/";
 
@@ -19,13 +20,16 @@ namespace UnityEditor.PackageManager.UI
         private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
         private const string k_ExtensionDarkVariablesSheetPath = "StyleSheets/Extensions/base/dark.uss";
         private const string k_ExtensionLightVariablesSheetPath = "StyleSheets/Extensions/base/light.uss";
+        private const string s_PublicNorthstarCommonVariableStyleSheetPath = "StyleSheets/Variables/Public/common.uss";
+        private const string k_PublicNorthstarDarkVariablesSheetPath = "StyleSheets/Northstar/Palette/dark.uss";
+        private const string k_PublicNorthstarLightVariablesSheetPath = "StyleSheets/Northstar/Palette/light.uss";
 
         private static readonly string[] k_PackageManagerStyleSheetPaths = new string[] {"StyleSheets/PackageManager/PackageDependencies.uss", "StyleSheets/PackageManager/PackageDetails.uss", "StyleSheets/PackageManager/PackageItem.uss",
                                                                                          "StyleSheets/PackageManager/PackageList.uss", "StyleSheets/PackageManager/PackageLoadBar.uss", "StyleSheets/PackageManager/PackageSampleList.uss", "StyleSheets/PackageManager/PackageStatusBar.uss",
                                                                                          "StyleSheets/PackageManager/PackageToolbar.uss", "StyleSheets/PackageManager/ProgressBar.uss"};
 
-        private static StyleSheet m_DarkStyleSheet;
-        private static StyleSheet darkStyleSheet
+        private StyleSheet m_DarkStyleSheet;
+        private StyleSheet darkStyleSheet
         {
             get
             {
@@ -35,8 +39,8 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static StyleSheet m_LightStyleSheet;
-        private static StyleSheet lightStyleSheet
+        private StyleSheet m_LightStyleSheet;
+        private StyleSheet lightStyleSheet
         {
             get
             {
@@ -46,8 +50,8 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static StyleSheet m_DarkFilterStyleSheet;
-        private static StyleSheet darkFilterStyleSheet
+        private StyleSheet m_DarkFilterStyleSheet;
+        private StyleSheet darkFilterStyleSheet
         {
             get
             {
@@ -57,8 +61,8 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static StyleSheet m_LightFilterStyleSheet;
-        private static StyleSheet lightFilterStyleSheet
+        private StyleSheet m_LightFilterStyleSheet;
+        private StyleSheet lightFilterStyleSheet
         {
             get
             {
@@ -68,7 +72,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static StyleSheet LoadAndResolveStyleSheet(bool isDarkTheme)
+        private StyleSheet LoadAndResolveStyleSheet(bool isDarkTheme)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
@@ -77,6 +81,7 @@ namespace UnityEditor.PackageManager.UI
             var packageManagerThemeVariablesSheetPath = isDarkTheme ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
             var variablesThemeStyleSheetPath = isDarkTheme ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
             var extensionThemeStyleSheetPath = isDarkTheme ? k_ExtensionDarkVariablesSheetPath : k_ExtensionLightVariablesSheetPath;
+            var northstarThemeStyleSheetPath = isDarkTheme ? k_PublicNorthstarDarkVariablesSheetPath : k_PublicNorthstarLightVariablesSheetPath;
 
             var packageManagerCommon = EditorGUIUtility.Load(k_PackageManagerCommonStyleSheetPath) as StyleSheet;
             var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
@@ -85,16 +90,18 @@ namespace UnityEditor.PackageManager.UI
 
             var variableThemeSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(variablesThemeStyleSheetPath)) as StyleSheet;
             var extensionThemeStyleSheet = EditorGUIUtility.Load(extensionThemeStyleSheetPath) as StyleSheet;
+            var northstarCommonVariablesStyleSheet = EditorGUIUtility.Load(s_PublicNorthstarCommonVariableStyleSheetPath) as StyleSheet;
+            var northstarVariablesStyleSheet = EditorGUIUtility.Load(northstarThemeStyleSheetPath) as StyleSheet;
 
             var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(variableThemeSheet, extensionThemeStyleSheet, packageManagerCommon, packageManagerTheme);
+            resolver.AddStyleSheets(variableThemeSheet, extensionThemeStyleSheet, northstarCommonVariablesStyleSheet, northstarVariablesStyleSheet, packageManagerCommon, packageManagerTheme);
             resolver.AddStyleSheets(packageManagerStyles);
             resolver.ResolveTo(styleSheet);
 
             return styleSheet;
         }
 
-        private static StyleSheet LoadAndResolveFilterStyleSheet(bool isDarkTheme)
+        private StyleSheet LoadAndResolveFilterStyleSheet(bool isDarkTheme)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
@@ -111,27 +118,44 @@ namespace UnityEditor.PackageManager.UI
             return styleSheet;
         }
 
-        private static string TemplatePath(string filename)
+        private int m_NestedGetTemplateDepth = 0;
+        public virtual VisualElement GetTemplate(string templateFilename)
         {
-            return k_TemplateRoot + filename;
+            m_NestedGetTemplateDepth++;
+            var fullTemplatePath = k_TemplateRoot + templateFilename;
+            var visualTreeAsset = EditorGUIUtility.Load(fullTemplatePath) as VisualTreeAsset;
+            var result = visualTreeAsset?.Instantiate();
+            m_NestedGetTemplateDepth--;
+
+            // A `GetTemplate` call could implicitly call itself again, creating nested GetTemplate calls.
+            // We only want to call localization in the top level `GetTemplate` call to avoid multiple localization attempts on the same element.
+            if (m_NestedGetTemplateDepth == 0)
+                LocalizeVisualElement(result, L10n.Tr);
+            return result;
         }
 
-        public static VisualTreeAsset GetVisualTreeAsset(string templateFilename)
+        public virtual void LocalizeVisualElement(VisualElement visualElement, Func<string, string> l10nFunc)
         {
-            return EditorGUIUtility.Load(TemplatePath(templateFilename)) as VisualTreeAsset;
+            if (visualElement == null)
+                return;
+
+            visualElement.Query().Descendents<VisualElement>().ForEach((element) =>
+            {
+                if (!string.IsNullOrEmpty(element.tooltip))
+                    element.tooltip = l10nFunc(element.tooltip);
+
+                var textElement = element as TextElement;
+                if (!string.IsNullOrEmpty(textElement?.text))
+                    textElement.text = l10nFunc(textElement.text);
+            });
         }
 
-        public static VisualElement GetTemplate(string templateFilename)
-        {
-            return GetVisualTreeAsset(templateFilename)?.Instantiate();
-        }
-
-        public static StyleSheet GetMainWindowStyleSheet()
+        public virtual StyleSheet GetMainWindowStyleSheet()
         {
             return EditorGUIUtility.isProSkin ? darkStyleSheet : lightStyleSheet;
         }
 
-        public static StyleSheet GetFiltersWindowStyleSheet()
+        public virtual StyleSheet GetFiltersWindowStyleSheet()
         {
             return EditorGUIUtility.isProSkin ? darkFilterStyleSheet : lightFilterStyleSheet;
         }

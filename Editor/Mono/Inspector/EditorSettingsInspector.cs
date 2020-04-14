@@ -26,7 +26,6 @@ namespace UnityEditor
 
             public static GUIContent mode = EditorGUIUtility.TrTextContent("Mode");
 
-            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline");
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server (project specific)");
             public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
             public static GUIContent cacheServerNamespacePrefixLabel = EditorGUIUtility.TrTextContent("Namespace prefix", "The namespace used for looking up and storing values on the cache server");
@@ -66,10 +65,6 @@ namespace UnityEditor
             public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
             public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
             public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode");
-
-            private const string activeAssetPipelineVersionTooltip = "The active asset import pipeline is chosen at startup by inspecting the following sources in order: Environment variable, command line argument (-adb2), local per project editor settings (the dropdown above)";
-            public static readonly GUIContent activeAssetPipelineVersionLabel = EditorGUIUtility.TrTextContent("Active version", activeAssetPipelineVersionTooltip);
-            public static readonly GUIContent activeAssetPipelineVersion = new GUIContent("2", activeAssetPipelineVersionTooltip);
 
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
@@ -302,10 +297,7 @@ namespace UnityEditor
                 var wasEnabled = GUI.enabled;
                 GUI.enabled = true;
 
-                DoAssetPipelineSettings();
-
-                if (EditorSettings.assetPipelineMode == AssetPipelineMode.Version2)
-                    DoCacheServerSettings();
+                DoCacheServerSettings();
 
                 GUI.enabled = wasEnabled;
             }
@@ -442,16 +434,6 @@ namespace UnityEditor
                     s_ForcedAssetPipelineWarning = string.Empty;
             }
             return s_ForcedAssetPipelineWarning;
-        }
-
-        private void DoAssetPipelineSettings()
-        {
-            GUILayout.Space(10);
-            GUILayout.Label(Content.assetPipeline, EditorStyles.boldLabel);
-
-            var assetPipelineWarning = GetForcedAssetPipelineWarning();
-
-            EditorGUILayout.LabelField(Content.activeAssetPipelineVersionLabel, Content.activeAssetPipelineVersion);
         }
 
         private void DoCacheServerSettings()
@@ -784,9 +766,6 @@ namespace UnityEditor
 
             EditorSettings.spritePackerPaddingPower = popupIndex + 1;
         }
-
-        [Obsolete("SetAssetPipelineMode is deprecated, as Asset Pipeline V2 is the only mode available.")]
-        private void SetAssetPipelineMode(object data) {}
 
         private void SetCacheServerMode(object data)
         {

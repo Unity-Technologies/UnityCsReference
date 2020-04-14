@@ -16,6 +16,11 @@ namespace UnityEditor
     [CustomEditor(typeof(ShaderImporter))]
     internal class ShaderImporterInspector : AssetImporterEditor
     {
+        internal class Styles
+        {
+            public static GUIContent overridePreprocessor = EditorGUIUtility.TrTextContent("Override preprocessor", "Select preprocessor to use for this shader.");
+        }
+
         [Serializable]
         private class TextureProp
         {
@@ -37,6 +42,8 @@ namespace UnityEditor
         }
 
         SerializedProperty m_Properties;
+
+        SerializedProperty preprocessorOverride;
 
         internal override void OnHeaderControlsGUI()
         {
@@ -95,6 +102,8 @@ namespace UnityEditor
             base.OnEnable();
 
             m_Properties = extraDataSerializedObject.FindProperty("m_Properties");
+
+            preprocessorOverride = serializedObject.FindProperty("m_PreprocessorOverride");
         }
 
         private void ShowTextures()
@@ -197,6 +206,8 @@ namespace UnityEditor
 
             serializedObject.Update();
             extraDataSerializedObject.Update();
+
+            EditorGUILayout.PropertyField(preprocessorOverride, Styles.overridePreprocessor);
 
             ShowTextures();
 

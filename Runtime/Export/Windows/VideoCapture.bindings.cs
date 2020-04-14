@@ -134,6 +134,9 @@ namespace UnityEngine.Windows.WebCam
                 throw new ArgumentNullException("onCreatedCallback");
             }
 
+            // NOTE: This option no longer works in XR SDK and (as specified in the Documentation) the parameter is ignored.
+            showHolograms = false;
+
             Instantiate_Internal(showHolograms, onCreatedCallback);
         }
 
@@ -230,10 +233,6 @@ namespace UnityEngine.Windows.WebCam
                 throw new ArgumentNullException("filename");
             }
 
-            // Make sure we don't have any forward slashes.
-            // WinRT Apis do not like forward slashes.
-            filename = filename.Replace("/", @"\");
-
             string directory = System.IO.Path.GetDirectoryName(filename);
             if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
             {
@@ -246,7 +245,9 @@ namespace UnityEngine.Windows.WebCam
                 throw new ArgumentException("Cannot write to the file because it is read-only.", "filename");
             }
 
-            StartRecordingVideoToDisk_Internal(filename, onStartedRecordingVideoCallback);
+            // WinRT requires the full file path; so pass in the FullName in case filename isn't an absolute path
+            // This also takes care of switching '/' separators to '\'
+            StartRecordingVideoToDisk_Internal(fileInfo.FullName, onStartedRecordingVideoCallback);
         }
 
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]

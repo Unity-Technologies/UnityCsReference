@@ -14,7 +14,7 @@ namespace UnityEditor
     {
         static readonly NumberFormatInfo percentageFormat = new CultureInfo("en-US", false).NumberFormat;
 
-        static class Styles
+        internal static class Styles
         {
             public const int spacing = 4;
 
@@ -33,9 +33,10 @@ namespace UnityEditor
 
             public static readonly GUIContent[] statusWheel;
             public static readonly GUIContent assemblyLock = EditorGUIUtility.IconContent("AssemblyLock", "|Assemblies are currently locked. Compilation will resume once they are unlocked");
-            public static readonly GUIContent progressIcon = EditorGUIUtility.IconContent("Progress", "Open progress details...");
-            public static readonly GUIContent autoGenerateLightOn = EditorGUIUtility.IconContent("AutoLightbakingOn", "Auto Generate Lighting On");
-            public static readonly GUIContent autoGenerateLightOff = EditorGUIUtility.IconContent("AutoLightbakingOff", "Auto Generate Lighting Off");
+            public static readonly GUIContent progressIcon = EditorGUIUtility.TrIconContent("Progress", "Show progress details");
+            public static readonly GUIContent progressHideIcon = EditorGUIUtility.TrIconContent("Progress", "Hide progress details");
+            public static readonly GUIContent autoGenerateLightOn = EditorGUIUtility.TrIconContent("AutoLightbakingOn", "Auto Generate Lighting On");
+            public static readonly GUIContent autoGenerateLightOff = EditorGUIUtility.TrIconContent("AutoLightbakingOff", "Auto Generate Lighting Off");
 
             static Styles()
             {
@@ -50,6 +51,7 @@ namespace UnityEditor
 
         private string m_MiniMemoryOverview = "";
         private bool? m_autoLightBakingOn;
+        private bool m_DrawExtraFeatures;
         private GUIContent m_ProgressStatus = new GUIContent();
         private GUIContent m_ProgressPercentageStatus = new GUIContent();
         private bool m_CurrentProgressNotResponding = false;
@@ -83,6 +85,8 @@ namespace UnityEditor
             m_autoLightBakingOn = GetBakeMode();
             m_ManagedDebuggerToggle = new ManagedDebuggerToggle();
             m_CacheServerToggle = new CacheServerToggle();
+            m_EventInterests.wantsLessLayoutEvents = true;
+            m_DrawExtraFeatures = ModeService.HasCapability(ModeCapability.StatusBarExtraFeatures, true);
 
             Progress.added += RefreshProgressBar;
             Progress.removed += RefreshProgressBar;
@@ -147,11 +151,15 @@ namespace UnityEditor
                 GUILayout.Space(2);
                 DrawStatusText();
                 GUILayout.FlexibleSpace();
-                DrawSpecialModeLabel();
+                if (m_DrawExtraFeatures)
+                    DrawSpecialModeLabel();
                 DrawProgressBar();
-                DrawDebuggerToggle();
-                DrawCacheServerToggle();
-                DrawBakeMode();
+                if (m_DrawExtraFeatures)
+                {
+                    DrawDebuggerToggle();
+                    DrawCacheServerToggle();
+                    DrawBakeMode();
+                }
                 DrawRefreshStatus();
             }
             GUILayout.EndHorizontal();
@@ -179,8 +187,14 @@ namespace UnityEditor
             }
             else
             {
-                if (GUILayout.Button(Styles.progressIcon, Styles.statusIcon))
-                    Progress.ShowDetails();
+                var canHide = ProgressWindow.canHideDetails;
+                if (GUILayout.Button(canHide ? Styles.progressHideIcon : Styles.progressIcon, Styles.statusIcon))
+                {
+                    if (canHide)
+                        ProgressWindow.HideDetails();
+                    else
+                        Progress.ShowDetails();
+                }
 
                 var buttonRect = GUILayoutUtility.GetLastRect();
                 EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
@@ -286,16 +300,14 @@ namespace UnityEditor
             EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
         }
 
-        private void DrawDebuggerToggle()
+        void DrawDebuggerToggle()
         {
-            var rect = EditorGUILayout.GetControlRect(GUILayout.Width(m_ManagedDebuggerToggle.GetWidth() - 3));
-            m_ManagedDebuggerToggle.OnGUI(rect.x, 0);
+            m_ManagedDebuggerToggle.OnGUI();
         }
 
-        private void DrawCacheServerToggle()
+        void DrawCacheServerToggle()
         {
-            var rect = EditorGUILayout.GetControlRect(GUILayout.Width(m_CacheServerToggle.GetWidth()));
-            m_CacheServerToggle.OnGUI(rect.x, 0);
+            m_CacheServerToggle.OnGUI();
         }
 
         private void DrawStatusText()
@@ -416,8 +428,12 @@ namespace UnityEditor
         {
             int iconWidth = 25;
             float specialModeLabelWidth = Styles.statusLabel.CalcSize(new GUIContent(m_SpecialModeLabel)).x + k_SpaceBeforeProgress + 8;
-            float debugToggleWidth = m_ManagedDebuggerToggle.GetWidth() + 1;
-            float statusRightReservedSpace = specialModeLabelWidth + debugToggleWidth + (showBakeMode ? (iconWidth) : 0) + iconWidth;
+            float statusRightReservedSpace =
+                specialModeLabelWidth +
+                iconWidth + // script debugger
+                iconWidth + // cache server
+                (showBakeMode ? iconWidth : 0) + // bake
+                iconWidth; // progress
             if (!showProgress)
                 return GUILayout.MaxWidth(position.width - statusRightReservedSpace - consoleIconWidth);
 

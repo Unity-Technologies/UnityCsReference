@@ -85,6 +85,7 @@ namespace UnityEditor
         }
 
         private const string kMaterialExtension = ".mat";
+        internal const string kDummyPrefabStageRootObjectName = "Prefab Mode in Context";
 
         [RequiredByNativeCode]
         internal static void ExtractSelectedObjectsFromPrefab()
@@ -641,10 +642,32 @@ namespace UnityEditor
                 return;
             }
 
+            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
+            if (sourceProperty == null)
+            {
+                bool cancel;
+                var instanceArrayProperty = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(instanceProperty, prefabSourceSerializedObject, InteractionMode.AutomatedAction, out cancel);
+                if (instanceArrayProperty != null)
+                {
+                    prefabSourceSerializedObject.CopyFromSerializedProperty(instanceArrayProperty);
+                    sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
+                    if (sourceProperty == null)
+                    {
+                        Debug.LogError($"ApplySingleProperty full array copy error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
+                        return;
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"ApplySingleProperty copy state error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
+                    return;
+                }
+            }
+
+            // Copy overridden property value to asset
             prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
 
             // Abort if property has reference to object in scene.
-            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
             if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
             {
                 MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, assetPath);
@@ -705,7 +728,7 @@ namespace UnityEditor
                     outerPrefabProp.prefabOverride = false;
                 }
                 if (outerPrefabProp == null)
-                    Debug.LogError($"ApplySingleProperty error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
+                    Debug.LogError($"ApplySingleProperty clear overrides error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
 
                 outerPrefabObject = PrefabUtility.GetCorrespondingObjectFromSource(outerPrefabObject);
                 sourceIndex++;
@@ -1274,18 +1297,24 @@ namespace UnityEditor
 
             string directory = Path.GetDirectoryName(path);
 
+            // We allow relative paths outside the Assets folder so we do not throw if isValidAssetFolder is false
             bool isRootFolder = false;
             bool isImmutableFolder = false;
             bool isValidAssetFolder = AssetDatabase.GetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
+
             if (isValidAssetFolder && isImmutableFolder)
                 throw new ArgumentException("Saving Prefab to immutable folder is not allowed: '" + path + "'");
 
             if (directory.Length > 0 && !Directory.Exists(directory))
                 throw new ArgumentException("Given path does not exist: '" + path + "'");
 
-            string prefabGUID = AssetDatabase.AssetPathToGUID(path);
-            if (!VerifyNestingFromScript(new GameObject[] {instanceRoot}, prefabGUID, PrefabUtility.GetPrefabInstanceHandle(instanceRoot)))
-                throw new ArgumentException("Cyclic nesting detected");
+            if (isValidAssetFolder)
+            {
+                string projectRelativePath = Path.IsPathRooted(path) ? FileUtil.GetProjectRelativePath(path) : path;
+                string prefabGUID = AssetDatabase.AssetPathToGUID(projectRelativePath);
+                if (!VerifyNestingFromScript(new GameObject[] { instanceRoot }, prefabGUID, PrefabUtility.GetPrefabInstanceHandle(instanceRoot)))
+                    throw new ArgumentException("Cyclic nesting detected");
+            }
         }
 
         private static void SaveAsPrefabAssetArgumentCheck(GameObject instanceRoot, string path)

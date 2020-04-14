@@ -138,14 +138,14 @@ namespace UnityEditor
             EditorGUIUtility.SetIconSize(Vector2.zero);
 
             // Version control overlay icons
-            if (VersionControl.Provider.isActive)
+            if (VersionControl.Provider.isActive && EditorUserSettings.hierarchyOverlayIcons)
             {
                 Rect overlayRect = labelRect;
                 overlayRect.width = 16;
                 overlayRect.y += (overlayRect.height - 16) / 2;
                 overlayRect.height = 16;
 
-                // The source asset can have been deleted while open in stage so the library object can be null here (case 1086613)
+                // The source asset could have been deleted while open inside the stage so the library object might be null here (case 1086613)
                 var asset = AssetDatabase.LoadMainAssetAtPath(stage.assetPath);
                 if (asset != null)
                     AssetsTreeViewGUI.OnIconOverlayGUI(asset.GetInstanceID(), overlayRect, true);

@@ -711,49 +711,49 @@ namespace UnityEditor
                 return false;
             }
 
-            // Get CreateAvatar property
-            SerializedObject serializedObject = new SerializedObject(importer);
-            SerializedProperty humanBoneArray = serializedObject.FindProperty(sHuman);
-            SerializedProperty humanSkeletonArray = serializedObject.FindProperty(sSkeleton);
-            SerializedProperty animationType = serializedObject.FindProperty("m_AnimationType");
-            if (animationType == null)
+            using (var serializedObject = new SerializedObject(importer))
             {
-                Debug.LogError(modelAsset.name + ": Could not find property m_AnimationType on ModelImporter", modelAsset);
-                return false;
-            }
+                // Get CreateAvatar property
+                SerializedProperty humanBoneArray = serializedObject.FindProperty(sHuman);
+                SerializedProperty humanSkeletonArray = serializedObject.FindProperty(sSkeleton);
+                SerializedProperty animationType = serializedObject.FindProperty("m_AnimationType");
+                if (animationType == null)
+                {
+                    Debug.LogError(modelAsset.name + ": Could not find property m_AnimationType on ModelImporter", modelAsset);
+                    return false;
+                }
 
-            // Clear avatar import settings and reimport
-            animationType.intValue = 2;
-            ClearAll(humanBoneArray, humanSkeletonArray);
-            serializedObject.ApplyModifiedProperties();
-            AssetDatabase.ImportAsset(path);
+                // Clear avatar import settings and reimport
+                animationType.intValue = 2;
+                ClearAll(humanBoneArray, humanSkeletonArray);
+                serializedObject.ApplyModifiedProperties();
+                AssetDatabase.ImportAsset(path);
 
-            // Setup avatar import settings and reimport
-            animationType.intValue = 3;
-            serializedObject.ApplyModifiedProperties();
-            // the humanoid avatar is set up during import
-            AssetDatabase.ImportAsset(path);
+                // Setup avatar import settings and reimport
+                animationType.intValue = 3;
+                serializedObject.ApplyModifiedProperties();
+                // the humanoid avatar is set up during import
+                AssetDatabase.ImportAsset(path);
 
-            // Check if Avatar is valid
-            Avatar avatar = AssetDatabase.LoadAssetAtPath(path, typeof(Avatar)) as Avatar;
-            if (avatar == null)
-            {
-                Debug.LogError(modelAsset.name + ": Did not find Avatar after reimport with CreateAvatar enabled", modelAsset);
-                return false;
-            }
-            if (!avatar.isHuman)
-            {
-                Debug.LogError(modelAsset.name + ": Avatar is not valid after reimport", modelAsset);
-                return false;
-            }
-            if (!IsPoseValidOnInstance(modelAsset, serializedObject))
-            {
-                Debug.LogError(modelAsset.name + ": Avatar has invalid pose after reimport", modelAsset);
-                return false;
-            }
+                // Check if Avatar is valid
+                Avatar avatar = AssetDatabase.LoadAssetAtPath(path, typeof(Avatar)) as Avatar;
+                if (avatar == null)
+                {
+                    Debug.LogError(modelAsset.name + ": Did not find Avatar after reimport with CreateAvatar enabled", modelAsset);
+                    return false;
+                }
+                if (!avatar.isHuman)
+                {
+                    Debug.LogError(modelAsset.name + ": Avatar is not valid after reimport", modelAsset);
+                    return false;
+                }
+                if (!IsPoseValidOnInstance(modelAsset, serializedObject))
+                {
+                    Debug.LogError(modelAsset.name + ": Avatar has invalid pose after reimport", modelAsset);
+                    return false;
+                }
 
-            // Check that mapping matches reference mapping
-            {
+                // Check that mapping matches reference mapping
                 string pathWithoutExtension = path.Substring(0, path.Length - System.IO.Path.GetExtension(path).Length);
 
                 // Get reference template

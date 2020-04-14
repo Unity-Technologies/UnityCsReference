@@ -2357,10 +2357,11 @@ namespace UnityEditor
             }
 
             int id = GUIUtility.GetControlID(s_TerrainEditorHash, FocusType.Passive);
+            var eventType = e.GetTypeForControl(id);
             if (!hitValidTerrain)
             {
                 // if we release the mouse button outside the terrain we still need to update the terrains. ( case 1089947 )
-                if (e.GetTypeForControl(id) == EventType.MouseUp)
+                if (eventType == EventType.MouseUp)
                     PaintContext.ApplyDelayedActions();
 
                 return;
@@ -2370,7 +2371,7 @@ namespace UnityEditor
 
             bool changeSelection = false;
 
-            switch (e.GetTypeForControl(id))
+            switch (eventType)
             {
                 case EventType.Layout:
                     if (!IsModificationToolActive())
@@ -2391,11 +2392,11 @@ namespace UnityEditor
                         return;
 
                     // Don't do anything on MouseDrag if we don't own the hotControl.
-                    if (e.GetTypeForControl(id) == EventType.MouseDrag && EditorGUIUtility.hotControl != id)
+                    if (eventType == EventType.MouseDrag && EditorGUIUtility.hotControl != id)
                         return;
 
                     // If user is ALT-dragging, we want to return to main routine
-                    if (Event.current.alt)
+                    if (e.alt)
                         return;
 
                     // Allow painting with LMB only
@@ -2405,6 +2406,7 @@ namespace UnityEditor
                     if (!IsModificationToolActive())
                         return;
 
+                    HandleUtility.AddDefaultControl(id);
                     if (HandleUtility.nearestControl != id)
                         return;
 

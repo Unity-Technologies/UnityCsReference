@@ -25,8 +25,12 @@ namespace UnityEngine
     //  - *** The memory layout of this struct must be identical to the native type: AssetReferenceMemoryLayout. ***
     //  - Not using bindings file as we don't want a wrapper class in this situation. but it must mirror it's native counter part to a 'T'.
     //----------------------------------------------------------------------------------------------------------------------
-    [StructLayout(LayoutKind.Sequential)]
-    [Serializable]
+
+    /// <summary>
+    /// Serializable lazy reference to a <see cref="UnityEngine.Object"/> contained in an asset file, where referenced object is loaded only when accessed and not at deserialization of this struct.
+    /// </summary>
+    /// <typeparam name="T">The type of the asset.</typeparam>
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public struct LazyLoadReference<T> where T : UnityEngine.Object
     {
         private const int kInstanceID_None = 0;
@@ -34,48 +38,111 @@ namespace UnityEngine
         [SerializeField]
         private int m_InstanceID;
 
-        public int instanceID
-        {
-            get { return m_InstanceID; }
-            set { m_InstanceID = value; }
-        }
+        /// <summary>
+        /// Determines if the reference is linked to an asset, loaded or not, valid or not.
+        /// Calling this never triggers a load.
+        /// </summary>
+        public bool isSet => m_InstanceID != kInstanceID_None;
 
-        // Determines if the reference is linked to an object, loaded or not, valid or not.
-        // Calling this never triggers a load.
-        public bool isSet => m_InstanceID == kInstanceID_None;
-
-        // Convenience property that checks if the reference is broken: is set to something, but that something is not available/loadable at the moment for whatever reason.
-        // Note that this will may trigger loading the referenced object into memory.
+        /// <summary>
+        /// Convenience property that checks if the reference is broken: is set to something, but that something is not available/loadable at the moment for whatever reason.
+        /// May trigger loading the referenced object into memory if the object is not already loaded.
+        /// </summary>
         public bool isBroken => m_InstanceID != kInstanceID_None && !UnityEngine.Object.DoesObjectWithInstanceIDExist(m_InstanceID);
 
-        // Accessor to the referenenced object/asset.
-        // Note that this will may trigger loading the referenced object into memory.
+        /// <summary>
+        /// Accessor to the referenced asset.
+        /// May trigger loading the referenced object into memory if the object is not already loaded.
+        /// </summary>
         public T asset
         {
             get
             {
                 if (m_InstanceID == kInstanceID_None)
+                {
                     return null;
+                }
                 else
                 {
                     return (T)Object.ForceLoadFromInstanceID(m_InstanceID);
                 }
             }
-
             set
             {
-                if (value != null)
+                if (value == null)
+                {
+                    m_InstanceID = kInstanceID_None;
+                }
+                else
                 {
                     if (!Object.IsPersistent(value))
                     {
                         throw new ArgumentException("Object that does not belong to a persisted asset cannot be set as the target of a LazyLoadReference.");
                     }
-
                     m_InstanceID = value.GetInstanceID();
                 }
-                else
-                    m_InstanceID = kInstanceID_None;
             }
+        }
+
+        /// <summary>
+        /// InstanceID of the referenced asset.
+        /// Getting or setting this never triggers a load.
+        /// </summary>
+        public int instanceID
+        {
+            get => m_InstanceID;
+            set => m_InstanceID = value;
+        }
+
+        /// <summary>
+        /// Construct a <see cref="LazyLoadReference{T}"/> from asset reference.
+        /// May trigger loading the referenced object into memory if the object is not already loaded.
+        /// </summary>
+        /// <param name="asset"></param>
+        public LazyLoadReference(T asset)
+        {
+            if (asset == null)
+            {
+                m_InstanceID = kInstanceID_None;
+            }
+            else
+            {
+                if (!Object.IsPersistent(asset))
+                {
+                    throw new ArgumentException("Object that does not belong to a persisted asset cannot be set as the target of a LazyLoadReference.");
+                }
+                m_InstanceID = asset.GetInstanceID();
+            }
+        }
+
+        /// <summary>
+        /// Construct a <see cref="LazyLoadReference{T}"/> from asset instance ID.
+        /// Calling this never triggers a load.
+        /// </summary>
+        /// <param name="instanceID"></param>
+        public LazyLoadReference(int instanceID)
+        {
+            m_InstanceID = instanceID;
+        }
+
+        /// <summary>
+        /// Implicit conversion from <see cref="T"/> asset to <see cref="LazyLoadReference{T}"/>.
+        /// May trigger loading the referenced object into memory if the object is not already loaded.
+        /// </summary>
+        /// <param name="asset">The asset reference.</param>
+        public static implicit operator LazyLoadReference<T>(T asset)
+        {
+            return new LazyLoadReference<T> { asset = asset };
+        }
+
+        /// <summary>
+        /// Implicit conversion from asset instance ID to <see cref="LazyLoadReference{T}"/>.
+        /// Calling this never triggers a load.
+        /// </summary>
+        /// <param name="instanceID">The asset instance ID.</param>
+        public static implicit operator LazyLoadReference<T>(int instanceID)
+        {
+            return new LazyLoadReference<T> { instanceID = instanceID };
         }
     }
 }

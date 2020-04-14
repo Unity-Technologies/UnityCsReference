@@ -76,8 +76,8 @@ namespace UnityEditor.Modules
             }
 
             // Texture format
-            int[] formatValuesForAll = null;
-            string[] formatStringsForAll = null;
+            int[] formatValuesForAll = {};
+            string[] formatStringsForAll = {};
             bool formatOptionsAreDifferent = false;
 
             int formatForAll = 0;

@@ -179,6 +179,13 @@ namespace UnityEditor
             get;
         }
 
+        // Retuns true if resources are being built
+        internal static extern bool isBuildingAnyResources
+        {
+            [FreeFunction("IsBuildingAnyResources")]
+            get;
+        }
+
         internal static extern string userJavascriptPackagesPath
         {
             get;

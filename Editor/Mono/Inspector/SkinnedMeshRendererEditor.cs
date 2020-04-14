@@ -17,7 +17,7 @@ namespace UnityEditor
         class Styles
         {
             public static readonly GUIContent legacyClampBlendShapeWeightsInfo = EditorGUIUtility.TrTextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.");
-            public static readonly GUIContent meshNotSupportingSkinningInfo = EditorGUIUtility.TrTextContent("The assigned mesh doesn't support skinning. A valid setup requires bone weights with bind pose or blend shapes. If you do not need either of these, use a MeshRenderer instead.");
+            public static readonly GUIContent meshNotSupportingSkinningInfo = EditorGUIUtility.TrTextContent("The assigned mesh is missing either bone weights with bind pose, or blend shapes. This might cause the mesh not to render in the Player. If your mesh does not have either bone weights with bind pose, or blend shapes, use a Mesh Renderer instead of Skinned Mesh Renderer.");
             public static readonly GUIContent bounds = EditorGUIUtility.TrTextContent("Bounds");
             public static readonly GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Number of bones to use per vertex during skinning.");
             public static readonly GUIContent updateWhenOffscreen = EditorGUIUtility.TrTextContent("Update When Offscreen", "If an accurate bounding volume representation should be calculated every frame. ");
@@ -100,7 +100,7 @@ namespace UnityEditor
 
                 if (!haveClothComponent && renderer.sharedMesh.blendShapeCount == 0 && (renderer.sharedMesh.boneWeights.Length == 0 || renderer.sharedMesh.bindposes.Length == 0))
                 {
-                    EditorGUILayout.HelpBox(Styles.meshNotSupportingSkinningInfo.text, MessageType.Info);
+                    EditorGUILayout.HelpBox(Styles.meshNotSupportingSkinningInfo.text, MessageType.Error);
                 }
             }
         }

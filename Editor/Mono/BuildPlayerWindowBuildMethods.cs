@@ -175,7 +175,10 @@ namespace UnityEditor
 
                 if (report != null)
                 {
-                    var resultStr = String.Format("Build completed with a result of '{0}'", report.summary.result.ToString("g"));
+                    var resultStr = String.Format("Build completed with a result of '{0}' in {1} seconds ({2} ms)",
+                        report.summary.result.ToString("g"),
+                        Convert.ToInt32(report.summary.totalTime.TotalSeconds),
+                        Convert.ToInt32(report.summary.totalTime.TotalMilliseconds));
 
                     switch (report.summary.result)
                     {

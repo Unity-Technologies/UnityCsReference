@@ -7,6 +7,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEditor.Connect;
 using UnityEditor.PackageManager.UI;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -18,10 +19,26 @@ namespace UnityEditor
         [MenuItem("Window/Asset Store", false, 1499)]
         public static AssetStoreWindow Init()
         {
-            AssetStoreWindow window = GetWindow<AssetStoreWindow>(typeof(SceneView));
-            window.SetMinMaxSizes();
-            window.Show();
-            return window;
+            if (EditorPrefs.GetBool("AlwaysOpenAssetStoreInBrowser", false))
+            {
+                OpenAssetStoreInBrowser();
+                return null;
+            }
+            else
+            {
+                AssetStoreWindow window = GetWindow<AssetStoreWindow>(typeof(SceneView));
+                window.SetMinMaxSizes();
+                window.Show();
+                return window;
+            }
+        }
+
+        private static void OpenAssetStoreInBrowser()
+        {
+            string assetStoreUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl);
+            if (UnityEditor.Connect.UnityConnect.instance.loggedIn)
+                UnityEditor.Connect.UnityConnect.instance.OpenAuthorizedURLInWebBrowser(assetStoreUrl);
+            else Application.OpenURL(assetStoreUrl);
         }
 
         public void OnEnable()
@@ -33,8 +50,14 @@ namespace UnityEditor
             {
                 var root = windowResource.CloneTree();
 
-                var styleSheet = EditorGUIUtility.Load("StyleSheets/AssetStore/AssetStoreWindow.uss") as StyleSheet;
+                var lightStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath) as StyleSheet;
+                var assetStoreStyleSheet = EditorGUIUtility.Load("StyleSheets/AssetStore/AssetStoreWindow.uss") as StyleSheet;
+                var styleSheet = CreateInstance<StyleSheet>();
                 styleSheet.isUnityStyleSheet = true;
+
+                var resolver = new StyleSheets.StyleSheetResolver();
+                resolver.AddStyleSheets(lightStyleSheet, assetStoreStyleSheet);
+                resolver.ResolveTo(styleSheet);
                 root.styleSheets.Add(styleSheet);
 
                 rootVisualElement.Add(root);
@@ -42,6 +65,13 @@ namespace UnityEditor
 
                 visitWebsiteButton.clickable.clicked += OnVisitWebsiteButtonClicked;
                 launchPackageManagerButton.clickable.clicked += OnLaunchPackageManagerButtonClicked;
+
+                alwaysOpenInBrowserToggle.SetValueWithoutNotify(EditorPrefs.GetBool("AlwaysOpenAssetStoreInBrowser", false));
+
+                alwaysOpenInBrowserToggle.RegisterValueChangedCallback(changeEvent =>
+                {
+                    EditorPrefs.SetBool("AlwaysOpenAssetStoreInBrowser", changeEvent.newValue);
+                });
             }
         }
 
@@ -61,10 +91,7 @@ namespace UnityEditor
 
         private void OnVisitWebsiteButtonClicked()
         {
-            string assetStoreUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl);
-            if (UnityEditor.Connect.UnityConnect.instance.loggedIn)
-                UnityEditor.Connect.UnityConnect.instance.OpenAuthorizedURLInWebBrowser(assetStoreUrl);
-            else Application.OpenURL(assetStoreUrl);
+            OpenAssetStoreInBrowser();
         }
 
         private void OnLaunchPackageManagerButtonClicked()
@@ -80,5 +107,6 @@ namespace UnityEditor
 
         private Button visitWebsiteButton { get { return rootVisualElement.Q<Button>("visitWebsiteButton"); } }
         private Button launchPackageManagerButton { get { return rootVisualElement.Q<Button>("launchPackageManagerButton"); } }
+        private Toggle alwaysOpenInBrowserToggle { get { return rootVisualElement.Q<Toggle>("alwaysOpenInBrowserToggle"); } }
     }
 }

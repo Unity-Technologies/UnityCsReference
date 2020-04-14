@@ -326,7 +326,7 @@ namespace UnityEditor
                         "OnPreprocessMaterialDescription"
                     });
                     uint version = inst.GetVersion();
-                    if (version != 0 && hasAnyPostprocessMethod)
+                    if (hasAnyPostprocessMethod)
                     {
                         versionsByType.Add(type.FullName, version);
                     }
@@ -466,7 +466,7 @@ namespace UnityEditor
                     bool hasPostProcessMethod = (type.GetMethod("OnPostprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
                         (type.GetMethod("OnPostprocessCubemap", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null);
                     uint version = inst.GetVersion();
-                    if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
+                    if (hasPreProcessMethod || hasPostProcessMethod)
                     {
                         versionsByType.Add(type.FullName, version);
                     }
@@ -529,7 +529,7 @@ namespace UnityEditor
                     bool hasPreProcessMethod = type.GetMethod("OnPreprocessAudio", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
                     bool hasPostProcessMethod = type.GetMethod("OnPostprocessAudio", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
                     uint version = inst.GetVersion();
-                    if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
+                    if (hasPreProcessMethod || hasPostProcessMethod)
                     {
                         versionsByType.Add(type.FullName, version);
                     }
@@ -592,7 +592,7 @@ namespace UnityEditor
                     bool hasPreProcessMethod = type.GetMethod("OnPreprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
                     bool hasPostProcessMethod = type.GetMethod("OnPostprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
                     uint version = inst.GetVersion();
-                    if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
+                    if (hasPreProcessMethod || hasPostProcessMethod)
                     {
                         versionsByType.Add(type.FullName, version);
                     }

@@ -270,6 +270,18 @@ namespace UnityEditor.Collaboration
             }
         }
 
+        public void RefreshAvailableLocalChangesSynchronous()
+        {
+            IVersionControl_V2 vc_v2 = s_VersionControlInstance as IVersionControl_V2;
+
+            // If our VersionControlInstance isn't v2, this whole method is a no-op
+            if (vc_v2 != null)
+            {
+                vc_v2.RefreshAvailableLocalChangesSynchronous();
+                UpdateChangesToPublish();
+            }
+        }
+
         // Static constructor for Collab
         static Collab()
         {

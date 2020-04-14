@@ -268,6 +268,7 @@ namespace UnityEditor
 
                 if (EditorGUI.EndChangeCheck())
                 {
+                    AnnotationUtility.SetGizmosDirty();
                     lightType.intValue = type;
                 }
                 EditorGUI.EndProperty();

@@ -138,18 +138,6 @@ namespace UnityEditor.Profiling
             get;
         }
 
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern ushort GetMarkerCategoryIndex(int markerId);
-
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern MarkerFlags GetMarkerFlags(int markerId);
-
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern string GetMarkerName(int markerId);
-
-        [NativeMethod(IsThreadSafe = true)]
-        public extern int GetMarkerId(string markerName);
-
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
         public struct MarkerMetadataInfo
@@ -169,6 +157,21 @@ namespace UnityEditor.Profiling
             public string name;
             public MarkerMetadataInfo[] metadataInfo;
         };
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern ushort GetMarkerCategoryIndex(int markerId);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern MarkerFlags GetMarkerFlags(int markerId);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern string GetMarkerName(int markerId);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern MarkerMetadataInfo[] GetMarkerMetadataInfo(int markerId);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern int GetMarkerId(string markerName);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void GetMarkers(List<MarkerInfo> markerInfoList);

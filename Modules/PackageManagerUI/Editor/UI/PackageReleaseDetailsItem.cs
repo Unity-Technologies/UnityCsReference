@@ -14,9 +14,18 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageReleaseDetailsItem> {}
 
+        private ResourceLoader m_ResourceLoader;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+        }
+
         public PackageReleaseDetailsItem()
         {
-            var root = Resources.GetTemplate("PackageReleaseDetailsItem.uxml");
+            ResolveDependencies();
+
+            var root = m_ResourceLoader.GetTemplate("PackageReleaseDetailsItem.uxml");
             Add(root);
             cache = new VisualElementCache(root);
 

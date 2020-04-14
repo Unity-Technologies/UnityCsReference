@@ -37,7 +37,13 @@ namespace UnityEditor
                 new GUIContent("Overwrite Failed Checkout Assets",
                     "When on, assets that can not be checked out will get saved anyway.");
             public static GUIContent overlayIcons = new GUIContent("Overlay Icons",
-                "Should version control status icons be shown in project view.");
+                "Should version control status icons be shown.");
+            public static GUIContent projectOverlayIcons = new GUIContent("Project Window",
+                "Should version control status icons be shown in the Project window.");
+            public static GUIContent hierarchyOverlayIcons = new GUIContent("Hierarchy Window",
+                "Should version control status icons be shown in the Hierarchy window.");
+            public static GUIContent otherOverlayIcons = new GUIContent("Other Windows",
+                "Should version control status icons be shown in other windows.");
 
             // these are required to have correct search keywords
             public static GUIContent password = new GUIContent("Password");
@@ -430,15 +436,35 @@ namespace UnityEditor
                 EditorUserSettings.semanticMergeMode = (SemanticMergeMode)EditorGUILayout.Popup(Styles.smartMerge,
                     (int)EditorUserSettings.semanticMergeMode, semanticMergePopupList);
 
-                var newOverlayIcons = EditorGUILayout.Toggle(Styles.overlayIcons, EditorUserSettings.overlayIcons);
-                if (newOverlayIcons != EditorUserSettings.overlayIcons)
+                GUILayout.Space(10);
+                GUILayout.Label(Styles.overlayIcons);
+
+                EditorGUI.indentLevel++;
+                var newProjectOverlayIcons = EditorGUILayout.Toggle(Styles.projectOverlayIcons, EditorUserSettings.overlayIcons);
+                if (newProjectOverlayIcons != EditorUserSettings.overlayIcons)
                 {
-                    EditorUserSettings.overlayIcons = newOverlayIcons;
+                    EditorUserSettings.overlayIcons = newProjectOverlayIcons;
                     EditorApplication.RequestRepaintAllViews();
                 }
 
+                var newHierarchyOverlayIcons = EditorGUILayout.Toggle(Styles.hierarchyOverlayIcons, EditorUserSettings.hierarchyOverlayIcons);
+                if (newHierarchyOverlayIcons != EditorUserSettings.hierarchyOverlayIcons)
+                {
+                    EditorUserSettings.hierarchyOverlayIcons = newHierarchyOverlayIcons;
+                    EditorApplication.RequestRepaintAllViews();
+                }
+
+                var newOtherOverlayIcons = EditorGUILayout.Toggle(Styles.otherOverlayIcons, EditorUserSettings.otherOverlayIcons);
+                if (newOtherOverlayIcons != EditorUserSettings.otherOverlayIcons)
+                {
+                    EditorUserSettings.otherOverlayIcons = newOtherOverlayIcons;
+                    EditorApplication.RequestRepaintAllViews();
+                }
+                EditorGUI.indentLevel--;
+                GUILayout.Space(10);
+
                 GUI.enabled = true;
-                if (newOverlayIcons)
+                if (newProjectOverlayIcons || newHierarchyOverlayIcons || newOtherOverlayIcons)
                     DrawOverlayDescriptions();
             }
             GUILayout.EndVertical();

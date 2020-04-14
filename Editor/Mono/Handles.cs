@@ -177,10 +177,6 @@ namespace UnityEditor
         // The function for calling AddControl in Layout event and draw the handle in Repaint event.
         public delegate void CapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType);
 
-        // Signatures expecting DrawCapFunction were marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
-        [Obsolete("This delegate is obsolete. Use CapFunction instead.")]
-        public delegate void DrawCapFunction(int controlID, Vector3 position, Quaternion rotation, float size);
-
         public delegate float SizeFunction(Vector3 position);
 
         static PrefColor[] s_AxisColor = { s_XAxisColor, s_YAxisColor, s_ZAxisColor };
@@ -394,13 +390,6 @@ namespace UnityEditor
             return UnityEditorInternal.Slider1D.Do(controlID, position, offset, direction, direction, size, capFunction, snap);
         }
 
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider(Vector3 position, Vector3 direction, float size, DrawCapFunction drawFunc, float snap)
-        {
-            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Passive);
-            return UnityEditorInternal.Slider1D.Do(id, position, direction, size, drawFunc, snap);
-        }
-
         public static Vector3 FreeMoveHandle(Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
         {
             int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
@@ -410,13 +399,6 @@ namespace UnityEditor
         public static Vector3 FreeMoveHandle(int controlID, Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
         {
             return UnityEditorInternal.FreeMove.Do(controlID, position, rotation, size, snap, capFunction);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 FreeMoveHandle(Vector3 position, Quaternion rotation, float size, Vector3 snap, DrawCapFunction capFunc)
-        {
-            int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
-            return UnityEditorInternal.FreeMove.Do(id, position, rotation, size, snap, capFunc);
         }
 
         // Make a single-float draggable handle.
@@ -431,13 +413,6 @@ namespace UnityEditor
             return UnityEditorInternal.SliderScale.DoCenter(controlID, value, position, rotation, size, capFunction, snap);
         }
 
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static float ScaleValueHandle(float value, Vector3 position, Quaternion rotation, float size, DrawCapFunction capFunc, float snap)
-        {
-            int id = GUIUtility.GetControlID(s_ScaleValueHandleHash, FocusType.Passive);
-            return UnityEditorInternal.SliderScale.DoCenter(id, value, position, rotation, size, capFunc, snap);
-        }
-
         // Make a 3D Button.
         public static bool Button(Vector3 position, Quaternion direction, float size, float pickSize, CapFunction capFunction)
         {
@@ -445,22 +420,9 @@ namespace UnityEditor
             return UnityEditorInternal.Button.Do(id, position, direction, size, pickSize, capFunction);
         }
 
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static bool Button(Vector3 position, Quaternion direction, float size, float pickSize, DrawCapFunction capFunc)
-        {
-            int id = GUIUtility.GetControlID(s_ButtonHash, FocusType.Passive);
-            return UnityEditorInternal.Button.Do(id, position, direction, size, pickSize, capFunc);
-        }
-
         internal static bool Button(int controlID, Vector3 position, Quaternion direction, float size, float pickSize, CapFunction capFunction)
         {
             return UnityEditorInternal.Button.Do(controlID, position, direction, size, pickSize, capFunction);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        internal static bool Button(int controlID, Vector3 position, Quaternion direction, float size, float pickSize, DrawCapFunction capFunc)
-        {
-            return UnityEditorInternal.Button.Do(controlID, position, direction, size, pickSize, capFunc);
         }
 
         // Draw a cube. Pass this into handle functions.
@@ -745,18 +707,6 @@ namespace UnityEditor
             return UnityEditorInternal.Slider2D.Do(id, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, snap, drawHelper);
         }
 
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(int id, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, Vector2 snap)
-        {
-            return Slider2D(id, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, false);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(int id, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, Vector2 snap, [DefaultValue("false")] bool drawHelper)
-        {
-            return UnityEditorInternal.Slider2D.Do(id, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, drawHelper);
-        }
-
         /// *listonly*
         public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Vector2 snap)
         {
@@ -767,19 +717,6 @@ namespace UnityEditor
         {
             int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
             return UnityEditorInternal.Slider2D.Do(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, capFunction, snap, drawHelper);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, Vector2 snap)
-        {
-            return Slider2D(handlePos, handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, false);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, Vector2 snap, [DefaultValue("false")] bool drawHelper)
-        {
-            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
-            return UnityEditorInternal.Slider2D.Do(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, drawHelper);
         }
 
         /// *listonly*
@@ -793,18 +730,6 @@ namespace UnityEditor
             return UnityEditorInternal.Slider2D.Do(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, capFunction, snap, drawHelper);
         }
 
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(int id, Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, Vector2 snap)
-        {
-            return Slider2D(id, handlePos, handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, false);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(int id, Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, Vector2 snap, [DefaultValue("false")] bool drawHelper)
-        {
-            return UnityEditorInternal.Slider2D.Do(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, drawHelper);
-        }
-
         /// *listonly*
         public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, float snap)
         {
@@ -815,19 +740,6 @@ namespace UnityEditor
         {
             int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
             return Slider2D(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, capFunction, new Vector2(snap, snap), drawHelper);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, float snap)
-        {
-            return Slider2D(handlePos, handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, false);
-        }
-
-        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
-        public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, float snap, [DefaultValue("false")] bool drawHelper)
-        {
-            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
-            return Slider2D(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, drawFunc, new Vector2(snap, snap), drawHelper);
         }
 
         // Make an unconstrained rotation handle.
@@ -935,49 +847,8 @@ namespace UnityEditor
             return mat;
         }
 
-        // Draw a cube. Pass this into handle functions.
-        [Obsolete("Use CubeHandleCap instead")]
-        public static void CubeCap(int controlID, Vector3 position, Quaternion rotation, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            Graphics.DrawMeshNow(cubeMesh, StartCapDraw(position, rotation, size));
-        }
-
-        // Draw a Sphere. Pass this into handle functions.
-        [Obsolete("Use SphereHandleCap instead")]
-        public static void SphereCap(int controlID, Vector3 position, Quaternion rotation, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            Graphics.DrawMeshNow(sphereMesh, StartCapDraw(position, rotation, size));
-        }
-
-        // Draw a Cone. Pass this into handle functions.
-        [Obsolete("Use ConeHandleCap instead")]
-        public static void ConeCap(int controlID, Vector3 position, Quaternion rotation, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            Graphics.DrawMeshNow(coneMesh, StartCapDraw(position, rotation, size));
-        }
-
-        // Draw a Cylinder. Pass this into handle functions.
-        [Obsolete("Use CylinderHandleCap instead")]
-        public static void CylinderCap(int controlID, Vector3 position, Quaternion rotation, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            Graphics.DrawMeshNow(cylinderMesh, StartCapDraw(position, rotation, size));
-        }
-
         // Draw a camera-facing Rectangle. Pass this into handle functions.
         static Vector3[] s_RectangleCapPointsCache = new Vector3[5];
-        [Obsolete("Use RectangleHandleCap instead")]
-        public static void RectangleCap(int controlID, Vector3 position, Quaternion rotation, float size)
-        {
-            RectangleCap(controlID, position, rotation, new Vector2(size, size));
-        }
 
         internal static void RectangleCap(int controlID, Vector3 position, Quaternion rotation, Vector2 size)
         {
@@ -1012,77 +883,6 @@ namespace UnityEditor
             Handles.DrawLine(point3, point4);
             Handles.DrawLine(point4, point1);
         }
-
-        // Draw a camera-facing dot. Pass this into handle functions.
-        [Obsolete("Use DotHandleCap instead")]
-        public static void DotCap(int controlID, Vector3 position,  Quaternion rotation, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
-            // Only apply matrix to the position because DotCap is camera facing
-            position = matrix.MultiplyPoint(position);
-
-            Vector3 sideways = Camera.current.transform.right * size;
-            Vector3 up = Camera.current.transform.up * size;
-
-            Color col = color * new Color(1, 1, 1, 0.99f);
-            HandleUtility.ApplyWireMaterial(zTest);
-            GL.Begin(GL.QUADS);
-            GL.Color(col);
-            GL.Vertex(position + sideways + up);
-            GL.Vertex(position + sideways - up);
-            GL.Vertex(position - sideways - up);
-            GL.Vertex(position - sideways + up);
-            GL.End();
-        }
-
-        // Draw a camera-facing Circle. Pass this into handle functions.
-        [Obsolete("Use CircleHandleCap instead")]
-        public static void CircleCap(int controlID, Vector3 position, Quaternion rotation, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            StartCapDraw(position, rotation, size);
-            Vector3 forward = rotation * new Vector3(0, 0, 1);
-            Handles.DrawWireDisc(position, forward, size);
-        }
-
-        // Draw an arrow like those used by the move tool.
-        [Obsolete("Use ArrowHandleCap instead")]
-        public static void ArrowCap(int controlID, Vector3 position, Quaternion rotation, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            Vector3 direction = rotation * Vector3.forward;
-            ConeCap(controlID, position + direction * size, Quaternion.LookRotation(direction), size * .2f);
-            Handles.DrawLine(position, position + direction * size * .9f);
-        }
-
-        [Obsolete("DrawCylinder has been renamed to CylinderCap.")]
-        public static void DrawCylinder(int controlID, Vector3 position, Quaternion rotation, float size)
-        { CylinderCap(controlID, position, rotation, size); }
-
-        [Obsolete("DrawSphere has been renamed to SphereCap.")]
-        public static void DrawSphere(int controlID, Vector3 position, Quaternion rotation, float size)
-        { SphereCap(controlID, position, rotation, size); }
-
-        [Obsolete("DrawRectangle has been renamed to RectangleCap.")]
-        public static void DrawRectangle(int controlID, Vector3 position, Quaternion rotation, float size)
-        { RectangleCap(controlID, position, rotation, size); }
-
-
-        [Obsolete("DrawCube has been renamed to CubeCap.")]
-        public static void DrawCube(int controlID, Vector3 position, Quaternion rotation, float size)
-        { CubeCap(controlID, position, rotation, size); }
-
-        [Obsolete("DrawArrow has been renamed to ArrowCap.")]
-        public static void DrawArrow(int controlID, Vector3 position, Quaternion rotation, float size)
-        { ArrowCap(controlID, position, rotation, size); }
-
-        [Obsolete("DrawCone has been renamed to ConeCap.")]
-        public static void DrawCone(int controlID, Vector3 position, Quaternion rotation, float size)
-        { ConeCap(controlID, position, rotation, size); }
 
         internal static void DrawAAPolyLine(Color[] colors, Vector3[] points)                { DoDrawAAPolyLine(colors, points, -1, null, 2, 0.75f); }
         internal static void DrawAAPolyLine(float width, Color[] colors, Vector3[] points)   { DoDrawAAPolyLine(colors, points, -1, null, width, 0.75f); }

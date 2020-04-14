@@ -433,6 +433,7 @@ namespace UnityEngine
     // skinning/blend-shapes are implemented with compute shaders so we must be able to load them from builtins
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
+    [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     public sealed partial class ComputeShader : Object
     {
         // skinning/blend-shapes are implemented with compute shaders so we must be able to load them from builtins

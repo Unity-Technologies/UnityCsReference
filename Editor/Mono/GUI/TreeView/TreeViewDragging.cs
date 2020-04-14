@@ -150,7 +150,7 @@ namespace UnityEditor.IMGUI.Controls
         // - Where the dragged items are dropped (above, below or upon)
         // - Auto expansion of collapsed items when hovering over them
         // - Setting up the render markers for drop location (horizontal lines)
-        // 'targetItem' is null when not hovering over any target Item, if so the rest if the arguments are invalid
+        // 'targetItem' is null when not hovering over any target Item, if so the rest of the arguments are invalid
         public virtual bool DragElement(TreeViewItem targetItem, Rect targetItemRect, int row)
         {
             bool perform = Event.current.type == EventType.DragPerform;

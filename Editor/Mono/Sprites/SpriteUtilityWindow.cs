@@ -376,18 +376,25 @@ namespace UnityEditor
                 drawAction(drawRect);
         }
 
+        [Obsolete("Use SpriteUtility.SetShowSpriteEditorWindowWithObject instead")]
         internal static void SetShowSpriteEditorWindow(Func<bool> spriteEditorWindow)
+        {
+            if (spriteEditorWindow != null)
+                showSpriteEditorWindow = (x) => spriteEditorWindow();
+        }
+
+        internal static void SetShowSpriteEditorWindowWithObject(Func<UnityEngine.Object, bool> spriteEditorWindow)
         {
             if (spriteEditorWindow != null)
                 showSpriteEditorWindow = spriteEditorWindow;
         }
 
-        internal static bool ShowSpriteEditorWindow()
+        internal static bool ShowSpriteEditorWindow(UnityEngine.Object obj = null)
         {
-            return showSpriteEditorWindow();
+            return showSpriteEditorWindow(obj != null ? obj : Selection.activeObject);
         }
 
-        static Func<bool> showSpriteEditorWindow = () =>
+        static Func<UnityEngine.Object, bool> showSpriteEditorWindow = (_) =>
         {
             EditorUtility.DisplayDialog(Styles.noSpriteEditorWindowTitle.text, Styles.noSpriteEditorWindow.text, Styles.okText.text);
             return false;

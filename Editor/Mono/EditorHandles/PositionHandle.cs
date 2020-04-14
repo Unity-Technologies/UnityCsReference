@@ -270,8 +270,7 @@ namespace UnityEditor
                 }
             }
 
-            // Draw axis sliders
-            // Draw last to have priority over the planes
+            // Draw axis sliders last to have priority over the planes
             for (var i = 0; i < 3; ++i)
             {
                 if (!param.ShouldShow(i))
@@ -321,6 +320,7 @@ namespace UnityEditor
                     s_DoPositionHandle_ArrowCapConeOffset = isHot
                         ? rotation * Vector3.Scale(Vector3.Scale(axisVector, param.axisOffset), s_DoPositionHandle_AxisHandlesOctant)
                         : Vector3.zero;
+
                     position = Slider(ids[i], position, offset, dir, size * param.axisSize[i], DoPositionHandle_ArrowCap, GridSnapping.active ? 0f : EditorSnapSettings.move[i]);
                 }
             }

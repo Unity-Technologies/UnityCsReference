@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
 {
     internal class ListViewReorderableDragAndDropController : IListViewDragAndDropController
     {
-        private readonly ListView m_ListView;
+        protected readonly ListView m_ListView;
 
         public ListViewReorderableDragAndDropController(ListView listView)
         {
@@ -58,12 +58,17 @@ namespace UnityEngine.UIElements
         public virtual void OnDrop(IListDragAndDropArgs args)
         {
             int indexShift = 0;
-            foreach (var index in m_ListView.selectedIndices)
+
+            var selectedIndices = m_ListView.selectedIndices.OrderBy(i => i).ToArray();
+
+            for (int i = selectedIndices.Length - 1; i >= 0; --i)
+            {
+                var index = selectedIndices[i];
                 if (index < args.insertAtIndex)
                     indexShift--;
 
-            foreach (var selectedItem in m_ListView.selectedItems)
-                m_ListView.itemsSource.Remove(selectedItem);
+                m_ListView.itemsSource.RemoveAt(index);
+            }
 
             switch (args.dragAndDropPosition)
             {

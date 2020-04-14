@@ -65,6 +65,39 @@ namespace UnityEditor
             return -(Vector2.Dot(x1 - x0, x2 - x1) / (x2 - x1).sqrMagnitude);
         }
 
+        // This limits the "shoot off into infinity" factor when the cursor ray and constraint are near parallel.
+        // Increase this value to more conservatively restrict movement, lower to allow more extreme values.
+        // Ex, with a camera roughly 30 degrees to the handle a value of .1 restricts translation to ~1500m, whereas a
+        // value of .01 will allow closer to 50000 units of movement.
+        const float k_MinRayConstraintDot = .05f;
+
+        // constraintOrigin and constraintDir are expected to be in Handle space (ie, origin and direction are
+        // pre-multiplied by the Handles.matrix)
+        internal static bool CalcPositionOnConstraint(Camera camera, Vector2 guiPosition, Vector3 constraintOrigin, Vector3 constraintDir, out Vector3 position)
+        {
+            Vector3 constraintToCameraTangent = Vector3.Cross(constraintDir, camera.transform.position - constraintOrigin);
+            Vector3 constraintPlaneNormal = Vector3.Cross(constraintDir, constraintToCameraTangent);
+            Plane plane = new Plane(constraintPlaneNormal, constraintOrigin);
+            var ray = GUIPointToWorldRay(guiPosition);
+
+            if (Vector3.Dot(ray.direction, plane.normal) > k_MinRayConstraintDot && plane.Raycast(ray, out float distance))
+            {
+                var pointOnPlane = ray.GetPoint(distance);
+                var pointOnLineParam = PointOnLineParameter(pointOnPlane, constraintOrigin, constraintDir);
+
+                if (!float.IsInfinity(pointOnLineParam))
+                {
+                    // As the mouse ray approaches perpendicular to the plane normal, the values become increasingly extreme.
+                    // We mitigate that effect here
+                    position = constraintOrigin + constraintDir * pointOnLineParam;
+                    return true;
+                }
+            }
+
+            position = Vector3.zero;
+            return false;
+        }
+
         // Returns the parameter for the projection of the /point/ on the given line
         public static float PointOnLineParameter(Vector3 point, Vector3 linePoint, Vector3 lineDirection)
         {
@@ -558,14 +591,79 @@ namespace UnityEditor
         // Convert 2D GUI position to a world space ray.
         public static Ray GUIPointToWorldRay(Vector2 position)
         {
-            if (!Camera.current)
+            return GUIPointToWorldRayPrecise(position);
+        }
+
+        private static Ray GUIPointToWorldRayPrecise(Vector2 position, float startZ = float.NegativeInfinity)
+        {
+            Camera camera = Camera.current;
+            if (!camera)
             {
                 Debug.LogError("Unable to convert GUI point to world ray if a camera has not been set up!");
                 return new Ray(Vector3.zero, Vector3.forward);
             }
+
+            if (float.IsNegativeInfinity(startZ))
+                startZ = camera.nearClipPlane;
+
             Vector2 screenPixelPos = GUIPointToScreenPixelCoordinate(position);
-            Camera camera = Camera.current;
-            return camera.ScreenPointToRay(screenPixelPos);
+            Rect viewport = camera.pixelRect;
+
+            Matrix4x4 camToWorld = camera.cameraToWorldMatrix;
+            Matrix4x4 camToClip = camera.projectionMatrix;
+            Matrix4x4 clipToCam = camToClip.inverse;
+
+            // calculate ray origin and direction in world space
+            Vector3 rayOriginWorldSpace;
+            Vector3 rayDirectionWorldSpace;
+
+            // first construct an arbitrary point that is on the ray through this screen pixel (remap screen pixel point to clip space [-1, 1])
+            Vector3 rayPointClipSpace = new Vector3(
+                (screenPixelPos.x - viewport.x) * 2.0f / viewport.width - 1.0f,
+                (screenPixelPos.y - viewport.y) * 2.0f / viewport.height - 1.0f,
+                0.95f
+            );
+
+            // and convert that point to camera space
+            Vector3 rayPointCameraSpace = clipToCam.MultiplyPoint(rayPointClipSpace);
+
+            if (camera.orthographic)
+            {
+                // ray direction is always 'camera forward' in orthographic mode
+                Vector3 rayDirectionCameraSpace = new Vector3(0.0f, 0.0f, -1.0f);
+                rayDirectionWorldSpace = camToWorld.MultiplyVector(rayDirectionCameraSpace);
+                rayDirectionWorldSpace.Normalize();
+
+                // in camera space, the ray origin has the same XY coordinates as ANY point on the ray
+                // so we just need to override the Z coordinate to startZ to get the correct starting point
+                // (assuming camToWorld is a pure rotation/offset, with no scale)
+                Vector3 rayOriginCameraSpace = rayPointCameraSpace;
+                // The camera/projection matrices follow OpenGL convention: positive Z is towards the viewer.
+                // So negate it to get into Unity convention.
+                rayOriginCameraSpace.z = -startZ;
+
+                // move it to world space
+                rayOriginWorldSpace = camToWorld.MultiplyPoint(rayOriginCameraSpace);
+            }
+            else
+            {
+                // in projective mode, the ray passes through the origin in camera space
+                // so the ray direction is just (ray point - origin) == (ray point)
+                Vector3 rayDirectionCameraSpace = rayPointCameraSpace;
+                rayDirectionCameraSpace.Normalize();
+
+                rayDirectionWorldSpace = camToWorld.MultiplyVector(rayDirectionCameraSpace);
+
+                // calculate the correct startZ offset from the camera by moving a distance along the ray direction
+                // this assumes camToWorld is a pure rotation/offset, with no scale, so we can use rayDirection.z to calculate how far we need to move
+                Vector3 cameraPositionWorldSpace = camToWorld.MultiplyPoint(Vector3.zero);
+                // The camera/projection matrices follow OpenGL convention: positive Z is towards the viewer.
+                // So negate it to get into Unity convention.
+                Vector3 originOffsetWorldSpace = rayDirectionWorldSpace * -startZ / rayDirectionCameraSpace.z;
+                rayOriginWorldSpace = cameraPositionWorldSpace + originOffsetWorldSpace;
+            }
+
+            return new Ray(rayOriginWorldSpace, rayDirectionWorldSpace);
         }
 
         // Figure out a rectangle to display a 2D GUI element in 3D space.

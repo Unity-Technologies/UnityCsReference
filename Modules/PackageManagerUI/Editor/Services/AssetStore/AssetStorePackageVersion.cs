@@ -39,10 +39,19 @@ namespace UnityEditor.PackageManager.UI
 
         [SerializeField]
         private List<PackageSizeInfo> m_SizeInfos;
+        [NonSerialized]
+        private AssetStoreUtils m_AssetStoreUtils;
+        [NonSerialized]
+        private IOProxy m_IOProxy;
+        public void ResolveDependencies(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
+        {
+            m_AssetStoreUtils = assetStoreUtils;
+            m_IOProxy = ioProxy;
+        }
 
         public override string author => m_Author;
 
-        public override string authorLink => $"{AssetStoreUtils.instance.assetStoreUrl}/publishers/{m_PublisherId}";
+        public override string authorLink => $"{m_AssetStoreUtils.assetStoreUrl}/publishers/{m_PublisherId}";
 
         public override string category => m_Category;
 
@@ -59,7 +68,7 @@ namespace UnityEditor.PackageManager.UI
                     foreach (var category in categories)
                     {
                         var lower = category.ToLower(CultureInfo.InvariantCulture);
-                        var url = $"{AssetStoreUtils.instance.assetStoreUrl}{parentCategory}{lower}";
+                        var url = $"{m_AssetStoreUtils.assetStoreUrl}{parentCategory}{lower}";
                         parentCategory += lower + "/";
                         m_CategoryLinks[category] = url;
                     }
@@ -95,13 +104,15 @@ namespace UnityEditor.PackageManager.UI
         public void SetLocalPath(string path)
         {
             m_LocalPath = path ?? string.Empty;
-            m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && File.Exists(m_LocalPath);
+            m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && m_IOProxy.FileExists(m_LocalPath);
         }
 
-        public AssetStorePackageVersion(AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
+        public AssetStorePackageVersion(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
         {
             if (productInfo == null)
                 throw new ArgumentNullException(nameof(productInfo));
+
+            ResolveDependencies(assetStoreUtils, ioProxy);
 
             m_Errors = new List<UIError>();
             m_Tag = PackageTag.Downloadable | PackageTag.Importable;

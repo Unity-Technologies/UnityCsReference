@@ -15,6 +15,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
+using StackValidationResult = UnityEngine.Rendering.VirtualTexturing.EditorHelpers.StackValidationResult;
 
 namespace UnityEditor
 {
@@ -113,11 +114,13 @@ namespace UnityEditor
 
         private string                      m_InfoMessage;
         private Vector2                     m_PreviewDir = new Vector2(0, -20);
-        private int                         m_SelectedMesh;
+        private int                  m_SelectedMesh;
         private int                         m_TimeUpdate;
         private int                         m_LightMode = 1;
         private static readonly GUIContent  s_TilingText = EditorGUIUtility.TrTextContent("Tiling");
         private static readonly GUIContent  s_OffsetText = EditorGUIUtility.TrTextContent("Offset");
+
+        const string kDefaultMaterialPreviewMesh = "DefaultMaterialPreviewMesh";
 
         private ShaderGUI   m_CustomShaderGUI;
         string              m_CustomEditorClassName;
@@ -447,6 +450,8 @@ namespace UnityEditor
         {
             if (GetPreviewType(target as Material) == PreviewType.Skybox)
                 m_PreviewDir = new Vector2(0, 50);
+
+            m_SelectedMesh = EditorPrefs.GetInt(kDefaultMaterialPreviewMesh);
         }
 
         private void DetectShaderEditorNeedsUpdate()
@@ -466,6 +471,50 @@ namespace UnityEditor
             }
         }
 
+        private string ParseValidationResult(StackValidationResult validationResult)
+        {
+            string[] errorMessages = validationResult.errorMessage.Split('\n');
+
+            string result = "'" + validationResult.stackName + "' is invalid";
+            if (errorMessages.Length == 1)
+                result += " (1 issue)\n";
+            else
+                result += " (" + errorMessages.Length + " issues)\n";
+
+            for (int i = 0; i < errorMessages.Length; ++i)
+            {
+                result += " - " + errorMessages[i] + '\n';
+            }
+
+            return result;
+        }
+
+        private void DetectTextureStackValidationIssues()
+        {
+            if (isVisible && m_Shader != null && !HasMultipleMixedShaderValues())
+            {
+                // We want additional spacing, but only when the material properties are visible
+                EditorGUILayout.Space(EditorGUIUtility.singleLineHeight / 2.0f);
+            }
+
+            // We don't want these message boxes to be indented
+            EditorGUI.indentLevel--;
+
+            var material = target as Material;
+            StackValidationResult[] stackValidationResults = VirtualTexturing.EditorHelpers.ValidateMaterialTextureStacks(material);
+            if (stackValidationResults.Length == 0)
+                return;
+
+            foreach (StackValidationResult validationResult in stackValidationResults)
+            {
+                string errorBoxText = ParseValidationResult(validationResult);
+                EditorGUILayout.HelpBox(errorBoxText, MessageType.Warning);
+            }
+
+            // Reset the original indentation level
+            EditorGUI.indentLevel++;
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -481,6 +530,8 @@ namespace UnityEditor
                     PropertiesChanged();
                 }
             }
+
+            DetectTextureStackValidationIssues();
         }
 
         void CheckSetup()
@@ -546,7 +597,7 @@ namespace UnityEditor
                 ShaderPopup("MiniPulldown");
 
                 // Edit button for custom shaders
-                if (m_Shader != null && HasMultipleMixedShaderValues() && (m_Shader.hideFlags & HideFlags.DontSave) == 0)
+                if (m_Shader != null && !HasMultipleMixedShaderValues() && (m_Shader.hideFlags & HideFlags.DontSave) == 0)
                 {
                     if (GUILayout.Button("Edit...", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                         AssetDatabase.OpenAsset(m_Shader);
@@ -1827,7 +1878,6 @@ namespace UnityEditor
             return null;
         }
 
-        private PreviewRenderUtility m_PreviewUtility;
         private static readonly Mesh[] s_Meshes = {null, null, null, null, null };
         private static Mesh s_PlaneMesh;
         private static readonly GUIContent[] s_MeshIcons = { null, null, null, null, null };
@@ -1836,12 +1886,6 @@ namespace UnityEditor
 
         private void Init()
         {
-            if (m_PreviewUtility == null)
-            {
-                m_PreviewUtility = new PreviewRenderUtility();
-                EditorUtility.SetCameraAnimateMaterials(m_PreviewUtility.camera, true);
-            }
-
             if (s_Meshes[0] == null)
             {
                 var handleGo = (GameObject)EditorGUIUtility.LoadRequired("Previews/PreviewMaterials.fbx");
@@ -1917,8 +1961,13 @@ namespace UnityEditor
             var viewType = GetPreviewType(mat);
             if (targets.Length > 1 || viewType == PreviewType.Mesh)
             {
+                var oldSelectedMeshVal = m_SelectedMesh;
                 m_TimeUpdate = PreviewGUI.CycleButton(m_TimeUpdate, s_TimeIcons);
                 m_SelectedMesh = PreviewGUI.CycleButton(m_SelectedMesh, s_MeshIcons);
+
+                if (oldSelectedMeshVal != m_SelectedMesh)
+                    EditorPrefs.SetInt(kDefaultMaterialPreviewMesh, m_SelectedMesh);
+
                 m_LightMode = PreviewGUI.CycleButton(m_LightMode, s_LightIcons);
 
                 Rect settingsButton;
@@ -1934,13 +1983,13 @@ namespace UnityEditor
 
             Init();
 
-            m_PreviewUtility.BeginStaticPreview(new Rect(0, 0, width, height));
 
+            var previewRenderUtility = GetPreviewRendererUtility();
+            EditorUtility.SetCameraAnimateMaterials(previewRenderUtility.camera, true);
+            previewRenderUtility.BeginStaticPreview(new Rect(0, 0, width, height));
             StreamRenderResources();
-
-            DoRenderPreview();
-
-            return m_PreviewUtility.EndStaticPreview();
+            DoRenderPreview(previewRenderUtility, true);
+            return previewRenderUtility.EndStaticPreview();
         }
 
         private void StreamRenderResources()
@@ -1971,9 +2020,15 @@ namespace UnityEditor
                                 if (!stackTextures.ContainsKey(stackId))
                                 {
                                     //Get the dimension of the texture stack. This can be different from the texture dimensions.
-                                    int width, height;
-                                    if (VirtualTexturing.EditorHelpers.GetTextureStackSize(mat, stackId, out width, out height))
+                                    try
+                                    {
+                                        int width, height;
+                                        VirtualTexturing.System.GetTextureStackSize(mat, stackId, out width, out height);
                                         stackTextures[stackId] = Math.Max(width, height);
+                                    }
+                                    catch
+                                    {
+                                    }
                                 }
                             }
                         }
@@ -2017,35 +2072,35 @@ namespace UnityEditor
             }
         }
 
-        private void DoRenderPreview()
+        private void DoRenderPreview(PreviewRenderUtility previewRenderUtility, bool overridePreviewMesh = false)
         {
-            if (m_PreviewUtility.renderTexture.width <= 0 || m_PreviewUtility.renderTexture.height <= 0)
+            if (previewRenderUtility.renderTexture.width <= 0 || previewRenderUtility.renderTexture.height <= 0)
                 return;
 
             var mat = target as Material;
             var viewType = GetPreviewType(mat);
 
-            m_PreviewUtility.camera.transform.position = -Vector3.forward * 5;
-            m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
+            previewRenderUtility.camera.transform.position = -Vector3.forward * 5;
+            previewRenderUtility.camera.transform.rotation = Quaternion.identity;
             if (m_LightMode == 0)
             {
-                m_PreviewUtility.lights[0].intensity = 1.0f;
-                m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(30f, 30f, 0);
-                m_PreviewUtility.lights[1].intensity = 0;
+                previewRenderUtility.lights[0].intensity = 1.0f;
+                previewRenderUtility.lights[0].transform.rotation = Quaternion.Euler(30f, 30f, 0);
+                previewRenderUtility.lights[1].intensity = 0;
             }
             else
             {
-                m_PreviewUtility.lights[0].intensity = 1.0f;
-                m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
-                m_PreviewUtility.lights[1].intensity = 1.0f;
+                previewRenderUtility.lights[0].intensity = 1.0f;
+                previewRenderUtility.lights[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
+                previewRenderUtility.lights[1].intensity = 1.0f;
             }
 
-            m_PreviewUtility.ambientColor = new Color(.2f, .2f, .2f, 0);
+            previewRenderUtility.ambientColor = new Color(.2f, .2f, .2f, 0);
 
             Quaternion rot = Quaternion.identity;
             if (DoesPreviewAllowRotation(viewType))
                 rot = Quaternion.Euler(m_PreviewDir.y, 0, 0) * Quaternion.Euler(0, m_PreviewDir.x, 0);
-            Mesh mesh = s_Meshes[m_SelectedMesh];
+            Mesh mesh = overridePreviewMesh ? s_Meshes[0] : s_Meshes[m_SelectedMesh];
 
             switch (viewType)
             {
@@ -2055,26 +2110,26 @@ namespace UnityEditor
                 case PreviewType.Mesh:
                     // We need to rotate camera, so we can see different reflections from different angles
                     // If we would only rotate object, the reflections would stay the same
-                    m_PreviewUtility.camera.transform.position = Quaternion.Inverse(rot) * m_PreviewUtility.camera.transform.position;
-                    m_PreviewUtility.camera.transform.LookAt(Vector3.zero);
+                    previewRenderUtility.camera.transform.position = Quaternion.Inverse(rot) * previewRenderUtility.camera.transform.position;
+                    previewRenderUtility.camera.transform.LookAt(Vector3.zero);
                     rot = Quaternion.identity;
                     break;
                 case PreviewType.Skybox:
                     mesh = null;
-                    m_PreviewUtility.camera.transform.rotation = Quaternion.Inverse(rot);
-                    m_PreviewUtility.camera.fieldOfView = 120.0f;
+                    previewRenderUtility.camera.transform.rotation = Quaternion.Inverse(rot);
+                    previewRenderUtility.camera.fieldOfView = 120.0f;
                     break;
             }
 
             if (mesh != null)
             {
-                m_PreviewUtility.DrawMesh(mesh, Vector3.zero, rot, mat, 0, null, m_ReflectionProbePicker.Target, false);
+                previewRenderUtility.DrawMesh(mesh, Vector3.zero, rot, mat, 0, null, m_ReflectionProbePicker.Target, false);
             }
 
-            m_PreviewUtility.Render(true);
+            previewRenderUtility.Render(true);
             if (viewType == PreviewType.Skybox)
             {
-                InternalEditorUtility.DrawSkyboxMaterial(mat, m_PreviewUtility.camera);
+                InternalEditorUtility.DrawSkyboxMaterial(mat, previewRenderUtility.camera);
             }
         }
 
@@ -2124,15 +2179,38 @@ namespace UnityEditor
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            m_PreviewUtility.BeginPreview(r,  background);
-
-            DoRenderPreview();
-
-            m_PreviewUtility.EndAndDrawPreview(r);
+            var previewRenderUtility = GetPreviewRendererUtility();
+            previewRenderUtility.BeginPreview(r,  background);
+            DoRenderPreview(previewRenderUtility, !firstInspectedEditor);
+            previewRenderUtility.EndAndDrawPreview(r);
         }
+
+        private static PreviewRenderUtility s_PreviewRenderUtility;
+        private static PreviewRenderUtility GetPreviewRendererUtility()
+        {
+            if (s_PreviewRenderUtility == null)
+            {
+                s_PreviewRenderUtility = new PreviewRenderUtility();
+                EditorUtility.SetCameraAnimateMaterials(s_PreviewRenderUtility.camera, true);
+            }
+            return s_PreviewRenderUtility;
+        }
+
+        private static void CleanUpPreviewRenderUtility()
+        {
+            if (s_PreviewRenderUtility == null)
+                return;
+
+            s_PreviewRenderUtility.Cleanup();
+            s_PreviewRenderUtility = null;
+        }
+
+        private static int s_NumberOfEditors = 0;
 
         public virtual void OnEnable()
         {
+            s_NumberOfEditors++;
+
             if (!target)
                 return;
             m_Shader = serializedObject.FindProperty("m_Shader").objectReferenceValue as Shader;
@@ -2162,13 +2240,11 @@ namespace UnityEditor
 
         public virtual void OnDisable()
         {
-            m_ReflectionProbePicker.OnDisable();
-            if (m_PreviewUtility != null)
-            {
-                m_PreviewUtility.Cleanup();
-                m_PreviewUtility = null;
-            }
+            s_NumberOfEditors--;
+            if (s_NumberOfEditors == 0)
+                CleanUpPreviewRenderUtility();
 
+            m_ReflectionProbePicker.OnDisable();
             s_MaterialEditors.Remove(this);
             Undo.undoRedoPerformed -= UndoRedoPerformed;
         }
@@ -2200,7 +2276,8 @@ namespace UnityEditor
             if (s_previousDraggedUponRenderer != null)
             {
                 bool hasRevert = false;
-                if (!s_previousAlreadyHadPrefabModification && PrefabUtility.IsPartOfAnyPrefab(s_previousDraggedUponRenderer))
+                if (!s_previousAlreadyHadPrefabModification &&
+                    PrefabUtility.GetPrefabInstanceStatus(s_previousDraggedUponRenderer) == PrefabInstanceStatus.Connected)
                 {
                     var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
                     PrefabUtility.RevertPropertyOverride(materialRendererSerializedObject, InteractionMode.AutomatedAction);
@@ -2285,7 +2362,7 @@ namespace UnityEditor
 
                     // Update prefab modification status cache
                     s_previousAlreadyHadPrefabModification = false;
-                    if (PrefabUtility.IsPartOfAnyPrefab(s_previousDraggedUponRenderer))
+                    if (PrefabUtility.GetPrefabInstanceStatus(s_previousDraggedUponRenderer) == PrefabInstanceStatus.Connected)
                     {
                         var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
                         s_previousAlreadyHadPrefabModification = materialRendererSerializedObject.prefabOverride;

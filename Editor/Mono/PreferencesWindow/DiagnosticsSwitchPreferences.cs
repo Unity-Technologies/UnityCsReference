@@ -180,6 +180,13 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateDiagnosticProvider()
         {
+            // Diagnostic switches might be turned off in the build,
+            // in which case there will be none of them -- don't
+            // create the preference pane then.
+            var switches = new List<DiagnosticSwitch>();
+            Debug.GetDiagnosticSwitches(switches);
+            if (switches.Count == 0)
+                return null;
             return new DiagnosticSwitchPreferences();
         }
     }

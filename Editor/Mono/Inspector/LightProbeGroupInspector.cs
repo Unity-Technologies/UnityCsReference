@@ -722,13 +722,21 @@ namespace UnityEditor
             return vec1 - vec2;
         }
 
-        private void InternalOnSceneView()
+        public static bool IsSceneGUIEnabled()
         {
             if (SceneView.lastActiveSceneView != null)
             {
                 if (!SceneView.lastActiveSceneView.drawGizmos)
-                    return;
+                    return false;
+            }
 
+            return true;
+        }
+
+        public void OnSceneGUI()
+        {
+            if (SceneView.lastActiveSceneView != null)
+            {
                 if (m_ShouldFocus)
                 {
                     m_ShouldFocus = false;
@@ -746,11 +754,6 @@ namespace UnityEditor
                     EndEditProbes();
             }
             m_Editor.PushProbePositions();
-        }
-
-        public void OnSceneGUI()
-        {
-            InternalOnSceneView();
         }
 
         public bool HasFrameBounds()

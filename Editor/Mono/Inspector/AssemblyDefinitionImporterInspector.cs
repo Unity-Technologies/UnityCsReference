@@ -868,6 +868,11 @@ namespace UnityEditor
                     var data = CustomScriptAssemblyData.FromJson(((AssemblyDefinitionAsset)assetProp.objectReferenceValue).text);
                     nameProp.stringValue = data.name;
                 }
+                else if (change.changed && obj == null)
+                {
+                    assetProp.objectReferenceValue = obj;
+                    nameProp.stringValue = "";
+                }
             }
         }
 

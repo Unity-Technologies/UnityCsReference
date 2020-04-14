@@ -76,9 +76,18 @@ namespace UnityEditor.PackageManager
         }
 
         [Serializable]
+        class PackageName
+        {
+            public string completeName;
+            public string name;
+            public string organizationName;
+            public string domain;
+        }
+
+        [Serializable]
         class PackageInformation
         {
-            public string packageName;
+            public PackageName packageName = new PackageName();
             public string displayName;
             public string version;
             public string description;
@@ -101,6 +110,7 @@ namespace UnityEditor.PackageManager
         {
             public static readonly GUIContent information = EditorGUIUtility.TrTextContent("Information");
             public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "Package name. Must be lowercase");
+            public static readonly GUIContent organizationName = EditorGUIUtility.TrTextContent("Organization name", "Package organization name. Must be lowercase and not include dots '.'");
             public static readonly GUIContent displayName = EditorGUIUtility.TrTextContent("Display name", "Display name used in UI.");
             public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version", "Package Version, much follow SemVer (ex: 1.0.0-preview.1).");
             public static readonly GUIContent type = EditorGUIUtility.TrTextContent("Type", "Package Type (optional).");
@@ -141,6 +151,7 @@ namespace UnityEditor.PackageManager
 
         private SerializedProperty m_IsValidFile;
         private SerializedProperty m_Name;
+        private SerializedProperty m_OrganizationName;
         private SerializedProperty m_DisplayName;
         private SerializedProperty m_Version;
         private SerializedProperty m_UnityVersionEnabled;
@@ -161,7 +172,7 @@ namespace UnityEditor.PackageManager
                     return string.Format(s_LocalizedMultipleTitle, targets.Length);
                 }
                 return string.Format(s_LocalizedTitle, packageState != null && packageState.isValidFile ?
-                    !IsNullOrEmptyTrim(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName :
+                    !IsNullOrEmptyTrim(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName.completeName :
                     s_LocalizedInvalidPackageManifest);
             }
         }
@@ -175,7 +186,7 @@ namespace UnityEditor.PackageManager
             GUI.enabled = packageState != null && packageState.isValidFile && targets.Length == 1;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                PackageManagerWindow.SelectPackageAndFilter(packageState.info.packageName);
+                PackageManagerWindow.SelectPackageAndFilterStatic(packageState.info.packageName.completeName);
             }
             GUI.enabled = previousEnabled;
         }
@@ -188,7 +199,8 @@ namespace UnityEditor.PackageManager
             warningMessages = new List<string>();
 
             m_IsValidFile = extraDataSerializedObject.FindProperty("isValidFile");
-            m_Name = extraDataSerializedObject.FindProperty("info.packageName");
+            m_Name = extraDataSerializedObject.FindProperty("info.packageName.name");
+            m_OrganizationName = extraDataSerializedObject.FindProperty("info.packageName.organizationName");
             m_DisplayName = extraDataSerializedObject.FindProperty("info.displayName");
             m_Version = extraDataSerializedObject.FindProperty("info.version");
             m_UnityVersionEnabled = extraDataSerializedObject.FindProperty("info.unity.isEnable");
@@ -201,7 +213,7 @@ namespace UnityEditor.PackageManager
             m_Visibility = extraDataSerializedObject.FindProperty("info.settings.visibility");
 
             m_DependenciesList = new ReorderableList(extraDataSerializedObject,
-                extraDataSerializedObject.FindProperty("dependencies"), false, false, true, true)
+                extraDataSerializedObject.FindProperty("dependencies"), true, false, true, true)
             {
                 drawElementCallback = DrawDependencyListElement,
                 drawHeaderCallback = DrawDependencyHeaderElement,
@@ -232,12 +244,16 @@ namespace UnityEditor.PackageManager
             var dependency = list.GetArrayElementAtIndex(index);
             var packageName = dependency.FindPropertyRelative("packageName");
             var version = dependency.FindPropertyRelative("version");
+            var organizationName = dependency.FindPropertyRelative("organizationName");
 
             var w = rect.width;
             rect.x += 4;
             rect.width = w / 3 * 2 - 2;
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
             packageName.stringValue = EditorGUI.DelayedTextField(rect, packageName.stringValue);
+
+            if (!IsNullOrEmptyTrim(organizationName.stringValue) && !PackageValidation.ValidateOrganizationName(organizationName.stringValue))
+                errorMessages.Add($"Invalid Dependency Package Organization Name '{organizationName.stringValue}'");
 
             if (!IsNullOrEmptyTrim(packageName.stringValue) && !PackageValidation.ValidateName(packageName.stringValue))
                 errorMessages.Add($"Invalid Dependency Package Name '{packageName.stringValue}'");
@@ -252,6 +268,11 @@ namespace UnityEditor.PackageManager
                     errorMessages.Add(
                         $"Invalid Dependency Version '{version.stringValue}' for '{packageName.stringValue}'");
             }
+        }
+
+        protected override bool CanApply()
+        {
+            return errorMessages.Count == 0;
         }
 
         protected override void Apply()
@@ -281,6 +302,7 @@ namespace UnityEditor.PackageManager
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 EditorGUILayout.DelayedTextField(m_Name, Styles.name);
+                m_OrganizationName.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames);
                 EditorGUILayout.DelayedTextField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.DelayedTextField(m_Version, Styles.version);
                 m_Type.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.type, m_Type.stringValue, PackageInfo.GetPredefinedPackageTypes());
@@ -308,9 +330,10 @@ namespace UnityEditor.PackageManager
         {
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                using (new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition,
+                using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition,
                     GUILayout.MinHeight(kMinHeightDescriptionScrollView)))
                 {
+                    descriptionScrollViewPosition = scrollView.scrollPosition;
                     m_Description.stringValue = EditorGUILayout.TextArea(m_Description.stringValue ?? "" ,
                         GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
                 }
@@ -319,6 +342,9 @@ namespace UnityEditor.PackageManager
 
         private void PerformValidation()
         {
+            if (!PackageValidation.ValidateOrganizationName(m_OrganizationName.stringValue))
+                errorMessages.Add($"Invalid Package Organization Name '{m_OrganizationName.stringValue}'");
+
             if (!PackageValidation.ValidateName(m_Name.stringValue))
                 errorMessages.Add($"Invalid Package Name '{m_Name.stringValue}'");
 
@@ -389,6 +415,8 @@ namespace UnityEditor.PackageManager
             DoPackageDescriptionLayout();
 
             // Package dependencies
+            if (m_DependenciesList.index < 0 && m_DependenciesList.count > 0)
+                m_DependenciesList.index = 0;
             GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
             m_DependenciesList.DoLayoutList();
 
@@ -449,11 +477,25 @@ namespace UnityEditor.PackageManager
 
                 if (packageState.isValidFile)
                 {
-                    packageState.info.packageName = info["name"] as string;
-                    packageState.name = packageState.info.packageName;
-
                     if (info.ContainsKey("displayName") && info["displayName"] is string)
                         packageState.info.displayName = (string)info["displayName"];
+
+                    packageState.info.packageName.completeName = info["name"] as string;
+
+                    if (packageState.info.packageName.completeName.Split('.').Count() > 2)
+                    {
+                        packageState.info.packageName.domain = packageState.info.packageName.completeName.Split('.')[0];
+                        packageState.info.packageName.organizationName = packageState.info.packageName.completeName.Split('.')[1];
+                        string domainAndOrganizationName = packageState.info.packageName.domain + "." + packageState.info.packageName.organizationName + ".";
+                        packageState.name = packageState.info.packageName.completeName.Replace(domainAndOrganizationName, "");
+                        packageState.info.packageName.name = packageState.name;
+                    }
+                    else
+                    {
+                        packageState.info.packageName.domain = "com";
+                        packageState.info.packageName.organizationName = "";
+                        packageState.info.packageName.name = packageState.info.packageName.completeName;
+                    }
 
                     packageState.info.version = info["version"] as string;
 
@@ -537,7 +579,10 @@ namespace UnityEditor.PackageManager
             if (json == null)
                 return;
 
-            json["name"] = packageState.info.packageName;
+            json["name"] = string.Join(".",
+                new[] { packageState.info.packageName.domain.Trim(),
+                        packageState.info.packageName.organizationName.Trim(),
+                        packageState.info.packageName.name.Trim() });
 
             if (!IsNullOrEmptyTrim(packageState.info.displayName))
                 json["displayName"] = packageState.info.displayName.Trim();
@@ -598,6 +643,7 @@ namespace UnityEditor.PackageManager
             try
             {
                 File.WriteAllText(assetPath, Json.Serialize(json, true));
+                Client.Resolve();
             }
             catch (IOException)
             {

@@ -28,8 +28,8 @@ namespace UnityEditorInternal.Profiling
         static readonly GUIContent[] kDetailedViewTypeNames =
         {
             EditorGUIUtility.TrTextContent("No Details"),
-            EditorGUIUtility.TrTextContent("Show Related Objects"),
-            EditorGUIUtility.TrTextContent("Show Calls")
+            EditorGUIUtility.TrTextContent("Related Data"),
+            EditorGUIUtility.TrTextContent("Calls")
         };
         static readonly int[] kDetailedViewTypes = new[]
         {
@@ -243,11 +243,11 @@ namespace UnityEditorInternal.Profiling
             m_Initialized = true;
         }
 
-        public override void OnEnable(CPUorGPUProfilerModule cpuModule, bool isGpuView)
+        public override void OnEnable(CPUorGPUProfilerModule cpuModule, IProfilerWindowController profilerWindow, bool isGpuView)
         {
-            base.OnEnable(cpuModule, isGpuView);
-            if (m_DetailedCallsView != null)
-                m_DetailedCallsView.profilerSampleNameProvider = cpuModule;
+            base.OnEnable(cpuModule, profilerWindow, isGpuView);
+            m_DetailedObjectsView?.OnEnable(cpuModule);
+            m_DetailedCallsView?.OnEnable(cpuModule);
         }
 
         void OnMultiColumnHeaderChanged(MultiColumnHeader header)
@@ -353,7 +353,7 @@ namespace UnityEditorInternal.Profiling
                 case HierarchyFrameDataView.columnWarningCount:
                     return LocalizationDatabase.GetLocalizedString("|Warnings");
                 case HierarchyFrameDataView.columnObjectName:
-                    return LocalizationDatabase.GetLocalizedString("Name");
+                    return LocalizationDatabase.GetLocalizedString("Object Name");
                 case HierarchyFrameDataView.columnStartTime:
                     return LocalizationDatabase.GetLocalizedString("Start ms");
                 default:
@@ -361,7 +361,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public void DoGUI(HierarchyFrameDataView frameDataView)
+        public void DoGUI(HierarchyFrameDataView frameDataView, bool fetchData, ref bool updateViewLive)
         {
             using (m_DoGUIMarker.Auto())
             {
@@ -384,7 +384,7 @@ namespace UnityEditorInternal.Profiling
                 // Hierarchy view area
                 GUILayout.BeginVertical();
 
-                DrawToolbar(frameDataView, showDetailedView);
+                DrawToolbar(frameDataView, showDetailedView, ref updateViewLive);
 
                 if (!string.IsNullOrEmpty(dataAvailabilityMessage))
                 {
@@ -392,7 +392,10 @@ namespace UnityEditorInternal.Profiling
                 }
                 else if (!isDataAvailable)
                 {
-                    GUILayout.Label(BaseStyles.noData, BaseStyles.label);
+                    if (!fetchData && !updateViewLive)
+                        GUILayout.Label(BaseStyles.liveUpdateMessage, BaseStyles.label);
+                    else
+                        GUILayout.Label(BaseStyles.noData, BaseStyles.label);
                 }
                 else if (!isSearchAllowed)
                 {
@@ -445,25 +448,28 @@ namespace UnityEditorInternal.Profiling
             treeView.searchString = m_SearchField.OnToolbarGUI(rect, treeView.searchString);
         }
 
-        void DrawToolbar(HierarchyFrameDataView frameDataView, bool showDetailedView)
+        void DrawToolbar(HierarchyFrameDataView frameDataView, bool showDetailedView, ref bool updateViewLive)
         {
             EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
 
-            if (frameDataView.valid)
+            if (frameDataView != null && frameDataView.valid)
                 DrawViewTypePopup((frameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) != 0 ? ProfilerViewType.Hierarchy : ProfilerViewType.RawHierarchy);
+            else
+                DrawViewTypePopup(ProfilerViewType.Hierarchy);
 
+            DrawLiveUpdateToggle(ref updateViewLive);
             if (!gpuView)
             {
-                using (new EditorGUI.DisabledScope(!frameDataView.valid))
+                using (new EditorGUI.DisabledScope(!(frameDataView != null && frameDataView.valid)))
                 {
-                    EditorGUILayout.Space(); // workaround: Remove double lines
                     DrawThreadPopup(frameDataView);
                 }
             }
 
+
             GUILayout.FlexibleSpace();
 
-            if (frameDataView.valid)
+            if (frameDataView != null && frameDataView.valid)
                 DrawCPUGPUTime(frameDataView.frameTimeMs, frameDataView.frameGpuTimeMs);
 
             GUILayout.FlexibleSpace();
@@ -557,7 +563,7 @@ namespace UnityEditorInternal.Profiling
 
         private void DrawThreadPopup(HierarchyFrameDataView frameDataView)
         {
-            if (!frameDataView.valid)
+            if (!(frameDataView != null && frameDataView.valid))
             {
                 var disabledValues = new string[] { m_ThreadName };
                 EditorGUILayout.AdvancedPopup(0, disabledValues, BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));

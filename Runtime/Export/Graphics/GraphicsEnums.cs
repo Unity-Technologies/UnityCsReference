@@ -716,7 +716,14 @@ namespace UnityEngine
                 RGBA_ASTC10X10_SRGB = 137,
                 RGBA_ASTC10X10_UNorm = 138,
                 RGBA_ASTC12X12_SRGB = 139,
-                RGBA_ASTC12X12_UNorm = 140
+                RGBA_ASTC12X12_UNorm = 140,
+
+                RGBA_ASTC4X4_UFloat = 145,
+                RGBA_ASTC5X5_UFloat = 146,
+                RGBA_ASTC6X6_UFloat = 147,
+                RGBA_ASTC8X8_UFloat = 148,
+                RGBA_ASTC10X10_UFloat = 149,
+                RGBA_ASTC12X12_UFloat = 150,
             }
             // Match RayTracingMode on C++ side
             public enum RayTracingMode

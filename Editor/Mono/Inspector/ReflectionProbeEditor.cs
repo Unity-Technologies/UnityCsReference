@@ -88,8 +88,8 @@ namespace UnityEditor
             public static GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel);
 
             public static string bakeButtonText = "Bake";
-            public static string[] bakeCustomOptionText = {"Bake as new Cubemap..."};
-            public static string[] bakeButtonsText = {"Bake All Reflection Probes"};
+            public static string[] bakeCustomOptionText = { "Bake as new Cubemap..." };
+            public static string[] bakeButtonsText = { "Bake All Reflection Probes" };
 
             public static GUIContent bakeCustomButtonText = EditorGUIUtility.TrTextContent("Bake", "Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
             public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime Settings", "These settings are used by objects when they render with the cubemap of this probe");
@@ -108,7 +108,7 @@ namespace UnityEditor
             public static GUIContent timeSlicing = EditorGUIUtility.TrTextContent("Time Slicing", "If enabled this probe will update over several frames, to help reduce the impact on the frame rate");
             public static GUIContent refreshMode = EditorGUIUtility.TrTextContent("Refresh Mode", "Controls how this probe refreshes in the Player");
 
-            public static  GUIContent typeText = EditorGUIUtility.TrTextContent("Type", "'Baked Cubemap' uses the 'Auto Baking' mode from the Lighting window. If it is enabled, then baking is automatic otherwise manual bake is needed (use the bake button below). \n'Custom' can be used if a custom cubemap is wanted. \n'Realtime' can be used to dynamically re-render the cubemap during runtime (via scripting).");
+            public static GUIContent typeText = EditorGUIUtility.TrTextContent("Type", "'Baked Cubemap' uses the 'Auto Baking' mode from the Lighting window. If it is enabled, then baking is automatic otherwise manual bake is needed (use the bake button below). \n'Custom' can be used if a custom cubemap is wanted. \n'Realtime' can be used to dynamically re-render the cubemap during runtime (via scripting).");
             public static GUIContent[] reflectionProbeMode = { EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("Custom"), EditorGUIUtility.TrTextContent("Realtime") };
             public static int[] reflectionProbeModeValues = { (int)ReflectionProbeMode.Baked, (int)ReflectionProbeMode.Custom, (int)ReflectionProbeMode.Realtime };
 
@@ -155,7 +155,7 @@ namespace UnityEditor
 
         private TextureInspector m_CubemapEditor = null;
 
-        bool IsReflectionProbeEditMode(EditMode.SceneViewEditMode editMode)
+        static bool IsReflectionProbeEditMode(EditMode.SceneViewEditMode editMode)
         {
             return editMode == EditMode.SceneViewEditMode.ReflectionProbeBox ||
                 editMode == EditMode.SceneViewEditMode.ReflectionProbeOrigin;
@@ -712,7 +712,7 @@ namespace UnityEditor
 
             b.Encapsulate(localTransformPosition);
 
-            center =  b.center;
+            center = b.center;
             size = b.size;
             return true;
         }
@@ -748,6 +748,11 @@ namespace UnityEditor
             Gizmos.DrawWireCube(reflectionProbe.center, reflectionProbe.size);
             Gizmos.matrix = Matrix4x4.identity;
             Gizmos.color = oldColor;
+        }
+
+        public static bool IsSceneGUIEnabled()
+        {
+            return IsReflectionProbeEditMode(EditMode.editMode);
         }
 
         public void OnSceneGUI()

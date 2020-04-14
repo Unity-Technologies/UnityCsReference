@@ -36,7 +36,7 @@ namespace UnityEditor
                 var quickSearchPackage = searchLatestRequest.Result.FirstOrDefault(p => p.name == k_QuickSearchPackageId);
                 if (quickSearchPackage != null && EditorUtility.DisplayDialog(
                     $"Shoot! {quickSearchPackage.displayName} is not installed yet!",
-                    $"Do you want to install {quickSearchPackage.displayName} ({quickSearchPackage.versions.latest}) and be more productive?" +
+                    $"Do you want to install {quickSearchPackage.displayName} ({quickSearchPackage.versions.verified}) and be more productive?" +
                     $"\r\n\r\nPackage Description: {quickSearchPackage.description}", "Yes", "No"))
                 {
                     // Install a token that will be read by the quick search package once
@@ -46,7 +46,7 @@ namespace UnityEditor
 
                     // Add quick search package entry. the added package will
                     // be compiled and a domain reload will occur.
-                    var packageIdToInstall = $"{quickSearchPackage.name}@{quickSearchPackage.versions.latest}";
+                    var packageIdToInstall = $"{quickSearchPackage.name}@{quickSearchPackage.versions.verified}";
                     var addQuickSearchRequest = PackageManager.Client.Add(packageIdToInstall);
                     if (!WaitForRequest(addQuickSearchRequest, $"Installing {quickSearchPackage.displayName}..."))
                         Debug.LogError($"Failed to install {packageIdToInstall}");

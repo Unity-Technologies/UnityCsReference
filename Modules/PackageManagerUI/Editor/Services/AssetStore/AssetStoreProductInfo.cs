@@ -33,15 +33,21 @@ namespace UnityEditor.PackageManager.UI
         public List<PackageLink> links;
         public List<PackageSizeInfo> sizeInfos;
 
-        public static AssetStoreProductInfo ParseProductInfo(string productId, IDictionary<string, object> productDetail)
+        [NonSerialized]
+        private AssetStoreUtils m_AssetStoreUtils;
+        public void ResolveDependencies(AssetStoreUtils assetStoreUtils)
         {
-            if (string.IsNullOrEmpty(productId) || productDetail == null || !productDetail.Any())
-                return null;
-            return new AssetStoreProductInfo(productId, productDetail);
+            m_AssetStoreUtils = assetStoreUtils;
         }
 
-        private AssetStoreProductInfo(string productId, IDictionary<string, object> productDetail)
+        private AssetStoreProductInfo()
         {
+        }
+
+        private AssetStoreProductInfo(AssetStoreUtils assetStoreUtils, string productId, IDictionary<string, object> productDetail)
+        {
+            ResolveDependencies(assetStoreUtils);
+
             id = productId;
             description = CleanUpHtml(productDetail.GetString("description")) ?? string.Empty;
 
@@ -51,7 +57,7 @@ namespace UnityEditor.PackageManager.UI
                 if (publisher.GetString("url") == "http://unity3d.com")
                     author = "Unity Technologies Inc.";
                 else
-                    author = publisher.GetString("name") ?? ApplicationUtil.instance.GetTranslationForText("Unknown publisher");
+                    author = publisher.GetString("name") ?? L10n.Tr("Unknown publisher");
                 publisherId = publisher.GetString("externalRef") ?? string.Empty;
             }
             else
@@ -86,7 +92,14 @@ namespace UnityEditor.PackageManager.UI
             assetStoreLink = GetAssetStoreLinkFromProductDetails(productDetail);
         }
 
-        private static string CleanUpHtml(string source)
+        public static AssetStoreProductInfo ParseProductInfo(AssetStoreUtils assetStoreUtils, string productId, IDictionary<string, object> productDetail)
+        {
+            if (string.IsNullOrEmpty(productId) || productDetail == null || !productDetail.Any())
+                return null;
+            return new AssetStoreProductInfo(assetStoreUtils, productId, productDetail);
+        }
+
+        internal static string CleanUpHtml(string source)
         {
             if (string.IsNullOrEmpty(source))
                 return source;
@@ -97,7 +110,9 @@ namespace UnityEditor.PackageManager.UI
             var arrayIndex = 0;
             var inside = false;
 
-            foreach (var c in source.ToCharArray())
+            var result = Regex.Replace(source, "<a .*href=[\"']([^\"']+)[\"'][^>]*>(.+)</a>", "$2 ($1)", RegexOptions.IgnoreCase);
+
+            foreach (var c in result.ToCharArray())
             {
                 if (c == '<')
                     inside = true;
@@ -124,7 +139,7 @@ namespace UnityEditor.PackageManager.UI
             return text;
         }
 
-        private static List<PackageImage> GetImagesFromProductDetails(IDictionary<string, object> productDetail)
+        private List<PackageImage> GetImagesFromProductDetails(IDictionary<string, object> productDetail)
         {
             int imageLimit = 3;
             int imagesLoaded = 0;
@@ -185,7 +200,7 @@ namespace UnityEditor.PackageManager.UI
             return result;
         }
 
-        private static List<PackageLink> GetLinksFromProductDetails(IDictionary<string, object> productDetail)
+        private List<PackageLink> GetLinksFromProductDetails(IDictionary<string, object> productDetail)
         {
             var result = new List<PackageLink>();
 
@@ -205,7 +220,7 @@ namespace UnityEditor.PackageManager.UI
             return result;
         }
 
-        private static PackageLink GetAssetStoreLinkFromProductDetails(IDictionary<string, object> productDetail)
+        private PackageLink GetAssetStoreLinkFromProductDetails(IDictionary<string, object> productDetail)
         {
             var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
             var packagePath = $"/packages/p/{slug}";
@@ -213,7 +228,7 @@ namespace UnityEditor.PackageManager.UI
             return GetPackageLink("View in the Asset Store", packagePath);
         }
 
-        private static List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)
+        private List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)
         {
             var result = new List<PackageSizeInfo>();
             var uploads = productDetail.GetDictionary("uploads");
@@ -244,10 +259,10 @@ namespace UnityEditor.PackageManager.UI
             return result;
         }
 
-        private static PackageLink GetPackageLink(string name, string url)
+        private PackageLink GetPackageLink(string name, string url)
         {
             if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
-                url = AssetStoreUtils.instance.assetStoreUrl + url;
+                url = m_AssetStoreUtils.assetStoreUrl + url;
             return new PackageLink { name = name, url = url };
         }
     }

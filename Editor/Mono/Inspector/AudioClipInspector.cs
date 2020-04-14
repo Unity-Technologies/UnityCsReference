@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         private PreviewRenderUtility m_PreviewUtility;
         private AudioClip m_Clip;
-        private bool playing => s_PlayingInstance == this && m_Clip != null && AudioUtil.IsClipPlaying(m_Clip);
+        private bool playing => s_PlayingInstance == this && m_Clip != null && AudioUtil.IsPreviewClipPlaying();
         Vector2 m_Position = Vector2.zero;
         private bool m_MultiEditing;
 
@@ -59,7 +59,7 @@ namespace UnityEditor
         {
             if (s_PlayingInstance == this)
             {
-                AudioUtil.StopAllClips();
+                AudioUtil.StopAllPreviewClips();
                 s_PlayingInstance = null;
             }
 
@@ -129,7 +129,7 @@ namespace UnityEditor
                             PlayClip(clip, 0, s_Loop);
                         else
                         {
-                            AudioUtil.StopAllClips();
+                            AudioUtil.StopAllPreviewClips();
                             m_Clip = null;
                         }
                     }
@@ -144,14 +144,14 @@ namespace UnityEditor
                 bool loop = s_Loop;
                 s_Loop = GUILayout.Toggle(s_Loop, s_LoopIcon, EditorStyles.toolbarButton);
                 if ((loop != s_Loop) && playing)
-                    AudioUtil.LoopClip(clip, s_Loop);
+                    AudioUtil.LoopPreviewClip(s_Loop);
             }
         }
 
         void PlayClip(AudioClip clip, int startSample = 0, bool loop = false)
         {
-            AudioUtil.StopAllClips();
-            AudioUtil.PlayClip(clip, startSample, loop);
+            AudioUtil.StopAllPreviewClips();
+            AudioUtil.PlayPreviewClip(clip, startSample, loop);
             m_Clip = clip;
             s_PlayingInstance = this;
         }
@@ -213,10 +213,10 @@ namespace UnityEditor
                         if (r.Contains(evt.mousePosition))
                         {
                             var startSample = (int)(evt.mousePosition.x * (AudioUtil.GetSampleCount(clip) / (int)r.width));
-                            if (!AudioUtil.IsClipPlaying(clip) || clip != m_Clip)
+                            if (!AudioUtil.IsPreviewClipPlaying() || clip != m_Clip)
                                 PlayClip(clip, startSample, s_Loop);
                             else
-                                AudioUtil.SetClipSamplePosition(clip, startSample);
+                                AudioUtil.SetPreviewClipSamplePosition(clip, startSample);
                             evt.Use();
                         }
                     }
@@ -248,7 +248,7 @@ namespace UnityEditor
 
                 if (m_Clip == clip)
                 {
-                    float t = AudioUtil.GetClipPosition(clip);
+                    float t = AudioUtil.GetPreviewClipPosition();
 
                     System.TimeSpan ts = new System.TimeSpan(0, 0, 0, 0, (int)(t * 1000.0f));
 
@@ -275,7 +275,7 @@ namespace UnityEditor
 
                 if (m_Clip == clip)
                 {
-                    float t = AudioUtil.GetClipPosition(clip);
+                    float t = AudioUtil.GetPreviewClipPosition();
 
                     System.TimeSpan ts = new System.TimeSpan(0, 0, 0, 0, (int)(t * 1000.0f));
 

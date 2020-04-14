@@ -21,6 +21,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.EditorTools;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.Profiling;
 using UnityEditor.Snap;
 using UnityEngine.UIElements;
@@ -126,6 +127,21 @@ namespace UnityEditor
         {
             get { return m_ShowContextualTools; }
             set { m_ShowContextualTools = value; }
+        }
+
+        internal static Transform GetDefaultParentObjectIfSet()
+        {
+            Transform parentObject = null;
+            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            string activeSceneGUID = prefabStage != null ? prefabStage.scene.guid : EditorSceneManager.GetActiveScene().guid;
+            int id = SessionState.GetInt(SceneHierarchy.GetDefaultOriginKeyForScene(activeSceneGUID), 0);
+            if (id != 0)
+            {
+                var objectFromInstanceID = EditorUtility.InstanceIDToObject(id) as GameObject;
+                parentObject = objectFromInstanceID?.gameObject?.transform;
+            }
+
+            return parentObject;
         }
 
         static void OnSelectedObjectWasDestroyed(int unused)
@@ -241,11 +257,17 @@ namespace UnityEditor
             get { return new Rect(0, toolbarHeight, position.width, sceneViewHeight); }
         }
 
-        Transform m_CustomParentForDraggedObjects;
+        Transform m_CustomParentForNewGameObjects;
         protected internal Transform customParentForDraggedObjects
         {
-            get { return m_CustomParentForDraggedObjects; }
-            set { m_CustomParentForDraggedObjects = value; }
+            get { return customParentForNewGameObjects; }
+            set { customParentForNewGameObjects = value; }
+        }
+
+        internal Transform customParentForNewGameObjects
+        {
+            get { return m_CustomParentForNewGameObjects; }
+            set { m_CustomParentForNewGameObjects = value; }
         }
 
         [NonSerialized]
@@ -297,15 +319,15 @@ namespace UnityEditor
             public bool showParticleSystems = true;
             public bool showVisualEffectGraphs = true;
 
-            internal bool fogEnabled => fxEnabled && showFog;
-            internal bool materialUpdateEnabled => fxEnabled && showMaterialUpdate;
-            internal bool skyboxEnabled => fxEnabled && showSkybox;
-            internal bool flaresEnabled => fxEnabled && showFlares;
-            internal bool imageEffectsEnabled => fxEnabled && showImageEffects;
-            internal bool particleSystemsEnabled => fxEnabled && showParticleSystems;
-            internal bool visualEffectGraphsEnabled => fxEnabled && showVisualEffectGraphs;
+            public bool fogEnabled => fxEnabled && showFog;
+            public bool materialUpdateEnabled => fxEnabled && showMaterialUpdate;
+            public bool skyboxEnabled => fxEnabled && showSkybox;
+            public bool flaresEnabled => fxEnabled && showFlares;
+            public bool imageEffectsEnabled => fxEnabled && showImageEffects;
+            public bool particleSystemsEnabled => fxEnabled && showParticleSystems;
+            public bool visualEffectGraphsEnabled => fxEnabled && showVisualEffectGraphs;
 
-            [SerializeField] bool m_FxEnabled;
+            [SerializeField] bool m_FxEnabled = true;
 
             public SceneViewState()
             {
@@ -313,6 +335,7 @@ namespace UnityEditor
 
             public SceneViewState(SceneViewState other)
             {
+                fxEnabled = other.fxEnabled;
                 showFog = other.showFog;
                 showMaterialUpdate = other.showMaterialUpdate;
                 showSkybox = other.showSkybox;
@@ -360,7 +383,7 @@ namespace UnityEditor
                 showVisualEffectGraphs = value;
             }
 
-            internal bool fxEnabled
+            public bool fxEnabled
             {
                 get { return m_FxEnabled; }
                 set { m_FxEnabled = value; }
@@ -876,7 +899,6 @@ namespace UnityEditor
         static Shader s_ShowMipsShader;
         static Shader s_ShowTextureStreamingShader;
         static Shader s_AuraShader;
-        static Shader s_BuildFilterShader;
         static Material s_FadeMaterial;
         static Material s_ApplyFilterMaterial;
         static Texture2D s_MipColorsTexture;
@@ -1055,6 +1077,7 @@ namespace UnityEditor
         {
             titleContent = GetLocalizedTitleContent();
             m_RectSelection = new RectSelection(this);
+            SceneViewMotion.ResetDragState();
 
             if (m_Grid == null)
                 m_Grid = new SceneViewGrid();
@@ -1076,6 +1099,7 @@ namespace UnityEditor
             sceneViewGrids.gridVisibilityChanged += GridOnGridVisibilityChanged;
 
             wantsMouseMove = true;
+            wantsLessLayoutEvents = true;
             wantsMouseEnterLeaveWindow = true;
             s_SceneViews.Add(this);
 
@@ -1126,6 +1150,8 @@ namespace UnityEditor
             m_CameraViewVisualElement = CreateCameraRectVisualElement();
 
             rootVisualElement.Add(m_CameraViewVisualElement);
+
+            Repaint();
         }
 
         VisualElement CreateCameraRectVisualElement()
@@ -1316,6 +1342,12 @@ namespace UnityEditor
                 RefreshAudioPlay();
 
             RefreshToolbarHeight();
+        }
+
+        internal override void OnMaximized()
+        {
+            SceneViewMotion.ResetDragState();
+            Repaint();
         }
 
         void RefreshToolbarHeight()
@@ -2058,10 +2090,7 @@ namespace UnityEditor
             // Fourth pass: Draw objects which do meet filter in a mask
             RenderTexture.active = m_SceneTargetTexture;
             GL.Clear(false, true, Color.clear);
-
-            if (!s_BuildFilterShader)
-                s_BuildFilterShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewBuildFilter.shader") as Shader;
-            m_Camera.SetReplacementShader(s_BuildFilterShader, "");
+            m_Camera.ResetReplacementShader();
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
             // Final pass: Blit the faded scene where the mask isn't set
@@ -2650,15 +2679,15 @@ namespace UnityEditor
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
             }
 
+            sceneViewGrids.UpdateGridColor();
+
             Color origColor = GUI.color;
             Rect origCameraRect = m_Camera.rect;
             Rect windowSpaceCameraRect = cameraRect;
 
             HandleClickAndDragToFocus();
 
-            if (evt.type == EventType.Layout)
-                m_ShowSceneViewWindows = (lastActiveSceneView == this);
-
+            m_ShowSceneViewWindows = (lastActiveSceneView == this);
             m_SceneViewOverlay.Begin();
 
             bool oldFog;
@@ -2724,7 +2753,9 @@ namespace UnityEditor
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all
             //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
-            if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat))
+
+            bool hdrDisplayActive = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
+            if (!UseSceneFiltering() && evt.type == EventType.Repaint && GraphicsFormatUtility.IsIEEE754Format(m_SceneTargetTexture.graphicsFormat) && !hdrDisplayActive)
             {
                 var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;
@@ -2793,18 +2824,15 @@ namespace UnityEditor
 
             // Handle scene view motion when this scene view is active (always after duringSceneGui and Tools, so that
             // user tools can access RMB and alt keys if they want to override the event)
-            if (s_LastActiveSceneView == this)
-            {
-                // Do not pass the camera transform to the SceneViewMotion calculations.
-                // The camera transform is calculation *output* not *input*.
-                // Avoiding using it as input too avoids errors accumulating.
-                SceneViewMotion.DoViewTool(this);
-            }
+            // Do not pass the camera transform to the SceneViewMotion calculations.
+            // The camera transform is calculation *output* not *input*.
+            // Avoiding using it as input too avoids errors accumulating.
+            SceneViewMotion.DoViewTool(this);
 
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
             // Handle scene commands after EditorTool.OnSceneGUI so that tools can handle commands
-            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
+            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand || evt.keyCode == KeyCode.Escape)
                 CommandsGUI();
 
             Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
@@ -3100,7 +3128,7 @@ namespace UnityEditor
 
         static float ValidateSceneSize(float value)
         {
-            if (value == 0f)
+            if (value == 0f || float.IsNaN(value))
                 return float.Epsilon;
             if (value > k_MaxSceneViewSize)
                 return k_MaxSceneViewSize;
@@ -3439,7 +3467,7 @@ namespace UnityEditor
             FixNegativeSize();
             m_Position.target = point;
             m_Rotation.target = direction;
-            m_Size.target = Mathf.Abs(newSize);
+            m_Size.target = ValidateSceneSize(Mathf.Abs(newSize));
             // Update name in the top-right handle
             svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
@@ -3479,7 +3507,7 @@ namespace UnityEditor
             {
                 m_Position.target = point;
                 m_Rotation.target = direction;
-                m_Size.target = Mathf.Abs(newSize);
+                m_Size.target = ValidateSceneSize(Mathf.Abs(newSize));
                 m_Ortho.target = ortho;
             }
 
@@ -3558,8 +3586,11 @@ namespace UnityEditor
                     // call old-style C++ dragging handlers
                     if (DragAndDrop.visualMode != DragAndDropVisualMode.Copy)
                     {
+                        var defaultParentObject = GetDefaultParentObjectIfSet();
+                        var parent = defaultParentObject != null ? defaultParentObject : customParentForDraggedObjects;
+
                         GameObject go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
-                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kSceneDropDstId, go, pivot, Event.current.mousePosition, customParentForDraggedObjects, isPerform);
+                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kSceneDropDstId, go, pivot, Event.current.mousePosition, parent, isPerform);
                     }
 
                     if (isPerform && DragAndDrop.visualMode != DragAndDropVisualMode.None)
@@ -3609,17 +3640,30 @@ namespace UnityEditor
                     break;
                 case EventCommandNames.Duplicate:
                     if (execute)
-                        Unsupported.DuplicateGameObjectsUsingPasteboard();
+                    {
+                        CutCopyPasteUtility.DuplicateGO(customParentForNewGameObjects);
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.Copy:
                     if (execute)
-                        Unsupported.CopyGameObjectsToPasteboard();
+                    {
+                        CutCopyPasteUtility.CopyGO();
+                    }
+                    Event.current.Use();
+                    break;
+                case EventCommandNames.Cut:
+                    if (execute)
+                    {
+                        CutCopyPasteUtility.CutGO();
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.Paste:
                     if (execute)
-                        Unsupported.PasteGameObjectsFromPasteboard();
+                    {
+                        CutCopyPasteUtility.PasteGO(customParentForNewGameObjects);
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.SelectAll:
@@ -3665,6 +3709,12 @@ namespace UnityEditor
                     }
                     Event.current.Use();
                     break;
+            }
+            // Detect if we are canceling 'Cut' operation
+            if (Event.current.keyCode == KeyCode.Escape && CutBoard.hasCutboardData)
+            {
+                CutCopyPasteUtility.ResetCutboardAndRepaintHierarchyWindows();
+                Repaint();
             }
         }
 
@@ -3838,25 +3888,36 @@ namespace UnityEditor
 
                 if (method != null)
                 {
-                    using (new EditorPerformanceTracker($"Editor.{editor.GetType().Name}.OnSceneGUI"))
+                    MethodInfo methodEnabled = editor.GetType().GetMethod(
+                        "IsSceneGUIEnabled",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy,
+                        null,
+                        Type.EmptyTypes,
+                        null);
+
+                    bool enabled = (methodEnabled != null) ? (bool)methodEnabled.Invoke(null, null) : true;
+                    if (enabled)
                     {
-                        Editor.m_AllowMultiObjectAccess = true;
-                        for (int n = 0; n < editor.targets.Length; n++)
+                        using (new EditorPerformanceTracker($"Editor.{editor.GetType().Name}.OnSceneGUI"))
                         {
-                            ResetOnSceneGUIState();
-                            editor.referenceTargetIndex = n;
-
-                            EditorGUI.BeginChangeCheck();
-                            // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
-                            // since there's no harm in going through the serializedObject there if there's always only one target.
-                            Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
-                            method.Invoke(editor, null);
                             Editor.m_AllowMultiObjectAccess = true;
-                            if (EditorGUI.EndChangeCheck())
-                                editor.serializedObject.SetIsDifferentCacheDirty();
-                        }
+                            for (int n = 0; n < editor.targets.Length; n++)
+                            {
+                                ResetOnSceneGUIState();
+                                editor.referenceTargetIndex = n;
 
-                        ResetOnSceneGUIState();
+                                EditorGUI.BeginChangeCheck();
+                                // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
+                                // since there's no harm in going through the serializedObject there if there's always only one target.
+                                Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
+                                method.Invoke(editor, null);
+                                Editor.m_AllowMultiObjectAccess = true;
+                                if (EditorGUI.EndChangeCheck())
+                                    editor.serializedObject.SetIsDifferentCacheDirty();
+                            }
+
+                            ResetOnSceneGUIState();
+                        }
                     }
                 }
             }

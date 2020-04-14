@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Experimental;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
@@ -45,7 +46,7 @@ namespace UnityEditorInternal
                 case "mixer": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Audio.AudioMixerController));
                 case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.UIElements.VisualTreeAsset));
                 case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
-                case "lighting": return EditorGUIUtility.FindTexture(typeof(UnityEditor.LightingSettings));
+                case "lighting": return EditorGUIUtility.FindTexture(typeof(UnityEngine.LightingSettings));
 
                 case "ttf": case "otf": case "fon": case "fnt":
                     return EditorGUIUtility.FindTexture(typeof(Font));
@@ -218,9 +219,9 @@ namespace UnityEditorInternal
             if (entry.instanceID != 0 || string.IsNullOrEmpty(entry.guid))
                 return true;
 
-            var guids = new string[] { entry.guid };
-            var hashes = UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids, UnityEditor.Experimental.AssetDatabaseExperimental.ImportSyncMode.Queue);
-            if (!hashes[0].isValid)
+            GUID lookupGUID = new GUID(entry.guid);
+            var hash = UnityEditor.Experimental.AssetDatabaseExperimental.ProduceArtifactAsync(new ArtifactKey(lookupGUID));
+            if (!hash.isValid)
                 return false;
 
             string path = AssetDatabase.GUIDToAssetPath(entry.guid);
@@ -230,12 +231,15 @@ namespace UnityEditorInternal
 
         internal static List<int> TryGetInstanceIds(List<int> entryInstanceIds, List<string> entryInstanceGuids, int from, int to)
         {
-            List<string> guids = new List<string>();
+            List<GUID> guids = new List<GUID>();
 
             for (int i = from; i <= to; ++i)
             {
                 if (entryInstanceIds[i] == 0)
-                    guids.Add(entryInstanceGuids[i]);
+                {
+                    GUID parsedGuid = new GUID(entryInstanceGuids[i]);
+                    guids.Add(parsedGuid);
+                }
             }
 
             // Force import if needed so that we can get an instance ID for the entry
@@ -246,7 +250,7 @@ namespace UnityEditorInternal
             }
             else
             {
-                var hashes = UnityEditor.Experimental.AssetDatabaseExperimental.GetArtifactHashes(guids.ToArray(), UnityEditor.Experimental.AssetDatabaseExperimental.ImportSyncMode.Queue);
+                var hashes = UnityEditor.Experimental.AssetDatabaseExperimental.ProduceArtifactsAsync(guids.ToArray());
                 if (System.Array.FindIndex(hashes, a => !a.isValid) != -1)
                     return null;
 

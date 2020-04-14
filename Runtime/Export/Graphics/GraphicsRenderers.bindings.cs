@@ -296,7 +296,8 @@ namespace UnityEngine
 
         extern public float GetBlendShapeWeight(int index);
         extern public void  SetBlendShapeWeight(int index, float value);
-        extern public void  BakeMesh(Mesh mesh);
+        public void BakeMesh(Mesh mesh) { BakeMesh(mesh, false); }
+        extern public void  BakeMesh(Mesh mesh, bool useScale);
 
         [FreeFunction(Name = "SkinnedMeshRendererScripting::GetLocalAABB", HasExplicitThis = true)]
         extern private Bounds GetLocalAABB();
@@ -314,7 +315,9 @@ namespace UnityEngine
         extern public Mesh additionalVertexStreams { get; set; }
         extern public Mesh enlightenVertexStream { get; set; }
         extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
+        extern public float scaleInLightmap { get; set; }
         extern public ReceiveGI receiveGI { get; set; }
+        extern public bool stitchLightmapSeams { get; set; }
     }
 
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]

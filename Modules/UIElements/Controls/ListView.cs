@@ -22,11 +22,13 @@ namespace UnityEngine.UIElements
 
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
-            private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] {"itemHeight"}, defaultValue = s_DefaultItemHeight };
+            private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] { "itemHeight" }, defaultValue = s_DefaultItemHeight };
             private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
             private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
             private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
             private readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = false };
+            private readonly UxmlBoolAttributeDescription m_ShowBoundCollectionSize = new UxmlBoolAttributeDescription { name = "show-bound-collection-size", defaultValue = true };
+            private readonly UxmlBoolAttributeDescription m_HorizontalScrollingEnabled = new UxmlBoolAttributeDescription { name = "horizontal-scrolling", defaultValue = false };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -50,6 +52,8 @@ namespace UnityEngine.UIElements
                 listView.showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
                 listView.selectionType = m_SelectionType.GetValueFromBag(bag, cc);
                 listView.showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
+                listView.showBoundCollectionSize = m_ShowBoundCollectionSize.GetValueFromBag(bag, cc);
+                listView.horizontalScrollingEnabled = m_HorizontalScrollingEnabled.GetValueFromBag(bag, cc);
             }
         }
 
@@ -211,6 +215,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+
         // Persisted.
         [SerializeField]
         private float m_ScrollOffset;
@@ -272,6 +277,23 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public bool showBoundCollectionSize { get; set; } = true;
+
+        private bool m_HorizontalScrollingEnabled;
+
+        public bool horizontalScrollingEnabled
+        {
+            get { return m_HorizontalScrollingEnabled; }
+            set
+            {
+                if (m_HorizontalScrollingEnabled == value)
+                    return;
+
+                m_HorizontalScrollingEnabled = value;
+                m_ScrollView.SetScrollViewMode(value ? ScrollViewMode.VerticalAndHorizontal : ScrollViewMode.Vertical);
+            }
+        }
+
         internal static readonly int s_DefaultItemHeight = 30;
         internal static CustomStyleProperty<int> s_ItemHeightProperty = new CustomStyleProperty<int>("--unity-item-height");
 
@@ -297,7 +319,7 @@ namespace UnityEngine.UIElements
         public static readonly string itemSelectedVariantUssClassName = itemUssClassName + "--selected";
         public static readonly string itemAlternativeBackgroundUssClassName = itemUssClassName + "--alternative-background";
 
-        internal static readonly string s_BackgroundFillUssClassName  = ussClassName + "__background";
+        internal static readonly string s_BackgroundFillUssClassName = ussClassName + "__background";
 
         public ListView()
         {
@@ -462,27 +484,21 @@ namespace UnityEngine.UIElements
                 else
                     m_ScrollView.scrollOffset = new Vector2(0, itemsSource.Count * pixelAlignedItemHeight);
             }
-            else if (m_FirstVisibleIndex > index)
+            else if (m_FirstVisibleIndex >= index)
             {
-                m_ScrollView.scrollOffset = Vector2.up * pixelAlignedItemHeight * index;
+                m_ScrollView.scrollOffset = Vector2.up * (pixelAlignedItemHeight * index);
             }
-            else // index >= first
+            else // index > first
             {
-                int actualCount = (int)(m_LastHeight / pixelAlignedItemHeight);
+                var actualCount = (int)(m_LastHeight / pixelAlignedItemHeight);
                 if (index < m_FirstVisibleIndex + actualCount)
                     return;
 
-                bool someItemIsPartiallyVisible = (int)(m_LastHeight - actualCount * pixelAlignedItemHeight) != 0;
-                int d = index - actualCount;
+                var d = index - actualCount;
+                var visibleOffset = pixelAlignedItemHeight - (m_LastHeight - actualCount * pixelAlignedItemHeight);
+                var yScrollOffset = pixelAlignedItemHeight * d + visibleOffset;
 
-                // we're scrolling down in that case
-                // if the list view size is not an integer multiple of the item height
-                // the selected item might be the last visible and truncated one
-                // in that case, increment by one the index
-                if (someItemIsPartiallyVisible)
-                    d++;
-
-                m_ScrollView.scrollOffset = Vector2.up * pixelAlignedItemHeight * d;
+                m_ScrollView.scrollOffset =  new Vector2(m_ScrollView.scrollOffset.x, yScrollOffset);
             }
         }
 
@@ -732,7 +748,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            SetSelection(new[] {index});
+            SetSelection(new[] { index });
         }
 
         public void SetSelection(IEnumerable<int> indices)
@@ -802,6 +818,12 @@ namespace UnityEngine.UIElements
             m_Dragger.dragAndDropController = dragAndDropController;
         }
 
+        //Used for unit testing
+        internal IListViewDragAndDropController GetDragAndDropController()
+        {
+            return m_Dragger?.dragAndDropController;
+        }
+
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
@@ -818,6 +840,8 @@ namespace UnityEngine.UIElements
             m_ScrollOffset = offset;
             var pixelAlignedItemHeight = resolvedItemHeight;
             int fistVisibleItem = (int)(offset / pixelAlignedItemHeight);
+
+            m_ScrollView.contentContainer.style.paddingTop = fistVisibleItem * pixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = itemsSource.Count * pixelAlignedItemHeight;
 
             if (fistVisibleItem != m_FirstVisibleIndex)
@@ -840,7 +864,7 @@ namespace UnityEngine.UIElements
                             inserting.Add(last);
                             m_Pool.RemoveAt(m_Pool.Count - 1); //we remove from the end
 
-                            last.element.SendToBack();  //We send the element to the top of the list (back in z-order)
+                            last.element.SendToBack(); //We send the element to the top of the list (back in z-order)
                         }
 
                         m_ScrollInsertionList = m_Pool;
@@ -871,8 +895,15 @@ namespace UnityEngine.UIElements
                     }
 
                     //Let's rebind everything
-                    for (var i = 0; i < m_Pool.Count && i + m_FirstVisibleIndex < itemsSource.Count; i++)
-                        Setup(m_Pool[i], i + m_FirstVisibleIndex);
+                    for (var i = 0; i < m_Pool.Count; i++)
+                    {
+                        int index = i + m_FirstVisibleIndex;
+
+                        if (index < itemsSource.Count)
+                            Setup(m_Pool[i], index);
+                        else
+                            m_Pool[i].element.style.display = DisplayStyle.None;
+                    }
                 }
             }
         }
@@ -964,11 +995,11 @@ namespace UnityEngine.UIElements
                         m_Pool.Add(recycledItem);
 
                         item.AddToClassList("unity-listview-item");
+                        item.style.position = Position.Relative;
                         item.style.marginTop = 0f;
                         item.style.marginBottom = 0f;
-                        item.style.position = Position.Absolute;
-                        item.style.left = 0f;
-                        item.style.right = 0f;
+                        item.style.flexGrow = 0f;
+                        item.style.flexShrink = 0f;
                         item.style.height = pixelAlignedItemHeight;
                         if (index < itemsSource.Count)
                         {
@@ -976,7 +1007,7 @@ namespace UnityEngine.UIElements
                         }
                         else
                         {
-                            item.style.visibility = Visibility.Hidden;
+                            item.style.display = DisplayStyle.None;
                         }
 
                         Add(item);
@@ -993,7 +1024,7 @@ namespace UnityEngine.UIElements
         private void Setup(RecycledItem recycledItem, int newIndex)
         {
             var newId = GetIdFromIndex(newIndex);
-            recycledItem.element.style.visibility = Visibility.Visible;
+            recycledItem.element.style.display = DisplayStyle.Flex;
             if (recycledItem.index == newIndex) return;
 
             m_LastItemIndex = newIndex;
@@ -1005,11 +1036,18 @@ namespace UnityEngine.UIElements
             if (recycledItem.index != RecycledItem.kUndefinedIndex)
                 unbindItem?.Invoke(recycledItem.element, recycledItem.index);
 
-            var pixelAlignedItemHeight = resolvedItemHeight;
             recycledItem.index = newIndex;
             recycledItem.id = newId;
-            recycledItem.element.style.top = recycledItem.index * pixelAlignedItemHeight;
-            recycledItem.element.style.bottom = (itemsSource.Count - recycledItem.index - 1) * pixelAlignedItemHeight;
+            int indexInParent = newIndex - m_FirstVisibleIndex;
+            if (indexInParent == contentContainer.childCount)
+            {
+                recycledItem.element.BringToFront();
+            }
+            else
+            {
+                recycledItem.element.PlaceBehind(contentContainer[indexInParent]);
+            }
+
             bindItem(recycledItem.element, recycledItem.index);
             recycledItem.SetSelected(m_SelectedIds.Contains(newId));
         }
@@ -1033,7 +1071,7 @@ namespace UnityEngine.UIElements
                 var itemsToAdd = itemsCount - m_EmptyRows.childCount;
                 for (var i = 0; i < itemsToAdd; i++)
                 {
-                    var row  = new VisualElement();
+                    var row = new VisualElement();
                     //Inline style is used to prevent a user from changing an item flexShrink property.
                     row.style.flexShrink = 0;
                     m_EmptyRows.Add(row);

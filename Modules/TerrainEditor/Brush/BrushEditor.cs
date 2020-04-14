@@ -24,9 +24,12 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static GUIContent maskTexture = EditorGUIUtility.TrTextContent("Mask texture");
-            public static GUIContent remap = EditorGUIUtility.TrTextContent("Remap");
-            public static GUIContent remapInvert = EditorGUIUtility.TrTextContent("Invert Range");
+            public static GUIContent readonlyText = EditorGUIUtility.TrTextContent("One or more selected Brushes are read-only.");
+            public static GUIContent maskTexture = EditorGUIUtility.TrTextContent("Mask Texture", "Texture Red channel controls the shape of the Brush");
+            public static GUIContent falloff = EditorGUIUtility.TrTextContent("Falloff Curve", "Controls the Brush falloff curve, over the distance from the center of the Brush.");
+            public static GUIContent radiusScale = EditorGUIUtility.TrTextContent("Falloff Radius Scale", "Controls the radius of the falloff curve.");
+            public static GUIContent remap = EditorGUIUtility.TrTextContent("Brush Remap", "Remaps the grayscale values of the Brush");
+            public static GUIContent remapInvert = EditorGUIUtility.TrTextContent("Brush Invert", "Inverts the Brush shape, swapping black and white");
         }
 
 
@@ -54,11 +57,13 @@ namespace UnityEditor
         {
             if (IsAnyReadOnly())
             {
-                EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent("One or more selected brushes are read-only."));
+                EditorGUILayout.HelpBox(Styles.readonlyText);
                 return;
             }
 
             serializedObject.Update();
+
+            bool brushChanged = false;
             EditorGUI.BeginChangeCheck();
             Texture2D origMask = (Texture2D)m_Mask.objectReferenceValue;
             Texture2D mask = (Texture2D)EditorGUILayout.ObjectField(Styles.maskTexture,
@@ -66,31 +71,37 @@ namespace UnityEditor
             if (mask == null)
             {
                 mask = Brush.DefaultMask();
-                m_HasChanged = true;
+                brushChanged = true;
             }
 
             if (origMask != mask)
                 m_Mask.objectReferenceValue = mask;
 
+            EditorGUILayout.CurveField(m_Falloff, Color.white, new Rect(0, 0, 1, 1), Styles.falloff);
+            EditorGUILayout.PropertyField(m_RadiusScale, Styles.radiusScale);
+
             float blackWhiteRemapMin = m_BlackWhiteRemapMin.floatValue;
             float blackWhiteRemapMax = m_BlackWhiteRemapMax.floatValue;
-
             EditorGUILayout.MinMaxSlider(Styles.remap, ref blackWhiteRemapMin, ref blackWhiteRemapMax, 0.0f, 1.0f);
-            EditorGUILayout.PropertyField(m_InvertRemapRange);
-            EditorGUILayout.CurveField(m_Falloff, Color.white, new Rect(0, 0, 1, 1));
-            EditorGUILayout.PropertyField(m_RadiusScale);
             if (m_BlackWhiteRemapMin.floatValue != blackWhiteRemapMin || m_BlackWhiteRemapMax.floatValue != blackWhiteRemapMax)
             {
                 m_BlackWhiteRemapMin.floatValue = blackWhiteRemapMin;
                 m_BlackWhiteRemapMax.floatValue = blackWhiteRemapMax;
-                m_HasChanged = true;
+                brushChanged = true;
             }
-            m_HasChanged |= EditorGUI.EndChangeCheck();
+            EditorGUILayout.PropertyField(m_InvertRemapRange, Styles.remapInvert);
+
+            brushChanged |= EditorGUI.EndChangeCheck();
+            m_HasChanged |= brushChanged;
+
             serializedObject.ApplyModifiedProperties();
 
-            foreach (Brush b in targets)
+            if (brushChanged)
             {
-                b.SetDirty(m_HasChanged);
+                foreach (Brush b in targets)
+                {
+                    b.SetDirty(true);
+                }
             }
         }
 

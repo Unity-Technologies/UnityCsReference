@@ -361,6 +361,9 @@
     <Compile Include="..\..\Editor\Mono\AssetPipeline\BumpMapSettings.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\BumpMapSettings.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetPipeline\ComputeShaderImporter.bindings.cs">
+      <Link>Editor\Mono\AssetPipeline\ComputeShaderImporter.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\IHVImageFormatImporter.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\IHVImageFormatImporter.bindings.cs</Link>
     </Compile>
@@ -844,6 +847,9 @@
     <Compile Include="..\..\Editor\Mono\CutBoard.cs">
       <Link>Editor\Mono\CutBoard.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\CutCopyPasteUtility.cs">
+      <Link>Editor\Mono\CutCopyPasteUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\DataWatchService.cs">
       <Link>Editor\Mono\DataWatchService.cs</Link>
     </Compile>
@@ -1071,9 +1077,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GI\LightingDataAsset.bindings.cs">
       <Link>Editor\Mono\GI\LightingDataAsset.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GI\LightingSettings.bindings.cs">
-      <Link>Editor\Mono\GI\LightingSettings.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GI\LightmapEditorSettings.bindings.cs">
       <Link>Editor\Mono\GI\LightmapEditorSettings.bindings.cs</Link>
@@ -1909,6 +1912,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\CompositeCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\CompositeCollider2DEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\ComputeShaderImporterInspector.cs">
+      <Link>Editor\Mono\Inspector\ComputeShaderImporterInspector.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ComputeShaderInspector.cs">
       <Link>Editor\Mono\Inspector\ComputeShaderInspector.cs</Link>
     </Compile>
@@ -2457,9 +2463,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\NumericFieldDraggerUtility.cs">
       <Link>Editor\Mono\NumericFieldDraggerUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\OSColorPicker.bindings.cs">
-      <Link>Editor\Mono\OSColorPicker.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\OSUtil.bindings.cs">
       <Link>Editor\Mono\OSUtil.bindings.cs</Link>
@@ -3157,6 +3160,15 @@
     <Compile Include="..\..\Editor\Mono\SearchUtility.cs">
       <Link>Editor\Mono\SearchUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\DefaultImplementations.cs">
+      <Link>Editor\Mono\Search\DefaultImplementations.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\SearchService.cs">
+      <Link>Editor\Mono\Search\SearchService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\SearchServiceSettings.cs">
+      <Link>Editor\Mono\Search\SearchServiceSettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Selection.bindings.cs">
       <Link>Editor\Mono\Selection.bindings.cs</Link>
     </Compile>
@@ -3309,6 +3321,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\BindingExtensions.cs">
       <Link>Editor\Mono\UIElements\Controls\BindingExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\BindingsInterface.cs">
+      <Link>Editor\Mono\UIElements\Controls\BindingsInterface.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\BoundsField.cs">
       <Link>Editor\Mono\UIElements\Controls\BoundsField.cs</Link>
@@ -3988,6 +4003,9 @@
     <Compile Include="..\..\Modules\GraphViewEditor\Elements\IResizable.cs">
       <Link>Modules\GraphViewEditor\Elements\IResizable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Elements\Line2.cs">
+      <Link>Modules\GraphViewEditor\Elements\Line2.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Elements\MiniMap.cs">
       <Link>Modules\GraphViewEditor\Elements\MiniMap.cs</Link>
     </Compile>
@@ -4051,6 +4069,9 @@
     <Compile Include="..\..\Modules\GraphViewEditor\IconBadge.cs">
       <Link>Modules\GraphViewEditor\IconBadge.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\LineView.cs">
+      <Link>Modules\GraphViewEditor\LineView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\ClickSelector.cs">
       <Link>Modules\GraphViewEditor\Manipulators\ClickSelector.cs</Link>
     </Compile>
@@ -4089,6 +4110,12 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\ShortcutHandler.cs">
       <Link>Modules\GraphViewEditor\Manipulators\ShortcutHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\SnapService.cs">
+      <Link>Modules\GraphViewEditor\Manipulators\SnapService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\Snapper.cs">
+      <Link>Modules\GraphViewEditor\Manipulators\Snapper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\Zoomer.cs">
       <Link>Modules\GraphViewEditor\Manipulators\Zoomer.cs</Link>
@@ -4207,9 +4234,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreVersionList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\ApplicationUtil.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BasePackage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\BasePackage.cs</Link>
     </Compile>
@@ -4231,8 +4255,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Resources.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\Resources.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UIError.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\UIError.cs</Link>
@@ -4246,47 +4270,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IApplicationUtil.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IApplicationUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreCache.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreClient.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreClient.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreOAuth.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreOAuth.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreRestAPI.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreRestAPI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IAssetStoreUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadManager.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IDownloadManager.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackage.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageDatabase.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageDatabase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageFiltering.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageFiltering.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmCache.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IUpmClient.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs</Link>
@@ -4326,6 +4317,27 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\SelectionProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\SelectionProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\UnityConnectProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\UnityConnectProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\UnityOAuthProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\UnityOAuthProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ServicesContainer.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ServicesContainer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs</Link>
@@ -4426,23 +4438,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerMenuExtension.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerPrefs.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerPrefs.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerToolbarExtension.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPage.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPage.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPageManager.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPageManager.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDependencySampleItemLowWidth.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDependencySampleItemLowWidth.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetails.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetails.cs</Link>
@@ -5738,7 +5747,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEditor.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_ASSETPIPELINE_GUI;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

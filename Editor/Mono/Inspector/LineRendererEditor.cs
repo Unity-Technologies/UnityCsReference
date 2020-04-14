@@ -20,7 +20,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Lines can rotate to face their transform component or the camera. When using Local mode, lines face the XY plane of the Transform.");
             public static readonly GUIContent colorGradient = EditorGUIUtility.TrTextContent("Color", "The gradient describing the color along the line.");
-            public static readonly string disabledEditMessage = L10n.Tr("Editing is only available when editing a single LineRenderer");
+            public static readonly string disabledEditMessage = L10n.Tr("Editing is only available when editing a single LineRenderer in a scene.");
             public static readonly GUIContent inputMode = EditorGUIUtility.TrTextContent("Input", "Use mouse position or physics raycast to determine where to create points.");
             public static readonly GUIContent layerMask = EditorGUIUtility.TrTextContent("Layer Mask", "The layer mask to use when performing raycasts.");
             public static readonly GUIContent normalOffset = EditorGUIUtility.TrTextContent("Offset", "The offset applied to created points either from the scene camera or raycast normal, when using physics.");
@@ -95,6 +95,7 @@ namespace UnityEditor
         AnimBool m_ShowPositionsAnimation;
 
         bool m_IsMultiEditing;
+        bool m_IsGameObjectEditable;
 
         public static readonly float kPositionsViewMinHeight = 30;
 
@@ -108,11 +109,18 @@ namespace UnityEditor
             get { return IsLineRendererEditMode(EditMode.editMode) && EditMode.IsOwner(this); }
         }
 
+        private bool canEditInScene
+        {
+            get { return !m_IsMultiEditing && m_IsGameObjectEditable; }
+        }
+
         public override void OnEnable()
         {
             base.OnEnable();
 
-            m_PointEditor = new LineRendererEditor(target as LineRenderer, this);
+            var lineRenderer = target as LineRenderer;
+            m_PointEditor = new LineRendererEditor(lineRenderer, this);
+
             m_PointEditor.Deselect();
             SceneView.duringSceneGui += OnSceneGUIDelegate;
             Undo.undoRedoPerformed += UndoRedoPerformed;
@@ -135,13 +143,14 @@ namespace UnityEditor
             m_PositionsView = new LineRendererPositionsView(m_Positions);
             m_PositionsView.selectionChangedCallback += PositionsViewSelectionChanged;
             if (targets.Length == 1)
-                m_PositionsView.lineRenderer = target as LineRenderer;
+                m_PositionsView.lineRenderer = lineRenderer;
 
             m_ShowPositionsAnimation = new AnimBool(false, Repaint) { value = m_Positions.isExpanded };
             EditorApplication.contextualPropertyMenu += OnPropertyContextMenu;
 
             // We cannot access isEditingMultipleObjects when drawing the SceneView so we need to cache it here for later use.
             m_IsMultiEditing = serializedObject.isEditingMultipleObjects;
+            m_IsGameObjectEditable = (lineRenderer.gameObject.hideFlags & HideFlags.NotEditable) == 0;
         }
 
         void OnPropertyContextMenu(GenericMenu menu, SerializedProperty property)
@@ -243,12 +252,12 @@ namespace UnityEditor
 
         private void DrawToolbar()
         {
-            if (m_IsMultiEditing)
+            if (!canEditInScene)
             {
                 EditorGUILayout.HelpBox(Styles.disabledEditMessage, MessageType.Info);
             }
 
-            EditorGUI.BeginDisabled(m_IsMultiEditing);
+            EditorGUI.BeginDisabled(!canEditInScene);
             EditorGUILayout.Space();
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
@@ -361,7 +370,7 @@ namespace UnityEditor
         {
             var lineRenderer = target as LineRenderer;
 
-            if (!showSimplifyPreview || m_IsMultiEditing || !lineRenderer.enabled)
+            if (!showSimplifyPreview || !canEditInScene || !lineRenderer.enabled)
                 return;
 
             if (m_PreviewPoints == null && lineRenderer.positionCount > 2)

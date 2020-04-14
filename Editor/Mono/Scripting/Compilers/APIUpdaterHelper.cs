@@ -53,21 +53,25 @@ namespace UnityEditor.Scripting.Compilers
 
         public static void UpdateScripts(string responseFile, string sourceExtension, string[] sourceFiles)
         {
-            if (!APIUpdaterManager.WaitForVCSServerConnection(true))
-            {
-                return;
-            }
-
+            bool anyFileInAssetsFolder = false;
             var pathMappingsFilePath = Path.GetTempFileName();
-
             var filePathMappings = new List<string>(sourceFiles.Length);
             foreach (var source in sourceFiles)
             {
-                var f = CommandLineFormatter.PrepareFileName(source);
-                f = Paths.UnifyDirectorySeparator(f);
+                anyFileInAssetsFolder |= (source.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1);
 
-                if (f != source)
+                var f = CommandLineFormatter.PrepareFileName(source);
+                if (f != source) // assume path represents a virtual path and needs to be mapped.
+                {
+                    f = Paths.UnifyDirectorySeparator(f);
                     filePathMappings.Add(f + " => " + source);
+                }
+            }
+
+            // Only try to connect to VCS if there are files under VCS that need to be updated
+            if (anyFileInAssetsFolder && !APIUpdaterManager.WaitForVCSServerConnection(true))
+            {
+                return;
             }
 
             File.WriteAllLines(pathMappingsFilePath, filePathMappings.ToArray());
@@ -81,7 +85,7 @@ namespace UnityEditor.Scripting.Compilers
                     pathMappingsFilePath,
                     responseFile);
 
-                RunUpdatingProgram("ScriptUpdater.exe", arguments, tempOutputPath);
+                RunUpdatingProgram("ScriptUpdater.exe", arguments, tempOutputPath, anyFileInAssetsFolder);
             }
 #pragma warning disable CS0618 // Type or member is obsolete
             catch (Exception ex) when (!(ex is StackOverflowException) && !(ex is ExecutionEngineException))
@@ -107,25 +111,27 @@ namespace UnityEditor.Scripting.Compilers
                 + responseFile;  // Response file is always relative and without spaces, no need to quote.
         }
 
-        static void RunUpdatingProgram(string executable, string arguments, string tempOutputPath)
+        static void RunUpdatingProgram(string executable, string arguments, string tempOutputPath, bool anyFileInAssetsFolder)
         {
             var scriptUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/" + executable; // ManagedProgram will quote this path for us.
-            var program = new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null, scriptUpdaterPath, arguments, false, null);
-            program.LogProcessStartInfo();
-            program.Start();
-            program.WaitForExit();
+            using (var program = new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null, scriptUpdaterPath, arguments, false, null))
+            {
+                program.LogProcessStartInfo();
+                program.Start();
+                program.WaitForExit();
 
-            Console.WriteLine(string.Join(Environment.NewLine, program.GetStandardOutput()));
+                Console.WriteLine(string.Join(Environment.NewLine, program.GetStandardOutput()));
 
-            HandleUpdaterReturnValue(program, tempOutputPath);
+                HandleUpdaterReturnValue(program, tempOutputPath, anyFileInAssetsFolder);
+            }
         }
 
-        static void HandleUpdaterReturnValue(ManagedProgram program, string tempOutputPath)
+        static void HandleUpdaterReturnValue(ManagedProgram program, string tempOutputPath, bool anyFileInAssetsFolder)
         {
             if (program.ExitCode == 0)
             {
                 Console.WriteLine(string.Join(Environment.NewLine, program.GetErrorOutput()));
-                CopyUpdatedFiles(tempOutputPath);
+                CopyUpdatedFiles(tempOutputPath, anyFileInAssetsFolder);
                 return;
             }
 
@@ -147,7 +153,7 @@ namespace UnityEditor.Scripting.Compilers
             APIUpdaterManager.ReportGroupedAPIUpdaterFailure(msg);
         }
 
-        static void CopyUpdatedFiles(string tempOutputPath)
+        static void CopyUpdatedFiles(string tempOutputPath, bool anyFileInAssetsFolder)
         {
             if (!Directory.Exists(tempOutputPath))
                 return;
@@ -155,7 +161,7 @@ namespace UnityEditor.Scripting.Compilers
             var files = Directory.GetFiles(tempOutputPath, "*.*", SearchOption.AllDirectories);
 
             var pathsRelativeToTempOutputPath = files.Select(path => path.Replace(tempOutputPath, ""));
-            if (Provider.enabled && !CheckoutAndValidateVCSFiles(pathsRelativeToTempOutputPath))
+            if (anyFileInAssetsFolder && Provider.enabled && !CheckoutAndValidateVCSFiles(pathsRelativeToTempOutputPath))
                 return;
 
             var destRelativeFilePaths = files.Select(sourceFileName => sourceFileName.Substring(tempOutputPath.Length)).ToArray();
@@ -445,6 +451,8 @@ namespace UnityEditor.Scripting.Compilers
         {
             return string.Join(".", parts.ToArray());
         }
+
+        public string ToStringStartingWith(string prefix) => $"{prefix}.{ToString()}";
     }
 
     /*
@@ -543,6 +551,9 @@ namespace UnityEditor.Scripting.Compilers
             var curr = memberReferenceExpression;
             var last = memberReferenceExpression;
             bool matchesPosition = false;
+
+            //TODO: Can we avoid calling AddIdentifierPartsTakingAliasesIntoAccount() here? Reasoning is that we may not add the identifier to the list
+            //      see the condition outside the while.
             while (curr != null)
             {
                 if (!matchesPosition && MatchesPosition(curr.StartLocation, curr.EndLocation.Column))
@@ -553,14 +564,22 @@ namespace UnityEditor.Scripting.Compilers
                 curr = curr.TargetObject as MemberReferenceExpression;
             }
 
-            var lastIdentifier = last.TargetObject as IdentifierExpression;
-            if (lastIdentifier == null || (!matchesPosition && !MatchesPosition(lastIdentifier.StartLocation, lastIdentifier.EndLocation.Column)))
+            var root = last.TargetObject as IdentifierExpression;
+            // In some scenarios the compiler may not emit an error if an invalid namespace of a FNQ type reference is also imported (*using*). In this scenario the compiler only reports the invalid
+            // namespace in the *using statement*; in order to make sure all candidates indentifiers will be considered (added to the identifiers list) we need also check this scenario
+            // (method TypeDeclaredInOffendingNamespace()).
+            if (root == null || (!TypeDeclaredInOffendingNamespace(identifier.ToStringStartingWith(root.Identifier)) && !matchesPosition && !MatchesPosition(root.StartLocation, root.EndLocation.Column)))
                 return base.VisitMemberReferenceExpression(memberReferenceExpression, data);
 
-            AddIdentifierPartsTakingAliasesIntoAccount(ref identifier, lastIdentifier.Identifier);
+            AddIdentifierPartsTakingAliasesIntoAccount(ref identifier, root.Identifier);
             identifiers.Add(identifier);
 
             return null;
+        }
+
+        bool TypeDeclaredInOffendingNamespace(string candidateFQN)
+        {
+            return _isOffendingUsing && usings.Any(u => candidateFQN.StartsWith(u.Name));
         }
 
         public override object VisitUsing(Using @using, object data)

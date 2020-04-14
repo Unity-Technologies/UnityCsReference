@@ -117,6 +117,9 @@ namespace UnityEditor
         [FreeFunction]
         public static extern void CopyGameObjectsToPasteboard();
 
+        [FreeFunction]
+        internal static extern bool CanPasteGameObjectsFromPasteboard();
+
         public static void PasteGameObjectsFromPasteboard()
         {
             PasteGameObjectsFromPasteboard(null);

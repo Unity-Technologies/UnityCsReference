@@ -45,10 +45,8 @@ namespace UnityEditor
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
-        public VisualElement rootVisualElement => this.GetRootVisualElement();
-
-        internal System.Object uiRootElement { get; set; }
-        internal Action uiRootElementCreated { get; set; }
+        private VisualElement m_UIRootElement;
+        public VisualElement rootVisualElement => m_UIRootElement ?? (m_UIRootElement = CreateRoot());
 
         [HideInInspector]
         [SerializeField]
@@ -166,6 +164,20 @@ namespace UnityEditor
             set
             {
                 m_EventInterests.wantsMouseEnterLeaveWindow = value;
+                MakeParentsSettingsMatchMe();
+            }
+        }
+
+        // Indicates that the editor window will only receive a layout pass before a repaint event.
+        public bool wantsLessLayoutEvents
+        {
+            get
+            {
+                return m_EventInterests.wantsLessLayoutEvents;
+            }
+            set
+            {
+                m_EventInterests.wantsLessLayoutEvents = value;
                 MakeParentsSettingsMatchMe();
             }
         }
@@ -319,6 +331,8 @@ namespace UnityEditor
                 }
             }
         }
+
+        internal virtual void OnMaximized() {}
 
         // Is EditorWindow focused?
         public bool hasFocus { get { return m_Parent && m_Parent.actualView == this; } }
@@ -1140,15 +1154,32 @@ namespace UnityEditor
             }, null);
             Menu.AddSeparator($"{k_RootMenuItemName}/", menuIdx++);
 
+            int menuIndex = 1;
             foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
             {
                 var title = win.titleContent.text;
                 if (!String.IsNullOrEmpty(win.titleContent.tooltip) && win.titleContent.tooltip != title)
-                    title += " (" + win.titleContent.tooltip + ")";
+                    title = win.titleContent.tooltip;
                 title = title.Replace("/", "\\");
-                Menu.AddMenuItem($"{k_RootMenuItemName}/{title}", "", false, menuIdx++, () => win.Focus(), null);
+                Menu.AddMenuItem($"{k_RootMenuItemName}/{menuIndex++} {title}", "", false, menuIdx++, () => win.Focus(), null);
             }
             EditorUtility.Internal_UpdateAllMenus();
+        }
+
+        private static VisualElement CreateRoot()
+        {
+            var name = "rootVisualContainer";
+            var root = new VisualElement()
+            {
+                name = VisualElementUtils.GetUniqueName(name),
+                pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
+                viewDataKey = name,
+                renderHints = RenderHints.ClipWithScissors
+            };
+            root.pseudoStates |= PseudoStates.Root;
+            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
+            return root;
         }
     }
 
@@ -1172,45 +1203,6 @@ namespace UnityEditor
             public static int GetAntiAliasing(this EditorWindow window)
             {
                 return window.antiAliasing;
-            }
-
-            internal static VisualElement GetRootVisualElement(this EditorWindow window)
-            {
-                object rootElement = window.uiRootElement;
-
-                if (rootElement == null)
-                {
-                    var root = CreateRoot();
-                    window.uiRootElement = root;
-                    window.uiRootElementCreated?.Invoke();
-                    return root;
-                }
-
-                var result = rootElement as VisualElement;
-
-                if (result == null)
-                {
-                    Debug.Log($"An editor window can only use one UIElements version at a time. Root element of type \"{rootElement.GetType().AssemblyQualifiedName}\" was already created and assigned to this EditorWindow.");
-                    return null;
-                }
-
-                return result;
-            }
-
-            private static VisualElement CreateRoot()
-            {
-                var name = "rootVisualContainer";
-                var root = new VisualElement()
-                {
-                    name = VisualElementUtils.GetUniqueName(name),
-                    pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
-                    viewDataKey = name,
-                    renderHints = RenderHints.ClipWithScissors
-                };
-                root.pseudoStates |= PseudoStates.Root;
-                UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
-                root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
-                return root;
             }
         }
     }

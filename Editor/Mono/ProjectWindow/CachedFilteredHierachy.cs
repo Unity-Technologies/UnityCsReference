@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Experimental;
 using UnityEngine.Assertions;
 
@@ -95,7 +96,11 @@ namespace UnityEditor
         FilterResult[] m_Results = new FilterResult[0];     // When filtering of folder we have all sub assets here
         FilterResult[] m_VisibleItems = new FilterResult[0]; // Subset of m_Results used for showing/hiding sub assets
 
+        SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.Scene.searchType);
+
         HierarchyType m_HierarchyType;
+
+        public const int maxSearchAddCount = 3000;
 
         public FilteredHierarchy(HierarchyType type)
         {
@@ -130,9 +135,10 @@ namespace UnityEditor
 
         public void SetResults(int[] instanceIDs)
         {
+            var instanceIdSet = new HashSet<int>(instanceIDs);
             if (m_HierarchyType ==  HierarchyType.Assets)
             {
-                string[] rootPaths = new string[instanceIDs.Length];
+                var idsUnderEachRoot = new Dictionary<string, int>();
                 for (int i = 0; i < instanceIDs.Length; ++i)
                 {
                     var rootPath = "Assets";
@@ -143,16 +149,12 @@ namespace UnityEditor
                     if (packageInfo != null)
                         rootPath = packageInfo.assetPath;
 
-                    rootPaths[i] = rootPath;
+                    if (!idsUnderEachRoot.ContainsKey(rootPath))
+                        idsUnderEachRoot.Add(rootPath, 0);
+                    ++idsUnderEachRoot[rootPath];
                 }
 
-                System.Array.Resize(ref m_Results, instanceIDs.Length);
-                for (int i = 0; i < instanceIDs.Length; ++i)
-                {
-                    HierarchyProperty property = new HierarchyProperty(rootPaths[i], false);
-                    if (property.Find(instanceIDs[i], null))
-                        CopyPropertyData(ref m_Results[i], property);
-                }
+                SetAssetsResults(instanceIdSet, idsUnderEachRoot);
             }
             else
             {
@@ -164,6 +166,59 @@ namespace UnityEditor
                 {
                     if (property.Find(instanceIDs[i], null))
                         CopyPropertyData(ref m_Results[i], property);
+                }
+            }
+        }
+
+        internal void SetResults(int[] instanceIDs, string[] rootPaths)
+        {
+            var instanceIdSet = new HashSet<int>(instanceIDs);
+            if (m_HierarchyType == HierarchyType.Assets)
+            {
+                var idsUnderEachRoot = new Dictionary<string, int>();
+                foreach (var rootPath in rootPaths)
+                {
+                    if (!idsUnderEachRoot.ContainsKey(rootPath))
+                        idsUnderEachRoot.Add(rootPath, 0);
+                    ++idsUnderEachRoot[rootPath];
+                }
+                SetAssetsResults(instanceIdSet, idsUnderEachRoot);
+            }
+            else
+            {
+                HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
+                property.Reset();
+
+                System.Array.Resize(ref m_Results, instanceIDs.Length);
+                for (int i = 0; i < instanceIDs.Length; ++i)
+                {
+                    if (property.Find(instanceIDs[i], null))
+                        CopyPropertyData(ref m_Results[i], property);
+                }
+            }
+        }
+
+        void SetAssetsResults(HashSet<int> instanceIdsSet, Dictionary<string, int> idsUnderEachRoot)
+        {
+            System.Array.Resize(ref m_Results, instanceIdsSet.Count);
+            var currentResultIndex = 0;
+            var rootPaths = idsUnderEachRoot.Keys.ToArray();
+            var idCounts = idsUnderEachRoot.Values.ToArray();
+            for (var i = 0; i < rootPaths.Length; ++i)
+            {
+                var rootPath = rootPaths[i];
+                var nbIds = idCounts[i];
+                HierarchyProperty property = new HierarchyProperty(rootPath, false);
+                var propertiesFound = 0;
+                while (property.Next(null) && propertiesFound < nbIds)
+                {
+                    var instanceId = property.GetInstanceIDIfImported();
+                    if (instanceIdsSet.Contains(instanceId))
+                    {
+                        ++propertiesFound;
+                        CopyPropertyData(ref m_Results[currentResultIndex], property);
+                        ++currentResultIndex;
+                    }
                 }
             }
         }
@@ -198,13 +253,12 @@ namespace UnityEditor
 
         void SearchAllAssets(SearchFilter.SearchArea area)
         {
-            const int k_MaxAddCount = 3000;
             if (m_HierarchyType == HierarchyType.Assets)
             {
                 List<FilterResult> list = new List<FilterResult>();
                 list.AddRange(m_Results);
 
-                var maxAddCount = k_MaxAddCount;
+                var maxAddCount = maxSearchAddCount;
                 m_SearchFilter.searchArea = area;
                 var enumerator = AssetDatabase.EnumerateAllAssets(m_SearchFilter);
                 while (enumerator.MoveNext() && --maxAddCount >= 0)
@@ -219,7 +273,20 @@ namespace UnityEditor
             else if (m_HierarchyType == HierarchyType.GameObjects)
             {
                 HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
-                property.SetSearchFilter(m_SearchFilter);
+                m_SearchSessionHandler.BeginSession(() =>
+                {
+                    return new HierarchySearchContext
+                    {
+                        filter = m_SearchFilter,
+                        rootProperty = property,
+                        requiredTypeNames = m_SearchFilter.classNames,
+                        requiredTypes = searchFilter.classNames.Select(name => TypeCache.GetTypesDerivedFrom<Object>().FirstOrDefault(t => name == t.FullName || name == t.Name))
+                    };
+                });
+
+                var searchQuery = m_SearchFilter.originalText;
+                var searchContext = (HierarchySearchContext)m_SearchSessionHandler.context;
+                m_SearchSessionHandler.BeginSearch(searchQuery);
 
                 if (m_SearchFilter.sceneHandles != null &&
                     m_SearchFilter.sceneHandles.Length > 0)
@@ -227,17 +294,26 @@ namespace UnityEditor
                     property.SetCustomScenes(m_SearchFilter.sceneHandles);
                 }
 
-                int elements = property.CountRemaining(null);
-                elements = Mathf.Min(elements, k_MaxAddCount);
-                property.Reset();
+                var newResults = new List<FilterResult>();
+                while (property.Next(null))
+                {
+                    if (!SearchService.Scene.Filter(searchQuery, property, searchContext))
+                        continue;
+                    FilterResult newResult = new FilterResult();
+                    CopyPropertyData(ref newResult, property);
+                    newResults.Add(newResult);
+                }
+                int elements = newResults.Count;
+                elements = Mathf.Min(elements, maxSearchAddCount);
 
                 int i = m_Results.Length;
                 System.Array.Resize(ref m_Results, m_Results.Length + elements);
-                while (property.Next(null) && i < m_Results.Length)
+                for (var j = 0; j < elements && i < m_Results.Length; ++j, ++i)
                 {
-                    CopyPropertyData(ref m_Results[i], property);
-                    i++;
+                    m_Results[i] = newResults[j];
                 }
+
+                m_SearchSessionHandler.EndSearch();
             }
         }
 
@@ -387,6 +463,7 @@ namespace UnityEditor
                 {
                     HierarchyProperty gameObjects = new HierarchyProperty(HierarchyType.GameObjects, false);
                     gameObjects.SetSearchFilter(m_SearchFilter);
+                    m_SearchSessionHandler.EndSession();
                 }
             }
         }

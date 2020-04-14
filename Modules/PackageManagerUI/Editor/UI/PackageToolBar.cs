@@ -10,9 +10,18 @@ namespace UnityEditor.PackageManager.UI
     {
         internal new class UxmlFactory : UxmlFactory<PackageToolbar> {}
 
+        private ResourceLoader m_ResourceLoader;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+        }
+
         public PackageToolbar()
         {
-            var root = Resources.GetTemplate("PackageToolbar.uxml");
+            ResolveDependencies();
+
+            var root = m_ResourceLoader.GetTemplate("PackageToolbar.uxml");
             Add(root);
         }
     }

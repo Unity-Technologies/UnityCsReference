@@ -161,9 +161,11 @@ namespace UnityEditor
             {
                 emptySelection = false;
                 EditorGUILayout.MultiSelectionObjectTitleBar(oas);
-                SerializedObject so = new SerializedObject(oas);
-                EditorGUILayout.PropertyField(so.FindProperty("m_IsViewVolume"));
-                so.ApplyModifiedProperties();
+                using (var so = new SerializedObject(oas))
+                {
+                    EditorGUILayout.PropertyField(so.FindProperty("m_IsViewVolume"));
+                    so.ApplyModifiedProperties();
+                }
             }
 
             // Renderers
@@ -172,10 +174,12 @@ namespace UnityEditor
             {
                 emptySelection = false;
                 EditorGUILayout.MultiSelectionObjectTitleBar(renderers);
-                SerializedObject goso = new SerializedObject(gos);
-                SceneModeUtility.StaticFlagField("Occluder Static", goso.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.OccluderStatic);
-                SceneModeUtility.StaticFlagField("Occludee Static", goso.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.OccludeeStatic);
-                goso.ApplyModifiedProperties();
+                using (var goso = new SerializedObject(gos))
+                {
+                    SceneModeUtility.StaticFlagField("Occluder Static", goso.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.OccluderStatic);
+                    SceneModeUtility.StaticFlagField("Occludee Static", goso.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.OccludeeStatic);
+                    goso.ApplyModifiedProperties();
+                }
             }
 
             if (emptySelection)

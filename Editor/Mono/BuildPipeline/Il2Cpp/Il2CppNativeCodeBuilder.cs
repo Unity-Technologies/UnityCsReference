@@ -119,7 +119,7 @@ namespace UnityEditorInternal
         /// <returns>A list of full paths</returns>
         public virtual IEnumerable<string> ConvertIncludesToFullPaths(IEnumerable<string> relativeIncludePaths)
         {
-            var workingDirectory = Directory.GetCurrentDirectory();
+            var workingDirectory = IL2CPPBuilder.GetShortPathName(Directory.GetCurrentDirectory());
             return relativeIncludePaths.Select(path => Path.Combine(workingDirectory, path));
         }
 
@@ -131,7 +131,7 @@ namespace UnityEditorInternal
         /// <returns>The full output file path</returns>
         public virtual string ConvertOutputFileToFullPath(string outputFileRelativePath)
         {
-            return Path.Combine(Directory.GetCurrentDirectory(), outputFileRelativePath);
+            return Path.Combine(IL2CPPBuilder.GetShortPathName(Directory.GetCurrentDirectory()), outputFileRelativePath);
         }
 
         public void SetupStartInfo(ProcessStartInfo startInfo)

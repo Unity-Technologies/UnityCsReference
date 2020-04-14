@@ -103,13 +103,18 @@ namespace UnityEditor
                 scaleDelta = refAlignment * scaleDelta;
                 scaleDelta = Vector3.Scale(scaleDelta, refAlignment * Vector3.one);
 
+                var applySmartRounding = Tools.current != Tool.Rect;
+
                 if (preferRectResize)
                 {
                     if (rectTransform != null)
                     {
                         Vector2 newSizeDelta = sizeDelta + Vector2.Scale(rect.size, scaleDelta) - rect.size;
-                        newSizeDelta.x = MathUtils.RoundBasedOnMinimumDifference(newSizeDelta.x, minDifference.x);
-                        newSizeDelta.y = MathUtils.RoundBasedOnMinimumDifference(newSizeDelta.y, minDifference.y);
+                        if (applySmartRounding)
+                        {
+                            newSizeDelta.x = MathUtils.RoundBasedOnMinimumDifference(newSizeDelta.x, minDifference.x);
+                            newSizeDelta.y = MathUtils.RoundBasedOnMinimumDifference(newSizeDelta.y, minDifference.y);
+                        }
                         rectTransform.sizeDelta = newSizeDelta;
                         if (rectTransform.drivenByObject != null)
                             RectTransform.SendReapplyDrivenProperties(rectTransform);
@@ -126,9 +131,12 @@ namespace UnityEditor
                     }
                 }
 
-                scaleDelta.x = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.x, minDifference.x);
-                scaleDelta.y = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.y, minDifference.y);
-                scaleDelta.z = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.z, minDifference.z);
+                if (applySmartRounding)
+                {
+                    scaleDelta.x = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.x, minDifference.x);
+                    scaleDelta.y = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.y, minDifference.y);
+                    scaleDelta.z = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.z, minDifference.z);
+                }
                 SetScaleValue(Vector3.Scale(scale, scaleDelta));
             }
 
@@ -334,10 +342,7 @@ namespace UnityEditor
                 var cur = s_MouseDownState[i];
                 undoObjects[i] = cur.transform;
             }
-            if (AnimationMode.InAnimationMode())
-                Undo.RecordObjects(undoObjects, "Scale");
-            else
-                Undo.RegisterCompleteObjectUndo(undoObjects, "Scale");
+            Undo.RecordObjects(undoObjects, "Scale");
 
             Vector3 point = Tools.handlePosition;
             for (int i = 0; i < s_MouseDownState.Length; i++)
@@ -394,10 +399,7 @@ namespace UnityEditor
                 var cur = s_MouseDownState[i];
                 undoObjects[i] = (cur.rectTransform != null ? (Object)cur.rectTransform : (Object)cur.transform);
             }
-            if (AnimationMode.InAnimationMode())
-                Undo.RecordObjects(undoObjects, "Move");
-            else
-                Undo.RegisterCompleteObjectUndo(undoObjects, "Move");
+            Undo.RecordObjects(undoObjects, "Move");
 
             if (s_MouseDownState.Length > 0)
             {

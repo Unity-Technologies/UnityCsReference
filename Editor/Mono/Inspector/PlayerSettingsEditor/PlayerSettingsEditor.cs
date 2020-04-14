@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
@@ -78,6 +79,7 @@ namespace UnityEditor
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
             public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Stack Trace*");
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
+            public static readonly GUIContent legacyXRTitle = EditorGUIUtility.TrTextContent("XR Settings (Deprecated)");
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
 
             public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TrTextContent("Prebake Collision Meshes*", "Bake collision data into the meshes on build time");
@@ -162,7 +164,7 @@ namespace UnityEditor
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
-            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
+            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -370,6 +372,11 @@ namespace UnityEditor
 
         int selectedPlatform = 0;
         int scriptingDefinesControlID = 0;
+        bool scriptingDefinesFoldout = true;
+        int scriptingDefineSymbolsSize;
+        string[] scriptDefines;
+        const string kDefinesSizeStateName = "scriptingDefineSymbolsSize";
+
         ISettingEditorExtension[] m_SettingsExtensions;
 
         // Section animation state
@@ -583,12 +590,17 @@ namespace UnityEditor
 
             int sectionIndex = 0;
 
+            // Fix for case 1218668
+            EditorGUI.indentLevel++;
+
             IconSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             ResolutionSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             m_SplashScreenEditor.SplashSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             DebugAndCrashReportingGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             OtherSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             PublishSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+
+            EditorGUI.indentLevel--;
 
             if (sectionIndex != kNumberGUISections)
                 Debug.LogError("Mismatched number of GUI sections.");
@@ -1074,16 +1086,51 @@ namespace UnityEditor
             // If we're changing the first API for relevant editor, this will cause editor to switch: ask for scene save & confirmation
             if (firstEntryChanged && WillEditorUseFirstGraphicsAPI(target))
             {
-                if (EditorUtility.DisplayDialog("Changing editor graphics device",
-                    "You've changed the active graphics API. This requires a restart of the Editor.",
-                    "Restart Editor", "Not now"))
+                // If we have dirty scenes we need to save or discard changes before we restart editor.
+                // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
+                var dirtyScenes = new List<Scene>();
+                for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
                 {
-                    doRestart = true;
+                    var scene = EditorSceneManager.GetSceneAt(i);
+                    if (scene.isDirty)
+                        dirtyScenes.Add(scene);
+                }
+                if (dirtyScenes.Count != 0)
+                {
+                    var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
+                        "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
+                        "Save and Restart", "Discard Changes and Restart", "Cancel Changing API");
+                    if (result == 2)
+                    {
+                        doRestart = false; // Cancel was selected
+                    }
+                    else
+                    {
+                        doRestart = true;
+                        if (result == 0) // Save and Restart was selected
+                        {
+                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                                EditorSceneManager.SaveScene(dirtyScenes[i]);
+                        }
+                        else // Discard Changes and Restart was selected
+                        {
+                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                                EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                        }
+                    }
                 }
                 else
-                    doRestart = false;
+                {
+                    doRestart = EditorUtility.DisplayDialog("Changing editor graphics API",
+                        "You've changed the active graphics API. This requires a restart of the Editor.",
+                        "Restart Editor", "Not now");
+                }
+                return new ChangeGraphicsApiAction(doRestart, doRestart);
             }
-            return new ChangeGraphicsApiAction(doRestart, doRestart);
+            else
+            {
+                return new ChangeGraphicsApiAction(true, false);
+            }
         }
 
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action)
@@ -1799,7 +1846,7 @@ namespace UnityEditor
                 }
             }
 
-            if (targetGroup == BuildTargetGroup.Standalone || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
+            if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
             {
                 PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
             }
@@ -2123,9 +2170,38 @@ namespace UnityEditor
 
             // User script defines
             {
-                EditorGUILayout.LabelField(SettingsContent.scriptingDefineSymbols);
                 EditorGUI.BeginChangeCheck();
-                string scriptDefines = EditorGUILayout.DelayedTextField(PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup), EditorStyles.textField);
+                if (scriptDefines == null)
+                {
+                    PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup, out scriptDefines);
+                    // Get define symbols size from SessionState since to have user's preferred array size
+                    scriptingDefineSymbolsSize = SessionState.GetInt(kDefinesSizeStateName, scriptingDefineSymbolsSize);
+                    if (scriptingDefineSymbolsSize == 0)
+                        scriptingDefineSymbolsSize = scriptDefines.Length;
+                }
+
+                scriptingDefinesFoldout = EditorGUILayout.Foldout(scriptingDefinesFoldout, SettingsContent.scriptingDefineSymbols, EditorStyles.titlebarFoldout);
+
+                if (scriptingDefinesFoldout)
+                {
+                    EditorGUI.indentLevel++;
+                    scriptingDefineSymbolsSize = Mathf.Clamp(EditorGUILayout.DelayedIntField("Size", scriptingDefineSymbolsSize), 1, 500);
+
+                    if (scriptingDefineSymbolsSize != scriptDefines.Length)
+                    {
+                        // Save define symbols size using SessionState since we want to have user's prefered array size,
+                        // otherwise it will be reset to current array size after domain reload
+                        SessionState.SetInt(kDefinesSizeStateName, scriptingDefineSymbolsSize);
+                        Array.Resize(ref scriptDefines, scriptingDefineSymbolsSize);
+                    }
+
+                    for (int i = 0; i < scriptingDefineSymbolsSize; i++)
+                    {
+                        scriptDefines[i] = EditorGUILayout.DelayedTextField("Define " + i, scriptDefines[i]);
+                    }
+                    EditorGUI.indentLevel--;
+                }
+
                 scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -2328,6 +2404,8 @@ namespace UnityEditor
             // ARCore - legacy way to enable
             if (BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, BuildTargetDiscovery.VRAttributes.SupportTango))
             {
+                EditorGUILayout.Space();
+                GUILayout.Label(SettingsContent.legacyXRTitle, EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
             }
 

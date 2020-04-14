@@ -468,7 +468,7 @@ namespace UnityEditorInternal.Profiling
                         headerContent = (m_Type == CallsTreeView.Type.Callers ? Styles.callersLabel : Styles.calleesLabel),
                         headerTextAlignment = TextAlignment.Left,
                         sortedAscending = true,
-                        sortingArrowAlignment = TextAlignment.Center,
+                        sortingArrowAlignment = TextAlignment.Right,
                         width = 150, minWidth = 150,
                         autoResize = true, allowToggleVisibility = false
                     },
@@ -653,6 +653,11 @@ namespace UnityEditorInternal.Profiling
                 SessionState.SetFloat(spillter0StatePrefKey, m_VertSplit.relativeSizes[0]);
                 SessionState.GetFloat(spillter1StatePrefKey, m_VertSplit.relativeSizes[1]);
             }
+        }
+
+        override public void OnEnable(CPUorGPUProfilerModule cpuModule)
+        {
+            profilerSampleNameProvider = cpuModule;
         }
 
         override public void OnDisable()

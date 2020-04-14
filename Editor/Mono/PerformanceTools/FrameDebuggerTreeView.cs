@@ -223,6 +223,11 @@ namespace UnityEditorInternal
                 eventStack.RemoveAt(idx);
             }
 
+            static bool IsHiddenEventType(FrameEventType et)
+            {
+                return et == FrameEventType.BeginSubpass;
+            }
+
             public override void FetchData()
             {
                 var rootLevel = new FDTreeHierarchyLevel(0, 0, string.Empty, null);
@@ -252,6 +257,10 @@ namespace UnityEditorInternal
                     {
                         CloseLastHierarchyLevel(eventStack, i);
                     }
+
+                    if (m_FrameEvents[i].type == FrameEventType.HierarchyLevelBreak)
+                        continue;
+
                     // add all further levels for current event
                     for (var j = level; j < names.Length; ++j)
                     {
@@ -260,6 +269,10 @@ namespace UnityEditorInternal
                         parent.children.Add(newLevel.item);
                         eventStack.Add(newLevel);
                     }
+
+                    if (IsHiddenEventType(m_FrameEvents[i].type))
+                        continue;
+
                     // add leaf event to current level
                     var eventGo = FrameDebuggerUtility.GetFrameEventGameObject(i);
                     var displayName = eventGo ? " " + eventGo.name : string.Empty;

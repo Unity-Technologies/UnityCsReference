@@ -111,6 +111,7 @@ namespace UnityEngine.UIElements
             get { return (propagation & EventPropagation.TricklesDown) != 0; }
         }
 
+        // Original target. May be different than 'target' when propagating event and 'target.isCompositeRoot' is true
         internal IEventHandler leafTarget { get; private set; }
 
         IEventHandler m_Target;

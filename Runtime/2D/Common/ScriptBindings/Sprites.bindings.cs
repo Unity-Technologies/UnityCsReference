@@ -104,6 +104,9 @@ namespace UnityEngine
             get;
         }
 
+        // Get Secondary Textures.
+        internal extern Texture2D GetSecondaryTexture(int index);
+
         // The number of pixels in one unit. Note: The C++ side still uses the name pixelsToUnits which is misleading,
         // but has not been changed yet to minimize merge conflicts.
         public extern float pixelsPerUnit

@@ -17,6 +17,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct PlayerUpdateTime {}
         [RequiredByNativeCode]
+        public struct UpdateCameraMotionVectors {}
+        [RequiredByNativeCode]
         public struct DirectorSampleTime {}
         [RequiredByNativeCode]
         public struct AsyncUploadTimeSlicedUpdate {}
@@ -91,7 +93,10 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct SpriteAtlasManagerUpdate {}
         [RequiredByNativeCode]
+        [Obsolete("TangoUpdate has been deprecated. Use ARCoreUpdate instead (UnityUpgradable) -> UnityEngine.PlayerLoop.EarlyUpdate/ARCoreUpdate", false)]
         public struct TangoUpdate {}
+        [RequiredByNativeCode]
+        public struct ARCoreUpdate {}
         [RequiredByNativeCode]
         public struct PerformanceAnalyticsUpdate {}
     }
@@ -221,6 +226,8 @@ namespace UnityEngine.PlayerLoop
         public struct UpdateCustomRenderTextures {}
         [RequiredByNativeCode]
         public struct UpdateAllRenderers {}
+        [RequiredByNativeCode]
+        public struct UpdateLightProbeProxyVolumes {}
         [RequiredByNativeCode]
         public struct EnlightenRuntimeUpdate {}
         [RequiredByNativeCode]

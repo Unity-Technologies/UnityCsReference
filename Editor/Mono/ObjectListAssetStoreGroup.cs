@@ -93,7 +93,10 @@ namespace UnityEditor
                             m_Owner.SetSelection(m_Assets[itemIdx], clicks == 2);
 
                         if (isRepaintEvent)
-                            DrawLabel(r, m_Assets[itemIdx], false);
+                        {
+                            bool selected = !AssetStoreAssetSelection.Empty && AssetStoreAssetSelection.ContainsAsset(m_Assets[itemIdx].id);
+                            DrawLabel(r, m_Assets[itemIdx], selected);
+                        }
                     }
                 }
                 else
@@ -124,7 +127,8 @@ namespace UnityEditor
                         for (; itemIdx < endItem && itemIdx < endContainerItem; itemIdx++)
                         {
                             r = m_Grid.CalcRect(itemIdx, yOffset);
-                            DrawLabel(r, m_Assets[itemIdx], false);
+                            bool selected = !AssetStoreAssetSelection.Empty && AssetStoreAssetSelection.ContainsAsset(m_Assets[itemIdx].id);
+                            DrawLabel(r, m_Assets[itemIdx], selected);
                         }
                     }
                 }

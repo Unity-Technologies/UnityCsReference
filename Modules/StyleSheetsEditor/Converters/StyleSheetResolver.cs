@@ -441,8 +441,126 @@ namespace UnityEditor.StyleSheets
             PopulateSheet(dest, Rules.Values, Options);
         }
 
+        class VariableDependencyNode
+        {
+            public Property Variable;
+            public VariableDependencyNode Parent;
+            public List<VariableDependencyNode> Children;
+
+            public VariableDependencyNode(Property variable)
+            {
+                Variable = variable;
+            }
+
+            public void Tranverse(Action<Property, int> action)
+            {
+                Tranverse(action, this, 0);
+            }
+
+            public static void Tranverse(Action<Property, int> action, VariableDependencyNode node, int depth)
+            {
+                action(node.Variable, depth);
+
+                if (node.Children != null)
+                {
+                    foreach (var child in node.Children)
+                    {
+                        Tranverse(action, child, depth + 1);
+                    }
+                }
+            }
+        }
+
+        static VariableDependencyNode BuildVariableDependencies(Property var, Dictionary<string, Property> variables, ref Dictionary<string, VariableDependencyNode> dependencies)
+        {
+            VariableDependencyNode varNode = null;
+
+            if (dependencies.TryGetValue(var.Name, out varNode) == false)
+            {
+                varNode = dependencies[var.Name] = new VariableDependencyNode(var);
+
+                foreach (var value in var.Values)
+                {
+                    if (IsVariableValue(value))
+                    {
+                        Property variableProperty = null;
+
+                        if (value.ValueType == StyleValueType.Function)
+                        {
+                            var functionValue = value as Function;
+
+                            if (functionValue != null)
+                            {
+                                variables.TryGetValue(functionValue.args[0][0].AsString(), out variableProperty);
+                            }
+                        }
+                        else
+                        {
+                            variables.TryGetValue(value.AsString(), out variableProperty);
+                        }
+
+                        if (variableProperty == null)
+                            continue;
+
+                        var referredVarNode = BuildVariableDependencies(variableProperty, variables, ref dependencies);
+
+                        if (varNode.Parent == null) // in case the the variable is referred multiple times.
+                        {
+                            if (referredVarNode.Children == null)
+                                referredVarNode.Children = new List<VariableDependencyNode>();
+                            referredVarNode.Children.Add(varNode);
+                            varNode.Parent = referredVarNode;
+                        }
+                    }
+                }
+            }
+            return varNode;
+        }
+
+        static List<VariableDependencyNode> BuildVariableDependencies(Dictionary<string, Property> variables)
+        {
+            var topLevelDepNodes = new List<VariableDependencyNode>();
+            var variableDependencies = new Dictionary<string, VariableDependencyNode>();
+
+            foreach (var var in variables)
+            {
+                try
+                {
+                    var node = BuildVariableDependencies(var.Value, variables, ref variableDependencies);
+
+                    if (node.Parent == null)
+                        topLevelDepNodes.Add(node);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+
+            return topLevelDepNodes;
+        }
+
         public static void ResolveVariables(IEnumerable<Rule> rules, Dictionary<string, Property> variables, ResolvingOptions options)
         {
+            var graph = BuildVariableDependencies(variables);
+
+
+            foreach (var varDepNode in graph)
+            {
+                varDepNode.Tranverse((var, depth) => ResolveValues(var, variables, options));
+            }
+
+            foreach (var varDepNode in graph)
+            {
+                varDepNode.Tranverse((var, depth) =>
+                {
+                    if (IsVariableProperty(var))
+                    {
+                        Debug.Log("Not resolved variable found " + var.Name);
+                    }
+                });
+            }
+
             foreach (var rule in rules)
             {
                 foreach (var property in rule.Properties.Values)
@@ -518,6 +636,10 @@ namespace UnityEditor.StyleSheets
                         // env(--my-variable, 23 45);
                         // env(--my-variable, "pow");
                         variableValues = functionValue.args[1];
+                    }
+                    else
+                    {
+                        throw new Exception($"Cannot resolve variable: \"{functionValue.args[0][0].AsString()}\"");
                     }
                 }
                 else
@@ -825,9 +947,10 @@ namespace UnityEditor.StyleSheets
                                 helper.builder.AddValue(value.AsString(), StyleValueType.FunctionSeparator);
                             }
                         }
-
                         break;
-
+                    case StyleValueType.ScalableImage:
+                        helper.builder.AddValue(value.AsScalableImage().normalImage);
+                        break;
                     case StyleValueType.AssetReference:
                         helper.builder.AddValue(value.AsAssetReference());
                         break;

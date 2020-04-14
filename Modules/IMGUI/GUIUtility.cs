@@ -5,7 +5,6 @@
 using System;
 using System.Reflection;
 using UnityEngine.Scripting;
-using UnityEngine.Bindings;
 // Use this define to debug who grabs and releases hotcontrol
 //#define DEBUG_HOTCONTROL
 
@@ -22,6 +21,17 @@ namespace UnityEngine
     // *undocumented*
     public sealed class ExitGUIException : Exception
     {
+        public ExitGUIException()
+        {
+            GUIUtility.guiIsExiting = true;
+        }
+
+        internal ExitGUIException(string message)
+            : base(message)
+        {
+            GUIUtility.guiIsExiting = true;
+            Console.WriteLine(message);
+        }
     }
 
     // Utility class for making new GUI controls.
@@ -123,9 +133,6 @@ namespace UnityEngine
         //*undocumented*
         public static void ExitGUI()
         {
-            // Hint for scope helpers
-            guiIsExiting = true;
-
             // We have to always throw the ExitGUIException otherwise the exiting out of recursive on GUI will not work.
             throw new ExitGUIException();
         }

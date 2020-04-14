@@ -209,7 +209,7 @@ namespace UnityEngine
         public void GetVertices(List<Vector3> vertices)
         {
             if (vertices == null)
-                throw new ArgumentNullException("The result vertices list cannot be null.", "vertices");
+                throw new ArgumentNullException(nameof(vertices), "The result vertices list cannot be null.");
 
             GetListForChannel(vertices, vertexCount, VertexAttribute.Position, DefaultDimensionForChannel(VertexAttribute.Position));
         }
@@ -264,7 +264,7 @@ namespace UnityEngine
         public void GetNormals(List<Vector3> normals)
         {
             if (normals == null)
-                throw new ArgumentNullException("The result normals list cannot be null.", "normals");
+                throw new ArgumentNullException(nameof(normals), "The result normals list cannot be null.");
 
             GetListForChannel(normals, vertexCount, VertexAttribute.Normal, DefaultDimensionForChannel(VertexAttribute.Normal));
         }
@@ -319,7 +319,7 @@ namespace UnityEngine
         public void GetTangents(List<Vector4> tangents)
         {
             if (tangents == null)
-                throw new ArgumentNullException("The result tangents list cannot be null.", "tangents");
+                throw new ArgumentNullException(nameof(tangents), "The result tangents list cannot be null.");
 
             GetListForChannel(tangents, vertexCount, VertexAttribute.Tangent, DefaultDimensionForChannel(VertexAttribute.Tangent));
         }
@@ -374,7 +374,7 @@ namespace UnityEngine
         public void GetColors(List<Color> colors)
         {
             if (colors == null)
-                throw new ArgumentNullException("The result colors list cannot be null.", "colors");
+                throw new ArgumentNullException(nameof(colors), "The result colors list cannot be null.");
 
             GetListForChannel(colors, vertexCount, VertexAttribute.Color, DefaultDimensionForChannel(VertexAttribute.Color));
         }
@@ -412,7 +412,7 @@ namespace UnityEngine
         public void GetColors(List<Color32> colors)
         {
             if (colors == null)
-                throw new ArgumentNullException("The result colors list cannot be null.", "colors");
+                throw new ArgumentNullException(nameof(colors), "The result colors list cannot be null.");
 
             GetListForChannel(colors, vertexCount, VertexAttribute.Color, 4, VertexAttributeFormat.UNorm8);
         }
@@ -601,7 +601,7 @@ namespace UnityEngine
         private void GetUVsImpl<T>(int uvIndex, List<T> uvs, int dim)
         {
             if (uvs == null)
-                throw new ArgumentNullException("The result uvs list cannot be null.", "uvs");
+                throw new ArgumentNullException(nameof(uvs), "The result uvs list cannot be null.");
             if (uvIndex < 0 || uvIndex > 7)
                 throw new IndexOutOfRangeException("The uv index is invalid. Must be in the range 0 to 7.");
 
@@ -788,7 +788,7 @@ namespace UnityEngine
         public void GetTriangles(List<int> triangles, int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
             if (triangles == null)
-                throw new ArgumentNullException("The result triangles list cannot be null.", "triangles");
+                throw new ArgumentNullException(nameof(triangles), "The result triangles list cannot be null.");
 
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
@@ -800,7 +800,7 @@ namespace UnityEngine
         public void GetTriangles(List<ushort> triangles, int submesh, bool applyBaseVertex = true)
         {
             if (triangles == null)
-                throw new ArgumentNullException("The result triangles list cannot be null.", "triangles");
+                throw new ArgumentNullException(nameof(triangles), "The result triangles list cannot be null.");
 
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
@@ -829,7 +829,7 @@ namespace UnityEngine
         public void GetIndices(List<int> indices, int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
             if (indices == null)
-                throw new ArgumentNullException("The result indices list cannot be null.", nameof(indices));
+                throw new ArgumentNullException(nameof(indices), "The result indices list cannot be null.");
 
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
@@ -841,7 +841,7 @@ namespace UnityEngine
         public void GetIndices(List<ushort> indices, int submesh, bool applyBaseVertex = true)
         {
             if (indices == null)
-                throw new ArgumentNullException("The result indices list cannot be null.", nameof(indices));
+                throw new ArgumentNullException(nameof(indices), "The result indices list cannot be null.");
 
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
@@ -1094,11 +1094,67 @@ namespace UnityEngine
         }
 
         //
+        // submeshes
+        //
+
+        public void SetSubMeshes(SubMeshDescriptor[] desc, int start, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            if (count > 0 && desc == null)
+                throw new ArgumentNullException("desc", "Array of submeshes cannot be null unless count is zero.");
+
+            int valuesCount = desc?.Length ?? 0;
+            if (start < 0 || count < 0 || start + count > valuesCount)
+                throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count} desc.Length:{valuesCount})");
+
+            for (int i = start; i < start + count; ++i)
+            {
+                MeshTopology t = desc[i].topology;
+                if (t < MeshTopology.Triangles || t > MeshTopology.Points)
+                    throw new ArgumentException(nameof(desc), $"{i}-th submesh descriptor has invalid topology ({(int)t}).");
+                if (t == (MeshTopology)1)
+                    throw new ArgumentException(nameof(desc), $"{i}-th submesh descriptor has triangles strip topology, which is no longer supported.");
+            }
+
+            SetAllSubMeshesAtOnceFromArray(desc, start, count, flags);
+        }
+
+        public void SetSubMeshes(SubMeshDescriptor[] desc, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            SetSubMeshes(desc, 0, desc?.Length ?? 0, flags);
+        }
+
+        public void SetSubMeshes(List<SubMeshDescriptor> desc, int start, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            SetSubMeshes(NoAllocHelpers.ExtractArrayFromListT<SubMeshDescriptor>(desc), start, count, flags);
+        }
+
+        public void SetSubMeshes(List<SubMeshDescriptor> desc, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            SetSubMeshes(NoAllocHelpers.ExtractArrayFromListT<SubMeshDescriptor>(desc), 0, desc?.Count ?? 0, flags);
+        }
+
+        public unsafe void SetSubMeshes<T>(NativeArray<T> desc, int start, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default) where T : struct
+        {
+            if (UnsafeUtility.SizeOf<T>() != UnsafeUtility.SizeOf<SubMeshDescriptor>())
+                throw new ArgumentException($"{nameof(SetSubMeshes)} with NativeArray should use struct type that is {UnsafeUtility.SizeOf<SubMeshDescriptor>()} bytes in size");
+
+            if (start < 0 || count < 0 || start + count > desc.Length)
+                throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count} desc.Length:{desc.Length})");
+
+            SetAllSubMeshesAtOnceFromNativeArray((IntPtr)desc.GetUnsafeReadOnlyPtr(), start, count, UnityEngine.Rendering.MeshUpdateFlags.Default);
+        }
+
+        public unsafe void SetSubMeshes<T>(NativeArray<T> desc, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default) where T : struct
+        {
+            SetSubMeshes(desc, 0, desc.Length, flags);
+        }
+
+        //
 
         public void GetBindposes(List<Matrix4x4> bindposes)
         {
             if (bindposes == null)
-                throw new ArgumentNullException("The result bindposes list cannot be null.", "bindposes");
+                throw new ArgumentNullException(nameof(bindposes), "The result bindposes list cannot be null.");
 
             NoAllocHelpers.EnsureListElemCount(bindposes, GetBindposeCount());
             GetBindposesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(bindposes));
@@ -1107,7 +1163,7 @@ namespace UnityEngine
         public void GetBoneWeights(List<BoneWeight> boneWeights)
         {
             if (boneWeights == null)
-                throw new ArgumentNullException("The result boneWeights list cannot be null.", "boneWeights");
+                throw new ArgumentNullException(nameof(boneWeights), "The result boneWeights list cannot be null.");
 
             if (HasBoneWeights())
                 NoAllocHelpers.EnsureListElemCount(boneWeights, vertexCount);

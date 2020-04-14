@@ -88,13 +88,20 @@ namespace UnityEditor
             return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
         }
 
-        public void OnSceneGUI()
+        public static bool IsSceneGUIEnabled()
         {
             if (Event.current.type != EventType.Repaint
                 || Camera.current == null
                 || SceneView.lastActiveSceneView != SceneView.currentDrawingSceneView)
-                return;
+            {
+                return false;
+            }
 
+            return true;
+        }
+
+        public void OnSceneGUI()
+        {
             Camera camera = SceneView.lastActiveSceneView.camera;
             var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(m_LODGroup);
 
@@ -708,13 +715,28 @@ namespace UnityEditor
             var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(group);
             var percentage = Mathf.Max(desiredPercentage / QualitySettings.lodBias, 0.000001f);
 
+            var sceneView = SceneView.lastActiveSceneView;
+            var sceneCamera = sceneView.camera;
+
             // Figure out a distance based on the percentage
-            var distance = LODUtility.CalculateDistance(SceneView.lastActiveSceneView.camera, percentage, group);
+            var distance = LODUtility.CalculateDistance(sceneCamera, percentage, group);
 
-            if (SceneView.lastActiveSceneView.camera.orthographic)
-                distance *= Mathf.Sqrt(2 * SceneView.lastActiveSceneView.camera.aspect);
+            // We need to do inverse of SceneView.cameraDistance:
+            // given the distance, need to figure out "size" to focus the scene view on.
+            float size;
+            if (sceneCamera.orthographic)
+            {
+                size = distance;
+                if (sceneCamera.aspect < 1.0)
+                    size *= sceneCamera.aspect;
+            }
+            else
+            {
+                var fov = sceneCamera.fieldOfView;
+                size = distance * Mathf.Sin(fov * 0.5f * Mathf.Deg2Rad);
+            }
 
-            SceneView.lastActiveSceneView.LookAtDirect(worldReferencePoint, SceneView.lastActiveSceneView.camera.transform.rotation, distance);
+            SceneView.lastActiveSceneView.LookAtDirect(worldReferencePoint, sceneCamera.transform.rotation, size);
         }
 
         private void UpdateSelectedLODFromCamera(IEnumerable<LODGroupGUI.LODInfo> lods, float cameraPercent)
@@ -1091,7 +1113,8 @@ namespace UnityEditor
                 lodRenderers.Add(new LODLightmapScale(pixelHeight, renderersAtLOD));
             }
 
-            for (var i = 0; i < m_NumberOfLODs; i++)
+            // set from least detailed to most detailed, as renderers can be in multiple layers
+            for (var i = m_NumberOfLODs - 1; i >= 0; i--)
             {
                 SetLODLightmapScale(lodRenderers[i]);
             }
@@ -1103,10 +1126,13 @@ namespace UnityEditor
             {
                 if (renderer.objectReferenceValue == null)
                     continue;
-                var so = new SerializedObject(renderer.objectReferenceValue);
-                var lightmapScaleProp = so.FindProperty("m_ScaleInLightmap");
-                lightmapScaleProp.floatValue = Mathf.Max(0.0f, lodRenderer.m_Scale * (1.0f / LightmapVisualization.GetLightmapLODLevelScale((Renderer)renderer.objectReferenceValue)));
-                so.ApplyModifiedProperties();
+
+                using (var so = new SerializedObject(renderer.objectReferenceValue))
+                {
+                    var lightmapScaleProp = so.FindProperty("m_ScaleInLightmap");
+                    lightmapScaleProp.floatValue = Mathf.Max(0.0f, lodRenderer.m_Scale * (1.0f / LightmapVisualization.GetLightmapLODLevelScale((Renderer)renderer.objectReferenceValue)));
+                    so.ApplyModifiedProperties();
+                }
             }
         }
 

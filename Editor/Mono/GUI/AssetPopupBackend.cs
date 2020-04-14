@@ -44,8 +44,10 @@ namespace UnityEditor
 
             public void SetProperty(SerializedProperty property)
             {
-                var so = new SerializedObject(property.serializedObject.targetObject);
-                m_Property = so.FindProperty(property.propertyPath);
+                using (var so = new SerializedObject(property.serializedObject.targetObject))
+                {
+                    m_Property = so.FindProperty(property.propertyPath);
+                }
             }
 
             public override void Action(int instanceId, string pathName, string resourceFile)
@@ -67,7 +69,7 @@ namespace UnityEditor
             }
         }
 
-        static void ShowAssetsPopupMenu<T>(Rect buttonRect, string typeName, SerializedProperty serializedProperty, string fileExtension, string defaultFieldName) where T : Object, new()
+        internal static void ShowAssetsPopupMenu<T>(Rect buttonRect, string typeName, SerializedProperty serializedProperty, string fileExtension, string defaultFieldName) where T : Object, new()
         {
             GenericMenu gm = new GenericMenu();
 
@@ -116,15 +118,22 @@ namespace UnityEditor
                 }
             }
 
-            // Create item
-            gm.AddSeparator("");
-            gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
+            var target = serializedProperty.serializedObject.targetObject;
+            bool isPreset = target is Component ? ((int)(target as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(target);
+
+            // the preset object is destroyed with the inspector, and nothing new can be created that needs this link. Fix for case 1208437
+            if (!isPreset)
             {
-                var newAsset = Activator.CreateInstance<T>();
-                var doCreate = ScriptableObject.CreateInstance<DoCreateNewAsset>();
-                doCreate.SetProperty(serializedProperty);
-                ProjectWindowUtil.StartNameEditingIfProjectWindowExists(newAsset.GetInstanceID(), doCreate, "New " + typeName + "." + fileExtension, AssetPreview.GetMiniThumbnail(newAsset), null);
-            });
+                // Create item
+                gm.AddSeparator("");
+                gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
+                {
+                    var newAsset = Activator.CreateInstance<T>();
+                    var doCreate = ScriptableObject.CreateInstance<DoCreateNewAsset>();
+                    doCreate.SetProperty(serializedProperty);
+                    ProjectWindowUtil.StartNameEditingIfProjectWindowExists(newAsset.GetInstanceID(), doCreate, "New " + typeName + "." + fileExtension, AssetPreview.GetMiniThumbnail(newAsset), null);
+                });
+            }
 
             gm.DropDown(buttonRect);
         }

@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEditor;
+using UnityEditor.Profiling;
+using System.Text;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -94,9 +96,87 @@ namespace UnityEditorInternal.Profiling
         public override void DrawView(Rect position)
         {
             if (m_ShowDetailedMemoryPane == ProfilerMemoryView.Simple)
-                DrawOverviewText(ProfilerArea.Memory, position);
+                DrawSimpleMemoryPane(position);
             else
                 DrawDetailedMemoryPane(m_ViewSplit);
+        }
+
+        static long GetCounterValue(FrameDataView frameData, string name)
+        {
+            var id = frameData.GetMarkerId(name);
+            if (id == FrameDataView.invalidMarkerId)
+                return -1;
+
+            return frameData.GetCounterValueAsLong(id);
+        }
+
+        void DrawSimpleMemoryPane(Rect position)
+        {
+            string activeText = string.Empty;
+
+            using (var f = ProfilerDriver.GetRawFrameDataView(m_ProfilerWindow.GetActiveVisibleFrameIndex(), 0))
+            {
+                if (f.valid)
+                {
+                    var totalUsedMemory = GetCounterValue(f, "Total Used Memory");
+                    if (totalUsedMemory != -1)
+                    {
+                        var stringBuilder = new StringBuilder(1024);
+                        stringBuilder.Append($"Used Total: {EditorUtility.FormatBytes(totalUsedMemory)}   ");
+                        stringBuilder.Append($"Mono/il2cpp: {EditorUtility.FormatBytes(GetCounterValue(f, "GC Used Memory"))}   ");
+                        stringBuilder.Append($"Gfx: {EditorUtility.FormatBytes(GetCounterValue(f, "Gfx Used Memory"))}   ");
+                        stringBuilder.Append($"Audio: {EditorUtility.FormatBytes(GetCounterValue(f, "Audio Used Memory"))}   ");
+                        stringBuilder.Append($"Video: {EditorUtility.FormatBytes(GetCounterValue(f, "Video Used Memory"))}   ");
+                        stringBuilder.Append($"Profiler: {EditorUtility.FormatBytes(GetCounterValue(f, "Profiler Used Memory"))}   ");
+
+                        stringBuilder.Append($"\nReserved Total: {EditorUtility.FormatBytes(GetCounterValue(f, "Total Reserved Memory"))}   ");
+                        stringBuilder.Append($"Mono/il2cpp: {EditorUtility.FormatBytes(GetCounterValue(f, "GC Reserved Memory"))}   ");
+                        stringBuilder.Append($"Gfx: {EditorUtility.FormatBytes(GetCounterValue(f, "Gfx Reserved Memory"))}   ");
+                        stringBuilder.Append($"Audio: {EditorUtility.FormatBytes(GetCounterValue(f, "Audio Reserved Memory"))}   ");
+                        stringBuilder.Append($"Video: {EditorUtility.FormatBytes(GetCounterValue(f, "Video Reserved Memory"))}   ");
+                        stringBuilder.Append($"Profiler: {EditorUtility.FormatBytes(GetCounterValue(f, "Profiler Reserved Memory"))}   ");
+
+                        stringBuilder.Append($"\nTotal System Memory Usage: {EditorUtility.FormatBytes(GetCounterValue(f, "System Used Memory"))}   ");
+
+                        stringBuilder.Append($"\n\nTextures: {GetCounterValue(f, "Texture Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "Texture Memory"))}   ");
+                        stringBuilder.Append($"\nMeshes: {GetCounterValue(f, "Mesh Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "Mesh Memory"))}   ");
+                        stringBuilder.Append($"\nMaterials: {GetCounterValue(f, "Material Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "Material Memory"))}   ");
+                        stringBuilder.Append($"\nAnimationClips: {GetCounterValue(f, "AnimationClip Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "AnimationClip Memory"))}   ");
+                        stringBuilder.Append($"\nAssets: {GetCounterValue(f, "Asset Count")}   ");
+                        stringBuilder.Append($"\nGameObjects in Scenes: {GetCounterValue(f, "Game Object Count")}   ");
+                        stringBuilder.Append($"\nTotal Objects in Scenes: {GetCounterValue(f, "Scene Object Count")}   ");
+                        stringBuilder.Append($"\nTotal Unity Object Count: {GetCounterValue(f, "Object Count")}   ");
+
+                        stringBuilder.Append($"\n\nGC Allocations per Frame: {GetCounterValue(f, "GC Allocation In Frame Count")} / {EditorUtility.FormatBytes(GetCounterValue(f, "GC Allocated In Frame"))}   ");
+
+                        var garlicHeapUsedMemory = GetCounterValue(f, "GARLIC heap used");
+                        if (garlicHeapUsedMemory != -1)
+                        {
+                            var garlicHeapAvailable = GetCounterValue(f, "GARLIC heap available");
+                            stringBuilder.Append($"\n\nGARLIC heap used: {EditorUtility.FormatBytes(garlicHeapUsedMemory)}/{EditorUtility.FormatBytes(garlicHeapAvailable + garlicHeapUsedMemory)}   ");
+                            stringBuilder.Append($"({EditorUtility.FormatBytes(garlicHeapAvailable)} available)   ");
+                            stringBuilder.Append($"peak used: {EditorUtility.FormatBytes(GetCounterValue(f, "GARLIC heap peak used"))}   ");
+                            stringBuilder.Append($"num allocs: {GetCounterValue(f, "GARLIC heap allocs")}\n");
+
+                            stringBuilder.Append($"ONION heap used: {EditorUtility.FormatBytes(GetCounterValue(f, "ONION heap used"))}   ");
+                            stringBuilder.Append($"peak used: {EditorUtility.FormatBytes(GetCounterValue(f, "ONION heap peak used"))}   ");
+                            stringBuilder.Append($"num allocs: {GetCounterValue(f, "ONION heap allocs")}");
+                        }
+
+                        activeText = stringBuilder.ToString();
+                    }
+                    else
+                    {
+                        // Old data compatibility.
+                        activeText = ProfilerDriver.GetOverviewText(ProfilerArea.Memory, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+                    }
+                }
+            }
+            float height = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(activeText), position.width);
+
+            m_PaneScroll = GUILayout.BeginScrollView(m_PaneScroll, ProfilerWindow.Styles.background);
+            EditorGUILayout.SelectableLabel(activeText, EditorStyles.wordWrappedLabel, GUILayout.MinHeight(height));
+            GUILayout.EndScrollView();
         }
 
         void DrawDetailedMemoryPane(SplitterState splitter)

@@ -14,7 +14,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         // This maintains the list of terrains we have touched in the current operation (and the current operation identifier, as an undo group)
         // We track this to have good cross-tile undo support: each modified tile should be added, at most, ONCE within a single operation
         private static int s_CurrentOperationUndoGroup = -1;
-        private static List<UnityEngine.Object> s_CurrentOperationUndoStack = new List<UnityEngine.Object>();
+        private static Dictionary<UnityEngine.Object, int> s_CurrentOperationUndoStack = new Dictionary<UnityEngine.Object, int>();
 
         static TerrainPaintUtilityEditor()
         {
@@ -30,14 +30,39 @@ namespace UnityEditor.Experimental.TerrainAPI
                 if (string.IsNullOrEmpty(editorUndoName))
                     return;
 
-                if (!s_CurrentOperationUndoStack.Contains(tile.terrain))
+                int recordedActions = 0;
+                if (!s_CurrentOperationUndoStack.TryGetValue(tile.terrain, out recordedActions))
                 {
-                    s_CurrentOperationUndoStack.Add(tile.terrain);
+                    recordedActions = 0;
+                }
+
+                // since action is a bitfield, this calculates all of the actions that aren't yet recorded
+                int newActions = ((int)action) & ~recordedActions;
+                if (newActions != 0)
+                {
                     var undoObjects = new List<UnityEngine.Object>();
-                    undoObjects.Add(tile.terrain.terrainData);
-                    if (0 != (action & PaintContext.ToolAction.PaintTexture))
+
+                    // texture splats are serialized separately
+                    if (0 != (newActions & (int)PaintContext.ToolAction.PaintTexture))
+                    {
                         undoObjects.AddRange(tile.terrain.terrainData.alphamapTextures);
-                    Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), editorUndoName);
+                        recordedActions |= (int)PaintContext.ToolAction.PaintTexture;
+                    }
+
+                    // both PaintHeightmap and PaintHoles are serialized into the main terrainData object,
+                    // if either is flagged, record both
+                    int kPaintHeightmapOrHoles = (int)(PaintContext.ToolAction.PaintHeightmap | PaintContext.ToolAction.PaintHoles | PaintContext.ToolAction.AddTerrainLayer);
+                    if (0 != (newActions & kPaintHeightmapOrHoles))
+                    {
+                        undoObjects.Add(tile.terrain.terrainData);
+                        recordedActions |= kPaintHeightmapOrHoles;      // mark that we recorded both
+                    }
+
+                    if (undoObjects.Count > 0)
+                    {
+                        Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), editorUndoName);
+                        s_CurrentOperationUndoStack[tile.terrain] = recordedActions;
+                    }
                 }
             };
         }
@@ -51,9 +76,9 @@ namespace UnityEditor.Experimental.TerrainAPI
                 s_CurrentOperationUndoStack.Clear();
             }
 
-            if (!s_CurrentOperationUndoStack.Contains(terrainData))
+            if (!s_CurrentOperationUndoStack.ContainsKey(terrainData))
             {
-                s_CurrentOperationUndoStack.Add(terrainData);
+                s_CurrentOperationUndoStack.Add(terrainData, 0);
                 Undo.RegisterCompleteObjectUndo(terrainData, undoName);
             }
         }

@@ -38,16 +38,17 @@ namespace Unity.Collections
         internal AtomicSafetyHandle       m_Safety;
         [NativeSetClassTypeToNullOnSchedule]
         internal DisposeSentinel          m_DisposeSentinel;
-        static int                        s_staticSafetyId;
 
+        // TODO: Once Burst supports internal/external functions in static initializers, this can become
+        //   static readonly int s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeArray<T>>();
+        // and InitStaticSafetyId() can be replaced with a call to AtomicSafetyHandle.SetStaticSafetyId();
+        static int                        s_staticSafetyId;
         [BurstDiscard]
-        static void AssignStaticSafetyId(ref AtomicSafetyHandle safetyHandle)
+        static void InitStaticSafetyId(ref AtomicSafetyHandle handle)
         {
             if (s_staticSafetyId == 0)
-            {
-                s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId($"NativeArray<{typeof(T).Name}>");
-            }
-            AtomicSafetyHandle.SetStaticSafetyId(ref safetyHandle, s_staticSafetyId);
+                s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeArray<T>>();
+            AtomicSafetyHandle.SetStaticSafetyId(ref handle, s_staticSafetyId);
         }
 
 
@@ -101,7 +102,7 @@ namespace Unity.Collections
             array.m_MinIndex = 0;
             array.m_MaxIndex = length - 1;
             DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
-            AssignStaticSafetyId(ref array.m_Safety);
+            InitStaticSafetyId(ref array.m_Safety);
         }
 
         public int Length => m_Length;
@@ -159,12 +160,23 @@ namespace Unity.Collections
         [WriteAccessRequired]
         public void Dispose()
         {
-
-            if (!UnsafeUtility.IsValidAllocator(m_AllocatorLabel))
+            if (m_AllocatorLabel == Allocator.Invalid)
+            {
                 throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
+            }
 
-            DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
-            UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
+            if (m_Buffer == null)
+            {
+                throw new InvalidOperationException("The NativeArray is already disposed.");
+            }
+
+            if (m_AllocatorLabel > Allocator.None)
+            {
+                DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+                UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
+                m_AllocatorLabel = Allocator.Invalid;
+            }
+
             m_Buffer = null;
             m_Length = 0;
         }
@@ -182,19 +194,39 @@ namespace Unity.Collections
         /// the container.</returns>
         public JobHandle Dispose(JobHandle inputDeps)
         {
-            // [DeallocateOnJobCompletion] is not supported, but we want the deallocation
-            // to happen in a thread. DisposeSentinel needs to be cleared on main thread.
-            // AtomicSafetyHandle can be destroyed after the job was scheduled (Job scheduling
-            // will check that no jobs are writing to the container).
-            DisposeSentinel.Clear(ref m_DisposeSentinel);
+            if (m_AllocatorLabel == Allocator.Invalid)
+            {
+                throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
+            }
 
-            var jobHandle = new NativeArrayDisposeJob { Data = new NativeArrayDispose { m_Buffer = m_Buffer, m_AllocatorLabel = m_AllocatorLabel, m_Safety = m_Safety } }.Schedule(inputDeps);
+            if (m_Buffer == null)
+            {
+                throw new InvalidOperationException("The NativeArray is already disposed.");
+            }
 
-            AtomicSafetyHandle.Release(m_Safety);
+            if (m_AllocatorLabel > Allocator.None)
+            {
+                // [DeallocateOnJobCompletion] is not supported, but we want the deallocation
+                // to happen in a thread. DisposeSentinel needs to be cleared on main thread.
+                // AtomicSafetyHandle can be destroyed after the job was scheduled (Job scheduling
+                // will check that no jobs are writing to the container).
+                DisposeSentinel.Clear(ref m_DisposeSentinel);
+
+                var jobHandle = new NativeArrayDisposeJob { Data = new NativeArrayDispose { m_Buffer = m_Buffer, m_AllocatorLabel = m_AllocatorLabel, m_Safety = m_Safety } }.Schedule(inputDeps);
+
+                AtomicSafetyHandle.Release(m_Safety);
+
+                m_Buffer = null;
+                m_Length = 0;
+                m_AllocatorLabel = Allocator.Invalid;
+
+                return jobHandle;
+            }
+
             m_Buffer = null;
             m_Length = 0;
 
-            return jobHandle;
+            return inputDeps;
         }
 
         [WriteAccessRequired]

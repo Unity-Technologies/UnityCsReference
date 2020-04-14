@@ -369,7 +369,7 @@ namespace UnityEditor
                     {
                         Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
                         EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
-                        GUI.Label(labelRect, Constants.badgeWarn);
+                        GUI.Label(labelRect, Constants.badgeWarn, Constants.paddinglessStyle);
                         EditorGUIUtility.SetIconSize(Vector2.zero);
                     }
 

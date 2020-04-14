@@ -208,6 +208,7 @@ namespace UnityEditorInternal
         static public extern void SetMarkerFiltering(string name);
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [Obsolete("Use GetFormattedCounterValue to get the stats including Profiler Counter data", false)]
         static public extern string GetFormattedStatisticsValue(int frame, int identifier);
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
@@ -216,10 +217,17 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static public extern void GetUISystemEventMarkersBatch(int firstFrame, int frameCount, [Out] EventMarker[] buffer, [Out] string[] names);
 
-
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         [NativeMethod("GetStatisticsValuesBatch")]
+        [Obsolete("Use GetCounterValuesBatch to read the stats including Profiler Counter data", false)]
         static public extern void GetStatisticsValues(int identifier, int firstFrame, float scale, [Out] float[] buffer, out float maxValue);
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        static public extern string GetFormattedCounterValue(int frame, ProfilerArea area, string name);
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        public static extern void GetCounterValuesBatch(ProfilerArea area, string name, int firstFrame, float scale, [Out] float[] buffer, out float maxValue);
+
 
         static public void GetGpuStatisticsAvailabilityStates(int firstFrame, [Out] GpuProfilingStatisticsAvailabilityStates[] buffer)
         {

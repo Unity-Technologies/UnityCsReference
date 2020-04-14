@@ -839,6 +839,22 @@ namespace UnityEngine.Rendering
 
 namespace UnityEngine.Experimental.Rendering
 {
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public static class ExternalGPUProfiler
+    {
+        [FreeFunction("ExternalGPUProfilerBindings::BeginGPUCapture")]
+        public static extern void BeginGPUCapture();
+
+        [FreeFunction("ExternalGPUProfilerBindings::EndGPUCapture")]
+        public static extern void EndGPUCapture();
+
+        [FreeFunction("ExternalGPUProfilerBindings::IsAttached")]
+        public static extern bool IsAttached();
+    }
+}
+
+namespace UnityEngine.Experimental.Rendering
+{
     public enum WaitForPresentSyncPoint
     {
         BeginFrame = 0,

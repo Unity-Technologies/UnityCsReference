@@ -2,14 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Bindings;
-
 namespace UnityEngine
 {
     internal struct EventInterests
     {
         public bool wantsMouseMove { get; set; }
         public bool wantsMouseEnterLeaveWindow { get; set; }
+        public bool wantsLessLayoutEvents { get; set; }
 
         public bool WantsEvent(EventType type)
         {
@@ -23,6 +22,32 @@ namespace UnityEngine
                 default:
                     return true;
             }
+        }
+
+        public bool WantsLayoutPass(EventType type)
+        {
+            if (!wantsLessLayoutEvents)
+                return true;
+
+            switch (type)
+            {
+                case EventType.Repaint:
+                    return true;
+
+                case EventType.KeyDown:
+                case EventType.KeyUp:
+                    return GUIUtility.textFieldInput;
+
+                case EventType.MouseDown:
+                case EventType.MouseUp:
+                    return wantsMouseMove;
+
+                case EventType.MouseEnterWindow:
+                case EventType.MouseLeaveWindow:
+                    return wantsMouseEnterLeaveWindow;
+            }
+
+            return false;
         }
     }
 }

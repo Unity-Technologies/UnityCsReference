@@ -13,11 +13,20 @@ namespace UnityEditor.PackageManager.UI
 
         public Action onCloseError;
 
+        private ResourceLoader m_ResourceLoader;
+        private void ResolveDependencies()
+        {
+            var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
+        }
+
         public Alert()
         {
+            ResolveDependencies();
+
             UIUtils.SetElementDisplay(this, false);
 
-            var root = Resources.GetTemplate("Alert.uxml");
+            var root = m_ResourceLoader.GetTemplate("Alert.uxml");
             Add(root);
 
             cache = new VisualElementCache(root);
@@ -32,8 +41,8 @@ namespace UnityEditor.PackageManager.UI
         public void SetError(UIError error)
         {
             var message = string.IsNullOrEmpty(error.message) ?
-                ApplicationUtil.instance.GetTranslationForText("An error occurred. See console for more details.") :
-                string.Format(ApplicationUtil.instance.GetTranslationForText("An error occurred ({0}). See console for more details."), error.message);
+                L10n.Tr("An error occurred. See console for more details.") :
+                string.Format(L10n.Tr("An error occurred ({0}). See console for more details."), error.message);
 
             alertMessage.text = message;
             UIUtils.SetElementDisplay(this, true);

@@ -809,12 +809,6 @@ namespace UnityEditor
                 return false;
 
             GameObject go = target as GameObject;
-
-            // Is this a camera?
-            Camera camera = go.GetComponent(typeof(Camera)) as Camera;
-            if (camera)
-                return true;
-
             return HasRenderableParts(go);
         }
 
@@ -977,33 +971,8 @@ namespace UnityEditor
                     evt.Use();
                     break;
                 case EventType.DragPerform:
-
-                    var stage = StageNavigationManager.instance.currentStage;
-                    if (stage is PrefabStage)
-                    {
-                        var prefabAssetThatIsAddedTo = AssetDatabase.LoadMainAssetAtPath(stage.assetPath);
-                        if (PrefabUtility.CheckIfAddingPrefabWouldResultInCyclicNesting(prefabAssetThatIsAddedTo, go))
-                        {
-                            PrefabUtility.ShowCyclicNestingWarningDialog();
-                            return;
-                        }
-                    }
-
-                    Transform parent = sceneView.customParentForDraggedObjects;
-
-                    string uniqueName = GameObjectUtility.GetUniqueNameForSibling(parent, dragObject.name);
-                    if (parent != null)
-                        dragObject.transform.parent = parent;
-                    dragObject.hideFlags = 0;
-                    Undo.RegisterCreatedObjectUndo(dragObject, "Place " + dragObject.name);
-                    EditorUtility.SetDirty(dragObject);
-                    DragAndDrop.AcceptDrag();
-                    Selection.activeObject = dragObject;
-                    HandleUtility.ignoreRaySnapObjects = null;
-                    if (SceneView.mouseOverWindow != null)
-                        SceneView.mouseOverWindow.Focus();
-                    if (!Application.IsPlaying(dragObject))
-                        dragObject.name = uniqueName;
+                    if (!DragPerform(sceneView, dragObject, go))
+                        return;
                     dragObject = null;
                     evt.Use();
                     break;
@@ -1017,6 +986,39 @@ namespace UnityEditor
                     }
                     break;
             }
+        }
+
+        internal static bool DragPerform(SceneView sceneView, GameObject draggedObject, GameObject go)
+        {
+            var stage = StageNavigationManager.instance.currentStage;
+            if (stage is PrefabStage)
+            {
+                var prefabAssetThatIsAddedTo = AssetDatabase.LoadMainAssetAtPath(stage.assetPath);
+                if (PrefabUtility.CheckIfAddingPrefabWouldResultInCyclicNesting(prefabAssetThatIsAddedTo, go))
+                {
+                    PrefabUtility.ShowCyclicNestingWarningDialog();
+                    return false;
+                }
+            }
+
+            var defaultParentObject = SceneView.GetDefaultParentObjectIfSet();
+            var parent = defaultParentObject != null ? defaultParentObject : sceneView.customParentForDraggedObjects;
+
+            string uniqueName = GameObjectUtility.GetUniqueNameForSibling(parent, draggedObject.name);
+            if (parent != null)
+                draggedObject.transform.parent = parent;
+            draggedObject.hideFlags = 0;
+            Undo.RegisterCreatedObjectUndo(draggedObject, "Place " + draggedObject.name);
+            EditorUtility.SetDirty(draggedObject);
+            DragAndDrop.AcceptDrag();
+            Selection.activeObject = draggedObject;
+            HandleUtility.ignoreRaySnapObjects = null;
+            if (SceneView.mouseOverWindow != null)
+                SceneView.mouseOverWindow.Focus();
+            if (!Application.IsPlaying(draggedObject))
+                draggedObject.name = uniqueName;
+
+            return true;
         }
     }
 }

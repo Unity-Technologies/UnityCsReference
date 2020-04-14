@@ -283,7 +283,7 @@ namespace UnityEditor.Connect
 
         private string GetGoogleKeyResource()
         {
-            return PurchasingConfiguration.instance.googlePlayDevConsoleUrl + k_GoogleKeySubPath + UnityConnect.instance.projectInfo.projectGUID;
+            return PurchasingConfiguration.instance.analyticsApiUrl + k_GoogleKeySubPath + UnityConnect.instance.projectInfo.projectGUID;
         }
     }
 }

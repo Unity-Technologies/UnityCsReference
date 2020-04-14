@@ -376,9 +376,9 @@ namespace UnityEditor
             m_Probes.Initialize(serializedObject);
         }
 
-        protected void LightingSettingsGUI(bool showLightmappSettings, bool showShadowBias = false)
+        protected void LightingSettingsGUI(bool showLightmappSettings)
         {
-            m_Lighting.RenderSettings(showLightmappSettings, showShadowBias);
+            m_Lighting.RenderSettings(showLightmappSettings);
 
             if (SupportedRenderingFeatures.active.rendererProbes)
             {
@@ -452,7 +452,15 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel++;
 
+                EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_MaterialsSize);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    serializedObject.ApplyModifiedProperties();
+                    GUIUtility.ExitGUI();
+                    // stop processing the current event as the size of the list has changed
+                }
 
                 for (int i = 0; i < m_MaterialsSize.intValue; i++)
                 {

@@ -173,6 +173,15 @@ namespace UnityEditor
                 Event.current.Use();
                 if (s_AnnotationWindow == null)
                     s_AnnotationWindow = ScriptableObject.CreateInstance<AnnotationWindow>();
+                else
+                {
+                    // We are treating AnnotationWindow like a PopupWindow which has logic to reclose it when opened,
+                    // AuxWindows derived from EditorWindow reset/reopen when repeatedly clicking the open button by design.
+                    // Call Cancel() here if it is already open.
+                    s_AnnotationWindow.Cancel();
+                    return false;
+                }
+
                 s_AnnotationWindow.Init(buttonRect, isGameView);
                 return true;
             }

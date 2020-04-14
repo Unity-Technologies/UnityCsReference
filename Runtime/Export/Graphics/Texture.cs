@@ -905,7 +905,7 @@ namespace UnityEngine
         public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
             if (ValidateFormat(format, FormatUsage.Sample))
-                Internal_Create(this, width, height, depth, mipCount, format, flags);
+                Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
         }
 
         public Texture3D(int width, int height, int depth, TextureFormat textureFormat, int mipCount)
@@ -917,12 +917,37 @@ namespace UnityEngine
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
-            Internal_Create(this, width, height, depth, mipCount, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
+        }
+
+        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, int mipCount, IntPtr nativeTex)
+        {
+            if (!ValidateFormat(textureFormat))
+                return;
+
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
+            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+                flags |= TextureCreationFlags.Crunch;
+            Internal_Create(this, width, height, depth, mipCount, format, flags, nativeTex);
         }
 
         public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
             : this(width, height, depth, textureFormat, mipChain ? -1 : 1)
         {
+        }
+
+        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, IntPtr nativeTex)
+            : this(width, height, depth, textureFormat, mipChain ? -1 : 1, nativeTex)
+        {
+        }
+
+        public static Texture3D CreateExternalTexture(int width, int height, int depth, TextureFormat format, bool mipChain, IntPtr nativeTex)
+        {
+            if (nativeTex == IntPtr.Zero)
+                throw new ArgumentException($"{nameof(nativeTex)} may not be zero");
+
+            return new Texture3D(width, height, depth, format, mipChain ? -1 : 1, nativeTex);
         }
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)

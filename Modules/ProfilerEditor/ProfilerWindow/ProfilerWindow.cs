@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Accessibility;
 using UnityEditorInternal;
 using UnityEditor.Profiling;
@@ -83,6 +84,8 @@ namespace UnityEditor
             public static readonly GUIStyle entryOdd = "OL EntryBackOdd";
             public static readonly GUIStyle profilerGraphBackground = "ProfilerScrollviewBackground";
             public static readonly GUIStyle profilerDetailViewBackground = "ProfilerDetailViewBackground";
+
+            public static readonly GUILayoutOption chartWidthOption = GUILayout.Width(Chart.kSideWidth - 1);
 
             static Styles()
             {
@@ -258,7 +261,7 @@ namespace UnityEditor
 
         public bool IsRecording()
         {
-            return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
+            return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || ProfilerDriver.profileEditor || !ProfilerDriver.IsConnectionEditor());
         }
 
         public bool IsSetToRecord()
@@ -292,6 +295,36 @@ namespace UnityEditor
             Initialize();
         }
 
+        static readonly string[] k_DefaultMemoryAreaCounterNames =
+        {
+            "Total Used Memory",
+            "Texture Memory",
+            "Mesh Memory",
+            "Material Count",
+            "Object Count",
+            "GC Used Memory",
+            "GC Allocated In Frame",
+        };
+
+        static readonly string[] k_PS4MemoryAreaCounterNames = k_DefaultMemoryAreaCounterNames.Concat(new string[]
+        {
+            "GARLIC heap allocs",
+            "ONION heap allocs"
+        }).ToArray();
+
+        string[] GetStatNamesForArea(ProfilerArea area)
+        {
+            if (area == ProfilerArea.Memory)
+            {
+                if (m_ActiveNativePlatformSupportModule == "PS4")
+                    return k_PS4MemoryAreaCounterNames;
+                else
+                    return k_DefaultMemoryAreaCounterNames;
+            }
+
+            return ProfilerDriver.GetGraphStatisticsPropertiesForArea(area);
+        }
+
         void Initialize()
         {
             // When reinitializing (e.g. because Colorblind mode or PlatformModule changed) we don't need a new state
@@ -308,7 +341,7 @@ namespace UnityEditor
             {
                 float scale = 1.0f;
                 Chart.ChartType chartType = Chart.ChartType.Line;
-                string[] statisticsNames = ProfilerDriver.GetGraphStatisticsPropertiesForArea((ProfilerArea)i);
+                string[] statisticsNames = GetStatNamesForArea((ProfilerArea)i);
                 int length = statisticsNames.Length;
                 if (Array.IndexOf(ms_StackedAreas, (ProfilerArea)i) != -1)
                 {
@@ -337,6 +370,7 @@ namespace UnityEditor
 
                 m_Charts[(int)i] = chart;
             }
+
 
             m_CurrentArea = (ProfilerArea)SessionState.GetInt(k_CurrentAreaPrefKey, (int)k_InvalidArea);
 
@@ -420,6 +454,11 @@ namespace UnityEditor
             ProfilerChart newChart = (i == ProfilerArea.UIDetails)
                 ? new UISystemProfilerChart(chartType, scale, length)
                 : new ProfilerChart(i, chartType, scale, length);
+
+            if (i == ProfilerArea.NetworkMessages || i == ProfilerArea.NetworkOperations)
+            {
+                newChart.m_SharedScale = true;
+            }
             newChart.selected += OnChartSelected;
             newChart.closed += OnChartClosed;
             return newChart;
@@ -811,9 +850,8 @@ namespace UnityEditor
                     cpuChart.m_Data.overlays[i] = new ChartSeriesViewData(chart.name, chart.yValues.Length, chart.color);
                     for (int frameIdx = 0; frameIdx < chart.yValues.Length; ++frameIdx)
                         cpuChart.m_Data.overlays[i].xValues[frameIdx] = (float)frameIdx;
-                    int identifier = ProfilerDriver.GetStatisticsIdentifierForArea(cpuChart.m_Area, UnityString.Format("Selected{0}", chart.name));
                     float maxValue;
-                    ProfilerDriver.GetStatisticsValues(identifier, firstEmptyFrame, 1.0f, cpuChart.m_Data.overlays[i].yValues, out maxValue);
+                    ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, UnityString.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, cpuChart.m_Data.overlays[i].yValues, out maxValue);
                     cpuChart.m_Data.overlays[i].yScale = cpuChart.m_DataScale;
                 }
             }
@@ -865,12 +903,9 @@ namespace UnityEditor
         internal void UpdateSingleChart(ProfilerChart chart, int firstEmptyFrame, int firstFrame)
         {
             float totalMaxValue = 1;
-            var maxValues = new float[chart.m_Series.Length];
             for (int i = 0, count = chart.m_Series.Length; i < count; ++i)
             {
-                int identifier = ProfilerDriver.GetStatisticsIdentifierForArea(chart.m_Area, chart.m_Series[i].name);
-                float maxValue;
-                ProfilerDriver.GetStatisticsValues(identifier, firstEmptyFrame, 1.0f, chart.m_Series[i].yValues, out maxValue);
+                ProfilerDriver.GetCounterValuesBatch(chart.m_Area, chart.m_Series[i].name, firstEmptyFrame, 1.0f, chart.m_Series[i].yValues, out var maxValue);
                 chart.m_Series[i].yScale = chart.m_DataScale;
                 maxValue *= chart.m_DataScale;
 
@@ -884,18 +919,16 @@ namespace UnityEditor
                 {
                     // Scale line charts so they never hit the top. Scale them slightly differently for each line
                     // so that in "no stuff changing" case they will not end up being exactly the same.
-                    maxValues[i] = maxValue * (1.05f + i * 0.05f);
-                    chart.m_Series[i].rangeAxis = new Vector2(0f, maxValues[i]);
-                }
-                else
-                {
-                    maxValues[i] = maxValue;
+                    maxValue *= (1.05f + i * 0.05f);
+                    chart.m_Series[i].rangeAxis = new Vector2(0f, maxValue);
                 }
             }
-            if (chart.m_Area == ProfilerArea.NetworkMessages || chart.m_Area == ProfilerArea.NetworkOperations)
+            if (chart.m_SharedScale && chart.m_Type == Chart.ChartType.Line)
             {
+                // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
+                // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
                 for (int i = 0, count = chart.m_Series.Length; i < count; ++i)
-                    chart.m_Series[i].rangeAxis = new Vector2(0f, 0.9f * totalMaxValue);
+                    chart.m_Series[i].rangeAxis = new Vector2(0f, (1.05f + i * 0.05f) * totalMaxValue);
                 chart.m_Data.maxValue = totalMaxValue;
             }
             chart.m_Data.Assign(chart.m_Series, firstEmptyFrame, firstFrame);
@@ -986,7 +1019,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             // Graph types
-            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, GUILayout.Width(Chart.kSideWidth - 1));
+            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, Styles.chartWidthOption);
             if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
             {
                 int length = m_Charts.Length;
@@ -1162,23 +1195,26 @@ namespace UnityEditor
             }
 
 
-            if (GUILayout.Toggle(m_CurrentFrame == -1, Styles.currentFrame, EditorStyles.toolbarButton))
+            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex < 0))
             {
-                if (!m_CurrentFrameEnabled)
+                if (GUILayout.Toggle(ProfilerDriver.lastFrameIndex >= 0 && m_CurrentFrame == -1, Styles.currentFrame, EditorStyles.toolbarButton))
                 {
-                    SetCurrentFrame(-1);
-                    m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
-                    m_CurrentFrameEnabled = true;
+                    if (!m_CurrentFrameEnabled)
+                    {
+                        SetCurrentFrame(-1);
+                        m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
+                        m_CurrentFrameEnabled = true;
+                    }
                 }
-            }
-            else if (m_CurrentFrame == -1)
-            {
-                m_CurrentFrameEnabled = false;
-                PrevFrame();
-            }
-            else if (m_CurrentFrameEnabled && m_CurrentFrame >= 0)
-            {
-                m_CurrentFrameEnabled = false;
+                else if (m_CurrentFrame == -1)
+                {
+                    m_CurrentFrameEnabled = false;
+                    PrevFrame();
+                }
+                else if (m_CurrentFrameEnabled && m_CurrentFrame >= 0)
+                {
+                    m_CurrentFrameEnabled = false;
+                }
             }
 
             // Frame number

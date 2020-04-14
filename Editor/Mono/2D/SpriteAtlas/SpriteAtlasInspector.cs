@@ -62,17 +62,24 @@ namespace UnityEditor.U2D
             public readonly GUIContent packButton = EditorGUIUtility.TrTextContent("Pack Preview", "Pack this atlas.");
 
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accept Folder, Sprite Sheet (Texture) and Sprite.");
+            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accepts Folder, Sprite Sheet (Texture) and Sprite.");
 
-            public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Sprite Atlas variant with a packed texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/texture formats.");
+            public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Variant Sprite Atlas with a packed Texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/Texture formats.");
+            public readonly GUIContent secondaryTextureNameLabel = EditorGUIUtility.TrTextContent("Secondary Texture Name", "The name of the Secondary Texture to apply the following settings to.");
+            public readonly GUIContent platformSettingsDropDownLabel = EditorGUIUtility.TrTextContent("Show Platform Settings For");
 
             public readonly GUIContent smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
             public readonly GUIContent largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
             public readonly GUIContent alphaIcon = EditorGUIUtility.IconContent("PreTextureAlpha");
             public readonly GUIContent RGBIcon = EditorGUIUtility.IconContent("PreTextureRGB");
+            public readonly GUIContent trashIcon = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete currently selected settings.");
 
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
+
+            public readonly string secondaryTextureNameTextControlName = "secondary_texture_name_text_field";
+            public readonly string defaultTextForSecondaryTextureName = L10n.Tr("(Matches the names of the Secondary Textures in your Sprites.)");
+            public readonly string nameUniquenessWarning = L10n.Tr("Secondary Texture names must be unique within a Sprite or Sprite Atlas.");
 
             public readonly int[] atlasTypeValues = { 0, 1 };
             public readonly GUIContent[] atlasTypeOptions =
@@ -133,14 +140,21 @@ namespace UnityEditor.U2D
         private float m_MipLevel = 0;
         private bool m_ShowAlpha;
 
+        private List<string> m_PlatformSettingsOptions;
+        private int m_SelectedPlatformSettings = 0;
+
         private List<BuildPlatform> m_ValidPlatforms;
         private Dictionary<string, List<TextureImporterPlatformSettings>> m_TempPlatformSettings;
 
         private ITexturePlatformSettingsView m_TexturePlatformSettingsView;
+        private ITexturePlatformSettingsView m_SecondaryTexturePlatformSettingsView;
         private ITexturePlatformSettingsFormatHelper m_TexturePlatformSettingTextureHelper;
         private ITexturePlatformSettingsController m_TexturePlatformSettingsController;
 
         private SpriteAtlas spriteAtlas { get { return target as SpriteAtlas; } }
+
+        // The first two options are the main texture and a separator while the last two options are another separator and the new settings menu.
+        private bool secondaryTextureSelected { get { return m_SelectedPlatformSettings >= 2 && m_SelectedPlatformSettings <= m_PlatformSettingsOptions.Count - 3; } }
 
         static bool IsPackable(Object o)
         {
@@ -191,6 +205,8 @@ namespace UnityEditor.U2D
             m_BindAsDefault = serializedObject.FindProperty("m_EditorData.bindAsDefault");
             m_VariantScale = serializedObject.FindProperty("m_EditorData.variantMultiplier");
 
+            PopulatePlatformSettingsOptions();
+
             m_Packables = serializedObject.FindProperty("m_EditorData.packables");
             m_PackableList = new ReorderableList(serializedObject, m_Packables, true, false, true, true);
             m_PackableList.onAddCallback = AddPackable;
@@ -204,18 +220,48 @@ namespace UnityEditor.U2D
             m_TexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(AllTargetsAreMaster());
             m_TexturePlatformSettingTextureHelper = new TexturePlatformSettingsFormatHelper();
             m_TexturePlatformSettingsController = new TexturePlatformSettingsViewController();
+
+            // Don't show max size option for secondary textures as they must have the same size as the main texture.
+            m_SecondaryTexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(false);
+        }
+
+        // Populate the platform settings dropdown list with secondary texture names found through serialized properties of the Sprite Atlas assets.
+        private void PopulatePlatformSettingsOptions()
+        {
+            m_PlatformSettingsOptions = new List<string> { L10n.Tr("Main Texture"), "", "", L10n.Tr("New Secondary Texture settings.") };
+            SerializedProperty secondaryPlatformSettings = serializedObject.FindProperty("m_EditorData.secondaryTextureSettings");
+            if (secondaryPlatformSettings != null && !secondaryPlatformSettings.hasMultipleDifferentValues)
+            {
+                int numSecondaryTextures = secondaryPlatformSettings.arraySize;
+                List<string> secondaryTextureNames = new List<string>(numSecondaryTextures);
+
+                for (int i = 0; i < numSecondaryTextures; ++i)
+                    secondaryTextureNames.Add(secondaryPlatformSettings.GetArrayElementAtIndex(i).displayName);
+
+                // Insert after main texture and the separator.
+                m_PlatformSettingsOptions.InsertRange(2, secondaryTextureNames);
+            }
+
+            m_SelectedPlatformSettings = 0;
         }
 
         void SyncPlatformSettings()
         {
             m_TempPlatformSettings = new Dictionary<string, List<TextureImporterPlatformSettings>>();
 
+            string secondaryTextureName = null;
+            if (secondaryTextureSelected)
+                secondaryTextureName = m_PlatformSettingsOptions[m_SelectedPlatformSettings];
+
             // Default platform
             var defaultSettings = new List<TextureImporterPlatformSettings>();
             m_TempPlatformSettings.Add(TextureImporterInspector.s_DefaultPlatformName, defaultSettings);
             foreach (SpriteAtlas sa in targets)
             {
-                var settings = sa.GetPlatformSettings(TextureImporterInspector.s_DefaultPlatformName);
+                var settings = secondaryTextureSelected
+                    ? sa.GetSecondaryPlatformSettings(TextureImporterInspector.s_DefaultPlatformName, secondaryTextureName)
+                    : sa.GetPlatformSettings(TextureImporterInspector.s_DefaultPlatformName);
+
                 defaultSettings.Add(settings);
             }
 
@@ -226,10 +272,31 @@ namespace UnityEditor.U2D
                 m_TempPlatformSettings.Add(platform.name, platformSettings);
                 foreach (SpriteAtlas sa in targets)
                 {
-                    var settings = sa.GetPlatformSettings(platform.name);
+                    var settings = secondaryTextureSelected
+                        ? sa.GetSecondaryPlatformSettings(platform.name, secondaryTextureName)
+                        : sa.GetPlatformSettings(platform.name);
 
                     // setting will be in default state if copy failed
                     platformSettings.Add(settings);
+                }
+            }
+        }
+
+        void RenameSecondaryPlatformSettings(string oldName, string newName)
+        {
+            for (var i = 0; i < targets.Length; ++i)
+            {
+                SpriteAtlas sa = (SpriteAtlas)targets[i];
+
+                sa.DeleteSecondaryPlatformSettings(oldName);
+
+                var defaultPlatformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
+                sa.SetSecondaryPlatformSettings(defaultPlatformSettings[i], newName);
+
+                foreach (var buildPlatform in m_ValidPlatforms)
+                {
+                    var platformSettings = m_TempPlatformSettings[buildPlatform.name];
+                    sa.SetSecondaryPlatformSettings(platformSettings[i], newName);
                 }
             }
         }
@@ -357,10 +424,10 @@ namespace UnityEditor.U2D
                     serializedObject.ApplyModifiedProperties();
 
                     foreach (SpriteAtlas sa in targets)
-                    {
                         sa.CopyMasterAtlasSettings();
-                        SyncPlatformSettings();
-                    }
+
+                    PopulatePlatformSettingsOptions();
+                    SyncPlatformSettings();
                 }
             }
 
@@ -415,21 +482,108 @@ namespace UnityEditor.U2D
 
             GUILayout.Space(EditorGUI.kSpacing);
 
-            HandlePlatformSettingUI();
+            // "Show Platform Settings For" dropdown
+            EditorGUILayout.BeginHorizontal();
+            {
+                EditorGUILayout.PrefixLabel(s_Styles.platformSettingsDropDownLabel);
+
+                EditorGUI.BeginChangeCheck();
+                m_SelectedPlatformSettings = EditorGUILayout.Popup(m_SelectedPlatformSettings, m_PlatformSettingsOptions.ToArray(), GUILayout.MaxWidth(150.0f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    // New settings option is selected...
+                    if (m_SelectedPlatformSettings == m_PlatformSettingsOptions.Count - 1)
+                    {
+                        m_PlatformSettingsOptions.Insert(m_SelectedPlatformSettings - 1, s_Styles.defaultTextForSecondaryTextureName);
+                        m_SelectedPlatformSettings--;
+                        EditorGUI.FocusTextInControl(s_Styles.secondaryTextureNameTextControlName);
+                    }
+
+                    SyncPlatformSettings();
+                }
+
+                if (secondaryTextureSelected)
+                {
+                    // trash can button
+                    if (GUILayout.Button(s_Styles.trashIcon, EditorStyles.iconButton, GUILayout.ExpandWidth(false)))
+                    {
+                        EditorGUI.EndEditingActiveTextField();
+
+                        foreach (SpriteAtlas sa in targets)
+                            sa.DeleteSecondaryPlatformSettings(m_PlatformSettingsOptions[m_SelectedPlatformSettings]);
+
+                        m_PlatformSettingsOptions.RemoveAt(m_SelectedPlatformSettings);
+
+                        m_SelectedPlatformSettings--;
+                        if (m_SelectedPlatformSettings == 1)
+                            m_SelectedPlatformSettings = 0;
+
+                        SyncPlatformSettings();
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // Texture platform settings UI.
+            EditorGUILayout.BeginHorizontal();
+            {
+                EditorGUI.indentLevel++;
+                GUILayout.Space(EditorGUI.indent);
+                EditorGUI.indentLevel--;
+
+                if (m_SelectedPlatformSettings == 0)
+                    HandlePlatformSettingUI(null);
+                else
+                {
+                    EditorGUILayout.BeginVertical();
+                    {
+                        string oldSecondaryTextureName = m_PlatformSettingsOptions[m_SelectedPlatformSettings];
+                        GUI.SetNextControlName(s_Styles.secondaryTextureNameTextControlName);
+
+                        EditorGUI.BeginChangeCheck();
+                        string textFieldText = EditorGUILayout.DelayedTextField(s_Styles.secondaryTextureNameLabel, oldSecondaryTextureName);
+                        if (EditorGUI.EndChangeCheck() && oldSecondaryTextureName != textFieldText)
+                        {
+                            if (!m_PlatformSettingsOptions.Exists(x => x == textFieldText))
+                            {
+                                m_PlatformSettingsOptions[m_SelectedPlatformSettings] = textFieldText;
+                                RenameSecondaryPlatformSettings(oldSecondaryTextureName, textFieldText);
+                            }
+                            else
+                            {
+                                Debug.LogWarning(s_Styles.nameUniquenessWarning);
+                                EditorGUI.FocusTextInControl(s_Styles.secondaryTextureNameTextControlName);
+                            }
+                        }
+
+                        HandlePlatformSettingUI(textFieldText);
+                    }
+                    EditorGUILayout.EndVertical();
+                }
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
-        private void HandlePlatformSettingUI()
+        private void HandlePlatformSettingUI(string secondaryTextureName)
         {
-            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms.ToArray(), styles.defaultPlatformLabel);
+            bool isSecondary = secondaryTextureName != null;
+            ITexturePlatformSettingsView view = isSecondary ? m_SecondaryTexturePlatformSettingsView : m_TexturePlatformSettingsView;
+
+            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms.ToArray(), s_Styles.defaultPlatformLabel);
             var defaultPlatformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
+
             if (shownTextureFormatPage == -1)
             {
-                if (m_TexturePlatformSettingsController.HandleDefaultSettings(defaultPlatformSettings, m_TexturePlatformSettingsView, m_TexturePlatformSettingTextureHelper))
+                if (m_TexturePlatformSettingsController.HandleDefaultSettings(defaultPlatformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
                     for (var i = 0; i < defaultPlatformSettings.Count; ++i)
                     {
                         SpriteAtlas sa = (SpriteAtlas)targets[i];
-                        sa.SetPlatformSettings(defaultPlatformSettings[i]);
+
+                        if (isSecondary)
+                            sa.SetSecondaryPlatformSettings(defaultPlatformSettings[i], secondaryTextureName);
+                        else
+                            sa.SetPlatformSettings(defaultPlatformSettings[i]);
                     }
                 }
             }
@@ -437,7 +591,6 @@ namespace UnityEditor.U2D
             {
                 var buildPlatform = m_ValidPlatforms[shownTextureFormatPage];
                 var platformSettings = m_TempPlatformSettings[buildPlatform.name];
-
 
                 for (var i = 0; i < platformSettings.Count; ++i)
                 {
@@ -460,13 +613,16 @@ namespace UnityEditor.U2D
                     }
                 }
 
-                m_TexturePlatformSettingsView.buildPlatformTitle = buildPlatform.title.text;
-                if (m_TexturePlatformSettingsController.HandlePlatformSettings(buildPlatform.defaultTarget, platformSettings, m_TexturePlatformSettingsView, m_TexturePlatformSettingTextureHelper))
+                view.buildPlatformTitle = buildPlatform.title.text;
+                if (m_TexturePlatformSettingsController.HandlePlatformSettings(buildPlatform.defaultTarget, platformSettings, view, m_TexturePlatformSettingTextureHelper))
                 {
                     for (var i = 0; i < platformSettings.Count; ++i)
                     {
                         SpriteAtlas sa = (SpriteAtlas)targets[i];
-                        sa.SetPlatformSettings(platformSettings[i]);
+                        if (isSecondary)
+                            sa.SetSecondaryPlatformSettings(platformSettings[i], secondaryTextureName);
+                        else
+                            sa.SetPlatformSettings(platformSettings[i]);
                     }
                 }
             }
@@ -569,7 +725,24 @@ namespace UnityEditor.U2D
                     m_OptionValues = new int[m_TotalPages];
                     for (int i = 0; i < m_TotalPages; ++i)
                     {
-                        m_OptionDisplays[i] = string.Format("# {0}", i + 1);
+                        // Example texName:
+                        //    pageNum                                       secondaryName
+                        //       V                                              | V |
+                        // sactx-2-128x128-Uncompressed-My Sprite Atlas-0fe925a#_Glow-var-0.5...
+                        string texName = m_PreviewTextures[i].name;
+                        string pageNum = texName.Split('-')[1];
+                        int hashTag = texName.IndexOf('#');
+                        int dashAfterHashTag = hashTag != -1 ? texName.IndexOf('-', hashTag) : -1;
+
+                        string secondaryName;
+                        if (hashTag == -1)
+                            secondaryName = "";
+                        else if (dashAfterHashTag == -1)
+                            secondaryName = "-" + texName.Substring(hashTag + 1);
+                        else
+                            secondaryName = "-" + texName.Substring(hashTag + 1, dashAfterHashTag - hashTag - 1);
+
+                        m_OptionDisplays[i] = string.Format("#{0}{1}", pageNum, secondaryName);
                         m_OptionValues[i] = i;
                     }
                 }
@@ -604,6 +777,8 @@ namespace UnityEditor.U2D
 
             if (m_PreviewTextures != null)
             {
+                m_PreviewPage = Mathf.Min(m_PreviewPage, m_PreviewTextures.Length - 1);
+
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 
                 if (TextureUtil.HasAlphaTextureFormat(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))

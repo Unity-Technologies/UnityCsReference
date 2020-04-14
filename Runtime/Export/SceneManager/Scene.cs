@@ -18,6 +18,7 @@ namespace UnityEngine.SceneManagement
         }
 
         [SerializeField]
+        [HideInInspector]
         private int m_Handle;
 
         public int handle { get { return m_Handle; } }

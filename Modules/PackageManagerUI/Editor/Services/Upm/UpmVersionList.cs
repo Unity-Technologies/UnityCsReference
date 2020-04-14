@@ -94,6 +94,14 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion importAvailable => null;
 
+        public void ResolveDependencies(IOProxy ioProxy)
+        {
+            if (m_Versions == null)
+                return;
+            foreach (var version in m_Versions)
+                version.ResolveDependencies(ioProxy);
+        }
+
         internal void UpdateVersion(UpmPackageVersion version)
         {
             for (var i = 0; i < m_Versions.Count; ++i)
@@ -138,20 +146,24 @@ namespace UnityEditor.PackageManager.UI
             return sortedVersions.Count - 1;
         }
 
-        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null)
+        public UpmVersionList(IOProxy ioProxy, IEnumerable<UpmPackageVersion> versions = null)
         {
+            ResolveDependencies(ioProxy);
+
             m_Versions = versions?.ToList() ?? new List<UpmPackageVersion>();
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
         }
 
-        public UpmVersionList(PackageInfo info, bool isInstalled)
+        public UpmVersionList(IOProxy ioProxy, PackageInfo info, bool isInstalled)
         {
-            var mainVersion = new UpmPackageVersion(info, isInstalled);
+            ResolveDependencies(ioProxy);
+
+            var mainVersion = new UpmPackageVersion(ioProxy, info, isInstalled);
             m_Versions = info.versions.compatible.Select(v =>
             {
                 SemVersion? version;
                 SemVersionParser.TryParse(v, out version);
-                return new UpmPackageVersion(info, false, version, mainVersion.displayName);
+                return new UpmPackageVersion(ioProxy, info, false, version, mainVersion.displayName);
             }).ToList();
 
             AddToSortedVersions(m_Versions, mainVersion);

@@ -15,44 +15,30 @@ namespace UnityEditor
         private readonly GUIContent m_DebuggerEnabledContent;
         private readonly PopupLocation[] m_PopupLocation;
 
-        private const int k_Width = 36;
-        private const int k_Height = 19;
-        private const int k_MarginX = 0;
-        private const int k_MarginY = 0;
-
         public ManagedDebuggerToggle()
         {
-            m_DebuggerAttachedContent = EditorGUIUtility.TrIconContent("DebuggerAttached");
-            m_DebuggerDisabledContent = EditorGUIUtility.TrIconContent("DebuggerDisabled");
-            m_DebuggerEnabledContent = EditorGUIUtility.TrIconContent("DebuggerEnabled");
+            m_DebuggerAttachedContent = EditorGUIUtility.TrIconContent("DebuggerAttached", "Debugger Attached");
+            m_DebuggerDisabledContent = EditorGUIUtility.TrIconContent("DebuggerDisabled", "Debugger Disabled");
+            m_DebuggerEnabledContent = EditorGUIUtility.TrIconContent("DebuggerEnabled", "Debugger Enabled");
             m_PopupLocation = new[] { PopupLocation.AboveAlignRight };
         }
 
-        public void OnGUI(float x, float y)
+        public void OnGUI()
         {
             using (new EditorGUI.DisabledScope(!ManagedDebugger.isEnabled))
             {
                 var codeOptimization = CompilationPipeline.codeOptimization;
                 var debuggerAttached = ManagedDebugger.isAttached;
-                var debuggerContent = GetDebuggerContent(debuggerAttached, codeOptimization);
-                var buttonArea = new Rect(x + k_MarginX, y + k_MarginY, k_Width, k_Height);
+                var content = GetDebuggerContent(debuggerAttached, codeOptimization);
 
-                if (EditorGUI.DropdownButton(buttonArea, debuggerContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+                var style = AppStatusBar.Styles.statusIcon;
+                var rect = GUILayoutUtility.GetRect(content, style);
+                if (GUI.Button(rect, content, style))
                 {
-                    PopupWindow.Show(buttonArea, new ManagedDebuggerWindow(codeOptimization), m_PopupLocation);
+                    PopupWindow.Show(rect, new ManagedDebuggerWindow(codeOptimization), m_PopupLocation);
                     GUIUtility.ExitGUI();
                 }
             }
-        }
-
-        public float GetWidth()
-        {
-            return k_Width + (k_MarginX << 1);
-        }
-
-        public float GetHeight()
-        {
-            return k_Height + (k_MarginY << 1);
         }
 
         private GUIContent GetDebuggerContent(bool debuggerAttached, CodeOptimization optimization)

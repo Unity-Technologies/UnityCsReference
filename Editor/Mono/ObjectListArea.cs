@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
 using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -115,6 +117,8 @@ namespace UnityEditor
         Vector2 m_LastScrollPosition = new Vector2(0, 0);
         double LastScrollTime = 0;
 
+        public bool selectedAssetStoreAsset;
+
         internal Texture m_SelectedObjectIcon = null;
 
         LocalGroup m_LocalAssets;
@@ -157,6 +161,7 @@ namespace UnityEditor
 
         double m_NextDirtyCheck = 0;
 
+        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.Project.searchType);
 
         // Callbacks
         System.Action m_RepaintWantedCallback;
@@ -199,6 +204,15 @@ namespace UnityEditor
 
             // Set list manually
             m_LocalAssets.ShowObjectsInList(instanceIDs);
+        }
+
+        internal void ShowObjectsInList(int[] instanceIDs, string[] rootPaths)
+        {
+            // Clear asset store search etc.
+            Init(m_TotalRect, HierarchyType.Assets, new SearchFilter(), false);
+
+            // Set list manually
+            m_LocalAssets.ShowObjectsInList(instanceIDs, rootPaths);
         }
 
         // This method is being used by the EditorTests/Searching tests
@@ -260,6 +274,108 @@ namespace UnityEditor
 
             // End renaming if a rename was in progress
             EndRename(true);
+        }
+
+        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId)
+        {
+            var searchQuery = searchFilter.originalText;
+            if (string.IsNullOrEmpty(searchQuery))
+                searchQuery = searchFilter.FilterToSearchFieldString();
+
+            // Override Asset search here. For GameObjects, it is done in CachedFilteredHierarchy.cs
+            if (hierarchyType == HierarchyType.GameObjects)
+            {
+                Init(rect, hierarchyType, searchFilter, checkThumbnails);
+                return;
+            }
+
+
+            var allResults = new List<string>();
+            if (searchFilter.IsSearching())
+            {
+                m_SearchSessionHandler.BeginSession(() =>
+                {
+                    return new SearchService.Project.SearchContext
+                    {
+                        requiredTypeNames = searchFilter.classNames,
+                        requiredTypes = searchFilter.classNames.Select(name =>
+                            TypeCache.GetTypesDerivedFrom<Object>()
+                                .FirstOrDefault(t => name == t.FullName || name == t.Name))
+                    };
+                });
+                m_SearchSessionHandler.BeginSearch(searchQuery);
+                var searchContext = (SearchService.Project.SearchContext)m_SearchSessionHandler.context;
+                // Asynchronous searches return new results. Accumulate those results when using ShowObjectsInList.
+                var results = SearchService.Project.Search(searchQuery, searchContext, newResults =>
+                {
+                    if (newResults == null || !searchFilter.IsSearching())
+                        return;
+                    allResults.AddRange(newResults);
+                    InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, allResults, assetToInstanceId);
+                });
+                InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, results, assetToInstanceId);
+                if (results != null)
+                    allResults.AddRange(results);
+                m_SearchSessionHandler.EndSearch();
+            }
+            else
+            {
+                m_SearchSessionHandler.EndSession();
+                // Call default implementation when not searching
+                Init(rect, hierarchyType, searchFilter, checkThumbnails);
+            }
+        }
+
+        void InitListAreaWithItems(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, IEnumerable<string> items, Func<string, int> assetToInstanceId)
+        {
+            // When items is null, we fallback to default implementation. Current default search engine returns null.
+            Init(rect, hierarchyType, items == null ? searchFilter : new SearchFilter(), checkThumbnails);
+            if (items != null && hierarchyType == HierarchyType.Assets)
+            {
+                // We only support assets under "Assets" and "Packages"
+                var instanceIdSet = new HashSet<int>();
+                var uniqueInstanceIds = new List<int>();
+                var rootPaths = new List<string>();
+                var itemsTaken = 0;
+                foreach (var path in items)
+                {
+                    if (string.IsNullOrEmpty(path))
+                        continue;
+
+                    var reformattedPath = path.Replace('\\', '/');
+
+                    var rootPath = "";
+                    if (reformattedPath.StartsWith("Assets"))
+                        rootPath = "Assets";
+                    else if (reformattedPath.StartsWith("Packages"))
+                    {
+                        var secondSlashIndex = reformattedPath.IndexOf('/', "Packages".Length + 1);
+                        rootPath = secondSlashIndex == -1 ? reformattedPath : reformattedPath.Substring(0, secondSlashIndex);
+                    }
+                    else
+                        continue;
+
+                    // We don't support showing root folders
+                    if (reformattedPath == rootPath)
+                        continue;
+
+                    var instanceId = assetToInstanceId(reformattedPath);
+                    if (instanceId <= 0)
+                        continue;
+
+                    if (instanceIdSet.Add(instanceId))
+                    {
+                        uniqueInstanceIds.Add(instanceId);
+                        rootPaths.Add(rootPath);
+                        ++itemsTaken;
+                    }
+
+                    if (itemsTaken >= FilteredHierarchy.maxSearchAddCount)
+                        break;
+                }
+                ShowObjectsInList(uniqueInstanceIds.ToArray(), rootPaths.ToArray());
+            }
+            InitSelection(Selection.instanceIDs);
         }
 
         bool HasFocus()
@@ -802,11 +918,23 @@ namespace UnityEditor
             {
                 m_State.m_LastClickedInstanceID = 0;
             }
+
+            if (Selection.activeObject == null || Selection.activeObject.GetType() != typeof(AssetStoreAssetInspector))
+            {
+                selectedAssetStoreAsset = false;
+                AssetStoreAssetSelection.Clear();
+            }
         }
 
         void SetSelection(AssetStoreAsset assetStoreResult, bool doubleClicked)
         {
             m_State.m_SelectedInstanceIDs.Clear();
+
+            selectedAssetStoreAsset = true;
+            AssetStoreAssetSelection.Clear();
+            AssetStorePreviewManager.CachedAssetStoreImage item = AssetStorePreviewManager.TextureFromUrl(assetStoreResult.staticPreviewURL, assetStoreResult.name, gridSize, s_Styles.resultsGridLabel, s_Styles.resultsGrid, true);
+            Texture2D lowresPreview = item.image;
+            AssetStoreAssetSelection.AddAsset(assetStoreResult, lowresPreview);
             if (m_ItemSelectedCallback != null)
             {
                 Repaint();
@@ -1137,6 +1265,30 @@ namespace UnityEditor
             int offsetIdx = m_LocalAssets.IndexOf(m_State.m_LastClickedInstanceID);
             if (offsetIdx != -1)
                 return offsetIdx;
+
+            offsetIdx = m_LocalAssets.m_Grid.rows * m_LocalAssets.m_Grid.columns;
+
+            // Project or builtin asset not selected. Check asset store asset.
+            if (AssetStoreAssetSelection.Count == 0)
+                return -1;
+
+            AssetStoreAsset asset = AssetStoreAssetSelection.GetFirstAsset();
+            if (asset == null)
+                return -1;
+            int assetID = asset.id;
+
+            foreach (AssetStoreGroup g in m_StoreAssets)
+            {
+                if (!g.Visible)
+                    continue;
+
+                int idx = g.IndexOf(assetID);
+                if (idx != -1)
+                    return offsetIdx + idx;
+
+                offsetIdx += g.m_Grid.rows * g.m_Grid.columns;
+            }
+
             return -1;
         }
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
 using UnityEditorInternal;
@@ -22,15 +23,18 @@ namespace UnityEditor
     }
 
     [Serializable]
-    internal abstract class PlayModeView : EditorWindow, ISerializationCallbackReceiver
+    internal abstract class PlayModeView : EditorWindow
     {
         static List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
         static PlayModeView s_LastFocused;
         static PlayModeView s_RenderingView;
 
-        Dictionary<string, string> m_SerializedViews = new Dictionary<string, string>();
-        [SerializeField] private List<string> m_SerializedViewsNames = new List<string>();
-        [SerializeField] private List<string> m_SerializedViewsValues = new List<string>();
+        private readonly string m_ViewsCache = Path.GetFullPath(Directory.GetCurrentDirectory() + "/Library/PlayModeViewStates/");
+
+        [SerializeField] private List<string> m_SerializedViewNames = new List<string>();
+        [SerializeField] private List<string> m_SerializedViewValues = new List<string>();
+        [SerializeField] private List<string> m_SerializedCustomFieldsNames = new List<string>();
+        [SerializeField] private List<string> m_SerializedCustomFieldsValues = new List<string>();
         [SerializeField] string m_PlayModeViewName;
         [SerializeField] bool m_ShowGizmos;
         [SerializeField] int m_TargetDisplay;
@@ -164,7 +168,8 @@ namespace UnityEditor
                     currentTargetDisplay = targetDisplay;
                 }
 
-                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, playModeViewName);
+                bool hdr = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
+                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, playModeViewName, hdr);
 
                 if (Event.current == null || Event.current.type != EventType.Repaint)
                     return m_TargetTexture;
@@ -173,7 +178,8 @@ namespace UnityEditor
                 GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
                 SavedGUIState oldState = SavedGUIState.Create();
 
-                EditorGUIUtility.RenderPlayModeViewCamerasInternal(m_TargetTexture, currentTargetDisplay, mousePosition, showGizmos, renderIMGUI);
+                if (m_TargetTexture.IsCreated())
+                    EditorGUIUtility.RenderPlayModeViewCamerasInternal(m_TargetTexture, currentTargetDisplay, mousePosition, showGizmos, renderIMGUI);
 
                 oldState.ApplyAndForget();
                 GUIUtility.s_EditorScreenPointOffset = oldOffset;
@@ -204,12 +210,25 @@ namespace UnityEditor
 
         private void SetSerializedViews(Dictionary<string, string> serializedViews)
         {
-            m_SerializedViews = serializedViews;
+            m_SerializedViewNames = serializedViews.Keys.ToList();
+            m_SerializedViewValues = serializedViews.Values.ToList();
+        }
+
+        private void SetSerializedCustomFields(Dictionary<string, string> serializedCustomFields)
+        {
+            m_SerializedCustomFieldsNames = serializedCustomFields.Keys.ToList();
+            m_SerializedCustomFieldsValues = serializedCustomFields.Values.ToList();
         }
 
         private string GetTypeName()
         {
             return GetType().ToString();
+        }
+
+        private Dictionary<string, string> ListsToDictionary(List<string> keys, List<string> values)
+        {
+            var dict = keys.Select((key, val) => new { key, val = values[val] }).ToDictionary(x => x.key, x => x.val);
+            return dict;
         }
 
         protected void SwapMainWindow(Type type)
@@ -218,22 +237,53 @@ namespace UnityEditor
                 throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);
             if (type.Name != GetType().Name)
             {
-                var serializedViews = new Dictionary<string, string>(m_SerializedViews);
-                m_SerializedViews.Clear();
+                var serializedViews = ListsToDictionary(m_SerializedViewNames, m_SerializedViewValues);
+                var serializedCustomFields = ListsToDictionary(m_SerializedCustomFieldsNames, m_SerializedCustomFieldsValues);
+
+                // Clear serialized views so they wouldn't be serialized again
+                m_SerializedViewNames.Clear();
+                m_SerializedViewValues.Clear();
+                m_SerializedCustomFieldsNames.Clear();
+                m_SerializedCustomFieldsValues.Clear();
+
                 var serializedObject = SerializeView();
                 if (serializedObject != null)
-                    serializedViews.Add(GetTypeName(), serializedObject);
+                    serializedCustomFields.Add(GetTypeName(), serializedObject);
 
-                var window = CreateInstance(type) as PlayModeView;
-                window.autoRepaintOnSceneChange = true;
+                var guid = GUID.Generate();
+                var serializedViewPath = Path.GetFullPath(Path.Combine(m_ViewsCache, guid.ToString()));
+                if (!Directory.Exists(m_ViewsCache))
+                    Directory.CreateDirectory(m_ViewsCache);
 
-                if (serializedViews.ContainsKey(window.GetTypeName()))
+                InternalEditorUtility.SaveToSerializedFileAndForget(new[] {this}, serializedViewPath, true);
+                serializedViews.Add(GetTypeName(), serializedViewPath);
+
+                PlayModeView window = null;
+                if (serializedViews.ContainsKey(type.ToString()))
                 {
-                    window.DeserializeView(serializedViews[window.GetTypeName()]);
-                    serializedViews.Remove(window.GetTypeName());
+                    var path = serializedViews[type.ToString()];
+                    serializedViews.Remove(type.ToString());
+                    if (File.Exists(path))
+                    {
+                        window = InternalEditorUtility.LoadSerializedFileAndForget(path)[0] as PlayModeView;
+                        File.Delete(path);
+                    }
                 }
 
+                if (!window)
+                    window = CreateInstance(type) as PlayModeView;
+
+
+                if (serializedCustomFields.ContainsKey(window.GetTypeName()))
+                {
+                    window.DeserializeView(serializedCustomFields[window.GetTypeName()]);
+                    serializedCustomFields.Remove(window.GetTypeName());
+                }
+
+                window.autoRepaintOnSceneChange = true;
+
                 window.SetSerializedViews(serializedViews);
+                window.SetSerializedCustomFields(serializedCustomFields);
 
                 var da = m_Parent as DockArea;
                 if (da)
@@ -256,19 +306,24 @@ namespace UnityEditor
             }
         }
 
-        private void ConfigureTargetTexture(int width, int height, bool clearTexture, string name)
+        private void ConfigureTargetTexture(int width, int height, bool clearTexture, string name, bool hdr)
         {
+            // make sure we actually support R16G16B16A16_SFloat
+            GraphicsFormat format = (hdr && SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Render)) ? GraphicsFormat.R16G16B16A16_SFloat : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
+
             // Requires destroying the entire RT object and recreating it if
             // 1. color space is changed;
             // 2. using mipmap is changed.
-            if (m_TargetTexture && (m_CurrentColorSpace != QualitySettings.activeColorSpace || m_TargetTexture.useMipMap != m_UseMipMap))
+            // 3. HDR backbuffer mode for the view has changed
+
+            if (m_TargetTexture && (m_CurrentColorSpace != QualitySettings.activeColorSpace || m_TargetTexture.useMipMap != m_UseMipMap || m_TargetTexture.graphicsFormat != format))
             {
                 UnityEngine.Object.DestroyImmediate(m_TargetTexture);
             }
             if (!m_TargetTexture)
             {
                 m_CurrentColorSpace = QualitySettings.activeColorSpace;
-                m_TargetTexture = new RenderTexture(0, 0, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
+                m_TargetTexture = new RenderTexture(0, 0, 24, format);
                 m_TargetTexture.name = name + " RT";
                 m_TargetTexture.filterMode = textureFilterMode;
                 m_TargetTexture.hideFlags = textureHideFlags;
@@ -383,27 +438,6 @@ namespace UnityEditor
 
             foreach (PlayModeView playModeView in s_PlayModeViews)
                 playModeView.Repaint();
-        }
-
-        public void OnBeforeSerialize()
-        {
-            m_SerializedViewsNames = new List<string>();
-            m_SerializedViewsValues = new List<string>();
-
-            foreach (var serializedView in m_SerializedViews)
-            {
-                m_SerializedViewsNames.Add(serializedView.Key);
-                m_SerializedViewsValues.Add(serializedView.Value);
-            }
-        }
-
-        public void OnAfterDeserialize()
-        {
-            m_SerializedViews = new Dictionary<string, string>();
-            for (int i = 0; i < m_SerializedViewsNames.Count; i++)
-            {
-                m_SerializedViews.Add(m_SerializedViewsNames[i], m_SerializedViewsValues[i]);
-            }
         }
     }
 }

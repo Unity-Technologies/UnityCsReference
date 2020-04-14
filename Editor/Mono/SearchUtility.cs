@@ -31,6 +31,7 @@ namespace UnityEditor
                 return false;
 
             filter.ClearSearch();
+            filter.originalText = searchText;
 
             string searchString = string.Copy(searchText);
             RemoveUnwantedWhitespaces(ref searchString);

@@ -211,7 +211,7 @@ namespace UnityEditor
         {
             var gameObjectItem = new PrefabOverridesTreeViewItem
                 (
-                idSequence.get(),
+                gameObject.GetInstanceID(),
                 parentItem.depth + 1,
                 gameObject.name
                 );
@@ -259,7 +259,7 @@ namespace UnityEditor
 
                     var componentItem = new PrefabOverridesTreeViewItem
                         (
-                        idSequence.get(),
+                        component.GetInstanceID(),
                         gameObjectItem.depth + 1,
                         ObjectNames.GetInspectorTitle(component)
                         );
@@ -512,8 +512,8 @@ namespace UnityEditor
             readonly Editor m_InstanceEditor;
             readonly bool m_Unappliable;
 
-            const float k_HeaderHeight = 24f;
-            const float k_ScrollbarWidth = 15;
+            const float k_HeaderHeight = 25f;
+            const float k_ScrollbarWidth = 13;
             Vector2 m_PreviewSize = new Vector2(600f, 0);
             Vector2 m_Scroll;
 
@@ -570,6 +570,27 @@ namespace UnityEditor
 
                 if (m_Source == null || m_Instance == null || m_Modification == null)
                     m_PreviewSize.x /= 2;
+
+                if (modification is ObjectOverride)
+                    Undo.postprocessModifications += RecheckOverrideStatus;
+            }
+
+            public override void OnClose()
+            {
+                Undo.postprocessModifications -= RecheckOverrideStatus;
+
+                base.OnClose();
+                if (m_SourceEditor != null)
+                    Object.DestroyImmediate(m_SourceEditor);
+                if (m_InstanceEditor != null)
+                    Object.DestroyImmediate(m_InstanceEditor);
+            }
+
+            UndoPropertyModification[] RecheckOverrideStatus(UndoPropertyModification[] modifications)
+            {
+                if (m_Instance == null || !PrefabUtility.HasObjectOverride(m_Instance))
+                    UpdateAndClose();
+                return modifications;
             }
 
             void UpdatePreviewHeight(float height)
@@ -582,7 +603,7 @@ namespace UnityEditor
             {
                 bool scroll = (m_PreviewSize.y > rect.height - k_HeaderHeight);
                 if (scroll)
-                    rect.width -= k_ScrollbarWidth;
+                    rect.width -= k_ScrollbarWidth + 1;
                 else
                     // We overdraw border by one pixel to the right, so subtract here to account for that.
                     rect.width -= 1;
@@ -590,7 +611,7 @@ namespace UnityEditor
                 EditorGUIUtility.comparisonViewMode = EditorGUIUtility.ComparisonViewMode.Original;
                 EditorGUIUtility.wideMode = true;
                 EditorGUIUtility.labelWidth = 120;
-                int middleCol = Mathf.RoundToInt(rect.width * 0.5f);
+                int middleCol = Mathf.RoundToInt((rect.width - 1) * 0.5f);
 
                 if (Event.current.type == EventType.Repaint)
                     EditorStyles.viewBackground.Draw(rect, GUIContent.none, 0);
@@ -598,7 +619,7 @@ namespace UnityEditor
                 if (m_Modification == null)
                 {
                     DrawHeader(
-                        new Rect(rect.x, rect.y, rect.width, k_HeaderHeight + 1),
+                        new Rect(rect.x, rect.y, rect.width, k_HeaderHeight),
                         Styles.noModificationsContent);
                     m_PreviewSize.y = 0;
                     return;
@@ -615,7 +636,7 @@ namespace UnityEditor
                 if (m_Source != null && m_Instance != null)
                 {
                     Rect sourceHeaderRect = new Rect(rect.x, rect.y, middleCol, k_HeaderHeight);
-                    Rect instanceHeaderRect = new Rect(rect.x + middleCol, rect.y, rect.xMax - middleCol, k_HeaderHeight);
+                    Rect instanceHeaderRect = new Rect(rect.x + middleCol, rect.y, rect.xMax - middleCol + (scroll ? k_ScrollbarWidth : 0), k_HeaderHeight);
                     DrawHeader(sourceHeaderRect, Styles.sourceContent);
                     DrawHeader(instanceHeaderRect, Styles.instanceContent);
 
@@ -668,8 +689,9 @@ namespace UnityEditor
             void DrawHeader(Rect rect, GUIContent label)
             {
                 EditorGUI.LabelField(rect, label, Styles.headerStyle);
-                // Overdraw border by one pixel to the right and down, so adjacent borders overlap.
-                GUI.Label(new Rect(rect.x, rect.y, rect.width + 1, rect.height + 1), GUIContent.none, Styles.borderStyle);
+                // Overdraw border by one pixel to the right, so adjacent borders overlap.
+                // Don't overdraw down, since overlapping scroll view can make controls overlap divider line.
+                GUI.Label(new Rect(rect.x, rect.y, rect.width + 1, rect.height), GUIContent.none, Styles.borderStyle);
             }
 
             void DrawRevertApplyButtons(Rect rect)
@@ -722,6 +744,8 @@ namespace UnityEditor
 
             float DrawEditor(Rect rect, Editor editor, bool disabled)
             {
+                rect.xMin += 1;
+                EditorGUIUtility.leftMarginCoord = rect.x;
                 GUILayout.BeginArea(rect);
                 Rect editorRect = EditorGUILayout.BeginVertical();
                 {
@@ -741,7 +765,7 @@ namespace UnityEditor
                             else
                             {
                                 EditorGUIUtility.hierarchyMode = true;
-                                EditorGUILayout.InspectorTitlebar(true, editor.target);
+                                EditorGUILayout.InspectorTitlebar(true, editor);
                                 EditorGUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
                                 editor.OnInspectorGUI();
                                 EditorGUILayout.Space();
@@ -754,8 +778,8 @@ namespace UnityEditor
                 EditorGUILayout.EndVertical();
                 GUILayout.EndArea();
 
-                // Overdraw border by one pixel to the right and down, so adjacent borders overlap.
-                GUI.Label(new Rect(rect.x, 0, rect.width + 1, m_PreviewSize.y + 1), GUIContent.none, Styles.borderStyle);
+                // Overdraw border by one pixel in all directions.
+                GUI.Label(new Rect(rect.x - 1, -1, rect.width + 2, m_PreviewSize.y + 2), GUIContent.none, Styles.borderStyle);
 
                 return editorRect.height;
             }
@@ -763,15 +787,6 @@ namespace UnityEditor
             public override Vector2 GetWindowSize()
             {
                 return new Vector2(m_PreviewSize.x, m_PreviewSize.y + k_HeaderHeight + 1f);
-            }
-
-            public override void OnClose()
-            {
-                base.OnClose();
-                if (m_SourceEditor != null)
-                    Object.DestroyImmediate(m_SourceEditor);
-                if (m_InstanceEditor != null)
-                    Object.DestroyImmediate(m_InstanceEditor);
             }
         }
     }

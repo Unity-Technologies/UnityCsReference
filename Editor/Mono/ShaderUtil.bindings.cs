@@ -14,6 +14,13 @@ using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
+    public enum PreprocessorOverride
+    {
+        UseProjectSettings = 0,
+        ForcePlatformPreprocessor = 1,
+        ForceCachingPreprocessor = 2
+    }
+
     [Serializable]
     [RequiredByNativeCode]
     [NativeHeader("Editor/Src/ShaderMenu.h")]

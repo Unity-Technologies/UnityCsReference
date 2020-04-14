@@ -66,7 +66,7 @@ namespace UnityEngine.UIElements
                 if (canGrabFocus)
                 {
                     var elementGettingFocused = GetFocusDelegate();
-                    focusController.SwitchFocus(elementGettingFocused);
+                    focusController.SwitchFocus(elementGettingFocused , this != elementGettingFocused);
                 }
                 else
                 {
@@ -305,20 +305,20 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
+        void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction, bool bIsFocusDelegated = false)
         {
-            using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction, this))
+            using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction, this, bIsFocusDelegated))
             {
                 focusable.SendEvent(e);
             }
         }
 
-        internal void SwitchFocus(Focusable newFocusedElement)
+        internal void SwitchFocus(Focusable newFocusedElement, bool bIsFocusDelegated = false)
         {
-            SwitchFocus(newFocusedElement, FocusChangeDirection.unspecified);
+            SwitchFocus(newFocusedElement, FocusChangeDirection.unspecified, bIsFocusDelegated);
         }
 
-        void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction)
+        void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction, bool bIsFocusDelegated = false)
         {
             if (GetLeafFocusedElement() == newFocusedElement)
             {
@@ -353,7 +353,7 @@ namespace UnityEngine.UIElements
                     ReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction);
                 }
 
-                GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction);
+                GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, bIsFocusDelegated);
             }
         }
 

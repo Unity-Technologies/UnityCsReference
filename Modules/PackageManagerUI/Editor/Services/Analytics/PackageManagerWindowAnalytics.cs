@@ -35,15 +35,18 @@ namespace UnityEditor.PackageManager.UI
             if (!string.IsNullOrEmpty(packageId))
                 packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
 
+            var packageFiltering = ServicesContainer.instance.Resolve<PackageFiltering>();
+            var packageManagerPrefs = ServicesContainer.instance.Resolve<PackageManagerPrefs>();
+
             var parameters = new PackageManagerWindowAnalytics
             {
                 action = action,
                 package_id = packageId ?? string.Empty,
-                search_text = PackageFiltering.instance.currentSearchText,
-                filter_name = PackageFiltering.instance.currentFilterTab.ToString(),
+                search_text = packageFiltering.currentSearchText,
+                filter_name = packageFiltering.currentFilterTab.ToString(),
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
-                dependencies_visible = PackageManagerPrefs.instance.showPackageDependencies,
-                preview_visible = PackageManagerPrefs.instance.showPreviewPackages,
+                dependencies_visible = packageManagerPrefs.showPackageDependencies,
+                preview_visible = packageManagerPrefs.showPreviewPackages,
                 t_since_start = (long)(EditorApplication.timeSinceStartup * 1E6),
                 ts = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond
             };

@@ -74,9 +74,12 @@ namespace UnityEditor.PackageManager.UI
             m_Errors.Add(error);
         }
 
-        public void ClearErrors()
+        public void ClearErrors(Predicate<UIError> match = null)
         {
-            m_Errors.Clear();
+            if (match == null)
+                m_Errors.Clear();
+            else
+                m_Errors.RemoveAll(match);
         }
 
         [SerializeField]

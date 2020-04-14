@@ -60,7 +60,7 @@ namespace UnityEditor.SceneManagement
         internal override void SyncSceneViewToStage(SceneView sceneView)
         {
             sceneView.customScene = new Scene();
-            sceneView.customParentForDraggedObjects = null;
+            sceneView.customParentForNewGameObjects = null;
 
             // NOTE: We always set overrideSceneCullingMask to ensure the gizmo handling in the Entities package works (in dots search for 'gizmo hack').
             // This ensures normal picking works with the livelink since the SceneCullingMasks.MainStageSceneViewObjects is part of the mask while the gizmo bit is also set.

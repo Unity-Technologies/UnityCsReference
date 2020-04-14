@@ -1068,6 +1068,7 @@ namespace UnityEditor
             hierarchyMode = false;
             wideMode = false;
             comparisonViewMode = ComparisonViewMode.None;
+            leftMarginCoord = 0;
 
             //Clear the cache, so it uses the global one
             ScriptAttributeUtility.propertyHandlerCache = null;
@@ -1128,6 +1129,13 @@ namespace UnityEditor
         {
             get { return s_ComparisonViewMode; }
             set { s_ComparisonViewMode = value; }
+        }
+
+        private static float s_LeftMarginCoord;
+        internal static float leftMarginCoord
+        {
+            get { return s_LeftMarginCoord; }
+            set { s_LeftMarginCoord = value; }
         }
 
         // Context width is used for calculating the label width for various editor controls.

@@ -51,7 +51,7 @@ namespace UnityEditorInternal.VersionControl
                 {
                     string metaPath = asset.path.Trim('/') + ".meta";
                     Asset metaAsset = Provider.GetAssetByPath(metaPath);
-                    Overlay.DrawOverlay(asset, metaAsset, drawRect);
+                    Overlay.DrawProjectOverlay(asset, metaAsset, drawRect);
                 }
             }
         }
@@ -61,7 +61,8 @@ namespace UnityEditorInternal.VersionControl
             var now = EditorApplication.timeSinceStartup;
             if (repaintAction != null)
             {
-                var hash = AssetDatabaseExperimental.GetArtifactHash(guid, AssetDatabaseExperimental.ImportSyncMode.Poll);
+                GUID lookupGUID = new GUID(guid);
+                var hash = AssetDatabaseExperimental.LookupArtifact(new ArtifactKey(lookupGUID));
                 if (!hash.isValid)
                 {
                     if (s_ProgressRepainters.IndexOf(repaintAction) == -1)

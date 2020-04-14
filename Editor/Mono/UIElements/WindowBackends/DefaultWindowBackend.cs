@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -15,6 +16,8 @@ namespace UnityEditor.UIElements
         protected IMGUIContainer imguiContainer;
 
         public object visualTree => m_Panel.visualTree;
+
+        internal Panel panel => m_Panel;
 
         public virtual void OnCreate(IWindowModel model)
         {
@@ -32,17 +35,16 @@ namespace UnityEditor.UIElements
             imguiContainer.focusOnlyIfHasFocusableControls = false;
 
             m_Panel.visualTree.Insert(0, imguiContainer);
-
-            m_Model.sizeChanged = OnSizeChanged;
-            m_Model.eventInterestsChanged = OnEventsInterestsChanged;
+            Assert.IsNull(m_Panel.rootIMGUIContainer);
+            m_Panel.rootIMGUIContainer = imguiContainer;
         }
 
-        private void OnSizeChanged()
+        void IWindowBackend.SizeChanged()
         {
             m_Panel.visualTree.SetSize(m_Model.size);
         }
 
-        private void OnEventsInterestsChanged()
+        void IWindowBackend.EventInterestsChanged()
         {
             m_Panel.IMGUIEventInterests = m_Model.eventInterests;
         }
@@ -54,15 +56,13 @@ namespace UnityEditor.UIElements
                 if (imguiContainer.HasMouseCapture())
                     imguiContainer.ReleaseMouse();
                 imguiContainer.RemoveFromHierarchy();
+                Assert.AreEqual(imguiContainer, m_Panel.rootIMGUIContainer);
+                m_Panel.rootIMGUIContainer = null;
                 imguiContainer = null;
             }
 
-            if (m_Model != null)
-            {
-                m_Model.sizeChanged = OnSizeChanged;
-                m_Model.eventInterestsChanged = OnEventsInterestsChanged;
-                m_Model = null;
-            }
+            // Here we assume m_Model == model. We should probably make the ignored OnDestroy argument obsolete.
+            m_Model = null;
             m_Panel.Dispose();
         }
 

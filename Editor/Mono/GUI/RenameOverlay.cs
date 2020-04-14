@@ -48,9 +48,6 @@ namespace UnityEditor
         [System.NonSerialized]
         bool m_UndoRedoWasPerformed;
 
-        [System.NonSerialized]
-        DelayedCallback m_DelayedCallback;
-
         string k_RenameOverlayFocusName = "RenameOverlayField";
 
         // property interface
@@ -84,7 +81,7 @@ namespace UnityEditor
             m_ClientGUIView = GUIView.current;
 
             if (delay > 0f)
-                m_DelayedCallback = new DelayedCallback(BeginRenameInternalCallback, delay);
+                EditorApplication.CallDelayed(BeginRenameInternalCallback, delay);
             else
                 BeginRenameInternalCallback();
             return true;
@@ -109,8 +106,7 @@ namespace UnityEditor
                 return;
 
             Undo.undoRedoPerformed -= UndoRedoWasPerformed;
-            if (m_DelayedCallback != null)
-                m_DelayedCallback.Clear();
+            EditorApplication.update -= BeginRenameInternalCallback;
 
             RemoveMessage();
 
@@ -379,12 +375,14 @@ namespace UnityEditor
         }
     }
 
+    // [Obsolete("Use EditorApplication.CallDelayed or EditorApplication.delayCall instead.")]
     internal interface IDelayedCallback
     {
         void Clear();
         void Reset();
     }
 
+    // [Obsolete("Use EditorApplication.CallDelayed or EditorApplication.delayCall instead.")]
     internal class DelayedCallback : IDelayedCallback
     {
         private System.Action m_Callback;
@@ -416,7 +414,7 @@ namespace UnityEditor
                 var callback = m_Callback;
                 Clear();
 
-                callback();
+                callback?.Invoke();
             }
         }
 

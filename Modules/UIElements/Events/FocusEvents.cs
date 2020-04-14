@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
 
         protected FocusController focusController { get; private set; }
 
+        internal bool IsFocusDelegated { get; private set; }
         protected override void Init()
         {
             base.Init();
@@ -33,13 +34,14 @@ namespace UnityEngine.UIElements
             focusController = null;
         }
 
-        public static T GetPooled(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction, FocusController focusController)
+        public static T GetPooled(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction, FocusController focusController, bool bIsFocusDelegated = false)
         {
             T e = GetPooled();
             e.target = target;
             e.relatedTarget = relatedTarget;
             e.direction = direction;
             e.focusController = focusController;
+            e.IsFocusDelegated = bIsFocusDelegated;
             return e;
         }
 

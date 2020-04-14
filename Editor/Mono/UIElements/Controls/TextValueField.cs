@@ -70,6 +70,7 @@ namespace UnityEditor.UIElements
             }
         }
 
+        internal virtual bool CanTryParse(string textString) => false;
 
         protected void AddLabelDragger<TDraggerType>()
         {

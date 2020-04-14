@@ -72,6 +72,12 @@ namespace UnityEditor
             if (s_PopupWindowWithoutFocus == null)
                 return false;
 
+            if (type == EventType.MouseDown && !s_PopupWindowWithoutFocus.position.Contains(mousePosition))
+            {
+                s_PopupWindowWithoutFocus.Close();
+                return false;
+            }
+
             if (type == EventType.KeyDown && keyCode == KeyCode.Escape)
             {
                 s_PopupWindowWithoutFocus.Close();

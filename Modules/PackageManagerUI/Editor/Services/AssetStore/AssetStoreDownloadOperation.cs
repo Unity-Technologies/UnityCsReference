@@ -32,6 +32,10 @@ namespace UnityEditor.PackageManager.UI
 
         public bool isInProgress => state == DownloadState.Connecting || state == DownloadState.Downloading || state == DownloadState.Decrypting;
 
+        public bool isInPause => state == DownloadState.Paused || state == DownloadState.Pausing;
+
+        public bool isProgressVisible => state == DownloadState.ResumeRequested || isInProgress || isInPause;
+
         public bool isProgressTrackable => true;
 
         public float progressPercentage => m_TotalBytes > 0 ? m_DownloadedBytes / (float)m_TotalBytes : 0.0f;
@@ -42,6 +46,7 @@ namespace UnityEditor.PackageManager.UI
         public event Action<IOperation> onOperationSuccess = delegate {};
         public event Action<IOperation> onOperationFinalized = delegate {};
         public event Action<IOperation> onOperationProgress = delegate {};
+        public event Action<IOperation> onOperationPaused = delegate {};
 
         [SerializeField]
         private ulong m_DownloadedBytes;
@@ -60,11 +65,30 @@ namespace UnityEditor.PackageManager.UI
         private AssetStoreDownloadInfo m_DownloadInfo;
         public AssetStoreDownloadInfo downloadInfo => m_DownloadInfo;
 
+        [NonSerialized]
+        private AssetStoreUtils m_AssetStoreUtils;
+        [NonSerialized]
+        private AssetStoreRestAPI m_AssetStoreRestAPI;
+        public void ResolveDependencies(AssetStoreUtils assetStoreUtils,
+            AssetStoreRestAPI assetStoreRestAPI)
+        {
+            m_AssetStoreUtils = assetStoreUtils;
+            m_AssetStoreRestAPI = assetStoreRestAPI;
+        }
+
+        private AssetStoreDownloadOperation()
+        {
+        }
+
+        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, string productId)
+        {
+            ResolveDependencies(assetStoreUtils, assetStoreRestAPI);
+
+            m_ProductId = productId;
+        }
+
         public void OnDownloadProgress(string message, ulong bytes, ulong total)
         {
-            m_DownloadedBytes = bytes;
-            m_TotalBytes = total;
-
             switch (message)
             {
                 case "ok":
@@ -76,17 +100,28 @@ namespace UnityEditor.PackageManager.UI
                     m_State = DownloadState.Connecting;
                     break;
                 case "downloading":
-                    m_State = DownloadState.Downloading;
+                    if (!isInPause)
+                        m_State = DownloadState.Downloading;
+                    m_DownloadedBytes = Math.Max(m_DownloadedBytes, bytes);
+                    m_TotalBytes = Math.Max(m_TotalBytes, total);
                     break;
                 case "decrypt":
                     m_State = DownloadState.Decrypting;
                     break;
                 case "aborted":
-                    m_DownloadedBytes = 0;
-                    m_State = DownloadState.Aborted;
-                    m_ErrorMessage = ApplicationUtil.instance.GetTranslationForText("Download aborted");
-                    onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
-                    onOperationFinalized?.Invoke(this);
+                    if (!isInPause)
+                    {
+                        m_DownloadedBytes = 0;
+                        m_State = DownloadState.Aborted;
+                        m_ErrorMessage = L10n.Tr("Download aborted");
+                        onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
+                        onOperationFinalized?.Invoke(this);
+                    }
+                    else
+                    {
+                        m_State = DownloadState.Paused;
+                        onOperationPaused?.Invoke(this);
+                    }
                     break;
                 default:
                     OnErrorMessage(message);
@@ -99,10 +134,25 @@ namespace UnityEditor.PackageManager.UI
         private void OnErrorMessage(string errorMessage)
         {
             m_State = DownloadState.Error;
-            m_ErrorMessage = ApplicationUtil.instance.GetTranslationForText(k_LocalizedDownloadErrorMessage);
+            m_ErrorMessage = L10n.Tr(k_LocalizedDownloadErrorMessage);
             Debug.LogError(errorMessage);
             onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
             onOperationFinalized?.Invoke(this);
+        }
+
+        public void Pause()
+        {
+            if (downloadInfo?.isValid != true)
+                return;
+
+            if (state == DownloadState.Aborted || state == DownloadState.Completed || state == DownloadState.Error || state == DownloadState.Paused)
+                return;
+
+            m_State = DownloadState.Pausing;
+
+            // Pause here is the same as aborting the download, but we don't delete the file so we can resume from where we paused it from
+            if (!m_AssetStoreUtils.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
+                Debug.LogError(k_LocalizedAbortErrorMessage);
         }
 
         public void Abort()
@@ -113,15 +163,25 @@ namespace UnityEditor.PackageManager.UI
             if (state == DownloadState.Aborted || state == DownloadState.Completed || state == DownloadState.Error)
                 return;
 
+            // We reset everything if we cancel after pausing a download
+            if (state == DownloadState.Paused)
+            {
+                m_DownloadedBytes = 0;
+                m_State = DownloadState.Aborted;
+                onOperationFinalized?.Invoke(this);
+                return;
+            }
+
             // the actual download state change from `downloading` to `aborted` happens in `OnDownloadProgress` callback
-            if (!AssetStoreUtils.instance.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
-                Debug.LogError(ApplicationUtil.instance.GetTranslationForText(k_LocalizedAbortErrorMessage));
+            if (!m_AssetStoreUtils.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
+                Debug.LogError(L10n.Tr(k_LocalizedAbortErrorMessage));
         }
 
-        public void Download()
+        public void Download(bool resume)
         {
+            m_State = resume ? DownloadState.ResumeRequested : DownloadState.DownloadRequested;
             var productId = long.Parse(m_ProductId);
-            AssetStoreRestAPI.instance.GetDownloadDetail(productId, downloadInfo =>
+            m_AssetStoreRestAPI.GetDownloadDetail(productId, downloadInfo =>
             {
                 m_DownloadInfo = downloadInfo;
                 if (!downloadInfo.isValid)
@@ -132,7 +192,7 @@ namespace UnityEditor.PackageManager.UI
 
                 var dest = downloadInfo.destination;
 
-                var json = AssetStoreUtils.instance.CheckDownload(
+                var json = m_AssetStoreUtils.CheckDownload(
                     $"{k_AssetStoreDownloadPrefix}{downloadInfo.productId}",
                     downloadInfo.url, dest,
                     downloadInfo.key);
@@ -140,10 +200,6 @@ namespace UnityEditor.PackageManager.UI
                 var resumeOK = false;
                 try
                 {
-                    json = Regex.Replace(json, "\"url\":(?<url>\"?[^,]+\"?),\"", "\"url\":\"${url}\",\"");
-                    json = Regex.Replace(json, "\"key\":(?<key>\"?[0-9a-zA-Z]*\"?)\\}", "\"key\":\"${key}\"}");
-                    json = Regex.Replace(json, "\"+(?<value>[^\"]+)\"+", "\"${value}\"");
-
                     var current = Json.Deserialize(json) as IDictionary<string, object>;
                     if (current == null)
                         throw new ArgumentException("Invalid JSON");
@@ -151,7 +207,8 @@ namespace UnityEditor.PackageManager.UI
                     var inProgress = current.ContainsKey("in_progress") && (current["in_progress"] is bool? (bool)current["in_progress"] : false);
                     if (inProgress)
                     {
-                        m_State = DownloadState.Downloading;
+                        if (!isInPause)
+                            m_State = DownloadState.Downloading;
                         return;
                     }
 
@@ -170,21 +227,16 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 json = $"{{\"download\":{{\"url\":\"{downloadInfo.url}\",\"key\":\"{downloadInfo.key}\"}}}}";
-                AssetStoreUtils.instance.Download(
+                m_AssetStoreUtils.Download(
                     $"{k_AssetStoreDownloadPrefix}{downloadInfo.productId}",
                     downloadInfo.url,
                     dest,
                     downloadInfo.key,
                     json,
-                    resumeOK);
+                    resumeOK && resume);
 
                 m_State = DownloadState.Connecting;
             });
-        }
-
-        public AssetStoreDownloadOperation(string productId)
-        {
-            m_ProductId = productId;
         }
     }
 }

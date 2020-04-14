@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Player;
@@ -313,6 +315,40 @@ namespace UnityEditorInternal
             m_BuildForMonoRuntime = buildForMonoRuntime;
         }
 
+        [DllImport("kernel32.dll", EntryPoint = "GetShortPathName", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern int WindowsGetShortPathName(
+            [MarshalAs(UnmanagedType.LPWStr)]
+            string lpszLongPath,
+            [MarshalAs(UnmanagedType.LPWStr)]
+            StringBuilder lpszShortPath,
+            int cchBuffer
+        );
+
+        private static bool IsWindows()
+        {
+            return Environment.OSVersion.Platform == PlatformID.Win32NT;
+        }
+
+        public static string GetShortPathName(string path)
+        {
+            if (!IsWindows() || Encoding.UTF8.GetByteCount(path) == path.Length)
+            {
+                return path;
+            }
+            int length = WindowsGetShortPathName(path, null, 0);
+            if (length == 0)
+            {
+                return path;
+            }
+            StringBuilder shortPath = new StringBuilder(length);
+            length = WindowsGetShortPathName(path, shortPath, shortPath.Capacity);
+            if (length == 0)
+            {
+                return path;
+            }
+            return shortPath.ToString(0, length);
+        }
+
         public void Run()
         {
             var outputDirectory = GetCppOutputDirectoryInStagingArea();
@@ -378,7 +414,7 @@ namespace UnityEditorInternal
                     arguments.Add(additionalArgs);
 
                 arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
-                arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(Path.GetFullPath(GetCppOutputDirectoryInStagingArea()))}");
+                arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(GetCppOutputDirectoryInStagingArea())))}");
                 arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
                 arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
@@ -390,7 +426,7 @@ namespace UnityEditorInternal
 
         private string OutputFileRelativePath()
         {
-            var nativeLibPath = Path.Combine(m_StagingAreaData, "Native");
+            var nativeLibPath = Path.Combine(GetShortPathName(m_StagingAreaData), "Native");
             Directory.CreateDirectory(nativeLibPath);
             nativeLibPath = Path.Combine(nativeLibPath, m_PlatformProvider.nativeLibraryFileName);
             return nativeLibPath;
@@ -475,9 +511,9 @@ namespace UnityEditorInternal
             if (!string.IsNullOrEmpty(additionalArgs))
                 arguments.Add(additionalArgs);
 
-            arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(Path.GetFullPath(data.inputDirectory))}");
+            arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(data.inputDirectory)))}");
 
-            arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(Path.GetFullPath(outputDirectory))}");
+            arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(outputDirectory)))}");
 
             // NOTE: any arguments added here that affect how generated code is built need
             // to also be added to PlatformDependent\Win\Extensions\Managed\VisualStudioProjectHelpers.cs

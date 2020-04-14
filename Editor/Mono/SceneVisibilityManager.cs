@@ -390,7 +390,7 @@ namespace UnityEditor
 
         static bool IsIgnoredBySceneVisibility(GameObject go)
         {
-            var hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor;
+            var hideFlags = HideFlags.HideInHierarchy;
 
             return (go.hideFlags & hideFlags) != 0;
         }

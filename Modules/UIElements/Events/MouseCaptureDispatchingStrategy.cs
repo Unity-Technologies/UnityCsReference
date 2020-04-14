@@ -76,18 +76,10 @@ namespace UnityEngine.UIElements
 
                 if (mouseEvent != null && basePanel != null)
                 {
-                    bool shouldRecomputeTopElementUnderMouse = true;
-                    if ((IMouseEventInternal)mouseEvent != null)
-                    {
-                        shouldRecomputeTopElementUnderMouse =
-                            ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
-                    }
-                    VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse ?
-                        basePanel.Pick(mouseEvent.mousePosition) :
-                        basePanel.GetTopElementUnderPointer(PointerId.mousePointerId);
+                    bool shouldRecomputeTopElementUnderMouse = (mouseEvent as IMouseEventInternal)?.recomputeTopElementUnderMouse ?? true;
 
                     if (shouldRecomputeTopElementUnderMouse)
-                        basePanel.SetElementUnderPointer(elementUnderMouse, evt);
+                        basePanel.RecomputeTopElementUnderPointer(mouseEvent.mousePosition, evt);
                 }
 
                 evt.dispatch = true;

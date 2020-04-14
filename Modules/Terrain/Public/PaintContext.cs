@@ -124,7 +124,8 @@ namespace UnityEngine.Experimental.TerrainAPI
             None = 0,
             PaintHeightmap = 1 << 0,
             PaintTexture = 1 << 1,
-            PaintHoles = 1 << 2
+            PaintHoles = 1 << 2,
+            AddTerrainLayer = 1 << 3
         }
 
         public static float kNormalizedHeightScale => 32766.0f / 65535.0f;
@@ -444,6 +445,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                     tileLayerIndex = TerrainPaintUtility.FindTerrainLayerIndex(context.terrain, terrainLayer);
                     if ((tileLayerIndex == -1) && (addLayerIfDoesntExist))
                     {
+                        onTerrainTileBeforePaint?.Invoke(context, ToolAction.AddTerrainLayer, "Adding Terrain Layer");
                         tileLayerIndex = TerrainPaintUtility.AddTerrainLayer(context.terrain, terrainLayer);
                     }
                 }

@@ -30,8 +30,8 @@ namespace UnityEditor.VersionControl
         static Styles s_Styles = null;
 
         static Texture2D changeIcon = null;
-        Texture2D syncIcon = null;
-        Texture2D refreshIcon = null;
+        static Texture2D syncIcon = null;
+        static Texture2D refreshIcon = null;
         GUIStyle header;
         [SerializeField] ListControl pendingList;
         [SerializeField] ListControl incomingList;
@@ -738,13 +738,13 @@ namespace UnityEditor.VersionControl
         {
             if (syncIcon == null)
             {
-                syncIcon = EditorGUIUtility.LoadIcon("vcs_incoming");
+                syncIcon = EditorGUIUtility.LoadIcon("VersionControl/Incoming Icon");
                 syncIcon.hideFlags = HideFlags.HideAndDontSave;
                 syncIcon.name = "SyncIcon";
             }
             if (changeIcon == null)
             {
-                changeIcon = EditorGUIUtility.LoadIcon("vcs_change");
+                changeIcon = EditorGUIUtility.LoadIcon("VersionControl/Outgoing Icon");
                 changeIcon.hideFlags = HideFlags.HideAndDontSave;
                 changeIcon.name = "ChangeIcon";
             }

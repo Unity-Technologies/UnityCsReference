@@ -229,10 +229,7 @@ namespace UnityEditor
         private void UpdateWindowTitle(EditorWindow w)
         {
             if (w && w.m_Parent && w.m_Parent.window && w.titleContent != null)
-            {
-                var projectName = EditorApplication.isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath));
-                w.m_Parent.window.title = w.titleContent.text + " - " + projectName;
-            }
+                w.m_Parent.window.title = w.titleContent.text;
         }
 
         private void KillIfEmpty()
@@ -320,6 +317,7 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.ResetGUIState();
 
             // Exit if the window was destroyed after entering play mode or on domain-reload.
@@ -362,6 +360,7 @@ namespace UnityEditor
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);
+            EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
         private void DrawView(Rect viewRect, Rect dockAreaRect)
@@ -669,7 +668,7 @@ namespace UnityEditor
 
             menu.AddSeparator("");
 
-            ((IEditorWindowModel)this).onDisplayWindowMenu?.Invoke(menu);
+            editorWindowBackend?.OnDisplayWindowMenu(menu);
         }
 
         void AddTabToHere(object userData)
@@ -798,7 +797,7 @@ namespace UnityEditor
                         var menuPos = new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0);
                         if (sel != -1 && sel < m_Panes.Count && !ContainerWindow.s_Modal)
                             PopupGenericMenu(m_Panes[sel], menuPos);
-                        else if (!ContainerWindow.s_Modal)
+                        else if (!ContainerWindow.s_Modal && m_Panes.Count == 0) // i.e. all panes have failed to load
                             PopupGenericMenu(null, menuPos);
                     }
                     break;
@@ -1097,7 +1096,8 @@ namespace UnityEditor
             if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition) && !ContainerWindow.s_Modal)
                 PopupGenericMenu(actualView, new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 0, 0));
 
-            ShowGenericMenu(position.width - GetGenericMenuLeftOffset(true), backRect.yMin + Styles.genericMenuTopOffset);
+            // GetGenericMenuLeftOffset false because maximized window are not floating windows
+            ShowGenericMenu(position.width - GetGenericMenuLeftOffset(false), backRect.yMin + Styles.genericMenuTopOffset);
 
             const float topBottomPadding = 0f;
             Rect viewRect = maximizedViewRect;
@@ -1151,7 +1151,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            ((IEditorWindowModel)this).onDisplayWindowMenu?.Invoke(menu);
+            editorWindowBackend?.OnDisplayWindowMenu(menu);
         }
     }
 }

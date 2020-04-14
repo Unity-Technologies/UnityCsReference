@@ -79,7 +79,8 @@ namespace UnityEditor
         public virtual void OnEnable()
         {
             var s = target as Shader;
-            ShaderUtil.FetchCachedMessages(s);
+            if (s != null)
+                ShaderUtil.FetchCachedMessages(s);
         }
 
         public virtual void OnDisable()
@@ -344,7 +345,8 @@ namespace UnityEditor
         private void ShowCompiledCodeButton(Shader s)
         {
             EditorGUILayout.BeginVertical();
-            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor))
+            ShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(s.GetInstanceID())) as ShaderImporter;
+            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor && importer && importer.preprocessorOverride != PreprocessorOverride.ForceCachingPreprocessor))
                 m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);

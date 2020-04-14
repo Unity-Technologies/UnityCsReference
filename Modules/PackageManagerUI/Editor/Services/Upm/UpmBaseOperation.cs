@@ -54,6 +54,8 @@ namespace UnityEditor.PackageManager.UI
 
         public abstract bool isInProgress { get; }
 
+        public bool isProgressVisible => false;
+
         public bool isProgressTrackable => false;
 
         public float progressPercentage => 0;
@@ -82,13 +84,18 @@ namespace UnityEditor.PackageManager.UI
         {
             if (isInProgress)
             {
-                Debug.LogError(ApplicationUtil.instance.GetTranslationForText("Unable to start the operation again while it's in progress. " +
+                Debug.LogError(L10n.Tr("Unable to start the operation again while it's in progress. " +
                     "Please cancel the operation before re-start or wait until the operation is completed."));
                 return;
             }
 
             if (!isOfflineMode)
                 m_Timestamp = DateTime.Now.Ticks;
+            // Usually the timestamp for an offline operation is the last success timestamp of its online equivalence (to indicate the freshness of the data)
+            // But in the rare case where we start an offline operation before an online one, we use the start timestamp of the editor instead of 0,
+            // because we consider a `0` refresh timestamp as `not initialized`/`no refreshes have been done`.
+            else if (m_Timestamp == 0)
+                m_Timestamp = DateTime.Now.Ticks - (long)(EditorApplication.timeSinceStartup * TimeSpan.TicksPerSecond);
             m_Request = CreateRequest();
             error = null;
             EditorApplication.update += Progress;
@@ -110,7 +117,7 @@ namespace UnityEditor.PackageManager.UI
                 else if (m_Request.Status >= StatusCode.Failure)
                     OnError((UIError)m_Request.Error);
                 else
-                    Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Unsupported progress state {0}"), m_Request.Status));
+                    Debug.LogError(string.Format(L10n.Tr("Unsupported progress state {0}"), m_Request.Status));
                 OnFinalize();
             }
         }
@@ -120,16 +127,16 @@ namespace UnityEditor.PackageManager.UI
             try
             {
                 this.error = error;
-                var message = ApplicationUtil.instance.GetTranslationForText("Cannot perform upm operation");
+                var message = L10n.Tr("Cannot perform upm operation");
                 message += string.IsNullOrEmpty(error.message) ? "." : $": {error.message} [{error.errorCode}].";
-                message += ApplicationUtil.instance.GetTranslationForText("See console for more details");
+                message += L10n.Tr("See console for more details");
 
                 Debug.LogError(message);
                 onOperationError?.Invoke(this, error);
             }
             catch (Exception exception)
             {
-                Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Package Manager Window had an error while reporting an error in an operation: {0}"), exception.Message));
+                Debug.LogError(string.Format(L10n.Tr("Package Manager Window had an error while reporting an error in an operation: {0}"), exception.Message));
             }
         }
 
@@ -143,7 +150,7 @@ namespace UnityEditor.PackageManager.UI
             }
             catch (Exception exception)
             {
-                Debug.LogError(string.Format(ApplicationUtil.instance.GetTranslationForText("Package Manager Window had an error while completing an operation: {0}"), exception.Message));
+                Debug.LogError(string.Format(L10n.Tr("Package Manager Window had an error while completing an operation: {0}"), exception.Message));
             }
         }
 

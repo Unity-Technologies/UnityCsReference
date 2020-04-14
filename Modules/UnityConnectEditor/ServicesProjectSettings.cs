@@ -1132,6 +1132,7 @@ namespace UnityEditor.Connect
             const string k_SameVersionInfo = "SameVersionInfo";
             const string k_ChoiceYes = "Yes";
             const string k_ChoiceNo = "No";
+            const string k_NotApplicable = "N/A";
 
             // UIElements For the related package messages
             Label m_CurrentPackageVersionLabel;
@@ -1142,7 +1143,7 @@ namespace UnityEditor.Connect
             ListRequest m_Request; // To get a list of all packages for the project
             SearchRequest m_SearchRequest; // To get the actual available package
             AddRequest m_AddRequest; // To start the actual update process
-            bool m_InstallingLatest; // A switch to make sure to only call the installation in a singleton fashion...
+            bool m_InstallingNewPackage; // A switch to make sure to only call the installation in a singleton fashion...
             bool m_NotLatestPackageInfoHasBeenShown;
 
             // Information to be set-up by the actual child classes
@@ -1155,14 +1156,16 @@ namespace UnityEditor.Connect
             protected bool packmanPackageInstalled { get; set; }
             protected bool isLatestPackageInstalled { get; set; }
 
+            protected string installPackageVersion { get; set; }
+
             // String containing the actual text for the version number label
-            string m_CurrentPackageVersion;
-            string m_LatestPackageVersion;
+            protected string currentPackageVersion { get; private set; }
+            protected string latestPackageVersion { get; private set; }
 
             protected void UpdatePackageInformation()
             {
-                m_CurrentPackageVersion = string.Empty;
-                m_LatestPackageVersion = string.Empty;
+                currentPackageVersion = string.Empty;
+                latestPackageVersion = string.Empty;
 
                 // List packages installed for the Project
                 m_Request = Client.List();
@@ -1173,6 +1176,11 @@ namespace UnityEditor.Connect
                 EditorApplication.update += SearchPackageProgress;
             }
 
+            protected virtual string GetUpdatablePackageVersion()
+            {
+                return latestPackageVersion;
+            }
+
             protected void UpdatePackageUpdateButton()
             {
                 if ((m_InstallLatestVersion == null) || (m_SameVersionLabel == null))
@@ -1180,9 +1188,9 @@ namespace UnityEditor.Connect
                     return;
                 }
 
-                if ((m_CurrentPackageVersion != string.Empty) && (m_LatestPackageVersion != string.Empty))
+                if ((currentPackageVersion != string.Empty) && (GetUpdatablePackageVersion() != string.Empty))
                 {
-                    if (m_CurrentPackageVersion.Equals(m_LatestPackageVersion))
+                    if (currentPackageVersion.Equals(GetUpdatablePackageVersion()))
                     {
                         isLatestPackageInstalled = true;
                         m_InstallLatestVersion.style.display = DisplayStyle.None;
@@ -1216,9 +1224,9 @@ namespace UnityEditor.Connect
                     }
                     else
                     {
-                        EditorAnalytics.SendImportServicePackageEvent(new ImportPackageInfo() { packageName = provider.serviceInstance.packageName, version = m_LatestPackageVersion });
+                        EditorAnalytics.SendImportServicePackageEvent(new ImportPackageInfo() { packageName = provider.serviceInstance.packageName, version = installPackageVersion });
                     }
-                    m_InstallingLatest = false;
+                    m_InstallingNewPackage = false;
                 }
             }
 
@@ -1233,12 +1241,7 @@ namespace UnityEditor.Connect
                         {
                             if (package.name.Equals(provider.serviceInstance.packageName))
                             {
-                                m_LatestPackageVersion = package.version;
-                                if (m_LatestPackageVersionLabel != null)
-                                {
-                                    m_LatestPackageVersionLabel.text = package.version;
-                                }
-
+                                OnSearchPackageFound(package);
                                 break;
                             }
                         }
@@ -1253,6 +1256,15 @@ namespace UnityEditor.Connect
                 }
             }
 
+            protected virtual void OnSearchPackageFound(PackageManager.PackageInfo package)
+            {
+                latestPackageVersion = package.version;
+                if (m_LatestPackageVersionLabel != null)
+                {
+                    m_LatestPackageVersionLabel.text = package.version;
+                }
+            }
+
             protected void ListingCurrentPackageProgress()
             {
                 if (m_Request.IsCompleted)
@@ -1262,19 +1274,19 @@ namespace UnityEditor.Connect
                     if (m_Request.Status == StatusCode.Success)
                     {
                         // Make sure the actual version is N/A...
-                        m_CurrentPackageVersion = L10n.Tr("N/A").ToUpper();
+                        currentPackageVersion = L10n.Tr(k_NotApplicable).ToUpper();
                         foreach (var package in m_Request.Result)
                         {
                             if (package.name.Equals(provider.serviceInstance.packageName))
                             {
                                 packmanPackageInstalled = true;
-                                m_CurrentPackageVersion = package.version;
+                                currentPackageVersion = package.version;
                                 break;
                             }
                         }
                         if (m_CurrentPackageVersionLabel != null)
                         {
-                            m_CurrentPackageVersionLabel.text = m_CurrentPackageVersion;
+                            m_CurrentPackageVersionLabel.text = currentPackageVersion;
                         }
                         // Call the update button update independently of the actual presence of the package
                         UpdatePackageUpdateButton();
@@ -1323,27 +1335,35 @@ namespace UnityEditor.Connect
                 m_InstallLatestVersion = sectionRoot.Q<Button>(k_InstallLatestVersion);
                 if (m_InstallLatestVersion != null)
                 {
-                    m_InstallingLatest = false;
-                    m_InstallLatestVersion.clicked += () =>
-                    {
-                        var messageForDialog = L10n.Tr(packageInstallationHeadsup);
-                        if ((duplicateInstallWarning != null) && assetStorePackageInstalled)
-                        {
-                            messageForDialog = L10n.Tr(duplicateInstallWarning);
-                        }
-
-                        if (!m_InstallingLatest)
-                        {
-                            if (EditorUtility.DisplayDialog(L10n.Tr(packageInstallationDialogTitle), messageForDialog,
-                                L10n.Tr(k_ChoiceYes), L10n.Tr(k_ChoiceNo)))
-                            {
-                                m_InstallingLatest = true;
-                                m_AddRequest = Client.Add(provider.serviceInstance.packageName);
-                                EditorApplication.update += AddPackageProgress;
-                            }
-                        }
-                    };
+                    m_InstallingNewPackage = false;
+                    m_InstallLatestVersion.clicked += InstallLatestPackage;
                     m_InstallLatestVersion.style.display = DisplayStyle.None;
+                }
+            }
+
+            void InstallLatestPackage()
+            {
+                var messageForDialog = L10n.Tr(packageInstallationHeadsup);
+                installPackageVersion = GetUpdatablePackageVersion();
+                if ((duplicateInstallWarning != null) && assetStorePackageInstalled)
+                {
+                    messageForDialog = L10n.Tr(duplicateInstallWarning);
+                }
+
+                InstallPackage(messageForDialog);
+            }
+
+            protected void InstallPackage(string messageForDialog)
+            {
+                if (!m_InstallingNewPackage)
+                {
+                    if (EditorUtility.DisplayDialog(L10n.Tr(packageInstallationDialogTitle), messageForDialog,
+                        L10n.Tr(k_ChoiceYes), L10n.Tr(k_ChoiceNo)))
+                    {
+                        m_InstallingNewPackage = true;
+                        m_AddRequest = Client.Add(provider.serviceInstance.packageName);
+                        EditorApplication.update += AddPackageProgress;
+                    }
                 }
             }
 

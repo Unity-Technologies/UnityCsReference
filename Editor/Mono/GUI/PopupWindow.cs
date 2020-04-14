@@ -51,6 +51,22 @@ namespace UnityEditor
         // Shown on top of any previous windows
         internal static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocation[] locationPriorityOrder, ShowMode showMode)
         {
+            // If we already have a popup window showing this type of content, then just close
+            // the existing one.
+            var existingWindows = Resources.FindObjectsOfTypeAll(typeof(PopupWindow));
+            if (existingWindows != null && existingWindows.Length > 0)
+            {
+                var existingPopup = existingWindows[0] as PopupWindow;
+                if (existingPopup != null)
+                {
+                    if (existingPopup.m_WindowContent.GetType() == windowContent.GetType())
+                    {
+                        existingPopup.CloseWindow();
+                        return;
+                    }
+                }
+            }
+
             if (ShouldShowWindow(activatorRect))
             {
                 PopupWindow win = CreateInstance<PopupWindow>();

@@ -65,6 +65,9 @@ namespace UnityEngine.UIElements
 
         // If true, skip OnGUI() calls when outside the viewport
         private bool m_CullingEnabled = false;
+
+        // If true, the IMGUIContainer received Focus through delgation
+        private bool m_IsFocusDelegated = false;
         public bool cullingEnabled
         {
             get { return m_CullingEnabled; }
@@ -259,7 +262,7 @@ namespace UnityEngine.UIElements
                                 GUIUtility.SetKeyboardControlToFirstControlId();
                             }
                         }
-                        else if (GUIUtility.keyboardControl == 0)
+                        else if (GUIUtility.keyboardControl == 0 && m_IsFocusDelegated)
                         {
                             // Since GUIUtility.keyboardControl == 0, we got focused in some other way than by clicking inside us
                             // (for example it could be by clicking in an element that delegates focus to us).
@@ -268,17 +271,18 @@ namespace UnityEngine.UIElements
                         }
                     }
 
-                    receivedFocus = false;
-                    focusChangeDirection = FocusChangeDirection.unspecified;
                     if (focusController != null)
                     {
-                        if (focusController.imguiKeyboardControl != GUIUtility.keyboardControl)
+                        if (focusController.imguiKeyboardControl != GUIUtility.keyboardControl && focusChangeDirection != FocusChangeDirection.unspecified)
                         {
                             newKeyboardFocusControlID = GUIUtility.keyboardControl;
                         }
 
                         focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
                     }
+
+                    receivedFocus = false;
+                    focusChangeDirection = FocusChangeDirection.unspecified;
                 }
                 // We intentionally don't send the NewKeyboardFocus command here since it creates an issue with the AutomatedWindow
                 // newKeyboardFocusControlID = GUIUtility.keyboardControl;
@@ -588,14 +592,6 @@ namespace UnityEngine.UIElements
             return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, onGUIHandler, canAffectFocus);
         }
 
-        private bool IsIMGUILayoutPassRequired(Event e, bool wantsMouseMove)
-        {
-            return m_RefreshCachedLayout || e.rawType == EventType.Repaint
-                // We are handling these event types because of some legacy IMGUI editor window doing funky stuff in the layout pass.
-                || e.rawType == EventType.MouseUp || (wantsMouseMove && e.rawType == EventType.MouseDown)
-                || e.rawType == EventType.ExecuteCommand || e.rawType == EventType.ValidateCommand;
-        }
-
         private bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect, Action onGUIHandler, bool canAffectFocus)
         {
             if (e == null || onGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.rawType) == false)
@@ -606,7 +602,7 @@ namespace UnityEngine.UIElements
             EventType originalEventType = e.rawType;
             if (originalEventType != EventType.Layout)
             {
-                if (IsIMGUILayoutPassRequired(e, elementPanel.IMGUIEventInterests.wantsMouseMove))
+                if (m_RefreshCachedLayout || elementPanel.IMGUIEventInterests.WantsLayoutPass(e.rawType))
                 {
                     // Only update the layout in-between repaint events.
                     e.type = EventType.Layout;
@@ -691,6 +687,7 @@ namespace UnityEngine.UIElements
                 FocusEvent fe = evt as FocusEvent;
                 receivedFocus = true;
                 focusChangeDirection = fe.direction;
+                m_IsFocusDelegated = fe.IsFocusDelegated;
             }
             else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
             {

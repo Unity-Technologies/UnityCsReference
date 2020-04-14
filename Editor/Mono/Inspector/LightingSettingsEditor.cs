@@ -875,26 +875,10 @@ namespace UnityEditor
 
             bool editClicked = false;
 
-            if (prop.objectReferenceValue == null)
+            if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
             {
-                var defaults = AssetDatabase.GetBuiltinExtraResource<LightmapParameters>("LightmapParameters/Default-Medium.giparams");
-
-                using (new EditorGUI.DisabledScope(!defaults))
-                {
-                    if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                    {
-                        Selection.activeObject = defaults;
-                        editClicked = true;
-                    }
-                }
-            }
-            else
-            {
-                if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                {
-                    Selection.activeObject = prop.objectReferenceValue;
-                    editClicked = true;
-                }
+                Selection.activeObject = prop.objectReferenceValue;
+                editClicked = true;
             }
 
             EditorGUILayout.EndHorizontal();

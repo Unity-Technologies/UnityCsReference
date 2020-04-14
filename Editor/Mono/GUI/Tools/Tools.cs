@@ -377,35 +377,49 @@ namespace UnityEditor
         static int s_LockHandleRectAxis;
         static bool s_LockHandleRectAxisActive = false;
 
+        struct LayerSettings
+        {
+            public int visibleLayersValue;
+            public int lockedLayersValue;
+            public LayerSettings(int visible, int locked)
+            {
+                visibleLayersValue = visible;
+                lockedLayersValue = locked;
+            }
+        }
+
+        LayerSettings m_LayerSettings = new LayerSettings(-1, -1);
+
+        static StateCache<LayerSettings> s_LayersStateCache = new StateCache<LayerSettings>("Library/StateCache/LayerSettings/");
+        static Hash128 m_LayerSettingsKey = Hash128.Compute("LayerSettings");
+
         public static int visibleLayers
         {
-            get { return get.m_VisibleLayers; }
+            get { return get.m_LayerSettings.visibleLayersValue; }
             set
             {
-                if (get.m_VisibleLayers != value)
+                if (get.m_LayerSettings.visibleLayersValue != value)
                 {
-                    get.m_VisibleLayers = value;
+                    get.m_LayerSettings.visibleLayersValue = value;
                     EditorGUIUtility.SetVisibleLayers(value);
-                    EditorPrefs.SetInt("VisibleLayers", visibleLayers);
+                    s_LayersStateCache.SetState(m_LayerSettingsKey, get.m_LayerSettings);
                 }
             }
         }
-        int m_VisibleLayers = -1;
 
         public static int lockedLayers
         {
-            get { return get.m_LockedLayers; }
+            get { return get.m_LayerSettings.lockedLayersValue; }
             set
             {
-                if (get.m_LockedLayers != value)
+                if (get.m_LayerSettings.lockedLayersValue != value)
                 {
-                    get.m_LockedLayers = value;
+                    get.m_LayerSettings.lockedLayersValue = value;
                     EditorGUIUtility.SetLockedLayers(value);
-                    EditorPrefs.SetInt("LockedLayers", lockedLayers);
+                    s_LayersStateCache.SetState(m_LayerSettingsKey, get.m_LayerSettings);
                 }
             }
         }
-        int m_LockedLayers = -1;
 
         void OnEnable()
         {
@@ -413,8 +427,9 @@ namespace UnityEditor
             pivotMode = (PivotMode)EditorPrefs.GetInt("PivotMode", 0);
             rectBlueprintMode = EditorPrefs.GetBool("RectBlueprintMode", false);
             pivotRotation = (PivotRotation)EditorPrefs.GetInt("PivotRotation", 0);
-            visibleLayers = EditorPrefs.GetInt("VisibleLayers", -1);
-            lockedLayers = EditorPrefs.GetInt("LockedLayers", 0);
+            var layerSettings = s_LayersStateCache.GetState(m_LayerSettingsKey, new LayerSettings(-1, 0));
+            visibleLayers = layerSettings.visibleLayersValue;
+            lockedLayers = layerSettings.lockedLayersValue;
             Selection.selectionChanged += OnSelectionChange;
             Undo.undoRedoPerformed += OnSelectionChange;
 
