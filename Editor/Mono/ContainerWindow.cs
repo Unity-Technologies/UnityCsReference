@@ -30,6 +30,7 @@ namespace UnityEditor
         const float kTitleHeight = 24f, kButtonWidth = 16f, kButtonHeight = 16f;
 
         static internal bool macEditor => Application.platform == RuntimePlatform.OSXEditor;
+        static internal bool s_Modal = false;
 
         private static class Styles
         {

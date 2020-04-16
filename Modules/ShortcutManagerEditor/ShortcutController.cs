@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Scripting;
 using Attribute = System.Attribute;
 using Event = UnityEngine.Event;
 
@@ -51,6 +52,36 @@ namespace UnityEditor.ShortcutManagement
                 EnsureShortcutControllerCreated();
                 return s_Instance;
             }
+        }
+
+        private static bool s_Enabled;
+        internal static bool enabled
+        {
+            get
+            {
+                return s_Enabled;
+            }
+            set
+            {
+                if (value == s_Enabled) return;
+
+                if (value)
+                {
+                    EditorApplication.globalEventHandler += EventHandler;
+                }
+                else
+                {
+                    EditorApplication.globalEventHandler -= EventHandler;
+                }
+
+                s_Enabled = value;
+            }
+        }
+
+        [RequiredByNativeCode]
+        internal static void SetShortcutIntegrationEnabled(bool enable)
+        {
+            enabled = enable;
         }
 
         static ShortcutIntegration()
@@ -103,7 +134,7 @@ namespace UnityEditor.ShortcutManagement
             s_Instance = new ShortcutController(discovery, contextManager, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
             s_Instance.trigger.invokingAction += OnInvokingAction;
 
-            EditorApplication.globalEventHandler += EventHandler;
+            enabled = true;
             EditorApplication.doPressedKeysTriggerAnyShortcut += HasAnyEntriesHandler;
             EditorApplication.focusChanged += OnFocusChanged;
         }

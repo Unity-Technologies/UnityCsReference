@@ -472,9 +472,30 @@ namespace UnityEditor
             ShowPopupWithMode(ShowMode.PopupMenu, true);
         }
 
+        void MakeModal()
+        {
+            try
+            {
+                ContainerWindow.s_Modal = true;
+
+                SavedGUIState guiState = SavedGUIState.Create();
+                m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
+
+                Internal_MakeModal(m_Parent.window);
+
+                m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
+                guiState.ApplyAndForget();
+            }
+            finally
+            {
+                ContainerWindow.s_Modal = false;
+            }
+        }
+
         public void ShowModalUtility()
         {
             ShowWithMode(ShowMode.ModalUtility);
+            MakeModal();
         }
 
         // Used for popup style windows.
@@ -609,17 +630,10 @@ namespace UnityEditor
         }
 
         // Show modal editor window. Other windows will not be accessible until this one is closed.
-        internal void ShowModal()
+        public void ShowModal()
         {
             ShowWithMode(ShowMode.AuxWindow);
-            SavedGUIState guiState = SavedGUIState.Create();
-
-            m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
-            MakeModal(m_Parent.window);
-
-            m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
-
-            guiState.ApplyAndForget();
+            MakeModal();
         }
 
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
