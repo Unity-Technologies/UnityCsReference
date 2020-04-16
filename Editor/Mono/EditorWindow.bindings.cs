@@ -10,7 +10,7 @@ namespace UnityEditor
     public partial class EditorWindow
     {
         [FreeFunction("ContainerWindowBindings::MakeModal")]
-        internal static extern void MakeModal(ContainerWindow win);
+        internal static extern void Internal_MakeModal(ContainerWindow win);
 
     }
 }

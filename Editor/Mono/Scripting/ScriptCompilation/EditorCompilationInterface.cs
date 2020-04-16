@@ -302,6 +302,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static string[] GetCompiledAssemblyGraph(string assemblyName)
+        {
+            return EmitExceptionAsError(() => Instance.GetCompiledAssemblyGraph(assemblyName), new string[0]);
+        }
+
+        [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssembliesWithScripts()
         {
             var options = GetAdditionalEditorScriptCompilationOptions();

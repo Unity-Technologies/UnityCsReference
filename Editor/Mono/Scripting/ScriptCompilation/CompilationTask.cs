@@ -38,6 +38,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         List<PostProcessorTask> postProcessorTasks = new List<PostProcessorTask>();
         List<PostProcessorTask> pendingPostProcessorTasks = new List<PostProcessorTask>();
 
+        ScriptAssembly[] scriptAssemblies;
         string buildOutputDirectory;
         object context;
         int compilePhase = 0;
@@ -65,6 +66,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                int maxConcurrentCompilers,
                                IILPostProcessing ilPostProcessing)
         {
+            this.scriptAssemblies = scriptAssemblies;
             pendingAssemblies = new HashSet<ScriptAssembly>(scriptAssemblies);
             CompileErrors = false;
             this.buildOutputDirectory = buildOutputDirectory;
@@ -73,6 +75,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             this.compilationTaskOptions = compilationTaskOptions;
             this.maxConcurrentCompilers = maxConcurrentCompilers;
             this.ilPostProcessing = ilPostProcessing;
+        }
+
+        public ScriptAssembly[] ScriptAssemblies
+        {
+            get
+            {
+                return scriptAssemblies;
+            }
         }
 
         public bool IsCompiling
