@@ -54,13 +54,13 @@ namespace UnityEditor
                 guids = new HashSet<string>(AssetDatabase.CollectAllChildren(AssetDatabase.assetFolderGUID, temp));
             }
 
-            ExportPackageItem[] assets = PackageUtility.BuildExportPackageItemsList(guids.ToArray(), includeDependencies);
+            ExportPackageItem[] assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(guids.ToArray(), includeDependencies, true);
 
             // If any scripts are included, add all scripts with dependencies
             if (includeDependencies && assets.Any(asset => UnityEditorInternal.InternalEditorUtility.IsScriptOrAssembly(asset.assetPath)))
             {
-                assets = PackageUtility.BuildExportPackageItemsList(
-                    guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray(), includeDependencies);
+                assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(
+                    guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray(), includeDependencies, true);
             }
 
             // If the user exports the root Assets folder, we need to remove it from the list

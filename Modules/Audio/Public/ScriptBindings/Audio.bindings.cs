@@ -600,23 +600,23 @@ namespace UnityEngine
     [StaticAccessor("AudioSourceBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class AudioSource : AudioBehaviour
     {
-        extern static private float GetPitch(AudioSource source);
-        extern static private void SetPitch(AudioSource source, float pitch);
+        extern static private float GetPitch([NotNull] AudioSource source);
+        extern static private void SetPitch([NotNull] AudioSource source, float pitch);
 
-        extern static private void PlayHelper(AudioSource source, UInt64 delay);
+        extern static private void PlayHelper([NotNull] AudioSource source, UInt64 delay);
         extern private void Play(double delay);
 
-        extern static private void PlayOneShotHelper(AudioSource source, AudioClip clip, float volumeScale);
+        extern static private void PlayOneShotHelper([NotNull] AudioSource source, AudioClip clip, float volumeScale);
 
         extern private void Stop(bool stopOneShots);
 
         [NativeThrows]
-        extern static private void SetCustomCurveHelper(AudioSource source, AudioSourceCurveType type, AnimationCurve curve);
-        extern static private AnimationCurve GetCustomCurveHelper(AudioSource source, AudioSourceCurveType type);
+        extern static private void SetCustomCurveHelper([NotNull] AudioSource source, AudioSourceCurveType type, AnimationCurve curve);
+        extern static private AnimationCurve GetCustomCurveHelper([NotNull] AudioSource source, AudioSourceCurveType type);
 
-        extern static private void GetOutputDataHelper(AudioSource source, [Out] float[] samples, int channel);
+        extern static private void GetOutputDataHelper([NotNull] AudioSource source, [Out] float[] samples, int channel);
         [NativeThrows]
-        extern static private void GetSpectrumDataHelper(AudioSource source, [Out] float[] samples, int channel, FFTWindow window);
+        extern static private void GetSpectrumDataHelper([NotNull] AudioSource source, [Out] float[] samples, int channel, FFTWindow window);
 
         // The volume of the audio source (0.0 to 1.0)
         extern public float volume { get; set; }

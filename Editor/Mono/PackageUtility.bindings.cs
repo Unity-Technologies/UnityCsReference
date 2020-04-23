@@ -59,6 +59,8 @@ namespace UnityEditor
         [NativeThrows]
         public static extern ExportPackageItem[] BuildExportPackageItemsList(string[] guids, bool dependencies);
         [NativeThrows]
+        public static extern ExportPackageItem[] BuildExportPackageItemsListWithPackageManagerWarning(string[] guids, bool dependencies, bool warnPackageManagerDependencies);
+        [NativeThrows]
         public static extern void ExportPackage(string[] guids, string fileName);
         [NativeThrows]
         public static extern void ExportPackageAndPackageManagerManifest(string[] guids, string fileName);
