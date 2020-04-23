@@ -648,7 +648,14 @@ namespace UnityEditorInternal
 
                 if (usePlayableGraph)
                 {
-                    if (HasFlag(flags, ResampleFlags.RebuildGraph) || !m_Graph.IsValid())
+                    var isValidGraph = m_Graph.IsValid();
+                    if (isValidGraph)
+                    {
+                        var playableOutput = (AnimationPlayableOutput)m_Graph.GetOutput(0);
+                        isValidGraph = playableOutput.GetTarget() == (Animator)animationPlayer;
+                    }
+
+                    if (HasFlag(flags, ResampleFlags.RebuildGraph) || !isValidGraph)
                     {
                         RebuildGraph((Animator)animationPlayer);
                     }

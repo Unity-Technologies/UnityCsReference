@@ -256,6 +256,11 @@ namespace UnityEngine.Rendering
                     };
                     for (int i = 0; i < layers.Length; ++i)
                     {
+                        if (SystemInfo.GetCompatibleFormat(layers[i], FormatUsage.Render) != layers[i])
+                        {
+                            throw new ArgumentException($"Requested format {layers[i]} on layer {i} is not supported on this platform");
+                        }
+
                         bool valid = false;
                         for (int j = 0; j < supportedFormats.Length; ++j)
                         {

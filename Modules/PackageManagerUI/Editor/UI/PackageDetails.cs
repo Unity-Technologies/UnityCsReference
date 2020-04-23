@@ -491,6 +491,7 @@ namespace UnityEditor.PackageManager.UI
             if (sizeInfo != null)
             {
                 var textField = new TextField();
+                textField.style.whiteSpace = WhiteSpace.Normal;
                 textField.SetValueWithoutNotify(string.Format(ApplicationUtil.instance.GetTranslationForText("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount));
                 textField.isReadOnly = true;
                 detailSizes.Add(textField);

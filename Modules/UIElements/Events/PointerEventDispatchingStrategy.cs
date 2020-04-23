@@ -54,22 +54,11 @@ namespace UnityEngine.UIElements
 
             BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
 
-            bool shouldRecomputeTopElementUnderPointer = true;
-            if (evt is IPointerEventInternal)
-            {
-                shouldRecomputeTopElementUnderPointer =
-                    ((IPointerEventInternal)pointerEvent).recomputeTopElementUnderPointer;
-            }
+            bool shouldRecomputeTopElementUnderPointer = (evt as IPointerEventInternal)?.recomputeTopElementUnderPointer ?? true;
 
             elementUnderPointer = shouldRecomputeTopElementUnderPointer
-                ? basePanel?.Pick(pointerEvent.position)
+                ? basePanel?.RecomputeTopElementUnderPointer(pointerEvent.position, evt)
                 : basePanel?.GetTopElementUnderPointer(pointerEvent.pointerId);
-
-
-            if (basePanel != null && shouldRecomputeTopElementUnderPointer)
-            {
-                basePanel.SetElementUnderPointer(elementUnderPointer, evt);
-            }
         }
     }
 }

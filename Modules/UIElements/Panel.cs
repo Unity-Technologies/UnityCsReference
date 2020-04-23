@@ -281,14 +281,21 @@ namespace UnityEngine.UIElements
             return m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId);
         }
 
+        internal VisualElement RecomputeTopElementUnderPointer(Vector2 pointerPos, EventBase triggerEvent)
+        {
+            VisualElement element = Pick(pointerPos);
+            m_TopElementUnderPointers.SetElementUnderPointer(element, triggerEvent);
+            return element;
+        }
+
+        internal void ClearCachedElementUnderPointer(EventBase triggerEvent)
+        {
+            m_TopElementUnderPointers.SetTemporaryElementUnderPointer(null, triggerEvent);
+        }
+
         void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, Vector2 pointerPos)
         {
             m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, pointerId, pointerPos);
-        }
-
-        internal void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
-        {
-            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, triggerEvent);
         }
 
         internal void CommitElementUnderPointers()
@@ -635,12 +642,11 @@ namespace UnityEngine.UIElements
         public override VisualElement Pick(Vector2 point)
         {
             ValidateLayout();
-            Vector2 mousePos;
-            var element = m_TopElementUnderPointers.GetTopElementUnderPointer(PointerId.mousePointerId, out mousePos);
-            var diff = mousePos - point;
+            var element = m_TopElementUnderPointers.GetTopElementUnderPointer(PointerId.mousePointerId,
+                out Vector2 mousePos, out bool isTemporary);
             // The VisualTreeTransformClipUpdater updates the ElementUnderPointer after each validate layout.
             // small enough to be smaller than 1 pixel
-            if (diff.sqrMagnitude < 0.25f)
+            if (!isTemporary && (mousePos - point).sqrMagnitude < 0.25f)
             {
                 return element;
             }

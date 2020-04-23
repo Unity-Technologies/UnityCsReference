@@ -234,6 +234,14 @@ namespace UnityEditor
         {
             Editor.AssignCachedProperties(this, serializedObject.GetIterator());
 
+            // caching errors values now as they can't change until next re-import that will triggers a new OnEnable
+            m_Errors = m_AnimationImportErrors.stringValue;
+            m_Warnings = m_AnimationImportWarnings.stringValue;
+            m_RigWarnings = m_RigImportWarnings.stringValue;
+            m_RetargetWarnings = m_AnimationRetargetingWarnings.stringValue;
+
+            RegisterListeners();
+
             if (serializedObject.isEditingMultipleObjects)
                 return;
 
@@ -255,13 +263,6 @@ namespace UnityEditor
 
             motionNodeIndex = ArrayUtility.FindIndex(m_MotionNodeList, delegate(GUIContent content) { return content.text == m_MotionNodeName.stringValue; });
             motionNodeIndex = motionNodeIndex < 1 ? 0 : motionNodeIndex;
-
-            // caching errors values now as they can't change until next re-import that will triggers a new OnEnable
-            m_Errors = m_AnimationImportErrors.stringValue;
-            m_Warnings = m_AnimationImportWarnings.stringValue;
-            m_RigWarnings = m_RigImportWarnings.stringValue;
-            m_RetargetWarnings = m_AnimationRetargetingWarnings.stringValue;
-            RegisterListeners();
         }
 
         void SyncClipEditor(AnimationClipInfoProperties info)
@@ -1021,12 +1022,15 @@ namespace UnityEditor
         void RegisterListeners()
         {
             //Ensures that the ClipList and the Serialized copy of the clip remain in sync when an Undo/Redo is performed.
-            Undo.undoRedoPerformed += HandleUndo;
+            if (!serializedObject.isEditingMultipleObjects)
+                Undo.undoRedoPerformed += HandleUndo;
         }
 
         void UnregisterListeners()
         {
-            Undo.undoRedoPerformed -= HandleUndo;
+            //Ensures that the ClipList and the Serialized copy of the clip remain in sync when an Undo/Redo is performed.
+            if (!serializedObject.isEditingMultipleObjects)
+                Undo.undoRedoPerformed -= HandleUndo;
         }
 
         void HandleUndo()

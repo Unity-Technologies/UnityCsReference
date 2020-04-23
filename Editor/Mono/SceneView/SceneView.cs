@@ -297,13 +297,13 @@ namespace UnityEditor
             public bool showParticleSystems = true;
             public bool showVisualEffectGraphs = true;
 
-            internal bool fogEnabled => fxEnabled && showFog;
-            internal bool materialUpdateEnabled => fxEnabled && showMaterialUpdate;
-            internal bool skyboxEnabled => fxEnabled && showSkybox;
-            internal bool flaresEnabled => fxEnabled && showFlares;
-            internal bool imageEffectsEnabled => fxEnabled && showImageEffects;
-            internal bool particleSystemsEnabled => fxEnabled && showParticleSystems;
-            internal bool visualEffectGraphsEnabled => fxEnabled && showVisualEffectGraphs;
+            public bool fogEnabled => fxEnabled && showFog;
+            public bool materialUpdateEnabled => fxEnabled && showMaterialUpdate;
+            public bool skyboxEnabled => fxEnabled && showSkybox;
+            public bool flaresEnabled => fxEnabled && showFlares;
+            public bool imageEffectsEnabled => fxEnabled && showImageEffects;
+            public bool particleSystemsEnabled => fxEnabled && showParticleSystems;
+            public bool visualEffectGraphsEnabled => fxEnabled && showVisualEffectGraphs;
 
             [SerializeField] bool m_FxEnabled = true;
 
@@ -361,7 +361,7 @@ namespace UnityEditor
                 showVisualEffectGraphs = value;
             }
 
-            internal bool fxEnabled
+            public bool fxEnabled
             {
                 get { return m_FxEnabled; }
                 set { m_FxEnabled = value; }

@@ -358,7 +358,7 @@ namespace UnityEditor.PackageManager.UI
         internal static void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>(typeof(SceneView));
-            instance.minSize = new Vector2(700, 250);
+            instance.minSize = new Vector2(800, 250);
             if (!string.IsNullOrEmpty(packageIdOrDisplayName) || filterTab != null)
             {
                 if (filterTab == null)

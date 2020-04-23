@@ -17,6 +17,32 @@ namespace UnityEditor.PackageManager.UI
             var root = Resources.GetTemplate("PackageDependencies.uxml");
             Add(root);
             cache = new VisualElementCache(root);
+
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            float newWidth = evt.newRect.width;
+            ToggleLowWidthDependencyView(newWidth);
+        }
+
+        private void ToggleLowWidthDependencyView(float width)
+        {
+            if (width <= 340)
+            {
+                UIUtils.SetElementDisplay(dependenciesListLowWidth, true);
+                UIUtils.SetElementDisplay(reverseDependenciesListLowWidth, true);
+                UIUtils.SetElementDisplay(dependenciesNormalView, false);
+                UIUtils.SetElementDisplay(reverseDependenciesNormalView, false);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(dependenciesListLowWidth, false);
+                UIUtils.SetElementDisplay(reverseDependenciesListLowWidth, false);
+                UIUtils.SetElementDisplay(dependenciesNormalView, true);
+                UIUtils.SetElementDisplay(reverseDependenciesNormalView, true);
+            }
         }
 
         private static Label BuildLabel(string text, string clazz)
@@ -79,6 +105,7 @@ namespace UnityEditor.PackageManager.UI
             dependenciesNames.Clear();
             dependenciesVersions.Clear();
             dependenciesStatuses.Clear();
+            dependenciesListLowWidth.Clear();
 
             var hasDependencies = dependencies?.Any() ?? false;
             UIUtils.SetElementDisplay(noDependencies, !hasDependencies);
@@ -93,6 +120,9 @@ namespace UnityEditor.PackageManager.UI
                 dependenciesNames.Add(BuildTextField(GetNameText(dependency), "text"));
                 dependenciesVersions.Add(BuildTextField(dependency.version, "text"));
                 dependenciesStatuses.Add(BuildLabel(GetStatusText(dependency), "text"));
+
+                var dependencyLowWidthItem = new PackageDependencySampleItemLowWidth(GetNameText(dependency), dependency.version.ToString(), BuildLabel(GetStatusText(dependency), "text"));
+                dependenciesListLowWidth.Add(dependencyLowWidthItem);
             }
         }
 
@@ -100,6 +130,7 @@ namespace UnityEditor.PackageManager.UI
         {
             reverseDependenciesNames.Clear();
             reverseDependenciesVersions.Clear();
+            reverseDependenciesListLowWidth.Clear();
 
             var hasReverseDependencies = reverseDependencies?.Any() ?? false;
             UIUtils.SetElementDisplay(noReverseDependencies, !hasReverseDependencies);
@@ -113,18 +144,25 @@ namespace UnityEditor.PackageManager.UI
             {
                 reverseDependenciesNames.Add(BuildTextField(version.displayName ?? string.Empty, "text"));
                 reverseDependenciesVersions.Add(BuildTextField(version.version.ToString(), "text"));
+
+                var reverseDependencyLowWidthItem = new PackageDependencySampleItemLowWidth(version.displayName ?? string.Empty, version.version.ToString(), null);
+                reverseDependenciesListLowWidth.Add(reverseDependencyLowWidthItem);
             }
         }
 
         private VisualElementCache cache { get; set; }
 
+        private VisualElement dependenciesNormalView { get { return cache.Get<VisualElement>("dependenciesNormalView"); } }
         private Label noDependencies { get { return cache.Get<Label>("noDependencies"); } }
         private VisualElement dependenciesNames { get { return cache.Get<VisualElement>("dependenciesNames"); } }
         private VisualElement dependenciesVersions { get { return cache.Get<VisualElement>("dependenciesVersions"); } }
         private VisualElement dependenciesStatuses { get { return cache.Get<VisualElement>("dependenciesStatuses"); } }
+        private VisualElement dependenciesListLowWidth { get { return cache.Get<VisualElement>("dependenciesListLowWidth"); } }
 
+        private VisualElement reverseDependenciesNormalView { get { return cache.Get<VisualElement>("reverseDependenciesNormalView"); } }
         private Label noReverseDependencies { get { return cache.Get<Label>("noReverseDependencies"); } }
         private VisualElement reverseDependenciesNames { get { return cache.Get<VisualElement>("reverseDependenciesNames"); } }
         private VisualElement reverseDependenciesVersions { get { return cache.Get<VisualElement>("reverseDependenciesVersions"); } }
+        private VisualElement reverseDependenciesListLowWidth { get { return cache.Get<VisualElement>("reverseDependenciesListLowWidth"); } }
     }
 }
