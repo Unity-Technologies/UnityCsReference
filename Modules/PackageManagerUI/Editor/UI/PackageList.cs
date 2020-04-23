@@ -178,12 +178,12 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnEnterPanel(AttachToPanelEvent e)
         {
-            panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            panel?.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
         private void OnLeavePanel(DetachFromPanelEvent e)
         {
-            panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            panel?.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
 
         private void OnPackageOperationFinish(IPackage package)

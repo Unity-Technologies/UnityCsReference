@@ -434,6 +434,15 @@ namespace UnityEditor
 
             // App Bundle size which should cause warning message appear
             internal static extern int appBundleSizeToValidate { get; set; }
+
+            // Use Swappy to decrease fluctuations in framerate
+            internal static extern bool optimizedFramePacing
+            {
+                [NativeMethod("GetAndroidUseSwappy")]
+                get;
+                [NativeMethod("SetAndroidUseSwappy")]
+                set;
+            }
         }
     }
 }

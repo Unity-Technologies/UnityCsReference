@@ -607,6 +607,27 @@ namespace UnityEditor
                     MaterialPropertyGUI(mat);
                 }
             }
+
+            if (Event.current.commandName == ObjectSelector.ObjectSelectorClosedCommand)
+            {
+                // Remove references to null from external objects when the Object Selector closes.
+                for (int externalObjectIdx = m_ExternalObjects.arraySize - 1;
+                     externalObjectIdx >= 0;
+                     --externalObjectIdx)
+                {
+                    var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectIdx);
+                    var material = pair.FindPropertyRelative("second").objectReferenceValue;
+                    if (material == null)
+                    {
+                        m_ExternalObjects.DeleteArrayElementAtIndex(externalObjectIdx);
+                        serializedObject.ApplyModifiedProperties();
+                        serializedObject.Update();
+
+                        BuildExternalObjectsCache();
+                        break;
+                    }
+                }
+            }
         }
 
         void MaterialPropertyGUI(MaterialCache materialCache, ExternalObjectCache externalObjectCache)
@@ -617,12 +638,17 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             SerializedProperty property = externalObjectCache.property;
-            EditorGUILayout.PropertyField(property, nameLabel, false);
-            Material material = property.objectReferenceValue != null ? property.objectReferenceValue as Material : null;
+            EditorGUILayout.ObjectField(property, typeof(Material), nameLabel);
+            Material material = property.objectReferenceValue as Material;
             if (EditorGUI.EndChangeCheck())
             {
                 if (material == null)
-                    m_ExternalObjects.DeleteArrayElementAtIndex(externalObjectCache.propertyIdx);
+                {
+                    if (Event.current.commandName != ObjectSelector.ObjectSelectorUpdatedCommand)
+                    {
+                        m_ExternalObjects.DeleteArrayElementAtIndex(externalObjectCache.propertyIdx);
+                    }
+                }
                 else
                 {
                     var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectCache.propertyIdx);

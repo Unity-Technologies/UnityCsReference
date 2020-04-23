@@ -80,12 +80,6 @@ namespace Unity.Collections.LowLevel.Unsafe
             throw new NotImplementedException("Patching this method failed");
         }
 
-        // minimum alignment of a struct
-        public static int AlignOf<T>() where T : struct
-        {
-            throw new NotImplementedException("Patching this method failed");
-        }
-
         // converts generic enum to int without boxing
         public static int EnumToInt<T>(T enumValue) where T : struct, IConvertible
         {

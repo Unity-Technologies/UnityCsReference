@@ -223,11 +223,6 @@ namespace UnityEditor
             if (string.Compare(cpu, "None", true) == 0)
                 return string.Empty;
 
-            if (!string.IsNullOrEmpty(cpu) && string.Compare(cpu, "AnyCPU", true) != 0)
-            {
-                return Path.Combine(cpu, Path.GetFileName(imp.assetPath));
-            }
-
             if (pluginForWindows)
             {
                 // Fix case 1185926: plugins for x86_64 are supposed to be copied to Plugins/x86_64

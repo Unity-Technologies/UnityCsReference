@@ -66,7 +66,7 @@ namespace UnityEditor
             m_Cache[key] = obj;
         }
 
-        public T GetState(string key)
+        public T GetState(string key, T defaultValue = default(T))
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("key cannot be null or empty string", key);
@@ -86,7 +86,7 @@ namespace UnityEditor
                 catch (Exception e)
                 {
                     Debug.LogError(string.Format("Error loading file {0}. Error: {1}", filePath, e.ToString()));
-                    return default(T);
+                    return defaultValue;
                 }
 
                 try
@@ -97,14 +97,14 @@ namespace UnityEditor
                 {
                     Debug.LogError(string.Format("Invalid file content for {0}. Removing file. Error: {1}", filePath, exception.ToString()));
                     RemoveState(key);
-                    return default(T);
+                    return defaultValue;
                 }
 
                 m_Cache[key] = obj;
                 return obj;
             }
 
-            return default(T);
+            return defaultValue;
         }
 
         public void RemoveState(string key)
