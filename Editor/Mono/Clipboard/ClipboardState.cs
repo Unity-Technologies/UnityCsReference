@@ -34,14 +34,6 @@ namespace UnityEditor
                 m_HasBool = ClipboardParser.ParseBool(m_RawContents, out m_ValueBool);
         }
 
-        internal bool? m_HasEnum;
-        internal int m_ValueEnum;
-        internal void FetchEnum()
-        {
-            if (!m_HasEnum.HasValue)
-                m_HasEnum = ClipboardParser.ParseEnum(m_RawContents, out m_ValueEnum);
-        }
-
         internal bool? m_HasLayerMask;
         internal LayerMask m_ValueLayerMask;
         internal void FetchLayerMask()

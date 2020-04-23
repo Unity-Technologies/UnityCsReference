@@ -58,13 +58,17 @@ namespace UnityEditor.PackageManager.UI
         private UpmCache m_UpmCache;
         [NonSerialized]
         private IOProxy m_IOProxy;
+        [NonSerialized]
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         public void ResolveDependencies(PackageManagerPrefs packageManagerPrefs,
             UpmCache upmCache,
-            IOProxy IOProxy)
+            IOProxy IOProxy,
+            PackageManagerProjectSettingsProxy settingsProxy)
         {
             m_PackageManagerPrefs = packageManagerPrefs;
             m_UpmCache = upmCache;
             m_IOProxy = IOProxy;
+            m_SettingsProxy = settingsProxy;
         }
 
         public virtual bool isAddRemoveOrEmbedInProgress
@@ -330,7 +334,7 @@ namespace UnityEditor.PackageManager.UI
 
             var upmPackages = new List<UpmPackage>();
             var productPackages = new List<UpmPackage>();
-            var showPreview = m_PackageManagerPrefs.showPreviewPackages;
+            var showPreview = m_SettingsProxy.enablePreviewPackages;
             foreach (var p in packageInfos)
             {
                 var productId = m_UpmCache.GetProductId(p.name);
@@ -355,7 +359,7 @@ namespace UnityEditor.PackageManager.UI
                 onProductPackageChanged?.Invoke(m_UpmCache.GetProductId(package.name), package);
         }
 
-        private void OnShowPreviewPackagesChanged(bool showPreview)
+        private void OnShowPreviewPackagesesChanged(bool showPreview)
         {
             var updatedUpmPackages = new List<UpmPackage>();
             var updatedProductPackages = new List<UpmPackage>();
@@ -474,7 +478,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnEnable()
         {
-            m_PackageManagerPrefs.onShowPreviewPackagesChanged += OnShowPreviewPackagesChanged;
+            m_SettingsProxy.onEnablePreviewPackagesChanged += OnShowPreviewPackagesesChanged;
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
 
             RestoreInProgressOperations();
@@ -482,7 +486,7 @@ namespace UnityEditor.PackageManager.UI
 
         public void OnDisable()
         {
-            m_PackageManagerPrefs.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
+            m_SettingsProxy.onEnablePreviewPackagesChanged -= OnShowPreviewPackagesesChanged;
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
         }
 

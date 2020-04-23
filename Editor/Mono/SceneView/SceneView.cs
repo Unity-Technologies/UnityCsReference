@@ -528,8 +528,6 @@ namespace UnityEditor
         float m_ExposureSliderValue = 0.0f;
         // this value can be altered by the user
         float m_ExposureSliderMax = 16f;
-        // no point of allowing the user to go over this
-        const float kExposureSliderAbsoluteMax = 23.0f;
 
         Texture2D m_ExposureTexture = null;
         Texture2D m_EmptyExposureTexture = null;
@@ -925,7 +923,6 @@ namespace UnityEditor
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
-            public static GUIContent exposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the precomputed and baked lighting debug views.");
             public static GUIContent contributeGIOff = EditorGUIUtility.TrTextContent("Contribute GI Off");
             public static GUIContent receiveGILightmaps = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Lightmaps");
             public static GUIContent receiveGILightProbes = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Light Probes");
@@ -1547,10 +1544,13 @@ namespace UnityEditor
         {
             Rect sceneCameraRect = GUILayoutUtility.GetRect(Styles.sceneViewCameraContent, EditorStyles.toolbarDropDown);
 
+            var evt = Event.current;
+            if (evt.type == EventType.ContextClick && sceneCameraRect.Contains(evt.mousePosition))
+                SceneViewCameraWindow.ShowContextMenu(this);
+
             if (EditorGUI.DropdownButton(sceneCameraRect, Styles.sceneViewCameraContent, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
-                Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneViewCameraWindow(this));
+                PopupWindow.Show(sceneCameraRect, new SceneViewCameraWindow(this));
                 GUIUtility.ExitGUI();
             }
         }
@@ -2534,18 +2534,8 @@ namespace UnityEditor
 
         internal void DrawLightingExposureSlider()
         {
-            float labelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 20;
-            m_ExposureSliderValue = EditorGUILayout.Slider(Styles.exposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax,
-                m_ExposureSliderMax, -kExposureSliderAbsoluteMax, kExposureSliderAbsoluteMax, EditorStyles.toolbarSlider);
+            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, EditorStyles.toolbarSlider);
 
-            // This will allow the user to set a new max value for the current session
-            if (m_ExposureSliderValue >= 0)
-                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue);
-            else
-                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue * -1);
-
-            EditorGUIUtility.labelWidth = labelWidth;
             Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
         }
 

@@ -13,6 +13,660 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ClampedDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ClampedDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ClickDetector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ClickDetector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Clickable.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Clickable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManager.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManipulator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ContextualMenuManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseSlider.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\BaseSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Binding.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Box.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Box.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Button.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Button.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Foldout.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Foldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\HelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\INotifyValueChanged.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\INotifyValueChanged.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Image.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Image.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\KeyboardTextEditor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\KeyboardTextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Label.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Label.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\ListView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\ListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\MinMaxSlider.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\MinMaxSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\PopupWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\PopupWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\RepeatButton.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\RepeatButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\ScrollView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\ScrollView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Scroller.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Scroller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Slider.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Slider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\SliderInt.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\SliderInt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TextEditor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TextEditorEngine.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TextEditorEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TextField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TextField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TextInputFieldBase.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TextInputFieldBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\Toggle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\Toggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TouchScreenTextEditor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TouchScreenTextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TreeView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\TreeViewItem.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\TreeViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Controls\VisualTreeBindingsUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Controls\VisualTreeBindingsUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Cursor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Cursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DisposeHelper.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DisposeHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\DragAndDropUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\DragAndDropUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\DragEventsProcessor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\DragEventsProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IListDragAndDropArgs.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IListDragAndDropArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IListViewDragAndDropController.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IListViewDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IReorderable.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\IReorderable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\ListViewDragger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\ListViewDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\ListViewReorderableDragAndDropController.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DragAndDrop\ListViewReorderableDragAndDropController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\DropdownMenu.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\DropdownMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\EasingCurves.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\EasingCurves.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\EventDispatcher.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\EventDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\CaptureEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\CaptureEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\ChangeEvent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\ChangeEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\CommandEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\CommandEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\CommandEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\CommandEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\DebuggerEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\DebuggerEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\DefaultDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\DefaultDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\DragAndDropEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\DragAndDropEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\ElementUnderPointer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\ElementUnderPointer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventBase.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventCallback.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventCallback.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventCallbackRegistry.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventCallbackRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\EventDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\EventDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\EventDebuggerEventRecord.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\EventDebuggerEventRecord.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\EventDebuggerTrace.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\EventDebuggerTrace.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\GlobalCallbackRegistry.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventDebugger\GlobalCallbackRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\EventHandler.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\EventHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\FocusEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\FocusEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\IEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\IEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\IMGUIEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\IMGUIEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\InputEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\InputEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\KeyboardEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\KeyboardEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\KeyboardEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\KeyboardEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\LayoutEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\LayoutEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\MouseCaptureDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\MouseCaptureDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEventsHelper.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\MouseEventsHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\PanelEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\PanelEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\PointerCaptureDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\PointerCaptureDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\PointerDeviceState.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\PointerDeviceState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\PointerEventDispatchingStrategy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\PointerEventDispatchingStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\PointerEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\PointerEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\PropagationPaths.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\PropagationPaths.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\StyleEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\StyleEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\TooltipEvent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\TooltipEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Events\UIEvent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Events\UIEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\FocusController.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\FocusController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\HierarchyTraversal.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\HierarchyTraversal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\IDataWatchService.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\IDataWatchService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\IMGUIContainer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\IMGUIContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ISerializableJsonDictionary.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ISerializableJsonDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ITransform.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ITransform.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ImmediateModeElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ImmediateModeElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\InteractionEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ManipulatorActivationFilter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ManipulatorActivationFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Manipulators.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Manipulators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\MouseButton.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\MouseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\MouseCaptureController.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\MouseCaptureController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\MouseManipulator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\MouseManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ObjectPool.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ObjectPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Panel.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Panel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\PointerCaptureController.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\PointerCaptureController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\PointerClickable.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\PointerClickable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\PointerManipulator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\PointerManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ProjectionUtils.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ProjectionUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRAtlasAllocator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRAtlasAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRAtlasManager.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRAtlasManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilder.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilderImpl.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRChainBuilderImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRLayoutUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRLayoutUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRLinkedPool.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRLinkedPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRMeshBuilder.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRMeshBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTextureBlitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRVEShaderInfoAllocator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRVEShaderInfoAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRVectorImageManager.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRVectorImageManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDevice.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDevice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDeviceAllocator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDeviceAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRenderer\UIRenderers.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRenderer\UIRenderers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Scheduler.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Scheduler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Spacing.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Spacing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StringUtils.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StringUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleEnums.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StylePainter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StylePainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Dimension.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Dimension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\ScalableImage.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\ScalableImage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleComplexSelector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleComplexSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleProperty.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StylePropertyReader.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StylePropertyReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleRule.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleRule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelector.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorHelper.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorPart.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorRelationship.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorRelationship.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorType.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSelectorType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheet.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetApplicator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetApplicator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetCache.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetColor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetColor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleSheetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValue.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueFunction.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueFunction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueHandle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueKeyword.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueKeyword.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueType.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleValueType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleVariable.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\StyleVariable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxExpression.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxExpression.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxParser.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxToken.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Syntax\StyleSyntaxToken.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StyleMatcher.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StyleMatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StylePropertyCache.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StylePropertyCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StylePropertyValueParser.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StylePropertyValueParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StyleValidator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\StyleSheets\Validation\StyleValidator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Background.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Background.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\ComputedStyle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\ComputedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\CustomStyle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\CustomStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ComputedStyle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ComputedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\IResolvedStyle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\IResolvedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\IStyle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\IStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\InitialStyle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\InitialStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\InlineStyleAccess.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\InlineStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ResolvedStyleAccess.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ResolvedStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StyleDataStructs.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StyleDataStructs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StyleDebug.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StyleDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StylePropertyCache.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StylePropertyCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StylePropertyEnums.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StylePropertyEnums.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StylePropertyUtil.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Generated\StylePropertyUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\InlineStyleAccess.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\InlineStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\Length.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\Length.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleBackground.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleBackground.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleColor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleColor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleCursor.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleCursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleDebug.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleEnum.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleEnum.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFloat.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFloat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFont.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleFont.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleInt.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleInt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleLength.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleLength.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Style\StyleTypes.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Style\StyleTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TemplateContainer.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\TemplateContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TextElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\TextElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\TextHandle.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\TextHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Transitions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Transitions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UIElementsPackageUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UIElementsPackageUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UIElementsRuntimeUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UIElementsRuntimeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UIElementsUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UIElementsUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UQuery.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\IUxmlAttributes.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\IUxmlAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\OrphanFactories.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\OrphanFactories.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\TemplateAsset.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\TemplateAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlChildElementDescription.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlChildElementDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlFactory.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\VectorImage.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\VectorImage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\VisualElementAsset.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\VisualElementAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\VisualElementFactoryRegistry.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\VisualElementFactoryRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\UXML\VisualTreeAsset.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\UXML\VisualTreeAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\ValueAnimation.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\ValueAnimation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElement.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementAnimation.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementAnimation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementExperimentalFeatures.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementExperimentalFeatures.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementFocusRing.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementFocusRing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementHierarchy.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementHierarchy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementScheduler.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementScheduler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementStyleAccess.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementStyleSheetSet.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementStyleSheetSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementTooltip.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementTooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualElementUtils.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualElementUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeAnimationUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeAnimationUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeHierarchyTracker.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeHierarchyTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeStyleUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeStyleUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeTransformClipUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeTransformClipUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\VisualTreeViewDataUpdater.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\VisualTreeViewDataUpdater.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
       <Link>External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs</Link>
     </Compile>
@@ -646,8 +1300,53 @@
     <Compile Include="..\..\Modules\Subsystems\Example\ExampleSubsystemDescriptor.bindings.cs">
       <Link>Modules\Subsystems\Example\ExampleSubsystemDescriptor.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Subsystems\ISubsystem.cs">
+      <Link>Modules\Subsystems\ISubsystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\ISubsystemDescriptor.cs">
+      <Link>Modules\Subsystems\ISubsystemDescriptor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\IntegratedSubsystem.bindings.cs">
+      <Link>Modules\Subsystems\IntegratedSubsystem.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\IntegratedSubsystem.deprecated.cs">
+      <Link>Modules\Subsystems\IntegratedSubsystem.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\IntegratedSubsystemDescriptor.bindings.cs">
+      <Link>Modules\Subsystems\IntegratedSubsystemDescriptor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\StandaloneProvider.cs">
+      <Link>Modules\Subsystems\StandaloneProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystem.cs">
+      <Link>Modules\Subsystems\StandaloneSubsystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystem.deprecated.cs">
+      <Link>Modules\Subsystems\StandaloneSubsystem.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystemDescriptor.cs">
+      <Link>Modules\Subsystems\StandaloneSubsystemDescriptor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystemDescriptor.deprecated.cs">
+      <Link>Modules\Subsystems\StandaloneSubsystemDescriptor.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemDescriptorStore.bindings.cs">
+      <Link>Modules\Subsystems\SubsystemDescriptorStore.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemDescriptorStore.cs">
+      <Link>Modules\Subsystems\SubsystemDescriptorStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemDescriptorStore.deprecated.cs">
+      <Link>Modules\Subsystems\SubsystemDescriptorStore.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Subsystems\SubsystemManager.bindings.cs">
       <Link>Modules\Subsystems\SubsystemManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemManager.cs">
+      <Link>Modules\Subsystems\SubsystemManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemManager.deprecated.cs">
+      <Link>Modules\Subsystems\SubsystemManager.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TerrainPhysics\TerrainPhysics.bindings.cs">
       <Link>Modules\TerrainPhysics\TerrainPhysics.bindings.cs</Link>
@@ -828,660 +1527,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElementsNative\UIElementsUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\BindableElement.cs">
-      <Link>Modules\UIElements\BindableElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ClampedDragger.cs">
-      <Link>Modules\UIElements\ClampedDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ClickDetector.cs">
-      <Link>Modules\UIElements\ClickDetector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Clickable.cs">
-      <Link>Modules\UIElements\Clickable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ContextualMenuManager.cs">
-      <Link>Modules\UIElements\ContextualMenuManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ContextualMenuManipulator.cs">
-      <Link>Modules\UIElements\ContextualMenuManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\BaseField.cs">
-      <Link>Modules\UIElements\Controls\BaseField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\BaseSlider.cs">
-      <Link>Modules\UIElements\Controls\BaseSlider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Binding.cs">
-      <Link>Modules\UIElements\Controls\Binding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Box.cs">
-      <Link>Modules\UIElements\Controls\Box.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Button.cs">
-      <Link>Modules\UIElements\Controls\Button.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Foldout.cs">
-      <Link>Modules\UIElements\Controls\Foldout.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\HelpBox.cs">
-      <Link>Modules\UIElements\Controls\HelpBox.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\INotifyValueChanged.cs">
-      <Link>Modules\UIElements\Controls\INotifyValueChanged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Image.cs">
-      <Link>Modules\UIElements\Controls\Image.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\KeyboardTextEditor.cs">
-      <Link>Modules\UIElements\Controls\KeyboardTextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Label.cs">
-      <Link>Modules\UIElements\Controls\Label.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\ListView.cs">
-      <Link>Modules\UIElements\Controls\ListView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\MinMaxSlider.cs">
-      <Link>Modules\UIElements\Controls\MinMaxSlider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\PopupWindow.cs">
-      <Link>Modules\UIElements\Controls\PopupWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\RepeatButton.cs">
-      <Link>Modules\UIElements\Controls\RepeatButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\ScrollView.cs">
-      <Link>Modules\UIElements\Controls\ScrollView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Scroller.cs">
-      <Link>Modules\UIElements\Controls\Scroller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Slider.cs">
-      <Link>Modules\UIElements\Controls\Slider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\SliderInt.cs">
-      <Link>Modules\UIElements\Controls\SliderInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\TextEditor.cs">
-      <Link>Modules\UIElements\Controls\TextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\TextEditorEngine.cs">
-      <Link>Modules\UIElements\Controls\TextEditorEngine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\TextField.cs">
-      <Link>Modules\UIElements\Controls\TextField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\TextInputFieldBase.cs">
-      <Link>Modules\UIElements\Controls\TextInputFieldBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\Toggle.cs">
-      <Link>Modules\UIElements\Controls\Toggle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\TouchScreenTextEditor.cs">
-      <Link>Modules\UIElements\Controls\TouchScreenTextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\TreeView.cs">
-      <Link>Modules\UIElements\Controls\TreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\TreeViewItem.cs">
-      <Link>Modules\UIElements\Controls\TreeViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Controls\VisualTreeBindingsUpdater.cs">
-      <Link>Modules\UIElements\Controls\VisualTreeBindingsUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Cursor.cs">
-      <Link>Modules\UIElements\Cursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DisposeHelper.cs">
-      <Link>Modules\UIElements\DisposeHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\DragAndDropUtility.cs">
-      <Link>Modules\UIElements\DragAndDrop\DragAndDropUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\DragEventsProcessor.cs">
-      <Link>Modules\UIElements\DragAndDrop\DragEventsProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IDragAndDrop.cs">
-      <Link>Modules\UIElements\DragAndDrop\IDragAndDrop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IDragAndDropController.cs">
-      <Link>Modules\UIElements\DragAndDrop\IDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IListDragAndDropArgs.cs">
-      <Link>Modules\UIElements\DragAndDrop\IListDragAndDropArgs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IListViewDragAndDropController.cs">
-      <Link>Modules\UIElements\DragAndDrop\IListViewDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\IReorderable.cs">
-      <Link>Modules\UIElements\DragAndDrop\IReorderable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\ListViewDragger.cs">
-      <Link>Modules\UIElements\DragAndDrop\ListViewDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DragAndDrop\ListViewReorderableDragAndDropController.cs">
-      <Link>Modules\UIElements\DragAndDrop\ListViewReorderableDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\DropdownMenu.cs">
-      <Link>Modules\UIElements\DropdownMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\EasingCurves.cs">
-      <Link>Modules\UIElements\EasingCurves.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\EventDispatcher.cs">
-      <Link>Modules\UIElements\EventDispatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\CaptureEvents.cs">
-      <Link>Modules\UIElements\Events\CaptureEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\ChangeEvent.cs">
-      <Link>Modules\UIElements\Events\ChangeEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\CommandEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\CommandEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\CommandEvents.cs">
-      <Link>Modules\UIElements\Events\CommandEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\DebuggerEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\DebuggerEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\DefaultDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\DefaultDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\DragAndDropEvents.cs">
-      <Link>Modules\UIElements\Events\DragAndDropEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\ElementUnderPointer.cs">
-      <Link>Modules\UIElements\Events\ElementUnderPointer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventBase.cs">
-      <Link>Modules\UIElements\Events\EventBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventCallback.cs">
-      <Link>Modules\UIElements\Events\EventCallback.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventCallbackRegistry.cs">
-      <Link>Modules\UIElements\Events\EventCallbackRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\EventDebugger.cs">
-      <Link>Modules\UIElements\Events\EventDebugger\EventDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\EventDebuggerEventRecord.cs">
-      <Link>Modules\UIElements\Events\EventDebugger\EventDebuggerEventRecord.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\EventDebuggerTrace.cs">
-      <Link>Modules\UIElements\Events\EventDebugger\EventDebuggerTrace.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventDebugger\GlobalCallbackRegistry.cs">
-      <Link>Modules\UIElements\Events\EventDebugger\GlobalCallbackRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\EventHandler.cs">
-      <Link>Modules\UIElements\Events\EventHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\FocusEvents.cs">
-      <Link>Modules\UIElements\Events\FocusEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\IEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\IEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\IMGUIEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\IMGUIEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\InputEvents.cs">
-      <Link>Modules\UIElements\Events\InputEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\KeyboardEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\KeyboardEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\KeyboardEvents.cs">
-      <Link>Modules\UIElements\Events\KeyboardEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\LayoutEvents.cs">
-      <Link>Modules\UIElements\Events\LayoutEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\MouseCaptureDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\MouseCaptureDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\MouseEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\MouseEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\MouseEvents.cs">
-      <Link>Modules\UIElements\Events\MouseEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\MouseEventsHelper.cs">
-      <Link>Modules\UIElements\Events\MouseEventsHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\PanelEvents.cs">
-      <Link>Modules\UIElements\Events\PanelEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\PointerCaptureDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\PointerCaptureDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\PointerDeviceState.cs">
-      <Link>Modules\UIElements\Events\PointerDeviceState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\PointerEventDispatchingStrategy.cs">
-      <Link>Modules\UIElements\Events\PointerEventDispatchingStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\PointerEvents.cs">
-      <Link>Modules\UIElements\Events\PointerEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\PropagationPaths.cs">
-      <Link>Modules\UIElements\Events\PropagationPaths.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\StyleEvents.cs">
-      <Link>Modules\UIElements\Events\StyleEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\TooltipEvent.cs">
-      <Link>Modules\UIElements\Events\TooltipEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Events\UIEvent.cs">
-      <Link>Modules\UIElements\Events\UIEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\FocusController.cs">
-      <Link>Modules\UIElements\FocusController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\HierarchyTraversal.cs">
-      <Link>Modules\UIElements\HierarchyTraversal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\IDataWatchService.cs">
-      <Link>Modules\UIElements\IDataWatchService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\IMGUIContainer.cs">
-      <Link>Modules\UIElements\IMGUIContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ISerializableJsonDictionary.cs">
-      <Link>Modules\UIElements\ISerializableJsonDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ITransform.cs">
-      <Link>Modules\UIElements\ITransform.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ImmediateModeElement.cs">
-      <Link>Modules\UIElements\ImmediateModeElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\InteractionEnums.cs">
-      <Link>Modules\UIElements\InteractionEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ManipulatorActivationFilter.cs">
-      <Link>Modules\UIElements\ManipulatorActivationFilter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Manipulators.cs">
-      <Link>Modules\UIElements\Manipulators.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\MouseButton.cs">
-      <Link>Modules\UIElements\MouseButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\MouseCaptureController.cs">
-      <Link>Modules\UIElements\MouseCaptureController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\MouseManipulator.cs">
-      <Link>Modules\UIElements\MouseManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ObjectPool.cs">
-      <Link>Modules\UIElements\ObjectPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Panel.cs">
-      <Link>Modules\UIElements\Panel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\PointerCaptureController.cs">
-      <Link>Modules\UIElements\PointerCaptureController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\PointerClickable.cs">
-      <Link>Modules\UIElements\PointerClickable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\PointerManipulator.cs">
-      <Link>Modules\UIElements\PointerManipulator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ProjectionUtils.cs">
-      <Link>Modules\UIElements\ProjectionUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRAtlasAllocator.cs">
-      <Link>Modules\UIElements\Renderer\UIRAtlasAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRAtlasManager.cs">
-      <Link>Modules\UIElements\Renderer\UIRAtlasManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRChainBuilder.cs">
-      <Link>Modules\UIElements\Renderer\UIRChainBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRChainBuilderImpl.cs">
-      <Link>Modules\UIElements\Renderer\UIRChainBuilderImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRGradientSettingsAtlas.cs">
-      <Link>Modules\UIElements\Renderer\UIRGradientSettingsAtlas.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRLayoutUpdater.cs">
-      <Link>Modules\UIElements\Renderer\UIRLayoutUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRLinkedPool.cs">
-      <Link>Modules\UIElements\Renderer\UIRLinkedPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRMeshBuilder.cs">
-      <Link>Modules\UIElements\Renderer\UIRMeshBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRMeshGenerationContext.cs">
-      <Link>Modules\UIElements\Renderer\UIRMeshGenerationContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRRepaintUpdater.cs">
-      <Link>Modules\UIElements\Renderer\UIRRepaintUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRTessellation.cs">
-      <Link>Modules\UIElements\Renderer\UIRTessellation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRTextureBlitter.cs">
-      <Link>Modules\UIElements\Renderer\UIRTextureBlitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRUtility.cs">
-      <Link>Modules\UIElements\Renderer\UIRUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRVEShaderInfoAllocator.cs">
-      <Link>Modules\UIElements\Renderer\UIRVEShaderInfoAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRVectorImageManager.cs">
-      <Link>Modules\UIElements\Renderer\UIRVectorImageManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderDevice.cs">
-      <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderDevice.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderDeviceAllocator.cs">
-      <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderDeviceAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Renderer\UIRenderer\UIRenderers.cs">
-      <Link>Modules\UIElements\Renderer\UIRenderer\UIRenderers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Scheduler.cs">
-      <Link>Modules\UIElements\Scheduler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Spacing.cs">
-      <Link>Modules\UIElements\Spacing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StringUtils.cs">
-      <Link>Modules\UIElements\StringUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleEnums.cs">
-      <Link>Modules\UIElements\StyleEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StylePainter.cs">
-      <Link>Modules\UIElements\StylePainter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Dimension.cs">
-      <Link>Modules\UIElements\StyleSheets\Dimension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\ScalableImage.cs">
-      <Link>Modules\UIElements\StyleSheets\ScalableImage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleComplexSelector.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleComplexSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleProperty.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleProperty.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StylePropertyReader.cs">
-      <Link>Modules\UIElements\StyleSheets\StylePropertyReader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleRule.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleRule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelector.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorHelper.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSelectorHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorPart.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSelectorPart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorRelationship.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSelectorRelationship.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSelectorType.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSelectorType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheet.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSheet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetApplicator.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSheetApplicator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetCache.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSheetCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetColor.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSheetColor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetExtensions.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleSheetExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValue.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueFunction.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleValueFunction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueHandle.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleValueHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueKeyword.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleValueKeyword.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValueType.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleValueType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleVariable.cs">
-      <Link>Modules\UIElements\StyleSheets\StyleVariable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Syntax\StyleSyntaxExpression.cs">
-      <Link>Modules\UIElements\StyleSheets\Syntax\StyleSyntaxExpression.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Syntax\StyleSyntaxParser.cs">
-      <Link>Modules\UIElements\StyleSheets\Syntax\StyleSyntaxParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Syntax\StyleSyntaxToken.cs">
-      <Link>Modules\UIElements\StyleSheets\Syntax\StyleSyntaxToken.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StyleMatcher.cs">
-      <Link>Modules\UIElements\StyleSheets\Validation\StyleMatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StylePropertyCache.cs">
-      <Link>Modules\UIElements\StyleSheets\Validation\StylePropertyCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StylePropertyValueParser.cs">
-      <Link>Modules\UIElements\StyleSheets\Validation\StylePropertyValueParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\StyleSheets\Validation\StyleValidator.cs">
-      <Link>Modules\UIElements\StyleSheets\Validation\StyleValidator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Background.cs">
-      <Link>Modules\UIElements\Style\Background.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\ComputedStyle.cs">
-      <Link>Modules\UIElements\Style\ComputedStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\CustomStyle.cs">
-      <Link>Modules\UIElements\Style\CustomStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\ComputedStyle.cs">
-      <Link>Modules\UIElements\Style\Generated\ComputedStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\IResolvedStyle.cs">
-      <Link>Modules\UIElements\Style\Generated\IResolvedStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\IStyle.cs">
-      <Link>Modules\UIElements\Style\Generated\IStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\InitialStyle.cs">
-      <Link>Modules\UIElements\Style\Generated\InitialStyle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\InlineStyleAccess.cs">
-      <Link>Modules\UIElements\Style\Generated\InlineStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\ResolvedStyleAccess.cs">
-      <Link>Modules\UIElements\Style\Generated\ResolvedStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\ShorthandApplicator.cs">
-      <Link>Modules\UIElements\Style\Generated\ShorthandApplicator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\StyleDataStructs.cs">
-      <Link>Modules\UIElements\Style\Generated\StyleDataStructs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\StyleDebug.cs">
-      <Link>Modules\UIElements\Style\Generated\StyleDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\StylePropertyCache.cs">
-      <Link>Modules\UIElements\Style\Generated\StylePropertyCache.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\StylePropertyEnums.cs">
-      <Link>Modules\UIElements\Style\Generated\StylePropertyEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Generated\StylePropertyUtil.cs">
-      <Link>Modules\UIElements\Style\Generated\StylePropertyUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\InlineStyleAccess.cs">
-      <Link>Modules\UIElements\Style\InlineStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\Length.cs">
-      <Link>Modules\UIElements\Style\Length.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleBackground.cs">
-      <Link>Modules\UIElements\Style\StyleBackground.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleColor.cs">
-      <Link>Modules\UIElements\Style\StyleColor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleCursor.cs">
-      <Link>Modules\UIElements\Style\StyleCursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleDebug.cs">
-      <Link>Modules\UIElements\Style\StyleDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleEnum.cs">
-      <Link>Modules\UIElements\Style\StyleEnum.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleFloat.cs">
-      <Link>Modules\UIElements\Style\StyleFloat.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleFont.cs">
-      <Link>Modules\UIElements\Style\StyleFont.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleInt.cs">
-      <Link>Modules\UIElements\Style\StyleInt.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleLength.cs">
-      <Link>Modules\UIElements\Style\StyleLength.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Style\StyleTypes.cs">
-      <Link>Modules\UIElements\Style\StyleTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\TemplateContainer.cs">
-      <Link>Modules\UIElements\TemplateContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\TextElement.cs">
-      <Link>Modules\UIElements\TextElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\TextHandle.cs">
-      <Link>Modules\UIElements\TextHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Transitions.cs">
-      <Link>Modules\UIElements\Transitions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UIElementsPackageUtility.cs">
-      <Link>Modules\UIElements\UIElementsPackageUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UIElementsRuntimeUtility.cs">
-      <Link>Modules\UIElements\UIElementsRuntimeUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UIElementsUtility.cs">
-      <Link>Modules\UIElements\UIElementsUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UQuery.cs">
-      <Link>Modules\UIElements\UQuery.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\IUxmlAttributes.cs">
-      <Link>Modules\UIElements\UXML\IUxmlAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\OrphanFactories.cs">
-      <Link>Modules\UIElements\UXML\OrphanFactories.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\TemplateAsset.cs">
-      <Link>Modules\UIElements\UXML\TemplateAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\UxmlAttributeDescription.cs">
-      <Link>Modules\UIElements\UXML\UxmlAttributeDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\UxmlChildElementDescription.cs">
-      <Link>Modules\UIElements\UXML\UxmlChildElementDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\UxmlFactory.cs">
-      <Link>Modules\UIElements\UXML\UxmlFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\UxmlTypeRestriction.cs">
-      <Link>Modules\UIElements\UXML\UxmlTypeRestriction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\VectorImage.cs">
-      <Link>Modules\UIElements\UXML\VectorImage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\VisualElementAsset.cs">
-      <Link>Modules\UIElements\UXML\VisualElementAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\VisualElementFactoryRegistry.cs">
-      <Link>Modules\UIElements\UXML\VisualElementFactoryRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\UXML\VisualTreeAsset.cs">
-      <Link>Modules\UIElements\UXML\VisualTreeAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\ValueAnimation.cs">
-      <Link>Modules\UIElements\ValueAnimation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElement.cs">
-      <Link>Modules\UIElements\VisualElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementAnimation.cs">
-      <Link>Modules\UIElements\VisualElementAnimation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementExperimentalFeatures.cs">
-      <Link>Modules\UIElements\VisualElementExperimentalFeatures.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementFocusRing.cs">
-      <Link>Modules\UIElements\VisualElementFocusRing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementHierarchy.cs">
-      <Link>Modules\UIElements\VisualElementHierarchy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementScheduler.cs">
-      <Link>Modules\UIElements\VisualElementScheduler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementStyleAccess.cs">
-      <Link>Modules\UIElements\VisualElementStyleAccess.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementStyleSheetSet.cs">
-      <Link>Modules\UIElements\VisualElementStyleSheetSet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementTooltip.cs">
-      <Link>Modules\UIElements\VisualElementTooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualElementUtils.cs">
-      <Link>Modules\UIElements\VisualElementUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeAnimationUpdater.cs">
-      <Link>Modules\UIElements\VisualTreeAnimationUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeHierarchyTracker.cs">
-      <Link>Modules\UIElements\VisualTreeHierarchyTracker.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeStyleUpdater.cs">
-      <Link>Modules\UIElements\VisualTreeStyleUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeTransformClipUpdater.cs">
-      <Link>Modules\UIElements\VisualTreeTransformClipUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeUpdater.cs">
-      <Link>Modules\UIElements\VisualTreeUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\VisualTreeViewDataUpdater.cs">
-      <Link>Modules\UIElements\VisualTreeViewDataUpdater.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>
@@ -1704,6 +1749,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs">
       <Link>Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VirtualTexturing\Managed\AssemblyInfo.cs">
+      <Link>Modules\VirtualTexturing\Managed\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VirtualTexturing\ScriptBindings\VirtualTexturing.bindings.cs">
       <Link>Modules\VirtualTexturing\ScriptBindings\VirtualTexturing.bindings.cs</Link>

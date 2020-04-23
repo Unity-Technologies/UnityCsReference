@@ -220,12 +220,12 @@ namespace UnityEditor.Compilation
                 }
             };
 
-            editorCompilation.assemblyCompilationFinished += (assemblyPath, messages) =>
+            editorCompilation.assemblyCompilationFinished += (assembly, messages, editorScriptCompilationSettings) =>
             {
                 try
                 {
                     if (assemblyCompilationFinished != null)
-                        assemblyCompilationFinished(assemblyPath, messages);
+                        assemblyCompilationFinished(assembly.FullPath, messages);
                 }
                 catch (Exception e)
                 {

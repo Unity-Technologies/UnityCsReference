@@ -55,7 +55,6 @@ namespace UnityEditor
         private GUIContent m_ProgressStatus = new GUIContent();
         private GUIContent m_ProgressPercentageStatus = new GUIContent();
         private bool m_CurrentProgressNotResponding = false;
-        private int m_LastProgressId = -1;
         private float m_LastElapsedTime = 0f;
 
         private ManagedDebuggerToggle m_ManagedDebuggerToggle = null;
@@ -117,23 +116,29 @@ namespace UnityEditor
 
         private void DelayCheckProgressUnresponsive()
         {
-            EditorApplication.delayCall -= CheckProgressUnresponsive;
-            EditorApplication.delayCall += CheckProgressUnresponsive;
+            EditorApplication.update -= CheckProgressUnresponsive;
+            EditorApplication.CallDelayed(CheckProgressUnresponsive, 0.250);
         }
 
         private void CheckProgressUnresponsive()
         {
             if (Progress.running)
             {
-                var progressItem = Progress.GetProgressById(m_LastProgressId);
-                if (progressItem != null && !progressItem.responding)
-                    RefreshProgressBar(new[] {progressItem});
-
-                DelayCheckProgressUnresponsive();
+                var unresponsiveItem = Progress.EnumerateItems().FirstOrDefault(item => !item.responding);
+                if (unresponsiveItem != null)
+                {
+                    m_CurrentProgressNotResponding = true;
+                    RefreshProgressBar(new[] { unresponsiveItem });
+                }
+                else
+                {
+                    m_CurrentProgressNotResponding = false;
+                    DelayCheckProgressUnresponsive();
+                }
             }
             else
             {
-                m_LastProgressId = -1;
+                m_CurrentProgressNotResponding = false;
             }
         }
 
@@ -232,28 +237,18 @@ namespace UnityEditor
                 return;
 
             GUILayout.Space(k_SpaceBeforeProgress);
-            if (GUILayout.Button(m_ProgressStatus, Styles.statusLabel))
-                Progress.ShowDetails();
 
             var buttonRect = GUILayoutUtility.GetLastRect();
             EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
 
             // Define the progress styles to be used based on the current progress state.
-            Color oldColor  = GUI.color;
-            if (m_CurrentProgressNotResponding)
-            {
-                var fade = Mathf.Min(Mathf.Max(0.25f, Mathf.Cos((float)EditorApplication.timeSinceStartup * 2.0f) / 2.0f + 0.75f), 0.85f);
-                GUI.color = new Color(fade, fade, fade);
-            }
             var globalProgress = Progress.globalProgress;
             var progressBarStyle = GetProgressBarStyle(globalProgress);
-            var progressBarContent = GetProgressBarContent(globalProgress, m_ProgressPercentageStatus);
+            var progressBarContent = GetProgressBarContent(m_ProgressStatus);
             var progressRect = EditorGUILayout.GetControlRect(false, position.height, Styles.progressBarBack, Styles.progressBarWidth);
             if (EditorGUI.ProgressBar(progressRect, globalProgress, progressBarContent, true,
                 Styles.progressBarBack, progressBarStyle, Styles.progressBarText))
                 Progress.ShowDetails();
-
-            GUI.color = oldColor;
 
             if (globalProgress == -1.0f)
                 EditorApplication.delayCall += () => Repaint();
@@ -262,10 +257,10 @@ namespace UnityEditor
             GUILayout.Space(k_SpaceAfterProgress);
         }
 
-        private GUIContent GetProgressBarContent(float globalProgress, GUIContent defaultContent)
+        private GUIContent GetProgressBarContent(GUIContent defaultContent)
         {
             GUIContent progressBarContent = defaultContent;
-            if (m_CurrentProgressNotResponding || globalProgress < 0.15f)
+            if (m_CurrentProgressNotResponding)
                 progressBarContent = GUIContent.none;
 
             return progressBarContent;
@@ -328,7 +323,7 @@ namespace UnityEditor
             GUILayout.BeginVertical();
             GUILayout.Space(1);
 
-            GUILayout.Label(statusText, errorStyle, GetStatusTextLayoutOption(m_ProgressStatus, (icon != null ? icon.width : 0) + 6));
+            GUILayout.Label(statusText, errorStyle, GetStatusTextLayoutOption((icon != null ? icon.width : 0) + 6));
 
             // Handle status bar click
             if (Event.current.type == EventType.MouseDown)
@@ -350,9 +345,7 @@ namespace UnityEditor
             var taskCount = Progress.GetRunningProgressCount();
             if (taskCount == 0)
             {
-                m_LastProgressId = -1;
                 m_LastElapsedTime = 0f;
-                m_CurrentProgressNotResponding = false;
                 m_ProgressStatus.text = String.Empty;
                 m_ProgressPercentageStatus.text = String.Empty;
             }
@@ -364,7 +357,8 @@ namespace UnityEditor
                 m_ProgressPercentageStatus.text = Progress.globalProgress.ToString("P", percentageFormat);
 
                 var remainingTimeText = "";
-                if (Progress.EnumerateItems().Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime) && Progress.EnumerateItems().All(item => !item.indefinite) && Progress.globalRemainingTime.TotalSeconds > 0)
+                if (progressItems.Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime) &&
+                    progressItems.All(item => !item.indefinite) && Progress.globalRemainingTime.TotalSeconds > 0)
                 {
                     remainingTimeText = $" [{Progress.globalRemainingTime:g}]";
                 }
@@ -374,31 +368,19 @@ namespace UnityEditor
                 else
                     m_ProgressStatus.text = $"{currentItem.name}{remainingTimeText}";
 
-
-                m_LastProgressId = currentItem.id;
-                m_CurrentProgressNotResponding = true;
-                for (int i = 0; i < progressItems.Length; ++i)
-                {
-                    if (!progressItems[i].responding)
-                    {
-                        m_LastProgressId = progressItems[i].id;
-                        continue;
-                    }
-                    m_CurrentProgressNotResponding = false;
-                    break;
-                }
-
                 m_LastElapsedTime = Mathf.Max(m_LastElapsedTime, currentItem.elapsedTime);
                 if (m_CurrentProgressNotResponding)
                     m_LastElapsedTime = float.MaxValue;
+
+                DelayCheckProgressUnresponsive();
             }
+
             RepaintProgress(progressItems);
         }
 
         private void RepaintProgress(Progress.Item[] progressItems)
         {
             bool hasSynchronous = false;
-            bool hasIndefinite = false;
             foreach (var item in progressItems)
             {
                 if ((item.options & Progress.Options.Synchronous) == Progress.Options.Synchronous)
@@ -406,25 +388,15 @@ namespace UnityEditor
                     hasSynchronous = true;
                     break;
                 }
-                if (item.indefinite)
-                    hasIndefinite = true;
             }
+
             if (hasSynchronous)
-            {
                 RepaintImmediately();
-            }
-            else if (hasIndefinite)
-            {
-                Repaint();
-            }
             else
-            {
                 Repaint();
-                DelayCheckProgressUnresponsive();
-            }
         }
 
-        private GUILayoutOption GetStatusTextLayoutOption(GUIContent progressContent, float consoleIconWidth)
+        private GUILayoutOption GetStatusTextLayoutOption(float consoleIconWidth)
         {
             int iconWidth = 25;
             float specialModeLabelWidth = Styles.statusLabel.CalcSize(new GUIContent(m_SpecialModeLabel)).x + k_SpaceBeforeProgress + 8;
@@ -437,8 +409,7 @@ namespace UnityEditor
             if (!showProgress)
                 return GUILayout.MaxWidth(position.width - statusRightReservedSpace - consoleIconWidth);
 
-            var progressStatusContentWidth = Styles.statusLabel.CalcSize(progressContent).x;
-            return GUILayout.MaxWidth(position.width - statusRightReservedSpace - k_SpaceBeforeProgress - 8 - progressStatusContentWidth - (float)Styles.progressBarWidth.value - k_SpaceAfterProgress - consoleIconWidth);
+            return GUILayout.MaxWidth(position.width - statusRightReservedSpace - k_SpaceBeforeProgress - 8 - (float)Styles.progressBarWidth.value - k_SpaceAfterProgress - consoleIconWidth);
         }
 
         private GUIContent GetBakeModeIcon(bool? bakeMode)

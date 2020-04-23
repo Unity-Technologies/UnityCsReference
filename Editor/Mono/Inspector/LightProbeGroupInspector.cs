@@ -715,9 +715,9 @@ namespace UnityEditor
             if (float.IsInfinity(vec1.z) || float.IsNaN(vec1.z))
                 vec1.z = 0;
 
-            Mathf.Clamp(vec1.x, float.MinValue, float.MaxValue);
-            Mathf.Clamp(vec1.y, float.MinValue, float.MaxValue);
-            Mathf.Clamp(vec1.z, float.MinValue, float.MaxValue);
+            vec1.x = Mathf.Clamp(vec1.x, float.MinValue, float.MaxValue);
+            vec1.y = Mathf.Clamp(vec1.y, float.MinValue, float.MaxValue);
+            vec1.z = Mathf.Clamp(vec1.z, float.MinValue, float.MaxValue);
 
             return vec1 - vec2;
         }

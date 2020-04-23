@@ -183,10 +183,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private AssetPathMetaData[] m_AssetPathsMetaData;
         private Dictionary<string, string> m_AllDistinctVersionMetaDatas;
 
+        public event Action<string> unusedAssembly;
+        public event Action<string[]> dirtyPrecompiledAssembly;
+
         public event Action<object> compilationStarted;
         public event Action<object> compilationFinished;
         public event Action<string> assemblyCompilationStarted;
-        public event Action<string, UnityEditor.Compilation.CompilerMessage[]> assemblyCompilationFinished;
+        public event Action<ScriptAssembly, UnityEditor.Compilation.CompilerMessage[], EditorScriptCompilationOptions> assemblyCompilationFinished;
 
         public bool IsCodeGenAssemblyChanged { get; set; }
 
@@ -408,6 +411,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 DirtyPrecompiledAssembly(path);
             }
+            dirtyPrecompiledAssembly?.Invoke(paths);
         }
 
         private void DirtyPrecompiledAssembly(string path)
@@ -1323,6 +1327,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 deleteFiles.Remove(path);
                 deleteFiles.Remove(MDBPath(path));
                 deleteFiles.Remove(PDBPath(path));
+                unusedAssembly?.Invoke(assembly.Name);
             }
 
             foreach (var path in deleteFiles)
@@ -1746,7 +1751,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     AddUnitySpecificErrorMessages(assembly, messages);
 
-                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
+                    InvokeAssemblyCompilationFinished(assembly, messages, options);
                     return;
                 }
 
@@ -1755,11 +1760,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     messages.Add(new CompilerMessage { message = string.Format("Copying assembly from '{0}' to '{1}' failed", AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
                     StopCompilationTask();
-                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
+                    InvokeAssemblyCompilationFinished(assembly, messages, options);
                     return;
                 }
 
-                InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
+                InvokeAssemblyCompilationFinished(assembly, messages, options);
 
                 Stopwatch stopwatch = null;
 
@@ -1829,12 +1834,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 assemblyCompilationStarted(assemblyOutputPath);
         }
 
-        public void InvokeAssemblyCompilationFinished(string assemblyOutputPath, List<CompilerMessage> messages)
+        public void InvokeAssemblyCompilationFinished(ScriptAssembly assembly, List<CompilerMessage> messages, EditorScriptCompilationOptions scriptCompilationOptions)
         {
             if (assemblyCompilationFinished != null)
             {
                 var convertedMessages = ConvertCompilerMessages(messages);
-                assemblyCompilationFinished(assemblyOutputPath, convertedMessages);
+                assemblyCompilationFinished(assembly, convertedMessages, scriptCompilationOptions);
             }
         }
 

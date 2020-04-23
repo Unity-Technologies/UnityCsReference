@@ -365,6 +365,11 @@ namespace UnityEditor
             return s_LastFocused;
         }
 
+        internal static PlayModeView GetLastFocusedPlayModeView()
+        {
+            return s_LastFocused;
+        }
+
         private static void RemoveDisabledWindows()
         {
             if (s_PlayModeViews == null)

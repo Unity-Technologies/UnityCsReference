@@ -51,7 +51,7 @@ namespace UnityEditor
                 return null;
 
             var topmost = enumerator.Current;
-            var selectionBase = HandleUtility.FindSelectionBase(topmost);
+            var selectionBase = HandleUtility.FindSelectionBaseForPicking(topmost);
             var first = (selectionBase == null ? topmost : selectionBase);
             int topmostHash = topmost.GetHashCode();
             int prefixHash = topmostHash;

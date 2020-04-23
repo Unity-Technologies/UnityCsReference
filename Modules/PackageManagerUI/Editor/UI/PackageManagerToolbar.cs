@@ -386,12 +386,6 @@ namespace UnityEditor.PackageManager.UI
                 PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
             }, a => m_PackageManagerPrefs.showPackageDependencies ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            advancedMenu.menu.AppendAction(L10n.Tr("Show preview packages"), a =>
-            {
-                TogglePreviewPackages();
-                PackageManagerWindowAnalytics.SendEvent("togglePreview");
-            }, a => m_PackageManagerPrefs.showPreviewPackages ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
             advancedMenu.menu.AppendSeparator();
 
             advancedMenu.menu.AppendAction(L10n.Tr("Reset Packages to defaults"), a =>
@@ -411,19 +405,6 @@ namespace UnityEditor.PackageManager.UI
         private void ToggleDependencies()
         {
             m_PackageManagerPrefs.showPackageDependencies = !m_PackageManagerPrefs.showPackageDependencies;
-        }
-
-        private void TogglePreviewPackages()
-        {
-            var showPreviewPackages = m_PackageManagerPrefs.showPreviewPackages;
-            if (!showPreviewPackages && m_PackageManagerPrefs.showPreviewPackagesWarning)
-            {
-                const string message = "Preview packages are not verified with Unity, may be unstable, and are unsupported in production. Are you sure you want to show preview packages?";
-                if (!EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr(message), L10n.Tr("Yes"), L10n.Tr("No")))
-                    return;
-                m_PackageManagerPrefs.showPreviewPackagesWarning = false;
-            }
-            m_PackageManagerPrefs.showPreviewPackages = !showPreviewPackages;
         }
 
         private VisualElementCache cache { get; set; }

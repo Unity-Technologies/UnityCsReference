@@ -14,5 +14,7 @@ namespace UnityEditor
 
         [Obsolete("Vulkan SW command buffers are deprecated, vulkanUseSWCommandBuffers will be ignored.")]
         public static bool vulkanUseSWCommandBuffers { get { return false; } set {} }
+
+        public static extern bool vulkanEnablePreTransform { get; set; }
     }
 }

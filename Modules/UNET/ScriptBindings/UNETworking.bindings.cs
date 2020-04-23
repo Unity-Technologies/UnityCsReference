@@ -102,7 +102,7 @@ namespace UnityEngine.Networking
             return AddHost(topology, 0, null);
         }
 
-        [FreeFunction("UNETManager::Get()->AddHost")]
+        [FreeFunction("UNETManager::Get()->AddHost", ThrowsException = true)]
         extern private static int AddHostInternal(HostTopologyInternal topologyInt, string ip, int port, int minTimeout, int maxTimeout);
 
         static public int AddWebsocketHost(HostTopology topology, int port, string ip)
@@ -123,7 +123,7 @@ namespace UnityEngine.Networking
             return AddWebsocketHost(topology, port, null);
         }
 
-        [FreeFunction("UNETManager::Get()->AddWsHost")]
+        [FreeFunction("UNETManager::Get()->AddWsHost", ThrowsException = true)]
         extern private static int AddWsHostInternal(HostTopologyInternal topologyInt, string ip, int port);
 
         private static bool IsPortOpen(string ip, int port)
@@ -156,10 +156,10 @@ namespace UnityEngine.Networking
             ConnectAsNetworkHostInternal(hostId, address, port, (ulong)network, (ulong)source, (ushort)node, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->ConnectAsNetworkHost")]
+        [FreeFunction("UNETManager::Get()->ConnectAsNetworkHost", ThrowsException = true)]
         extern private static void ConnectAsNetworkHostInternal(int hostId, string address, int port, ulong network, ulong source, ushort node, out byte error);
 
-        [FreeFunction("UNETManager::Get()->DisconnectNetworkHost")]
+        [FreeFunction("UNETManager::Get()->DisconnectNetworkHost", ThrowsException = true)]
         extern static public void DisconnectNetworkHost(int hostId, out byte error);
 
         static public NetworkEventType ReceiveRelayEventFromHost(int hostId, out byte error)
@@ -167,7 +167,7 @@ namespace UnityEngine.Networking
             return (NetworkEventType)ReceiveRelayEventFromHostInternal(hostId, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->PopRelayHostData")]
+        [FreeFunction("UNETManager::Get()->PopRelayHostData", ThrowsException = true)]
         extern static private int ReceiveRelayEventFromHostInternal(int hostId, out byte error);
 
         static public int ConnectToNetworkPeer(int hostId, string address, int port, int exceptionConnectionId, int relaySlotId, NetworkID network, SourceID source, NodeID node, int bytesPerSec, float bucketSizeFactor, out byte error)
@@ -180,7 +180,7 @@ namespace UnityEngine.Networking
             return ConnectToNetworkPeer(hostId, address, port, exceptionConnectionId, relaySlotId, network, source, node, 0, 0, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->ConnectToNetworkPeer")]
+        [FreeFunction("UNETManager::Get()->ConnectToNetworkPeer", ThrowsException = true)]
         extern private static int ConnectToNetworkPeerInternal(int hostId, string address, int port, int exceptionConnectionId, int relaySlotId, ulong network, ulong source, ushort node, int bytesPerSec, float bucketSizeFactor, out byte error);
 
         //Statistics ----
@@ -197,14 +197,14 @@ namespace UnityEngine.Networking
             return 0;
         }
 
-        [FreeFunction("UNETManager::Get()->GetIncomingMessageQueueSize")]
+        [FreeFunction("UNETManager::Get()->GetIncomingMessageQueueSize", ThrowsException = true)]
         extern static public int GetIncomingMessageQueueSize(int hostId, out byte error);
 
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingMessageQueueSize")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingMessageQueueSize", ThrowsException = true)]
         extern static public int GetOutgoingMessageQueueSize(int hostId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetCurrentRTT")]
+        [FreeFunction("UNETManager::Get()->GetCurrentRTT", ThrowsException = true)]
         extern static public int GetCurrentRTT(int hostId, int connectionId, out byte error);
 
 
@@ -214,7 +214,7 @@ namespace UnityEngine.Networking
             return GetCurrentRTT(hostId, connectionId, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->GetIncomingPacketLossCount")]
+        [FreeFunction("UNETManager::Get()->GetIncomingPacketLossCount", ThrowsException = true)]
         extern static public int GetIncomingPacketLossCount(int hostId, int connectionId, out byte error);
 
         [Obsolete("GetNetworkLostPacketNum() has been deprecated.")]
@@ -223,71 +223,70 @@ namespace UnityEngine.Networking
             return GetIncomingPacketLossCount(hostId, connectionId, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->GetIncomingPacketCount")]
+        [FreeFunction("UNETManager::Get()->GetIncomingPacketCount", ThrowsException = true)]
         extern static public int GetIncomingPacketCount(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingPacketNetworkLossPercent")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingPacketNetworkLossPercent", ThrowsException = true)]
         extern static public int GetOutgoingPacketNetworkLossPercent(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingPacketOverflowLossPercent")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingPacketOverflowLossPercent", ThrowsException = true)]
         extern static public int GetOutgoingPacketOverflowLossPercent(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetMaxAllowedBandwidth")]
+        [FreeFunction("UNETManager::Get()->GetMaxAllowedBandwidth", ThrowsException = true)]
         extern static public int GetMaxAllowedBandwidth(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetAckBufferCount")]
+        [FreeFunction("UNETManager::Get()->GetAckBufferCount", ThrowsException = true)]
         extern static public int GetAckBufferCount(int hostId, int connectionId, out byte error);
 
-
-        [FreeFunction("UNETManager::Get()->GetIncomingPacketDropCountForAllHosts")]
+        [FreeFunction("UNETManager::Get()->GetIncomingPacketDropCountForAllHosts", ThrowsException = true)]
         extern static public int GetIncomingPacketDropCountForAllHosts();
 
-        [FreeFunction("UNETManager::Get()->GetIncomingPacketCountForAllHosts")]
+        [FreeFunction("UNETManager::Get()->GetIncomingPacketCountForAllHosts", ThrowsException = true)]
         extern static public int GetIncomingPacketCountForAllHosts();
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingPacketCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingPacketCount", ThrowsException = true)]
         extern static public int GetOutgoingPacketCount();
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingPacketCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingPacketCount", ThrowsException = true)]
         extern static public int GetOutgoingPacketCountForHost(int hostId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingPacketCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingPacketCount", ThrowsException = true)]
         extern static public int GetOutgoingPacketCountForConnection(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingMessageCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingMessageCount", ThrowsException = true)]
         extern static public int GetOutgoingMessageCount();
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingMessageCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingMessageCount", ThrowsException = true)]
         extern static public int GetOutgoingMessageCountForHost(int hostId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingMessageCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingMessageCount", ThrowsException = true)]
         extern static public int GetOutgoingMessageCountForConnection(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingUserBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingUserBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingUserBytesCount();
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingUserBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingUserBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingUserBytesCountForHost(int hostId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingUserBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingUserBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingUserBytesCountForConnection(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingSystemBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingSystemBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingSystemBytesCount();
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingSystemBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingSystemBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingSystemBytesCountForHost(int hostId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingSystemBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingSystemBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingSystemBytesCountForConnection(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingFullBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingFullBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingFullBytesCount();
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingFullBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingFullBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingFullBytesCountForHost(int hostId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetOutgoingFullBytesCount")]
+        [FreeFunction("UNETManager::Get()->GetOutgoingFullBytesCount", ThrowsException = true)]
         extern static public int GetOutgoingFullBytesCountForConnection(int hostId, int connectionId, out byte error);
 
         [Obsolete("GetPacketSentRate has been deprecated.")]
@@ -317,7 +316,7 @@ namespace UnityEngine.Networking
             return 0;
         }
 
-        [FreeFunction("UNETManager::Get()->GetConnectionInfo")]
+        [FreeFunction("UNETManager::Get()->GetConnectionInfo", ThrowsException = true)]
         extern static public string GetConnectionInfo(int hostId, int connectionId, out int port, out ulong network, out ushort dstNode, out byte error);
         static public void GetConnectionInfo(int hostId, int connectionId, out string address, out int port, out NetworkID network, out NodeID dstNode, out byte error)
         {
@@ -329,10 +328,10 @@ namespace UnityEngine.Networking
         }
 
         //Timing service API
-        [FreeFunction("UNETManager::Get()->GetNetworkTimestamp")]
+        [FreeFunction("UNETManager::Get()->GetNetworkTimestamp", ThrowsException = true)]
         extern static public int GetNetworkTimestamp();
 
-        [FreeFunction("UNETManager::Get()->GetRemoteDelayTimeMS")]
+        [FreeFunction("UNETManager::Get()->GetRemoteDelayTimeMS", ThrowsException = true)]
         extern static public int GetRemoteDelayTimeMS(int hostId, int connectionId, int remoteTime, out byte error);
 
         static public bool StartSendMulticast(int hostId, int channelId, byte[] buffer, int size, out byte error)
@@ -340,19 +339,19 @@ namespace UnityEngine.Networking
             return StartSendMulticastInternal(hostId, channelId, buffer, size, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->StartSendMulticast")]
+        [FreeFunction("UNETManager::Get()->StartSendMulticast", ThrowsException = true)]
         extern static private bool StartSendMulticastInternal(int hostId, int channelId, [Out] byte[] buffer, int size, out byte error);
 
-        [FreeFunction("UNETManager::Get()->SendMulticast")]
+        [FreeFunction("UNETManager::Get()->SendMulticast", ThrowsException = true)]
         extern static public bool SendMulticast(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->FinishSendMulticast")]
+        [FreeFunction("UNETManager::Get()->FinishSendMulticast", ThrowsException = true)]
         extern static public bool FinishSendMulticast(int hostId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetMaxPacketSize")]
+        [FreeFunction("UNETManager::Get()->GetMaxPacketSize", ThrowsException = true)]
         extern static private int GetMaxPacketSize();
 
-        [FreeFunction("UNETManager::Get()->RemoveHost")]
+        [FreeFunction("UNETManager::Get()->RemoveHost", ThrowsException = true)]
         extern static public bool RemoveHost(int hostId);
 
         static public bool IsStarted
@@ -362,20 +361,20 @@ namespace UnityEngine.Networking
         [FreeFunction("UNETManager::IsStarted")]
         extern static private bool IsStartedInternal();
 
-        [FreeFunction("UNETManager::Get()->Connect")]
+        [FreeFunction("UNETManager::Get()->Connect", ThrowsException = true)]
         extern static public int Connect(int hostId, string address, int port, int exeptionConnectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->ConnectWithSimulator")]
+        [FreeFunction("UNETManager::Get()->ConnectWithSimulator", ThrowsException = true)]
         extern static private int ConnectWithSimulatorInternal(int hostId, string address, int port, int exeptionConnectionId, out byte error, ConnectionSimulatorConfigInternal conf);
         static public int ConnectWithSimulator(int hostId, string address, int port, int exeptionConnectionId, out byte error, ConnectionSimulatorConfig conf)
         {
             return ConnectWithSimulatorInternal(hostId, address, port, exeptionConnectionId, out error, new ConnectionSimulatorConfigInternal(conf));
         }
 
-        [FreeFunction("UNETManager::Get()->Disconnect")]
+        [FreeFunction("UNETManager::Get()->Disconnect", ThrowsException = true)]
         extern static public bool Disconnect(int hostId, int connectionId, out byte error);
 
-        [FreeFunction("UNETManager::Get()->ConnectSockAddr")]
+        [FreeFunction("UNETManager::Get()->ConnectSockAddr", ThrowsException = true)]
         extern static private int Internal_ConnectEndPoint(int hostId, [Out] byte[] sockAddrStorage, int sockAddrStorageLen, int exceptionConnectionId, out byte error);
         static public bool Send(int hostId, int connectionId, int channelId, byte[] buffer, int size, out byte error)
         {
@@ -384,7 +383,7 @@ namespace UnityEngine.Networking
             return SendWrapper(hostId, connectionId, channelId, buffer, size, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->Send")]
+        [FreeFunction("UNETManager::Get()->Send", ThrowsException = true)]
         extern private static bool SendWrapper(int hostId, int connectionId, int channelId, [Out] byte[] buffer, int size, out byte error);
         static public bool QueueMessageForSending(int hostId, int connectionId, int channelId, byte[] buffer, int size, out byte error)
         {
@@ -393,10 +392,10 @@ namespace UnityEngine.Networking
             return QueueMessageForSendingWrapper(hostId, connectionId, channelId, buffer, size, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->QueueMessageForSending")]
+        [FreeFunction("UNETManager::Get()->QueueMessageForSending", ThrowsException = true)]
         extern private static bool QueueMessageForSendingWrapper(int hostId, int connectionId, int channelId, [Out] byte[] buffer, int size, out byte error);
 
-        [FreeFunction("UNETManager::Get()->SendQueuedMessages")]
+        [FreeFunction("UNETManager::Get()->SendQueuedMessages", ThrowsException = true)]
         extern static public bool SendQueuedMessages(int hostId, int connectionId, out byte error);
 
         static public NetworkEventType Receive(out int hostId, out int connectionId, out int channelId, byte[] buffer, int bufferSize, out int receivedSize, out byte error)
@@ -404,7 +403,7 @@ namespace UnityEngine.Networking
             return (NetworkEventType)PopData(out hostId, out connectionId, out channelId, buffer, bufferSize, out receivedSize, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->PopData")]
+        [FreeFunction("UNETManager::Get()->PopData", ThrowsException = true)]
         private static extern int PopData(out int hostId, out int connectionId, out int channelId, [Out] byte[] buffer, int bufferSize, out int receivedSize, out byte error);
 
         static public NetworkEventType ReceiveFromHost(int hostId, out int connectionId, out int channelId, byte[] buffer, int bufferSize, out int receivedSize, out byte error)
@@ -412,10 +411,10 @@ namespace UnityEngine.Networking
             return (NetworkEventType)PopDataFromHost(hostId, out connectionId, out channelId, buffer, bufferSize, out receivedSize, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->PopDataFromHost")]
+        [FreeFunction("UNETManager::Get()->PopDataFromHost", ThrowsException = true)]
         private static extern int PopDataFromHost(int hostId, out int connectionId, out int channelId, [Out] byte[] buffer, int bufferSize, out int receivedSize, out byte error);
 
-        [FreeFunction("UNETManager::Get()->SetPacketStat")]
+        [FreeFunction("UNETManager::Get()->SetPacketStat", ThrowsException = true)]
         extern static public void SetPacketStat(int direction, int packetStatId, int numMsgs, int numBytes);
 
 
@@ -430,18 +429,18 @@ namespace UnityEngine.Networking
         [FreeFunction("UNETManager::SetConnectionReadyForSendCallback")]
         extern static void SetConnectionReadyForSendCallback(Action<int, int> callback);
 
-        [FreeFunction("UNETManager::Get()->NotifyWhenConnectionReadyForSend")]
+        [FreeFunction("UNETManager::Get()->NotifyWhenConnectionReadyForSend", ThrowsException = true)]
         extern static public bool NotifyWhenConnectionReadyForSend(int hostId, int connectionId, int notificationLevel, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetHostPort")]
+        [FreeFunction("UNETManager::Get()->GetHostPort", ThrowsException = true)]
         extern static public int GetHostPort(int hostId);
 
 
         //broadcast
-        [FreeFunction("UNETManager::Get()->StartBroadcastDiscoveryWithData")]
+        [FreeFunction("UNETManager::Get()->StartBroadcastDiscoveryWithData", ThrowsException = true)]
         extern static private bool StartBroadcastDiscoveryWithData(int hostId, int broadcastPort, int key, int version, int subversion, [Out] byte[] buffer, int size, int timeout, out byte error);
 
-        [FreeFunction("UNETManager::Get()->StartBroadcastDiscoveryWithoutData")]
+        [FreeFunction("UNETManager::Get()->StartBroadcastDiscoveryWithoutData", ThrowsException = true)]
         extern private static bool StartBroadcastDiscoveryWithoutData(int hostId, int broadcastPort, int key, int version, int subversion, int timeout, out byte error);
         static public bool StartBroadcastDiscovery(int hostId, int broadcastPort, int key, int version, int subversion, byte[] buffer, int size, int timeout, out byte error)
         {
@@ -458,16 +457,16 @@ namespace UnityEngine.Networking
                 return StartBroadcastDiscoveryWithData(hostId, broadcastPort, key, version, subversion, buffer, size, timeout, out error);
         }
 
-        [FreeFunction("UNETManager::Get()->StopBroadcastDiscovery")]
+        [FreeFunction("UNETManager::Get()->StopBroadcastDiscovery", ThrowsException = true)]
         extern static public void StopBroadcastDiscovery();
 
-        [FreeFunction("UNETManager::Get()->IsBroadcastDiscoveryRunning")]
+        [FreeFunction("UNETManager::Get()->IsBroadcastDiscoveryRunning", ThrowsException = true)]
         extern static public bool IsBroadcastDiscoveryRunning();
 
-        [FreeFunction("UNETManager::Get()->SetBroadcastCredentials")]
+        [FreeFunction("UNETManager::Get()->SetBroadcastCredentials", ThrowsException = true)]
         extern static public void SetBroadcastCredentials(int hostId, int key, int version, int subversion, out byte error);
 
-        [FreeFunction("UNETManager::Get()->GetBroadcastConnectionInfoInternal")]
+        [FreeFunction("UNETManager::Get()->GetBroadcastConnectionInfoInternal", ThrowsException = true)]
         extern public static string GetBroadcastConnectionInfo(int hostId, out int port, out byte error);
 
         static public void GetBroadcastConnectionInfo(int hostId, out string address, out int port, out byte error)
@@ -483,7 +482,7 @@ namespace UnityEngine.Networking
         [FreeFunction("UNETManager::SetMulticastLock")]
         extern public static void SetMulticastLock(bool enabled);
 
-        [FreeFunction("UNETManager::Get()->GetBroadcastConnectionMessage")]
+        [FreeFunction("UNETManager::Get()->GetBroadcastConnectionMessage", ThrowsException = true)]
         extern static private void GetBroadcastConnectionMessageInternal(int hostId, [Out] byte[] buffer, int bufferSize, out int receivedSize, out byte error);
 
 
@@ -502,7 +501,7 @@ namespace UnityEngine.Networking
             }
         }
 
-        [FreeFunction("UNETManager::Get()->LoadEncryptionLibrary")]
+        [FreeFunction("UNETManager::Get()->LoadEncryptionLibrary", ThrowsException = true)]
         extern static private bool LoadEncryptionLibraryInternal(string libraryName);
 
         public static bool LoadEncryptionLibrary(string libraryName)
@@ -510,7 +509,7 @@ namespace UnityEngine.Networking
             return LoadEncryptionLibraryInternal(libraryName);
         }
 
-        [FreeFunction("UNETManager::Get()->UnloadEncryptionLibrary")]
+        [FreeFunction("UNETManager::Get()->UnloadEncryptionLibrary", ThrowsException = true)]
         extern static private void UnloadEncryptionLibraryInternal();
 
         public static void UnloadEncryptionLibrary()
@@ -518,7 +517,7 @@ namespace UnityEngine.Networking
             UnloadEncryptionLibraryInternal();
         }
 
-        [FreeFunction("UNETManager::Get()->IsEncryptionActive")]
+        [FreeFunction("UNETManager::Get()->IsEncryptionActive", ThrowsException = true)]
         extern static private bool IsEncryptionActiveInternal();
 
         public static bool IsEncryptionActive()
@@ -526,7 +525,7 @@ namespace UnityEngine.Networking
             return IsEncryptionActiveInternal();
         }
 
-        [FreeFunction("UNETManager::Get()->GetEncryptionSafeMaxPacketSize")]
+        [FreeFunction("UNETManager::Get()->GetEncryptionSafeMaxPacketSize", ThrowsException = true)]
         extern static private short GetEncryptionSafeMaxPacketSizeInternal(short maxPacketSize);
 
         public static short GetEncryptionSafeMaxPacketSize(short maxPacketSize)

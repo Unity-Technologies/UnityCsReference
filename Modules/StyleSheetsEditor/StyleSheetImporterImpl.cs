@@ -105,7 +105,8 @@ namespace UnityEditor.StyleSheets
 
             if (result != URIValidationResult.OK)
             {
-                m_Errors.AddSemanticError(ConvertErrorCode(result), errorMessage);
+                m_Builder.AddValue(path, StyleValueType.MissingAssetReference);
+                m_Errors.AddValidationWarning(errorMessage, m_Builder.currentProperty.line);
             }
             else
             {

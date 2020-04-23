@@ -35,16 +35,15 @@ namespace UnityEditor.PackageManager.UI
 
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
-        private void ResolveDependencies()
+        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager)
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_PageManager = container.Resolve<PageManager>();
+            m_ResourceLoader = resourceLoader;
+            m_PageManager = pageManager;
         }
 
-        public PackageItem(IPackage package)
+        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, IPackage package)
         {
-            ResolveDependencies();
+            ResolveDependencies(resourceLoader, pageManager);
 
             var root = m_ResourceLoader.GetTemplate("PackageItem.uxml");
             Add(root);

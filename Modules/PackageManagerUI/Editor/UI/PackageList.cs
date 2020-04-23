@@ -322,7 +322,7 @@ namespace UnityEditor.PackageManager.UI
                 item.SetPackage(package);
             else
             {
-                item = new PackageItem(package);
+                item = new PackageItem(m_ResourceLoader, m_PageManager, package);
                 itemsList.Add(item);
                 m_PackageItemsLookup[package.uniqueId] = item;
             }
@@ -406,34 +406,37 @@ namespace UnityEditor.PackageManager.UI
 
         internal bool SelectBy(int delta)
         {
-            var list = GetSelectableItems();
+            if (delta == 0)
+                return false;
+
             var selection = GetSelectedItem();
-            if (selection != null)
+            if (selection == null)
+                return false;
+
+            var list = GetSelectableItems();
+            var index = list.IndexOf(selection);
+
+            var direction = Math.Sign(delta);
+            delta = Math.Abs(delta);
+            var nextIndex = index;
+            var numVisibleElement = 0;
+            ISelectableItem nextElement = null;
+            while (numVisibleElement < delta)
             {
-                var index = list.IndexOf(selection);
-
-                var direction = Math.Sign(delta);
-                delta = Math.Abs(delta);
-                var nextIndex = index;
-                var numVisibleElement = 0;
-                ISelectableItem nextElement = null;
-                while (numVisibleElement < delta)
-                {
-                    nextIndex += direction;
-                    if (nextIndex >= list.Count)
-                        return false;
-                    if (nextIndex < 0)
-                        return false;
-                    nextElement = list.ElementAt(nextIndex);
-                    if (UIUtils.IsElementVisible(nextElement.element))
-                        ++numVisibleElement;
-                }
-
-                m_PageManager.SetSelected(nextElement.package, nextElement.targetVersion, true);
-
-                foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
-                    ScrollIfNeeded(scrollView, nextElement.element);
+                nextIndex += direction;
+                if (nextIndex >= list.Count)
+                    return false;
+                if (nextIndex < 0)
+                    return false;
+                nextElement = list.ElementAt(nextIndex);
+                if (UIUtils.IsElementVisible(nextElement.element))
+                    ++numVisibleElement;
             }
+
+            m_PageManager.SetSelected(nextElement.package, nextElement.targetVersion, true);
+
+            foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
+                ScrollIfNeeded(scrollView, nextElement.element);
 
             return true;
         }

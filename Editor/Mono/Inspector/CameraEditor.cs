@@ -525,7 +525,7 @@ namespace UnityEditor
             m_ShowTargetEyeOption.valueChanged.AddListener(Repaint);
 
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
-            SubsystemManager.reloadSubsytemsCompleted += OnReloadSubsystemsComplete;
+            SubsystemManager.afterReloadSubsystems += OnReloadSubsystemsComplete;
 
             SceneView.duringSceneGui += DuringSceneGUI;
 

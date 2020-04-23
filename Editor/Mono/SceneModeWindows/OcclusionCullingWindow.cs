@@ -57,6 +57,11 @@ namespace UnityEditor
             Visualization = 2
         }
 
+        internal static bool isVisible
+        {
+            get { return (ms_OcclusionCullingWindow != null) ? s_IsVisible : false; }
+        }
+
         void OnBecameVisible()
         {
             if (s_IsVisible == true) return;
@@ -423,9 +428,8 @@ namespace UnityEditor
         OverlayWindow m_OverlayWindow;
         public void OnSceneViewGUI(SceneView sceneView)
         {
-            if (!s_IsVisible)
+            if (!StaticOcclusionCullingVisualization.showOcclusionCulling)
                 return;
-
 
             SceneViewOverlay.ShowWindow(m_OverlayWindow);
         }
@@ -489,7 +493,7 @@ namespace UnityEditor
             if (!sceneView)
                 return;
 
-            if (!s_IsVisible)
+            if (!StaticOcclusionCullingVisualization.showOcclusionCulling)
                 return;
 
             bool temp;

@@ -37,6 +37,7 @@ namespace UnityEditor.PackageManager.UI
 
             var packageFiltering = ServicesContainer.instance.Resolve<PackageFiltering>();
             var packageManagerPrefs = ServicesContainer.instance.Resolve<PackageManagerPrefs>();
+            var settingsProxy = ServicesContainer.instance.Resolve<PackageManagerProjectSettingsProxy>();
 
             var parameters = new PackageManagerWindowAnalytics
             {
@@ -46,7 +47,7 @@ namespace UnityEditor.PackageManager.UI
                 filter_name = packageFiltering.currentFilterTab.ToString(),
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
                 dependencies_visible = packageManagerPrefs.showPackageDependencies,
-                preview_visible = packageManagerPrefs.showPreviewPackages,
+                preview_visible = settingsProxy.enablePreviewPackages,
                 t_since_start = (long)(EditorApplication.timeSinceStartup * 1E6),
                 ts = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond
             };

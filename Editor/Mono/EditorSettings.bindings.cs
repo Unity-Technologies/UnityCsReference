@@ -110,6 +110,9 @@ namespace UnityEditor
             set;
         }
 
+        [FreeFunction("GetEditorSettings")]
+        internal static extern EditorSettings GetEditorSettings();
+
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern SerializationMode serializationMode { get; set; }
 
@@ -215,8 +218,17 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool useLegacyProbeSampleCount { get; set; }
 
+        [Obsolete("EditorSettings.disableCookiesInLightmapper is obsolete, please use EditorSettings.enableCookiesInLightmapper instead.", false)]
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool disableCookiesInLightmapper { get; set; }
+
+        public static bool enableCookiesInLightmapper
+        {
+#pragma warning disable 618
+            get { return !disableCookiesInLightmapper; }
+            set { disableCookiesInLightmapper = !value; }
+#pragma warning restore 618
+        }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool enterPlayModeOptionsEnabled { get; set; }

@@ -844,7 +844,6 @@ namespace UnityEditor.Experimental.SceneManagement
             // because the RenderSettings of the customScene is used to override lighting settings for this SceneView.
             PrefabStage prefabStage = GetContextStage() as PrefabStage;
             sceneView.customScene = prefabStage == null ? default(Scene) : prefabStage.scene;
-
             sceneView.customParentForNewGameObjects = prefabContentsRoot.transform;
             switch (mode)
             {
@@ -1575,6 +1574,8 @@ namespace UnityEditor.Experimental.SceneManagement
         // This method is not called from the SceneView if the SceneView does not support stage handling
         internal override void OnPreSceneViewRender(SceneView sceneView)
         {
+            StaticOcclusionCullingVisualization.showOcclusionCulling = false;
+
             if (mode != Mode.InContext)
                 return;
 
@@ -1587,6 +1588,8 @@ namespace UnityEditor.Experimental.SceneManagement
         // This method is not called from the SceneView if the SceneView does not support stage handling
         internal override void OnPostSceneViewRender(SceneView sceneView)
         {
+            StaticOcclusionCullingVisualization.showOcclusionCulling = OcclusionCullingWindow.isVisible;
+
             if (mode != Mode.InContext)
                 return;
 

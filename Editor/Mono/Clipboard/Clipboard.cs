@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Globalization;
+using System.Collections.Generic;
 using UnityEngine;
 
 // ReSharper disable PossibleInvalidOperationException -- we are accessing bool?
@@ -32,27 +32,6 @@ namespace UnityEditor
                 return m_State.m_RawContents;
             }
             set => EditorGUIUtility.systemCopyBuffer = value;
-        }
-
-        public static bool hasEnum
-        {
-            get
-            {
-                FetchState();
-                m_State.FetchEnum();
-                return m_State.m_HasEnum.Value;
-            }
-        }
-
-        public static int enumValue
-        {
-            get
-            {
-                FetchState();
-                m_State.FetchEnum();
-                return m_State.m_ValueEnum;
-            }
-            set => EditorGUIUtility.systemCopyBuffer = $"Enum({value})";
         }
 
         public static bool hasLayerMask
@@ -137,7 +116,7 @@ namespace UnityEditor
                 m_State.FetchVector3();
                 return m_State.m_ValueVector3;
             }
-            set => EditorGUIUtility.systemCopyBuffer = string.Format(CultureInfo.InvariantCulture, "Vector3({0:g9},{1:g9},{2:g9})", value.x, value.y, value.z);
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteVector3(value);
         }
 
         public static bool hasVector2
@@ -158,7 +137,7 @@ namespace UnityEditor
                 m_State.FetchVector2();
                 return m_State.m_ValueVector2;
             }
-            set => EditorGUIUtility.systemCopyBuffer = string.Format(CultureInfo.InvariantCulture, "Vector2({0:g9},{1:g9})", value.x, value.y);
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteVector2(value);
         }
 
         public static bool hasVector4
@@ -179,7 +158,7 @@ namespace UnityEditor
                 m_State.FetchVector4();
                 return m_State.m_ValueVector4;
             }
-            set => EditorGUIUtility.systemCopyBuffer = string.Format(CultureInfo.InvariantCulture, "Vector4({0:g9},{1:g9},{2:g9},{3:g9})", value.x, value.y, value.z, value.w);
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteVector4(value);
         }
 
         public static bool hasQuaternion
@@ -200,7 +179,7 @@ namespace UnityEditor
                 m_State.FetchQuaternion();
                 return m_State.m_ValueQuaternion;
             }
-            set => EditorGUIUtility.systemCopyBuffer = string.Format(CultureInfo.InvariantCulture, "Quaternion({0:g9},{1:g9},{2:g9},{3:g9})", value.x, value.y, value.z, value.w);
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteQuaternion(value);
         }
 
         public static bool hasRect
@@ -221,7 +200,7 @@ namespace UnityEditor
                 m_State.FetchRect();
                 return m_State.m_ValueRect;
             }
-            set => EditorGUIUtility.systemCopyBuffer = string.Format(CultureInfo.InvariantCulture, "Rect({0:g9},{1:g9},{2:g9},{3:g9})", value.x, value.y, value.width, value.height);
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteRect(value);
         }
 
         public static bool hasBounds
@@ -242,10 +221,7 @@ namespace UnityEditor
                 m_State.FetchBounds();
                 return m_State.m_ValueBounds;
             }
-            set => EditorGUIUtility.systemCopyBuffer =
-                string.Format(CultureInfo.InvariantCulture,
-                    "Bounds({0:g9},{1:g9},{2:g9},{3:g9},{4:g9},{5:g9})",
-                    value.center.x, value.center.y, value.center.z, value.extents.x, value.extents.y, value.extents.z);
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteBounds(value);
         }
 
         public static bool hasColor
@@ -348,6 +324,46 @@ namespace UnityEditor
         public static void SetCustomValue<T>(T val) where T : new()
         {
             EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteCustom<T>(val);
+        }
+
+        const string kGenericPrefix = "GenericPropertyJSON:";
+
+        public static bool HasSerializedProperty()
+        {
+            return stringValue?.StartsWith(kGenericPrefix) ?? false;
+        }
+
+        public static void SetSerializedProperty(SerializedProperty src)
+        {
+            var encoded = ClipboardParser.WriteGenericSerializedProperty(src);
+            var json = Json.Serialize(encoded);
+            stringValue = kGenericPrefix + json;
+        }
+
+        public static void GetSerializedProperty(SerializedProperty dst)
+        {
+            var clip = stringValue;
+            if (!clip.StartsWith(kGenericPrefix))
+                return;
+            if (!(Json.Deserialize(clip.Substring(kGenericPrefix.Length)) is Dictionary<string, object> jsonObjects))
+                return;
+            ClipboardParser.ParseGenericSerializedProperty(dst, jsonObjects);
+        }
+
+        public static bool HasEnumProperty(SerializedProperty prop)
+        {
+            var idx = ClipboardParser.ParseEnumPropertyIndex(stringValue, prop);
+            return idx >= 0;
+        }
+
+        public static void GetEnumProperty(SerializedProperty prop)
+        {
+            ClipboardParser.ParseEnumProperty(stringValue, prop);
+        }
+
+        public static void SetEnumProperty(SerializedProperty prop)
+        {
+            EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteEnumProperty(prop);
         }
 
         static void FetchState()

@@ -93,6 +93,11 @@ namespace UnityEditor.Experimental.GraphView
                 draggedPort = null;
             }
 
+            if (edgeCandidate != null)
+            {
+                edgeCandidate.SetEnabled(true);
+            }
+
             m_GhostEdge = null;
             edgeCandidate = null;
 

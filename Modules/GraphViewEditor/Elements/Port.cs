@@ -29,6 +29,8 @@ namespace UnityEditor.Experimental.GraphView
 
         public override bool showInMiniMap => false;
 
+        public bool allowMultiDrag { get; set; } = true;
+
         internal Color capColor
         {
             get

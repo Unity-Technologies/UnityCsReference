@@ -137,6 +137,12 @@ namespace UnityEditor
             public static readonly GUIContent editorLanguage = EditorGUIUtility.TrTextContent("Editor language");
         }
 
+        internal class DeveloperModeProperties
+        {
+            public static readonly GUIContent developerMode = EditorGUIUtility.TrTextContent("Developer Mode", "Enable or disable developer mode features.");
+            public static readonly GUIContent showRepaintDots = EditorGUIUtility.TrTextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.");
+        }
+
         private List<IPreferenceWindowExtension> prefWinExtensions;
         private bool m_AutoRefresh;
         private bool m_DirectoryMonitoring;
@@ -148,6 +154,7 @@ namespace UnityEditor
         private bool m_VerifySavingAssets;
         private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
+        private bool m_ShowRepaintDots;
         private bool m_DeveloperModeDirty;
         private bool m_ScriptDebugInfoEnabled;
         private string m_GpuDevice;
@@ -360,6 +367,17 @@ namespace UnityEditor
             return null;
         }
 
+        [SettingsProvider]
+        internal static SettingsProvider CreateDeveloperModeProvider()
+        {
+            // Only show this section if this is a source build or we're already in developer mode.
+            if (!(Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()))
+                return null;
+            var settings = new PreferencesProvider("Preferences/Developer Mode", GetSearchKeywordsFromGUIContentProperties<DeveloperModeProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowDeveloperMode); };
+            return settings;
+        }
+
         // Group Preference sections with the same name
         private static void OnGUI(string searchContext, Action<string> drawAction)
         {
@@ -517,16 +535,6 @@ namespace UnityEditor
 
             CodeOptimization codeOptimization = (CodeOptimization)EditorGUILayout.EnumPopup(ExternalProperties.codeOptimizationOnStartup, m_ScriptDebugInfoEnabled ? CodeOptimization.Debug : CodeOptimization.Release);
             m_ScriptDebugInfoEnabled = (codeOptimization == CodeOptimization.Debug ? true : false);
-
-            // Only show this toggle if this is a source build or we're already in developer mode.
-            // We don't want to show this to users yet.
-            if (Unsupported.IsSourceBuild() || m_DeveloperMode)
-            {
-                EditorGUI.BeginChangeCheck();
-                m_DeveloperMode = EditorGUILayout.Toggle("Developer Mode", m_DeveloperMode);
-                if (EditorGUI.EndChangeCheck())
-                    m_DeveloperModeDirty = true;
-            }
 
             using (new EditorGUI.DisabledScope(!pro))
             {
@@ -975,6 +983,22 @@ namespace UnityEditor
             ApplyChangesToPrefs();
         }
 
+        private void ShowDeveloperMode(string searchContext)
+        {
+            EditorGUI.BeginChangeCheck();
+            m_DeveloperMode = EditorGUILayout.Toggle(DeveloperModeProperties.developerMode, m_DeveloperMode);
+
+            using (new EditorGUI.DisabledScope(!m_DeveloperMode))
+            {
+                m_ShowRepaintDots = EditorGUILayout.Toggle(DeveloperModeProperties.showRepaintDots, m_ShowRepaintDots);
+            }
+
+            // If any developer mode preference changes, make sure to repaint all views
+            m_DeveloperModeDirty = EditorGUI.EndChangeCheck();
+
+            ApplyChangesToPrefs();
+        }
+
         private void WriteRecentAppsList(string[] paths, string path, string prefsKey)
         {
             int appIndex = 0;
@@ -1037,10 +1061,11 @@ namespace UnityEditor
             if (m_DeveloperModeDirty)
             {
                 EditorPrefs.SetBool("DeveloperMode", m_DeveloperMode);
-
                 // Repaint all views to show/hide debug repaint indicator
                 InternalEditorUtility.RepaintAllViews();
             }
+
+            EditorGUI.s_ShowRepaintDots.value = m_ShowRepaintDots;
 
             EditorPrefs.SetBool("ScriptDebugInfoEnabled", m_ScriptDebugInfoEnabled);
 
@@ -1154,6 +1179,7 @@ namespace UnityEditor
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
             m_DeveloperMode = Unsupported.IsDeveloperMode();
+            m_ShowRepaintDots = EditorGUI.s_ShowRepaintDots.value;
 
             m_GICacheSettings.m_EnableCustomPath = EditorPrefs.GetBool("GICacheEnableCustomPath");
             m_GICacheSettings.m_CachePath = EditorPrefs.GetString("GICacheFolder");

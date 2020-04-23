@@ -69,7 +69,7 @@ namespace UnityEngine.XR
         [RequiredByNativeCode(GenerateProxy = true)]
         private static void InvokeTrackingOriginUpdatedEvent(IntPtr internalPtr)
         {
-            IntegratedSubsystem subsystem = Internal_SubsystemInstances.Internal_GetInstanceByPtr(internalPtr);
+            IntegratedSubsystem subsystem = SubsystemManager.GetIntegratedSubsystemByPtr(internalPtr);
             XRInputSubsystem inputSubsystem = subsystem as XRInputSubsystem;
             if ((inputSubsystem != null) && (inputSubsystem.trackingOriginUpdated != null))
                 inputSubsystem.trackingOriginUpdated(inputSubsystem);
@@ -78,7 +78,7 @@ namespace UnityEngine.XR
         [RequiredByNativeCode(GenerateProxy = true)]
         private static void InvokeBoundaryChangedEvent(IntPtr internalPtr)
         {
-            IntegratedSubsystem subsystem = Internal_SubsystemInstances.Internal_GetInstanceByPtr(internalPtr);
+            IntegratedSubsystem subsystem = SubsystemManager.GetIntegratedSubsystemByPtr(internalPtr);
             XRInputSubsystem inputSubsystem = subsystem as XRInputSubsystem;
             if ((inputSubsystem != null) && (inputSubsystem.boundaryChanged != null))
                 inputSubsystem.boundaryChanged(inputSubsystem);

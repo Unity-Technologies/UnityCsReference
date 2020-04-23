@@ -144,17 +144,21 @@ namespace UnityEngine
 
             public bool MoveNext()
             {
-                if (_current.z >= _max.z)
+                if (_current.z >= _max.z || _current.y >= _max.y)
                     return false;
 
                 _current.x++;
                 if (_current.x >= _max.x)
                 {
                     _current.x = _min.x;
+                    if (_current.x >= _max.x)
+                        return false;
+
                     _current.y++;
                     if (_current.y >= _max.y)
                     {
                         _current.y = _min.y;
+
                         _current.z++;
                         if (_current.z >= _max.z)
                             return false;

@@ -95,6 +95,7 @@ namespace UnityEditor
         const float s_FloatWidth = 40;
         const float s_MinViewDistance = 0f;
         const float s_MaxViewDistance = 5.0f;
+        static readonly Vector2 s_InitialRotation = new Vector2(15, 30);
 
         PreviewRenderUtility m_PreviewUtility;
         Preview3DMode m_Preview3DMode;
@@ -396,7 +397,7 @@ namespace UnityEditor
         {
             Texture3D texture = target as Texture3D;
 
-            Quaternion rotation = Quaternion.Euler(-m_PreviewDir.y, 0, 0) * Quaternion.Euler(0, -m_PreviewDir.x, 0) * Quaternion.Euler(15, 30, 0);
+            Quaternion rotation = Quaternion.Euler(-m_PreviewDir.y + s_InitialRotation.x, -m_PreviewDir.x + s_InitialRotation.y, 0);
 
             m_PreviewUtility.camera.transform.position = rotation * Vector3.back * m_ViewDistance;
             m_PreviewUtility.camera.transform.rotation = rotation;

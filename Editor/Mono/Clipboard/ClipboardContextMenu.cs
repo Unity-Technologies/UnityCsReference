@@ -21,25 +21,25 @@ namespace UnityEditor
                 case SerializedPropertyType.Vector2:
                     SetupAction(property, menu, evt,
                         p => Clipboard.vector2Value = p.vector2Value,
-                        () => Clipboard.hasVector2,
+                        p => Clipboard.hasVector2,
                         p => p.vector2Value = Clipboard.vector2Value);
                     break;
                 case SerializedPropertyType.Vector3:
                     SetupAction(property, menu, evt,
                         p => Clipboard.vector3Value = p.vector3Value,
-                        () => Clipboard.hasVector3,
+                        p => Clipboard.hasVector3,
                         p => p.vector3Value = Clipboard.vector3Value);
                     break;
                 case SerializedPropertyType.Vector4:
                     SetupAction(property, menu, evt,
                         p => Clipboard.vector4Value = p.vector4Value,
-                        () => Clipboard.hasVector4,
+                        p => Clipboard.hasVector4,
                         p => p.vector4Value = Clipboard.vector4Value);
                     break;
                 case SerializedPropertyType.Boolean:
                     SetupAction(property, menu, evt,
                         p => Clipboard.boolValue = p.boolValue,
-                        () => Clipboard.hasBool,
+                        p => Clipboard.hasBool,
                         p => p.boolValue = Clipboard.boolValue);
                     break;
                 case SerializedPropertyType.Quaternion: SetupQuaternion(property, menu, evt); break;
@@ -47,13 +47,13 @@ namespace UnityEditor
                 case SerializedPropertyType.Color:
                     SetupAction(property, menu, evt,
                         p => Clipboard.colorValue = p.colorValue,
-                        () => Clipboard.hasColor,
+                        p => Clipboard.hasColor,
                         p => p.colorValue = Clipboard.colorValue);
                     break;
                 case SerializedPropertyType.Gradient:
                     SetupAction(property, menu, evt,
                         p => Clipboard.gradientValue = p.gradientValue,
-                        () => Clipboard.hasGradient,
+                        p => Clipboard.hasGradient,
                         delegate(SerializedProperty p) {
                             p.gradientValue = Clipboard.gradientValue;
                             UnityEditorInternal.GradientPreviewCache.ClearCache();
@@ -62,13 +62,13 @@ namespace UnityEditor
                 case SerializedPropertyType.AnimationCurve:
                     SetupAction(property, menu, evt,
                         p => Clipboard.animationCurveValue = p.animationCurveValue,
-                        () => Clipboard.hasAnimationCurve,
+                        p => Clipboard.hasAnimationCurve,
                         p => p.animationCurveValue = Clipboard.animationCurveValue);
                     break;
                 case SerializedPropertyType.Vector2Int:
                     SetupAction(property, menu, evt,
                         p => Clipboard.vector2Value = p.vector2IntValue,
-                        () => Clipboard.hasVector2,
+                        p => Clipboard.hasVector2,
                         delegate(SerializedProperty p)
                         {
                             var vi = Clipboard.vector2Value;
@@ -78,7 +78,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Vector3Int:
                     SetupAction(property, menu, evt,
                         p => Clipboard.vector3Value = p.vector3IntValue,
-                        () => Clipboard.hasVector3,
+                        p => Clipboard.hasVector3,
                         delegate(SerializedProperty p)
                         {
                             var vi = Clipboard.vector3Value;
@@ -88,7 +88,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Rect:
                     SetupAction(property, menu, evt,
                         p => Clipboard.rectValue = p.rectValue,
-                        () => Clipboard.hasRect,
+                        p => Clipboard.hasRect,
                         p => p.rectValue = Clipboard.rectValue);
                     break;
                 case SerializedPropertyType.RectInt:
@@ -98,7 +98,7 @@ namespace UnityEditor
                             var ri = p.rectIntValue;
                             Clipboard.rectValue = new Rect(ri.x, ri.y, ri.width, ri.height);
                         },
-                        () => Clipboard.hasRect,
+                        p => Clipboard.hasRect,
                         delegate(SerializedProperty p)
                         {
                             var r = Clipboard.rectValue;
@@ -108,20 +108,26 @@ namespace UnityEditor
                 case SerializedPropertyType.Bounds:
                     SetupAction(property, menu, evt,
                         p => Clipboard.boundsValue = p.boundsValue,
-                        () => Clipboard.hasBounds,
+                        p => Clipboard.hasBounds,
                         p => p.boundsValue = Clipboard.boundsValue);
                     break;
                 case SerializedPropertyType.LayerMask:
                     SetupAction(property, menu, evt,
                         p => Clipboard.layerMaskValue = p.intValue,
-                        () => Clipboard.hasLayerMask,
+                        p => Clipboard.hasLayerMask,
                         p => p.intValue = Clipboard.layerMaskValue);
                     break;
                 case SerializedPropertyType.Enum:
                     SetupAction(property, menu, evt,
-                        p => Clipboard.enumValue = p.intValue,
-                        () => Clipboard.hasEnum,
-                        p => p.intValue = Clipboard.enumValue);
+                        Clipboard.SetEnumProperty,
+                        Clipboard.HasEnumProperty,
+                        Clipboard.GetEnumProperty);
+                    break;
+                case SerializedPropertyType.Generic:
+                    SetupAction(property, menu, evt,
+                        Clipboard.SetSerializedProperty,
+                        p => Clipboard.HasSerializedProperty(),
+                        Clipboard.GetSerializedProperty);
                     break;
             }
         }
@@ -141,11 +147,11 @@ namespace UnityEditor
 
         static void SetupAction(SerializedProperty property, GenericMenu menu, Event evt,
             Action<SerializedProperty> copyFunc,
-            Func<bool> canPasteFunc,
+            Func<SerializedProperty, bool> canPasteFunc,
             Action<SerializedProperty> pasteFunc)
         {
             var canCopy = !property.hasMultipleDifferentValues;
-            var canPaste = GUI.enabled && canPasteFunc();
+            var canPaste = GUI.enabled && canPasteFunc(property);
 
             if (menu != null)
             {

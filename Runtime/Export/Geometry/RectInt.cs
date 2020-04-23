@@ -150,6 +150,9 @@ namespace UnityEngine
                 if (_current.x >= _max.x)
                 {
                     _current.x = _min.x;
+                    if (_current.x >= _max.x)
+                        return false;
+
                     _current.y++;
                     if (_current.y >= _max.y)
                     {

@@ -123,7 +123,7 @@ namespace UnityEditor.Compilation
 
             compilationTask.OnCompilationFinished += (assembly, messages) =>
             {
-                editorCompilation.InvokeAssemblyCompilationFinished(assemblyPath, messages);
+                editorCompilation.InvokeAssemblyCompilationFinished(assembly, messages, EditorScriptCompilationOptions.BuildingEmpty);
                 OnCompilationFinished(assembly, messages);
             };
 

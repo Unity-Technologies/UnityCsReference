@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -14,6 +15,8 @@ namespace UnityEditor.Experimental.GraphView
         private Vector2 m_PressPos;
         private Port m_ConnectedPort;
         private EdgeDragHelper m_ConnectedEdgeDragHelper;
+        private List<Edge> m_AdditionalEdges;
+        private List<EdgeDragHelper> m_AdditionalEdgeDragHelpers;
         private Port m_DetachedPort;
         private bool m_DetachedFromInputPort;
         private static int s_StartDragDistance = 10;
@@ -48,6 +51,7 @@ namespace UnityEditor.Experimental.GraphView
             m_Edge = null;
             m_ConnectedPort = null;
             m_ConnectedEdgeDragHelper = null;
+            m_AdditionalEdgeDragHelpers = null;
             m_DetachedPort = null;
             m_DetachedFromInputPort = false;
         }
@@ -122,9 +126,41 @@ namespace UnityEditor.Experimental.GraphView
                 }
 
                 // Use the edge drag helper of the still connected port
+
                 m_ConnectedEdgeDragHelper = m_ConnectedPort.edgeConnector.edgeDragHelper;
                 m_ConnectedEdgeDragHelper.draggedPort = m_ConnectedPort;
                 m_ConnectedEdgeDragHelper.edgeCandidate = m_Edge;
+
+                m_AdditionalEdgeDragHelpers = new List<EdgeDragHelper>();
+                m_AdditionalEdges = new List<Edge>();
+
+                GraphView gv = m_DetachedPort.GetFirstAncestorOfType<GraphView>();
+
+                if (m_DetachedPort.allowMultiDrag)
+                {
+                    foreach (var edge in m_DetachedPort.connections)
+                    {
+                        if (edge != m_Edge && edge.IsSelected(gv))
+                        {
+                            var otherPort = m_DetachedPort == edge.input ? edge.output : edge.input;
+
+                            var edgeDragHelper = otherPort.edgeConnector.edgeDragHelper;
+                            edgeDragHelper.draggedPort = otherPort;
+                            edgeDragHelper.edgeCandidate = edge;
+                            if (m_DetachedPort == edge.input)
+                                edge.input = null;
+                            else
+                                edge.output = null;
+
+                            m_AdditionalEdgeDragHelpers.Add(edgeDragHelper);
+                            m_AdditionalEdges.Add(edge);
+                        }
+                    }
+
+                    foreach (var edge in m_AdditionalEdges)
+                        m_DetachedPort.Disconnect(edge);
+                }
+
                 m_Edge.candidatePosition = evt.mousePosition;
 
                 // Redirect the last mouse down event to active the drag helper
@@ -132,16 +168,28 @@ namespace UnityEditor.Experimental.GraphView
                 if (m_ConnectedEdgeDragHelper.HandleMouseDown(m_LastMouseDownEvent))
                 {
                     m_Active = true;
+                    foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                    {
+                        edgeDrag.HandleMouseDown(m_LastMouseDownEvent);
+                    }
                 }
                 else
                 {
                     Reset();
                 }
+
                 m_LastMouseDownEvent = null;
             }
 
             if (m_Active)
+            {
                 m_ConnectedEdgeDragHelper.HandleMouseMove(evt);
+
+                foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                {
+                    edgeDrag.HandleMouseMove(evt);
+                }
+            }
         }
 
         protected void OnMouseUp(MouseUpEvent evt)
@@ -156,6 +204,11 @@ namespace UnityEditor.Experimental.GraphView
                     RestoreDetachedPort();
 
                     m_ConnectedEdgeDragHelper.HandleMouseUp(evt);
+
+                    foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                    {
+                        edgeDrag.HandleMouseUp(evt);
+                    }
                 }
                 Reset();
                 evt.StopPropagation();
@@ -171,6 +224,12 @@ namespace UnityEditor.Experimental.GraphView
                     RestoreDetachedPort();
 
                     m_ConnectedEdgeDragHelper.Reset();
+
+                    foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                    {
+                        edgeDrag.Reset();
+                    }
+
                     Reset();
                     target.ReleaseMouse();
                     evt.StopPropagation();
@@ -185,12 +244,26 @@ namespace UnityEditor.Experimental.GraphView
                 m_Edge.input = m_DetachedPort;
 
                 m_DetachedPort.Connect(m_Edge);
+
+                foreach (var edge in m_AdditionalEdges)
+                {
+                    edge.input = m_DetachedPort;
+
+                    m_DetachedPort.Connect(edge);
+                }
             }
             else
             {
                 m_Edge.output = m_DetachedPort;
 
                 m_DetachedPort.Connect(m_Edge);
+
+                foreach (var edge in m_AdditionalEdges)
+                {
+                    edge.output = m_DetachedPort;
+
+                    m_DetachedPort.Connect(edge);
+                }
             }
         }
     }

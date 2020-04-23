@@ -734,8 +734,13 @@ namespace UnityEditor
             return Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, ignoreRaySnapObjects, out vertex);
         }
 
+#pragma warning disable 618
+        [Obsolete("Use PickGameObjectCallback")]
         internal delegate GameObject PickClosestGameObjectFunc(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
+
+        [Obsolete("Use pickGameObjectCustomPasses")]
         internal static PickClosestGameObjectFunc pickClosestGameObjectDelegate;
+#pragma warning restore 618
 
         public static GameObject PickGameObject(Vector2 position, out int materialIndex)
         {
@@ -746,6 +751,9 @@ namespace UnityEditor
         {
             return PickGameObjectDelegated(position, ignore, null, out materialIndex);
         }
+
+        public delegate GameObject PickGameObjectCallback(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
+        public static event PickGameObjectCallback pickGameObjectCustomPasses;
 
         internal static GameObject PickGameObjectDelegated(Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex)
         {
@@ -763,11 +771,28 @@ namespace UnityEditor
                 throw new ArgumentException("filter may not contain null elements");
 
             GameObject picked = null;
+
+            // deprecated version
+            #pragma warning disable 618
             if (pickClosestGameObjectDelegate != null)
                 picked = pickClosestGameObjectDelegate(cam, layers, position, ignore, filter, out materialIndex);
+            #pragma warning restore 618
 
             if (picked == null)
                 picked = Internal_PickClosestGO(cam, layers, position, ignore, filter, out materialIndex);
+
+            if (picked == null && pickGameObjectCustomPasses != null)
+            {
+                foreach (var method in pickGameObjectCustomPasses.GetInvocationList())
+                {
+                    picked = ((PickGameObjectCallback)method)(cam, layers, position, ignore, filter, out materialIndex);
+                    // don't trust this method to respect the ignore or filter argument, because in the event that it
+                    // does not it will break pick cycling in SceneViewPicking.GetAllOverlapping.
+                    if (picked != null && (ignore == null || !ignore.Contains(picked)) && (filter == null || filter.Contains(picked)))
+                        break;
+                    picked = null;
+                }
+            }
 
             return picked;
         }
@@ -788,9 +813,9 @@ namespace UnityEditor
             GameObject picked = PickGameObjectDelegated(position, ignore, filter, out dummyMaterialIndex);
             if (picked && selectPrefabRoot)
             {
-                GameObject pickedRoot = FindSelectionBase(picked) ?? picked;
+                GameObject pickedRoot = FindSelectionBaseForPicking(picked) ?? picked;
                 Transform atc = Selection.activeTransform;
-                GameObject selectionRoot = atc ? (FindSelectionBase(atc.gameObject) ?? atc.gameObject) : null;
+                GameObject selectionRoot = atc ? (FindSelectionBaseForPicking(atc.gameObject) ?? atc.gameObject) : null;
                 if (pickedRoot == selectionRoot)
                     return picked;
                 return pickedRoot;
@@ -798,35 +823,46 @@ namespace UnityEditor
             return picked;
         }
 
-        internal static GameObject FindSelectionBase(GameObject go)
+        // Get the selection base object, taking into account user enabled picking filter
+        internal static GameObject FindSelectionBaseForPicking(GameObject go)
         {
             if (go == null)
                 return null;
 
             // Find prefab based base
             Transform prefabBase = null;
-            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(go))
-            {
-                prefabBase = PrefabUtility.GetOutermostPrefabInstanceRoot(go).transform;
-            }
 
-            // Find attribute based base
+            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(go))
+                prefabBase = PrefabUtility.GetOutermostPrefabInstanceRoot(go).transform;
+
+            // Walk up the hierarchy to find the outermost prefab instance root that is not marked as non-pickable, or
+            // alternatively a GameObject with the SelectionBaseAttribute assigned.
             Transform tr = go.transform;
+            GameObject outerMostSelectableRoot = null;
+
             while (tr != null)
             {
-                // If we come across the prefab base, no need to search further down.
-                if (tr == prefabBase)
-                    return tr.gameObject;
+                if (!SceneVisibilityState.IsGameObjectPickingDisabled(tr.gameObject))
+                {
+                    // If we come across the prefab base, no need to search further
+                    if (tr == prefabBase)
+                        return tr.gameObject;
 
-                // If this one has the attribute, return this one.
-                if (AttributeHelper.GameObjectContainsAttribute<SelectionBaseAttribute>(tr.gameObject))
-                    return tr.gameObject;
+                    // If prefabBase is not pickable, we want to select the nearest pickable root to the base
+                    GameObject nestedRoot = PrefabUtility.GetNearestPrefabInstanceRoot(tr);
+
+                    if (nestedRoot != null && tr == nestedRoot.transform)
+                        outerMostSelectableRoot = tr.gameObject;
+
+                    // If a SelectionBaseAttribute is found, select the nearest to the picked GameObject
+                    if (AttributeHelper.GameObjectContainsAttribute<SelectionBaseAttribute>(tr.gameObject))
+                        return tr.gameObject;
+                }
 
                 tr = tr.parent;
             }
 
-            // There is neither a prefab or attribute based selection root, so return null
-            return null;
+            return outerMostSelectableRoot;
         }
 
         // The materials used to draw handles - Don't use unless you're Nicholas.

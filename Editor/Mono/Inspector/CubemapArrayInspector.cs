@@ -51,6 +51,11 @@ namespace UnityEngine
             EditorGUI.EndDisabledGroup();
             m_Material.SetInt("_SliceIndex", m_Slice);
 
+            EditorGUI.BeginDisabledGroup(!TextureUtil.NeedsExposureControl(t));
+            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, EditorStyles.toolbarSlider);
+            EditorGUI.EndDisabledGroup();
+            m_Material.SetFloat("_Exposure", GetExposureValueForTexture(t));
+
             EditorGUI.BeginDisabledGroup(m_MipCount == 0);
             GUILayout.Box(EditorGUIUtility.IconContent("PreTextureMipMapLow"), Styles.toolbarLabel);
             m_Mip = Mathf.RoundToInt(GUILayout.HorizontalSlider(m_Mip, m_MipCount - 1, 0, GUILayout.Width(64)));
@@ -105,8 +110,10 @@ namespace UnityEngine
             m_Slice = 0;
             m_Mip = Mathf.RoundToInt(GetMipLevelForRendering());
             m_MipCount = TextureUtil.GetMipmapCount(t);
+
             m_Material.SetInt("_SliceIndex", m_Slice);
             m_Material.SetFloat("_Mip", m_Mip);
+            m_Material.SetFloat("_Exposure", GetExposureValueForTexture(t));
         }
 
         public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)

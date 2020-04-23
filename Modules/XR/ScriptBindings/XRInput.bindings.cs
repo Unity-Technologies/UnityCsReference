@@ -386,7 +386,7 @@ namespace UnityEngine.XR
                 {
                     /// The DeviceId is cut in two, with the hiword being the subsystem identifier, and the loword being for the specific device.
                     UInt32 pluginIndex = (UInt32)(m_DeviceId >> 32);
-                    SubsystemManager.GetInstances<XRInputSubsystem>(s_InputSubsystemCache);
+                    SubsystemManager.GetSubsystems(s_InputSubsystemCache);
                     for (int i = 0; i < s_InputSubsystemCache.Count; i++)
                     {
                         if (pluginIndex == s_InputSubsystemCache[i].GetIndex())

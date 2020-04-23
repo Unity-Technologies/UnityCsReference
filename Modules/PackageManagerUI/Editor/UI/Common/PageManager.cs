@@ -80,6 +80,8 @@ namespace UnityEditor.PackageManager.UI
         private AssetStoreClient m_AssetStoreClient;
         [NonSerialized]
         private PackageDatabase m_PackageDatabase;
+        [NonSerialized]
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         public void ResolveDependencies(ApplicationProxy application,
             SelectionProxy selection,
             UnityConnectProxy unityConnect,
@@ -87,7 +89,8 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerPrefs packageManagerPrefs,
             UpmClient upmClient,
             AssetStoreClient assetStoreClient,
-            PackageDatabase packageDatabase)
+            PackageDatabase packageDatabase,
+            PackageManagerProjectSettingsProxy settingsProxy)
         {
             m_Application = application;
             m_Selection = selection;
@@ -97,6 +100,7 @@ namespace UnityEditor.PackageManager.UI
             m_UpmClient = upmClient;
             m_AssetStoreClient = assetStoreClient;
             m_PackageDatabase = packageDatabase;
+            m_SettingsProxy = settingsProxy;
 
             foreach (var page in m_SerializedSimplePages)
                 page.ResolveDependencies(packageDatabase, packageFiltering);
@@ -304,7 +308,7 @@ namespace UnityEditor.PackageManager.UI
         private void SelectInInspector(IPackage package, IPackageVersion version, bool forceSelectInInspector)
         {
             // There are two situations when we want to select a package in the inspector
-            // 1) we explicitly/force to select it as a result of an manual action (in this case, forceSelectInInspector should be set to true)
+            // 1) we explicitly/force to select it as a result of a manual action (in this case, forceSelectInInspector should be set to true)
             // 2) currently another package is selected in inspector, hence we are sure that we are not stealing selection from some other window
             var currentPackageSelection = m_Selection.activeObject as PackageSelectionObject;
             if (forceSelectInInspector || currentPackageSelection != null)
@@ -343,6 +347,13 @@ namespace UnityEditor.PackageManager.UI
             if (version?.isInstalled == true || package?.versions?.installed != null)
                 return PackageFilterTab.InProject;
 
+            if (!m_SettingsProxy.enablePreviewPackages && (version?.version?.Major == 0 || (version?.version?.Prerelease.StartsWith("preview") ?? false) ||
+                                                           package?.versions.primary.version?.Major == 0 || (package?.versions.primary.version?.Prerelease.StartsWith("preview") ?? false)))
+            {
+                Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
+                return page.tab;
+            }
+
             return PackageFilterTab.All;
         }
 
@@ -371,7 +382,7 @@ namespace UnityEditor.PackageManager.UI
             UpdateSearchTextOnPage(page, m_PackageFiltering.currentSearchText);
 
             // When the filter tab is changed, on a page level, the selection hasn't changed because selection is kept for each filter
-            // However, if you look at package manager as a whole
+            // However, the active selection is still changed if you look at package manager as a whole
             OnPageSelectionChanged(page.GetSelectedVersion());
         }
 

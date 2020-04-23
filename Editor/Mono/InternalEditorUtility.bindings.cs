@@ -40,7 +40,6 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Mono/MonoEditorUtility.h")]
     [NativeHeader("Editor/Platform/Interface/ColorPicker.h")]
     [NativeHeader("Editor/Platform/Interface/EditorUtility.h")]
-    [NativeHeader("Editor/Platform/Interface/EditorWindows.h")]
     [NativeHeader("Editor/Src/Application/Application.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseDeprecated.h")]

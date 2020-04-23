@@ -222,7 +222,7 @@ namespace UnityEditor.Scripting.Compilers
                     return;
                 }
 
-                if (packageInfo.source == PackageSource.Registry || packageInfo.source == PackageSource.Git)
+                if (packageInfo.source != PackageSource.Local && packageInfo.source != PackageSource.Embedded)
                 {
                     // Packman creates a (readonly) cache under Library/PackageCache in a way that even if multiple projects uses the same package each one should have its own
                     // private cache so it is safe for the updater to simply remove the readonly attribute and update the file.
@@ -240,6 +240,8 @@ namespace UnityEditor.Scripting.Compilers
 
                 File.SetAttributes(relativeFilePath, fileAttributes & ~FileAttributes.ReadOnly);
             }
+
+            PackageManager.ImmutableAssets.SetAssetsAllowedToBeModified(filesFromReadOnlyPackages.ToArray());
         }
 
         internal static bool CheckReadOnlyFiles(string[] destRelativeFilePaths)

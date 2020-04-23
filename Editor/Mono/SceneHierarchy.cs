@@ -1762,7 +1762,7 @@ namespace UnityEditor
         private void InvertSelection()
         {
             int[] instanceIDs = treeView.GetRowIDs().Except(treeView.GetSelection()).ToArray();
-            treeView.SetSelection(instanceIDs, false);
+            treeView.SetSelection(instanceIDs, true);
             TreeViewSelectionChanged(instanceIDs);
         }
 
@@ -1856,7 +1856,7 @@ namespace UnityEditor
             }
 
             var newSelection = instanceIDs.Distinct().ToArray();
-            treeView.SetSelection(newSelection, false);
+            treeView.SetSelection(newSelection, true);
             TreeViewSelectionChanged(newSelection);
         }
 

@@ -55,6 +55,9 @@ namespace UnityEngine._Scripting.APIUpdating // Funky name because bindings gen 
 
             var attr = (ObsoleteAttribute)attrs[0];
             string x = attr.Message;
+            if (string.IsNullOrEmpty(x))
+                return false;
+
             string marker = "(UnityUpgradable) -> ";
             int index = x.IndexOf(marker);
             if (index >= 0)

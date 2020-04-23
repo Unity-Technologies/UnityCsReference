@@ -133,9 +133,6 @@ namespace UnityEditor.PackageManager.UI
 
             m_InstalledPackageInfos.Remove(packageName);
             onPackageInfosUpdated?.Invoke(new PackageInfo[] { oldInfo });
-
-            if (IsPreviewInstalled(oldInfo))
-                OnInstalledPreviewPackagesChanged();
         }
 
         public virtual bool IsPackageInstalled(string packageName) => m_InstalledPackageInfos.ContainsKey(packageName);
@@ -148,9 +145,6 @@ namespace UnityEditor.PackageManager.UI
             m_InstalledPackageInfos[info.name] = info;
             if (oldInfo == null || IsDifferent(oldInfo, info))
                 onPackageInfosUpdated?.Invoke(new PackageInfo[] { info });
-
-            if (IsPreviewInstalled(oldInfo) || IsPreviewInstalled(info))
-                OnInstalledPreviewPackagesChanged();
         }
 
         public virtual void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos)
@@ -163,13 +157,11 @@ namespace UnityEditor.PackageManager.UI
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
 
             if (updatedInfos.Any())
-            {
                 onPackageInfosUpdated?.Invoke(updatedInfos);
-                OnInstalledPreviewPackagesChanged();
-            }
         }
 
         public virtual PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
+
         public virtual void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
@@ -203,16 +195,6 @@ namespace UnityEditor.PackageManager.UI
 
             return packageInfo.isDirectDependency && packageInfo.source == PackageSource.Registry
                 && SemVersionParser.TryParse(packageInfo.version, out packageInfoVersion) && !((SemVersion)packageInfoVersion).IsRelease();
-        }
-
-        private void OnInstalledPreviewPackagesChanged()
-        {
-            if (!m_PackageManagerPrefs.hasShowPreviewPackagesKey)
-                m_PackageManagerPrefs.showPreviewPackagesFromInstalled = installedPackageInfos.Any(p => {
-                    SemVersion? version;
-                    bool isVersionParsed = SemVersionParser.TryParse(p.version, out version);
-                    return isVersionParsed && !((SemVersion)version).IsRelease();
-                });
         }
 
         public virtual void ClearCache()

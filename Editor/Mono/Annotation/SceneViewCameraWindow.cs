@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
 namespace UnityEditor
@@ -11,17 +12,17 @@ namespace UnityEditor
     {
         static class Styles
         {
-            static bool s_Initialized;
-            public static GUIStyle settingsArea;
+            public static readonly GUIContent copyPlacementLabel = EditorGUIUtility.TrTextContent("Copy Placement");
+            public static readonly GUIContent pastePlacementLabel = EditorGUIUtility.TrTextContent("Paste Placement");
+            public static readonly GUIContent copySettingsLabel = EditorGUIUtility.TrTextContent("Copy Settings");
+            public static readonly GUIContent pasteSettingsLabel = EditorGUIUtility.TrTextContent("Paste Settings");
+            public static readonly GUIContent resetSettingsLabel = EditorGUIUtility.TrTextContent("Reset Settings");
 
-            public static void Init()
+            public static readonly GUIStyle settingsArea;
+
+            static Styles()
             {
-                if (s_Initialized)
-                    return;
-
-                s_Initialized = true;
-
-                settingsArea = new GUIStyle()
+                settingsArea = new GUIStyle
                 {
                     border = new RectOffset(4, 4, 4, 4),
                 };
@@ -39,11 +40,6 @@ namespace UnityEditor
         GUIContent m_EasingEnabled;
         GUIContent m_SceneCameraLabel = EditorGUIUtility.TrTextContent("Scene Camera");
         GUIContent m_NavigationLabel = EditorGUIUtility.TrTextContent("Navigation");
-        GUIContent m_CopyPlacementLabel = EditorGUIUtility.TrTextContent("Copy Placement");
-        GUIContent m_PastePlacementLabel = EditorGUIUtility.TrTextContent("Paste Placement");
-        GUIContent m_CopySettingsLabel = EditorGUIUtility.TrTextContent("Copy Settings");
-        GUIContent m_PasteSettingsLabel = EditorGUIUtility.TrTextContent("Paste Settings");
-        GUIContent m_ResetSettingsLabel = EditorGUIUtility.TrTextContent("Reset Settings");
 
         const int kFieldCount = 12;
         const int kWindowWidth = 290;
@@ -102,8 +98,6 @@ namespace UnityEditor
 
         void Draw()
         {
-            Styles.Init();
-
             var settings = m_SceneView.cameraSettings;
 
             m_Scroll = GUILayout.BeginScrollView(m_Scroll);
@@ -117,7 +111,7 @@ namespace UnityEditor
             GUILayout.Label(m_SceneCameraLabel, EditorStyles.boldLabel);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(EditorGUI.GUIContents.titleSettingsIcon, EditorStyles.iconButton))
-                ShowContextMenu();
+                ShowContextMenu(m_SceneView);
             GUILayout.EndHorizontal();
 
             EditorGUIUtility.labelWidth = kPrefixLabelWidth;
@@ -212,55 +206,97 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
-        void ShowContextMenu()
+        internal static void ShowContextMenu(SceneView view)
         {
             var menu = new GenericMenu();
-            menu.AddItem(m_CopyPlacementLabel, false, CopyPlacement);
-            if (Clipboard.HasCustomValue<TransformWorldPlacement>())
-                menu.AddItem(m_PastePlacementLabel, false, PastePlacement);
+            menu.AddItem(Styles.copyPlacementLabel, false, () => CopyPlacement(view));
+            if (CanPastePlacement())
+                menu.AddItem(Styles.pastePlacementLabel, false, () => PastePlacement(view));
             else
-                menu.AddDisabledItem(m_PastePlacementLabel);
-            menu.AddItem(m_CopySettingsLabel, false, CopySettings);
+                menu.AddDisabledItem(Styles.pastePlacementLabel);
+            menu.AddItem(Styles.copySettingsLabel, false, () => CopySettings(view));
             if (Clipboard.HasCustomValue<SceneView.CameraSettings>())
-                menu.AddItem(m_PasteSettingsLabel, false, PasteSettings);
+                menu.AddItem(Styles.pasteSettingsLabel, false, () => PasteSettings(view));
             else
-                menu.AddDisabledItem(m_PasteSettingsLabel);
-            menu.AddItem(m_ResetSettingsLabel, false, ResetSettings);
+                menu.AddDisabledItem(Styles.pasteSettingsLabel);
+            menu.AddItem(Styles.resetSettingsLabel, false, () => ResetSettings(view));
 
             menu.ShowAsContext();
         }
 
-        void CopyPlacement()
+        // ReSharper disable once UnusedMember.Local - called by a shortcut
+        [Shortcut("Camera/Copy Placement")]
+        static void CopyPlacementShortcut()
         {
-            Clipboard.SetCustomValue(new TransformWorldPlacement(m_SceneView.camera.transform));
+            // if we are interacting with a game view, copy the main camera placement
+            var playView = PlayModeView.GetLastFocusedPlayModeView();
+            if (playView != null && (EditorWindow.focusedWindow == playView || EditorWindow.mouseOverWindow == playView))
+            {
+                var cam = Camera.main;
+                if (cam != null)
+                    Clipboard.SetCustomValue(new TransformWorldPlacement(cam.transform));
+            }
+            // otherwise copy the last active scene view placement
+            else
+            {
+                var sceneView = SceneView.lastActiveSceneView;
+                if (sceneView != null)
+                    CopyPlacement(sceneView);
+            }
         }
 
-        void PastePlacement()
+        static void CopyPlacement(SceneView view)
         {
-            var tr = m_SceneView.camera.transform;
+            Clipboard.SetCustomValue(new TransformWorldPlacement(view.camera.transform));
+        }
+
+        // ReSharper disable once UnusedMember.Local - called by a shortcut
+        [Shortcut("Camera/Paste Placement")]
+        static void PastePlacementShortcut()
+        {
+            var sceneView = SceneView.lastActiveSceneView;
+            if (sceneView == null) return;
+            if (CanPastePlacement())
+                PastePlacement(sceneView);
+        }
+
+        static bool CanPastePlacement()
+        {
+            return Clipboard.HasCustomValue<TransformWorldPlacement>();
+        }
+
+        static void PastePlacement(SceneView view)
+        {
+            var tr = view.camera.transform;
             var placement = Clipboard.GetCustomValue<TransformWorldPlacement>();
             tr.position = placement.position;
             tr.rotation = placement.rotation;
             tr.localScale = placement.scale;
-            m_SceneView.AlignViewToObject(tr);
-            m_SceneView.Repaint();
+
+            // Similar to what AlignViewToObject does, except we need to do that instantly
+            // in case the shortcut key was pressed while FPS camera controls (right click drag)
+            // were active.
+            view.size = 10;
+            view.LookAt(tr.position + tr.forward * view.cameraDistance, tr.rotation, view.size, view.orthographic, true);
+
+            view.Repaint();
         }
 
-        void CopySettings()
+        static void CopySettings(SceneView view)
         {
-            Clipboard.SetCustomValue(m_SceneView.cameraSettings);
+            Clipboard.SetCustomValue(view.cameraSettings);
         }
 
-        void PasteSettings()
+        static void PasteSettings(SceneView view)
         {
-            m_SceneView.cameraSettings = Clipboard.GetCustomValue<SceneView.CameraSettings>();
-            m_SceneView.Repaint();
+            view.cameraSettings = Clipboard.GetCustomValue<SceneView.CameraSettings>();
+            view.Repaint();
         }
 
-        void ResetSettings()
+        static void ResetSettings(SceneView view)
         {
-            m_SceneView.ResetCameraSettings();
-            m_SceneView.Repaint();
+            view.ResetCameraSettings();
+            view.Repaint();
         }
     }
 }

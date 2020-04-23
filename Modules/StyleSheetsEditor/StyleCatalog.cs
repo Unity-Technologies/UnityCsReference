@@ -288,6 +288,16 @@ namespace UnityEditor.StyleSheets
             }
         }
 
+        public bool incomplete => top == float.MaxValue || right == float.MaxValue || bottom == float.MaxValue || left == float.MaxValue;
+
+        internal StyleRect @fixed => new StyleRect
+        {
+            top = top == float.MaxValue ? 0 : top,
+            right = right == float.MaxValue ? 0 : right,
+            bottom = bottom == float.MaxValue ? 0 : bottom,
+            left = left == float.MaxValue ? 0 : left
+        };
+
         [FieldOffset(0)] public float top;
         [FieldOffset(4)] public float right;
         [FieldOffset(8)] public float bottom;
@@ -698,10 +708,7 @@ namespace UnityEditor.StyleSheets
 
         public StyleRect GetRect(string key, StyleRect defaultValue = default(StyleRect))
         {
-            var bufferIndex = GetValueIndex(key, StyleValue.Type.Rect);
-            if (bufferIndex == -1)
-                return defaultValue;
-            return catalog.buffers.rects[bufferIndex];
+            return GetRect(key.GetHashCode(), defaultValue);
         }
 
         public int GetInt(int key, int defaultValue = 0)
@@ -1040,6 +1047,22 @@ namespace UnityEditor.StyleSheets
             }
             return -1;
         }
+
+        internal static int GetValueIndex(int hash, IEnumerable<StyleValue> values, StyleValue.Type type, StyleState stateFlag)
+        {
+            foreach (var v in values)
+            {
+                if (v.key != hash)
+                    continue;
+                if (type != StyleValue.Type.Any && v.type != type)
+                    continue;
+
+                if (v.state == stateFlag)
+                    return v.index;
+            }
+
+            return -1;
+        }
     }
 
     internal class StyleCatalog
@@ -1315,7 +1338,7 @@ namespace UnityEditor.StyleSheets
             return true;
         }
 
-        const int k_CacheVersion = 3;
+        const int k_CacheVersion = 4;
         public void Save(BinaryWriter writer)
         {
             // version
@@ -1578,7 +1601,41 @@ namespace UnityEditor.StyleSheets
             return mergedBlockValues;
         }
 
-        private bool CompileElement(string name, IList<StyleBlock> blocks, StyleValue[] values)
+        private void CompileRects(StyleBlock block, StyleValue[] values, IList<StyleRect> rects)
+        {
+            // Fix rect default values with normal state.
+            foreach (var v in values)
+            {
+                if (v.type != StyleValue.Type.Rect)
+                    continue;
+
+                var rect = rects[v.index];
+                if (!rect.incomplete)
+                    continue;
+
+                if (v.state == StyleState.normal)
+                    continue;
+
+                // Merge missing values with normal state or default
+                var normalRectBufferIndex = StyleBlock.GetValueIndex(v.key, block.values, StyleValue.Type.Rect, StyleState.normal);
+                if (normalRectBufferIndex == -1)
+                {
+                    rects[v.index] = rect.@fixed;
+                    continue;
+                }
+
+                var normalRect = rects[normalRectBufferIndex];
+                rects[v.index] = new StyleRect
+                {
+                    top = rect.top == float.MaxValue ? normalRect.top : rect.top,
+                    right = rect.right == float.MaxValue ? normalRect.right : rect.right,
+                    bottom = rect.bottom == float.MaxValue ? normalRect.bottom : rect.bottom,
+                    left = rect.left == float.MaxValue ? normalRect.left : rect.left,
+                }.@fixed;
+            }
+        }
+
+        private bool CompileElement(string name, IList<StyleBlock> blocks, StyleValue[] values, IList<StyleRect> rects)
         {
             int key = GetNameKey(name);
 
@@ -1589,7 +1646,10 @@ namespace UnityEditor.StyleSheets
                 return true;
             }
 
-            var mergedBlockValues = MergeValues(blocks[existingStyleIndex].values, values);
+            var block = blocks[existingStyleIndex];
+            CompileRects(block, values, rects);
+
+            var mergedBlockValues = MergeValues(block.values, values);
             blocks[existingStyleIndex] = new StyleBlock(key, k_NoState, mergedBlockValues, this);
             return false;
         }
@@ -1631,8 +1691,15 @@ namespace UnityEditor.StyleSheets
 
                 values = ExpandValues(values, numbers, colors, strings, rects, groups);
 
-                if (CompileElement(blockName, blocks, values.ToArray()))
+                if (CompileElement(blockName, blocks, values.ToArray(), rects))
                     blocks.Sort((l, r) => l.name.CompareTo(r.name));
+
+                // Fix rects
+                for (int r = 0; r < rects.Count; ++r)
+                {
+                    if (rects[r].incomplete)
+                        rects[r] = rects[r].@fixed;
+                }
             }
         }
 
@@ -1762,16 +1829,7 @@ namespace UnityEditor.StyleSheets
 
                 var rectValues = new List<StyleValue>();
                 if (rect.left != float.MaxValue || rect.right != float.MaxValue || rect.top != float.MaxValue || rect.bottom != float.MaxValue)
-                {
-                    var validRect = new StyleRect
-                    {
-                        top = rect.top == float.MaxValue ? 0 : rect.top,
-                        right = rect.right == float.MaxValue ? 0 : rect.right,
-                        bottom = rect.bottom == float.MaxValue ? 0 : rect.bottom,
-                        left = rect.left == float.MaxValue ? 0 : rect.left
-                    };
-                    rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, validRect) });
-                }
+                    rectValues.Add(new StyleValue { key = rectKey, state = currentState, type = StyleValue.Type.Rect, index = SetIndex(rects, rect) });
 
                 if (rect.top != float.MaxValue)
                     rectValues.Add(new StyleValue { key = topKey, state = currentState, type = StyleValue.Type.Number, index = SetIndex(numbers, rect.top) });

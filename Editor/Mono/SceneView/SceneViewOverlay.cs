@@ -108,7 +108,7 @@ namespace UnityEditor
                 {
                     GUILayout.BeginVertical(m_TitleStyle);
 
-                    win.expanded = EditorGUILayout.Foldout(win.expanded, win.title);
+                    win.expanded = EditorGUILayout.Foldout(win.expanded, win.title, true);
 
                     if (win.expanded)
                         win.sceneViewFunc(win.target, m_SceneView);

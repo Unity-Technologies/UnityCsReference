@@ -333,6 +333,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingBufferParam", HasExplicitThis = true)]
         extern private void Internal_SetRayTracingBufferParam([NotNull] RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingConstantBufferParam", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingConstantBufferParam([NotNull] RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer, int offset, int size);
+
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingTextureParam", HasExplicitThis = true)]
         extern private void Internal_SetRayTracingTextureParam([NotNull] RayTracingShader rayTracingShader, int nameID, ref UnityEngine.Rendering.RenderTargetIdentifier rt);
 
@@ -373,7 +376,7 @@ namespace UnityEngine.Rendering
         extern private void Internal_DispatchRays([NotNull] RayTracingShader rayTracingShader, string rayGenShaderName, UInt32 width, UInt32 height, UInt32 depth, Camera camera = null);
 
         [NativeMethod("AddGenerateMips")]
-        extern private void Internal_GenerateMips(RenderTexture rt);
+        extern private void Internal_GenerateMips(RenderTargetIdentifier rt);
 
         [NativeMethod("AddResolveAntiAliasedSurface")]
         extern private void Internal_ResolveAntiAliasedSurface(RenderTexture rt, RenderTexture target);

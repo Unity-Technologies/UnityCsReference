@@ -708,7 +708,7 @@ namespace UnityEditor.IMGUI.Controls
 
                 if (enableItemHovering)
                 {
-                    Rect rowRect = gui.GetRowRect(row, rowWidth);
+                    Rect rowRect = gui.GetRowRect(row, showingVerticalScrollBar ? rowWidth - kSpaceForScrollBar : rowWidth);
                     if (rowRect.Contains(Event.current.mousePosition))
                         currentHoveredItem = data.GetItem(row);
                     m_GUIView.MarkHotRegion(GUIClip.UnclipToWindow(rowRect));

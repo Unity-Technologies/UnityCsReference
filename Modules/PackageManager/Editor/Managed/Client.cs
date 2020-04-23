@@ -55,6 +55,13 @@ namespace UnityEditor.PackageManager
             return new GetRegistriesRequest(operationId, status);
         }
 
+        internal static GetCachedPackagesRequest GetCachedPackages(string registryId)
+        {
+            long operationId;
+            var status = NativeClient.GetCachedPackages(out operationId, registryId);
+            return new GetCachedPackagesRequest(operationId, status);
+        }
+
         public static RemoveRequest Remove(string packageName)
         {
             long operationId;

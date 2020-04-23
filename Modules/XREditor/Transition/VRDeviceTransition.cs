@@ -42,8 +42,8 @@ namespace UnityEditor.XR
 
         static VRDeviceTransition()
         {
-            SubsystemManager.reloadSubsytemsStarted += SubsystemReloadStarted;
-            SubsystemManager.reloadSubsytemsCompleted += SubsystemReloadCompleted;
+            SubsystemManager.beforeReloadSubsystems += SubsystemReloadStarted;
+            SubsystemManager.afterReloadSubsystems += SubsystemReloadCompleted;
         }
 
         static void SubsystemReloadStarted()

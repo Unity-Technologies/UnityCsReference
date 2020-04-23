@@ -1758,7 +1758,7 @@ namespace UnityEngine
             }
 
             skin = _skin;
-            func(id);
+            func?.Invoke(id);
 
             if (Event.current.type == EventType.Layout)
             {

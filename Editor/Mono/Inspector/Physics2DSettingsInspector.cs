@@ -20,7 +20,6 @@ namespace UnityEditor
         SerializedProperty m_JobOptions;
 
         bool m_ShowLayerCollisionMatrix = true;
-        static bool s_ShowGizmoSettings;
         readonly AnimBool m_GizmoSettingsFade = new AnimBool();
         SerializedProperty m_AlwaysShowColliders;
         SerializedProperty m_ShowColliderSleep;
@@ -45,7 +44,6 @@ namespace UnityEditor
             m_ColliderContactColor = serializedObject.FindProperty("m_ColliderContactColor");
             m_ColliderAABBColor = serializedObject.FindProperty("m_ColliderAABBColor");
 
-            m_GizmoSettingsFade.value = s_ShowGizmoSettings;
             m_GizmoSettingsFade.valueChanged.AddListener(Repaint);
         }
 
@@ -58,10 +56,14 @@ namespace UnityEditor
         {
             serializedObject.Update();
             DrawPropertiesExcluding(serializedObject, "m_JobOptions");
-            EditorGUILayout.PropertyField(m_JobOptions, Styles.kJobOptionsLabel, true);
 
-            s_ShowGizmoSettings = EditorGUILayout.Foldout(s_ShowGizmoSettings, "Gizmos", true);
-            m_GizmoSettingsFade.target = s_ShowGizmoSettings;
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(0);
+            EditorGUILayout.PropertyField(m_JobOptions, Styles.kJobOptionsLabel, true);
+            GUILayout.EndHorizontal();
+
+            m_GizmoSettingsFade.value = m_GizmoSettingsFade.target = EditorGUILayout.Foldout(m_GizmoSettingsFade.target, "Gizmos", true);
+
             if (m_GizmoSettingsFade.value)
             {
                 if (EditorGUILayout.BeginFadeGroup(m_GizmoSettingsFade.faded))

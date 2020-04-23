@@ -41,15 +41,15 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal const int Write = 1 << 1;
         internal const int Dispose = 1 << 2;
 
-        internal const int ReadCheck                = ~(Write | Dispose);
-        internal const int WriteCheck               = ~(Read | Dispose);
-        internal const int DisposeCheck             = ~(Read | Write);
-        internal const int ReadWriteDisposeCheck    = ~(Read | Write | Dispose);
+        internal const int ReadCheck = ~(Write | Dispose);
+        internal const int WriteCheck = ~(Read | Dispose);
+        internal const int DisposeCheck = ~(Read | Write);
+        internal const int ReadWriteDisposeCheck = ~(Read | Write | Dispose);
 
         [NativeDisableUnsafePtrRestriction]
         internal IntPtr versionNode;
-        internal int  version;
-        internal int  staticSafetyId;
+        internal int version;
+        internal int staticSafetyId;
 
         // Creates a new AtomicSafetyHandle that is valid until Release is called.
         [ThreadSafe]
@@ -198,8 +198,10 @@ namespace Unity.Collections.LowLevel.Unsafe
         [NativeThrows, ThreadSafe]
         public static unsafe extern void SetCustomErrorMessage(int staticSafetyId, AtomicSafetyErrorType errorType, byte* messageBytes, int byteCount);
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [NativeThrows, ThreadSafe]
-        public static extern void SetStaticSafetyId(ref AtomicSafetyHandle handle, int staticSafetyId);
+        public static unsafe void SetStaticSafetyId(ref AtomicSafetyHandle handle, int staticSafetyId)
+        {
+            handle.staticSafetyId = staticSafetyId;
+        }
     }
 }
 

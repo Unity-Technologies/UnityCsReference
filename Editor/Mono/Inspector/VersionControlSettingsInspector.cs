@@ -155,13 +155,13 @@ namespace UnityEditor
             GUI.DrawTextureWithTexCoords(r, atlas, atlasUV);
         }
 
-        private static void CreatePopupMenuVersionControl(string title, EditorSettingsInspector.PopupElement[] elements, string selectedValue,
+        private void CreatePopupMenuVersionControl(string title, EditorSettingsInspector.PopupElement[] elements, string selectedValue,
             GenericMenu.MenuFunction2 func)
         {
             var selectedIndex =
                 System.Array.FindIndex(elements, (EditorSettingsInspector.PopupElement typeElem) => (typeElem.id == selectedValue));
             var content = new GUIContent(elements[selectedIndex].content);
-            EditorSettingsInspector.CreatePopupMenu(title, content, elements, selectedIndex, func);
+            EditorSettingsInspector.CreatePopupMenu(null, title, content, elements, selectedIndex, func);
         }
 
         private void SetVersionControlSystem(object data)

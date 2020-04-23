@@ -3730,6 +3730,63 @@
     <Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs">
       <Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\BoxModelView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\BoxModelView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\CodeLine.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\CodeLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLog.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSelectField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSelectField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\OverlayPainter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\OverlayPainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\PanelDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\PanelDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StyleLengthField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StyleLengthField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylesDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylesDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs</Link>
     </Compile>
@@ -4318,6 +4375,12 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
     </Compile>
@@ -4326,6 +4389,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\SelectionProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\SelectionProxy.cs</Link>
@@ -4483,6 +4549,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerWindow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerWindowRoot.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerWindowRoot.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs</Link>
     </Compile>
@@ -4515,6 +4584,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\BuildUtilities.cs">
       <Link>Modules\PackageManager\Editor\Managed\BuildUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs">
+      <Link>Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs">
       <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
@@ -4590,6 +4662,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs</Link>
@@ -5362,63 +5437,6 @@
     <Compile Include="..\..\Modules\UIAutomationEditor\TestEditorWindow.cs">
       <Link>Modules\UIAutomationEditor\TestEditorWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\BoxModelView.cs">
-      <Link>Modules\UIElementsDebuggerEditor\BoxModelView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\DebuggerSearchBar.cs">
-      <Link>Modules\UIElementsDebuggerEditor\DebuggerSearchBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\DebuggerSplitter.cs">
-      <Link>Modules\UIElementsDebuggerEditor\DebuggerSplitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\DebuggerTreeView.cs">
-      <Link>Modules\UIElementsDebuggerEditor\DebuggerTreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\CodeLine.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Events\CodeLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\EventLog.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Events\EventLog.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\EventLogLine.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Events\EventLogLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\EventTypeSelectField.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Events\EventTypeSelectField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\Events\UIElementsEventDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\Events\UIElementsEventDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\OverlayPainter.cs">
-      <Link>Modules\UIElementsDebuggerEditor\OverlayPainter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\PanelDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\PanelDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\StyleLengthField.cs">
-      <Link>Modules\UIElementsDebuggerEditor\StyleLengthField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\StylePropertyDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\StylePropertyDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\StylesDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\StylesDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIElementsDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\UIElementsDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\Debugger\AllocatorDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\UIR\Debugger\AllocatorDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\Debugger\UIRDebugger.cs">
-      <Link>Modules\UIElementsDebuggerEditor\UIR\Debugger\UIRDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIR\UIRDebugUtility.cs">
-      <Link>Modules\UIElementsDebuggerEditor\UIR\UIRDebugUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsDebuggerEditor\UxmlExporter.cs">
-      <Link>Modules\UIElementsDebuggerEditor\UxmlExporter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\ElementSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\ElementSnippet.cs</Link>
     </Compile>
@@ -5718,6 +5736,9 @@
     </Compile>
     <Compile Include="..\..\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
       <Link>Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VirtualTexturingEditor\ScriptBindings\VirtualTexturingEditor.bindings.cs">
+      <Link>Modules\VirtualTexturingEditor\ScriptBindings\VirtualTexturingEditor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\XREditor\Boot\XRBoot.bindings.cs">
       <Link>Modules\XREditor\Boot\XRBoot.bindings.cs</Link>

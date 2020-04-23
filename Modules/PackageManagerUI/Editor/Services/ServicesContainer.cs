@@ -20,6 +20,8 @@ namespace UnityEditor.PackageManager.UI
 
         private IOProxy m_IOProxy;
 
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
+
         private ResourceLoader m_ResourceLoader;
 
         [SerializeField]
@@ -78,6 +80,7 @@ namespace UnityEditor.PackageManager.UI
             m_UnityConnectProxy = new UnityConnectProxy();
             m_ApplicationProxy = new ApplicationProxy();
             m_IOProxy = new IOProxy();
+            m_SettingsProxy = new PackageManagerProjectSettingsProxy();
 
             m_ResourceLoader = new ResourceLoader();
 
@@ -117,12 +120,12 @@ namespace UnityEditor.PackageManager.UI
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI);
 
             m_UpmCache.ResolveDependencies(m_PackageManagerPrefs);
-            m_UpmClient.ResolveDependencies(m_PackageManagerPrefs, m_UpmCache, m_IOProxy);
+            m_UpmClient.ResolveDependencies(m_PackageManagerPrefs, m_UpmCache, m_IOProxy, m_SettingsProxy);
 
             m_PackageFiltering.ResolveDependencies(m_UnityConnectProxy, m_PackageManagerPrefs);
 
             m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmClient, m_IOProxy);
-            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_AssetStoreClient, m_PackageDatabase);
+            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
 
             m_DependenciesResolved = true;
         }
@@ -134,6 +137,7 @@ namespace UnityEditor.PackageManager.UI
             // Some services has dependencies that requires some initialization in `OnEnable`.
             m_UnityConnectProxy.OnEnable();
             m_ApplicationProxy.OnEnable();
+            m_SettingsProxy.OnEnable();
 
             m_AssetStoreClient.OnEnable();
             m_AssetStoreOAuth.OnEnable();
@@ -149,6 +153,7 @@ namespace UnityEditor.PackageManager.UI
         {
             m_UnityConnectProxy.OnDisable();
             m_ApplicationProxy.OnDisable();
+            m_SettingsProxy.OnDisable();
 
             m_AssetStoreClient.OnDisable();
             m_AssetStoreOAuth.OnDisable();
@@ -169,6 +174,7 @@ namespace UnityEditor.PackageManager.UI
             Register(m_ApplicationProxy);
             Register(m_ResourceLoader);
             Register(m_IOProxy);
+            Register(m_SettingsProxy);
 
             Register(m_AssetStoreCache);
             Register(m_AssetStoreClient);

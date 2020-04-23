@@ -79,6 +79,8 @@ namespace UnityEngine.XR
 
         extern public void SetFocusPlane(Vector3 point, Vector3 normal, Vector3 velocity);
 
+        extern public void SetMSAALevel(int level);
+
         extern public bool disableLegacyRenderer { get; set; }
 
         extern public int GetRenderPassCount();

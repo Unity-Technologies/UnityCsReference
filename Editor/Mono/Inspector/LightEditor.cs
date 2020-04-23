@@ -107,7 +107,9 @@ namespace UnityEditor
 
                 public static readonly GUIContent BakingWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. Enable Baked Global Illumination to use Mixed or Baked light modes.");
                 public static readonly GUIContent IndirectBounceShadowWarning = EditorGUIUtility.TrTextContent("Realtime indirect bounce shadowing is not supported for Spot and Point lights.");
-                public static readonly GUIContent CookieWarning = EditorGUIUtility.TrTextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.");
+                public static readonly GUIContent CookieSpotRepeatWarning = EditorGUIUtility.TrTextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.");
+                public static readonly GUIContent CookieNotEnabledWarning = EditorGUIUtility.TrTextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support");
+                public static readonly GUIContent CookieNotEnabledInfo = EditorGUIUtility.TrTextContent("Cookie support for mixed lights is not enabled for indirect lighting. You can enable it in Project Settings > Editor > Enable baked cookies support");
                 public static readonly GUIContent MixedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Mixed mode and/or any of the lighting modes.");
                 public static readonly GUIContent BakedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Baked mode.");
 
@@ -158,12 +160,29 @@ namespace UnityEditor
             }
             internal bool showBakingWarning { get { return !isPrefabAsset && !Lightmapping.GetLightingSettingsOrDefaultsFallback().bakedGI && lightmappingTypeIsSame && isBakedOrMixed; } }
 
-            internal bool showCookieWarning
+            internal bool showCookieSpotRepeatWarning
             {
                 get
                 {
                     return typeIsSame && light.type == LightType.Spot &&
                         !cookieProp.hasMultipleDifferentValues && cookie && cookie.wrapMode != TextureWrapMode.Clamp;
+                }
+            }
+
+
+            internal bool showCookieNotEnabledWarning
+            {
+                get
+                {
+                    return typeIsSame && isCompletelyBaked && !cookieProp.hasMultipleDifferentValues && cookie && !EditorSettings.enableCookiesInLightmapper;
+                }
+            }
+
+            internal bool showCookieNotEnabledInfo
+            {
+                get
+                {
+                    return typeIsSame && isMixed && !cookieProp.hasMultipleDifferentValues && cookie && !EditorSettings.enableCookiesInLightmapper;
                 }
             }
 
@@ -451,10 +470,22 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(cookieProp, Styles.Cookie);
 
-                if (showCookieWarning)
+                if (showCookieSpotRepeatWarning)
                 {
                     // warn on spotlights if the cookie is set to repeat
-                    EditorGUILayout.HelpBox(Styles.CookieWarning.text, MessageType.Warning);
+                    EditorGUILayout.HelpBox(Styles.CookieSpotRepeatWarning.text, MessageType.Warning);
+                }
+
+                if (showCookieNotEnabledWarning)
+                {
+                    // warn if cookie support is not enabled for baked lights
+                    EditorGUILayout.HelpBox(Styles.CookieNotEnabledWarning.text, MessageType.Warning);
+                }
+
+                if (showCookieNotEnabledInfo)
+                {
+                    // info if cookie support is not enabled for mixed lights
+                    EditorGUILayout.HelpBox(Styles.CookieNotEnabledInfo.text, MessageType.Info);
                 }
             }
 

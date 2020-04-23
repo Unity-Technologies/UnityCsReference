@@ -826,7 +826,7 @@ namespace UnityEditor
                     SerializedObject so = new SerializedObject(Lightmapping.GetLightingSettingsOrDefaultsFallback());
                     SerializedProperty lightmapParameters = so.FindProperty("m_LightmapParameters");
 
-                    using (new EditorGUI.DisabledScope(lightmapParameters == null))
+                    if (lightmapParameters.objectReferenceValue != null)
                     {
                         label = isBuiltIn(lightmapParameters) ? "View" : "Edit...";
 

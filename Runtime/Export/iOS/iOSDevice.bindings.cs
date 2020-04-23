@@ -103,30 +103,33 @@ namespace UnityEngine.iOS
         // please note that we check both advertisingIdentifier/advertisingTrackingEnabled
         //   usage in scripts to decide if we should enable UNITY_USES_IAD macro (i.e. code that uses iAD and related things)
         // that's why it is VERY important that you use private extern functions instead of properties in internal/implementation code
+        // as another caveat, apple seems to grep app strings naively when checking for usages of this api
+        //   poterntially finding UnityAdvertisingIdentifier/IsAdvertisingTrackingEnabled
+        // thats why we renamed these functions to be less like apple api
 
         [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
-        [FreeFunction("UnityAdvertisingIdentifier")]
-        extern private static string GetAdvertisingIdentifier();
+        [FreeFunction("UnityAdIdentifier")]
+        extern private static string GetAdIdentifier();
 
         public static string advertisingIdentifier
         {
             get
             {
-                string advertisingId = GetAdvertisingIdentifier();
-                Application.InvokeOnAdvertisingIdentifierCallback(advertisingId, IsAdvertisingTrackingEnabled());
+                string advertisingId = GetAdIdentifier();
+                Application.InvokeOnAdvertisingIdentifierCallback(advertisingId, IsAdTrackingEnabled());
                 return advertisingId;
             }
         }
 
         [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
-        [FreeFunction("IOSScripting::IsAdvertisingTrackingEnabled")]
-        extern private static bool IsAdvertisingTrackingEnabled();
+        [FreeFunction("IOSScripting::IsAdTrackingEnabled")]
+        extern private static bool IsAdTrackingEnabled();
 
         public static bool advertisingTrackingEnabled
         {
             get
             {
-                return IsAdvertisingTrackingEnabled();
+                return IsAdTrackingEnabled();
             }
         }
 

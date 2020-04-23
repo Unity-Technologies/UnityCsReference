@@ -38,6 +38,8 @@ namespace UnityEditor.PackageManager
 
         public static extern NativeStatusCode GetRegistries([Out] out long operationId);
 
+        public static extern NativeStatusCode GetCachedPackages([Out] out long operationId, string registryId);
+
         [ThreadAndSerializationSafe]
         public static extern void ReleaseCompletedOperation(long operationId);
 
@@ -56,6 +58,8 @@ namespace UnityEditor.PackageManager
         public static extern SearchResults GetSearchOperationData(long operationId);
 
         public static extern RegistryInfo[] GetGetRegistriesOperationData(long operationId);
+
+        public static extern CachedPackageInfo[] GetGetCachedPackagesOperationData(long operationId);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
@@ -83,5 +87,13 @@ namespace UnityEditor.PackageManager
 
         [NativeName("GetPackageByAssetPath")]
         private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
+    }
+
+
+    [NativeHeader("Modules/PackageManager/Editor/PackageManagerImmutableAssets.h")]
+    [StaticAccessor("PackageManager::ImmutableAssets", StaticAccessorType.DoubleColon)]
+    class ImmutableAssets
+    {
+        public static extern void SetAssetsAllowedToBeModified(string[] assetsAllowedToBeModified);
     }
 }

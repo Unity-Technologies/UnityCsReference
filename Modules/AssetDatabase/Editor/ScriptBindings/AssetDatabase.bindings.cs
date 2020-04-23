@@ -572,6 +572,16 @@ namespace UnityEditor
 
         [FreeFunction("ApplicationAllowAutoRefresh")]
         public static extern void AllowAutoRefresh();
+
+        public extern static UInt32 GlobalArtifactDependencyVersion
+        {
+            [FreeFunction("AssetDatabase::GetGlobalArtifactDependencyVersion")] get;
+        }
+
+        public extern static UInt32 GlobalArtifactProcessedVersion
+        {
+            [FreeFunction("AssetDatabase::GetGlobalArtifactProcessedVersion")] get;
+        }
     }
 }
 
