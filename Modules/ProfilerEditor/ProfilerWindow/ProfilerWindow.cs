@@ -122,7 +122,35 @@ namespace UnityEditor
         static List<ProfilerWindow> m_ProfilerWindows = new List<ProfilerWindow>();
 
         [SerializeField]
-        ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
+        ProfilerViewType m_CPUViewType = ProfilerViewType.Timeline;
+        const string k_CPUViewTypeSettingsKey = "Profiler.CPUProfilerModule.ViewType";
+        const ProfilerViewType k_DefaultCPUViewType = ProfilerViewType.Timeline;
+
+        [SerializeField]
+        ProfilerViewType m_GPUViewType = ProfilerViewType.Hierarchy;
+        const string k_GPUViewTypeSettingsKey = "Profiler.GPUProfilerModule.ViewType";
+        const ProfilerViewType k_DefaultGPUViewType = ProfilerViewType.Hierarchy;
+
+        ProfilerViewType m_ViewType
+        {
+            get
+            {
+                return m_CurrentArea == ProfilerArea.CPU ? m_CPUViewType : m_GPUViewType;
+            }
+            set
+            {
+                if (m_CurrentArea == ProfilerArea.CPU)
+                {
+                    m_CPUViewType = value;
+                    EditorPrefs.SetInt(k_CPUViewTypeSettingsKey, (int)m_CPUViewType);
+                }
+                else
+                {
+                    m_GPUViewType = value;
+                    EditorPrefs.SetInt(k_GPUViewTypeSettingsKey, (int)m_GPUViewType);
+                }
+            }
+        }
 
         [SerializeField]
         ProfilerArea m_CurrentArea = k_InvalidArea;
@@ -349,6 +377,9 @@ namespace UnityEditor
         void OnEnable()
         {
             InitializeIfNeeded();
+
+            m_CPUViewType = (ProfilerViewType)EditorPrefs.GetInt(k_CPUViewTypeSettingsKey, (int)k_DefaultCPUViewType);
+            m_GPUViewType = (ProfilerViewType)EditorPrefs.GetInt(k_GPUViewTypeSettingsKey, (int)k_DefaultGPUViewType);
 
             titleContent = GetLocalizedTitleContent();
             m_ProfilerWindows.Add(this);
