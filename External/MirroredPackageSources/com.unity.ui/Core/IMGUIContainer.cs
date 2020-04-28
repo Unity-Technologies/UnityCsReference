@@ -405,10 +405,13 @@ namespace UnityEngine.UIElements
 
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
             // if the IMGUI content resizes.
-            if (!isComputingLayout && evt.type == EventType.Layout &&
+            if (evt.type == EventType.Layout &&
                 (!Mathf.Approximately(previousMeasuredWidth, layoutMeasuredWidth) || !Mathf.Approximately(previousMeasuredHeight, layoutMeasuredHeight)))
             {
-                IncrementVersion(VersionChangeType.Layout);
+                if (isComputingLayout)
+                    this.schedule.Execute(() => IncrementVersion(VersionChangeType.Layout));
+                else
+                    IncrementVersion(VersionChangeType.Layout);
             }
 
             if (!isExitGUIException)

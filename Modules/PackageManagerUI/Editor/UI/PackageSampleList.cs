@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -12,10 +13,12 @@ namespace UnityEditor.PackageManager.UI
         internal new class UxmlFactory : UxmlFactory<PackageSampleList> {}
 
         private ResourceLoader m_ResourceLoader;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
+            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -26,7 +29,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void ToggleLowWidthDependencyView(float width)
         {
-            if (width <= 340)
+            if (width <= 420)
             {
                 UIUtils.SetElementDisplay(samplesListLowWidth, true);
                 UIUtils.SetElementDisplay(samplesContainer, false);
@@ -46,14 +49,24 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             cache = new VisualElementCache(root);
 
+            SetExpanded(m_PackageManagerPrefs.samplesExpanded);
+            samplesExpander.RegisterValueChangedCallback(evt => SetExpanded(evt.newValue));
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void SetExpanded(bool expanded)
+        {
+            if (samplesExpander.value != expanded)
+                samplesExpander.value = expanded;
+            if (m_PackageManagerPrefs.samplesExpanded != expanded)
+                m_PackageManagerPrefs.samplesExpanded = expanded;
+            UIUtils.SetElementDisplay(samplesOuterContainer, expanded);
         }
 
         public void SetPackageVersion(IPackageVersion version)
         {
             importStatusContainer.Clear();
-            nameLabelContainer.Clear();
-            sizeLabelContainer.Clear();
+            nameAndSizeLabelContainer.Clear();
             importButtonContainer.Clear();
             samplesListLowWidth.Clear();
 
@@ -67,8 +80,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 var sampleItem = new PackageSampleItem(version, sample);
                 importStatusContainer.Add(sampleItem.importStatus);
-                nameLabelContainer.Add(sampleItem.nameLabel);
-                sizeLabelContainer.Add(sampleItem.sizeLabel);
+                nameAndSizeLabelContainer.Add(sampleItem.nameLabel);
+                nameAndSizeLabelContainer.Add(sampleItem.sizeLabel);
                 importButtonContainer.Add(sampleItem.importButton);
                 sampleItem.importButton.SetEnabled(version.isInstalled);
 
@@ -78,12 +91,12 @@ namespace UnityEditor.PackageManager.UI
         }
 
         private VisualElementCache cache { get; set; }
-
+        private Toggle samplesExpander { get { return cache.Get<Toggle>("samplesExpander"); } }
         internal VisualElement samplesListLowWidth { get { return cache.Get<VisualElement>("samplesListLowWidth"); } }
+        private VisualElement samplesOuterContainer { get { return cache.Get<VisualElement>("samplesOuterContainer"); } }
         internal VisualElement samplesContainer { get { return cache.Get<VisualElement>("samplesContainer"); } }
         internal VisualElement importStatusContainer { get { return cache.Get<VisualElement>("importStatusContainer"); } }
-        internal VisualElement nameLabelContainer { get { return cache.Get<VisualElement>("nameLabelContainer"); } }
-        internal VisualElement sizeLabelContainer { get { return cache.Get<VisualElement>("sizeLabelContainer"); } }
+        internal VisualElement nameAndSizeLabelContainer { get { return cache.Get<VisualElement>("nameAndSizeLabelContainer"); } }
         internal VisualElement importButtonContainer { get { return cache.Get<VisualElement>("importButtonContainer"); } }
     }
 }

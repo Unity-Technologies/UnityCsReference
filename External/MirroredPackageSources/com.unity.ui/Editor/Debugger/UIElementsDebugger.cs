@@ -142,8 +142,8 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class UIElementsDebugger : EditorWindow
     {
-        public const string k_WindowPath = "Window/Analysis/UIElements Debugger";
-        public static readonly string WindowName = L10n.Tr("UIElements Debugger");
+        public const string k_WindowPath = "Window/UI Toolkit/Debugger";
+        public static readonly string WindowName = L10n.Tr("UI Toolkit Debugger");
         public static readonly string OpenWindowCommand = nameof(OpenUIElementsDebugger);
 
         [SerializeField]
@@ -152,7 +152,7 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private DebuggerContext m_DebuggerContext;
 
-        [MenuItem(k_WindowPath, false, 101, false)]
+        [MenuItem(k_WindowPath, false, 3010)]
         private static void OpenUIElementsDebugger()
         {
             if (CommandService.Exists(OpenWindowCommand))
@@ -442,7 +442,7 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     // Avoid spamming the console if picking
                     if (!m_Context.pickElement)
-                        Debug.LogWarning("Cross UIElements debugger debugging is not supported");
+                        Debug.LogWarning("Cross UI Toolkit debugger debugging is not supported");
                     return false;
                 }
             }

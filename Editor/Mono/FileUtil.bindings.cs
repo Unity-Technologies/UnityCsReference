@@ -109,10 +109,10 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern string GetLastPathNameComponent(string path);
 
-        [FreeFunction]
+        [FreeFunction(Name = "DeleteLastPathNameComponentManaged")]
         internal static extern string DeleteLastPathNameComponent(string path);
 
-        [FreeFunction("GetPathNameExtension")]
+        [FreeFunction("GetPathNameExtensionManaged")]
         internal static extern string GetPathExtension(string path);
 
         [FreeFunction("DeletePathNameExtension")]

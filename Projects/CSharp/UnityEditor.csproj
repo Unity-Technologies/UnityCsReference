@@ -4570,6 +4570,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageToolBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageToolBar.cs</Link>
     </Compile>

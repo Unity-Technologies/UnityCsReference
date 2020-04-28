@@ -9,7 +9,6 @@ namespace UnityEngine
 {
     public static partial class SubsystemManager
     {
-        [Obsolete("Use GetSubsystems instead. (UnityUpgradable) -> GetSubsystems(*)", false)]
         public static void GetInstances<T>(List<T> subsystems)
             where T : ISubsystem
         {
@@ -33,10 +32,7 @@ namespace UnityEngine
 
 #pragma warning restore CS0618
 
-        [Obsolete("Use beforeReloadSubsystems instead. (UnityUpgradable) -> beforeReloadSubsystems", false)]
         public static event Action reloadSubsytemsStarted;
-
-        [Obsolete("Use afterReloadSubsystems instead. (UnityUpgradable) -> afterReloadSubsystems", false)]
         public static event Action reloadSubsytemsCompleted;
     }
 }

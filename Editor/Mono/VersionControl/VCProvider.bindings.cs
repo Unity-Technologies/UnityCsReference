@@ -46,6 +46,7 @@ namespace UnityEditor.VersionControl
             public bool enablesCheckout;
             public bool enablesVersioningFolders;
             public bool enablesChangelists;
+            public bool enablesLocking;
         }
 
         private static extern Traits activeTraits
@@ -67,6 +68,11 @@ namespace UnityEditor.VersionControl
         public static bool hasCheckoutSupport
         {
             get { return activeTraits.enablesCheckout; }
+        }
+
+        public static bool hasLockingSupport
+        {
+            get { return activeTraits.enablesLocking; }
         }
 
         public static bool isVersioningFolders

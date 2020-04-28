@@ -119,6 +119,8 @@ namespace UnityEditor.Build.Content
         [FreeFunction("GetPlayerDependenciesForObjects")]
         static extern ObjectIdentifier[] GetPlayerDependencies_Objects(UnityEngine.Object[] objects, BuildTarget target, TypeDB typeDB, DependencyType mode);
 
+        public static extern ObjectIdentifier[] GetPlayerAssetRepresentations(GUID asset, BuildTarget target);
+
 
         public static void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet)
         {

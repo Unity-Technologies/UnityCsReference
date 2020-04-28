@@ -222,7 +222,13 @@ namespace UnityEngine.Rendering
 
         public void BuildRayTracingAccelerationStructure(RayTracingAccelerationStructure accelerationStructure)
         {
-            Internal_BuildRayTracingAccelerationStructure(accelerationStructure);
+            Vector3 zero = new Vector3(0, 0, 0);
+            Internal_BuildRayTracingAccelerationStructure(accelerationStructure, zero);
+        }
+
+        public void BuildRayTracingAccelerationStructure(RayTracingAccelerationStructure accelerationStructure, Vector3 relativeOrigin)
+        {
+            Internal_BuildRayTracingAccelerationStructure(accelerationStructure, relativeOrigin);
         }
 
         public void SetRayTracingAccelerationStructure(RayTracingShader rayTracingShader, string name, RayTracingAccelerationStructure rayTracingAccelerationStructure)

@@ -92,7 +92,7 @@ namespace UnityEditor
                 All = ~None
             }
 
-            static RotationHandleParam s_Default = new RotationHandleParam((Handle)(-1), Vector3.one, 1f, 1.1f, true, false);
+            static RotationHandleParam s_Default = new RotationHandleParam((Handle)(-1), Vector3.one, 1f, 1.1f, true, true);
             public static RotationHandleParam Default { get { return s_Default; } set { s_Default = value; } }
 
             public readonly Vector3 axisSize;
@@ -141,16 +141,14 @@ namespace UnityEditor
 
             var isHot = ids.Has(GUIUtility.hotControl);
 
-            // Draw freerotation first to give it the lowest priority
+            // Draw free rotation first to give it the lowest priority
             if (!isDisabled
                 && param.ShouldShow(RotationHandleParam.Handle.XYZ)
                 && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
             {
-                color = centerColor;
+                color = new Color(0, 0, 0, 0.3f);
                 rotation = UnityEditorInternal.FreeRotate.Do(ids.xyz, rotation, position, size * param.xyzSize, param.displayXYZCircle);
             }
-
-            var radiusOfAxesHandles = -1f;
 
             for (var i = 0; i < 3; ++i)
             {
@@ -163,21 +161,14 @@ namespace UnityEditor
                 var axisDir = GetAxisVector(i);
 
                 var radius = size * param.axisSize[i];
-                radiusOfAxesHandles = Mathf.Max(radius, radiusOfAxesHandles);
-
                 rotation = UnityEditorInternal.Disc.Do(ids[i], rotation, position, rotation * axisDir, radius, true, EditorSnapSettings.rotate, param.enableRayDrag, true, k_RotationPieColor);
             }
 
-            if (radiusOfAxesHandles > 0 && evt.type == EventType.Repaint)
-            {
-                Handles.color = new Color(0, 0, 0, 0.2f);
-                Handles.DrawWireDisc(position, camForward, radiusOfAxesHandles);
-            }
-
+            // while dragging any rotation handles, draw a gray disc outline
             if (isHot && evt.type == EventType.Repaint)
             {
                 color = ToActiveColorSpace(s_DisabledHandleColor);
-                Handles.DrawWireDisc(position, camForward, size * param.axisSize[0]);
+                Handles.DrawWireDisc(position, camForward, size * param.axisSize[0], Handles.lineThickness);
             }
 
             if (!isDisabled

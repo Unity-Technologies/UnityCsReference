@@ -24,6 +24,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
+                case EventType.MouseMove:
                 case EventType.Layout:
                     // We only want the position to be affected by the Handles.matrix.
                     Handles.matrix = Matrix4x4.identity;
@@ -116,32 +117,13 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
-                    break;
-
                 case EventType.Repaint:
-                    Color temp = Color.white;
-
-                    if (id == GUIUtility.hotControl)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.selectedColor;
-                    }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.preselectionColor;
-                    }
-
+                    Handles.SetupHandleColor(id, evt, out var prevColor, out var thickness);
                     // We only want the position to be affected by the Handles.matrix.
                     Handles.matrix = Matrix4x4.identity;
                     handleFunction(id, worldPosition, Camera.current.transform.rotation, size, EventType.Repaint);
                     Handles.matrix = origMatrix;
-
-                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
-                        Handles.color = temp;
+                    Handles.color = prevColor;
                     break;
             }
             return position;

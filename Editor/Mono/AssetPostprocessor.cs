@@ -16,6 +16,7 @@ using Object = UnityEngine.Object;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEditorInternal;
 using Unity.CodeEditor;
+using UnityEditor.Profiling;
 
 namespace UnityEditor
 {
@@ -673,32 +674,24 @@ namespace UnityEditor
 
         static object InvokeMethod(MethodInfo method, object[] args)
         {
-            bool profile = Profiler.enabled;
-            if (profile)
-                Profiler.BeginSample(method.DeclaringType.FullName + "." + method.Name);
-
-            var res = method.Invoke(null, args);
-
-            if (profile)
-                Profiler.EndSample();
+            object res = null;
+            using (new EditorPerformanceTracker(method.DeclaringType.FullName + "." + method.Name))
+            {
+                res = method.Invoke(null, args);
+            }
 
             return res;
         }
 
         static bool InvokeMethodIfAvailable(object target, string methodName, object[] args)
         {
-            bool profile = Profiler.enabled;
-
             MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (method != null)
             {
-                if (profile)
-                    Profiler.BeginSample(target.GetType().FullName + "." + methodName);
-
-                method.Invoke(target, args);
-
-                if (profile)
-                    Profiler.EndSample();
+                using (new EditorPerformanceTracker(target.GetType().FullName + "." + methodName))
+                {
+                    method.Invoke(target, args);
+                }
 
                 return true;
             }
@@ -707,18 +700,13 @@ namespace UnityEditor
 
         static bool InvokeMethodIfAvailable<T>(object target, string methodName, object[] args, ref T returnedObject) where T : class
         {
-            bool profile = Profiler.enabled;
-
             MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (method != null)
             {
-                if (profile)
-                    Profiler.BeginSample(target.GetType().FullName + "." + methodName);
-
-                returnedObject = method.Invoke(target, args) as T;
-
-                if (profile)
-                    Profiler.EndSample();
+                using (new EditorPerformanceTracker(target.GetType().FullName + "." + methodName))
+                {
+                    returnedObject = method.Invoke(target, args) as T;
+                }
 
                 return true;
             }

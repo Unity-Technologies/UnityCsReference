@@ -124,7 +124,7 @@ namespace UnityEditor.UIElements
                         relativeMousePosition = (Math.Min(e.localMousePosition.x, visualElement.layout.xMin + maxWidth) - visualElement.layout.xMin - minWidth) / availableWidth;
                     }
 
-                    relativeMousePosition = Math.Max(0.0f, Math.Min(1.0f, relativeMousePosition));
+                    relativeMousePosition = Math.Max(0.0f, Math.Min(0.999f, relativeMousePosition));
 
                     float totalFlex = visualElement.resolvedStyle.flexGrow + nextVisualElement.resolvedStyle.flexGrow;
                     visualElement.style.flexGrow = relativeMousePosition * totalFlex;

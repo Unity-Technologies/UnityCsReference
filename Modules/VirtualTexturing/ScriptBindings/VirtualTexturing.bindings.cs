@@ -268,9 +268,11 @@ namespace UnityEngine.Rendering
                         GraphicsFormat.R32_SFloat,
                         GraphicsFormat.A2B10G10R10_UNormPack32
                     };
+
+                    var formatUsage = (gpuGeneration == 1) ? FormatUsage.Render : FormatUsage.Sample;
                     for (int i = 0; i < layers.Length; ++i)
                     {
-                        if (SystemInfo.GetCompatibleFormat(layers[i], FormatUsage.Render) != layers[i])
+                        if (SystemInfo.GetCompatibleFormat(layers[i], formatUsage) != layers[i])
                         {
                             throw new ArgumentException($"Requested format {layers[i]} on layer {i} is not supported on this platform");
                         }
@@ -484,11 +486,11 @@ namespace UnityEngine.Rendering
                     var layer = GetLayer(layerIdx);
 
                     NativeArray<T> dstDataAsColor;
-                    AtomicSafetyHandle m_Safety = AtomicSafetyHandle.GetTempMemoryHandle();
+                    AtomicSafetyHandle safety = AtomicSafetyHandle.Create();
                     unsafe
                     {
-                        dstDataAsColor = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(layer.data, layer.dataSize, Allocator.Temp);
-                        NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref dstDataAsColor, m_Safety);
+                        dstDataAsColor = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(layer.data, layer.dataSize, Allocator.None);
+                        NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref dstDataAsColor, safety);
                     }
                     var dstWidth = layer.scanlineSize / UnsafeUtility.SizeOf<T>();
                     for (int i = 0; i < height; ++i)
@@ -496,6 +498,7 @@ namespace UnityEngine.Rendering
                         NativeArray<T>.Copy(colorData, i * width, dstDataAsColor, i * dstWidth, width);
                     }
                     dstDataAsColor.Dispose();
+                    AtomicSafetyHandle.Release(safety);
                 }
             }
 

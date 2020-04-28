@@ -244,8 +244,8 @@ namespace UnityEditor.PackageManager.UI
                     if (isVersionParsed)
                     {
                         var info = uploads.GetDictionary(key);
-                        var assetCount = info.GetString("assetCount") ?? string.Empty;
-                        var downloadSize = info.GetString("downloadSize") ?? string.Empty;
+                        var assetCount = info?.GetString("assetCount") ?? string.Empty;
+                        var downloadSize = info?.GetString("downloadSize") ?? string.Empty;
 
                         result.Add(new PackageSizeInfo
                         {

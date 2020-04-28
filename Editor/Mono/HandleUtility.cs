@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
@@ -191,6 +193,56 @@ namespace UnityEditor
             if (dist < radius)
                 return 0;
             return dist - radius;
+        }
+
+        // Pixel distance from mouse pointer to cone projection on screen
+        static ProfilerMarker s_DistanceToConeMarker = new ProfilerMarker("Handles.DistanceToCone");
+        static readonly Vector3[] s_DistanceToConePoints = new Vector3[7];
+        public static float DistanceToCone(Vector3 position, Quaternion rotation, float size)
+        {
+            using (s_DistanceToConeMarker.Auto())
+            {
+                // our handles cone mesh is along Z axis:
+                // base at Z=-0.5 with radius 0.4, and apex at Z=0.7
+                var baseZ = -0.5f * size;
+                var apexZ = 0.7f * size;
+                var baseR = 0.4f * size;
+
+                // approximate the cone with a six-sided base
+                var baseR60x = baseR * 0.5f; // cos 60
+                var baseR60y = baseR * 0.866f; // sin 60
+                var mat = Matrix4x4.TRS(position, rotation, Vector3.one);
+                s_DistanceToConePoints[0] = mat.MultiplyPoint(new Vector3(0, 0, apexZ));
+                s_DistanceToConePoints[1] = mat.MultiplyPoint(new Vector3(+baseR, 0, baseZ));
+                s_DistanceToConePoints[2] = mat.MultiplyPoint(new Vector3(-baseR, 0, baseZ));
+                s_DistanceToConePoints[3] = mat.MultiplyPoint(new Vector3(+baseR60x, +baseR60y, baseZ));
+                s_DistanceToConePoints[4] = mat.MultiplyPoint(new Vector3(-baseR60x, +baseR60y, baseZ));
+                s_DistanceToConePoints[5] = mat.MultiplyPoint(new Vector3(+baseR60x, -baseR60y, baseZ));
+                s_DistanceToConePoints[6] = mat.MultiplyPoint(new Vector3(-baseR60x, -baseR60y, baseZ));
+
+                return DistanceToPointCloudConvexHull(s_DistanceToConePoints);
+            }
+        }
+
+        // Pixel distance from mouse pointer to cube projection on screen
+        static ProfilerMarker s_DistanceToCubeMarker = new ProfilerMarker("Handles.DistanceToCube");
+        static readonly Vector3[] s_DistanceToCubePoints = new Vector3[8];
+        public static float DistanceToCube(Vector3 position, Quaternion rotation, float size)
+        {
+            using (s_DistanceToCubeMarker.Auto())
+            {
+                var s = size * 0.5f;
+                var mat = Matrix4x4.TRS(position, rotation, Vector3.one);
+                s_DistanceToCubePoints[0] = mat.MultiplyPoint(new Vector3(+s, +s, +s));
+                s_DistanceToCubePoints[1] = mat.MultiplyPoint(new Vector3(-s, +s, +s));
+                s_DistanceToCubePoints[2] = mat.MultiplyPoint(new Vector3(+s, -s, +s));
+                s_DistanceToCubePoints[3] = mat.MultiplyPoint(new Vector3(-s, -s, +s));
+                s_DistanceToCubePoints[4] = mat.MultiplyPoint(new Vector3(+s, +s, -s));
+                s_DistanceToCubePoints[5] = mat.MultiplyPoint(new Vector3(-s, +s, -s));
+                s_DistanceToCubePoints[6] = mat.MultiplyPoint(new Vector3(+s, -s, -s));
+                s_DistanceToCubePoints[7] = mat.MultiplyPoint(new Vector3(-s, -s, -s));
+                return DistanceToPointCloudConvexHull(s_DistanceToCubePoints);
+            }
         }
 
         // Pixel distance from mouse pointer to a rectangle on screen
@@ -469,6 +521,122 @@ namespace UnityEditor
             dot = Mathf.Clamp01(dot);
 
             return Vector3.Lerp(lineStart, lineEnd, dot);
+        }
+
+        static float CalcPointSide(Vector2 l0, Vector2 l1, Vector2 point)
+        {
+            return (l1.y - l0.y) * (point.x - l0.x) - (l1.x - l0.x) * (point.y - l0.y);
+        }
+
+        static float DistancePointToConvexHull(Vector2 p, List<Vector2> hull)
+        {
+            var distance = float.PositiveInfinity;
+            if (hull == null || hull.Count == 0)
+                return distance;
+
+            var inside = hull.Count > 1;
+            var sideSign = 0;
+            for (var i = 0; i < hull.Count; ++i)
+            {
+                // get the line segment
+                var j = i == 0 ? hull.Count - 1 : i - 1;
+                var pt1 = hull[i];
+                var pt2 = hull[j];
+
+                // for point to be inside the hull, "side"
+                // signs must be the same for all edges.
+                var thisSide = CalcPointSide(pt1, pt2, p);
+                var thisSideSign = thisSide >= 0 ? 1 : -1;
+                if (sideSign == 0)
+                    sideSign = thisSideSign;
+                else if (thisSideSign != sideSign)
+                    inside = false;
+
+                // get minimum distance to each segment
+                var thisDistance = DistancePointToLineSegment(p, pt1, pt2);
+                distance = Mathf.Min(distance, thisDistance);
+            }
+            if (inside)
+                distance = 0;
+            return distance;
+        }
+
+        static void RemoveInsidePoints(int countLimit, Vector2 pt, List<Vector2> hull)
+        {
+            while (hull.Count >= countLimit && CalcPointSide(hull[hull.Count - 2], hull[hull.Count - 1], pt) <= 0)
+                hull.RemoveAt(hull.Count - 1);
+        }
+
+        // Note: .z components of input points are ignored; result is a 2D hull on .xy
+        static void CalcConvexHull2D(Vector3[] points, List<Vector2> outHull)
+        {
+            outHull.Clear();
+            if (points == null || points.Length == 0)
+                return;
+            var needCapacity = points.Length + 1;
+            if (outHull.Capacity < needCapacity)
+                outHull.Capacity = needCapacity;
+            if (points.Length == 1)
+            {
+                outHull.Add(points[0]);
+                return;
+            }
+
+            // Andrew's monotone chain algorithm:
+            // First sort the input points
+            Array.Sort(points, (a, b) =>
+            {
+                var ca = a.x.CompareTo(b.x);
+                return ca != 0 ? ca : a.y.CompareTo(b.y);
+            });
+
+            // Build lower hull
+            for (int i = 0; i < points.Length; ++i)
+            {
+                Vector2 pt = points[i];
+                RemoveInsidePoints(2, pt, outHull);
+                outHull.Add(pt);
+            }
+
+            // Build upper hull
+            for (int i = points.Length - 2, j = outHull.Count + 1; i >= 0; --i)
+            {
+                Vector2 pt = points[i];
+                RemoveInsidePoints(j, pt, outHull);
+                outHull.Add(pt);
+            }
+
+            // Remove last point (it's the same as the first one)
+            outHull.RemoveAt(outHull.Count - 1);
+        }
+
+        // Note: modifies input points array
+        static void CalcPointCloudConvexHull(Vector3[] points, List<Vector2> outHull)
+        {
+            outHull.Clear();
+            if (points == null || points.Length == 0)
+                return;
+
+            // project point cloud into 2D GUI space
+            var handleMatrix = Handles.matrix;
+            var cam = new CameraProjectionCache(Camera.current, Screen.height);
+            for (var i = 0; i < points.Length; ++i)
+                points[i] = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[i]));
+
+            // calculate 2D convex hull
+            CalcConvexHull2D(points, outHull);
+        }
+
+        // Note: input array contents are modified
+        static readonly List<Vector2> s_PointCloudConvexHull = new List<Vector2>();
+        static float DistanceToPointCloudConvexHull(params Vector3[] points)
+        {
+            if (points == null || points.Length == 0)
+                return float.PositiveInfinity;
+
+            var mousePos = Event.current.mousePosition;
+            CalcPointCloudConvexHull(points, s_PointCloudConvexHull);
+            return DistancePointToConvexHull(mousePos, s_PointCloudConvexHull);
         }
 
         // Record a distance measurement from a handle.
@@ -883,8 +1051,51 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void CleanupHandleMaterials()
         {
+            DisposeArcIndexBuffer();
             // This is enough for all of them to get re-fetched in next call to InitHandleMaterials()
             s_HandleWireMaterial = null;
+        }
+
+        static GraphicsBuffer s_ArcIndexBuffer;
+
+        static void DisposeArcIndexBuffer()
+        {
+            s_ArcIndexBuffer?.Dispose();
+            s_ArcIndexBuffer = null;
+        }
+
+        static internal GraphicsBuffer GetArcIndexBuffer(int segments, int sides)
+        {
+            int indexCount = (segments - 1) * sides * 2 * 3;
+            if (s_ArcIndexBuffer != null && s_ArcIndexBuffer.count == indexCount)
+                return s_ArcIndexBuffer;
+
+            s_ArcIndexBuffer?.Dispose();
+            AssemblyReloadEvents.beforeAssemblyReload += DisposeArcIndexBuffer;
+            EditorApplication.quitting += DisposeArcIndexBuffer;
+
+            s_ArcIndexBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Index, indexCount, 2);
+            ushort[] ib = new ushort[indexCount];
+            var idx = 0;
+            for (var seg = 0; seg < segments - 1; ++seg)
+            {
+                for (var side = 0; side < sides; ++side)
+                {
+                    var idx00 = seg * sides + side;
+                    var idx01 = seg * sides + (side + 1) % sides;
+                    var idx10 = (seg + 1) * sides + side;
+                    var idx11 = (seg + 1) * sides + (side + 1) % sides;
+                    ib[idx + 0] = (ushort)idx00;
+                    ib[idx + 1] = (ushort)idx10;
+                    ib[idx + 2] = (ushort)idx01;
+                    ib[idx + 3] = (ushort)idx01;
+                    ib[idx + 4] = (ushort)idx10;
+                    ib[idx + 5] = (ushort)idx11;
+                    idx += 6;
+                }
+            }
+            s_ArcIndexBuffer.SetData(ib);
+            return s_ArcIndexBuffer;
         }
 
         static void InitHandleMaterials()
@@ -906,6 +1117,8 @@ namespace UnityEditor
                 s_HandleDottedWireTextureIndex2D = ShaderUtil.GetTextureBindingIndex(s_HandleDottedWireMaterial2D.shader, Shader.PropertyToID("_MainTex"));
                 s_HandleDottedWireTextureSamplerIndex = ShaderUtil.GetTextureSamplerBindingIndex(s_HandleDottedWireMaterial.shader, Shader.PropertyToID("_MainTex"));
                 s_HandleDottedWireTextureSamplerIndex2D = ShaderUtil.GetTextureSamplerBindingIndex(s_HandleDottedWireMaterial2D.shader, Shader.PropertyToID("_MainTex"));
+
+                s_HandleArcMaterial = (Material)EditorGUIUtility.LoadRequired("SceneView/CircularArc.mat");
             }
         }
 
@@ -932,6 +1145,15 @@ namespace UnityEditor
             }
         }
 
+        static internal Material handleArcMaterial
+        {
+            get
+            {
+                InitHandleMaterials();
+                return s_HandleArcMaterial;
+            }
+        }
+
         static Material s_HandleWireMaterial;
         static Material s_HandleWireMaterial2D;
         static int s_HandleWireTextureIndex;
@@ -945,6 +1167,8 @@ namespace UnityEditor
         static int s_HandleDottedWireTextureSamplerIndex;
         static int s_HandleDottedWireTextureIndex2D;
         static int s_HandleDottedWireTextureSamplerIndex2D;
+
+        static Material s_HandleArcMaterial;
 
         // Setup shader for later drawing of lines / anti-aliased lines.
         internal static void ApplyWireMaterial([DefaultValue("UnityEngine.Rendering.CompareFunction.Always")] CompareFunction zTest)

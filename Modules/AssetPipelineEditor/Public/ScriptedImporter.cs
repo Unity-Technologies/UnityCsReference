@@ -4,11 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.AssetImporters
 {
@@ -105,7 +103,7 @@ namespace UnityEditor.Experimental.AssetImporters
             {
                 for (var index = 0; index < attribute.overrideFileExtensions.Length; index++)
                 {
-                    var cleanExt = attribute.overrideFileExtensions[index].Trim('.');;
+                    var cleanExt = attribute.overrideFileExtensions[index].Trim('.');
                     if (!string.IsNullOrEmpty(cleanExt))
                         handledExts.Add(cleanExt, false);
                 }

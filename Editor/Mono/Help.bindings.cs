@@ -51,5 +51,23 @@ namespace UnityEditor
         // Open /url/ in the default web browser.
         [FreeFunction("OpenURLInWebbrowser")]
         public static extern void BrowseURL(string url);
+
+        [UnityEngine.Scripting.RequiredByNativeCode]
+        internal static string GetDispatchedHelpURL(Object obj, string fieldName)
+        {
+            System.Reflection.FieldInfo field = obj.GetType().GetField(fieldName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field == null)
+                return null;
+
+            object value = field.GetValue(obj);
+            if (value == null)
+                return null;
+
+            object[] attrs = value.GetType().GetCustomAttributes(typeof(HelpURLAttribute), true);
+            if (attrs != null && attrs.Length > 0)
+                return ((HelpURLAttribute)attrs[0]).m_Url;
+
+            return null;
+        }
     }
 }

@@ -12,12 +12,12 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         UIElementsEventsDebuggerImpl m_DebuggerImpl;
 
-        [MenuItem("Window/Analysis/UIElements Events Debugger", false, 102, true)]
+        [MenuItem("Window/UI Toolkit/Events Debugger", false, 3010, true)]
         public static void ShowUIElementsEventDebugger()
         {
             var window = EditorWindow.GetWindow<UIElementsEventsDebugger>();
             window.minSize = new Vector2(640, 480);
-            window.titleContent = new GUIContent("UIElements Event Debugger");
+            window.titleContent = EditorGUIUtility.TrTextContent("UI Toolkit Event Debugger");
             window.m_DebuggerImpl.ClearLogs();
         }
 

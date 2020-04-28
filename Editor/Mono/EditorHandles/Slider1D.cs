@@ -109,23 +109,9 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.Repaint:
-                    Color temp = Color.white;
-
-                    if (id == GUIUtility.hotControl)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.selectedColor;
-                    }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.preselectionColor;
-                    }
-
+                    Handles.SetupHandleColor(id, evt, out var prevColor, out var thickness);
                     capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Repaint);
-
-                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
-                        Handles.color = temp;
+                    Handles.color = prevColor;
                     break;
             }
             return position;

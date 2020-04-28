@@ -1745,33 +1745,33 @@ namespace UnityEditor
             EditorGUIUtility.PingObject(sceneObject);
         }
 
-        private void SelectAll()
+        void SelectAll()
         {
             int[] instanceIDs = treeView.GetRowIDs();
             treeView.SetSelection(instanceIDs, false);
             TreeViewSelectionChanged(instanceIDs);
         }
 
-        private void DeselectAll()
+        void DeselectAll()
         {
             int[] instanceIDs = new int[0];
             treeView.SetSelection(instanceIDs, false);
             TreeViewSelectionChanged(instanceIDs);
         }
 
-        private void InvertSelection()
+        void InvertSelection()
         {
             int[] instanceIDs = treeView.GetRowIDs().Except(treeView.GetSelection()).ToArray();
             treeView.SetSelection(instanceIDs, true);
             TreeViewSelectionChanged(instanceIDs);
         }
 
-        private bool IsSelectChildrenAvailable()
+        bool IsSelectChildrenAvailable()
         {
             foreach (var id in treeView.GetSelection())
             {
                 var scene = EditorSceneManager.GetSceneByHandle(id);
-                if (IsSceneHeaderInHierarchyWindow(scene))
+                if (IsSceneHeaderInHierarchyWindow(scene) && scene.isLoaded)
                 {
                     foreach (var rootGameObject in scene.GetRootGameObjects())
                     {
@@ -1793,7 +1793,7 @@ namespace UnityEditor
             return false;
         }
 
-        private void SelectChildren()
+        void SelectChildren()
         {
             List<int> instanceIDs = new List<int>(treeView.GetSelection());
             foreach (var id in treeView.GetSelection())

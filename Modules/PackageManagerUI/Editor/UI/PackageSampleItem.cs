@@ -98,17 +98,17 @@ namespace UnityEditor.PackageManager.UI
             else
             {
                 importStatus.RemoveFromClassList("imported");
-                importButton.text = L10n.Tr("Import into Project");
+                importButton.text = L10n.Tr("Import");
             }
         }
 
         private Label m_ImportStatus;
-        internal Label importStatus { get { return m_ImportStatus ?? (m_ImportStatus = new Label()); } }
+        internal Label importStatus { get { return m_ImportStatus ?? (m_ImportStatus = new Label() { classList = { "importStatus" } }); } }
         private Label m_NameLabel;
-        internal Label nameLabel { get { return m_NameLabel ?? (m_NameLabel = new Label()); } }
+        internal Label nameLabel { get { return m_NameLabel ?? (m_NameLabel = new Label() { classList = { "nameLabel" } }); } }
         private Label m_SizeLabel;
-        internal Label sizeLabel { get { return m_SizeLabel ?? (m_SizeLabel = new Label()); } }
+        internal Label sizeLabel { get { return m_SizeLabel ?? (m_SizeLabel = new Label() { classList = { "sizeLabel" } }); } }
         private Button m_ImportButton;
-        internal Button importButton { get { return m_ImportButton ?? (m_ImportButton = new Button()); } }
+        internal Button importButton { get { return m_ImportButton ?? (m_ImportButton = new Button() { classList = { "importButton" } }); } }
     }
 }

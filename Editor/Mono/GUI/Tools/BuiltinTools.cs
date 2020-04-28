@@ -394,8 +394,6 @@ namespace UnityEditor
             Quaternion handleRotation = Selection.transforms.Length > 1 ?
                 Tools.handleRotation : Tools.handleLocalRotation;
 
-            TransformManipulator.DebugAlignment(handleRotation);
-
             if (Event.current.type == EventType.MouseDown)
                 s_CurrentScale = Vector3.one;
 

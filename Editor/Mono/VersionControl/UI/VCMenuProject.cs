@@ -183,7 +183,7 @@ namespace UnityEditorInternal.VersionControl
         {
             AssetList selected = Provider.GetAssetListFromSelection();
             selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
-            return Provider.enabled && Provider.LockIsValid(selected);
+            return Provider.enabled && Provider.hasLockingSupport && Provider.LockIsValid(selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Lock" menu handler
@@ -205,7 +205,7 @@ namespace UnityEditorInternal.VersionControl
         {
             AssetList selected = Provider.GetAssetListFromSelection();
             selected = Provider.ConsolidateAssetList(selected, CheckoutMode.Both);
-            return Provider.enabled && Provider.UnlockIsValid(selected);
+            return Provider.enabled && Provider.hasLockingSupport && Provider.UnlockIsValid(selected);
         }
 
         // Called from native class VCSAssetMenuHandler as "Assets/Version Control/Unlock" menu handler

@@ -271,9 +271,6 @@ namespace UnityEditor
 
             // Prepare data
             SetupData(true);
-
-            // End renaming if a rename was in progress
-            EndRename(true);
         }
 
         internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId)

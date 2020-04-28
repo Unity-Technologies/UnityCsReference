@@ -2349,7 +2349,7 @@ namespace UnityEditor
                         m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
                         m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
                         m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
-                        EditorApplication.OpenProject(Environment.CurrentDirectory);
+                        EditorApplication.RestartEditorAndRecompileScripts();
                     }
                 }
                 EditorGUIUtility.ExitGUI();

@@ -119,20 +119,14 @@ namespace UnityEditor
     // extern splash screen type (on iOS)
     public enum iOSLaunchScreenType
     {
-        // Default
         Default = 0,
-
-        // Image and background (relative size)
         ImageAndBackgroundRelative = 1,
+        ImageAndBackgroundConstant = 4,
 
-        // extern XIB file
         CustomXib = 2,
 
-        // None
+        [Obsolete("Launch Images are no longer supported by Apple. (UnityUpgradable) -> Default", true)]
         None = 3,
-
-        // Image and background (constant size)
-        ImageAndBackgroundConstant = 4
     }
 
     internal enum iOSAutomaticallySignValue

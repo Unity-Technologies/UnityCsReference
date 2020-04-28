@@ -17,8 +17,6 @@ namespace UnityEditor.PackageManager.UI
         public virtual event Action<IOperation> onDownloadProgress = delegate {};
         public virtual event Action<IOperation> onDownloadPaused = delegate {};
 
-        private Texture2D m_MissingTexture;
-
         private Dictionary<string, AssetStoreDownloadOperation> m_DownloadOperations = new Dictionary<string, AssetStoreDownloadOperation>();
 
         [SerializeField]
@@ -100,39 +98,8 @@ namespace UnityEditor.PackageManager.UI
             operation.Download(false);
         }
 
-        public virtual void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
-        {
-            if (m_MissingTexture == null)
-            {
-                m_MissingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
-            }
-
-            var texture = m_AssetStoreCache.LoadImage(productID, url);
-            if (texture != null)
-            {
-                doneCallbackAction?.Invoke(productID, texture);
-                return;
-            }
-
-            var httpRequest = m_HttpClientFactory.GetASyncHTTPClient(url);
-            httpRequest.doneCallback = httpClient =>
-            {
-                if (httpClient.IsSuccess() && httpClient.texture != null)
-                {
-                    m_AssetStoreCache.SaveImage(productID, url, httpClient.texture);
-                    doneCallbackAction?.Invoke(productID, httpClient.texture);
-                    return;
-                }
-
-                doneCallbackAction?.Invoke(productID, m_MissingTexture);
-            };
-            httpRequest.Begin();
-        }
-
         public virtual void ClearCache()
         {
-            m_MissingTexture = null;
-
             AbortAllDownloads();
         }
 

@@ -201,6 +201,10 @@ namespace UnityEngine.XR
         [NativeConditional("ENABLE_XR")]
         extern public int GetPreferredMirrorBlitMode();
 
+        [NativeMethod(Name = "SetPreferredMirrorViewBlitMode", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public void SetPreferredMirrorBlitMode(int blitMode);
+
         [System.Obsolete("GetMirrorViewBlitDesc(RenderTexture, out XRMirrorViewBlitDesc) is deprecated. Use GetMirrorViewBlitDesc(RenderTexture, out XRMirrorViewBlitDesc, int) instead.", false)]
         public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc)
         {

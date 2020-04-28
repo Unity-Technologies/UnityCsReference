@@ -99,34 +99,21 @@ namespace UnityEditorInternal
                     }
                     break;
                 case EventType.Repaint:
-                    Color temp = Color.white;
+                    Handles.SetupHandleColor(id, evt, out var prevColor, out var thickness);
                     var isHot = id == GUIUtility.hotControl;
-                    var isPreselected = id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt;
-
-                    if (isHot)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.selectedColor;
-                    }
-                    else if (isPreselected)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.preselectionColor;
-                    }
+                    var isHover = Handles.IsHovering(id, evt);
 
                     // We only want the position to be affected by the Handles.matrix.
                     Handles.matrix = Matrix4x4.identity;
                     if (drawCircle)
-                        Handles.DrawWireDisc(worldPosition, Camera.current.transform.forward, size);
-                    if (isPreselected || isHot)
+                        Handles.DrawWireDisc(worldPosition, Camera.current.transform.forward, size, thickness);
+                    if (isHover || isHot)
                     {
                         Handles.color = s_DimmingColor;
                         Handles.DrawSolidDisc(worldPosition, Camera.current.transform.forward, size);
                     }
                     Handles.matrix = origMatrix;
-
-                    if (isHot || isPreselected)
-                        Handles.color = temp;
+                    Handles.color = prevColor;
                     break;
             }
             return rotation;

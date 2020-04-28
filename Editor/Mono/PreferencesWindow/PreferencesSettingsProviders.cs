@@ -129,6 +129,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
+            public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
         }
 
         internal class LanguageProperties
@@ -804,12 +805,18 @@ namespace UnityEditor
             GUILayout.Label("General", EditorStyles.boldLabel);
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
 
+            GUILayout.Label("Handles", EditorStyles.boldLabel);
+            Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);
+
             GUILayout.Label("Search", EditorStyles.boldLabel);
             SceneView.s_PreferenceEnableFilteringWhileSearching.value = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileSearching, SceneView.s_PreferenceEnableFilteringWhileSearching);
             SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing.value  = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileLodGroupEditing, SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing);
 
             if (EditorGUI.EndChangeCheck())
+            {
                 WritePreferences();
+                SceneView.RepaintAll();
+            }
         }
 
         private void ShowGICache(string searchContext)

@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI
 
         private Dictionary<string, AssetStoreLocalInfo> m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
 
+        private Texture2D m_MissingTexture;
+
         [SerializeField]
         private string[] m_SerializedKeys = new string[0];
 
@@ -52,10 +54,13 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private ApplicationProxy m_Application;
         [NonSerialized]
+        private HttpClientFactory m_HttpClientFactory;
+        [NonSerialized]
         private IOProxy m_IOProxy;
-        public void ResolveDependencies(ApplicationProxy application, AssetStoreUtils assetStoreUtils, IOProxy systemIOProxy)
+        public void ResolveDependencies(ApplicationProxy application, AssetStoreUtils assetStoreUtils, HttpClientFactory httpClientFactory, IOProxy systemIOProxy)
         {
             m_Application = application;
+            m_HttpClientFactory = httpClientFactory;
             m_IOProxy = systemIOProxy;
 
             foreach (var productInfo in m_ProductInfos.Values)
@@ -134,6 +139,35 @@ namespace UnityEditor.PackageManager.UI
             m_IOProxy.FileWriteAllBytes(path, texture.EncodeToJPG());
         }
 
+        public void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
+        {
+            if (m_MissingTexture == null)
+            {
+                m_MissingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
+            }
+
+            var texture = LoadImage(productID, url);
+            if (texture != null)
+            {
+                doneCallbackAction?.Invoke(productID, texture);
+                return;
+            }
+
+            var httpRequest = m_HttpClientFactory.GetASyncHTTPClient(url);
+            httpRequest.doneCallback = httpClient =>
+            {
+                if (httpClient.IsSuccess() && httpClient.texture != null)
+                {
+                    SaveImage(productID, url, httpClient.texture);
+                    doneCallbackAction?.Invoke(productID, httpClient.texture);
+                    return;
+                }
+
+                doneCallbackAction?.Invoke(productID, m_MissingTexture);
+            };
+            httpRequest.Begin();
+        }
+
         public virtual void ClearCache()
         {
             m_ETags.Clear();
@@ -142,6 +176,7 @@ namespace UnityEditor.PackageManager.UI
             m_PurchaseInfos.Clear();
             m_ProductInfos.Clear();
             m_LocalInfos.Clear();
+            m_MissingTexture = null;
         }
 
         public virtual AssetStorePurchaseInfo GetPurchaseInfo(string productIdString)

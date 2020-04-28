@@ -56,7 +56,6 @@ namespace UnityEditor
         SerializedProperty m_MaskRemapMaxB;
         SerializedProperty m_MaskRemapMaxA;
 
-        bool m_HasChanged = true;
         bool m_NormalMapHasCorrectTextureType;
         bool m_ShowMaskRemap = false;
 
@@ -163,8 +162,6 @@ namespace UnityEditor
 
             serializedObject.Update();
 
-            EditorGUI.BeginChangeCheck();
-
             var curMaskMap = m_MaskMapTexture.objectReferenceValue as Texture2D;
             bool maskMapUsed = m_MaskMapUsed || curMaskMap != null;
 
@@ -237,7 +234,6 @@ namespace UnityEditor
             EditorGUILayout.Space();
             TerrainLayerUtility.TilingSettingsUI(m_TileSize, m_TileOffset);
 
-            m_HasChanged |= EditorGUI.EndChangeCheck();
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -246,8 +242,7 @@ namespace UnityEditor
             if (target == null)
                 return false;
 
-            TerrainLayer t = (TerrainLayer)target;
-            return t.diffuseTexture != null;
+            return true;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
@@ -255,23 +250,22 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
                 background.Draw(r, false, false, false, false);
 
-            Texture2D mask = (Texture2D)m_DiffuseTexture.objectReferenceValue;
-            if (mask == null)
+            TerrainLayer terrainLayer = (TerrainLayer)target;
+
+            Texture2D mask = terrainLayer.diffuseTexture;
+            if (mask != null)
             {
-                mask = EditorGUIUtility.whiteTexture;
-                m_HasChanged = true;
+                int texWidth = Mathf.Min(mask.width, 256);
+                int texHeight = Mathf.Min(mask.height, 256);
+
+                float zoomLevel = Mathf.Min(Mathf.Min(r.width / texWidth, r.height / texHeight), 1);
+                Rect wantedRect = new Rect(r.x, r.y, texWidth * zoomLevel, texHeight * zoomLevel);
+                PreviewGUI.BeginScrollView(r, m_Pos, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
+
+                EditorGUI.DrawPreviewTexture(wantedRect, mask);
+
+                m_Pos = PreviewGUI.EndScrollView();
             }
-
-            int texWidth = Mathf.Min(mask.width, 256);
-            int texHeight = Mathf.Min(mask.height, 256);
-
-            float zoomLevel = Mathf.Min(Mathf.Min(r.width / texWidth, r.height / texHeight), 1);
-            Rect wantedRect = new Rect(r.x, r.y, texWidth * zoomLevel, texHeight * zoomLevel);
-            PreviewGUI.BeginScrollView(r, m_Pos, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
-
-            EditorGUI.DrawPreviewTexture(wantedRect, mask);
-
-            m_Pos = PreviewGUI.EndScrollView();
         }
 
         public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)

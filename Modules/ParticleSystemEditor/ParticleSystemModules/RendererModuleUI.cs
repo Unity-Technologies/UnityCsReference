@@ -91,7 +91,7 @@ namespace UnityEditor
             public GUIContent rotateWithStretchDirection = EditorGUIUtility.TrTextContent("Rotate With Stretch", "Rotate the particles based on the direction they are stretched in. This is added on top of other particle rotation.");
             public GUIContent sortingFudge = EditorGUIUtility.TrTextContent("Sorting Fudge", "Lower the number and most likely these particles will appear in front of other transparent objects, including other particles.");
             public GUIContent sortingFudgeDisabledDueToSortingGroup = EditorGUIUtility.TrTextContent("Sorting Fudge", "This is disabled as the Sorting Group component handles the sorting for this Renderer.");
-            public GUIContent sortMode = EditorGUIUtility.TrTextContent("Sort Mode", "The draw order of particles can be sorted by distance, oldest in front, or youngest in front.");
+            public GUIContent sortMode = EditorGUIUtility.TrTextContent("Sort Mode", "Draw order of the particles. They can be sorted by:\n- Distance (from the camera position)\n- Oldest particles in front\n- Youngest prticles in front\n- Depth (distance from the camera plane)");
             public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Set whether the rotation of the particles is defined in Screen or World space.");
             public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Only opaque materials cast shadows");
             public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows. When using deferred rendering, all opaque objects receive shadows.");
@@ -127,7 +127,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("None"),
                 EditorGUIUtility.TrTextContent("By Distance"),
                 EditorGUIUtility.TrTextContent("Oldest in Front"),
-                EditorGUIUtility.TrTextContent("Youngest in Front")
+                EditorGUIUtility.TrTextContent("Youngest in Front"),
+                EditorGUIUtility.TrTextContent("By Depth")
             };
 
             public GUIContent[] spaces = new GUIContent[]

@@ -216,32 +216,6 @@ namespace UnityEditor
                         RectTransform.SendReapplyDrivenProperties(rectTransform);
                 }
             }
-
-            public void DebugAlignment(Quaternion targetRotation)
-            {
-                Quaternion refAlignment = Quaternion.identity;
-                if (!TransformManipulator.individualSpace)
-                    refAlignment = GetRefAlignment(targetRotation, rotation);
-
-                Vector3 dir;
-                Vector3 pos = transform.position;
-                float size = HandleUtility.GetHandleSize(pos) * 0.25f;
-                Color oldColor = Handles.color;
-
-                Handles.color = Color.red;
-                dir = rotation * refAlignment * Vector3.right * size;
-                Handles.DrawLine(pos - dir, pos + dir);
-
-                Handles.color = Color.green;
-                dir = rotation * refAlignment * Vector3.up * size;
-                Handles.DrawLine(pos - dir, pos + dir);
-
-                Handles.color = Color.blue;
-                dir = rotation * refAlignment * Vector3.forward * size;
-                Handles.DrawLine(pos - dir, pos + dir);
-
-                Handles.color = oldColor;
-            }
         }
 
         static EventType s_EventTypeBefore = EventType.Ignore;
@@ -416,14 +390,6 @@ namespace UnityEditor
         public static bool HandleHasMoved(Vector3 position)
         {
             return position != s_PreviousHandlePosition;
-        }
-
-        public static void DebugAlignment(Quaternion targetRotation)
-        {
-            if (s_MouseDownState == null)
-                return;
-            for (int i = 0; i < s_MouseDownState.Length; i++)
-                s_MouseDownState[i].DebugAlignment(targetRotation);
         }
     }
 } // namespace

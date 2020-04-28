@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -31,7 +32,18 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             cache = new VisualElementCache(root);
 
+            SetExpanded(m_PackageManagerPrefs.dependenciesExpanded);
+            dependenciesExpander.RegisterValueChangedCallback(evt => SetExpanded(evt.newValue));
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void SetExpanded(bool expanded)
+        {
+            if (dependenciesExpander.value != expanded)
+                dependenciesExpander.value = expanded;
+            if (m_PackageManagerPrefs.dependenciesExpanded != expanded)
+                m_PackageManagerPrefs.dependenciesExpanded = expanded;
+            UIUtils.SetElementDisplay(dependenciesOuterContainer, expanded);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -42,7 +54,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void ToggleLowWidthDependencyView(float width)
         {
-            if (width <= 340)
+            if (width <= 420)
             {
                 UIUtils.SetElementDisplay(dependenciesListLowWidth, true);
                 UIUtils.SetElementDisplay(reverseDependenciesListLowWidth, true);
@@ -164,7 +176,8 @@ namespace UnityEditor.PackageManager.UI
         }
 
         private VisualElementCache cache { get; set; }
-
+        private Toggle dependenciesExpander { get { return cache.Get<Toggle>("dependenciesExpander"); } }
+        private VisualElement dependenciesOuterContainer { get { return cache.Get<VisualElement>("dependenciesOuterContainer"); } }
         private VisualElement dependenciesNormalView { get { return cache.Get<VisualElement>("dependenciesNormalView"); } }
         private Label noDependencies { get { return cache.Get<Label>("noDependencies"); } }
         private VisualElement dependenciesNames { get { return cache.Get<VisualElement>("dependenciesNames"); } }

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditor
@@ -222,6 +221,8 @@ namespace UnityEditor
         static int[] s_DoPositionHandle_Internal_NextIndex = { 1, 2, 0 };
         static int[] s_DoPositionHandle_Internal_PrevIndex = { 2, 0, 1 };
         static int[] s_DoPositionHandle_Internal_PrevPlaneIndex = { 5, 3, 4 };
+        static int[] s_DoPositionHandle_Internal_AxisDrawOrder = { 0, 1, 2 };
+
         static Vector3 DoPositionHandle_Internal(PositionHandleIds ids, Vector3 position, Quaternion rotation, PositionHandleParam param)
         {
             Color temp = color;
@@ -271,8 +272,11 @@ namespace UnityEditor
             }
 
             // Draw axis sliders last to have priority over the planes
-            for (var i = 0; i < 3; ++i)
+            CalcDrawOrder(viewVectorDrawSpace, s_DoPositionHandle_Internal_AxisDrawOrder);
+            for (var ii = 0; ii < 3; ++ii)
             {
+                int i = s_DoPositionHandle_Internal_AxisDrawOrder[ii];
+
                 if (!param.ShouldShow(i))
                     continue;
 
@@ -300,7 +304,7 @@ namespace UnityEditor
 
                 if (cameraLerp <= kCameraViewThreshold)
                 {
-                    color = Color.Lerp(color, Color.clear, cameraLerp);
+                    color = GetFadedAxisColor(color, cameraLerp, ids[i]);
                     var axisVector = GetAxisVector(i);
                     var dir = rotation * axisVector;
                     var offset = dir * axisOffset[i] * size;
@@ -362,15 +366,15 @@ namespace UnityEditor
 
             bool isDisabled = !GUI.enabled;
             color = isDisabled ? staticColor : GetColorByAxis(axisNormalIndex);
-            color = Color.Lerp(color, Color.clear, cameraLerp);
+            color = GetFadedAxisColor(color, cameraLerp, id);
 
-            var updateOpacityFillColor = false;
+            float faceOpacity = 0.8f;
             if (GUIUtility.hotControl == id)
                 color = selectedColor;
-            else if (HandleUtility.nearestControl == id && !Event.current.alt)
-                color = preselectionColor;
+            else if (IsHovering(id, Event.current))
+                faceOpacity = 0.4f;
             else
-                updateOpacityFillColor = true;
+                faceOpacity = 0.1f;
 
             color = ToActiveColorSpace(color);
 
@@ -427,8 +431,7 @@ namespace UnityEditor
             verts[1] = position + positionOffset + handleOffset + (-axis1 + axis2) * handleSize * 0.5f;
             verts[2] = position + positionOffset + handleOffset + (-axis1 - axis2) * handleSize * 0.5f;
             verts[3] = position + positionOffset + handleOffset + (axis1 - axis2) * handleSize * 0.5f;
-            Color faceColor = updateOpacityFillColor ? new Color(color.r, color.g, color.b, 0.1f) : color;
-            faceColor = ToActiveColorSpace(faceColor);
+            Color faceColor = new Color(color.r, color.g, color.b, color.a * faceOpacity);
             Handles.DrawSolidRectangleWithOutline(verts, faceColor, Color.clear);
 
             // And then render the handle itself (this is the colored outline)

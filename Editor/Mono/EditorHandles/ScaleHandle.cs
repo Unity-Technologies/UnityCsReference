@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.Snap;
 using UnityEngine;
 
 namespace UnityEditor
@@ -125,6 +124,7 @@ namespace UnityEditor
         }
 
         static Vector3 s_DoScaleHandle_AxisHandlesOctant = Vector3.one;
+        static int[] s_DoScaleHandle_AxisDrawOrder = { 0, 1, 2 };
         static Vector3 s_InitialScale;
 
         public static Vector3 DoScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size)
@@ -164,8 +164,10 @@ namespace UnityEditor
                     break;
             }
 
-            for (var i = 0; i < 3; ++i)
+            CalcDrawOrder(viewVectorDrawSpace, s_DoScaleHandle_AxisDrawOrder);
+            for (var ii = 0; ii < 3; ++ii)
             {
+                int i = s_DoScaleHandle_AxisDrawOrder[ii];
                 if (!param.ShouldShow(i))
                     continue;
 
@@ -198,7 +200,7 @@ namespace UnityEditor
 
                 if (cameraLerp <= kCameraViewThreshold)
                 {
-                    color = Color.Lerp(color, Color.clear, cameraLerp);
+                    color = GetFadedAxisColor(color, cameraLerp, id);
 
                     if (isHot && !isThisAxisHot)
                         color = s_DisabledHandleColor;

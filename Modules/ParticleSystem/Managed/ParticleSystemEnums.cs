@@ -25,6 +25,7 @@ namespace UnityEngine
         Distance = 1,               // Sort based on distance.
         OldestInFront = 2,          // Sort the oldest particles to the front.
         YoungestInFront = 3,        // Sort the youngest particles to the front.
+        Depth = 4,                  // Sort based on depth.
     }
 
     // The world collision quality

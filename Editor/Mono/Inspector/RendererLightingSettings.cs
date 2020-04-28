@@ -77,16 +77,13 @@ namespace UnityEditor
             public static readonly GUIContent resolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
             public static readonly GUIContent resolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
             public static readonly GUIContent giNotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
+            public static readonly GUIContent isPresetInfo = EditorGUIUtility.TrTextContent("The Contribute Global Illumination property cannot be stored in a preset.");
+
             public static readonly GUIContent openPreview = EditorGUIUtility.TrTextContent("Open Preview");
             public static readonly GUIStyle openPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
             public static readonly int previewPadding = 30;
             public static readonly int previewWidth = 104;
         }
-
-        private SavedBool m_ShowLightingSettings;
-        private SavedBool m_ShowLightmapSettings;
-        private SavedBool m_ShowBakedLM;
-        private SavedBool m_ShowRealtimeLM;
 
         SerializedObject m_SerializedObject;
         SerializedObject m_GameObjectsSerializedObject;
@@ -113,10 +110,10 @@ namespace UnityEditor
         Renderer[] m_Renderers;
         Terrain[] m_Terrains;
 
-        internal SavedBool showLightingSettings { get { return m_ShowLightingSettings; } set { m_ShowLightingSettings = value; } }
-        internal SavedBool showLightmapSettings { get { return m_ShowLightmapSettings; } set { m_ShowLightmapSettings = value; } }
-        internal SavedBool showBakedLightmap { get { return m_ShowBakedLM; } set { m_ShowBakedLM = value; } }
-        internal SavedBool showRealtimeLightmap { get { return m_ShowRealtimeLM; } set { m_ShowRealtimeLM = value; } }
+        internal SavedBool showLightingSettings { get; set; }
+        internal SavedBool showLightmapSettings { get; set; }
+        internal SavedBool showBakedLightmap { get; set; }
+        internal SavedBool showRealtimeLightmap { get; set; }
 
         VisualisationGITexture m_CachedRealtimeTexture;
         VisualisationGITexture m_CachedBakedTexture;
@@ -131,6 +128,8 @@ namespace UnityEditor
                 return PrefabUtility.IsPartOfPrefabAsset(m_SerializedObject.targetObject);
             }
         }
+
+        private bool isPreset { get; }
 
         private float CalcLODScale(bool isMeshRenderer)
         {
@@ -175,6 +174,11 @@ namespace UnityEditor
             m_Terrains = m_SerializedObject.targetObjects.OfType<Terrain>().ToArray();
 
             m_StaticEditorFlags = m_GameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
+
+            if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
+                isPreset = false;
+            else
+                isPreset = m_SerializedObject.targetObject is Component ? ((int)(m_SerializedObject.targetObject as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(m_SerializedObject.targetObject);
         }
 
         public void RenderSettings(bool showLightmapSettings)
@@ -190,16 +194,16 @@ namespace UnityEditor
             m_GameObjectsSerializedObject.Update();
 
             ReceiveGI receiveGI = (ReceiveGI)m_ReceiveGI.intValue;
-            bool contributeGI = (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
-            bool showEnlightenSettings = isPrefabAsset || realtimeGI || (bakedGI && lightmapper == LightingSettings.Lightmapper.Enlighten);
+            bool contributeGI = isPreset ? true : (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
+            bool showEnlightenSettings = isPreset || isPrefabAsset || realtimeGI || (bakedGI && lightmapper == LightingSettings.Lightmapper.Enlighten);
 
             // m_ReceiveGI might still be set to Lightmaps, but LightProbes is shown in the inspector since the contributeGI if off.
             // In this case we still have to mark it as "multiple values" even though both have "Lightmaps" as the value, but one is showing a grayed out "Light Probes" in the UI
-            bool showMixedGIValue = m_ReceiveGI.hasMultipleDifferentValues || ((m_StaticEditorFlags.hasMultipleDifferentValuesBitwise & (int)StaticEditorFlags.ContributeGI) != 0);
+            bool showMixedGIValue = m_ReceiveGI.hasMultipleDifferentValues || (isPreset ? false : ((m_StaticEditorFlags.hasMultipleDifferentValuesBitwise & (int)StaticEditorFlags.ContributeGI) != 0));
 
-            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.lightingSettings);
+            showLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(showLightingSettings.value, Styles.lightingSettings);
 
-            if (m_ShowLightingSettings.value)
+            if (showLightingSettings.value)
             {
                 EditorGUI.indentLevel += 1;
 
@@ -221,9 +225,13 @@ namespace UnityEditor
                     return;
                 }
 
-                contributeGI = ContributeGISettings();
+                using (new EditorGUI.DisabledScope(isPreset))
+                    contributeGI = ContributeGISettings();
 
-                if (!(bakedGI || realtimeGI) && !isPrefabAsset && contributeGI)
+                if (isPreset)
+                    EditorGUILayout.HelpBox(Styles.isPresetInfo.text, MessageType.Info);
+
+                if (!(bakedGI || realtimeGI) && contributeGI && !isPrefabAsset && !isPreset)
                 {
                     EditorGUILayout.HelpBox(Styles.giNotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
@@ -271,13 +279,13 @@ namespace UnityEditor
 
             if (showLightmapSettings && contributeGI && receiveGI == ReceiveGI.Lightmaps && !showMixedGIValue)
             {
-                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.lightmapSettings);
+                this.showLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(this.showLightmapSettings.value, Styles.lightmapSettings);
 
-                if (m_ShowLightmapSettings.value)
+                if (this.showLightmapSettings.value)
                 {
                     EditorGUI.indentLevel += 1;
 
-                    bool showProgressiveSettings = isPrefabAsset || (bakedGI && lightmapper != LightingSettings.Lightmapper.Enlighten);
+                    bool showProgressiveSettings = isPreset || isPrefabAsset || (bakedGI && lightmapper != LightingSettings.Lightmapper.Enlighten);
 
                     LightmapScaleGUI(true, Styles.scaleInLightmap, false);
 
@@ -332,17 +340,21 @@ namespace UnityEditor
             bool bakedGI = settings.bakedGI;
             bool realtimeGI = settings.realtimeGI;
 
-            bool contributeGI = (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
+            bool contributeGI = isPreset ? true : (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
 
-            m_ShowLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightingSettings.value, Styles.lightingSettings);
+            showLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(showLightingSettings.value, Styles.lightingSettings);
 
-            if (m_ShowLightingSettings.value)
+            if (showLightingSettings.value)
             {
                 EditorGUI.indentLevel += 1;
 
-                contributeGI = ContributeGISettings();
+                using (new EditorGUI.DisabledScope(isPreset))
+                    contributeGI = ContributeGISettings();
 
-                if (!(bakedGI || realtimeGI) && !isPrefabAsset && contributeGI)
+                if (isPreset)
+                    EditorGUILayout.HelpBox(Styles.isPresetInfo.text, MessageType.Info);
+
+                if (!(bakedGI || realtimeGI) && contributeGI && !isPrefabAsset && !isPreset)
                 {
                     EditorGUILayout.HelpBox(Styles.giNotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
@@ -362,9 +374,9 @@ namespace UnityEditor
 
             if (contributeGI)
             {
-                m_ShowLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowLightmapSettings.value, Styles.lightmapSettings);
+                showLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(showLightmapSettings.value, Styles.lightmapSettings);
 
-                if (m_ShowLightmapSettings.value)
+                if (showLightmapSettings.value)
                 {
                     EditorGUI.indentLevel += 1;
 
@@ -395,6 +407,12 @@ namespace UnityEditor
 
         bool ContributeGISettings()
         {
+            if (isPreset)
+            {
+                EditorGUILayout.Toggle(Styles.contributeGI, true);
+                return true;
+            }
+
             bool contributeGI = (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
             bool mixedValue = (m_StaticEditorFlags.hasMultipleDifferentValuesBitwise & (int)StaticEditorFlags.ContributeGI) != 0;
             EditorGUI.showMixedValue = mixedValue;
@@ -511,9 +529,9 @@ namespace UnityEditor
             if (m_CachedBakedTexture.texture == null)
                 return;
 
-            m_ShowBakedLM.value = EditorGUILayout.Foldout(m_ShowBakedLM.value, Styles.atlas, true);
+            showBakedLightmap.value = EditorGUILayout.Foldout(showBakedLightmap.value, Styles.atlas, true);
 
-            if (!m_ShowBakedLM.value)
+            if (!showBakedLightmap.value)
                 return;
 
             EditorGUI.indentLevel += 1;
@@ -546,7 +564,7 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            bool showProgressiveInfo = isPrefabAsset || (settings.bakedGI && settings.lightmapper != LightingSettings.Lightmapper.Enlighten);
+            bool showProgressiveInfo = !isPreset && (settings.bakedGI && settings.lightmapper != LightingSettings.Lightmapper.Enlighten);
 
             if (showProgressiveInfo && Unsupported.IsDeveloperMode())
             {
@@ -576,9 +594,9 @@ namespace UnityEditor
             if (!UpdateRealtimeTexture(inputSystemHash, terrain.GetInstanceID()))
                 return;
 
-            m_ShowRealtimeLM.value = EditorGUILayout.Foldout(m_ShowRealtimeLM.value, Styles.realtimeLM, true);
+            showRealtimeLightmap.value = EditorGUILayout.Foldout(showRealtimeLightmap.value, Styles.realtimeLM, true);
 
-            if (!m_ShowRealtimeLM.value)
+            if (!showRealtimeLightmap.value)
                 return;
 
             EditorGUI.indentLevel += 1;
@@ -618,9 +636,9 @@ namespace UnityEditor
             if (!UpdateRealtimeTexture(inputSystemHash, renderer.GetInstanceID()))
                 return;
 
-            m_ShowRealtimeLM.value = EditorGUILayout.Foldout(m_ShowRealtimeLM.value, Styles.realtimeLM, true);
+            showRealtimeLightmap.value = EditorGUILayout.Foldout(showRealtimeLightmap.value, Styles.realtimeLM, true);
 
-            if (!m_ShowRealtimeLM.value)
+            if (!showRealtimeLightmap.value)
                 return;
 
             EditorGUI.indentLevel += 1;
@@ -730,6 +748,9 @@ namespace UnityEditor
 
         private void DisplayMeshWarning()
         {
+            if (isPreset)
+                return;
+
             Mesh mesh = GetSharedMesh(m_Renderers[0]);
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();

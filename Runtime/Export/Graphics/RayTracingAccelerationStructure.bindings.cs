@@ -97,11 +97,21 @@ namespace UnityEngine.Experimental.Rendering
         internal IntPtr m_Ptr;
 #pragma warning restore 414
 
+        public void Build()
+        {
+            Build(Vector3.zero);
+        }
+
+        public void Update()
+        {
+            Update(Vector3.zero);
+        }
+
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
-        extern public void Build();
+        extern public void Build(Vector3 relativeOrigin);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Update", HasExplicitThis = true)]
-        extern public void Update();
+        extern public void Update(Vector3 relativeOrigin);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstance", HasExplicitThis = true)]
         extern public void AddInstance([NotNull] Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF);

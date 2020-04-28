@@ -8,7 +8,6 @@ using UnityEngine.SubsystemsImplementation;
 
 namespace UnityEngine
 {
-    [Obsolete("Use SubsystemDescriptorWithProvider instead.", false)]
     public abstract class SubsystemDescriptor : ISubsystemDescriptor
     {
         public string id { get; set; }
@@ -19,7 +18,6 @@ namespace UnityEngine
     }
 
 #pragma warning disable CS0618
-    [Obsolete("Use SubsystemDescriptorWithProvider<> instead.", false)]
     public class SubsystemDescriptor<TSubsystem> : SubsystemDescriptor
         where TSubsystem : Subsystem
 #pragma warning restore CS0618

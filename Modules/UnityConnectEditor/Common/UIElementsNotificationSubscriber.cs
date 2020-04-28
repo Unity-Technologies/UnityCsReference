@@ -23,7 +23,7 @@ namespace UnityEditor.Connect
         const string k_NotificationTemplateDarkUssPath = "StyleSheets/ServicesWindow/NotificationDark.uss";
         const string k_NotificationTemplateLightUssPath = "StyleSheets/ServicesWindow/NotificationLight.uss";
         const string k_PagerTextTemplate = "{0} of {1}";
-        const string k_NullVisualElementExceptionMessage = "rootVisualElement cannot be null. It should be the rootVisualElement of the UIElements layout.";
+        const string k_NullVisualElementExceptionMessage = "rootVisualElement cannot be null. It should be the rootVisualElement of the UI Toolkit layout.";
         const string k_NotificationSeverityParamName = "Notification.Severity";
         const string k_UnknownSeverityExceptionMessage = "Unknown severity: {0}";
 

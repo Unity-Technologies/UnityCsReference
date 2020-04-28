@@ -17,7 +17,7 @@ using UnityEditor.UIElements;
 
 public class {0} : EditorWindow
 {{
-    [MenuItem(""Window/UIElements/{0}"")]
+    [MenuItem(""Window/Project/{0}"")]
     public static void ShowExample()
     {{
         {0} wnd = GetWindow<{0}>();

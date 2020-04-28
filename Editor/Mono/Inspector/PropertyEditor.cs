@@ -248,8 +248,8 @@ namespace UnityEditor
                 res.checkout = isFolder || Provider.CheckoutIsValid(res.assets, checkoutBoth ? CheckoutMode.Both : CheckoutMode.Meta);
                 res.add = Provider.AddIsValid(res.assets);
                 res.submit = Provider.SubmitIsValid(null, res.assets);
-                res.@lock = !isFolder && Provider.LockIsValid(res.assets);
-                res.unlock = !isFolder && Provider.UnlockIsValid(res.assets);
+                res.@lock = Provider.hasLockingSupport && !isFolder && Provider.LockIsValid(res.assets);
+                res.unlock = Provider.hasLockingSupport && !isFolder && Provider.UnlockIsValid(res.assets);
                 return res;
             }
         }

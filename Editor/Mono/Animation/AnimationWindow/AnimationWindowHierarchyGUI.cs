@@ -832,24 +832,28 @@ namespace UnityEditorInternal
 
         override protected void RenameEnded()
         {
-            string newName = GetRenameOverlay().name;
-            string oldName = GetRenameOverlay().originalName;
-
-            if (newName != oldName)
+            var renameOverlay = GetRenameOverlay();
+            if (renameOverlay.userAcceptedRename)
             {
-                Undo.RecordObject(state.activeAnimationClip, "Rename Curve");
+                string newName = renameOverlay.name;
+                string oldName = renameOverlay.originalName;
 
-                foreach (AnimationWindowCurve curve in m_RenamedNode.curves)
+                if (newName != oldName)
                 {
-                    EditorCurveBinding newBinding = AnimationWindowUtility.GetRenamedBinding(curve.binding, newName);
+                    Undo.RecordObject(state.activeAnimationClip, "Rename Curve");
 
-                    if (AnimationWindowUtility.CurveExists(newBinding, state.allCurves.ToArray()))
+                    foreach (AnimationWindowCurve curve in m_RenamedNode.curves)
                     {
-                        Debug.LogWarning("Curve already exists, renaming cancelled.");
-                        continue;
-                    }
+                        EditorCurveBinding newBinding = AnimationWindowUtility.GetRenamedBinding(curve.binding, newName);
 
-                    AnimationWindowUtility.RenameCurvePath(curve, newBinding, curve.clip);
+                        if (AnimationWindowUtility.CurveExists(newBinding, state.allCurves.ToArray()))
+                        {
+                            Debug.LogWarning("Curve already exists, renaming cancelled.");
+                            continue;
+                        }
+
+                        AnimationWindowUtility.RenameCurvePath(curve, newBinding, curve.clip);
+                    }
                 }
             }
 

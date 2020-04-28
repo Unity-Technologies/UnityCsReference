@@ -36,7 +36,7 @@ namespace UnityEditor.UIElements
             return filePath;
         }
 
-        [MenuItem("Assets/Create/UIElements/UXML Template", false, 610, false)]
+        [MenuItem("Assets/Create/UI Toolkit/UI Document", false, 610, false)]
         public static void CreateUXMLTemplate()
         {
             if (CommandService.Exists(nameof(CreateUXMLTemplate)))

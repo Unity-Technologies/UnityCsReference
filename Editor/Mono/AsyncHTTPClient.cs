@@ -112,6 +112,8 @@ namespace UnityEditor
                 Dictionary<string, string> ret = new Dictionary<string, string>();
                 foreach (var curr in headerFlattened)
                 {
+                    if (string.IsNullOrEmpty(curr))
+                        continue;
                     string[] line = curr.Split(new string[] { ": " }, StringSplitOptions.None);
                     if (line.Length > 1)
                         ret.Add(line[0], string.Concat(line.Skip(1).ToArray()));

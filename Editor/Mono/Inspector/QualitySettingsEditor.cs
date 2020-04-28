@@ -565,7 +565,8 @@ namespace UnityEditor
                     SoftParticlesHintGUI();
             }
 
-            EditorGUILayout.PropertyField(realtimeReflectionProbes);
+            if (!SupportedRenderingFeatures.active.overridesRealtimeReflectionProbes)
+                EditorGUILayout.PropertyField(realtimeReflectionProbes);
             EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Content.kBillboardsFaceCameraPos);
             EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
 
@@ -587,14 +588,15 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
             bool shadowMaskSupported = SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask);
+            bool showShadowMaskUsage = shadowMaskSupported && !SupportedRenderingFeatures.active.overridesShadowmask;
 
-            if (!usingSRP || shadowMaskSupported)
+            if (!usingSRP || showShadowMaskUsage)
             {
                 GUILayout.Space(10);
 
                 GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
 
-                if (shadowMaskSupported)
+                if (showShadowMaskUsage)
                     EditorGUILayout.PropertyField(shadowMaskUsageProperty);
 
                 if (!usingSRP)

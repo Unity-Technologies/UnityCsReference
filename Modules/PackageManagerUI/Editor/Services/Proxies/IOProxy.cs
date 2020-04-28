@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI
     {
         // Need to re-create this method since Unity's FileUtil equivalent (with overwrite) is internal only.
         // From: https://stackoverflow.com/questions/58744/copy-the-entire-contents-of-a-directory-in-c-sharp
-        public void DirectoryCopy(string sourcePath, string destinationPath, bool makeWritable = false)
+        public virtual void DirectoryCopy(string sourcePath, string destinationPath, bool makeWritable = false)
         {
             Directory.CreateDirectory(destinationPath);
 
@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public ulong DirectorySizeInBytes(string path)
+        public virtual ulong DirectorySizeInBytes(string path)
         {
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
             ulong sizeInBytes = 0;
@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI
             return sizeInBytes;
         }
 
-        public void RemovePathAndMeta(string path, bool removeEmptyParent = false)
+        public virtual void RemovePathAndMeta(string path, bool removeEmptyParent = false)
         {
             if (Directory.Exists(path))
                 Directory.Delete(path, true);
@@ -55,72 +55,72 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public bool DirectoryExists(string directoryPath)
+        public virtual bool DirectoryExists(string directoryPath)
         {
             return Directory.Exists(directoryPath);
         }
 
-        public string[] DirectoryGetFiles(string directoryPath)
+        public virtual string[] DirectoryGetFiles(string directoryPath)
         {
             return Directory.GetFiles(directoryPath);
         }
 
-        public string[] DirectoryGetFiles(string directoryPath, string searchPattern)
+        public virtual string[] DirectoryGetFiles(string directoryPath, string searchPattern)
         {
             return Directory.GetFiles(directoryPath, searchPattern);
         }
 
-        public string[] DirectoryGetFiles(string directoryPath, string searchPattern, SearchOption searchOption)
+        public virtual string[] DirectoryGetFiles(string directoryPath, string searchPattern, SearchOption searchOption)
         {
             return Directory.GetFiles(directoryPath, searchPattern, searchOption);
         }
 
-        public DirectoryInfo DirectoryGetParent(string directoryPath)
+        public virtual DirectoryInfo DirectoryGetParent(string directoryPath)
         {
             return Directory.GetParent(directoryPath);
         }
 
-        public void CreateDirectory(string directoryPath)
+        public virtual void CreateDirectory(string directoryPath)
         {
             Directory.CreateDirectory(directoryPath);
         }
 
-        public void DeleteDirectory(string directoryPath)
+        public virtual void DeleteDirectory(string directoryPath)
         {
             Directory.Delete(directoryPath);
         }
 
-        public void DirectoryDelete(string directoryPath, bool recursive)
+        public virtual void DirectoryDelete(string directoryPath, bool recursive)
         {
             Directory.Delete(directoryPath, recursive);
         }
 
-        public bool FileExists(string filePath)
+        public virtual bool FileExists(string filePath)
         {
             return File.Exists(filePath);
         }
 
-        public byte[] FileReadAllBytes(string filePath)
+        public virtual byte[] FileReadAllBytes(string filePath)
         {
             return File.ReadAllBytes(filePath);
         }
 
-        public string FileReadAllText(string filePath)
+        public virtual string FileReadAllText(string filePath)
         {
             return File.ReadAllText(filePath);
         }
 
-        public void FileCopy(string sourcePath, string destinationPath, bool overwrite)
+        public virtual void FileCopy(string sourcePath, string destinationPath, bool overwrite)
         {
             File.Copy(sourcePath, destinationPath, overwrite);
         }
 
-        public void FileWriteAllBytes(string destinationPath, byte[] bytes)
+        public virtual void FileWriteAllBytes(string destinationPath, byte[] bytes)
         {
             File.WriteAllBytes(destinationPath, bytes);
         }
 
-        public void FileDelete(string filePath)
+        public virtual void FileDelete(string filePath)
         {
             File.Delete(filePath);
         }

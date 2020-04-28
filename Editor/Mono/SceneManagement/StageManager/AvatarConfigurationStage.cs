@@ -71,7 +71,7 @@ namespace UnityEditor.SceneManagement
 
             // Setup Scene view state
             sceneView.sceneViewState.showFlares = false;
-            sceneView.sceneViewState.showMaterialUpdate = false;
+            sceneView.sceneViewState.alwaysRefresh = false;
             sceneView.sceneViewState.showFog = false;
             sceneView.sceneViewState.showSkybox = false;
             sceneView.sceneViewState.showImageEffects = false;

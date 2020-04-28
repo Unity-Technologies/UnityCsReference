@@ -112,7 +112,7 @@ namespace UnityEditor.PackageManager.UI
             if (m_DependenciesResolved)
                 return;
 
-            m_AssetStoreCache.ResolveDependencies(m_ApplicationProxy, m_AssetStoreUtils, m_IOProxy);
+            m_AssetStoreCache.ResolveDependencies(m_ApplicationProxy, m_AssetStoreUtils, m_HttpClientFactory, m_IOProxy);
             m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_UpmClient, m_IOProxy);
             m_AssetStoreOAuth.ResolveDependencies(m_UnityConnectProxy, m_UnityOAuthProxy, m_AssetStoreUtils, m_HttpClientFactory);
             m_AssetStoreUtils.ResolveDependencies(m_UnityConnectProxy);

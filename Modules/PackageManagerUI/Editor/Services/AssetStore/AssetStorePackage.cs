@@ -130,8 +130,11 @@ namespace UnityEditor.PackageManager.UI
             m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
             m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList(ioProxy);
-            foreach (var version in m_UpmVersionList.Cast<UpmPackageVersion>())
-                version.UpdateProductInfo(productInfo);
+            if (productInfo != null)
+            {
+                foreach (var version in m_UpmVersionList.Cast<UpmPackageVersion>())
+                    version.UpdateProductInfo(productInfo);
+            }
 
             m_AssetStoreLink = productInfo?.assetStoreLink.url;
 

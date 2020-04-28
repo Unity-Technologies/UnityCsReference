@@ -71,9 +71,6 @@ namespace UnityEditor
 
             var state = m_SceneView.sceneViewState;
 
-            //
-            // scene view effect options
-
             DrawListElement(drawPos, "Skybox", state.showSkybox, value => state.showSkybox = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
 
@@ -83,10 +80,10 @@ namespace UnityEditor
             DrawListElement(drawPos, "Flares", state.showFlares, value => state.showFlares = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
 
-            DrawListElement(drawPos, "Animated Materials", state.showMaterialUpdate, value => state.showMaterialUpdate = value);
+            DrawListElement(drawPos, "Always Refresh", state.alwaysRefresh, value => state.alwaysRefresh = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
 
-            DrawListElement(drawPos, "Post Processings", state.showImageEffects, value => state.showImageEffects = value);
+            DrawListElement(drawPos, "Post Processing", state.showImageEffects, value => state.showImageEffects = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
 
             DrawListElement(drawPos, "Particle Systems", state.showParticleSystems, value => state.showParticleSystems = value);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -24,7 +25,9 @@ using UnityEditor.EditorTools;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.Profiling;
 using UnityEditor.Snap;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
+using Component = UnityEngine.Component;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
 
@@ -311,8 +314,26 @@ namespace UnityEditor
         [Serializable]
         public class SceneViewState
         {
+            [SerializeField, FormerlySerializedAs("showMaterialUpdate")]
+            bool m_AlwaysRefresh;
+
             public bool showFog = true;
-            public bool showMaterialUpdate = false;
+
+            // marked obsolete by @karlh 2020/4/14
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("Obsolete msg (UnityUpgradable) -> alwaysRefresh")]
+            public bool showMaterialUpdate
+            {
+                get => m_AlwaysRefresh;
+                set => m_AlwaysRefresh = value;
+            }
+
+            public bool alwaysRefresh
+            {
+                get => m_AlwaysRefresh;
+                set => m_AlwaysRefresh = value;
+            }
+
             public bool showSkybox = true;
             public bool showFlares = true;
             public bool showImageEffects = true;
@@ -320,14 +341,19 @@ namespace UnityEditor
             public bool showVisualEffectGraphs = true;
 
             public bool fogEnabled => fxEnabled && showFog;
-            public bool materialUpdateEnabled => fxEnabled && showMaterialUpdate;
+            // marked obsolete by @karlh 2020/4/14
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("Obsolete msg (UnityUpgradable) -> alwaysRefreshEnabled")]
+            public bool materialUpdateEnabled => alwaysRefreshEnabled;
+            public bool alwaysRefreshEnabled => fxEnabled && alwaysRefresh;
             public bool skyboxEnabled => fxEnabled && showSkybox;
             public bool flaresEnabled => fxEnabled && showFlares;
             public bool imageEffectsEnabled => fxEnabled && showImageEffects;
             public bool particleSystemsEnabled => fxEnabled && showParticleSystems;
             public bool visualEffectGraphsEnabled => fxEnabled && showVisualEffectGraphs;
 
-            [SerializeField] bool m_FxEnabled = true;
+            [SerializeField]
+            bool m_FxEnabled = true;
 
             public SceneViewState()
             {
@@ -337,7 +363,7 @@ namespace UnityEditor
             {
                 fxEnabled = other.fxEnabled;
                 showFog = other.showFog;
-                showMaterialUpdate = other.showMaterialUpdate;
+                alwaysRefresh = other.alwaysRefresh;
                 showSkybox = other.showSkybox;
                 showFlares = other.showFlares;
                 showImageEffects = other.showImageEffects;
@@ -355,13 +381,9 @@ namespace UnityEditor
             {
                 get
                 {
-                    bool all =  showFog && showMaterialUpdate && showSkybox && showFlares && showImageEffects && showParticleSystems;
-
+                    bool all =  showFog && alwaysRefresh && showSkybox && showFlares && showImageEffects && showParticleSystems;
                     if (UnityEngine.VFX.VFXManager.activateVFX)
-                    {
                         all = all && showVisualEffectGraphs;
-                    }
-
                     return all;
                 }
             }
@@ -375,7 +397,7 @@ namespace UnityEditor
             public void SetAllEnabled(bool value)
             {
                 showFog = value;
-                showMaterialUpdate = value;
+                alwaysRefresh = value;
                 showSkybox = value;
                 showFlares = value;
                 showImageEffects = value;
@@ -542,7 +564,7 @@ namespace UnityEditor
         }
 
         [SerializeField]
-        private SceneViewState m_SceneViewState;
+        SceneViewState m_SceneViewState;
 
         public SceneViewState sceneViewState
         {
@@ -836,7 +858,8 @@ namespace UnityEditor
 
         internal static void AddCursorRect(Rect rect, MouseCursor cursor)
         {
-            if (Event.current.type == EventType.Repaint)
+            var eventType = Event.current.type;
+            if (eventType == EventType.Repaint || eventType == EventType.MouseMove)
                 s_MouseRects.Add(new CursorRect(rect, cursor));
         }
 
@@ -3038,14 +3061,18 @@ namespace UnityEditor
         void HandleMouseCursor()
         {
             Event evt = Event.current;
+            Rect cursorRect = new Rect(0, 0, position.width, position.height);
+            var checkMouseRects = evt.type == EventType.MouseMove || evt.type == EventType.Repaint;
+
             if (GUIUtility.hotControl == 0)
                 s_DraggingCursorIsCached = false;
-            Rect cursorRect = new Rect(0, 0, position.width, position.height);
+
             if (!s_DraggingCursorIsCached)
             {
                 // Determine if mouse is inside a new cursor rect
+                bool repaintView = false;
                 MouseCursor cursor = MouseCursor.Arrow;
-                if (evt.type == EventType.MouseMove || evt.type == EventType.Repaint)
+                if (checkMouseRects)
                 {
                     foreach (CursorRect r in s_MouseRects)
                     {
@@ -3053,24 +3080,29 @@ namespace UnityEditor
                         {
                             cursor = r.cursor;
                             cursorRect = r.rect;
+                            repaintView = true;
                         }
                     }
+
                     if (GUIUtility.hotControl != 0)
                         s_DraggingCursorIsCached = true;
-                    if (cursor != s_LastCursor)
+
+                    var cursorChanged = cursor != s_LastCursor;
+                    if (cursorChanged)
                     {
                         s_LastCursor = cursor;
                         InternalEditorUtility.ResetCursor();
+                    }
+                    if (repaintView || cursorChanged)
+                    {
                         Repaint();
                     }
                 }
             }
+
             // Apply the one relevant cursor rect
-            if (evt.type == EventType.Repaint && s_LastCursor != MouseCursor.Arrow)
-            {
+            if (checkMouseRects && s_LastCursor != MouseCursor.Arrow)
                 EditorGUIUtility.AddCursorRect(cursorRect, s_LastCursor);
-                // GUI.color = Color.magenta; GUI.Box (rect, ""); EditorGUI.DropShadowLabel (rect, ""+s_LastCursor); GUI.color = Color.white;
-            }
         }
 
         void DrawRenderModeOverlay(Rect cameraRect)
@@ -3279,7 +3311,7 @@ namespace UnityEditor
                 UpdateImageEffects(enableImageEffects);
             }
 
-            EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.materialUpdateEnabled);
+            EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.alwaysRefreshEnabled);
             ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.particleSystemsEnabled;
             UnityEngine.VFX.VFXManager.renderInSceneView = m_SceneViewState.visualEffectGraphsEnabled;
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
@@ -3386,7 +3418,7 @@ namespace UnityEditor
 
         void UpdateAnimatedMaterials()
         {
-            if (sceneViewState.materialUpdateEnabled && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
+            if (sceneViewState.alwaysRefreshEnabled && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
             {
                 m_lastRenderedTime = EditorApplication.timeSinceStartup;
                 Repaint();

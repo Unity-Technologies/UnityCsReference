@@ -98,14 +98,16 @@ namespace UnityEngine
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class HelpURLAttribute : Attribute
     {
-        public HelpURLAttribute(string url) { m_Url = url; }
+        public HelpURLAttribute(string url) { m_Url = url; m_DispatchingFieldName = ""; m_Dispatcher = false; }
 
-        public string URL
-        {
-            get { return m_Url; }
-        }
+        //internal ability to retarget the url on an inside field value's type's HelpURL
+        internal HelpURLAttribute(string defaultURL, string dispatchingFieldName) { m_Url = defaultURL; m_DispatchingFieldName = dispatchingFieldName; m_Dispatcher = !String.IsNullOrEmpty(dispatchingFieldName); }
+
+        public string URL => m_Url;
 
         internal readonly string m_Url;
+        internal readonly bool m_Dispatcher;
+        internal readonly string m_DispatchingFieldName;
     }
 
     [UsedByNativeCode]

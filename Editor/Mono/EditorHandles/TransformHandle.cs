@@ -99,7 +99,7 @@ namespace UnityEditor
                     1.4f,
                     1.5f,
                     false,
-                    false
+                    true
                 ),
                 new ScaleHandleParam(
                     ScaleHandleParam.Handle.XYZ,
@@ -155,7 +155,7 @@ namespace UnityEditor
                     1.4f,
                     1.5f,
                     false,
-                    false
+                    true
                 ),
                 new ScaleHandleParam(
                     ScaleHandleParam.Handle.XYZ | ScaleHandleParam.Handle.X | ScaleHandleParam.Handle.Y | ScaleHandleParam.Handle.Z,
@@ -184,7 +184,7 @@ namespace UnityEditor
                     1.4f,
                     1.5f,
                     false,
-                    false
+                    true
                 ),
                 new ScaleHandleParam(
                     0,

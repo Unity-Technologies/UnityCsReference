@@ -14,7 +14,8 @@ namespace UnityEngine.Diagnostics
         AccessViolation = 0,
         FatalError = 1,
         Abort = 2,
-        PureVirtualFunction = 3
+        PureVirtualFunction = 3,
+        MonoAbort = 4
     }
 
     [NativeHeader("Runtime/Export/Diagnostics/DiagnosticsUtils.bindings.h")]

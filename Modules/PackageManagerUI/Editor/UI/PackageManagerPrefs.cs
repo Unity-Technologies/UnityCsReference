@@ -85,5 +85,21 @@ namespace UnityEditor.PackageManager.UI
             get { return m_NumItemsPerPage <= 0 ? (int?)null : m_NumItemsPerPage; }
             set { m_NumItemsPerPage = value ?? 0; }
         }
+
+        [SerializeField]
+        private bool m_DependenciesExpanded = false;
+        public virtual bool dependenciesExpanded
+        {
+            get => m_DependenciesExpanded;
+            set => m_DependenciesExpanded = value;
+        }
+
+        [SerializeField]
+        private bool m_SamplesExpanded = false;
+        public virtual bool samplesExpanded
+        {
+            get => m_SamplesExpanded;
+            set => m_SamplesExpanded = value;
+        }
     }
 }

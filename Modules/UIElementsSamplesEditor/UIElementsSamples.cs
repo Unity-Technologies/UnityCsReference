@@ -36,7 +36,7 @@ namespace UnityEditor.UIElements.Samples
 
         private VisualElement m_ContentPanel;
 
-        public const string k_WindowPath = "Window/UI/UIElements Samples";
+        public const string k_WindowPath = "Window/UI Toolkit/Samples";
         public static readonly string OpenWindowCommand = nameof(OpenUIElementsSamplesCommand);
 
         [MenuItem(k_WindowPath, false, 3010, false)]
@@ -54,7 +54,7 @@ namespace UnityEditor.UIElements.Samples
         {
             var wnd = GetWindow<UIElementsSamples>();
             wnd.minSize = new Vector2(345, 100);
-            wnd.titleContent = new GUIContent("UIElements Samples");
+            wnd.titleContent = new GUIContent("UI Toolkit Samples");
         }
 
         internal class SampleTreeItem : TreeViewItem<string>

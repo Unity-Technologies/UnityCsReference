@@ -37,7 +37,9 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private static readonly string k_EmptyDescriptionClass = "empty";
+        private const string k_EmptyDescriptionClass = "empty";
+
+        private string previewInfoReadMoreUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual/pack-preview.html";
 
         internal enum PackageAction
         {
@@ -122,11 +124,10 @@ namespace UnityEditor.PackageManager.UI
         private bool m_DescriptionExpanded;
 
         private ResourceLoader m_ResourceLoader;
-        private UnityConnectProxy m_UnityConnect;
         private ApplicationProxy m_Application;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private AssetStoreCache m_AssetStoreCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
-        private PackageFiltering m_PackageFiltering;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private IOProxy m_IOProxy;
@@ -134,11 +135,10 @@ namespace UnityEditor.PackageManager.UI
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_UnityConnect = container.Resolve<UnityConnectProxy>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
+            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_PackageFiltering = container.Resolve<PackageFiltering>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_IOProxy = container.Resolve<IOProxy>();
@@ -175,7 +175,7 @@ namespace UnityEditor.PackageManager.UI
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
             detailImages?.RegisterCallback<GeometryChangedEvent>(ImagesGeometryChangeEvent);
 
-            GetTagLabel(PackageTag.Verified.ToString()).text = string.Format(L10n.Tr("{0} verified"), m_Application.shortUnityVersion);
+            previewInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL(previewInfoReadMoreUrl);
 
             root.Query<TextField>().ForEach(t =>
             {
@@ -313,20 +313,21 @@ namespace UnityEditor.PackageManager.UI
             }
             else
             {
-                var isBuiltIn = package.Is(PackageType.BuiltIn);
-
                 detailTitle.SetValueWithoutNotify(displayVersion.displayName);
-
-                UIUtils.SetElementDisplay(detailNameContainer, !string.IsNullOrEmpty(package.name));
-                detailName.SetValueWithoutNotify(package.name);
 
                 RefreshLinks();
 
                 RefreshDescription();
 
                 var versionString = displayVersion.versionString;
-                detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0}"), versionString));
-                UIUtils.SetElementDisplay(detailVersion, !isBuiltIn && !string.IsNullOrEmpty(versionString));
+                var releaseDateString = displayVersion.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
+                if (string.IsNullOrEmpty(releaseDateString))
+                    detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0}"), versionString));
+                else
+                    detailVersion.SetValueWithoutNotify(string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
+                UIUtils.SetElementDisplay(detailVersion, !package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
+
+                UIUtils.SetElementDisplay(previewInfoBox, displayVersion.HasTag(PackageTag.Preview));
 
                 foreach (var tag in k_VisibleTags)
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), displayVersion.HasTag(tag));
@@ -366,10 +367,6 @@ namespace UnityEditor.PackageManager.UI
 
         private void DescriptionGeometryChangeEvent(GeometryChangedEvent evt)
         {
-            // only hide long description when there are images to be displayed
-            if (package?.images.Any() != true)
-                return;
-
             var minTextHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, "|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined, detailDesc.textHandle).y*3 + 1;
             var textHeight = (int)TextElement.MeasureVisualElementTextSize(detailDesc, detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined, detailDesc.textHandle).y + 1;
             if (!m_DescriptionExpanded && textHeight > minTextHeight)
@@ -487,7 +484,7 @@ namespace UnityEditor.PackageManager.UI
             detailReleaseDetails.Clear();
 
             // If the package details is not enabled, don't update the date yet as we are fetching new information
-            if (enabledSelf)
+            if (enabledSelf && package.firstPublishedDate != null)
             {
                 detailReleaseDetails.Add(new PackageReleaseDetailsItem($"{displayVersion.versionString}{(displayVersion is AssetStorePackageVersion ? " (Current)" : string.Empty)}",
                     displayVersion.publishedDate, displayVersion.releaseNotes));
@@ -501,11 +498,11 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshLinks()
         {
-            detailLinks.Clear();
+            detailLinksContainer.Clear();
             // add links from the package
             foreach (var link in package.links)
             {
-                detailLinks.Add(new Button(() => { m_Application.OpenURL(link.url); })
+                AddToLinks(new Button(() => { m_Application.OpenURL(link.url); })
                 {
                     text = link.name,
                     tooltip = link.url,
@@ -515,15 +512,23 @@ namespace UnityEditor.PackageManager.UI
 
             // add links related to the upm version
             if (UpmPackageDocs.HasDocs(displayVersion))
-                detailLinks.Add(new Button(ViewDocClick) { text = L10n.Tr("View documentation"), classList = { "unity-button", "link" } });
+                AddToLinks(new Button(ViewDocClick) { text = L10n.Tr("View documentation"), classList = { "unity-button", "link" } });
 
             if (UpmPackageDocs.HasChangelog(displayVersion))
-                detailLinks.Add(new Button(ViewChangelogClick) { text = L10n.Tr("View changelog"), classList = { "unity-button", "link" } });
+                AddToLinks(new Button(ViewChangelogClick) { text = L10n.Tr("View changelog"), classList = { "unity-button", "link" } });
 
             if (UpmPackageDocs.HasLicenses(displayVersion))
-                detailLinks.Add(new Button(ViewLicensesClick) { text = L10n.Tr("View licenses"), classList = { "unity-button", "link" } });
+                AddToLinks(new Button(ViewLicensesClick) { text = L10n.Tr("View licenses"), classList = { "unity-button", "link" } });
 
-            UIUtils.SetElementDisplay(detailLinksContainer, detailLinks.childCount != 0);
+            UIUtils.SetElementDisplay(detailLinksContainer, detailLinksContainer.childCount != 0);
+        }
+
+        private void AddToLinks(VisualElement item)
+        {
+            // Add a seperator between links to make them less crowded together
+            if (detailLinksContainer.childCount > 0)
+                detailLinksContainer.Add(new Label("·") { classList = { "interpunct" } });
+            detailLinksContainer.Add(item);
         }
 
         private void RefreshSizeAndSupportedUnityVersions()
@@ -621,7 +626,7 @@ namespace UnityEditor.PackageManager.UI
                     image.style.backgroundImage = s_LoadingTexture;
                     detailImages.Add(image);
 
-                    m_AssetStoreDownloadManager.DownloadImageAsync(id, packageImage.thumbnailUrl, (retId, texture) =>
+                    m_AssetStoreCache.DownloadImageAsync(id, packageImage.thumbnailUrl, (retId, texture) =>
                     {
                         if (retId.ToString() == package?.uniqueId)
                         {
@@ -1135,18 +1140,16 @@ namespace UnityEditor.PackageManager.UI
 
         private VisualElementCache cache { get; set; }
 
-        private VisualElement detailNameContainer { get { return cache.Get<VisualElement>("detailNameContainer"); } }
-        private TextField detailName { get { return cache.Get<TextField>("detailName"); } }
         private TextField detailDesc { get { return cache.Get<TextField>("detailDesc"); } }
         private Button detailDescMore { get { return cache.Get<Button>("detailDescMore"); } }
         private Button detailDescLess { get { return cache.Get<Button>("detailDescLess"); } }
-        private VisualElement detailLinksContainer { get { return cache.Get<VisualElement>("detailLinksContainer"); } }
-        private VisualElement detailLinks { get { return cache.Get<VisualElement>("detailLinks"); } }
+        private VisualElement detailLinksContainer => cache.Get<VisualElement>("detailLinksContainer");
         internal Alert detailError { get { return cache.Get<Alert>("detailError"); } }
         private ScrollView detailScrollView { get { return cache.Get<ScrollView>("detailScrollView"); } }
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
         private TextField detailTitle { get { return cache.Get<TextField>("detailTitle"); } }
         private TextField detailVersion { get { return cache.Get<TextField>("detailVersion"); } }
+        private HelpBox previewInfoBox { get { return cache.Get<HelpBox>("previewInfoBox"); } }
         private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }
         private TextField detailPurchasedDate { get { return cache.Get<TextField>("detailPurchasedDate"); } }
         private VisualElement detailAuthorContainer { get { return cache.Get<VisualElement>("detailAuthorContainer"); } }
@@ -1179,6 +1182,6 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailLabels { get { return cache.Get<VisualElement>("detailLabels"); } }
         private VisualElement detailSourcePathContainer { get { return cache.Get<VisualElement>("detailSourcePathContainer"); } }
         private TextField detailSourcePath { get { return cache.Get<TextField>("detailSourcePath"); } }
-        internal Label GetTagLabel(string tag) { return cache.Get<Label>("tag" + tag); }
+        internal PackageTagLabel GetTagLabel(string tag) { return cache.Get<PackageTagLabel>("tag" + tag); }
     }
 }

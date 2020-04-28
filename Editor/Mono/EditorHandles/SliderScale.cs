@@ -32,9 +32,10 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
+                case EventType.MouseMove:
                 case EventType.Layout:
                     HandleUtility.AddControl(id, HandleUtility.DistanceToLine(startPosition, cubePosition));
-                    HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(cubePosition, size * .3f));
+                    HandleUtility.AddControl(id, HandleUtility.DistanceToCube(cubePosition, rotation, size * .1f));
                     break;
 
                 case EventType.MouseDown:
@@ -70,29 +71,14 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
-                    break;
-
                 case EventType.Repaint:
-                    Color temp = Color.white;
-                    if (id == GUIUtility.hotControl)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.selectedColor;
-                    }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.preselectionColor;
-                    }
-
-                    Handles.DrawLine(startPosition, cubePosition);
-                    Handles.CubeHandleCap(id, cubePosition, rotation, size * .1f, EventType.Repaint);
-
-                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
-                        Handles.color = temp;
+                    Handles.SetupHandleColor(id, evt, out var prevColor, out var thickness);
+                    float capSize = size * .1f;
+                    if (Handles.IsHovering(id, evt))
+                        capSize *= Handles.s_HoverExtraScale;
+                    Handles.DrawLine(startPosition, cubePosition, thickness);
+                    Handles.CubeHandleCap(id, cubePosition, rotation, capSize, EventType.Repaint);
+                    Handles.color = prevColor;
                     break;
             }
 
@@ -104,6 +90,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
+                case EventType.MouseMove:
                 case EventType.Layout:
                     capFunction(id, position, rotation, size * .15f, EventType.Layout);
                     break;
@@ -155,27 +142,13 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.MouseMove:
-                    if (id == HandleUtility.nearestControl)
-                        HandleUtility.Repaint();
-                    break;
-
                 case EventType.Repaint:
-                    Color temp = Color.white;
-                    if (id == GUIUtility.hotControl)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.selectedColor;
-                    }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !evt.alt)
-                    {
-                        temp = Handles.color;
-                        Handles.color = Handles.preselectionColor;
-                    }
-                    capFunction(id, position, rotation, size * .15f, EventType.Repaint);
-
-                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
-                        Handles.color = temp;
+                    Handles.SetupHandleColor(id, evt, out var prevColor, out var thickness);
+                    float capSize = size * .15f;
+                    if (Handles.IsHovering(id, evt))
+                        capSize *= Handles.s_HoverExtraScale;
+                    capFunction(id, position, rotation, capSize, EventType.Repaint);
+                    Handles.color = prevColor;
                     break;
             }
 

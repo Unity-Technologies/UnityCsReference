@@ -6,7 +6,6 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Internal;
-using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -74,6 +73,15 @@ namespace UnityEditor
         internal static int s_ScaleValueHandleHash = "ScaleValueHandleHash".GetHashCode();
         internal static int s_DiscHash = "DiscHash".GetHashCode();
         internal static int s_ButtonHash = "ButtonHash".GetHashCode();
+
+        static readonly int kPropUseGuiClip = Shader.PropertyToID("_UseGUIClip");
+        static readonly int kPropHandleZTest = Shader.PropertyToID("_HandleZTest");
+        static readonly int kPropColor = Shader.PropertyToID("_Color");
+        static readonly int kPropArcCenterRadius = Shader.PropertyToID("_ArcCenterRadius");
+        static readonly int kPropArcNormalAngle = Shader.PropertyToID("_ArcNormalAngle");
+        static readonly int kPropArcFromCount = Shader.PropertyToID("_ArcFromCount");
+        static readonly int kPropArcThicknessSides = Shader.PropertyToID("_ArcThicknessSides");
+        static readonly int kPropHandlesMatrix = Shader.PropertyToID("_HandlesMatrix");
 
         public struct DrawingScope : IDisposable
         {
@@ -170,9 +178,27 @@ namespace UnityEditor
 
         private static Color lineTransparency = new Color(1, 1, 1, 0.75f);
 
-        internal const float kCameraViewLerpStart = 0.85f;
-        internal const float kCameraViewThreshold = 0.9f;
-        internal const float kCameraViewLerpSpeed = 1f / (1 - kCameraViewLerpStart);
+        internal static SavedFloat s_LineThickness = new SavedFloat("SceneView.handleLineThickness", 2.0f);
+        public static float lineThickness => s_LineThickness.value;
+
+        // When hovering over some handle axis/control, this is the indication that it would
+        // get picked on mouse press:
+        // Color gets a bit more bright and less opaque,
+        internal static Color s_HoverIntensity = new Color(1.2f, 1.2f, 1.2f, 1.33f);
+        // Handle lines get more thick,
+        internal static float s_HoverExtraThickness = 1.0f;
+        // 3D handle elements (caps) get slightly larger.
+        internal static float s_HoverExtraScale = 1.05f;
+
+        // When axis is looking away from camera, fade it out along 25 -> 15 degrees range
+        static readonly float kCameraViewLerpStart1 = Mathf.Cos(Mathf.Deg2Rad * 25.0f);
+        static readonly float kCameraViewLerpEnd1 = Mathf.Cos(Mathf.Deg2Rad * 15.0f);
+        // When axis is looking towards the camera, fade it out along 170 -> 175 degrees range
+        static readonly float kCameraViewLerpStart2 = Mathf.Cos(Mathf.Deg2Rad * 170.0f);
+        static readonly float kCameraViewLerpEnd2 = Mathf.Cos(Mathf.Deg2Rad * 175.0f);
+
+        // Hide & disable axis if they have faded out more than 60%
+        internal const float kCameraViewThreshold = 0.6f;
 
         // The function for calling AddControl in Layout event and draw the handle in Repaint event.
         public delegate void CapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType);
@@ -197,6 +223,52 @@ namespace UnityEditor
         static Vector3 GetAxisVector(int axis)
         {
             return s_AxisVector[axis];
+        }
+
+        internal static bool IsHovering(int controlID, Event evt)
+        {
+            return controlID == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !Tools.viewToolActive;
+        }
+
+        static internal void SetupHandleColor(int controlID, Event evt, out Color prevColor, out float thickness)
+        {
+            prevColor = Handles.color;
+            thickness = Handles.lineThickness;
+            if (controlID == GUIUtility.hotControl)
+            {
+                Handles.color = Handles.selectedColor;
+            }
+            else if (IsHovering(controlID, evt))
+            {
+                Handles.color = Handles.color * s_HoverIntensity;
+                thickness += s_HoverExtraThickness;
+            }
+        }
+
+        static void Swap(ref Vector3 v, int[] indices, int a, int b)
+        {
+            var f = v[a];
+            v[a] = v[b];
+            v[b] = f;
+
+            var t = indices[a];
+            indices[a] = indices[b];
+            indices[b] = t;
+        }
+
+        // Given view direction in handle space, calculate
+        // back-to-front order in which handle axes should be drawn.
+        // The array should be [3] size, and will contain axis indices
+        // from (0,1,2) set.
+        static void CalcDrawOrder(Vector3 viewDir, int[] ordering)
+        {
+            ordering[0] = 0;
+            ordering[1] = 1;
+            ordering[2] = 2;
+            // essentially an unrolled bubble sort for 3 elements
+            if (viewDir.y > viewDir.x) Swap(ref viewDir, ordering, 1, 0);
+            if (viewDir.z > viewDir.y) Swap(ref viewDir, ordering, 2, 1);
+            if (viewDir.y > viewDir.x) Swap(ref viewDir, ordering, 1, 0);
         }
 
         private static bool BeginLineDrawing(Matrix4x4 matrix, bool dottedLines, int mode)
@@ -233,6 +305,7 @@ namespace UnityEditor
             EndLineDrawing();
         }
 
+        [ExcludeFromDocs]
         public static void DrawLine(Vector3 p1, Vector3 p2)
         {
             DrawLine(p1, p2, false);
@@ -245,6 +318,35 @@ namespace UnityEditor
             GL.Vertex(p1);
             GL.Vertex(p2);
             EndLineDrawing();
+        }
+
+        static float ThicknessToPixels(float thickness)
+        {
+            var halfThicknessPixels = thickness * EditorGUIUtility.pixelsPerPoint * 0.5f;
+            if (halfThicknessPixels < 0.5f)
+                halfThicknessPixels = 0;
+            return halfThicknessPixels;
+        }
+
+        public static void DrawLine(Vector3 p1, Vector3 p2, [DefaultValue("0.0f")] float thickness)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+            thickness = ThicknessToPixels(thickness);
+            if (thickness <= 0)
+            {
+                DrawLine(p1, p2);
+                return;
+            }
+
+            var mat = SetupArcMaterial();
+            mat.SetVector(kPropArcCenterRadius, new Vector4(p1.x, p1.y, p1.z, 0));
+            mat.SetVector(kPropArcFromCount, new Vector4(p2.x, p2.y, p2.z, 0));
+            mat.SetVector(kPropArcThicknessSides, new Vector4(thickness, kArcSides, 0, 0));
+            mat.SetPass(1);
+
+            var indexBuffer = HandleUtility.GetArcIndexBuffer(kArcSegments, kArcSides);
+            Graphics.DrawProceduralNow(MeshTopology.Triangles, indexBuffer, kArcSides * 6);
         }
 
         public static void DrawLines(Vector3[] lineSegments)
@@ -432,8 +534,7 @@ namespace UnityEditor
             {
                 case EventType.Layout:
                 case EventType.MouseMove:
-                    // TODO: Create DistanceToCube
-                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
+                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCube(position, rotation, size));
                     break;
                 case (EventType.Repaint):
                     Graphics.DrawMeshNow(cubeMesh, StartCapDraw(position, rotation, size));
@@ -464,8 +565,7 @@ namespace UnityEditor
             {
                 case EventType.Layout:
                 case EventType.MouseMove:
-                    // TODO: Create DistanceToCone
-                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
+                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCone(position, rotation, size));
                     break;
                 case (EventType.Repaint):
                     Graphics.DrawMeshNow(coneMesh, StartCapDraw(position, rotation, size));
@@ -604,15 +704,22 @@ namespace UnityEditor
                 case EventType.MouseMove:
                 {
                     Vector3 direction = rotation * Vector3.forward;
-                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToLine(position, position + (direction + coneOffset) * size * .9f));
-                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position + (direction + coneOffset) * size, size * .2f));
+                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToLine(position, position + (direction + coneOffset) * (size * .9f)));
+                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCone(position + (direction + coneOffset) * size, rotation, size * .2f));
                     break;
                 }
-                case (EventType.Repaint):
+                case EventType.Repaint:
                 {
                     Vector3 direction = rotation * Vector3.forward;
-                    ConeHandleCap(controlID, position + (direction + coneOffset) * size, Quaternion.LookRotation(direction), size * .2f, eventType);
-                    Handles.DrawLine(position, position + (direction + coneOffset) * size * .9f, false);
+                    float thickness = Handles.lineThickness;
+                    float coneSize = size * .2f;
+                    if (IsHovering(controlID, Event.current))
+                    {
+                        thickness += s_HoverExtraThickness;
+                        coneSize *= s_HoverExtraScale;
+                    }
+                    ConeHandleCap(controlID, position + (direction + coneOffset) * size, rotation, coneSize, eventType);
+                    Handles.DrawLine(position, position + (direction + coneOffset) * (size * .9f), thickness);
                     break;
                 }
             }
@@ -639,18 +746,28 @@ namespace UnityEditor
             Handles.DrawLine(point4, point1);
         }
 
+        internal static Color GetFadedAxisColor(Color col, float fade, int id)
+        {
+            // never fade out axes that are being hover-highlighted or currently interacted with
+            if (id != 0 && id == GUIUtility.hotControl || id == HandleUtility.nearestControl)
+                fade = 0;
+            col = Color.Lerp(col, Color.clear, fade);
+            return col;
+        }
+
         internal static float GetCameraViewLerpForWorldAxis(Vector3 viewVector, Vector3 axis)
         {
-            return
-                Mathf.Clamp01(kCameraViewLerpSpeed *
-                (Mathf.Abs(Vector3.Dot(viewVector, axis)) - kCameraViewLerpStart));
+            var dot = Vector3.Dot(viewVector, axis);
+            var l1 = Mathf.InverseLerp(kCameraViewLerpStart1, kCameraViewLerpEnd1, dot);
+            var l2 = Mathf.InverseLerp(kCameraViewLerpStart2, kCameraViewLerpEnd2, dot);
+            return Mathf.Max(l1, l2);
         }
 
         internal static Vector3 GetCameraViewFrom(Vector3 position, Matrix4x4 matrix)
         {
             Camera camera = Camera.current;
             return camera.orthographic
-                ? matrix.MultiplyVector(-camera.transform.forward).normalized
+                ? matrix.MultiplyVector(camera.transform.forward).normalized
                 : matrix.MultiplyVector(position - camera.transform.position).normalized;
         }
 
@@ -943,20 +1060,64 @@ namespace UnityEditor
         }
 
         // Draw the outline of a flat disc in 3D space.
+        [ExcludeFromDocs]
         public static void DrawWireDisc(Vector3 center, Vector3 normal, float radius)
+        {
+            DrawWireDisc(center, normal, radius, 0.0f);
+        }
+
+        public static void DrawWireDisc(Vector3 center, Vector3 normal, float radius, [DefaultValue("0.0f")] float thickness)
         {
             Vector3 tangent = Vector3.Cross(normal, Vector3.up);
             if (tangent.sqrMagnitude < .001f)
                 tangent = Vector3.Cross(normal, Vector3.right);
-            DrawWireArc(center, normal, tangent, 360, radius);
+            DrawWireArc(center, normal, tangent, 360, radius, thickness);
         }
 
-        // Draw a circular arc in 3D space.
         private static readonly Vector3[] s_WireArcPoints = new Vector3[60];
+
+        // Draw a circular arc in 3D space.
+        [ExcludeFromDocs]
         public static void DrawWireArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius)
         {
-            SetDiscSectionPoints(s_WireArcPoints, center, normal, from, angle, radius);
-            Handles.DrawPolyLine(s_WireArcPoints);
+            DrawWireArc(center, normal, from, angle, radius, 0.0f);
+        }
+
+        static Material SetupArcMaterial()
+        {
+            var col = color * lineTransparency;
+            var mat = HandleUtility.handleArcMaterial;
+            mat.SetInt(kPropUseGuiClip, Camera.current ? 0 : 1);
+            mat.SetInt(kPropHandleZTest, (int)zTest);
+            mat.SetColor(kPropColor, col);
+            mat.SetMatrix(kPropHandlesMatrix, matrix);
+            return mat;
+        }
+
+        const int kArcSegments = 60;
+        const int kArcSides = 8;
+
+        public static void DrawWireArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius, [DefaultValue("0.0f")] float thickness)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            thickness = ThicknessToPixels(thickness);
+
+            var mat = SetupArcMaterial();
+            mat.SetVector(kPropArcCenterRadius, new Vector4(center.x, center.y, center.z, radius));
+            mat.SetVector(kPropArcNormalAngle, new Vector4(normal.x, normal.y, normal.z, angle * Mathf.Deg2Rad));
+            mat.SetVector(kPropArcFromCount, new Vector4(from.x, from.y, from.z, kArcSegments));
+            mat.SetVector(kPropArcThicknessSides, new Vector4(thickness, kArcSides, 0, 0));
+            mat.SetPass(0);
+
+            if (thickness <= 0.0f)
+                Graphics.DrawProceduralNow(MeshTopology.LineStrip, kArcSegments);
+            else
+            {
+                var indexBuffer = HandleUtility.GetArcIndexBuffer(kArcSegments, kArcSides);
+                Graphics.DrawProceduralNow(MeshTopology.Triangles, indexBuffer, indexBuffer.count);
+            }
         }
 
         public static void DrawSolidRectangleWithOutline(Rect rectangle, Color faceColor, Color outlineColor)
