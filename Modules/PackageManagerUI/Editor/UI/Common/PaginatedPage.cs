@@ -84,7 +84,7 @@ namespace UnityEditor.PackageManager.UI
                 var package = PackageDatabase.instance.GetPackage(state.packageUniqueId);
                 if (package != null)
                 {
-                    var visible = PackageFiltering.instance.FilterByCurrentSearchText(package);
+                    var visible = tab == PackageFilterTab.AssetStore ? true : PackageFiltering.instance.FilterByCurrentSearchText(package);
                     if (state.visible != visible)
                     {
                         state.visible = visible;

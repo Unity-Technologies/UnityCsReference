@@ -17,7 +17,12 @@ namespace UnityEditor.U2D
         extern public static void PackAllAtlases(BuildTarget target, bool canCancel = true);
 
         [FreeFunction("PackSpriteAtlases")]
-        extern public static void PackAtlases(SpriteAtlas[] atlases, BuildTarget target, bool canCancel = true);
+        extern internal static void PackAtlasesInternal(SpriteAtlas[] atlases, BuildTarget target, bool canCancel = true, bool invokedFromImporter = false, bool unloadSprites = false);
+
+        public static void PackAtlases(SpriteAtlas[] atlases, BuildTarget target, bool canCancel = true)
+        {
+            PackAtlasesInternal(atlases, target, canCancel, false, true);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

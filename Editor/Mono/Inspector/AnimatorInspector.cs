@@ -106,15 +106,6 @@ namespace UnityEditor
                     controllers.Add(animator.runtimeAnimatorController);
                 }
                 serializedObject.ApplyModifiedProperties();
-
-                //Force rebind if the controller has changed.
-                for (int i = 0; i < targets.Length; i++)
-                {
-                    if (controllers[i] != controller)
-                    {
-                        (targets[i] as Animator).Rebind();
-                    }
-                }
                 AnimationWindowUtility.ControllerChanged();
             }
 

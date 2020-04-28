@@ -201,7 +201,7 @@ namespace UnityEditor.PackageManager
             m_Visibility = extraDataSerializedObject.FindProperty("info.settings.visibility");
 
             m_DependenciesList = new ReorderableList(extraDataSerializedObject,
-                extraDataSerializedObject.FindProperty("dependencies"), false, false, true, true)
+                extraDataSerializedObject.FindProperty("dependencies"), true, false, true, true)
             {
                 drawElementCallback = DrawDependencyListElement,
                 drawHeaderCallback = DrawDependencyHeaderElement,
@@ -389,6 +389,8 @@ namespace UnityEditor.PackageManager
             DoPackageDescriptionLayout();
 
             // Package dependencies
+            if (m_DependenciesList.index < 0 && m_DependenciesList.count > 0)
+                m_DependenciesList.index = 0;
             GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
             m_DependenciesList.DoLayoutList();
 

@@ -198,8 +198,10 @@ namespace Unity.Collections.LowLevel.Unsafe
         [NativeThrows, ThreadSafe]
         public static unsafe extern void SetCustomErrorMessage(int staticSafetyId, AtomicSafetyErrorType errorType, byte* messageBytes, int byteCount);
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [NativeThrows, ThreadSafe]
-        public static extern void SetStaticSafetyId(ref AtomicSafetyHandle handle, int staticSafetyId);
+        public static unsafe void SetStaticSafetyId(ref AtomicSafetyHandle handle, int staticSafetyId)
+        {
+            handle.staticSafetyId = staticSafetyId;
+        }
     }
 }
 

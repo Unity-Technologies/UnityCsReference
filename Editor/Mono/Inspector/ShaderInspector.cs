@@ -79,7 +79,8 @@ namespace UnityEditor
         public virtual void OnEnable()
         {
             var s = target as Shader;
-            ShaderUtil.FetchCachedMessages(s);
+            if (s != null)
+                ShaderUtil.FetchCachedMessages(s);
         }
 
         public virtual void OnDisable()
