@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
+using UnityEditor.Profiling;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -300,7 +301,7 @@ namespace UnityEditor.Experimental
 
         internal static void BuildCatalog()
         {
-            using (new PerformanceTracker(nameof(BuildCatalog)))
+            using (new EditorPerformanceTracker(nameof(BuildCatalog)))
             {
                 s_StyleCatalog = new StyleCatalog();
 
@@ -339,7 +340,7 @@ namespace UnityEditor.Experimental
 
         internal static void RefreshSkin()
         {
-            using (new PerformanceTracker(nameof(RefreshSkin)))
+            using (new EditorPerformanceTracker(nameof(RefreshSkin)))
             {
                 if (!CanEnableExtendedStyles())
                     return;

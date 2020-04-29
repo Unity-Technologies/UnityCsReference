@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -73,6 +74,9 @@ namespace UnityEditor.UIElements
                 }
             }
         }
+
+        private string m_TrackerName;
+        internal string trackerName => m_TrackerName ?? (m_TrackerName = GetInspectorTrackerName(this));
 
         internal bool ownsEditor { get; private set; } = false;
 
@@ -522,7 +526,8 @@ namespace UnityEditor.UIElements
                                     else
                                     {
                                         InspectorWindowUtils.DrawAddedComponentBackground(contentRect, editor.targets);
-                                        editor.OnInspectorGUI();
+                                        using (new EditorPerformanceTracker(trackerName))
+                                            editor.OnInspectorGUI();
                                     }
                                 }
                                 catch (Exception e)
@@ -566,6 +571,15 @@ namespace UnityEditor.UIElements
             AddToClassList(iMGUIInspectorVariantUssClassName);
 
             return inspector;
+        }
+
+        internal static string GetInspectorTrackerName(VisualElement el)
+        {
+            var editorElementParent = el.parent as EditorElement;
+            if (editorElementParent == null)
+                return $"Editor.Unknown.OnInspectorGUI";
+
+            return $"Editor.{editorElementParent.name}.OnInspectorGUI";
         }
 
         private VisualElement CreateInspectorElementFromEditor(Editor editor, bool reuseIMGUIContainer = false)

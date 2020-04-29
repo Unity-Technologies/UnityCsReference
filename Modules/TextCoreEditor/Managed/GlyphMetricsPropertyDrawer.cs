@@ -22,10 +22,10 @@ namespace UnityEditor.TextCore
             // We get Rect since a valid position may not be provided by the caller.
             Rect rect = new Rect(position.x, position.y, position.width, 49);
 
-            EditorGUI.LabelField(rect, new GUIContent("Glyph Metrics"));
+            EditorGUI.LabelField(new Rect(rect.x, rect.y - 2.5f, rect.width, 18), new GUIContent("Glyph Metrics"));
 
-            EditorGUIUtility.labelWidth = 30f;
-            EditorGUIUtility.fieldWidth = 10f;
+            EditorGUIUtility.labelWidth = 50f;
+            EditorGUIUtility.fieldWidth = 15f;
 
             //GUI.enabled = false;
             float width = (rect.width - 75f) / 2;

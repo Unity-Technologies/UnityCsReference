@@ -21,6 +21,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.EditorTools;
+using UnityEditor.Profiling;
 using UnityEditor.Snap;
 
 namespace UnityEditor
@@ -3522,23 +3523,26 @@ namespace UnityEditor
 
                 if (method != null)
                 {
-                    Editor.m_AllowMultiObjectAccess = true;
-                    for (int n = 0; n < editor.targets.Length; n++)
+                    using (new EditorPerformanceTracker($"Editor.{editor.GetType().Name}.OnSceneGUI"))
                     {
-                        ResetOnSceneGUIState();
-                        editor.referenceTargetIndex = n;
-
-                        EditorGUI.BeginChangeCheck();
-                        // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
-                        // since there's no harm in going through the serializedObject there if there's always only one target.
-                        Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
-                        method.Invoke(editor, null);
                         Editor.m_AllowMultiObjectAccess = true;
-                        if (EditorGUI.EndChangeCheck())
-                            editor.serializedObject.SetIsDifferentCacheDirty();
-                    }
+                        for (int n = 0; n < editor.targets.Length; n++)
+                        {
+                            ResetOnSceneGUIState();
+                            editor.referenceTargetIndex = n;
 
-                    ResetOnSceneGUIState();
+                            EditorGUI.BeginChangeCheck();
+                            // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
+                            // since there's no harm in going through the serializedObject there if there's always only one target.
+                            Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
+                            method.Invoke(editor, null);
+                            Editor.m_AllowMultiObjectAccess = true;
+                            if (EditorGUI.EndChangeCheck())
+                                editor.serializedObject.SetIsDifferentCacheDirty();
+                        }
+
+                        ResetOnSceneGUIState();
+                    }
                 }
             }
 

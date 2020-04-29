@@ -9,6 +9,7 @@ using System.Reflection;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
@@ -344,7 +345,7 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
-                using (new PerformanceTracker($"{GetActualViewName()}.OnGUI.{Event.current.type}"))
+                using (new EditorPerformanceTracker($"{GetActualViewName()}.OnGUI.{Event.current.type}"))
                     Invoke("OnGUI");
             }
             catch (TargetInvocationException e)
