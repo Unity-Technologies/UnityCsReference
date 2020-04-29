@@ -129,7 +129,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (indexOfDot == -1)
             {
-                indexOfDot = path.Length - 1;
+                indexOfDot = path.Length;
             }
 
             return path.Substring(indexOfSlash, indexOfDot - indexOfSlash);

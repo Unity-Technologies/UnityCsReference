@@ -91,6 +91,9 @@
     <Compile Include="..\..\Editor\Mono\BlendTreePreviewUtility.bindings.cs">
       <Link>Editor\Mono\BlendTreePreviewUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BugReportingTools.bindings.cs">
+      <Link>Editor\Mono\BugReportingTools.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline.bindings.cs">
       <Link>Editor\Mono\BuildPipeline.bindings.cs</Link>
     </Compile>
@@ -159,6 +162,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\DefaultAsset.bindings.cs">
       <Link>Editor\Mono\DefaultAsset.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Delayer.cs">
+      <Link>Editor\Mono\Delayer.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\DisplayUtility.cs">
       <Link>Editor\Mono\DisplayUtility.cs</Link>
@@ -3612,6 +3618,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\View.cs">
       <Link>Editor\Mono\View.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\FileIO.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\FileIO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\ProjectGenerationFlag.cs">
+      <Link>Editor\Mono\VisualStudioIntegration\ProjectGenerationFlag.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs">
       <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
