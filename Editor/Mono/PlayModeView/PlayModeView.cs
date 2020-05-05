@@ -33,8 +33,6 @@ namespace UnityEditor
 
         [SerializeField] private List<string> m_SerializedViewNames = new List<string>();
         [SerializeField] private List<string> m_SerializedViewValues = new List<string>();
-        [SerializeField] private List<string> m_SerializedCustomFieldsNames = new List<string>();
-        [SerializeField] private List<string> m_SerializedCustomFieldsValues = new List<string>();
         [SerializeField] string m_PlayModeViewName;
         [SerializeField] bool m_ShowGizmos;
         [SerializeField] int m_TargetDisplay;
@@ -199,25 +197,10 @@ namespace UnityEditor
             return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
         }
 
-        protected virtual string SerializeView()
-        {
-            return null;
-        }
-
-        protected virtual void DeserializeView(string serializedView)
-        {
-        }
-
         private void SetSerializedViews(Dictionary<string, string> serializedViews)
         {
             m_SerializedViewNames = serializedViews.Keys.ToList();
             m_SerializedViewValues = serializedViews.Values.ToList();
-        }
-
-        private void SetSerializedCustomFields(Dictionary<string, string> serializedCustomFields)
-        {
-            m_SerializedCustomFieldsNames = serializedCustomFields.Keys.ToList();
-            m_SerializedCustomFieldsValues = serializedCustomFields.Values.ToList();
         }
 
         private string GetTypeName()
@@ -238,17 +221,10 @@ namespace UnityEditor
             if (type.Name != GetType().Name)
             {
                 var serializedViews = ListsToDictionary(m_SerializedViewNames, m_SerializedViewValues);
-                var serializedCustomFields = ListsToDictionary(m_SerializedCustomFieldsNames, m_SerializedCustomFieldsValues);
 
                 // Clear serialized views so they wouldn't be serialized again
                 m_SerializedViewNames.Clear();
                 m_SerializedViewValues.Clear();
-                m_SerializedCustomFieldsNames.Clear();
-                m_SerializedCustomFieldsValues.Clear();
-
-                var serializedObject = SerializeView();
-                if (serializedObject != null)
-                    serializedCustomFields.Add(GetTypeName(), serializedObject);
 
                 var guid = GUID.Generate();
                 var serializedViewPath = Path.GetFullPath(Path.Combine(m_ViewsCache, guid.ToString()));
@@ -273,17 +249,9 @@ namespace UnityEditor
                 if (!window)
                     window = CreateInstance(type) as PlayModeView;
 
-
-                if (serializedCustomFields.ContainsKey(window.GetTypeName()))
-                {
-                    window.DeserializeView(serializedCustomFields[window.GetTypeName()]);
-                    serializedCustomFields.Remove(window.GetTypeName());
-                }
-
                 window.autoRepaintOnSceneChange = true;
 
                 window.SetSerializedViews(serializedViews);
-                window.SetSerializedCustomFields(serializedCustomFields);
 
                 var da = m_Parent as DockArea;
                 if (da)

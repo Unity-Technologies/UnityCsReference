@@ -11,7 +11,6 @@ namespace UnityEditor.PackageManager.UI
 {
     internal static class UIUtils
     {
-        public static readonly string k_SelectedClassName = "selected";
         private static readonly string[] s_SizeUnits = { "KB", "MB", "GB", "TB" };
 
         public static void SetElementDisplay(VisualElement element, bool value)
@@ -36,6 +35,19 @@ namespace UnityEditor.PackageManager.UI
         public static bool IsElementVisible(VisualElement element)
         {
             return element.resolvedStyle.visibility == Visibility.Visible && element.resolvedStyle.display != DisplayStyle.None;
+        }
+
+        public static VisualElement FindNextSibling(VisualElement element, bool reverseOrder)
+        {
+            if (element == null)
+                return null;
+
+            var parent = element.parent;
+            var index = parent.IndexOf(element);
+            var newIndex = reverseOrder ? index - 1 : index + 1;
+            if (newIndex >= parent.childCount || newIndex < 0)
+                return null;
+            return parent.ElementAt(newIndex);
         }
 
         public static void ScrollIfNeeded(ScrollView container, VisualElement target)

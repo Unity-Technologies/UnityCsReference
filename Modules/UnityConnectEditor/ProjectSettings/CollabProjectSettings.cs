@@ -147,6 +147,15 @@ namespace UnityEditor.Connect
             }
         }
 
+        void OnCollabStateChanged(CollabInfo info)
+        {
+            // Make sure to update the service state based on the information changed in Collab...
+            if (CollabService.instance.IsServiceEnabled() != Collab.instance.IsCollabEnabledForCurrentProject())
+            {
+                CollabService.instance.EnableService(Collab.instance.IsCollabEnabledForCurrentProject());
+            }
+        }
+
         protected override void ActivateAction(string searchContext)
         {
             // Must reset properties every time this is activated
@@ -202,6 +211,11 @@ namespace UnityEditor.Connect
         {
             if (!m_EventHandlerInitialized)
             {
+                // Make sure to follow-up the Collab State...
+                // Collab is a specific case where the service can be enabled inside another Editor Window by the Collab package code itself.
+                //     We need to be informed of that changed when it happens
+                Collab.instance.StateChanged += OnCollabStateChanged;
+
                 CollabService.instance.serviceAfterEnableEvent += ServiceIsEnablingEvent;
                 CollabService.instance.serviceAfterDisableEvent += ServiceIsDisablingEvent;
                 m_EventHandlerInitialized = true;
@@ -212,6 +226,7 @@ namespace UnityEditor.Connect
         {
             if (m_EventHandlerInitialized)
             {
+                Collab.instance.StateChanged -= OnCollabStateChanged;
                 CollabService.instance.serviceAfterEnableEvent -= ServiceIsEnablingEvent;
                 CollabService.instance.serviceAfterDisableEvent -= ServiceIsDisablingEvent;
                 m_EventHandlerInitialized = false;

@@ -36,7 +36,10 @@ namespace UnityEditor.UIElements
             {
                 if (s_EditorShader == null)
                 {
-                    s_EditorShader = EditorGUIUtility.LoadRequired("Shaders/UIElements/EditorUIE.shader") as Shader;
+                    if (UIElementsPackageUtility.IsUIEPackageLoaded)
+                        s_EditorShader = Shader.Find("Hidden/UIE-Editor");
+                    else
+                        s_EditorShader = Shader.Find("Hidden/UIElements/EditorUIE");
                 }
                 return s_EditorShader;
             }

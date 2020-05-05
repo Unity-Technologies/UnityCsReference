@@ -152,7 +152,12 @@ namespace UnityEditor.IMGUI.Controls
 
         public bool IsColumnVisible(int columnIndex)
         {
-            return state.visibleColumns.Any(t => t == columnIndex);
+            foreach (int vc in state.visibleColumns)
+            {
+                if (vc == columnIndex)
+                    return true;
+            }
+            return false;
         }
 
         public int GetVisibleColumnIndex(int columnIndex)

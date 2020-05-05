@@ -834,7 +834,7 @@ namespace UnityEditor.Experimental.GraphView
             if (p != null)
             {
                 if (graphViewShader == null)
-                    graphViewShader = EditorGUIUtility.LoadRequired("GraphView/GraphViewUIE.shader") as Shader;
+                    graphViewShader = Shader.Find("Hidden/GraphView/GraphViewUIE");
                 p.standardShader = graphViewShader;
                 HostView ownerView = p.ownerObject as HostView;
                 if (ownerView != null && ownerView.actualView != null)

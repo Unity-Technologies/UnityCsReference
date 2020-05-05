@@ -19,6 +19,7 @@ namespace UnityEditor
         private static Object[] m_SelectedObjects;
         private static HashSet<Transform> m_CutAffectedGOs = new HashSet<Transform>();
         private const string kCutAndPaste = "Cut And Paste";
+        private static Stage m_StageCutWasPerformedIn;
 
         internal static void CutGO()
         {
@@ -27,11 +28,11 @@ namespace UnityEditor
             // Selection.transform does not provide correct list order, so we have to do it manually
             m_GOCutboard = m_GOCutboard.ToList().OrderBy(g => Array.IndexOf(m_SelectedObjects, g.gameObject)).ToArray();
 
-
             // Return if nothing selected
             if (!hasCutboardData)
                 return;
 
+            m_StageCutWasPerformedIn = StageUtility.GetStage(m_GOCutboard[0].gameObject);
 
             // If cut gameObject is prefab, get its root transform
             for (int i = 0; i < m_GOCutboard.Length; i++)
@@ -54,8 +55,16 @@ namespace UnityEditor
             Unsupported.ClearPasteboard();
         }
 
+        internal static bool CanGameObjectsBePasted()
+        {
+            return hasCutboardData && AreCutAndPasteStagesSame();
+        }
+
         internal static void PasteGameObjects(Transform fallbackParent)
         {
+            if (!AreCutAndPasteStagesSame())
+                return;
+
             // Paste as a sibling of a active transform
             if (Selection.activeTransform != null)
             {
@@ -76,7 +85,7 @@ namespace UnityEditor
 
         internal static void PasteAsChildren(Transform parent)
         {
-            if (m_GOCutboard == null)
+            if (m_GOCutboard == null || !AreCutAndPasteStagesSame())
                 return;
 
             foreach (var go in m_GOCutboard)
@@ -179,6 +188,11 @@ namespace UnityEditor
             m_SelectedObjects = null;
             m_GOCutboard = null;
             m_CutAffectedGOs.Clear();
+        }
+
+        internal static bool AreCutAndPasteStagesSame()
+        {
+            return m_StageCutWasPerformedIn == StageUtility.GetCurrentStage();
         }
     }
 }

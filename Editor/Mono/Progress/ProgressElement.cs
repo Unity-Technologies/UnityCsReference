@@ -329,8 +329,7 @@ namespace UnityEditor
                 }
             }
 
-            task.cancelButton.style.display = dataSource.running ? DisplayStyle.Flex : DisplayStyle.None;
-            task.cancelButton.visible = dataSource.cancellable;
+            task.cancelButton.visible = dataSource.cancellable && dataSource.running;
         }
 
         private static void UpdateStatusIcon(DisplayedTask task, string iconName)

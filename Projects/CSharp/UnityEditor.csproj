@@ -844,6 +844,9 @@
     <Compile Include="..\..\Editor\Mono\CutBoard.cs">
       <Link>Editor\Mono\CutBoard.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\CutCopyPasteUtility.cs">
+      <Link>Editor\Mono\CutCopyPasteUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\DataWatchService.cs">
       <Link>Editor\Mono\DataWatchService.cs</Link>
     </Compile>
@@ -4327,6 +4330,12 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettingsProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddOperation.cs</Link>
     </Compile>
@@ -4494,6 +4503,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageStatusBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageToolBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageToolBar.cs</Link>

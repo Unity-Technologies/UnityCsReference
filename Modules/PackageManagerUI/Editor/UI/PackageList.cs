@@ -31,8 +31,6 @@ namespace UnityEditor.PackageManager.UI
             viewDataKey = "package-list-key";
             scrollView.viewDataKey = "package-list-scrollview-key";
 
-            HidePackagesShowMessage(false, false);
-
             loginButton.clickable.clicked += OnLoginClicked;
 
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
@@ -91,7 +89,7 @@ namespace UnityEditor.PackageManager.UI
             if (packageItem == null)
                 return null;
 
-            if (packageItem.targetVersion == selectedVersion)
+            if (!packageItem.visualState.expanded)
                 return packageItem;
 
             return packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
@@ -215,7 +213,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnPackageProgressUpdate(IPackage package)
         {
-            GetPackageItem(package)?.UpdateStatusIcon();
+            GetPackageItem(package)?.RefreshState();
         }
 
         private void OnRefreshOperationStart()
@@ -275,12 +273,12 @@ namespace UnityEditor.PackageManager.UI
             }
             else if (evt.keyCode == KeyCode.UpArrow)
             {
-                if (SelectBy(-1))
+                if (SelectNext(true))
                     evt.StopPropagation();
             }
             else if (evt.keyCode == KeyCode.DownArrow)
             {
-                if (SelectBy(1))
+                if (SelectNext(false))
                     evt.StopPropagation();
             }
         }
@@ -372,48 +370,46 @@ namespace UnityEditor.PackageManager.UI
                 RefreshList(true);
         }
 
-        public List<ISelectableItem> GetSelectableItems()
+        internal bool SelectNext(bool reverseOrder)
         {
-            return packageItems.SelectMany(item => item.GetSelectableItems()).ToList();
-        }
+            var selectedVersion = PageManager.instance.GetSelectedVersion();
+            var packageItem = GetPackageItem(selectedVersion?.packageUniqueId);
+            if (packageItem == null)
+                return false;
 
-        internal bool SelectBy(int delta)
-        {
-            var list = GetSelectableItems();
-            var selection = GetSelectedItem();
-            if (selection != null)
+            // If the PackageItem is expanded, we want to start the search in the version list of the PackageItem
+            if (packageItem.visualState.expanded)
             {
-                var index = list.IndexOf(selection);
-
-                var direction = Math.Sign(delta);
-                delta = Math.Abs(delta);
-                var nextIndex = index;
-                var numVisibleElement = 0;
-                ISelectableItem nextElement = null;
-                while (numVisibleElement < delta)
+                var versionItem = packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
+                var nextVersionItem = UIUtils.FindNextSibling(versionItem, reverseOrder) as PackageVersionItem;
+                if (nextVersionItem != null)
                 {
-                    nextIndex += direction;
-                    if (nextIndex >= list.Count)
-                        return false;
-                    if (nextIndex < 0)
-                        return false;
-                    nextElement = list.ElementAt(nextIndex);
-                    if (UIUtils.IsElementVisible(nextElement.element))
-                        ++numVisibleElement;
+                    PageManager.instance.SetSelected(nextVersionItem.package, nextVersionItem.targetVersion, true);
+                    return true;
                 }
-
-                PageManager.instance.SetSelected(nextElement.package, nextElement.targetVersion, true);
-
-                foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
-                    ScrollIfNeeded(scrollView, nextElement.element);
             }
 
+            // Otherwise we just select the next PackageItem
+            var nextPackageItem = UIUtils.FindNextSibling(packageItem, reverseOrder) as PackageItem;
+            if (nextPackageItem == null)
+                return false;
+
+            if (nextPackageItem.visualState.expanded)
+            {
+                var versionItem = reverseOrder ? nextPackageItem.versionItems.LastOrDefault() : nextPackageItem.versionItems.FirstOrDefault();
+                if (versionItem != null)
+                {
+                    PageManager.instance.SetSelected(versionItem.package, versionItem.targetVersion, true);
+                    return true;
+                }
+            }
+            PageManager.instance.SetSelected(nextPackageItem.package, nextPackageItem.targetVersion, true);
             return true;
         }
 
         internal int CalculateNumberOfPackagesToDisplay()
         {
-            return ApplicationUtil.instance.CalculateNumberOfElementsInsideContainerToDisplay(this, 24);
+            return ApplicationUtil.instance.CalculateNumberOfElementsInsideContainerToDisplay(this, 38);
         }
 
         private VisualElementCache cache { get; set; }

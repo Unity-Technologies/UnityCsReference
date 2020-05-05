@@ -845,7 +845,7 @@ namespace UnityEditor.Experimental.SceneManagement
             PrefabStage prefabStage = GetContextStage() as PrefabStage;
             sceneView.customScene = prefabStage == null ? default(Scene) : prefabStage.scene;
 
-            sceneView.customParentForDraggedObjects = prefabContentsRoot.transform;
+            sceneView.customParentForNewGameObjects = prefabContentsRoot.transform;
             switch (mode)
             {
                 case PrefabStage.Mode.InIsolation:
@@ -1124,7 +1124,6 @@ namespace UnityEditor.Experimental.SceneManagement
 
                 if (!isCurrentStage)
                 {
-                    m_NeedsReloadingWhenReturningToStage = true;
                     return;
                 }
 
@@ -1555,7 +1554,14 @@ namespace UnityEditor.Experimental.SceneManagement
                     m_IsAssetMissing = false;
                     if (UpdateLastPrefabSourceFileHashIfNeeded() && !m_IgnoreNextAssetImportedEventForCurrentPrefab)
                     {
-                        m_PrefabWasChangedOnDisk = true;
+                        if (isCurrentStage)
+                        {
+                            m_PrefabWasChangedOnDisk = true;
+                        }
+                        else
+                        {
+                            m_NeedsReloadingWhenReturningToStage = true;
+                        }
                     }
 
                     // Reset the ignore flag when we finally have imported the saved prefab (We set this flag when saving the Prefab from Prefab Mode)

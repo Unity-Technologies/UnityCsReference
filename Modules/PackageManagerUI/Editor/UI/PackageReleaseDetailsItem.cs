@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI
 
         public PackageReleaseDetailsItem(string versionString, DateTime? publishedDate, string releaseNotes) : this()
         {
-            var releaseDateString = publishedDate?.ToString("MMMM dd,  yyyy", CultureInfo.CreateSpecificCulture("en-US"));
+            var releaseDateString = publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
 
             versionAndReleaseDateLabel.SetValueWithoutNotify(versionString + (releaseDateString != null ? $" - released on {releaseDateString}" : string.Empty));
 

@@ -989,7 +989,7 @@ namespace UnityEditor
                         }
                     }
 
-                    Transform parent = sceneView.customParentForDraggedObjects;
+                    Transform parent = sceneView.customParentForNewGameObjects;
 
                     string uniqueName = GameObjectUtility.GetUniqueNameForSibling(parent, dragObject.name);
                     if (parent != null)

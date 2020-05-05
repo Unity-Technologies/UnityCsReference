@@ -131,9 +131,6 @@ namespace UnityEditor.PackageManager.UI
 
                 m_InstalledPackageInfos.Remove(packageName);
                 onPackageInfosUpdated?.Invoke(new PackageInfo[] { oldInfo });
-
-                if (IsPreviewInstalled(oldInfo))
-                    OnInstalledPreviewPackagesChanged();
             }
 
             public bool IsPackageInstalled(string packageName) => m_InstalledPackageInfos.ContainsKey(packageName);
@@ -146,9 +143,6 @@ namespace UnityEditor.PackageManager.UI
                 m_InstalledPackageInfos[info.name] = info;
                 if (oldInfo == null || IsDifferent(oldInfo, info))
                     onPackageInfosUpdated?.Invoke(new PackageInfo[] { info });
-
-                if (IsPreviewInstalled(oldInfo) || IsPreviewInstalled(info))
-                    OnInstalledPreviewPackagesChanged();
             }
 
             public void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos)
@@ -163,7 +157,6 @@ namespace UnityEditor.PackageManager.UI
                 if (updatedInfos.Any())
                 {
                     onPackageInfosUpdated?.Invoke(updatedInfos);
-                    OnInstalledPreviewPackagesChanged();
                 }
             }
 
@@ -201,16 +194,6 @@ namespace UnityEditor.PackageManager.UI
 
                 return packageInfo.isDirectDependency && packageInfo.source == PackageSource.Registry
                     && SemVersionParser.TryParse(packageInfo.version, out packageInfoVersion) && !((SemVersion)packageInfoVersion).IsRelease();
-            }
-
-            private void OnInstalledPreviewPackagesChanged()
-            {
-                if (!PackageManagerPrefs.instance.hasShowPreviewPackagesKey)
-                    PackageManagerPrefs.instance.showPreviewPackagesFromInstalled = UpmCache.instance.installedPackageInfos.Any(p => {
-                        SemVersion? version;
-                        bool isVersionParsed = SemVersionParser.TryParse(p.version, out version);
-                        return isVersionParsed && !((SemVersion)version).IsRelease();
-                    });
             }
 
             public void ClearCache()

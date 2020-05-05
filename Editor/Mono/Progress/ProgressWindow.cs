@@ -25,6 +25,7 @@ namespace UnityEditor
         public const string kCanceledIcon = "console.warnicon";
         public const int kIconSize = 16;
 
+        private const float WindowMinWidth = 280;
         private const float WindowWidth = 400;
         private const float WindowHeight = 300;
 
@@ -81,7 +82,7 @@ namespace UnityEditor
                 var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
                 var size = new Vector2(WindowWidth, WindowHeight);
                 m_Window.position = new Rect(mainWindowRect.xMax - WindowWidth - 6, mainWindowRect.yMax - WindowHeight - 50, size.x, size.y);
-                m_Window.minSize = size;
+                m_Window.minSize = new Vector2(WindowMinWidth, size.y);
             }
         }
 
@@ -145,7 +146,6 @@ namespace UnityEditor
             rootVisualElement.Add(m_ScrollView);
 
             UpdateModel();
-            UpdateStatusHeaders();
             UpdateStatusFilter();
 
             Progress.added += OperationWasAdded;
@@ -181,7 +181,6 @@ namespace UnityEditor
             Assert.IsNotNull(ops[0]);
             var el = AddElement(ops[0]);
             UpdateNbTasks();
-            UpdateStatusHeaders();
             UpdateStatusFilter(el);
             CheckUnresponsive();
         }
@@ -211,7 +210,6 @@ namespace UnityEditor
 
             EditorApplication.delayCall += () =>
             {
-                UpdateStatusHeaders();
                 UpdateNbTasks();
                 CheckUnresponsive();
             };
@@ -254,7 +252,6 @@ namespace UnityEditor
                     }
                     m_LastParentFailedIndex++;
                 }
-                UpdateStatusHeaders();
                 UpdateStatusFilter(m_Elements[parentElementIndex]);
             }
             m_DismissAllBtn.SetEnabled(m_Elements.Any(el => !el.dataSource.running));
@@ -277,8 +274,6 @@ namespace UnityEditor
         private UIElements.ToolbarToggle CreateStatusFiler(VisualElement parent, string controlName, string iconName)
         {
             var filterToggle = new UIElements.ToolbarToggle();
-            filterToggle.text = "0";
-            filterToggle.text = controlName;
             filterToggle.tooltip = controlName;
             filterToggle.value = EditorPrefs.GetBool($"{preferenceKey}{controlName}_filter", true);
             var toggleCheck = filterToggle.Q<VisualElement>("unity-checkmark");
@@ -293,21 +288,6 @@ namespace UnityEditor
             });
             parent.Add(filterToggle);
             return filterToggle;
-        }
-
-        private void UpdateStatusHeaders()
-        {
-            var countPerStatus = Progress.GetCountPerStatus();
-            UpdateStatusHeader(m_FilterCancelled, Progress.Status.Canceled, countPerStatus);
-            UpdateStatusHeader(m_FilterFailed, Progress.Status.Failed, countPerStatus);
-            UpdateStatusHeader(m_FilterSuccess, Progress.Status.Succeeded, countPerStatus);
-        }
-
-        private static void UpdateStatusHeader(Toggle toggle, Progress.Status status, int[] countPerStatus)
-        {
-            var countStr = countPerStatus[(int)status].ToString();
-            if (toggle.text != countStr)
-                toggle.text = countStr;
         }
 
         private void UpdateStatusFilter()

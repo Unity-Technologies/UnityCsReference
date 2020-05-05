@@ -241,11 +241,17 @@ namespace UnityEditor
             get { return new Rect(0, toolbarHeight, position.width, sceneViewHeight); }
         }
 
-        Transform m_CustomParentForDraggedObjects;
+        Transform m_CustomParentForNewGameObjects;
         protected internal Transform customParentForDraggedObjects
         {
-            get { return m_CustomParentForDraggedObjects; }
-            set { m_CustomParentForDraggedObjects = value; }
+            get { return customParentForNewGameObjects; }
+            set { customParentForNewGameObjects = value; }
+        }
+
+        internal Transform customParentForNewGameObjects
+        {
+            get { return m_CustomParentForNewGameObjects; }
+            set { m_CustomParentForNewGameObjects = value; }
         }
 
         [NonSerialized]
@@ -506,8 +512,6 @@ namespace UnityEditor
         float m_ExposureSliderValue = 0.0f;
         // this value can be altered by the user
         float m_ExposureSliderMax = 16f;
-        // no point of allowing the user to go over this
-        const float kExposureSliderAbsoluteMax = 23.0f;
 
         Texture2D m_ExposureTexture = null;
         Texture2D m_EmptyExposureTexture = null;
@@ -904,7 +908,6 @@ namespace UnityEditor
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
-            public static GUIContent exposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the precomputed and baked lighting debug views.");
             public static GUIContent contributeGIOff = EditorGUIUtility.TrTextContent("Contribute GI Off");
             public static GUIContent receiveGILightmaps = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Lightmaps");
             public static GUIContent receiveGILightProbes = EditorGUIUtility.TrTextContent("Contribute GI / Receive GI Light Probes");
@@ -2507,18 +2510,8 @@ namespace UnityEditor
 
         internal void DrawLightingExposureSlider()
         {
-            float labelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 20;
-            m_ExposureSliderValue = EditorGUILayout.Slider(Styles.exposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax,
-                m_ExposureSliderMax, -kExposureSliderAbsoluteMax, kExposureSliderAbsoluteMax, EditorStyles.toolbarSlider);
+            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, EditorStyles.toolbarSlider);
 
-            // This will allow the user to set a new max value for the current session
-            if (m_ExposureSliderValue >= 0)
-                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue);
-            else
-                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue * -1);
-
-            EditorGUIUtility.labelWidth = labelWidth;
             Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
         }
 
@@ -2808,7 +2801,7 @@ namespace UnityEditor
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
             // Handle scene commands after EditorTool.OnSceneGUI so that tools can handle commands
-            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
+            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand || evt.keyCode == KeyCode.Escape)
                 CommandsGUI();
 
             Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
@@ -3563,7 +3556,7 @@ namespace UnityEditor
                     if (DragAndDrop.visualMode != DragAndDropVisualMode.Copy)
                     {
                         GameObject go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
-                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kSceneDropDstId, go, pivot, Event.current.mousePosition, customParentForDraggedObjects, isPerform);
+                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kSceneDropDstId, go, pivot, Event.current.mousePosition, customParentForNewGameObjects, isPerform);
                     }
 
                     if (isPerform && DragAndDrop.visualMode != DragAndDropVisualMode.None)
@@ -3613,17 +3606,30 @@ namespace UnityEditor
                     break;
                 case EventCommandNames.Duplicate:
                     if (execute)
-                        Unsupported.DuplicateGameObjectsUsingPasteboard();
+                    {
+                        CutCopyPasteUtility.DuplicateGO(customParentForNewGameObjects);
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.Copy:
                     if (execute)
-                        Unsupported.CopyGameObjectsToPasteboard();
+                    {
+                        CutCopyPasteUtility.CopyGO();
+                    }
+                    Event.current.Use();
+                    break;
+                case EventCommandNames.Cut:
+                    if (execute)
+                    {
+                        CutCopyPasteUtility.CutGO();
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.Paste:
                     if (execute)
-                        Unsupported.PasteGameObjectsFromPasteboard();
+                    {
+                        CutCopyPasteUtility.PasteGO(customParentForNewGameObjects);
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.SelectAll:
@@ -3669,6 +3675,12 @@ namespace UnityEditor
                     }
                     Event.current.Use();
                     break;
+            }
+            // Detect if we are canceling 'Cut' operation
+            if (Event.current.keyCode == KeyCode.Escape && CutBoard.hasCutboardData)
+            {
+                CutCopyPasteUtility.ResetCutboardAndRepaintHierarchyWindows();
+                Repaint();
             }
         }
 

@@ -120,7 +120,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 throw new PrecompiledAssemblyException(
-                    $"Multiple precompiled assemblies with the same name {precompiledAssemblyNameToIndexes.Key} included or the current platform. Only one assembly with the same name is allowed per platform. Assembly paths: {paths}");
+                    $"Multiple precompiled assemblies with the same name {precompiledAssemblyNameToIndexes.Key} included or the current platform. Only one assembly with the same name is allowed per platform. Assembly paths: {paths}", paths);
             }
 
             return fileNameToUserPrecompiledAssemblies;

@@ -296,13 +296,13 @@ namespace UnityEditor
         [MenuItem("Edit/Paste As Child %#V", false, 103)]
         static void PasteAsChild()
         {
-            lastInteractedHierarchyWindow?.m_SceneHierarchy?.PasteGOAsChild();
+            CutCopyPasteUtility.PasteGOAsChild();
         }
 
         [MenuItem("Edit/Paste As Child %#V", true, 103)]
         static bool ValidatePasteAsChild()
         {
-            return lastInteractedHierarchyWindow?.m_SceneHierarchy?.CanPasteAsChild() ?? false;
+            return CutCopyPasteUtility.CanPasteAsChild();
         }
     }
 

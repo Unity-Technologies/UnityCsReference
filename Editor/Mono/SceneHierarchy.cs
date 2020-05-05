@@ -898,21 +898,6 @@ namespace UnityEditor
             }
         }
 
-        bool GetIsCustomParentSelected()
-        {
-            if (m_CustomParentForNewGameObjects == null)
-                return false;
-
-            GameObject[] selected = Selection.gameObjects;
-            for (int i = 0; i < selected.Length; i++)
-            {
-                if (selected[i] == m_CustomParentForNewGameObjects.gameObject)
-                    return true;
-            }
-
-            return false;
-        }
-
         bool GetIsNotEditable()
         {
             GameObject[] selected = Selection.gameObjects;
@@ -937,7 +922,7 @@ namespace UnityEditor
 
             if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
             {
-                if (execute && !GetIsCustomParentSelected())
+                if (execute && !CutCopyPasteUtility.GetIsCustomParentSelected(m_CustomParentForNewGameObjects))
                     DeleteGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
@@ -958,13 +943,13 @@ namespace UnityEditor
             }
             else if (evt.commandName == EventCommandNames.Cut)
             {
-                CutGO();
+                CutCopyPasteUtility.CutGO();
                 GUIUtility.ExitGUI();
             }
             else if (evt.commandName == EventCommandNames.Copy)
             {
                 if (execute)
-                    CopyGO();
+                    CutCopyPasteUtility.CopyGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
@@ -1021,11 +1006,9 @@ namespace UnityEditor
         {
             Event evt = Event.current;
 
-            if (evt.keyCode == KeyCode.Escape && CutBoard.hasCutboardData)
+            if (evt.keyCode == KeyCode.Escape && CutBoard.CanGameObjectsBePasted())
             {
-                //Clear cutboard and affected gameObject list
-                CutBoard.Reset();
-                Repaint();
+                CutCopyPasteUtility.ResetCutboardAndRepaintHierarchyWindows();
                 GUIUtility.ExitGUI();
             }
         }
@@ -1035,16 +1018,20 @@ namespace UnityEditor
             // For Sub Scenes GameObjects, have menu items for cut, paste and delete.
             // Not copy or duplicate, since multiple of the same Sub Scene is not supported anyway.
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutGO);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
-            if (Selection.gameObjects.Length == 1)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, PasteGOAsChild);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutCopyPasteUtility.CutGO);
+            if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
+
+            if (CutCopyPasteUtility.CanPasteAsChild())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, CutCopyPasteUtility.PasteGOAsChild);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
 
             menu.AddSeparator("");
 
-            if (GetIsCustomParentSelected())
+            if (CutCopyPasteUtility.GetIsCustomParentSelected(m_CustomParentForNewGameObjects))
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete GameObject"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete GameObject"), false, DeleteGO);
@@ -1052,11 +1039,14 @@ namespace UnityEditor
 
         void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutGO);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, CopyGO);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
-            if (Selection.gameObjects.Length == 1)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, PasteGOAsChild);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutCopyPasteUtility.CutGO);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, CutCopyPasteUtility.CopyGO);
+            if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
+            if (CutCopyPasteUtility.CanPasteAsChild())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, CutCopyPasteUtility.PasteGOAsChild);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
 
@@ -1068,7 +1058,7 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
             menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
 
-            if (GetIsCustomParentSelected())
+            if (CutCopyPasteUtility.GetIsCustomParentSelected(m_CustomParentForNewGameObjects))
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
@@ -1417,62 +1407,14 @@ namespace UnityEditor
             menu.ShowAsContext();
         }
 
-        void CutGO()
-        {
-            CutBoard.CutGO();
-            Repaint();
-        }
-
-        void CopyGO()
-        {
-            CutBoard.Reset();
-            Unsupported.CopyGameObjectsToPasteboard();
-        }
-
         void PasteGO()
         {
-            if (CutBoard.hasCutboardData)
-            {
-                CutBoard.PasteGameObjects(m_CustomParentForNewGameObjects);
-                ReloadData();
-            }
-            // If it is not a Cut operation, execute regular paste
-            else
-            {
-                Unsupported.PasteGameObjectsFromPasteboard();
-            }
-        }
-
-        internal void PasteGOAsChild()
-        {
-            Transform[] selected = Selection.transforms;
-            int activeInstance = Selection.activeInstanceID;
-
-            // paste as a child if a gameObject is selected
-            if (selected.Length == 1)
-            {
-                // handle paste after cut
-                if (CutBoard.hasCutboardData)
-                {
-                    CutBoard.PasteAsChildren(selected[0]);
-                }
-                // paste after copy
-                else
-                {
-                    Unsupported.PasteGameObjectsFromPasteboard(selected[0]);
-                }
-            }
-        }
-
-        internal bool CanPasteAsChild()
-        {
-            return Selection.transforms.Length == 1;
+            CutCopyPasteUtility.PasteGO(m_CustomParentForNewGameObjects);
         }
 
         void DuplicateGO()
         {
-            CutBoard.Reset();
-            Unsupported.DuplicateGameObjectsUsingPasteboard();
+            CutCopyPasteUtility.DuplicateGO(m_CustomParentForNewGameObjects);
         }
 
         void RenameGO()

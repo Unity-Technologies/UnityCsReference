@@ -143,6 +143,11 @@ namespace UnityEditor
         [SerializeField]
         float m_MipLevel = 0;
 
+        [SerializeField]
+        protected float m_ExposureSliderValue = 0.0f;
+
+        protected float m_ExposureSliderMax = 16f; // this value can be altered by the user
+
         CubemapPreview m_CubemapPreview = new CubemapPreview();
 
         List<TextureMipLevels> m_TextureMipLevels = new List<TextureMipLevels>();
@@ -150,7 +155,7 @@ namespace UnityEditor
         public static bool IsNormalMap(Texture t)
         {
             TextureUsageMode mode = TextureUtil.GetUsageMode(t);
-            return mode == TextureUsageMode.NormalmapPlain || mode == TextureUsageMode.NormalmapDXT5nm;
+            return TextureUtil.IsNormalMapUsageMode(mode);
         }
 
         protected virtual void OnEnable()
@@ -529,6 +534,13 @@ namespace UnityEditor
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Tex2DArray;
         }
 
+        protected float GetExposureValueForTexture(Texture t)
+        {
+            if (TextureUtil.NeedsExposureControl(t))
+                return m_ExposureSliderValue;
+            return 0.0f;
+        }
+
         public override void OnPreviewSettings()
         {
             if (IsCubemap())
@@ -549,8 +561,10 @@ namespace UnityEditor
             // and while it's being shown the actual texture object might disappear --
             // make sure to handle null targets.
             Texture tex = target as Texture;
+
             bool alphaOnly = false;
             bool hasAlpha = true;
+            bool needsExposureControl = false;
             int mipCount = 1;
 
             if (target is Texture2D)
@@ -563,29 +577,27 @@ namespace UnityEditor
             {
                 if (t == null) // texture might have disappeared while we're showing this in a preview popup
                     continue;
-                TextureFormat format = 0;
-                bool checkFormat = false;
+
+                mipCount = Mathf.Max(mipCount, TextureUtil.GetMipmapCount(t));
+
                 if (t is Texture2D)
                 {
-                    format = (t as Texture2D).format;
-                    checkFormat = true;
-                }
+                    TextureFormat format = (t as Texture2D).format;
+                    TextureUsageMode mode = TextureUtil.GetUsageMode(t);
 
-                if (checkFormat)
-                {
                     if (!TextureUtil.IsAlphaOnlyTextureFormat(format))
                         alphaOnly = false;
+
                     if (TextureUtil.HasAlphaTextureFormat(format))
                     {
-                        TextureUsageMode mode = TextureUtil.GetUsageMode(t);
                         if (mode == TextureUsageMode.Default) // all other texture usage modes don't displayable alpha
                             hasAlpha = true;
                     }
+
+                    if (TextureUtil.NeedsExposureControl(t))
+                        needsExposureControl = true;
                 }
-
-                mipCount = Mathf.Max(mipCount, TextureUtil.GetMipmapCount(t));
             }
-
 
             List<PreviewMode> previewCandidates = new List<PreviewMode>(5);
             previewCandidates.Add(PreviewMode.RGB);
@@ -604,7 +616,6 @@ namespace UnityEditor
             {
                 previewCandidates.Remove(PreviewMode.A);
             }
-
 
             if (previewCandidates.Count > 1 && tex != null && !IsNormalMap(tex))
             {
@@ -632,6 +643,11 @@ namespace UnityEditor
                     m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.A, s_Styles.previewButtonContents[4], s_Styles.toolbarButton)
                         ? PreviewMode.A
                         : m_PreviewMode;
+            }
+
+            if (needsExposureControl)
+            {
+                m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, s_Styles.previewSlider);
             }
 
             if (mipCount > 1)
@@ -728,9 +744,9 @@ namespace UnityEditor
             else
             {
                 if (t2d != null && t2d.alphaIsTransparency)
-                    EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask);
+                    EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask, GetExposureValueForTexture(t));
                 else
-                    EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask);
+                    EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask, GetExposureValueForTexture(t));
             }
 
             // TODO: Less hacky way to prevent sprite rects to not appear in smaller previews like icons.
@@ -916,21 +932,20 @@ namespace UnityEditor
             if (showSize)
                 info += "\n" + EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(t));
 
-            if (TextureUtil.GetUsageMode(t) == TextureUsageMode.AlwaysPadded)
+            TextureUsageMode mode = TextureUtil.GetUsageMode(t);
+
+            if (mode == TextureUsageMode.AlwaysPadded)
             {
                 var glWidth = TextureUtil.GetGPUWidth(t);
                 var glHeight = TextureUtil.GetGPUHeight(t);
                 if (t.width != glWidth || t.height != glHeight)
                     info += UnityString.Format("\nPadded to {0}x{1}", glWidth, glHeight);
             }
-            else if (TextureUtil.GetUsageMode(t) == TextureUsageMode.BakedLightmapRGBM ||
-                     TextureUtil.GetUsageMode(t) == TextureUsageMode.RealtimeLightmapRGBM ||
-                     TextureUtil.GetUsageMode(t) == TextureUsageMode.RGBMEncoded)
+            else if (TextureUtil.IsRGBMUsageMode(mode))
             {
                 info += "\nRGBM encoded";
             }
-            else if (TextureUtil.GetUsageMode(t) == TextureUsageMode.DoubleLDR ||
-                     TextureUtil.GetUsageMode(t) == TextureUsageMode.BakedLightmapDoubleLDR)
+            else if (TextureUtil.IsDoubleLDRUsageMode(mode))
             {
                 info += "\ndLDR encoded";
             }

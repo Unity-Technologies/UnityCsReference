@@ -328,7 +328,7 @@ namespace UnityEditor.PackageManager.UI
 
                 var upmPackages = new List<UpmPackage>();
                 var productPackages = new List<UpmPackage>();
-                var showPreview = PackageManagerPrefs.instance.showPreviewPackages;
+                var showPreview = PackageManagerProjectSettings.instance.enablePreviewPackages;
                 foreach (var p in packageInfos)
                 {
                     var productId = UpmCache.instance.GetProductId(p.name);
@@ -476,7 +476,7 @@ namespace UnityEditor.PackageManager.UI
 
                 m_EventsRegistered = true;
 
-                PackageManagerPrefs.instance.onShowPreviewPackagesChanged += OnShowPreviewPackagesChanged;
+                PackageManagerProjectSettings.instance.onEnablePreviewPackageChanged += OnShowPreviewPackagesChanged;
                 UpmCache.instance.onPackageInfosUpdated += OnPackageInfosUpdated;
             }
 
@@ -487,7 +487,7 @@ namespace UnityEditor.PackageManager.UI
 
                 m_EventsRegistered = false;
 
-                PackageManagerPrefs.instance.onShowPreviewPackagesChanged -= OnShowPreviewPackagesChanged;
+                PackageManagerProjectSettings.instance.onEnablePreviewPackageChanged -= OnShowPreviewPackagesChanged;
                 UpmCache.instance.onPackageInfosUpdated -= OnPackageInfosUpdated;
             }
 

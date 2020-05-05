@@ -9,6 +9,9 @@ using UnityEditor.Web;
 using UnityEditor.Connect;
 using UnityEditorInternal;
 using UnityEditor.EditorTools;
+using UnityEditor.PackageManager.UI;
+using System.Linq;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -20,6 +23,11 @@ namespace UnityEditor
 
         // Count of the transform tools + custom editor tool.
         const int k_TransformToolCount = 6;
+
+        private const int k_MinWidthChangePreviewPackageInUseToIcon = 1100;
+
+        [NonSerialized]
+        private bool m_IsPreviewPackagesInUse;
 
         void InitializeToolIcons()
         {
@@ -91,6 +99,9 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("PlayButtonProfile On")
             };
 
+            s_PreviewPackageContent = EditorGUIUtility.TrTextContent("Preview Packages in Use");
+            s_PreviewPackageIcon = EditorGUIUtility.TrIconContent("PreviewPackageInUse", "Preview Packages in Use");
+
             s_CloudIcon = EditorGUIUtility.IconContent("CloudConnect");
             s_AccountContent = EditorGUIUtility.TrTextContent("Account");
         }
@@ -102,11 +113,15 @@ namespace UnityEditor
         static GUIContent[] s_PlayIcons;
         static GUIContent s_CustomToolIcon;
         static int s_ViewToolOnOffset;
+        static GUIContent s_PreviewPackageContent;
+        static GUIContent s_PreviewPackageIcon;
+
         static GUIContent s_AccountContent;
         static GUIContent   s_CloudIcon;
         static class Styles
         {
             public static readonly GUIStyle dropdown = "Dropdown";
+            public static readonly GUIStyle previewPackageInUseDropdown = "PreviewPackageInUse";
             public static readonly GUIStyle appToolbar = "AppToolbar";
             public static readonly GUIStyle command = "AppCommand";
             public static readonly GUIStyle buttonLeft = "AppToolbarButtonLeft";
@@ -129,6 +144,7 @@ namespace UnityEditor
             // when undo or redo is done, we need to reset global tools rotation
             Undo.undoRedoPerformed += OnSelectionChange;
             UnityConnect.instance.StateChanged += OnUnityConnectStateChanged;
+            m_IsPreviewPackagesInUse = PackageManager.PackageInfo.GetAll().FirstOrDefault(info => info.version.Contains("preview") || info.version.StartsWith("0.")) != null;
         }
 
         protected void OnDisable()
@@ -175,6 +191,8 @@ namespace UnityEditor
             const float standardButtonWidth = 32;
             const float dropdownWidth = 80;
             const float playPauseStopWidth = 140;
+            const float previewPackagesinUseWidth = 173;
+            const float previewPackagesinUseIconWidth = 45;
 
             InitializeToolIcons();
 
@@ -274,7 +292,45 @@ namespace UnityEditor
                 }
             }
 
+            if (m_IsPreviewPackagesInUse && !PackageManagerPrefs.instance.dismissPreviewPackagesInUse)
+            {
+                ReserveWidthLeft(space, ref pos);
+
+                var useIcon = Toolbar.get.mainToolbar.position.width < k_MinWidthChangePreviewPackageInUseToIcon;
+                ReserveWidthLeft(useIcon ? previewPackagesinUseIconWidth : previewPackagesinUseWidth, ref pos);
+
+                var dropDownCustomColor = new GUIStyle(Styles.previewPackageInUseDropdown);
+
+                if (EditorGUI.DropdownButton(EditorToolGUI.GetThinArea(pos), useIcon ? s_PreviewPackageIcon : s_PreviewPackageContent, FocusType.Passive, dropDownCustomColor))
+                    ShowPreviewPackageInUseMenu(EditorToolGUI.GetThinArea(pos));
+            }
+
             EditorGUI.ShowRepaints();
+        }
+
+        void ShowPreviewPackageInUseMenu(Rect rect)
+        {
+            var menu = new GenericMenu();
+
+            // Here hide the button : what do for now mean, reappear after opening unity
+            menu.AddItem(EditorGUIUtility.TrTextContent("Dismiss for now"), false, () => PackageManagerPrefs.instance.dismissPreviewPackagesInUse = true);
+            menu.AddSeparator("");
+
+            // Here we open the package manager, In-Project open and search field have preview.
+            menu.AddItem(EditorGUIUtility.TrTextContent("Show Preview Packages..."), false, () =>
+            {
+                PackageManagerWindow.SelectPackageAndFilter(string.Empty, PackageFilterTab.InProject, true, "preview");
+            });
+            menu.AddSeparator("");
+
+            // Here we go to the link explaining why we see this...
+            menu.AddItem(EditorGUIUtility.TrTextContent("Why am I seeing this?"), false, () =>
+            {
+                var unityVersionParts = Application.unityVersion.Split('.');
+                Application.OpenURL($"https://docs.unity3d.com/{unityVersionParts[0]}.{unityVersionParts[1]}/Documentation/Manual/pack-preview.html");
+            });
+
+            menu.DropDown(rect);
         }
 
         void ShowUserMenu(Rect dropDownRect)

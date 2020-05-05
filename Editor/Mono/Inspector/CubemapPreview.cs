@@ -22,6 +22,11 @@ namespace UnityEditor
         float                           m_MipLevel = 0.0F;
         private float                   m_Intensity = 1.0f;
 
+        [SerializeField]
+        float m_ExposureSliderValue = 0.0f;
+
+        float m_ExposureSliderMax = 16f; // this value can be altered by the user
+
         // Cached preview data
         private PreviewRenderUtility    m_PreviewUtility;
         private Mesh                    m_Mesh;
@@ -61,6 +66,13 @@ namespace UnityEditor
             m_Intensity = intensity;
         }
 
+        protected float GetExposureValueForTexture(Texture t)
+        {
+            if (TextureUtil.NeedsExposureControl(t))
+                return m_ExposureSliderValue;
+            return 0.0f;
+        }
+
         void InitPreview()
         {
             // Initialized?
@@ -83,6 +95,8 @@ namespace UnityEditor
             bool alphaOnly = true;
             //@TODO: Share some code with texture inspector???
             bool hasAlpha = false;
+            bool needsExposureControl = false;
+
             int mipCount = 8;
             foreach (Texture t2 in targets)
             {
@@ -100,6 +114,9 @@ namespace UnityEditor
                         if (mode == TextureUsageMode.Default) // all other texture usage modes don't displayable alpha
                             hasAlpha = true;
                     }
+
+                    if (TextureUtil.NeedsExposureControl(t2))
+                        needsExposureControl = true;
                 }
                 else
                 {
@@ -125,6 +142,11 @@ namespace UnityEditor
                 int index = (int)m_PreviewType;
                 if (GUILayout.Button(kPreviewIcons[index], Styles.preButton))
                     m_PreviewType = (PreviewType)(++index % kPreviewIcons.Length);
+            }
+
+            if (needsExposureControl)
+            {
+                m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, Styles.preSlider);
             }
 
             GUI.enabled = (mipCount != 1);
@@ -200,6 +222,7 @@ namespace UnityEditor
             mat.SetFloat("_Mip", mipLevel);
             mat.SetFloat("_Alpha", (m_PreviewType == PreviewType.Alpha) ? 1.0f : 0.0f);
             mat.SetFloat("_Intensity", m_Intensity);
+            mat.SetFloat("_Exposure", GetExposureValueForTexture(t));
 
             m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, mat, 0);
             m_PreviewUtility.Render();

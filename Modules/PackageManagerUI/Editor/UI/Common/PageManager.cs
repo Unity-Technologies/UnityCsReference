@@ -308,9 +308,6 @@ namespace UnityEditor.PackageManager.UI
 
             public void SetExpanded(IPackage package, bool value)
             {
-                // prevent an item from being expandable when there are no extra versions
-                if (value && package?.versions.Skip(1).Any() != true)
-                    return;
                 GetPageFromTab().SetExpanded(package, value);
             }
 

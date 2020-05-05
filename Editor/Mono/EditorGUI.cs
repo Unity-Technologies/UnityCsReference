@@ -5615,7 +5615,7 @@ namespace UnityEditor
                         var barRect = new Rect(position);
                         barRect.width *= value;
                         if (barRect.width >= 1f)
-                            progressBarStyle.Draw(barRect, textOnBar ? content : GUIContent.none, mouseHover, false, false, false);
+                            progressBarStyle.Draw(barRect, GUIContent.none, mouseHover, false, false, false);
                     }
                     else if (value == -1.0f)
                     {
@@ -5629,8 +5629,22 @@ namespace UnityEditor
                         var barRect = new Rect(position.x + cursor + scale, position.y, barWidth, position.height);
                         progressBarStyle.Draw(barRect, GUIContent.none, mouseHover, false, false, false);
                     }
-
-                    progressBarTextStyle.Draw(position, !textOnBar ? content : GUIContent.none, mouseHover, false, false, false);
+                    var contentTextToDisplay = content;
+                    var contentWidth = progressBarTextStyle.CalcSize(contentTextToDisplay).x;
+                    if (contentWidth > position.width)
+                    {
+                        int numberOfVisibleCharacters = (int)((position.width / contentWidth) * content.text.Length);
+                        // we iterate in case we encounter a weird string like ________..............._________ (with big characters in the outside and small in the inside)
+                        int i = 0;
+                        do
+                        {
+                            int numberOfVisibleCharactersBySide = numberOfVisibleCharacters / 2 - 2 - i; //-2 to account for the ..., we reduce each iteration to fit
+                            contentTextToDisplay.text = content.text.Substring(0, numberOfVisibleCharactersBySide) + "..." + content.text.Substring(content.text.Length - numberOfVisibleCharactersBySide, numberOfVisibleCharactersBySide);
+                            ++i;
+                        }
+                        while (progressBarTextStyle.CalcSize(contentTextToDisplay).x > position.width);
+                    }
+                    progressBarTextStyle.Draw(position, contentTextToDisplay, mouseHover, false, false, false);
                     break;
             }
 
@@ -6149,11 +6163,11 @@ namespace UnityEditor
         internal static void DrawTextureAlphaInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
         {
             var mat = UseVTMaterial(image) ? alphaVTMaterial : alphaMaterial;
-            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
+            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, ColorWriteMask.All, 0);
         }
 
         // Draws texture transparently using the alpha channel.
-        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask, float exposure)
         {
             if (imageAspect == 0f && image == null)
             {
@@ -6168,7 +6182,7 @@ namespace UnityEditor
             if (image != null)
             {
                 var mat = UseVTMaterial(image) ? transparentVTMaterial : transparentMaterial;
-                DrawPreviewTexture(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask);
+                DrawPreviewTexture(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask, exposure);
             }
         }
 
@@ -6191,7 +6205,7 @@ namespace UnityEditor
         }
 
         // Draws the texture within a rectangle.
-        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask, float exposure)
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -6214,7 +6228,7 @@ namespace UnityEditor
 
                 mat.SetColor("_ColorMask", colorMask);
                 mat.SetFloat("_Mip", mipLevel);
-
+                mat.SetFloat("_Exposure", exposure);
 
                 RenderTexture rt = image as RenderTexture;
                 bool manualResolve = (rt != null) && rt.bindTextureMS;
@@ -6896,9 +6910,9 @@ namespace UnityEditor
         }
 
         // Draws texture transparently using the alpha channel.
-        public static void DrawTextureTransparent(Rect position, Texture image, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode, [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask)
+        public static void DrawTextureTransparent(Rect position, Texture image, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode, [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask, [DefaultValue("0")] float exposure)
         {
-            DrawTextureTransparentInternal(position, image, scaleMode, imageAspect, mipLevel, colorWriteMask);
+            DrawTextureTransparentInternal(position, image, scaleMode, imageAspect, mipLevel, colorWriteMask, exposure);
         }
 
         [ExcludeFromDocs]
@@ -6925,11 +6939,23 @@ namespace UnityEditor
             DrawTextureTransparent(position, image, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
         }
 
+        [ExcludeFromDocs]
+        public static void DrawTextureTransparent(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        {
+            DrawTextureTransparent(position, image, scaleMode, imageAspect, mipLevel, colorWriteMask, 0);
+        }
+
         // Draws the texture within a rectangle.
         public static void DrawPreviewTexture(Rect position, Texture image, [DefaultValue("null")] Material mat, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode,
-            [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask)
+            [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask, [DefaultValue("0")] float exposure)
         {
-            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask);
+            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask, exposure);
+        }
+
+        [ExcludeFromDocs]
+        public static void DrawPreviewTexture(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        {
+            DrawPreviewTexture(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask, 0);
         }
 
         [ExcludeFromDocs]

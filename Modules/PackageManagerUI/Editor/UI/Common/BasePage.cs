@@ -119,8 +119,9 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetSelected(string packageUniqueId, string versionUniqueId)
         {
-            var oldSelection = GetVisualState(m_SelectedUniqueIds.FirstOrDefault());
-            if (oldSelection?.packageUniqueId == packageUniqueId && oldSelection?.selectedVersionId == versionUniqueId)
+            var oldPackageUniqueId = m_SelectedUniqueIds.FirstOrDefault();
+            var oldSelection = GetVisualState(oldPackageUniqueId);
+            if (oldPackageUniqueId == packageUniqueId && oldSelection?.selectedVersionId == versionUniqueId)
                 return;
 
             foreach (var uniqueId in m_SelectedUniqueIds)
@@ -141,7 +142,7 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
             TriggerOnSelectionChanged(GetSelectedVersion());
-            TriggerOnVisualStateChange(new[] { GetVisualState(oldSelection?.packageUniqueId), GetVisualState(packageUniqueId) }.Where(s => s != null));
+            TriggerOnVisualStateChange(new[] { GetVisualState(oldPackageUniqueId), GetVisualState(packageUniqueId) }.Where(s => s != null));
         }
 
         public void SetExpanded(IPackage package, bool value)

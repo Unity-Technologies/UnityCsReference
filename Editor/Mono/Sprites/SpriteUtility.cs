@@ -134,8 +134,8 @@ namespace UnityEditor
                             dragGO.hideFlags = HideFlags.None;
 
                             // When in e.g Prefab Mode ensure to reparent dragged objects under the prefab root
-                            if (sceneView.customParentForDraggedObjects != null)
-                                dragGO.transform.SetParent(sceneView.customParentForDraggedObjects, true);
+                            if (sceneView.customParentForNewGameObjects != null)
+                                dragGO.transform.SetParent(sceneView.customParentForNewGameObjects, true);
 
                             Undo.RegisterCreatedObjectUndo(dragGO, "Create Sprite");
                             EditorUtility.SetDirty(dragGO);

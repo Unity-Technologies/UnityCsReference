@@ -8,9 +8,9 @@ namespace UnityEditor.PackageManager.UI
 {
     internal interface IPackageManagerPrefs
     {
-        event Action<bool> onShowDependenciesChanged;
+        bool dismissPreviewPackagesInUse { get; set; }
 
-        event Action<bool> onShowPreviewPackagesChanged;
+        event Action<bool> onShowDependenciesChanged;
 
         bool skipRemoveConfirmation { get; set; }
 
@@ -18,14 +18,10 @@ namespace UnityEditor.PackageManager.UI
 
         bool showPackageDependencies { get; set; }
 
-        bool hasShowPreviewPackagesKey {get; }
-
-        bool showPreviewPackagesFromInstalled { get; set; }
-
-        bool showPreviewPackages { get; set; }
-
-        bool showPreviewPackagesWarning { get; set; }
-
         PackageFilterTab? lastUsedPackageFilter { get; set; }
+
+        bool dependenciesExpanded { get; set; }
+
+        bool samplesExpanded { get; set; }
     }
 }

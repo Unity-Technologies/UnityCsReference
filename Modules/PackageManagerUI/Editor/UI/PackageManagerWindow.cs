@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Scripting;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.UIElements;
 using System.Collections.Generic;
 
@@ -238,12 +239,6 @@ namespace UnityEditor.PackageManager.UI
             if (package != null || m_FilterToSelectAfterLoad != null)
             {
                 var tab = m_FilterToSelectAfterLoad ?? PackageFilterTab.All;
-                if (version != null)
-                {
-                    if (!PackageManagerPrefs.instance.showPreviewPackages && version.HasTag(PackageTag.Preview))
-                        PackageManagerPrefs.instance.showPreviewPackages = true;
-                }
-
                 PackageFiltering.instance.currentFilterTab = tab;
                 if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
                 {
@@ -363,21 +358,36 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (filterTab == null)
                 {
-                    IPackageVersion version;
-                    IPackage package;
-                    PackageDatabase.instance.GetPackageAndVersionByIdOrName(packageIdOrDisplayName, out package, out version);
-                    filterTab = PageManager.instance.FindTab(package, version);
+                    PackageDatabase.instance.GetPackageAndVersionByIdOrName(packageIdOrDisplayName, out var package, out var version);
+                    if (package != null)
+                        filterTab = PageManager.instance.FindTab(package, version);
+                    else
+                    {
+                        var packageIdOrDisplayNameSplit = packageIdOrDisplayName.Split('@');
+                        var versionString = packageIdOrDisplayNameSplit.Length == 2 ? packageIdOrDisplayNameSplit[1] : string.Empty;
+
+                        // Package is not found in PackageDatabase but we can determine if it's a preview package or not with it's version string.
+                        SemVersionParser.TryParse(versionString, out var semVersion);
+                        if (!PackageManagerProjectSettings.instance.enablePreviewPackages && semVersion.HasValue && (semVersion.Value.Major == 0 || semVersion.Value.Prerelease.StartsWith("preview")))
+                        {
+                            Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
+                            filterTab = PackageFiltering.instance.currentFilterTab;
+                            packageIdOrDisplayName = null;
+                        }
+                        else
+                            filterTab = PackageFilterTab.All;
+                    }
                 }
 
                 instance.m_FilterToSelectAfterLoad = filterTab;
                 instance.m_PackageToSelectOnLoaded = packageIdOrDisplayName;
-                instance.packageManagerToolbar.SetCurrentSearch(searchText);
 
                 if (refresh || PackageDatabase.instance.isEmpty)
                     instance.DelayRefresh((PackageFilterTab)filterTab);
                 else
                     instance.SelectPackageAndFilter();
             }
+            instance.packageManagerToolbar.SetCurrentSearch(searchText);
             instance.Show();
         }
 

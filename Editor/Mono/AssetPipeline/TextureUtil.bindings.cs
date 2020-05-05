@@ -37,6 +37,15 @@ namespace UnityEditor
         public static extern TextureUsageMode GetUsageMode(Texture t);
 
         [FreeFunction]
+        public static extern bool IsNormalMapUsageMode(TextureUsageMode usageMode);
+
+        [FreeFunction]
+        public static extern bool IsRGBMUsageMode(TextureUsageMode usageMode);
+
+        [FreeFunction]
+        public static extern bool IsDoubleLDRUsageMode(TextureUsageMode usageMode);
+
+        [FreeFunction]
         public static extern int GetBytesFromTextureFormat(TextureFormat inFormat);
 
         [FreeFunction]
@@ -58,6 +67,9 @@ namespace UnityEditor
         public static extern bool IsAlphaOnlyTextureFormat(TextureFormat format);
 
         [FreeFunction]
+        public static extern bool IsHDRFormat(TextureFormat format);
+
+        [FreeFunction]
         public static extern bool HasAlphaTextureFormat(TextureFormat format);
 
         [FreeFunction]
@@ -76,6 +88,9 @@ namespace UnityEditor
 
         [FreeFunction]
         public static extern bool HasMipMap(Texture t);
+
+        [FreeFunction]
+        public static extern bool NeedsExposureControl(Texture t);
 
         [FreeFunction]
         public static extern int GetGPUWidth(Texture t);

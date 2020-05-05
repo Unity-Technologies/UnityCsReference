@@ -268,17 +268,19 @@ namespace UnityEngine.UIElements
                         }
                     }
 
-                    receivedFocus = false;
-                    focusChangeDirection = FocusChangeDirection.unspecified;
+
                     if (focusController != null)
                     {
-                        if (focusController.imguiKeyboardControl != GUIUtility.keyboardControl)
+                        if (focusController.imguiKeyboardControl != GUIUtility.keyboardControl && focusChangeDirection != FocusChangeDirection.unspecified)
                         {
                             newKeyboardFocusControlID = GUIUtility.keyboardControl;
                         }
 
                         focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
                     }
+
+                    receivedFocus = false;
+                    focusChangeDirection = FocusChangeDirection.unspecified;
                 }
                 // We intentionally don't send the NewKeyboardFocus command here since it creates an issue with the AutomatedWindow
                 // newKeyboardFocusControlID = GUIUtility.keyboardControl;

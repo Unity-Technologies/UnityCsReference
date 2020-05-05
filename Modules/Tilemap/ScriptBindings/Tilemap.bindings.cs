@@ -7,6 +7,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.U2D;
 
 namespace UnityEngine.Tilemaps
 {
@@ -399,6 +400,20 @@ namespace UnityEngine.Tilemaps
             get;
             set;
         }
+
+        [RequiredByNativeCode]
+        internal void RegisterSpriteAtlasRegistered()
+        {
+            SpriteAtlasManager.atlasRegistered += OnSpriteAtlasRegistered;
+        }
+
+        [RequiredByNativeCode]
+        internal void UnregisterSpriteAtlasRegistered()
+        {
+            SpriteAtlasManager.atlasRegistered -= OnSpriteAtlasRegistered;
+        }
+
+        internal extern void OnSpriteAtlasRegistered(SpriteAtlas atlas);
     }
 
     [RequiredByNativeCode]

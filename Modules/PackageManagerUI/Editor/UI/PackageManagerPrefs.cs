@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -10,20 +11,17 @@ namespace UnityEditor.PackageManager.UI
     {
         static IPackageManagerPrefs s_Instance = null;
         public static IPackageManagerPrefs instance { get { return s_Instance ?? PackageManagerPrefsInternal.instance; } }
-        private class PackageManagerPrefsInternal : IPackageManagerPrefs
-        {
-            static PackageManagerPrefsInternal s_Instance = null;
-            public static PackageManagerPrefsInternal instance { get { return s_Instance ?? (s_Instance = new PackageManagerPrefsInternal()); } }
 
+        [Serializable]
+        private class PackageManagerPrefsInternal : ScriptableSingleton<PackageManagerPrefsInternal>, IPackageManagerPrefs
+        {
             private const string k_SkipRemoveConfirmationPrefs = "PackageManager.SkipRemoveConfirmation";
             private const string k_SkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
             private const string k_ShowPackageDependenciesPrefs = "PackageManager.ShowPackageDependencies";
-            private const string k_ShowPreviewPackagesWarningPrefs = "PackageManager.ShowPreviewPackagesWarning";
-            private const string k_ShowPreviewPackagesPrefsPrefix = "PackageManager.ShowPreviewPackages_";
             private const string k_LastUsedFilterPrefsPrefix = "PackageManager.Filter_";
 
+
             public event Action<bool> onShowDependenciesChanged = delegate {};
-            public event Action<bool> onShowPreviewPackagesChanged = delegate {};
 
             private static string projectIdentifier
             {
@@ -34,7 +32,14 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
             private static string lastUsedFilterForProjectPerfs { get { return k_LastUsedFilterPrefsPrefix + projectIdentifier; } }
-            private static string showPreviewPackagesForProjectPrefs { get { return k_ShowPreviewPackagesPrefsPrefix + projectIdentifier; } }
+
+            [SerializeField]
+            private bool m_DismissPreviewPackagesInUse;
+            public bool dismissPreviewPackagesInUse
+            {
+                get => m_DismissPreviewPackagesInUse;
+                set => m_DismissPreviewPackagesInUse = value;
+            }
 
             public bool skipRemoveConfirmation
             {
@@ -60,58 +65,6 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            public bool hasShowPreviewPackagesKey
-            {
-                get
-                {
-                    // If user manually choose to show or not preview packages, use this value
-                    return EditorPrefs.HasKey(showPreviewPackagesForProjectPrefs);
-                }
-            }
-
-            private bool m_ShowPreviewPackagesFromInstalled = false;
-            public bool showPreviewPackagesFromInstalled
-            {
-                get { return m_ShowPreviewPackagesFromInstalled; }
-                set
-                {
-                    if (m_ShowPreviewPackagesFromInstalled == value)
-                        return;
-                    var showPreviewPackagesOldValue = showPreviewPackages;
-                    m_ShowPreviewPackagesFromInstalled = value;
-                    var showPreviewPackagesNewValue = showPreviewPackages;
-                    if (showPreviewPackagesNewValue != showPreviewPackagesOldValue)
-                        onShowPreviewPackagesChanged(showPreviewPackagesNewValue);
-                }
-            }
-
-            public bool showPreviewPackages
-            {
-                get
-                {
-                    var key = showPreviewPackagesForProjectPrefs;
-                    // If user manually choose to show or not preview packages, use this value
-                    if (EditorPrefs.HasKey(key))
-                        return EditorPrefs.GetBool(key);
-
-                    // Returns true if at least one preview package is installed, false otherwise
-                    return showPreviewPackagesFromInstalled;
-                }
-                set
-                {
-                    var oldValue = showPreviewPackages;
-                    EditorPrefs.SetBool(showPreviewPackagesForProjectPrefs, value);
-                    if (oldValue != value)
-                        onShowPreviewPackagesChanged(value);
-                }
-            }
-
-            public bool showPreviewPackagesWarning
-            {
-                get { return EditorPrefs.GetBool(k_ShowPreviewPackagesWarningPrefs, true); }
-                set { EditorPrefs.SetBool(k_ShowPreviewPackagesWarningPrefs, value); }
-            }
-
             public PackageFilterTab? lastUsedPackageFilter
             {
                 get
@@ -129,6 +82,22 @@ namespace UnityEditor.PackageManager.UI
                 {
                     EditorPrefs.SetString(lastUsedFilterForProjectPerfs, value?.ToString());
                 }
+            }
+
+            [SerializeField]
+            private bool m_DependenciesExpanded = false;
+            public bool dependenciesExpanded
+            {
+                get => m_DependenciesExpanded;
+                set => m_DependenciesExpanded = value;
+            }
+
+            [SerializeField]
+            private bool m_SamplesExpanded = false;
+            public bool samplesExpanded
+            {
+                get => m_SamplesExpanded;
+                set => m_SamplesExpanded = value;
             }
         }
     }

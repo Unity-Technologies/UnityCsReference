@@ -57,6 +57,9 @@ namespace UnityEditor.PackageManager.UI
         private IPackage m_Package;
 
         [NonSerialized]
+        private bool m_ShouldBeEnabled;
+
+        [NonSerialized]
         private IPackageVersion m_Version;
 
         public override void OnInspectorGUI()
@@ -75,6 +78,11 @@ namespace UnityEditor.PackageManager.UI
                     EditorGUILayout.HelpBox(ApplicationUtil.instance.GetTranslationForText("This package is not accessible anymore."), MessageType.Error);
                     return;
                 }
+
+                var immutable = true;
+                m_ShouldBeEnabled = true;
+                if (!m_Version.isInstalled || AssetDatabase.GetAssetFolderInfo("Packages/" + m_Package.name, out var rootFolder, out immutable))
+                    m_ShouldBeEnabled = !immutable;
             }
 
             var dependencies = new List<DependencyInfo>();
@@ -87,6 +95,9 @@ namespace UnityEditor.PackageManager.UI
                 elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing
             };
 
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = m_ShouldBeEnabled;
+
             // Package information
             GUILayout.Label(Styles.information, EditorStyles.boldLabel);
             DoPackageInformationLayout();
@@ -98,6 +109,8 @@ namespace UnityEditor.PackageManager.UI
             // Package dependencies
             GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
             m_List.DoLayoutList();
+
+            GUI.enabled = previousEnabled;
         }
 
         internal override void OnHeaderControlsGUI()

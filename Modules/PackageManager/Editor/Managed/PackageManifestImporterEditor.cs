@@ -308,9 +308,10 @@ namespace UnityEditor.PackageManager
         {
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                using (new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition,
+                using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition,
                     GUILayout.MinHeight(kMinHeightDescriptionScrollView)))
                 {
+                    descriptionScrollViewPosition = scrollView.scrollPosition;
                     m_Description.stringValue = EditorGUILayout.TextArea(m_Description.stringValue ?? "" ,
                         GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
                 }

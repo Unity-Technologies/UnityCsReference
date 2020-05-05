@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager.UI;
+using UnityEditor.Collaboration;
 
 using Button = UnityEngine.UIElements.Button;
 
@@ -86,6 +87,14 @@ namespace UnityEditor.Connect
             LoadWindow();
         }
 
+        void OnCollabStateChanged(CollabInfo info)
+        {
+            if (CollabService.instance.IsServiceEnabled() != Collab.instance.IsCollabEnabledForCurrentProject())
+            {
+                CollabService.instance.EnableService(Collab.instance.IsCollabEnabledForCurrentProject());
+            }
+        }
+
         void OnDestroy()
         {
             EditorAnalytics.SendEventCloseServiceWindow(new CloseServiceWindowState() { availableServices = m_StatusLabelByServiceName.Count });
@@ -95,12 +104,19 @@ namespace UnityEditor.Connect
         {
             // Make sure to pair the removal of the delegate with the OnEnable()
             UnityConnect.instance.ProjectStateChanged -= OnStateRefreshRequired;
+
+            // Make sure to unpair the collab state change
+            Collab.instance.StateChanged -= OnCollabStateChanged;
         }
 
         public void OnEnable()
         {
             // Make sure the project is up-to-date
             UnityConnect.instance.ProjectStateChanged += OnStateRefreshRequired;
+            // Make sure to follow-up the Collab State...
+            // Collab is a specific case where the service can be enabled inside another Editor Window by the Collab package code itself.
+            //     We need to be informed of that changed when it happens
+            Collab.instance.StateChanged += OnCollabStateChanged;
 
             if (s_Instance == null)
             {

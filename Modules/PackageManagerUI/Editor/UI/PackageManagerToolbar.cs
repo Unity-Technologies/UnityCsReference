@@ -179,6 +179,10 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetFilterFromMenu(PackageFilterTab filter)
         {
+            if (filter == PackageFiltering.instance.currentFilterTab)
+                return;
+
+            SetCurrentSearch(string.Empty);
             SetFilter(filter);
             PackageManagerWindowAnalytics.SendEvent("changeFilter");
         }
@@ -365,12 +369,6 @@ namespace UnityEditor.PackageManager.UI
                 PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
             }, a => PackageManagerPrefs.instance.showPackageDependencies ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            advancedMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Show preview packages"), a =>
-            {
-                TogglePreviewPackages();
-                PackageManagerWindowAnalytics.SendEvent("togglePreview");
-            }, a => PackageManagerPrefs.instance.showPreviewPackages ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-
             advancedMenu.menu.AppendSeparator();
 
             advancedMenu.menu.AppendAction(ApplicationUtil.instance.GetTranslationForText("Reset Packages to defaults"), a =>
@@ -390,19 +388,6 @@ namespace UnityEditor.PackageManager.UI
         private void ToggleDependencies()
         {
             PackageManagerPrefs.instance.showPackageDependencies = !PackageManagerPrefs.instance.showPackageDependencies;
-        }
-
-        private void TogglePreviewPackages()
-        {
-            var showPreviewPackages = PackageManagerPrefs.instance.showPreviewPackages;
-            if (!showPreviewPackages && PackageManagerPrefs.instance.showPreviewPackagesWarning)
-            {
-                const string message = "Preview packages are not verified with Unity, may be unstable, and are unsupported in production. Are you sure you want to show preview packages?";
-                if (!EditorUtility.DisplayDialog(ApplicationUtil.instance.GetTranslationForText("Unity Package Manager"), ApplicationUtil.instance.GetTranslationForText(message), ApplicationUtil.instance.GetTranslationForText("Yes"), ApplicationUtil.instance.GetTranslationForText("No")))
-                    return;
-                PackageManagerPrefs.instance.showPreviewPackagesWarning = false;
-            }
-            PackageManagerPrefs.instance.showPreviewPackages = !showPreviewPackages;
         }
 
         private VisualElementCache cache { get; set; }

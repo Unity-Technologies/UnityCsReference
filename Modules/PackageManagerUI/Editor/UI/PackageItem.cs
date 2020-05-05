@@ -12,12 +12,15 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageItem : VisualElement, ISelectableItem
     {
-        internal new class UxmlFactory : UxmlFactory<PackageItem> {}
+        // Note that the height here is only the height of the main item (i.e, verison list is not expanded)
+        internal const float k_MainItemHeight = 38.0f;
+        private const string k_SelectedClassName = "selected";
+        private const string k_ExpandedClassName = "expanded";
 
         private string m_CurrentStateClass;
 
         public IPackage package { get; private set; }
-        private VisualState visualState { get; set; }
+        public VisualState visualState { get; set; }
 
         public IPackageVersion targetVersion { get { return package?.versions.primary; } }
         public VisualElement element { get { return this; } }
@@ -47,7 +50,7 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             cache = new VisualElementCache(root);
 
-            itemLabel.OnLeftClick(SelectMainItem);
+            mainItem.OnLeftClick(SelectMainItem);
             seeAllVersionsLabel.OnLeftClick(SeeAllVersionsClick);
             arrowExpander.RegisterValueChangedCallback(ToggleExpansion);
             nameLabel.ShowTextTooltipOnSizeChange();
@@ -69,22 +72,17 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(this, visualState.visible);
 
             if (selectedVersion != null && visualState != null && selectedVersion != targetVersion)
-            {
-                var keyVersions = package.versions.key.Where(p => p != package.versions.primary);
-                var allVersions = package.versions.Where(p => p != package.versions.primary);
-
-                visualState.expanded = visualState.expanded || allVersions.Contains(selectedVersion);
-                visualState.seeAllVersions = visualState.seeAllVersions || !keyVersions.Contains(selectedVersion);
-            }
+                visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(selectedVersion);
 
             var expansionChanged = UIUtils.IsElementVisible(versionsContainer) != visualState.expanded;
             if (expansionChanged)
                 UpdateExpanderUI(visualState.expanded);
 
-            if (expansionChanged || seeAllVersionsOld != visualState.seeAllVersions)
+            var needRefreshVersions = expansionChanged || seeAllVersionsOld != visualState.seeAllVersions;
+            if (needRefreshVersions)
                 RefreshVersions();
 
-            if (selectedVersionIdOld != visualState.selectedVersionId)
+            if (needRefreshVersions || selectedVersionIdOld != visualState.selectedVersionId)
                 RefreshSelection();
         }
 
@@ -112,27 +110,26 @@ namespace UnityEditor.PackageManager.UI
 
             nameLabel.text = displayVersion.displayName;
 
-            var expandable = package.versions.Skip(1).Any();
+            var expandable = !package.Is(PackageType.BuiltIn);
             UIUtils.SetElementDisplay(arrowExpander, expandable);
             UIUtils.SetElementDisplay(expanderHidden, !expandable);
             if (!expandable && UIUtils.IsElementVisible(versionsContainer))
                 UpdateExpanderUI(false);
 
-            var showVersionLabel = !displayVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
-            UIUtils.SetElementDisplay(versionList, showVersionLabel);
-            UIUtils.SetElementDisplay(versionLabel, showVersionLabel);
-            if (showVersionLabel)
-            {
-                var text = GetVersionText(displayVersion, true);
-                versionLabel.text = text == "0.0.0" ? string.Empty : text;
-            }
+            var showVersionList = !displayVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
+            UIUtils.SetElementDisplay(versionList, showVersionList);
 
-            UpdateStatusIcon();
+            tagContainer.Clear();
+            var tagLabel = PackageTagLabel.CreateTagLabel(displayVersion);
+            if (tagLabel != null)
+                tagContainer.Add(tagLabel);
+
+            RefreshState();
             RefreshVersions();
             RefreshSelection();
         }
 
-        public void UpdateStatusIcon()
+        public void RefreshState()
         {
             var state = package?.state ?? PackageState.None;
             var progress = package?.progress ?? PackageProgress.None;
@@ -142,18 +139,44 @@ namespace UnityEditor.PackageManager.UI
 
                 var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
                 if (!string.IsNullOrEmpty(m_CurrentStateClass))
-                    stateLabel.RemoveFromClassList(m_CurrentStateClass);
+                    stateIcon.RemoveFromClassList(m_CurrentStateClass);
                 if (!string.IsNullOrEmpty(stateClass))
-                    stateLabel.AddToClassList(stateClass);
+                    stateIcon.AddToClassList(stateClass);
                 m_CurrentStateClass = stateClass;
 
-                stateLabel.tooltip = GetTooltipByState(state);
+                stateIcon.tooltip = GetTooltipByState(state);
+
+                RefreshStateLabel(state);
             }
             else
             {
                 StartSpinner();
                 spinner.tooltip = GetTooltipByProgress(package.progress);
             }
+        }
+
+        private void RefreshStateLabel(PackageState state)
+        {
+            if (state == PackageState.Installed || state == PackageState.InstalledAsDependency || state == PackageState.InDevelopment)
+            {
+                if (package.Is(PackageType.BuiltIn))
+                    stateLabel.text = L10n.Tr("Enabled");
+                else
+                {
+                    var installedVersion = package.versions.installed;
+                    var versionText = installedVersion.version?.ToString() ?? installedVersion.versionString;
+                    stateLabel.text = string.Format(L10n.Tr("Installed {0}"), versionText);
+                }
+            }
+            else if (state == PackageState.UpdateAvailable)
+            {
+                stateLabel.text = L10n.Tr("Update Available");
+            }
+            else
+            {
+                stateLabel.text = string.Empty;
+            }
+            stateLabel.tooltip = stateLabel.text;
         }
 
         private void RefreshVersions()
@@ -165,15 +188,15 @@ namespace UnityEditor.PackageManager.UI
 
             var seeAllVersions = visualState?.seeAllVersions ?? false;
 
-            var additionalKeyVersions = package.versions.key.Where(p => p != package.versions.primary).ToList();
-            var additionalVersions = package.versions.Where(p => p != package.versions.primary).ToList();
+            var keyVersions = package.versions.key.ToList();
+            var allVersions = package.versions.ToList();
 
-            var versions = seeAllVersions ? additionalVersions : additionalKeyVersions;
+            var versions = seeAllVersions ? allVersions : keyVersions;
 
             for (var i = versions.Count - 1; i >= 0; i--)
                 versionList.Add(new PackageVersionItem(package, versions[i]));
 
-            var showToolbar = !seeAllVersions && additionalVersions.Count > additionalKeyVersions.Count;
+            var showToolbar = !seeAllVersions && allVersions.Count > keyVersions.Count;
             UIUtils.SetElementDisplay(versionToolbar, showToolbar);
 
             FixVersionListStyle(versions);
@@ -181,11 +204,11 @@ namespace UnityEditor.PackageManager.UI
 
         // TODO: Hard-code until scrollView can size to its content
         // Note: ListItemMaxHeight is used because there is an issue with VisualElement where at construction time,
-        //          styling is not yet applied and max height returns 0 even though the stylesheet has it at 150.
+        //          styling is not yet applied and max height returns 0 even though the stylesheet has it at 156.
         private void FixVersionListStyle(List<IPackageVersion> versions)
         {
-            const int listItemSpacing = 16 + 4 + 4;
-            const int listItemMaxHeight = 150;
+            const int listItemSpacing = 22 + 2 + 2;
+            const int listItemMaxHeight = 156;
 
             var maxHeight = Math.Max(versionList.style.maxHeight.value.value, listItemMaxHeight);
             versionList.style.minHeight = Math.Min(versions.Count * listItemSpacing, maxHeight);
@@ -198,9 +221,9 @@ namespace UnityEditor.PackageManager.UI
         public void RefreshSelection()
         {
             var selectedVersion = this.selectedVersion;
-            itemLabel.EnableClass(UIUtils.k_SelectedClassName, selectedVersion == targetVersion);
+            mainItem.EnableClass(k_SelectedClassName, selectedVersion != null);
             foreach (var version in versionItems)
-                version.EnableClass(UIUtils.k_SelectedClassName, selectedVersion == version.targetVersion);
+                version.EnableClass(k_SelectedClassName, selectedVersion == version.targetVersion);
         }
 
         public void SelectMainItem()
@@ -215,9 +238,11 @@ namespace UnityEditor.PackageManager.UI
 
         internal void SetExpanded(bool value)
         {
+            if (!UIUtils.IsElementVisible(arrowExpander))
+                return;
+
             // mark the package as expanded in the page manager,
             // the UI will be updated through the callback chain
-
             if (!value || string.IsNullOrEmpty(visualState.selectedVersionId))
                 SelectMainItem();
 
@@ -226,6 +251,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal void UpdateExpanderUI(bool expanded)
         {
+            mainItem.EnableClass(k_ExpandedClassName, expanded);
             arrowExpander.value = expanded;
             UIUtils.SetElementDisplay(versionsContainer, expanded);
         }
@@ -238,31 +264,24 @@ namespace UnityEditor.PackageManager.UI
         private void StartSpinner()
         {
             spinner.Start();
-            UIUtils.SetElementDisplay(stateLabel, false);
+            UIUtils.SetElementDisplay(stateIcon, false);
         }
 
         private void StopSpinner()
         {
             spinner.Stop();
-            UIUtils.SetElementDisplay(stateLabel, true);
-        }
-
-        public IEnumerable<ISelectableItem> GetSelectableItems()
-        {
-            yield return this;
-            if (arrowExpander.value)
-                foreach (var version in versionItems)
-                    yield return version;
+            UIUtils.SetElementDisplay(stateIcon, true);
         }
 
         private VisualElementCache cache { get; set; }
 
         private Label nameLabel { get { return cache.Get<Label>("packageName"); } }
-        private Label stateLabel { get { return cache.Get<Label>("packageState"); } }
-        private Label versionLabel { get { return cache.Get<Label>("packageVersion"); } }
         private Label seeAllVersionsLabel { get { return cache.Get<Label>("seeAllVersions"); } }
         private VisualElement versionToolbar { get { return cache.Get<VisualElement>("versionsToolbar"); } }
-        private VisualElement itemLabel { get { return cache.Get<VisualElement>("itemLabel"); } }
+        private VisualElement tagContainer => cache.Get<VisualElement>("tagContainer");
+        private VisualElement mainItem { get { return cache.Get<VisualElement>("mainItem"); } }
+        private VisualElement stateIcon { get { return cache.Get<VisualElement>("stateIcon"); } }
+        private Label stateLabel { get { return cache.Get<Label>("stateLabel"); } }
         private LoadingSpinner spinner { get { return cache.Get<LoadingSpinner>("packageSpinner"); } }
         private Toggle arrowExpander { get { return cache.Get<Toggle>("arrowExpander"); } }
         private Label expanderHidden { get { return cache.Get<Label>("expanderHidden"); } }
@@ -275,6 +294,8 @@ namespace UnityEditor.PackageManager.UI
             "This package is installed.",
             // Keep the error message for `installed` and `installedAsDependency` the same for now as requested by the designer
             "This package is installed.",
+            "This package is available for download.",
+            "This package is available to be added to your project.",
             "This package is available for import.",
             "This package is in development.",
             "A newer version of this package is available.",
@@ -299,31 +320,6 @@ namespace UnityEditor.PackageManager.UI
         public static string GetTooltipByProgress(PackageProgress progress)
         {
             return ApplicationUtil.instance.GetTranslationForText(k_TooltipsByProgress[(int)progress]);
-        }
-
-        public static string GetVersionText(IPackageVersion version, bool simplified = false)
-        {
-            if (version?.version == null)
-                return version?.versionString;
-
-            var label = version.version?.StripTag();
-            if (!simplified)
-            {
-                if (version.HasTag(PackageTag.Local))
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("local - {0}"), label);
-                if (version.HasTag(PackageTag.Git))
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("git - {0}"), label);
-                if (version.HasTag(PackageTag.Verified))
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("verified - {0}"), label);
-                if (version.isInstalled)
-                    label = string.Format(ApplicationUtil.instance.GetTranslationForText("current - {0}"), label);
-            }
-            if (version.HasTag(PackageTag.Preview))
-            {
-                var previewLabel = string.IsNullOrEmpty(version.version?.Prerelease) ? ApplicationUtil.instance.GetTranslationForText("preview") : version.version?.Prerelease;
-                label = $"{previewLabel} - {label}";
-            }
-            return label;
         }
     }
 }

@@ -616,8 +616,9 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             SerializedProperty property = externalObjectCache.property;
-            EditorGUILayout.PropertyField(property, nameLabel, false);
-            Material material = property.objectReferenceValue != null ? property.objectReferenceValue as Material : null;
+            EditorGUILayout.ObjectField(property, typeof(Material), nameLabel);
+            Material material = property.objectReferenceValue as Material;
+
             if (EditorGUI.EndChangeCheck())
             {
                 if (material == null)
@@ -638,7 +639,7 @@ namespace UnityEditor
             nameLabel.tooltip = materialCache.name;
 
             EditorGUI.BeginChangeCheck();
-            Material material = EditorGUILayout.ObjectField(nameLabel, null, typeof(Material), false) as Material;
+            Material material = ObjectFieldWithPPtrHashID(nameLabel, null, typeof(Material), false) as Material;
             if (EditorGUI.EndChangeCheck())
             {
                 m_ExternalObjects.arraySize++;
@@ -655,6 +656,28 @@ namespace UnityEditor
 
                 BuildExternalObjectsCache();
             }
+        }
+
+        private static readonly int s_PPtrHash = "s_PPtrHash".GetHashCode();
+
+        // Taken from EditorGUI in order to work arround the issue of ObjectField using different ControlIDs when a Serialized property is passed as argument.
+        private static Object ObjectFieldWithPPtrHashID(GUIContent label, Object obj, Type objType, bool allowSceneObjects, params GUILayoutOption[] options)
+        {
+            var height = EditorGUIUtility.HasObjectThumbnail(objType) ? EditorGUI.kObjectFieldThumbnailHeight : EditorGUI.kSingleLineHeight;
+            Rect position = EditorGUILayout.GetControlRect(true, height, options);
+
+            int id = GUIUtility.GetControlID(s_PPtrHash, FocusType.Keyboard, position);
+            position = EditorGUI.PrefixLabel(position, id, label);
+
+            if (EditorGUIUtility.HasObjectThumbnail(objType) && position.height > EditorGUI.kSingleLineHeight)
+            {
+                // Make object field with thumbnail quadratic and align to the right
+                float size = Mathf.Min(position.width, position.height);
+                position.height = size;
+                position.xMin = position.xMax - size;
+            }
+
+            return EditorGUI.DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects);
         }
     }
 }

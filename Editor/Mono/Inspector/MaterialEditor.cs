@@ -15,6 +15,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
+using StackValidationResult = UnityEngine.Rendering.VirtualTexturing.EditorHelpers.StackValidationResult;
 
 namespace UnityEditor
 {
@@ -466,6 +467,50 @@ namespace UnityEditor
             }
         }
 
+        private string ParseValidationResult(StackValidationResult validationResult)
+        {
+            string[] errorMessages = validationResult.errorMessage.Split('\n');
+
+            string result = "'" + validationResult.stackName + "' is invalid";
+            if (errorMessages.Length == 1)
+                result += " (1 issue)\n";
+            else
+                result += " (" + errorMessages.Length + " issues)\n";
+
+            for (int i = 0; i < errorMessages.Length; ++i)
+            {
+                result += " - " + errorMessages[i] + '\n';
+            }
+
+            return result;
+        }
+
+        private void DetectTextureStackValidationIssues()
+        {
+            if (isVisible && m_Shader != null && !HasMultipleMixedShaderValues())
+            {
+                // We want additional spacing, but only when the material properties are visible
+                EditorGUILayout.Space(EditorGUIUtility.singleLineHeight / 2.0f);
+            }
+
+            // We don't want these message boxes to be indented
+            EditorGUI.indentLevel--;
+
+            var material = target as Material;
+            StackValidationResult[] stackValidationResults = VirtualTexturing.EditorHelpers.ValidateMaterialTextureStacks(material);
+            if (stackValidationResults.Length == 0)
+                return;
+
+            foreach (StackValidationResult validationResult in stackValidationResults)
+            {
+                string errorBoxText = ParseValidationResult(validationResult);
+                EditorGUILayout.HelpBox(errorBoxText, MessageType.Warning);
+            }
+
+            // Reset the original indentation level
+            EditorGUI.indentLevel++;
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -481,6 +526,8 @@ namespace UnityEditor
                     PropertiesChanged();
                 }
             }
+
+            DetectTextureStackValidationIssues();
         }
 
         void CheckSetup()

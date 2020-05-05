@@ -38,10 +38,19 @@ namespace UnityEngine.Rendering
         [NativeConditional("UNITY_EDITOR")]
         public static class EditorHelpers
         {
+            [NativeHeader("Runtime/Shaders/SharedMaterialData.h")]
+            internal struct StackValidationResult
+            {
+                public string stackName;
+                public string errorMessage;
+            }
+
             extern internal static int tileSize { get; }
 
             [NativeThrows]
             extern public static bool ValidateTextureStack([NotNull] Texture[] textures, out string errorMessage);
+
+            extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
 
             [NativeConditional("UNITY_EDITOR", "{}")]
             extern public static GraphicsFormat[] QuerySupportedFormats();
@@ -233,6 +242,7 @@ namespace UnityEngine.Rendering
                 public GraphicsFormat[] layers;
                 internal int borderSize;
                 internal int gpuGeneration;
+                internal int useAutoCalculatedCPUCacheSize;
 
                 internal void Validate()
                 {
@@ -532,6 +542,7 @@ namespace UnityEngine.Rendering
                     creationParams = _creationParams;
                     creationParams.borderSize = borderSize;
                     creationParams.gpuGeneration = gpuGeneration ? 1 : 0;
+                    creationParams.useAutoCalculatedCPUCacheSize = 0;
                     creationParams.Validate();
                     handle = Binding.Create(creationParams);
                 }
