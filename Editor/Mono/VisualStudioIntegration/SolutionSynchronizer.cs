@@ -619,7 +619,6 @@ namespace UnityEditor.VisualStudioIntegration
                     projectBuilder.Append("    <ProjectReference Include=\"").Append(reference.name).Append(".csproj").Append("\">").Append(WindowsNewline);
                     projectBuilder.Append("      <Project>{").Append(ProjectGuid(reference.name)).Append("}</Project>").Append(WindowsNewline);
                     projectBuilder.Append("      <Name>").Append(reference.name).Append("</Name>").Append(WindowsNewline);
-                    projectBuilder.Append("      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>").Append(WindowsNewline);
                     projectBuilder.Append("    </ProjectReference>").Append(WindowsNewline);
                 }
             }
