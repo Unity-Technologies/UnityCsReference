@@ -11,10 +11,12 @@ namespace UnityEngine.UIElements
         private IPointerEvent[] m_TriggerPointerEvent = new IPointerEvent[PointerId.maxPointers];
         private IMouseEvent[] m_TriggerMouseEvent = new IMouseEvent[PointerId.maxPointers];
         private Vector2[] m_PickingPointerPositions = new Vector2[PointerId.maxPointers];
+        private bool[] m_IsPickingPointerTemporaries = new bool[PointerId.maxPointers];
 
-        internal VisualElement GetTopElementUnderPointer(int pointerId, out Vector2 pickPosition)
+        internal VisualElement GetTopElementUnderPointer(int pointerId, out Vector2 pickPosition, out bool isTemporary)
         {
             pickPosition = m_PickingPointerPositions[pointerId];
+            isTemporary = m_IsPickingPointerTemporaries[pointerId];
             return m_PendingTopElementUnderPointer[pointerId];
         }
 
@@ -28,6 +30,7 @@ namespace UnityEngine.UIElements
             Debug.Assert(pointerId >= 0);
 
             VisualElement previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
+            m_IsPickingPointerTemporaries[pointerId] = false;
             m_PickingPointerPositions[pointerId] = pointerPos;
             if (newElementUnderPointer == previousTopElementUnderPointer)
             {
@@ -58,7 +61,17 @@ namespace UnityEngine.UIElements
             return new Vector2(float.MinValue, float.MinValue);
         }
 
+        internal void SetTemporaryElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
+        {
+            SetElementUnderPointer(newElementUnderPointer, triggerEvent, temporary: true);
+        }
+
         internal void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
+        {
+            SetElementUnderPointer(newElementUnderPointer, triggerEvent, temporary: false);
+        }
+
+        void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent, bool temporary)
         {
             int pointerId = -1;
             if (triggerEvent is IPointerEvent)
@@ -72,6 +85,7 @@ namespace UnityEngine.UIElements
 
             Debug.Assert(pointerId >= 0);
 
+            m_IsPickingPointerTemporaries[pointerId] = temporary;
             m_PickingPointerPositions[pointerId] = GetEventPointerPosition(triggerEvent);
 
             VisualElement previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];

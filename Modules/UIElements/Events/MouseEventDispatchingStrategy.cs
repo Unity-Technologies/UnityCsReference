@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements
                 if (evt.eventTypeId == MouseLeaveWindowEvent.TypeId() &&
                     (evt as MouseLeaveWindowEvent).pressedButtons == 0)
                 {
-                    basePanel.SetElementUnderPointer(null, evt);
+                    basePanel.ClearCachedElementUnderPointer(evt);
                 }
                 else if (shouldRecomputeTopElementUnderMouse)
                 {

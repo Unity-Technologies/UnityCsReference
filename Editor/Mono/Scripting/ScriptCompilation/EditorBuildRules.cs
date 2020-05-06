@@ -272,14 +272,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ILookup<string, PrecompiledAssembly> filenameGroupedWithPrecompiledAssembly = userPrecompiledAssemblies.ToLookup(x => AssetPath.GetFileName(x.Path), x => x);
             foreach (IGrouping<string, PrecompiledAssembly> groupedPrecompiledAssemblies in filenameGroupedWithPrecompiledAssembly)
             {
-                if (groupedPrecompiledAssemblies.Count() > 1)
-                {
-                    var pathsString = string.Join(", ", groupedPrecompiledAssemblies.Select(x => x.Path).ToArray());
-
-                    throw new PrecompiledAssemblyException(
-                        $"Multiple precompiled assemblies with the same name {groupedPrecompiledAssemblies.Key} included for the current platform. Only one assembly with the same name is allowed per platform. Assembly paths: {pathsString}");
-                }
-                nameToPrecompiledAssemblies.Add(groupedPrecompiledAssemblies.Key, groupedPrecompiledAssemblies.Single());
+                if (groupedPrecompiledAssemblies.Count() == 1)
+                    nameToPrecompiledAssemblies.Add(groupedPrecompiledAssemblies.Key, groupedPrecompiledAssemblies.Single());
             }
 
             // Setup references for TargetAssemblies
@@ -592,9 +586,60 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return scriptAssemblies;
         }
 
+        private static Dictionary<string, PrecompiledAssembly> ValidateAndGetNameToPrecompiledAssembly(PrecompiledAssembly[] precompiledAssemblies)
+        {
+            if (precompiledAssemblies == null)
+            {
+                return new Dictionary<string, PrecompiledAssembly>(0);
+            }
+
+            Dictionary<string, PrecompiledAssembly> fileNameToUserPrecompiledAssemblies = new Dictionary<string, PrecompiledAssembly>(precompiledAssemblies.Length);
+
+            var sameNamedPrecompiledAssemblies = new Dictionary<string, List<string>>(precompiledAssemblies.Length);
+            for (int i = 0; i < precompiledAssemblies.Length; i++)
+            {
+                var precompiledAssembly = precompiledAssemblies[i];
+
+                var fileName = AssetPath.GetFileName(precompiledAssembly.Path);
+                if (!fileNameToUserPrecompiledAssemblies.ContainsKey(fileName))
+                {
+                    fileNameToUserPrecompiledAssemblies.Add(fileName, precompiledAssembly);
+                }
+                else
+                {
+                    if (!sameNamedPrecompiledAssemblies.ContainsKey(fileName))
+                    {
+                        sameNamedPrecompiledAssemblies.Add(fileName, new List<string>
+                        {
+                            fileNameToUserPrecompiledAssemblies[fileName].Path
+                        });
+                    }
+                    sameNamedPrecompiledAssemblies[fileName].Add(precompiledAssembly.Path);
+                }
+            }
+
+            foreach (var precompiledAssemblyNameToIndexes in sameNamedPrecompiledAssemblies)
+            {
+                string paths = string.Empty;
+                foreach (var precompiledPath in precompiledAssemblyNameToIndexes.Value)
+                {
+                    paths += $"{Environment.NewLine}{precompiledPath}";
+                }
+
+                throw new PrecompiledAssemblyException(
+                    $"Multiple precompiled assemblies with the same name {precompiledAssemblyNameToIndexes.Key} included or the current platform. Only one assembly with the same name is allowed per platform. Assembly paths: {paths}", paths);
+            }
+
+            return fileNameToUserPrecompiledAssemblies;
+        }
+
         internal static ScriptAssembly[] ToScriptAssemblies(IDictionary<TargetAssembly, DirtyTargetAssembly> targetAssemblies, ScriptAssemblySettings settings,
             CompilationAssemblies assemblies, HashSet<string> runUpdaterAssemblies)
         {
+            // Use extra validation to identify multiple precompiled assemblies with the same name, and throw an exception
+            // This will cause script recompilation, preventing potential crashes when importing dependent assets
+            ValidateAndGetNameToPrecompiledAssembly(assemblies.PrecompiledAssemblies);
+
             var scriptAssemblies = new ScriptAssembly[targetAssemblies.Count];
 
             var targetToScriptAssembly = new Dictionary<TargetAssembly, ScriptAssembly>();

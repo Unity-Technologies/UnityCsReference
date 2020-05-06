@@ -5338,19 +5338,11 @@ namespace UnityEditor
                 eventType = Event.current.rawType;
             }
 
-            Rect clickRect = position;
-            if (!toggleOnLabelClick)
-            {
-                clickRect = origPosition;
-                clickRect.width += style.padding.right;
-                clickRect.x += indent;
-            }
-
             switch (eventType)
             {
                 case EventType.MouseDown:
                     // If the mouse is inside the button, we say that we're the hot control
-                    if (clickRect.Contains(Event.current.mousePosition) && Event.current.button == 0)
+                    if (position.Contains(Event.current.mousePosition) && Event.current.button == 0)
                     {
                         GUIUtility.keyboardControl = GUIUtility.hotControl = id;
                         Event.current.Use();
@@ -5366,6 +5358,13 @@ namespace UnityEditor
                         Event.current.Use();
 
                         // toggle the passed-in value if the mouse was over the button & return true
+                        Rect clickRect = position;
+                        if (!toggleOnLabelClick)
+                        {
+                            clickRect.width = style.padding.left;
+                            clickRect.x += indent;
+                        }
+
                         if (clickRect.Contains(Event.current.mousePosition))
                         {
                             GUI.changed = true;

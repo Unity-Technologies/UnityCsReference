@@ -560,7 +560,7 @@ namespace UnityEngine.UIElements
             {
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-                basePanel?.SetElementUnderPointer(null, this);
+                basePanel?.ClearCachedElementUnderPointer(this);
             }
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))
@@ -603,7 +603,7 @@ namespace UnityEngine.UIElements
             {
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-                basePanel?.SetElementUnderPointer(null, this);
+                basePanel?.ClearCachedElementUnderPointer(this);
             }
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))
