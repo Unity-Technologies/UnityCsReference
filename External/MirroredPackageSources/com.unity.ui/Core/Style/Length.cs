@@ -3,35 +3,69 @@ using System.Globalization;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Describes how to interpret a <see cref="Length"/> value.
+    /// </summary>
     public enum LengthUnit
     {
+        /// <summary>
+        /// Interprets length as pixel.
+        /// </summary>
         Pixel,
+        /// <summary>
+        /// Interprets length as a percentage.
+        /// </summary>
         Percent,
         // Em
     }
 
+    /// <summary>
+    /// Reprensents a distance value.
+    /// </summary>
     public struct Length : IEquatable<Length>
     {
+        /// <summary>
+        /// Creates a percentage <see cref="Length"/> from a float.
+        /// </summary>
+        /// <returns>The created length.</returns>
         public static Length Percent(float value)
         {
             return new Length(value, LengthUnit.Percent);
         }
 
+        /// <summary>
+        /// The length value.
+        /// </summary>
         public float value
         {
             get { return m_Value; }
             set { m_Value = value; }
         }
 
+        /// <summary>
+        /// The unit of the value property.
+        /// </summary>
         public LengthUnit unit
         {
             get { return m_Unit; }
             set { m_Unit = value; }
         }
 
+        /// <summary>
+        /// Creates from a float and an optionnal <see cref="LengthUnit"/>.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="LengthUnit.Pixel"/> is the default unit.
+        /// </remarks>
         public Length(float value) : this(value, LengthUnit.Pixel)
         {}
 
+        /// <summary>
+        /// Creates from a float and an optionnal <see cref="LengthUnit"/>.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="LengthUnit.Pixel"/> is the default unit.
+        /// </remarks>
         public Length(float value, LengthUnit unit)
         {
             m_Value = value;

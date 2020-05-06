@@ -200,6 +200,10 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetFilterFromMenu(PackageFilterTab filter)
         {
+            if (filter == m_PackageFiltering.currentFilterTab)
+                return;
+
+            SetCurrentSearch(string.Empty);
             SetFilter(filter);
             PackageManagerWindowAnalytics.SendEvent("changeFilter");
         }

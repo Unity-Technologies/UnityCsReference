@@ -91,7 +91,7 @@ namespace UnityEditor.Scripting.Compilers
             catch (Exception ex) when (!(ex is StackOverflowException) && !(ex is ExecutionEngineException))
 #pragma warning restore CS0618 // Type or member is obsolete
             {
-                Debug.LogError("[API Updater] ScriptUpdater threw an exception. Check the following message in the log.");
+                Debug.LogError(L10n.Tr("[API Updater] ScriptUpdater threw an exception. Check the following message in the log."));
                 Debug.LogException(ex);
 
                 APIUpdaterManager.ReportExpectedUpdateFailure();
@@ -144,12 +144,12 @@ namespace UnityEditor.Scripting.Compilers
 
         static void ReportAPIUpdaterCrash(IEnumerable<string> errorOutput)
         {
-            Debug.LogErrorFormat("Failed to run script updater.{0}Please, report a bug to Unity with these details{0}{1}", Environment.NewLine, errorOutput.Aggregate("", (acc, curr) => acc + Environment.NewLine + "\t" + curr));
+            Debug.LogErrorFormat(L10n.Tr("Failed to run script updater.{0}Please, report a bug to Unity with these details{0}{1}"), Environment.NewLine, errorOutput.Aggregate("", (acc, curr) => acc + Environment.NewLine + "\t" + curr));
         }
 
         static void ReportAPIUpdaterFailure(IEnumerable<string> errorOutput)
         {
-            var msg = string.Format("APIUpdater encountered some issues and was not able to finish.{0}{1}", Environment.NewLine, errorOutput.Aggregate("", (acc, curr) => acc + Environment.NewLine + "\t" + curr));
+            var msg = string.Format(L10n.Tr("APIUpdater encountered some issues and was not able to finish.{0}{1}"), Environment.NewLine, errorOutput.Aggregate("", (acc, curr) => acc + Environment.NewLine + "\t" + curr));
             APIUpdaterManager.ReportGroupedAPIUpdaterFailure(msg);
         }
 
@@ -207,7 +207,7 @@ namespace UnityEditor.Scripting.Compilers
                     if (filesFromReadOnlyPackages.Count > 0)
                     {
                         Console.WriteLine(
-                            "[API Updater] At least one file from a readonly package and one file from other location have been updated (that is not expected).{0}File from other location: {0}\t{1}{0}Files from packages already processed: {0}{2}",
+                            L10n.Tr("[API Updater] At least one file from a readonly package and one file from other location have been updated (that is not expected).{0}File from other location: {0}\t{1}{0}Files from packages already processed: {0}{2}"),
                             Environment.NewLine,
                             path,
                             string.Join($"{Environment.NewLine}\t", filesFromReadOnlyPackages.ToArray()));
@@ -251,7 +251,7 @@ namespace UnityEditor.Scripting.Compilers
             var readOnlyFiles = destRelativeFilePaths.Where(path => (File.GetAttributes(path) & FileAttributes.ReadOnly) == FileAttributes.ReadOnly);
             if (readOnlyFiles.Any())
             {
-                Debug.LogErrorFormat("[API Updater] Files cannot be updated (files not writable): {0}", readOnlyFiles.Select(path => path).Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
+                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (files not writable): {0}"), readOnlyFiles.Select(path => path).Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
                 APIUpdaterManager.ReportExpectedUpdateFailure();
                 return false;
             }
@@ -277,7 +277,7 @@ namespace UnityEditor.Scripting.Compilers
                 var foundAsset = assetList.Where(asset => (asset?.path == assetPath));
                 if (!foundAsset.Any())
                 {
-                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", assetPath);
+                    Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to add file to list): {0}"), assetPath);
                     APIUpdaterManager.ReportExpectedUpdateFailure();
                     return false;
                 }
@@ -294,7 +294,7 @@ namespace UnityEditor.Scripting.Compilers
             var notEditable = assetList.Where(asset => asset.IsUnderVersionControl && !asset.IsState(Asset.States.CheckedOutLocal) && !asset.IsState(Asset.States.AddedLocal));
             if (!checkoutTask.success || notEditable.Any())
             {
-                Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to check out): {0}", notEditable.Select(a => a.fullName + " (" + a.state + ")").Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
+                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to check out): {0}"), notEditable.Select(a => a.fullName + " (" + a.state + ")").Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
                 APIUpdaterManager.ReportExpectedUpdateFailure();
                 return false;
             }
@@ -659,7 +659,7 @@ namespace UnityEditor.Scripting.Compilers
             identifiers.Add(identifier);
         }
 
-        private unsafe static string[] SplitIdentifier(string identifier)
+        private static string[] SplitIdentifier(string identifier)
         {
             int last = 0;
             var a = new List<string>();
@@ -667,11 +667,11 @@ namespace UnityEditor.Scripting.Compilers
             while (dotIndex != -1)
             {
                 var genericCloseBraceIndex = -1;
-                var genericOpenBranceIndex = identifier.IndexOf('<', last, dotIndex - last);
-                if (dotIndex > genericOpenBranceIndex && genericOpenBranceIndex != -1)
-                    genericCloseBraceIndex = FindClosingGenericBrance(identifier, genericOpenBranceIndex + 1);
+                var genericOpenBraceIndex = identifier.IndexOf('<', last, dotIndex - last);
+                if (dotIndex > genericOpenBraceIndex && genericOpenBraceIndex != -1)
+                    genericCloseBraceIndex = FindClosingGenericBrace(identifier, genericOpenBraceIndex + 1);
 
-                if (dotIndex < genericOpenBranceIndex || genericOpenBranceIndex == -1)
+                if (dotIndex < genericOpenBraceIndex || genericOpenBraceIndex == -1)
                 {
                     a.Add(identifier.Substring(last, dotIndex - last));
                     last = dotIndex + 1;
@@ -694,7 +694,7 @@ namespace UnityEditor.Scripting.Compilers
             return a.ToArray();
         }
 
-        private static int FindClosingGenericBrance(string identifier,  int startIndex)
+        private static int FindClosingGenericBrace(string identifier,  int startIndex)
         {
             var index = startIndex;
             byte balanceCount = 1;

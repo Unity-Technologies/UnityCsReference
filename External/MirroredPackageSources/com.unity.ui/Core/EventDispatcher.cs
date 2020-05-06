@@ -25,10 +25,38 @@ namespace UnityEngine.UIElements
         Immediate = 2,
     }
 
+    /// <summary>
+    /// Gates control when the dispatcher processes events.
+    /// </summary>
+    /// <remarks>
+    /// Here is an example of using a gate:
+    /// </remarks>
+    /// <remarks>
+    /// When the gate is instantiated, it closes automatically, causing the dispatcher to store the events it receives in a queue. At the end of the <c>using</c> block, <see cref="Dispose"/> is called, which triggers opening the gate. When all gates on a dispatcher open, the events stored in the queue are processed. Closing a gate while the event queue is processed does not stop it from being processed. Instead, a new queue is created to store new events.
+    /// </remarks>
+    /// <example>
+    /// Here is an example of using a gate:
+    /// <code>
+    /// public class MyElement : VisualElement
+    /// {
+    ///     void Foo()
+    ///     {
+    ///         using (new EventDispatcherGate(dispatcher))
+    ///         {
+    ///             // do something that sends events
+    ///         }
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
     public struct EventDispatcherGate : IDisposable, IEquatable<EventDispatcherGate>
     {
         readonly EventDispatcher m_Dispatcher;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="d">The dispatcher controlled by this gate.</param>
         public EventDispatcherGate(EventDispatcher d)
         {
             if (d == null)
@@ -39,6 +67,9 @@ namespace UnityEngine.UIElements
             m_Dispatcher.CloseGate();
         }
 
+        /// <summary>
+        /// Implementation of IDisposable.Dispose. Opens the gate. If all gates are open, events in the queue are processed.
+        /// </summary>
         public void Dispose()
         {
             m_Dispatcher.OpenGate();
@@ -71,6 +102,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Dispatches events to a <see cref="IPanel"/>.
+    /// </summary>
     public sealed class EventDispatcher
     {
         struct EventRecord

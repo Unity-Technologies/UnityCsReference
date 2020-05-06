@@ -11,11 +11,12 @@ using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using Unity.CodeEditor;
+using UnityEditor.VisualStudioIntegration;
 using UnityEditor.Connect;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
 using UnityEngine.TestTools;
-using UnityEditor.VisualStudioIntegration;
+using UnityEditor.Compilation;
 using UnityEditor.Collaboration;
 
 namespace UnityEditor
@@ -211,8 +212,6 @@ namespace UnityEditor
         private const string kRecentScriptAppsKey = "RecentlyUsedScriptApp";
         private const string kRecentImageAppsKey = "RecentlyUsedImageApp";
 
-        const string k_UnityGenerateAll = "unity_generate_all_csproj";
-
         private static readonly string k_ExpressNotSupportedMessage = L10n.Tr(
             "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
             "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
@@ -386,6 +385,16 @@ namespace UnityEditor
                 drawAction(searchContext);
         }
 
+        static void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
+        {
+            var prevValue = (SyncVS.Synchronizer.AssemblyNameProvider.ProjectGenerationFlag & preference) == preference;
+            var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
+            if (newValue != prevValue)
+            {
+                SyncVS.Synchronizer.AssemblyNameProvider.ToggleProjectGeneration(preference);
+            }
+        }
+
         private void ShowExternalApplications(string searchContext)
         {
             // Applications
@@ -398,13 +407,18 @@ namespace UnityEditor
             }
             else
             {
-                var prevGenerate = EditorPrefs.GetBool(k_UnityGenerateAll, false);
-                var generateAll = EditorGUILayout.Toggle("Generate all .csproj files.", prevGenerate);
-                if (generateAll != prevGenerate)
-                {
-                    EditorPrefs.SetBool(k_UnityGenerateAll, generateAll);
-                }
-                SyncVS.Synchronizer.GenerateAll(generateAll);
+                EditorGUILayout.LabelField("Generate .csproj files for:");
+                EditorGUI.indentLevel++;
+
+                SettingsButton(ProjectGenerationFlag.Embedded, "Embedded packages", "");
+                SettingsButton(ProjectGenerationFlag.Local, "Local packages", "");
+                SettingsButton(ProjectGenerationFlag.Registry, "Registry packages", "");
+                SettingsButton(ProjectGenerationFlag.Git, "Git packages", "");
+                SettingsButton(ProjectGenerationFlag.BuiltIn, "Built-in packages", "");
+                SettingsButton(ProjectGenerationFlag.Unknown, "Packages from unknown sources", "");
+                SettingsButton(ProjectGenerationFlag.PlayerAssemblies, "Player projects", "For each player project generate an additional csproj with the name 'project-player.csproj'");
+                RegenerateProjectFiles();
+                EditorGUI.indentLevel--;
             }
 
             if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
@@ -464,6 +478,16 @@ namespace UnityEditor
             }
 
             ApplyChangesToPrefs();
+        }
+
+        private void RegenerateProjectFiles()
+        {
+            var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(new GUILayoutOption[] {}));
+            rect.width = 252;
+            if (GUI.Button(rect, "Regenerate project files"))
+            {
+                SyncVS.Synchronizer.Sync();
+            }
         }
 
         #pragma warning disable 618

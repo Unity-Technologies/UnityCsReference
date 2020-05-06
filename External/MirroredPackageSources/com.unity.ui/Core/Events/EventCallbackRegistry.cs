@@ -3,9 +3,18 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Use this enum to specify during which phases the event handler is executed.
+    /// </summary>
     public enum TrickleDown
     {
+        /// <summary>
+        /// The event handler should be executed during the AtTarget and BubbleUp phases.
+        /// </summary>
         NoTrickleDown = 0,
+        /// <summary>
+        /// The event handler should be executed during the AtTarget and BubbleUp phases.
+        /// </summary>
         TrickleDown = 1
     }
 

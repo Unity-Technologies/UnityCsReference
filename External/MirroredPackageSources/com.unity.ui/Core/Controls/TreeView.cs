@@ -121,6 +121,7 @@ namespace UnityEngine.UIElements
             get { return m_ListView.horizontalScrollingEnabled; }
             set { m_ListView.horizontalScrollingEnabled = value; }
         }
+
         public bool showBorder
         {
             get { return m_ListView.showBorder;}

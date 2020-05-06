@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.UIR;
 
-namespace UnityEditor.UIElements
+namespace UnityEditor.UIElements.Debugger
 {
     internal enum RepaintMode
     {

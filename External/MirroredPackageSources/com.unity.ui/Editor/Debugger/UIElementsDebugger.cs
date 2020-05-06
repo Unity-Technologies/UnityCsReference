@@ -1,5 +1,7 @@
 using System;
+using UnityEditor;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -152,7 +154,7 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private DebuggerContext m_DebuggerContext;
 
-        [MenuItem(k_WindowPath, false, 3010)]
+        [MenuItem(k_WindowPath, false, 3010, false)]
         private static void OpenUIElementsDebugger()
         {
             if (CommandService.Exists(OpenWindowCommand))
@@ -173,6 +175,7 @@ namespace UnityEditor.UIElements.Debugger
                 OpenAndInspectWindow(EditorWindow.focusedWindow);
             }
         }
+
 
         public static void OpenAndInspectWindow(EditorWindow window)
         {

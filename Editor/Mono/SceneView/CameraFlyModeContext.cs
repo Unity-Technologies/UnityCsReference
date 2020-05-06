@@ -105,7 +105,10 @@ namespace UnityEditor
                         action(orthographic, new ShortcutArguments { stage = ShortcutStage.End, context = m_Context });
                         s_ArrowKeysDown.Remove(evt.keyCode);
                         if (s_ArrowKeysDown.Count == 0)
+                        {
                             GUIUtility.hotControl = 0;
+                            s_CurrentInputVector = Vector3.zero;
+                        }
                         evt.Use();
                         return true;
                     default:

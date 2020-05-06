@@ -65,8 +65,6 @@ namespace UnityEngine.UIElements
                 evt.skipElements.Add(evt.target);
                 if (!evt.Skip(rootIMGUI))
                 {
-                    // Only permit switching the focus to another IMGUIContainer if the event target was not focusable
-                    // and was itself an IMGUIContainer
                     bool canAffectFocus = evt.target is Focusable f && !f.focusable && f.isIMGUIContainer;
                     rootIMGUI.SendEventToIMGUI(evt, canAffectFocus);
                 }

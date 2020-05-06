@@ -5,6 +5,9 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// An instance of this class holds a tree of `VisualElementAsset`s, created from a UXML file. Each node in the file corresponds to a `VisualElementAsset`. You can clone a `VisualTreeAsset` to yield a tree of `VisualElement`s.
+    /// </summary>
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
     {
@@ -76,6 +79,9 @@ namespace UnityEngine.UIElements
         [SerializeField] private List<UsingEntry> m_Usings;
 #pragma warning restore 0649
 
+        /// <summary>
+        /// The UXML templates used by this VisualTreeAsset.
+        /// </summary>
         public IEnumerable<VisualTreeAsset> templateDependencies
         {
             get
@@ -107,6 +113,9 @@ namespace UnityEngine.UIElements
 
         [SerializeField] private List<VisualElementAsset> m_VisualElementAssets;
 
+        /// <summary>
+        /// The stylesheets used by this VisualTreeAsset.
+        /// </summary>
         public IEnumerable<StyleSheet> stylesheets
         {
             get
@@ -176,6 +185,10 @@ namespace UnityEngine.UIElements
             set { m_ContentContainerId = value; }
         }
 
+        /// <summary>
+        /// Build a tree of VisualElements from the asset.
+        /// </summary>
+        /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer Instantiate()
         {
             TemplateContainer target = new TemplateContainer(name);
@@ -191,6 +204,11 @@ namespace UnityEngine.UIElements
             return target;
         }
 
+        /// <summary>
+        /// Build a tree of VisualElements from the asset.
+        /// </summary>
+        /// <param name="bindingPath">The path to the property that you want to bind to the root of the cloned tree.</param>
+        /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer Instantiate(string bindingPath)
         {
             var tc = Instantiate();
@@ -199,17 +217,36 @@ namespace UnityEngine.UIElements
         }
 
         /* Will be deprecated. Use Instantiate() instead. */
+        /// <summary>
+        /// Build a tree of VisualElements from the asset.
+        /// </summary>
+        /// <remarks>
+        /// This function will be deprecated. Use <see cref="VisualElement.Instantiate"/> instead.
+        /// </remarks>
+        /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer CloneTree()
         {
             return Instantiate();
         }
 
         /* Will be deprecated. Use Instantiate(string bindingPath) instead. */
+        /// <summary>
+        /// Build a tree of VisualElements from the asset.
+        /// </summary>
+        /// <param name="bindingPath">The path to the property that you want to bind to the root of the cloned tree.</param>
+        /// <remarks>
+        /// This function will be deprecated. Use <see cref="VisualElement.Instantiate"/> instead.
+        /// </remarks>
+        /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer CloneTree(string bindingPath)
         {
             return Instantiate(bindingPath);
         }
 
+        /// <summary>
+        /// Builds a tree of VisualElements from the asset.
+        /// </summary>
+        /// <param name="target">A VisualElement that will act as the root of the cloned tree.</param>
         public void CloneTree(VisualElement target)
         {
             int firstElementIndex;
@@ -569,6 +606,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// A hash value computed from the template content.
+        /// </summary>
         public int contentHash
         {
             get { return m_ContentHash; }
@@ -576,6 +616,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// This class is used during UXML template instantiation.
+    /// </summary>
     public struct CreationContext : IEquatable<CreationContext>
     {
         public static readonly CreationContext Default = new CreationContext();

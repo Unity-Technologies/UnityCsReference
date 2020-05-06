@@ -9,12 +9,12 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager
 {
-    public static class Client
+    public static partial class Client
     {
         public static ListRequest List(bool offlineMode, bool includeIndirectDependencies)
         {
             long operationId;
-            var status = NativeClient.List(out operationId, offlineMode, includeIndirectDependencies);
+            var status = List(out operationId, offlineMode, includeIndirectDependencies);
             return new ListRequest(operationId, status);
         }
 
@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager
         public static AddRequest Add(string identifier)
         {
             long operationId;
-            var status = NativeClient.Add(out operationId, identifier);
+            var status = Add(out operationId, identifier);
             return new AddRequest(operationId, status);
         }
 
@@ -44,28 +44,28 @@ namespace UnityEditor.PackageManager
             Debug.Assert(packageInfo.entitlements.isAllowed, "Expected [entitlements.isAllowed] flag to be true.");
 
             long operationId;
-            var status = NativeClient.Embed(out operationId, packageName);
+            var status = Embed(out operationId, packageName);
             return new EmbedRequest(operationId, status);
         }
 
         internal static GetRegistriesRequest GetRegistries()
         {
             long operationId;
-            var status = NativeClient.GetRegistries(out operationId);
+            var status = GetRegistries(out operationId);
             return new GetRegistriesRequest(operationId, status);
         }
 
         internal static GetCachedPackagesRequest GetCachedPackages(string registryId)
         {
             long operationId;
-            var status = NativeClient.GetCachedPackages(out operationId, registryId);
+            var status = GetCachedPackages(out operationId, registryId);
             return new GetCachedPackagesRequest(operationId, status);
         }
 
         public static RemoveRequest Remove(string packageName)
         {
             long operationId;
-            var status = NativeClient.Remove(out operationId, packageName);
+            var status = Remove(out operationId, packageName);
             return new RemoveRequest(operationId, status, packageName);
         }
 
@@ -75,7 +75,7 @@ namespace UnityEditor.PackageManager
                 throw new ArgumentNullException(nameof(packageIdOrName));
 
             long operationId;
-            var status = NativeClient.GetPackageInfo(out operationId, packageIdOrName, offlineMode);
+            var status = GetPackageInfo(out operationId, packageIdOrName, offlineMode);
             return new SearchRequest(operationId, status, packageIdOrName);
         }
 
@@ -87,7 +87,7 @@ namespace UnityEditor.PackageManager
         public static SearchRequest SearchAll(bool offlineMode)
         {
             long operationId;
-            var status = NativeClient.GetAllPackageInfo(out operationId, offlineMode);
+            var status = GetPackageInfo(out operationId, string.Empty, offlineMode);
             return new SearchRequest(operationId, status, string.Empty);
         }
 
@@ -99,27 +99,22 @@ namespace UnityEditor.PackageManager
         internal static PerformSearchRequest Search(SearchOptions options)
         {
             long operationId;
-            var status = NativeClient.Search(out operationId, options);
+            var status = Search(out operationId, options);
             return new PerformSearchRequest(operationId, status, options);
         }
 
         public static ResetToEditorDefaultsRequest ResetToEditorDefaults()
         {
             long operationId;
-            var status = NativeClient.ResetToEditorDefaults(out operationId);
+            var status = ResetToEditorDefaults(out operationId);
             return new ResetToEditorDefaultsRequest(operationId, status);
         }
 
         public static PackRequest Pack(string packageFolder, string targetFolder)
         {
             long operationId;
-            var status = NativeClient.Pack(out operationId, packageFolder, targetFolder);
+            var status = Pack(out operationId, packageFolder, targetFolder);
             return new PackRequest(operationId, status);
-        }
-
-        internal static void Resolve()
-        {
-            NativeClient.Resolve();
         }
     }
 }

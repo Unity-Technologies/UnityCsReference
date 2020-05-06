@@ -11,6 +11,7 @@ using UnityEditor.Build.Reporting;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Runtime.InteropServices;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -199,6 +200,14 @@ namespace UnityEditor
         public BuildTarget target { get; set; }
         public BuildOptions options { get; set; }
         public string[] extraScriptingDefines { get; set; }
+    }
+
+    // Keep in sync with Runtime\Network\PlayerCommunicator\PlayerConnectionTypes.h
+    public enum PlayerConnectionInitiateMode
+    {
+        None,
+        PlayerConnectsToHost,
+        PlayerListens
     }
 
     // Lets you programmatically build players or AssetBundles which can be loaded from the web.
@@ -606,5 +615,43 @@ namespace UnityEditor
         }
 
         internal static extern string[] GetManagedPlayerDllPaths(string assembliesOutputPath);
+
+        [RequiredByNativeCode]
+        public static PlayerConnectionInitiateMode GetPlayerConnectionInitiateMode(BuildTarget targetPlatform, BuildOptions buildOptions)
+        {
+            bool connectProfilerOnStartup = (buildOptions & BuildOptions.ConnectWithProfiler) != 0;
+
+            bool connect = (buildOptions & BuildOptions.ConnectToHost) != 0 || (connectProfilerOnStartup && DoesBuildTargetSupportPlayerConnectionPlayerToEditor(targetPlatform));
+            return connect ? PlayerConnectionInitiateMode.PlayerConnectsToHost : PlayerConnectionInitiateMode.PlayerListens;
+        }
+
+        [RequiredByNativeCode]
+        private static bool DoesBuildTargetSupportPlayerConnectionPlayerToEditor(BuildTarget targetPlatform)
+        {
+            return
+                // Android: support connection from player to Editor in both cases
+                //          connecting to 127.0.0.1 (when both Editor and Android are on localhost using USB cable)
+                //          connecting to <ip of machine where the Editor is running>, the Android and PC has to be on the same subnet
+                // Update:  Disabling this for now, even though player-to-editor works fine on Android, but there are zillion not centralized places in testing framework
+                //          where it assumes Android can only listen. You can still pass BuildOptions.ConnectToHost, to force player-to-editor connection. But AutoConnect Profiler option
+                //          will keep using Listen mode for now
+                //targetPlatform == BuildTarget.Android ||
+                // WebGL: only supports connecting from player to editor, so always use this when profiling is set up in WebGL.
+                targetPlatform == BuildTarget.WebGL ||
+                // WSA: When Editor and Windows Store Apps are running on the same device, only connection from Player-To-Editor works
+                //      Editor-To-Player doesn't work, seems something is wrong with listening. For ex.,
+                //      when player starts, it's starts listening to 10.37.1.227:55207, this is an ip of the machine the application is running on
+                //      On the same machine editor is running, and editor simply cannot connect. Tried http://www.nirsoft.net/utils/cports.html, and shows that there's no application listening to that port...
+                //      Update: This is actually mentioned in the docs https://msdn.microsoft.com/en-us/library/windows/apps/Hh780593.aspx -
+                //         'Windows Runtime app can use an IP loopback only as the target address for a client network request. So a Windows Runtime app that uses a DatagramSocket or StreamSocketListener to listen on an IP loopback address is prevented from receiving any incoming packets.'
+                //      Note: if application is launched on another device, and starts lisenting, then the Editor will be able to connect
+                targetPlatform == BuildTarget.WSAPlayer;
+        }
+
+        [RequiredByNativeCode]
+        private static bool DoesBuildTargetSupportPlayerConnectionListening(BuildTarget platform)
+        {
+            return platform != BuildTarget.WebGL;
+        }
     }
 }

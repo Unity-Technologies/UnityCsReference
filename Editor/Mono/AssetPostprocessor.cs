@@ -223,6 +223,7 @@ namespace UnityEditor
         static string m_TextureProcessorsHashString = null;
         static string m_AudioProcessorsHashString = null;
         static string m_SpeedTreeProcessorsHashString = null;
+        static string m_PrefabProcessorsHashString = null;
 
         static Type[] GetCachedAssetPostprocessorClasses()
         {
@@ -562,6 +563,48 @@ namespace UnityEditor
         {
             object[] args = { clip };
             CallPostProcessMethods("OnPostprocessAudio", args);
+        }
+
+        [RequiredByNativeCode]
+        static string GetPrefabProcessorsHashString()
+        {
+            if (m_PrefabProcessorsHashString != null)
+                return m_PrefabProcessorsHashString;
+
+            var versionsByType = new SortedList<string, uint>();
+
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
+            {
+                try
+                {
+                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
+                    var type = inst.GetType();
+                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessPrefab", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    uint version = inst.GetVersion();
+                    if (version != 0 && hasPostProcessMethod)
+                    {
+                        versionsByType.Add(type.FullName, version);
+                    }
+                }
+                catch (MissingMethodException)
+                {
+                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+
+            m_PrefabProcessorsHashString = BuildHashString(versionsByType);
+            return m_PrefabProcessorsHashString;
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessPrefab(GameObject prefabAssetRoot)
+        {
+            object[] args = { prefabAssetRoot };
+            CallPostProcessMethods("OnPostprocessPrefab", args);
         }
 
         [RequiredByNativeCode]

@@ -3,10 +3,16 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Manipulator that displays a contextual menu when the user clicks the right mouse button or presses the menu key on the keyboard.
+    /// </summary>
     public class ContextualMenuManipulator : MouseManipulator
     {
         System.Action<ContextualMenuPopulateEvent> m_MenuBuilder;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public ContextualMenuManipulator(System.Action<ContextualMenuPopulateEvent> menuBuilder)
         {
             m_MenuBuilder = menuBuilder;
@@ -17,6 +23,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Register the event callbacks on the manipulator target.
+        /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
@@ -31,6 +40,9 @@ namespace UnityEngine.UIElements
             target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent);
         }
 
+        /// <summary>
+        /// Unregister the event callbacks from the manipulator target.
+        /// </summary>
         protected override void UnregisterCallbacksFromTarget()
         {
             if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)

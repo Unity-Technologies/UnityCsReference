@@ -487,7 +487,10 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "ComputeShaderScripting::SetConstantBuffer", HasExplicitThis = true)]
-        extern public void SetConstantBuffer(int nameID, [NotNull] ComputeBuffer buffer, int offset, int size);
+        extern private void SetConstantComputeBuffer(int nameID, [NotNull] ComputeBuffer buffer, int offset, int size);
+
+        [FreeFunction(Name = "ComputeShaderScripting::SetConstantBuffer", HasExplicitThis = true)]
+        extern private void SetConstantGraphicsBuffer(int nameID, [NotNull] GraphicsBuffer buffer, int offset, int size);
 
         [NativeMethod(Name = "ComputeShaderScripting::GetKernelThreadGroupSizes", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void GetKernelThreadGroupSizes(int kernelIndex, out uint x, out uint y, out uint z);
@@ -557,7 +560,10 @@ namespace UnityEngine.Experimental.Rendering
         extern private void SetGraphicsBuffer(int nameID, [NotNull] GraphicsBuffer buffer);
 
         [FreeFunction(Name = "RayTracingShaderScripting::SetConstantBuffer", HasExplicitThis = true)]
-        extern public void SetConstantBuffer(int nameID, [NotNull] ComputeBuffer buffer, int offset, int size);
+        extern private void SetConstantComputeBuffer(int nameID, [NotNull] ComputeBuffer buffer, int offset, int size);
+
+        [FreeFunction(Name = "RayTracingShaderScripting::SetConstantBuffer", HasExplicitThis = true)]
+        extern private void SetConstantGraphicsBuffer(int nameID, [NotNull] GraphicsBuffer buffer, int offset, int size);
 
         [NativeMethod(Name = "RayTracingShaderScripting::SetAccelerationStructure", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void SetAccelerationStructure(int nameID, [NotNull] RayTracingAccelerationStructure accelerationStructure);

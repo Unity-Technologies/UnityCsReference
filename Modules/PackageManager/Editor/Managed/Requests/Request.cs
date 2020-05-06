@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.Requests
     /// <summary>
     /// Tracks the state of an asynchronous Upm server operation
     /// </summary>
-    public abstract class Request : ISerializationCallbackReceiver
+    public abstract partial class Request : ISerializationCallbackReceiver
     {
         internal const string ShimPackageType = "shim";
 
@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.Requests
             {
                 if (!m_Status.IsCompleted())
                 {
-                    m_Status = NativeClient.GetOperationStatus(Id);
+                    m_Status = GetOperationStatus(Id);
                 }
 
                 return m_Status;
@@ -98,7 +98,7 @@ namespace UnityEditor.PackageManager.Requests
             }
 
             m_ErrorFetched = true;
-            m_Error = NativeClient.GetOperationError(Id);
+            m_Error = GetOperationError(Id);
 
             if (m_Error == null)
             {
@@ -132,7 +132,7 @@ namespace UnityEditor.PackageManager.Requests
             // Do our best to release the native request if it has not been already.
             // The only limitation left is an in-progress request that has not been
             // serialized during domain unload.
-            NativeClient.ReleaseCompletedOperation(Id);
+            ReleaseCompletedOperation(Id);
         }
 
         /// <summary>

@@ -132,6 +132,7 @@ namespace UnityEngine.UIElements
                     (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(Event.current);
                 }
             }
+
             // Call the package override of RepaintOverlayPanels, when available
             if (s_onRepaintOverlayPanels != null)
                 s_onRepaintOverlayPanels();

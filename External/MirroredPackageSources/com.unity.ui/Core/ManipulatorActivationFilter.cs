@@ -2,10 +2,35 @@ using System;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Used by manipulators to match events against their requirements.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// public class ClickableTest
+    /// {
+    ///     public void CreateClickable()
+    ///     {
+    ///         var clickable = new Clickable(() => { Debug.Log("Clicked!"); });
+    ///         clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
+    ///         clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.RightMouse, clickCount = 2, modifiers = EventModifiers.Control });
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
     public struct ManipulatorActivationFilter : IEquatable<ManipulatorActivationFilter>
     {
+        /// <summary>
+        /// The button that activates the manipulation.
+        /// </summary>
         public MouseButton button { get; set; }
+        /// <summary>
+        /// Any modifier keys (ie. ctrl, alt, ...) that are needed to activate the manipulation.
+        /// </summary>
         public EventModifiers modifiers { get; set; }
+        /// <summary>
+        /// Number of mouse clicks required to activate the manipulator.
+        /// </summary>
         public int clickCount { get; set; }
 
         public override bool Equals(object obj)
@@ -29,6 +54,11 @@ namespace UnityEngine.UIElements
             return hashCode;
         }
 
+        /// <summary>
+        /// Checks whether the current mouse event satisfies the activation requirements.
+        /// </summary>
+        /// <param name="e">The mouse event.</param>
+        /// <returns>True if the event matches the requirements. False otherwise.</returns>
         public bool Matches(IMouseEvent e)
         {
             if (e == null)
@@ -49,6 +79,11 @@ namespace UnityEngine.UIElements
             return MatchModifiers(e.altKey, e.ctrlKey, e.shiftKey, e.commandKey);
         }
 
+        /// <summary>
+        /// Checks whether the current mouse event satisfies the activation requirements.
+        /// </summary>
+        /// <param name="e">The mouse event.</param>
+        /// <returns>True if the event matches the requirements. False otherwise.</returns>
         public bool Matches(IPointerEvent e)
         {
             if (e == null)

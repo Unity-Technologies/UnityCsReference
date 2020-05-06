@@ -3,6 +3,9 @@ using System.Net;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A static class to capture and release pointers.
+    /// </summary>
     public static class PointerCaptureHelper
     {
         private static PointerDispatchState GetStateFor(IEventHandler handler)
@@ -11,26 +14,56 @@ namespace UnityEngine.UIElements
             return v?.panel?.dispatcher?.pointerState;
         }
 
+        /// <summary>
+        /// Tests whether the element has captured the pointer.
+        /// </summary>
+        /// <param name="handler">The VisualElement being tested.</param>
+        /// <param name="pointerId">The captured pointer.</param>
+        /// <returns>True if element captured the pointer.</returns>
         public static bool HasPointerCapture(this IEventHandler handler, int pointerId)
         {
             return GetStateFor(handler)?.HasPointerCapture(handler, pointerId) ?? false;
         }
 
+        /// <summary>
+        /// Captures the pointer.
+        /// </summary>
+        /// <param name="handler">The VisualElement that captures the pointer.</param>
+        /// <param name="pointerId">The pointer to capture.</param>
+        /// <remarks>
+        /// When a VisualElement captures a pointer, all pointer events are sent to the element, regardless of which element is under the pointer.
+        /// </remarks>
         public static void CapturePointer(this IEventHandler handler, int pointerId)
         {
             GetStateFor(handler)?.CapturePointer(handler, pointerId);
         }
 
+        /// <summary>
+        /// Tests whether an element captured a pointer and, if so, tells the element to release the pointer.
+        /// </summary>
+        /// <param name="handler">The element which potentially captured the pointer.</param>
+        /// <param name="pointerId">The captured pointer.</param>
         public static void ReleasePointer(this IEventHandler handler, int pointerId)
         {
             GetStateFor(handler)?.ReleasePointer(handler, pointerId);
         }
 
+        /// <summary>
+        /// Returns the element that is capturing the pointer.
+        /// </summary>
+        /// <param name="panel">The panel that holds the element.</param>
+        /// <param name="pointerId">The captured pointer.</param>
+        /// <returns>The element that is capturing the pointer.</returns>
         public static IEventHandler GetCapturingElement(this IPanel panel, int pointerId)
         {
             return panel?.dispatcher?.pointerState.GetCapturingElement(pointerId);
         }
 
+        /// <summary>
+        /// Releases the pointer.
+        /// </summary>
+        /// <param name="panel">The panel that holds the element that captured the pointer.</param>
+        /// <param name="pointerId">The captured pointer.</param>
         public static void ReleasePointer(this IPanel panel, int pointerId)
         {
             panel?.dispatcher?.pointerState.ReleasePointer(pointerId);

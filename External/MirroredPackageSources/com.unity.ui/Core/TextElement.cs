@@ -9,18 +9,36 @@ namespace UnityEngine.UIElements
         string text { get; set; }
     }
 
+    /// <summary>
+    /// Abstract base class for <see cref="VisualElement"/> containing text.
+    /// </summary>
     public class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
+        /// <summary>
+        /// Instantiates a <see cref="TextElement"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<TextElement, UxmlTraits> {}
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="TextElement"/>.
+        /// </summary>
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
+            /// <summary>
+            /// Enumerator to get the child elements of the <see cref="UxmlTraits"/> of <see cref="TextElement"/>.
+            /// </summary>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
             }
 
+            /// <summary>
+            /// Initializer for the <see cref="UxmlTraits"/> for the <see cref="TextElement"/>.
+            /// </summary>
+            /// <param name="ve"><see cref="VisualElement"/> to initialize.</param>
+            /// <param name="bag">Bag of attributes where to get the value from.</param>
+            /// <param name="cc">Creation Context, not used.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -28,6 +46,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string ussClassName = "unity-text-element";
 
         public TextElement()
@@ -67,6 +88,9 @@ namespace UnityEngine.UIElements
 
         private bool m_DisplayTooltipWhenElided = true;
 
+        /// <summary>
+        /// When true, a tooltip displays the full version of elided text.
+        /// </summary>
         public bool displayTooltipWhenElided
         {
             get { return m_DisplayTooltipWhenElided; }
@@ -81,6 +105,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Returns true if text is elided, false otherwise.
+        /// </summary>
+        /// <remarks>
+        /// Text is elided when the element that contains it is not large enough to display the full text, and has the following style property settings.
+        ///
+        /// overflow: Overflow.Hidden
+        /// whiteSpace: WhiteSpace.NoWrap
+        /// textOverflow: TextOverflow.Ellipsis
+        /// textOverflowPosition: TextOverflowPosition.<End | Start | Middle>
+        ///
+        /// The text Element hides elided text, and displays an ellipsis ('...') to indicate that there is hidden overflow content.
+        /// </remarks>
         public bool isElided { get; private set; }
 
         internal static readonly string k_EllipsisText = @"..."; // Some web standards seem to suggest "\u2026" (horizontal ellipsis Unicode character)
@@ -217,6 +254,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
+        /// </summary>
+        /// <param name="textToMeasure">The text to measure.</param>
+        /// <param name="width">Suggested width. Can be zero.</param>
+        /// <param name="widthMode">Width restrictions.</param>
+        /// <param name="height">Suggested height.</param>
+        /// <param name="heightMode">Height restrictions.</param>
+        /// <returns>The horizontal and vertical size needed to display the text string.</returns>
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
             MeasureMode heightMode)
         {
@@ -236,6 +282,10 @@ namespace UnityEngine.UIElements
             if (elementScaling.x + elementScaling.y <= 0 || ve.scaledPixelsPerPoint <= 0)
                 return Vector2.zero;
 
+            float pixelsPerPoint = ve.scaledPixelsPerPoint;
+            float pixelOffset = 0.02f;
+            float pointOffset = pixelOffset / pixelsPerPoint;
+
             if (widthMode == MeasureMode.Exactly)
             {
                 measuredWidth = width;
@@ -246,8 +296,9 @@ namespace UnityEngine.UIElements
                 textParams.wordWrap = false;
                 textParams.richText = false;
 
-                //we make sure to round up as yoga could decide to round down and text would start wrapping
-                measuredWidth = Mathf.Ceil(textHandle.ComputeTextWidth(textParams, ve.scaledPixelsPerPoint));
+                // Case 1215962: round up as yoga could decide to round down and text would start wrapping
+                measuredWidth = textHandle.ComputeTextWidth(textParams, pixelsPerPoint);
+                measuredWidth = measuredWidth < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, pixelOffset);
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -265,7 +316,8 @@ namespace UnityEngine.UIElements
                 textParams.wordWrapWidth = measuredWidth;
                 textParams.richText = false;
 
-                measuredHeight = Mathf.Ceil(textHandle.ComputeTextHeight(textParams, ve.scaledPixelsPerPoint));
+                measuredHeight = textHandle.ComputeTextHeight(textParams, pixelsPerPoint);
+                measuredHeight = measuredHeight < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, pixelOffset);
 
                 if (heightMode == MeasureMode.AtMost)
                 {

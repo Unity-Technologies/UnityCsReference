@@ -4,29 +4,81 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Represents a scheduled task created with a VisualElement's schedule interface.
+    /// </summary>
     public interface IVisualElementScheduledItem
     {
+        /// <summary>
+        /// Returns the VisualElement this object is associated with.
+        /// </summary>
         VisualElement element { get; }
+        /// <summary>
+        /// Will be true when this item is scheduled. Note that an item's callback will only be executed when it's VisualElement is attached to a panel.
+        /// </summary>
         bool isActive { get; }
 
+        /// <summary>
+        /// If not already active, will schedule this item on its VisualElement's scheduler.
+        /// </summary>
         void Resume();
+        /// <summary>
+        /// Removes this item from its VisualElement's scheduler.
+        /// </summary>
         void Pause();
 
         //will reset the delay of this item
         // If the item is not currently scheduled, it will resume it
+        /// <summary>
+        /// Cancels any previously scheduled execution of this item and re-schedules the item.
+        /// </summary>
+        /// <param name="delayMs">Minimum time in milliseconds before this item will be executed.</param>
         void ExecuteLater(long delayMs);
 
         //Fluent interface to set parameters
+        /// <summary>
+        /// Adds a delay to the first invokation.
+        /// </summary>
+        /// <param name="delayMs">The minimum number of milliseconds after activation where this item's action will be executed.</param>
+        /// <returns>This ScheduledItem.</returns>
         IVisualElementScheduledItem StartingIn(long delayMs);
+        /// <summary>
+        /// Repeats this action after a specified time.
+        /// </summary>
+        /// <param name="intervalMs">Minimum amount of time in milliseconds between each action execution.</param>
+        /// <returns>This ScheduledItem.</returns>
         IVisualElementScheduledItem Every(long intervalMs);
+        /// <summary>
+        /// Item will be unscheduled automatically when specified condition is met.
+        /// </summary>
+        /// <param name="stopCondition">When condition returns true, the item will be unscheduled.</param>
+        /// <returns>This ScheduledItem.</returns>
         IVisualElementScheduledItem Until(Func<bool> stopCondition);
+        /// <summary>
+        /// After specified duration, the item will be automatically unscheduled.
+        /// </summary>
+        /// <param name="durationMs">The total duration in milliseconds where this item will be active.</param>
+        /// <returns>This ScheduledItem.</returns>
         IVisualElementScheduledItem ForDuration(long durationMs);
     }
 
+    /// <summary>
+    /// A scheduler allows you to register actions to be executed at a later point.
+    /// </summary>
     public interface IVisualElementScheduler
     {
+        /// <summary>
+        /// Schedule this action to be executed later.
+        /// </summary>
+        /// <param name="timerUpdateEvent">The action to be executed.</param>
+        /// <returns>Reference to the scheduled action.</returns>
         IVisualElementScheduledItem Execute(Action<TimerState> timerUpdateEvent);
 
+        /// <summary>
+        /// Schedule this action to be executed later.
+        /// </summary>
+        /// <param name="updateEvent">The action to be executed.</param>
+        /// <returns>Reference to the scheduled action.</returns>
         IVisualElementScheduledItem Execute(Action updateEvent);
     }
 
@@ -112,8 +164,18 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Base class for objects that are part of the UIElements visual tree.
+    /// </summary>
+    /// <remarks>
+    /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
+    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
+    /// </remarks>
     public partial class VisualElement : IVisualElementScheduler
     {
+        /// <summary>
+        /// Retrieves this VisualElement's IVisualElementScheduler
+        /// </summary>
         public IVisualElementScheduler schedule { get { return this; } }
 
         /// <summary>

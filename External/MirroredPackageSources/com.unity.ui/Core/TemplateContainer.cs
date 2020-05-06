@@ -2,8 +2,14 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Template Container.
+    /// </summary>
     public class TemplateContainer : BindableElement
     {
+        /// <summary>
+        /// Instantiates and clones a <see cref="TemplateContainer"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits>
         {
             internal const string k_ElementName = "Instance";
@@ -13,17 +19,29 @@ namespace UnityEngine.UIElements
             public override string uxmlQualifiedName => uxmlNamespace + "." + uxmlName;
         }
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="TemplateContainer"/>.
+        /// </summary>
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             internal const string k_TemplateAttributeName = "template";
 
             UxmlStringAttributeDescription m_Template = new UxmlStringAttributeDescription { name = k_TemplateAttributeName, use = UxmlAttributeDescription.Use.Required };
 
+            /// <summary>
+            /// Returns an empty enumerable, as template instance do not have children.
+            /// </summary>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
             }
 
+            /// <summary>
+            /// Initialize <see cref="TemplateContainer"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);

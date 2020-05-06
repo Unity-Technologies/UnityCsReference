@@ -690,6 +690,26 @@ namespace UnityEngine
             SetBuffer(kernelIndex, Shader.PropertyToID(name), buffer);
         }
 
+        public void SetConstantBuffer(int nameID, ComputeBuffer buffer, int offset, int size)
+        {
+            SetConstantBuffer(nameID, buffer, offset, size);
+        }
+
+        public void SetConstantBuffer(string name, ComputeBuffer buffer, int offset, int size)
+        {
+            SetConstantBuffer(Shader.PropertyToID(name), buffer, offset, size);
+        }
+
+        public void SetConstantBuffer(int nameID, GraphicsBuffer buffer, int offset, int size)
+        {
+            SetConstantBuffer(nameID, buffer, offset, size);
+        }
+
+        public void SetConstantBuffer(string name, GraphicsBuffer buffer, int offset, int size)
+        {
+            SetConstantBuffer(Shader.PropertyToID(name), buffer, offset, size);
+        }
+
         public void DispatchIndirect(int kernelIndex, ComputeBuffer argsBuffer, [uei.DefaultValue("0")] uint argsOffset)
         {
             if (argsBuffer == null) throw new ArgumentNullException("argsBuffer");
@@ -741,30 +761,14 @@ namespace UnityEngine.Experimental.Rendering
         public void SetInts(int nameID, params int[] values) { SetIntArray(nameID, values); }
         public void SetBool(string name, bool val) { SetInt(Shader.PropertyToID(name), val ? 1 : 0); }
         public void SetBool(int nameID, bool val) { SetInt(nameID, val ? 1 : 0); }
-
-        public void SetTexture(string resourceName, Texture texture)
-        {
-            SetTexture(Shader.PropertyToID(resourceName), texture);
-        }
-
-        public void SetBuffer(string resourceName, ComputeBuffer buffer)
-        {
-            SetBuffer(Shader.PropertyToID(resourceName), buffer);
-        }
-
-        public void SetBuffer(string resourceName, GraphicsBuffer buffer)
-        {
-            SetBuffer(Shader.PropertyToID(resourceName), buffer);
-        }
-
-        public void SetAccelerationStructure(string name, RayTracingAccelerationStructure accelerationStructure)
-        {
-            SetAccelerationStructure(Shader.PropertyToID(name), accelerationStructure);
-        }
-
-        public void SetTextureFromGlobal(string resourceName, string globalTextureName)
-        {
-            SetTextureFromGlobal(Shader.PropertyToID(resourceName), Shader.PropertyToID(globalTextureName));
-        }
+        public void SetTexture(string name, Texture texture) { SetTexture(Shader.PropertyToID(name), texture); }
+        public void SetBuffer(string name, ComputeBuffer buffer) { SetBuffer(Shader.PropertyToID(name), buffer); }
+        public void SetBuffer(string name, GraphicsBuffer buffer) { SetBuffer(Shader.PropertyToID(name), buffer); }
+        public void SetConstantBuffer(int nameID, ComputeBuffer buffer, int offset, int size) { SetConstantComputeBuffer(nameID, buffer, offset, size); }
+        public void SetConstantBuffer(string name, ComputeBuffer buffer, int offset, int size) { SetConstantComputeBuffer(Shader.PropertyToID(name), buffer, offset, size); }
+        public void SetConstantBuffer(int nameID, GraphicsBuffer buffer, int offset, int size) { SetConstantGraphicsBuffer(nameID, buffer, offset, size); }
+        public void SetConstantBuffer(string name, GraphicsBuffer buffer, int offset, int size) { SetConstantGraphicsBuffer(Shader.PropertyToID(name), buffer, offset, size); }
+        public void SetAccelerationStructure(string name, RayTracingAccelerationStructure accelerationStructure) { SetAccelerationStructure(Shader.PropertyToID(name), accelerationStructure); }
+        public void SetTextureFromGlobal(string name, string globalTextureName) { SetTextureFromGlobal(Shader.PropertyToID(name), Shader.PropertyToID(globalTextureName)); }
     }
 }

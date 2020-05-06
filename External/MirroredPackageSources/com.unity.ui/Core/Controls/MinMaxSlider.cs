@@ -3,10 +3,19 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A min/max slider containing a representation of a range.
+    /// </summary>
     public class MinMaxSlider : BaseField<Vector2>
     {
+        /// <summary>
+        /// Instantiates a <see cref="MinMaxSlider"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<MinMaxSlider, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="MinMaxSlider"/>.
+        /// </summary>
         public new class UxmlTraits : BaseField<Vector2>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_MinValue = new UxmlFloatAttributeDescription { name = "min-value", defaultValue = 0 };
@@ -14,6 +23,12 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_LowLimit = new UxmlFloatAttributeDescription { name = "low-limit", defaultValue = float.MinValue };
             UxmlFloatAttributeDescription m_HighLimit = new UxmlFloatAttributeDescription { name = "high-limit", defaultValue = float.MaxValue };
 
+            /// <summary>
+            /// Initialize <see cref="MinMaxSlider"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The element to initialize.</param>
+            /// <param name="bag">The bag of attributes.</param>
+            /// <param name="cc">Creation Context, unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -47,6 +62,9 @@ namespace UnityEngine.UIElements
         DragState m_DragState;
 
         // Minimum value of the current position of the slider
+        /// <summary>
+        /// This is the low value of the range represented on the slider.
+        /// </summary>
         public float minValue
         {
             get { return value.x; }
@@ -57,6 +75,9 @@ namespace UnityEngine.UIElements
         }
 
         // Maximum value of the current position of the slider
+        /// <summary>
+        /// This is the high value of the range represented on the slider.
+        /// </summary>
         public float maxValue
         {
             get { return value.y; }
@@ -67,6 +88,9 @@ namespace UnityEngine.UIElements
         }
 
         // Complete value of the slider position, where X is the minimum, and Y is the maximum in a Vector2
+        /// <summary>
+        /// This is the value of the slider. This is a <see cref="Vector2"/> where the x is the lower bound and the y is the higher bound.
+        /// </summary>
         public override Vector2 value
         {
             get { return base.value; }
@@ -83,6 +107,9 @@ namespace UnityEngine.UIElements
         }
 
         // The complete range that the value could span on, from the minimum to the maximum limit.
+        /// <summary>
+        /// Returns the range of the low/high limits of the slider.
+        /// </summary>
         public float range
         {
             get { return Math.Abs(highLimit - lowLimit); }
@@ -92,6 +119,9 @@ namespace UnityEngine.UIElements
         float m_MaxLimit;
 
         // This is the low limit that the slider can slide to.
+        /// <summary>
+        /// This is the low limit of the slider.
+        /// </summary>
         public float lowLimit
         {
             get { return m_MinLimit; }
@@ -115,6 +145,9 @@ namespace UnityEngine.UIElements
         }
 
         // This is the high limit that the slider can slide to.
+        /// <summary>
+        /// This is the high limit of the slider.
+        /// </summary>
         public float highLimit
         {
             get { return m_MaxLimit; }
@@ -139,21 +172,59 @@ namespace UnityEngine.UIElements
 
         internal const float kDefaultHighValue = 10;
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-min-max-slider";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// USS class name of tracker elements in elements of this type.
+        /// </summary>
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
+        /// <summary>
+        /// USS class name of dragger elements in elements of this type.
+        /// </summary>
         public static readonly string draggerUssClassName = ussClassName + "__dragger";
+        /// <summary>
+        /// USS class name of the minimum thumb elements in elements of this type.
+        /// </summary>
         public static readonly string minThumbUssClassName = ussClassName + "__min-thumb";
+        /// <summary>
+        /// USS class name of the maximum thumb elements in elements of this type.
+        /// </summary>
         public static readonly string maxThumbUssClassName = ussClassName + "__max-thumb";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public MinMaxSlider()
             : this(null) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="minValue">The minimum value in the range to be represented.</param>
+        /// <param name="maxValue">The maximum value in the range to be represented.</param>
+        /// <param name="minLimit">The minimum value of the slider limit.</param>
+        /// <param name="maxLimit">The maximum value of the slider limit.</param>
         public MinMaxSlider(float minValue, float maxValue, float minLimit, float maxLimit)
             : this(null, minValue, maxValue, minLimit, maxLimit) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="minValue">The minimum value in the range to be represented.</param>
+        /// <param name="maxValue">The maximum value in the range to be represented.</param>
+        /// <param name="minLimit">The minimum value of the slider limit.</param>
+        /// <param name="maxLimit">The maximum value of the slider limit.</param>
         public MinMaxSlider(string label, float minValue = 0, float maxValue = kDefaultHighValue, float minLimit = float.MinValue, float maxLimit = float.MaxValue)
             : base(label, null)
         {

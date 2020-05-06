@@ -65,28 +65,37 @@ namespace UnityEngine.UIElements
 
         private void UpdateSubTree(VisualElement ve, int currentLayoutPass)
         {
-            Rect yogaRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
-            Rect lastRect = ve.lastLayout;
-            bool rectChanged = false;
+            Rect yogaLayoutRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
+            Rect yogaPaddingRect = new Rect(
+                ve.yogaNode.LayoutPaddingLeft,
+                ve.yogaNode.LayoutPaddingTop,
+                ve.yogaNode.LayoutWidth - (ve.yogaNode.LayoutPaddingLeft + ve.yogaNode.LayoutPaddingRight),
+                ve.yogaNode.LayoutHeight - (ve.yogaNode.LayoutPaddingTop + ve.yogaNode.LayoutPaddingBottom));
+            Rect lastLayoutRect = ve.lastLayout;
+            Rect lastPaddingRect = ve.lastPadding;
 
             VersionChangeType changeType = 0;
 
-            // If the last layout rect is different than the current one we must dirty transform on children
-            if ((lastRect.width != yogaRect.width) || (lastRect.height != yogaRect.height))
-            {
+            // Changing the layout/padding size should trigger the following version changes:
+            // - Size:    to update the clipping rect, when required
+            // - Repaint: to update the geometry inside the new rect
+            bool layoutSizeChanged = lastLayoutRect.size != yogaLayoutRect.size;
+            bool paddingSizeChanged = lastPaddingRect.size != yogaPaddingRect.size;
+            if (layoutSizeChanged || paddingSizeChanged)
                 changeType |= VersionChangeType.Size | VersionChangeType.Repaint;
-                rectChanged = true;
-            }
-            if (yogaRect.position != lastRect.position)
-            {
+
+            // Changing the layout/padding position should trigger the following version change:
+            // - Transform: to draw the element and content at the right position
+            bool layoutPositionChanged = yogaLayoutRect.position != lastLayoutRect.position;
+            bool paddingPositionChanged = yogaPaddingRect.position != lastPaddingRect.position;
+            if (layoutPositionChanged || paddingPositionChanged)
                 changeType |= VersionChangeType.Transform;
-                rectChanged = true;
-            }
 
             if (changeType != 0)
                 ve.IncrementVersion(changeType);
 
-            ve.lastLayout = yogaRect;
+            ve.lastLayout = yogaLayoutRect;
+            ve.lastPadding = yogaPaddingRect;
 
             // ignore clean sub trees
             bool hasNewLayout = ve.yogaNode.HasNewLayout;
@@ -99,9 +108,11 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (rectChanged)
+            // Only send GeometryChanged events when the layout changes
+            // (padding changes don't affect the element's geometry).
+            if (layoutSizeChanged || layoutPositionChanged)
             {
-                using (var evt = GeometryChangedEvent.GetPooled(lastRect, yogaRect))
+                using (var evt = GeometryChangedEvent.GetPooled(lastLayoutRect, yogaLayoutRect))
                 {
                     evt.layoutPass = currentLayoutPass;
                     evt.target = ve;

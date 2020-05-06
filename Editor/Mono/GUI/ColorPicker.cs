@@ -743,7 +743,7 @@ namespace UnityEditor
                 if (Event.current.type == EventType.Repaint)
                 {
                     var backgroundRect = rect;
-                    backgroundRect.xMin += EditorGUIUtility.labelWidth;
+                    backgroundRect.xMin += EditorGUIUtility.labelWidth + Styles.sliderBackground.padding.horizontal;
                     backgroundRect.xMax -= EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
                     backgroundRect = Styles.sliderBackground.padding.Remove(backgroundRect);
                     var uvLayout = new Rect

@@ -3,6 +3,12 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Base class for objects that can get the focus.
+    /// </summary>
+    /// <remarks>
+    /// The focus is used to designate an element that will receive keyboard events.
+    /// </remarks>
     public abstract class Focusable : CallbackEventHandler
     {
         protected Focusable()
@@ -11,14 +17,26 @@ namespace UnityEngine.UIElements
             tabIndex = 0;
         }
 
+        /// <summary>
+        /// Return the focus controller for this element.
+        /// </summary>
         public abstract FocusController focusController { get; }
 
+        /// <summary>
+        /// True if the element can be focused.
+        /// </summary>
         public bool focusable { get; set; }
 
         // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
+        /// <summary>
+        /// An integer used to sort focusables in the focus ring. Must be greater than or equal to zero.
+        /// </summary>
         public int tabIndex { get; set; }
 
         bool m_DelegatesFocus;
+        /// <summary>
+        /// Whether the element should delegate the focus to its children.
+        /// </summary>
         public bool delegatesFocus
         {
             get { return m_DelegatesFocus; }
@@ -53,8 +71,14 @@ namespace UnityEngine.UIElements
         // This enables early outs in some dispatching strategies.
         internal bool isIMGUIContainer = false;
 
+        /// <summary>
+        /// Return true if the element can be focused.
+        /// </summary>
         public virtual bool canGrabFocus => focusable;
 
+        /// <summary>
+        /// Attempt to give the focus to this element.
+        /// </summary>
         public virtual void Focus()
         {
             if (focusController != null)
@@ -71,6 +95,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Tell the element to release the focus.
+        /// </summary>
         public virtual void Blur()
         {
             if (focusController != null)
@@ -136,12 +163,27 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Base class for defining in which direction the focus moves in a focus ring.
+    /// </summary>
+    /// <remarks>
+    /// Focus ring implementations can move the focus in various direction; they can derive from this class to formalize the various ways the focus can change from one element to the other.
+    /// </remarks>
     public class FocusChangeDirection
     {
+        /// <summary>
+        /// Focus came from an unspecified direction, for example after a mouse down.
+        /// </summary>
         public static FocusChangeDirection unspecified { get; } = new FocusChangeDirection(-1);
 
+        /// <summary>
+        /// The null direction. This is usually used when the focus stays on the same element.
+        /// </summary>
         public static FocusChangeDirection none { get; } = new FocusChangeDirection(0);
 
+        /// <summary>
+        /// Last value for the direction defined by this class.
+        /// </summary>
         protected static FocusChangeDirection lastValue { get; } = none;
 
         readonly int m_Value;
@@ -157,17 +199,35 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Interface for classes implementing focus rings.
+    /// </summary>
     public interface IFocusRing
     {
+        /// <summary>
+        /// Get the direction of the focus change for the given event. For example, when the Tab key is pressed, focus should be given to the element to the right.
+        /// </summary>
         FocusChangeDirection GetFocusChangeDirection(Focusable currentFocusable, EventBase e);
 
+        /// <summary>
+        /// Get the next element in the given direction.
+        /// </summary>
         Focusable GetNextFocusable(Focusable currentFocusable, FocusChangeDirection direction);
     }
 
+    /// <summary>
+    /// Class in charge of managing the focus inside a Panel.
+    /// </summary>
+    /// <remarks>
+    /// Each Panel should have an instance of this class. The instance holds the currently focused VisualElement and is responsible for changing it.
+    /// </remarks>
     public class FocusController
     {
         // https://w3c.github.io/uievents/#interface-focusevent
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public FocusController(IFocusRing focusRing)
         {
             this.focusRing = focusRing;
@@ -184,6 +244,9 @@ namespace UnityEngine.UIElements
 
         List<FocusedElement> m_FocusedElements = new List<FocusedElement>();
 
+        /// <summary>
+        /// The currently focused VisualElement.
+        /// </summary>
         public Focusable focusedElement => GetRetargetedFocusedElement(null);
 
         internal bool IsFocused(Focusable f)

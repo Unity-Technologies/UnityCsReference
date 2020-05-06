@@ -5,8 +5,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either an enum or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleEnum<T> : IStyleValue<T>, IEquatable<StyleEnum<T>> where T : struct, IConvertible
     {
+        /// <summary>
+        /// The style value.
+        /// </summary>
         public T value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(T); }
@@ -17,16 +23,25 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from either an enum or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleEnum(T v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either an enum or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleEnum(StyleKeyword keyword)
             : this(default(T), keyword)
         {}

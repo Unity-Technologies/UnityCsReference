@@ -30,7 +30,7 @@ namespace UnityEditorInternal.APIUpdating
     //
     // 1. If an error happen (in updater) during package adding/updating we may not update assemblies. We need to report to user.
     //    Ex: PA (1.0) -> PB (1.0); Add PB, PA; Update PB (to 1.1) and introduce update config; if an error happen when processing PB (1.1)
-    //    we may not apply updtes to PA.
+    //    we may not apply updates to PA.
 
     // Keep in sync with APIUpdaterManager.h
     internal enum APIUpdaterStatus
@@ -130,7 +130,7 @@ namespace UnityEditorInternal.APIUpdating
             }
 
             sw.Stop();
-            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assemblie(s) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount, assembliesToCheckCount);
+            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount, assembliesToCheckCount);
 
             if (updatedCount > 0 && !EditorCompilationInterface.Instance.DoesProjectFolderHaveAnyScripts())
             {
@@ -177,7 +177,7 @@ namespace UnityEditorInternal.APIUpdating
                 {
                     Name = assemblyName,
                     Path = assemblyPath,
-                    DependencyGraph = null, // No need to restore the dependecy graph. It is only used during the collection phase (i.e, to figure out the list of
+                    DependencyGraph = null, // No need to restore the dependency graph. It is only used during the collection phase (i.e, to figure out the list of
                                             // potential candidates for updating which happens before this step.
                     UpdateConfigSources = updateConfigSources
                 });
@@ -203,11 +203,11 @@ namespace UnityEditorInternal.APIUpdating
 
         private static void LogTimeoutError(AssemblyUpdaterUpdateTask[] tasks)
         {
-            var completedSuccessfully = tasks.Where(t => t.Event.WaitOne(0));
-            var timedout = tasks.Where(t => !t.Event.WaitOne(0));
+            var completedSuccessfully = tasks.Where(t => t.Event.WaitOne(0)).ToArray();
+            var timedOutTasks = tasks.Where(t => !t.Event.WaitOne(0));
 
             var sb = new StringBuilder(L10n.Tr("Timeout while updating assemblies:"));
-            foreach (var updaterTask in timedout)
+            foreach (var updaterTask in timedOutTasks)
             {
                 sb.AppendFormat("{1} (Output: {2}){0}", Environment.NewLine, updaterTask.Candidate.Path, updaterTask.OutputPath);
             }
@@ -217,10 +217,10 @@ namespace UnityEditorInternal.APIUpdating
             APIUpdaterLogger.WriteErrorToConsole(sb.ToString());
         }
 
-        private static bool HandleAssemblyUpdaterErrors(IEnumerable<AssemblyUpdaterUpdateTask> allTasks)
+        private static bool HandleAssemblyUpdaterErrors(IList<AssemblyUpdaterUpdateTask> allTasks)
         {
-            var tasksWithErrors = allTasks.Where(t => APIUpdaterAssemblyHelper.IsError(t.Result) || APIUpdaterAssemblyHelper.IsUnknown(t.Result) || t.Exception != null);
-            if (!tasksWithErrors.Any())
+            var tasksWithErrors = allTasks.Where(t => APIUpdaterAssemblyHelper.IsError(t.Result) || APIUpdaterAssemblyHelper.IsUnknown(t.Result) || t.Exception != null).ToArray();
+            if (tasksWithErrors.Length == 0)
                 return false;
 
             var sb = new StringBuilder(L10n.Tr("Unable to update following assemblies:"));
@@ -229,7 +229,7 @@ namespace UnityEditorInternal.APIUpdating
                 sb.Append(FormatErrorFromTask(updaterTask));
             }
 
-            ReportIgnoredAssembliesDueToPreviousErrors(sb, allTasks.Except(tasksWithErrors));
+            ReportIgnoredAssembliesDueToPreviousErrors(sb, allTasks.Except(tasksWithErrors).ToArray());
 
             APIUpdaterLogger.WriteErrorToConsole(sb.ToString());
             return true;
@@ -240,7 +240,7 @@ namespace UnityEditorInternal.APIUpdating
             // this may happen if mono.exe (which we use to run AssemblyUpdater.exe) cannot run the executable
             // and reports an error (for example, *file not found*)
             var unknownStatusMessage = APIUpdaterAssemblyHelper.IsUnknown(updaterTask.Result)
-                ? " does not match any return code from AssemblyUpdater.exe"
+                ? L10n.Tr(" does not match any return code from AssemblyUpdater.exe")
                 : string.Empty;
 
             var exceptionMessage = updaterTask.Exception != null
@@ -259,12 +259,15 @@ namespace UnityEditorInternal.APIUpdating
                 exceptionMessage);
         }
 
-        private static void ReportIgnoredAssembliesDueToPreviousErrors(StringBuilder sb, IEnumerable<AssemblyUpdaterUpdateTask> completedSuccessfully)
+        private static void ReportIgnoredAssembliesDueToPreviousErrors(StringBuilder sb, IList<AssemblyUpdaterUpdateTask> completedSuccessfully)
         {
-            sb.AppendFormat(L10n.Tr("Following assemblies were successfully updated but due to the failed ones above they were ignored (not copied to the destination folder)."));
+            if (completedSuccessfully.Count == 0)
+                return;
+
+            sb.AppendFormat(L10n.Tr("Following assemblies were successfully updated but due to the failed ones above they were ignored (not copied to the destination folder):"));
             foreach (var updaterTask in completedSuccessfully)
             {
-                sb.AppendFormat("{1} (Result = {2}) (Output: {3}){0}{4}{0}", Environment.NewLine, updaterTask.Candidate.Path, updaterTask.Result, updaterTask.OutputPath, updaterTask.StdOut);
+                sb.AppendFormat("{1}\t(Result = {2}) (Output: {3}){0}{4}{0}", Environment.NewLine, updaterTask.Candidate.Path, updaterTask.Result, updaterTask.OutputPath, updaterTask.StdOut);
             }
         }
 
@@ -289,10 +292,10 @@ namespace UnityEditorInternal.APIUpdating
             if (!APIUpdaterHelper.CheckReadOnlyFiles(assemblyPaths2))
                 return 0;
 
-            foreach (var succeedd in succeededUpdates)
+            foreach (var succeed in succeededUpdates)
             {
-                APIUpdaterLogger.WriteToFile("{0}{1}", Environment.NewLine, succeedd.StdOut);
-                FileUtil.MoveFileIfExists(succeedd.OutputPath, succeedd.Candidate.Path);
+                APIUpdaterLogger.WriteToFile("{0}{1}", Environment.NewLine, succeed.StdOut);
+                FileUtil.MoveFileIfExists(succeed.OutputPath, succeed.Candidate.Path);
             }
 
             assembliesToUpdate.Clear();
@@ -374,7 +377,7 @@ namespace UnityEditorInternal.APIUpdating
             SaveDependencyGraph(depGraph, k_AssemblyDependencyGraphFilePath);
 
             sw.Stop();
-            APIUpdaterLogger.WriteToFile(L10n.Tr("Processing imported assemblies took {0} ms ({1}/{2} assemblie(s))."), sw.ElapsedMilliseconds, assembliesToUpdate.Count, sortedCandidatesForUpdating.Count());
+            APIUpdaterLogger.WriteToFile(L10n.Tr("Processing imported assemblies took {0} ms ({1}/{2} assembly(ies))."), sw.ElapsedMilliseconds, assembliesToUpdate.Count, sortedCandidatesForUpdating.Count());
 
             UpdateAssemblies();
         }
@@ -391,7 +394,7 @@ namespace UnityEditorInternal.APIUpdating
         private static void UpdatePublishUpdaterConfigStatusAndAddDependents(HashSet<AssemblyUpdateCandidate> assembliesToUpdate, IEnumerable<AssemblyUpdateCandidate> candidatesForUpdating, AssemblyDependencyGraph depGraph)
         {
             var tasks = candidatesForUpdating
-                .Where(a => AssemblyHelper.IsManagedAssembly(a.Path) && IsAssemblyInPackageOrExtensionFolder(a))
+                .Where(a => AssemblyHelper.IsManagedAssembly(a.Path) && IsAssemblyInPackageFolder(a))
                 .Select(a => new AssemblyUpdaterCheckAssemblyPublishConfigsTask(a)).ToArray();
 
             if (tasks.Length == 0)
@@ -427,14 +430,14 @@ namespace UnityEditorInternal.APIUpdating
 
         private static bool HandleCheckAssemblyPublishUpdaterConfigErrors(AssemblyUpdaterCheckAssemblyPublishConfigsTask[] nonTimedOutTasks)
         {
-            var withErrors = nonTimedOutTasks.Where(t => APIUpdaterAssemblyHelper.IsError(t.Result) || t.Exception != null);
-            if (!withErrors.Any())
+            var withErrors = nonTimedOutTasks.Where(t => APIUpdaterAssemblyHelper.IsError(t.Result) || t.Exception != null).ToArray();
+            if (withErrors.Length == 0)
                 return false;
 
             var sb = new StringBuilder(L10n.Tr("Failed to check following assemblies for updater configurations:\r\n"));
-            foreach (var failledAssemblyInfo in withErrors)
+            foreach (var failedAssemblyInfo in withErrors)
             {
-                sb.AppendFormat(L10n.Tr("{0} (ret = {1}):\r\n{2}\r\n{3}\r\n"), failledAssemblyInfo.Candidate.Path, failledAssemblyInfo.Result, failledAssemblyInfo.StdOut, failledAssemblyInfo.StdErr);
+                sb.AppendFormat(L10n.Tr("{0} (ret = {1}):\r\n{2}\r\n{3}\r\n"), failedAssemblyInfo.Candidate.Path, failedAssemblyInfo.Result, failedAssemblyInfo.StdOut, failedAssemblyInfo.StdErr);
             }
             sb.Append("\r\n--------------");
 
@@ -455,24 +458,10 @@ namespace UnityEditorInternal.APIUpdating
         private extern static void CollectAssemblyObsoleteAPIUsage(string assemblyPath);
         private extern static void ReportPossibleUpdateFinished(bool hasCompilerErrors);
 
-        static IEnumerable<string> SafeConcat(string[] refreshed, string[] added)
-        {
-            var emptyArray = new string[0];
-            added = added ?? emptyArray;
-            refreshed = refreshed ?? emptyArray;
 
-            return added.Concat(refreshed).Where(DllFilePredicate).Distinct();
-        }
-
-        private static bool DllFilePredicate(string path)
+        private static bool IsAssemblyInPackageFolder(AssemblyUpdateCandidate candidate)
         {
-            return string.Compare(Path.GetExtension(path), ".dll", StringComparison.InvariantCultureIgnoreCase) == 0;
-        }
-
-        private static bool IsAssemblyInPackageOrExtensionFolder(AssemblyUpdateCandidate candidate)
-        {
-            var isUnityExtension = candidate.Path.IsUnityExtension();
-            return isUnityExtension || candidate.Path.IsInPackage();
+            return candidate.Path.IsInPackage();
         }
 
         /*
@@ -493,15 +482,7 @@ namespace UnityEditorInternal.APIUpdating
                 var referencedAssembliesWithUpdaterConfigs = depInfo.Dependencies.Where(a => (depGraph.FindAssembly(a.Name)?.Status & AssemblyStatus.PublishesUpdaterConfigurations) == AssemblyStatus.PublishesUpdaterConfigurations);
                 if (referencedAssembliesWithUpdaterConfigs.Any())
                 {
-                    var isUnityExtension = assemblyPath.IsUnityExtension();
-                    IEnumerable<string> updateConfigSources = new string[0];
-
-                    // UnityExtensions should never use obsolete APIs (i.e, we should never need to update them)
-                    if (!isUnityExtension)
-                    {
-                        updateConfigSources = ResolvePathOfAssembliesWithUpdaterConfigurations(referencedAssembliesWithUpdaterConfigs);
-                    }
-
+                    IEnumerable<string> updateConfigSources = ResolvePathOfAssembliesWithUpdaterConfigurations(referencedAssembliesWithUpdaterConfigs);
                     candidates.Add(new AssemblyUpdateCandidate
                     {
                         Name = assemblyName,
@@ -525,7 +506,7 @@ namespace UnityEditorInternal.APIUpdating
             return result;
         }
 
-        // We only resolve Unity assemblies and assemblies comming from packages.
+        // We only resolve Unity assemblies and assemblies coming from packages.
         // We may want to change this to support *any assembly* to contribute with updater configurations
         private static IEnumerable<string> ResolvePathOfAssembliesWithUpdaterConfigurations(IEnumerable<AssemblyDependencyGraph.DependencyEntry> assemblies)
         {
@@ -552,14 +533,12 @@ namespace UnityEditorInternal.APIUpdating
 
             var assetsAssemblies = new HashSet<string>(AssetDatabase.GetAllAssetPaths().Where(assetPath => Path.GetExtension(assetPath) == ".dll").ToArray());
 
-            // If the same assembly exist in multiple folders, choose the shortest path one. This ensures that for UnityExtensions we always pick the one at the root of
-            // the extention folder.
+            // If the same assembly exist in multiple folders, choose the shortest path one.
             var resolvedList = assetsAssemblies.Where(a => CompareIgnoreCase(AssemblyNameFromPath(a), assemblyName)).ToArray();
             var assemblyPathInAssetsFolder = resolvedList.OrderBy(path => path.Length).FirstOrDefault();
-
-            if (resolvedList.Length > 1 && !resolvedList.All(a => a.IsUnityExtension()))
+            if (resolvedList.Length > 1)
             {
-                APIUpdaterLogger.WriteToFile("Warning : Multiple matches found for assembly name '{0}'. Shortest path one ({1}) choosen as the source of updates. Full list: {2}", assemblyName, assemblyPathInAssetsFolder, string.Join(Environment.NewLine, resolvedList));
+                APIUpdaterLogger.WriteToFile(L10n.Tr("Warning : Multiple matches found for assembly name '{0}'. Shortest path one ({1}) chosen as the source of updates. Full list: {2}"), assemblyName, assemblyPathInAssetsFolder, string.Join(Environment.NewLine, resolvedList));
             }
 
             if (assemblyPathInAssetsFolder != null && (assemblyPathInAssetsFolder.IsInPackage() || assemblyPathInAssetsFolder.IsInAssetsFolder()))

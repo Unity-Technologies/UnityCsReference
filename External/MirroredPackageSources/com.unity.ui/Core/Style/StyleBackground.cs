@@ -4,8 +4,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either a <see cref="Background"/> or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleBackground : IStyleValue<Background>, IEquatable<StyleBackground>
     {
+        /// <summary>
+        /// The <see cref="Background"/> value.
+        /// </summary>
         public Background value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : new Background(); }
@@ -16,24 +22,39 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from either a <see cref="Background"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleBackground(Background v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="Background"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleBackground(Texture2D v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="Background"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleBackground(VectorImage v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="Background"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleBackground(StyleKeyword keyword)
             : this(new Background(), keyword)
         {}

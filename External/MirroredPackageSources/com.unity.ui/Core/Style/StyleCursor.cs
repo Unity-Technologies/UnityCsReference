@@ -3,8 +3,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either a <see cref="Cursor"/> or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleCursor : IStyleValue<Cursor>, IEquatable<StyleCursor>
     {
+        /// <summary>
+        /// The <see cref="Cursor"/> value.
+        /// </summary>
         public Cursor value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(Cursor); }
@@ -15,16 +21,25 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from either a <see cref="Cursor"/> or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleCursor(Cursor v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="Cursor"/> or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleCursor(StyleKeyword keyword)
             : this(default(Cursor), keyword)
         {}

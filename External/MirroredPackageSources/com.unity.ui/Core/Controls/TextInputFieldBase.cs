@@ -24,11 +24,17 @@ namespace UnityEngine.UIElements
         void UpdateValueFromText();
     }
 
+    /// <summary>
+    /// Abstract base class used for all text-based fields.
+    /// </summary>
     public abstract class TextInputBaseField<TValueType> : BaseField<TValueType>
     {
         static CustomStyleProperty<Color> s_SelectionColorProperty = new CustomStyleProperty<Color>("--unity-selection-color");
         static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for <see cref="TextInputFieldBase"/>.
+        /// </summary>
         public new class UxmlTraits : BaseFieldTraits<string, UxmlStringAttributeDescription>
         {
             UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
@@ -37,6 +43,12 @@ namespace UnityEngine.UIElements
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
 
+            /// <summary>
+            /// Initialize the traits for this field.
+            /// </summary>
+            /// <param name="ve">VisualElement to which to apply the attributes.</param>
+            /// <param name="bag">Bag of attributes where to get the attributes.</param>
+            /// <param name="cc">Creation context.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -55,6 +67,9 @@ namespace UnityEngine.UIElements
         }
 
         TextInputBase m_TextInputBase;
+        /// <summary>
+        /// This is the text input visual element which presents the value in the field.
+        /// </summary>
         protected TextInputBase textInputBase => m_TextInputBase;
 
         internal const int kMaxLengthNone = -1;
@@ -62,10 +77,22 @@ namespace UnityEngine.UIElements
 
         internal TextHandle textHandle { get; private set; } = TextHandle.New();
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-base-text-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public static readonly string textInputUssName = "unity-text-input";
 
         public string text
@@ -77,6 +104,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Returns true if the field is read only.
+        /// </summary>
         public bool isReadOnly
         {
             get { return m_TextInputBase.isReadOnly; }
@@ -84,41 +114,71 @@ namespace UnityEngine.UIElements
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
+        /// <summary>
+        /// Returns true if the field is used to edit a password.
+        /// </summary>
         public bool isPasswordField
         {
             get { return m_TextInputBase.isPasswordField; }
             set { m_TextInputBase.isPasswordField = value; }
         }
 
+        /// <summary>
+        /// Background color of selected text.
+        /// </summary>
         public Color selectionColor => m_TextInputBase.selectionColor;
+        /// <summary>
+        /// Color of the cursor.
+        /// </summary>
         public Color cursorColor => m_TextInputBase.cursorColor;
 
 
+        /// <summary>
+        /// The current cursor position index in the text input field.
+        /// </summary>
         public int cursorIndex => m_TextInputBase.cursorIndex;
+        /// <summary>
+        /// The current selection position index in the text input field.
+        /// </summary>
         public int selectIndex => m_TextInputBase.selectIndex;
+        /// <summary>
+        /// Maximum number of characters for the field.
+        /// </summary>
         public int maxLength
         {
             get { return m_TextInputBase.maxLength; }
             set { m_TextInputBase.maxLength = value; }
         }
 
+        /// <summary>
+        /// Controls whether double clicking selects the word under the mouse pointer or not.
+        /// </summary>
         public bool doubleClickSelectsWord
         {
             get { return m_TextInputBase.doubleClickSelectsWord; }
             set { m_TextInputBase.doubleClickSelectsWord = value; }
         }
+        /// <summary>
+        /// Controls whether triple clicking selects the entire line under the mouse pointer or not.
+        /// </summary>
         public bool tripleClickSelectsLine
         {
             get { return m_TextInputBase.tripleClickSelectsLine; }
             set { m_TextInputBase.tripleClickSelectsLine = value; }
         }
 
+        /// <summary>
+        /// If set to true, the value property is not updated until either the user presses Enter or the text field loses focus.
+        /// </summary>
         public bool isDelayed
         {
             get { return m_TextInputBase.isDelayed; }
             set { m_TextInputBase.isDelayed = value; }
         }
 
+        /// <summary>
+        /// The character used for masking in a password field.
+        /// </summary>
         public char maskChar
         {
             get { return m_TextInputBase.maskChar; }
@@ -133,6 +193,9 @@ namespace UnityEngine.UIElements
 
         internal bool hasFocus => m_TextInputBase.hasFocus;
 
+        /// <summary>
+        /// Selects all the text.
+        /// </summary>
         public void SelectAll()
         {
             m_TextInputBase.SelectAll();
@@ -198,6 +261,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// This is the input text base class visual representation.
+        /// </summary>
         protected abstract class TextInputBase : VisualElement, ITextInputField
         {
             string m_OriginalText;
@@ -213,6 +279,9 @@ namespace UnityEngine.UIElements
                 text = m_OriginalText;
             }
 
+            /// <summary>
+            /// Selects all the text contained in the field.
+            /// </summary>
             public void SelectAll()
             {
                 editorEngine?.SelectAll();
@@ -237,6 +306,11 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            /// <summary>
+            /// Converts a string to a value type.
+            /// </summary>
+            /// <param name="str">The string to convert.</param>
+            /// <returns>The value parsed from the string.</returns>
             protected virtual TValueType StringToValue(string str)
             {
                 throw new NotSupportedException();
@@ -249,11 +323,17 @@ namespace UnityEngine.UIElements
                 parentTextField.value = newValue;
             }
 
+            /// <summary>
+            /// This is the cursor index in the text presented.
+            /// </summary>
             public int cursorIndex
             {
                 get { return editorEngine.cursorIndex; }
             }
 
+            /// <summary>
+            /// This is the selection index in the text presented.
+            /// </summary>
             public int selectIndex
             {
                 get { return editorEngine.selectIndex; }
@@ -261,13 +341,31 @@ namespace UnityEngine.UIElements
 
             bool ITextInputField.isReadOnly => isReadOnly;
 
+            /// <summary>
+            /// Returns true if the field is read only.
+            /// </summary>
             public bool isReadOnly { get; set; }
+            /// <summary>
+            /// Maximum number of characters for the field.
+            /// </summary>
             public int maxLength { get; set; }
+            /// <summary>
+            /// The character used for masking in a password field.
+            /// </summary>
             public char maskChar { get; set; }
 
+            /// <summary>
+            /// Returns true if the field is used to edit a password.
+            /// </summary>
             public virtual bool isPasswordField { get; set; }
 
+            /// <summary>
+            /// Indicates if a double click selects or not a word.
+            /// </summary>
             public bool doubleClickSelectsWord { get; set; }
+            /// <summary>
+            /// Indicates if a double click selects or not a line.
+            /// </summary>
             public bool tripleClickSelectsLine { get; set; }
             internal bool isDelayed { get; set; }
 
@@ -282,7 +380,13 @@ namespace UnityEngine.UIElements
             Color m_SelectionColor = Color.clear;
             Color m_CursorColor = Color.grey;
 
+            /// <summary>
+            /// Background color of selected text.
+            /// </summary>
             public Color selectionColor => m_SelectionColor;
+            /// <summary>
+            /// Color of the cursor.
+            /// </summary>
             public Color cursorColor => m_CursorColor;
 
 
@@ -482,9 +586,6 @@ namespace UnityEngine.UIElements
                 if (editorEngine.multiline && (resolvedStyle.whiteSpace == WhiteSpace.Normal))
                 {
                     wordWrapWidth = contentRect.width;
-
-                    // Since the wrapping is enabled, there is no need to offset the text... It will always fit the space on screen !
-                    scrollOffset = Vector2.zero;
                 }
 
                 Vector2 pos = editorEngine.graphicalCursorPos - scrollOffset;
@@ -620,6 +721,9 @@ namespace UnityEngine.UIElements
                 return !isReadOnly;
             }
 
+            /// <summary>
+            /// Called to construct a menu to show different options.
+            /// </summary>
             protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
             {
                 if (evt?.target is TextInputBase)

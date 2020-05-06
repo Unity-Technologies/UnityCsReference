@@ -128,7 +128,7 @@ namespace UnityEngine.UIElements.UIR
         {
             if (m_BlitMaterial == null)
             {
-                var blitShader = Shader.Find("Hidden/Internal-UIRAtlasBlitCopy");
+                var blitShader = Shader.Find(Shaders.k_AtlasBlit);
                 m_BlitMaterial = new Material(blitShader);
                 m_BlitMaterial.hideFlags |= HideFlags.DontSaveInEditor;
             }

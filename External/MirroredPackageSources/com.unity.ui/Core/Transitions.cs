@@ -3,8 +3,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements.Experimental
 {
+    /// <summary>
+    /// Container object used to animate multiple style values at once.
+    /// </summary>
     public struct StyleValues
     {
+        /// <summary>
+        /// Top distance from the element's box during layout.
+        /// </summary>
         public float top
         {
             get
@@ -16,6 +22,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Top, value);
             }
         }
+        /// <summary>
+        /// Left distance from the element's box during layout.
+        /// </summary>
         public float left
         {
             get
@@ -27,6 +36,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Left, value);
             }
         }
+        /// <summary>
+        /// Fixed width of an element for the layout.
+        /// </summary>
         public float width
         {
             get
@@ -38,6 +50,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Width, value);
             }
         }
+        /// <summary>
+        /// Fixed height of an element for the layout.
+        /// </summary>
         public float height
         {
             get
@@ -49,6 +64,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Height, value);
             }
         }
+        /// <summary>
+        /// Right distance from the element's box during layout.
+        /// </summary>
         public float right
         {
             get
@@ -60,6 +78,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Right, value);
             }
         }
+        /// <summary>
+        /// Bottom distance from the element's box during layout.
+        /// </summary>
         public float bottom
         {
             get
@@ -71,6 +92,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Bottom, value);
             }
         }
+        /// <summary>
+        /// Color to use when drawing the text of an element.
+        /// </summary>
         public Color color
         {
             get
@@ -82,6 +106,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Color, value);
             }
         }
+        /// <summary>
+        /// Background color to paint in the element's box.
+        /// </summary>
         public Color backgroundColor
         {
             get
@@ -93,6 +120,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BackgroundColor, value);
             }
         }
+        /// <summary>
+        /// Tinting color for the element's backgroundImage.
+        /// </summary>
         public Color unityBackgroundImageTintColor
         {
             get
@@ -104,6 +134,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.UnityBackgroundImageTintColor, value);
             }
         }
+        /// <summary>
+        /// Color of the border to paint inside the element's box.
+        /// </summary>
         public Color borderColor
         {
             get
@@ -115,6 +148,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderColor, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the left edge of the margin during the layout phase.
+        /// </summary>
         public float marginLeft
         {
             get
@@ -126,6 +162,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.MarginLeft, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the top edge of the margin during the layout phase.
+        /// </summary>
         public float marginTop
         {
             get
@@ -137,6 +176,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.MarginTop, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the right edge of the margin during the layout phase.
+        /// </summary>
         public float marginRight
         {
             get
@@ -148,6 +190,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.MarginRight, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the bottom edge of the margin during the layout phase.
+        /// </summary>
         public float marginBottom
         {
             get
@@ -159,6 +204,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.MarginBottom, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the left edge of the padding during the layout phase.
+        /// </summary>
         public float paddingLeft
         {
             get
@@ -170,6 +218,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.PaddingLeft, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the top edge of the padding during the layout phase.
+        /// </summary>
         public float paddingTop
         {
             get
@@ -181,6 +232,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.PaddingTop, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the right edge of the padding during the layout phase.
+        /// </summary>
         public float paddingRight
         {
             get
@@ -192,6 +246,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.PaddingRight, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the bottom edge of the padding during the layout phase.
+        /// </summary>
         public float paddingBottom
         {
             get
@@ -203,6 +260,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.PaddingBottom, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the left edge of the border during the layout phase.
+        /// </summary>
         public float borderLeftWidth
         {
             get
@@ -214,6 +274,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderLeftWidth, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the right edge of the border during the layout phase.
+        /// </summary>
         public float borderRightWidth
         {
             get
@@ -225,6 +288,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderRightWidth, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the top edge of the border during the layout phase.
+        /// </summary>
         public float borderTopWidth
         {
             get
@@ -236,6 +302,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderTopWidth, value);
             }
         }
+        /// <summary>
+        /// Space reserved for the bottom edge of the border during the layout phase.
+        /// </summary>
         public float borderBottomWidth
         {
             get
@@ -247,6 +316,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderBottomWidth, value);
             }
         }
+        /// <summary>
+        /// The radius of the top-left corner when a rounded rectangle is drawn in the element's box.
+        /// </summary>
         public float borderTopLeftRadius
         {
             get
@@ -258,6 +330,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderTopLeftRadius, value);
             }
         }
+        /// <summary>
+        /// The radius of the top-right corner when a rounded rectangle is drawn in the element's box.
+        /// </summary>
         public float borderTopRightRadius
         {
             get
@@ -269,6 +344,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderTopRightRadius, value);
             }
         }
+        /// <summary>
+        /// The radius of the bottom-left corner when a rounded rectangle is drawn in the element's box.
+        /// </summary>
         public float borderBottomLeftRadius
         {
             get
@@ -280,6 +358,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.BorderBottomLeftRadius, value);
             }
         }
+        /// <summary>
+        /// The radius of the bottom-right corner when a rounded rectangle is drawn in the element's box.
+        /// </summary>
         public float borderBottomRightRadius
         {
             get
@@ -292,6 +373,12 @@ namespace UnityEngine.UIElements.Experimental
             }
         }
 
+        /// <summary>
+        /// Specifies the transparency of an element.
+        /// </summary>
+        /// <remarks>
+        /// The opacity can be between 0.0 and 1.0. The lower value, the more transparent.
+        /// </remarks>
         public float opacity
         {
             get
@@ -303,6 +390,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.Opacity, value);
             }
         }
+        /// <summary>
+        /// Specifies how much the item will grow relative to the rest of the flexible items inside the same container.
+        /// </summary>
         public float flexGrow
         {
             get
@@ -314,6 +404,9 @@ namespace UnityEngine.UIElements.Experimental
                 SetValue(StylePropertyId.FlexGrow, value);
             }
         }
+        /// <summary>
+        /// Specifies how the item will shrink relative to the rest of the flexible items inside the same container.
+        /// </summary>
         public float flexShrink
         {
             get
@@ -356,31 +449,187 @@ namespace UnityEngine.UIElements.Experimental
         internal StyleValueCollection m_StyleValues;
     }
 
+    /// <summary>
+    /// Provides helper methods to create transition animations  for VisualElement style values
+    /// </summary>
     public interface ITransitionAnimations
     {
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="from">Start value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<float> Start(float from, float to, int durationMs, Action<VisualElement, float> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="from">Start value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Rect> Start(Rect from, Rect to, int durationMs, Action<VisualElement, Rect> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="from">Start value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Color> Start(Color from, Color to, int durationMs, Action<VisualElement, Color> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="from">Start value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Vector3> Start(Vector3 from, Vector3 to, int durationMs, Action<VisualElement, Vector3> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="from">Start value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Vector2> Start(Vector2 from, Vector2 to, int durationMs, Action<VisualElement, Vector2> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="from">Start value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Quaternion> Start(Quaternion from, Quaternion to, int durationMs, Action<VisualElement, Quaternion> onValueChanged);
 
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="from">Start value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<StyleValues> Start(StyleValues from, StyleValues to, int durationMs);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<StyleValues> Start(StyleValues to, int durationMs);
 
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="fromValueGetter">Callback that provides the initial value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<float> Start(Func<VisualElement, float> fromValueGetter, float to, int durationMs, Action<VisualElement, float> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="fromValueGetter">Callback that provides the initial value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Rect> Start(Func<VisualElement, Rect> fromValueGetter, Rect to, int durationMs, Action<VisualElement, Rect> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="fromValueGetter">Callback that provides the initial value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Color> Start(Func<VisualElement, Color> fromValueGetter, Color to, int durationMs, Action<VisualElement, Color> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="fromValueGetter">Callback that provides the initial value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Vector3> Start(Func<VisualElement, Vector3> fromValueGetter, Vector3 to, int durationMs, Action<VisualElement, Vector3> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="fromValueGetter">Callback that provides the initial value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Vector2> Start(Func<VisualElement, Vector2> fromValueGetter, Vector2 to, int durationMs, Action<VisualElement, Vector2> onValueChanged);
+
+        /// <summary>
+        /// Starts a transition animation on this VisualElement.
+        /// </summary>
+        /// <param name="fromValueGetter">Callback that provides the initial value.</param>
+        /// <param name="to">End value.</param>
+        /// <param name="durationMs">Duration of the transition in milliseconds.</param>
+        /// <param name="onValueChanged">Callback that applies the interpolated value.</param>
+        /// <returns>The created animation object.</returns>
         ValueAnimation<Quaternion> Start(Func<VisualElement, Quaternion> fromValueGetter, Quaternion to, int durationMs, Action<VisualElement, Quaternion> onValueChanged);
 
+        /// <summary>
+        /// Triggers an animation changing this element's layout style values.
+        /// </summary>
+        /// <seealso cref="IStyle.top"/>
+        /// <seealso cref="IStyle.left"/>
+        /// <seealso cref="IStyle.width"/>
+        /// <seealso cref="IStyle.height"/>
         ValueAnimation<Rect> Layout(Rect to, int durationMs);
+
+        /// <summary>
+        /// Triggers an animation changing this element's positioning style values.
+        /// </summary>
+        /// <seealso cref="IStyle.top"/>
+        /// <seealso cref="IStyle.left"/>
         ValueAnimation<Vector2> TopLeft(Vector2 to, int durationMs);
+
+        /// <summary>
+        /// Triggers an animation changing this element's size style values.
+        /// </summary>
+        /// <seealso cref="IStyle.width"/>
+        /// <seealso cref="IStyle.height"/>
         ValueAnimation<Vector2> Size(Vector2 to, int durationMs);
 
+        /// <summary>
+        /// Triggers an animation changing this element's transform scale.
+        /// </summary>
+        /// <seealso cref="ITransform.scale"/>
         ValueAnimation<float> Scale(float to, int duration);
+
+        /// <summary>
+        /// Triggers an animation changing this element's transform position.
+        /// </summary>
+        /// <seealso cref="ITransform.position"/>
         ValueAnimation<Vector3> Position(Vector3 to, int duration);
+
+        /// <summary>
+        /// Triggers an animation changing this element's transform rotation.
+        /// </summary>
+        /// <seealso cref="ITransform.rotation"/>
         ValueAnimation<Quaternion> Rotation(Quaternion to, int duration);
     }
 

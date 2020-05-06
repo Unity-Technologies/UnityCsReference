@@ -7,6 +7,12 @@ namespace UnityEngine.UIElements
         private IPointerEvent[] m_TriggerPointerEvent = new IPointerEvent[PointerId.maxPointers];
         private IMouseEvent[] m_TriggerMouseEvent = new IMouseEvent[PointerId.maxPointers];
         private Vector2[] m_PickingPointerPositions = new Vector2[PointerId.maxPointers];
+
+        // Some Events need to temporarily set the elementUnderPointer to a specific value to leave a predictable
+        // state for an expected Event chain.
+        // For example, MouseLeaveWindowEvent sets elementUnderPointer to null (see MouseEventDispatchingStrategy)
+        // to ensure it generates a proper MouseLeaveWindowEvent | MouseOutEvent event chain.
+        // Those temporary values should be overwritten by the next call to Panel.RecomputeTopElementUnderPointer().
         private bool[] m_IsPickingPointerTemporaries = new bool[PointerId.maxPointers];
 
         internal VisualElement GetTopElementUnderPointer(int pointerId, out Vector2 pickPosition, out bool isTemporary)

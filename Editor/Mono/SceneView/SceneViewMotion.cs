@@ -79,9 +79,6 @@ namespace UnityEditor
                 if (inputSamplingScope.currentlyMoving)
                     view.viewIsLockedToObject = false;
 
-                if (inputSamplingScope.inputVectorChanged)
-                    s_FlySpeedTarget = 0f;
-
                 s_Motion = inputSamplingScope.currentInputVector;
             }
 

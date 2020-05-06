@@ -400,6 +400,7 @@ namespace UnityEditor
         private static bool TryParse<T>(string expression, out T result)
         {
             expression = expression.Replace(',', '.');
+            expression = expression.TrimEnd('f');
 
             bool success = false;
             result = default(T);

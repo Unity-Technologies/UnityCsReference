@@ -2,70 +2,53 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Bindings;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Bindings;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor.PackageManager
 {
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
-    [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-    class NativeClient
+    public static partial class Client
     {
-        public static extern NativeStatusCode List([Out] out long operationId, bool offlineMode, bool includeIndirectDependencies);
+        [FreeFunction("PackageManager::Add::StartOperation")]
+        private static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 
-        public static extern NativeStatusCode Add([Out] out long operationId, string packageId);
+        [FreeFunction("PackageManager::Embed::StartOperation")]
+        private static extern NativeStatusCode Embed([Out] out long operationId, string packageId);
 
-        public extern static NativeStatusCode Embed([Out] out long operationId, string packageId);
+        [FreeFunction("PackageManager::GetCachedPackages::StartOperation")]
+        private static extern NativeStatusCode GetCachedPackages([Out] out long operationId, string registryId);
 
-        public static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
+        [FreeFunction("PackageManager::GetPackageInfo::StartOperation")]
+        private static extern NativeStatusCode GetPackageInfo([Out] out long operationId, string packageId, bool offlineMode);
 
-        public static extern NativeStatusCode GetPackageInfo([Out] out long operationId, string packageId, bool offlineMode);
+        [FreeFunction("PackageManager::GetRegistries::StartOperation")]
+        private static extern NativeStatusCode GetRegistries([Out] out long operationId);
 
-        public static extern NativeStatusCode GetAllPackageInfo([Out] out long operationId, bool offlineMode);
+        [FreeFunction("PackageManager::List::StartOperation")]
+        private static extern NativeStatusCode List([Out] out long operationId, bool offlineMode, bool includeIndirectDependencies);
 
-        public static extern NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
+        [FreeFunction("PackageManager::Pack::StartOperation")]
+        private static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder);
 
-        public static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder);
+        [FreeFunction("PackageManager::Remove::StartOperation")]
+        private static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
 
-        public static extern void Resolve();
+        [FreeFunction("PackageManager::ResetToEditorDefaults::StartOperation")]
+        private static extern NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
-        public static extern NativeStatusCode Search([Out] out long operationId, SearchOptions options);
+        [FreeFunction("PackageManager::Resolve")]
+        internal static extern void Resolve();
 
-        public static extern NativeStatusCode GetOperationStatus(long operationId);
-
-        public static extern NativeStatusCode GetRegistries([Out] out long operationId);
-
-        public static extern NativeStatusCode GetCachedPackages([Out] out long operationId, string registryId);
-
-        [ThreadAndSerializationSafe]
-        public static extern void ReleaseCompletedOperation(long operationId);
-
-        public static extern Error GetOperationError(long operationId);
-
-        public static extern OperationStatus GetListOperationData(long operationId);
-
-        public static extern PackageInfo GetAddOperationData(long operationId);
-
-        extern public static PackageInfo GetEmbedOperationData(long operationId);
-
-        public static extern PackageInfo[] GetGetPackageInfoOperationData(long operationId);
-
-        public static extern PackOperationResult GetPackOperationData(long operationId);
-
-        public static extern SearchResults GetSearchOperationData(long operationId);
-
-        public static extern RegistryInfo[] GetGetRegistriesOperationData(long operationId);
-
-        public static extern CachedPackageInfo[] GetGetCachedPackagesOperationData(long operationId);
+        [FreeFunction("PackageManager::Search::StartOperation")]
+        private static extern NativeStatusCode Search([Out] out long operationId, SearchOptions options);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerFolders.h")]
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
-    class Folders
+    internal class Folders
     {
         public static extern string GetPackagesPath();
         public static extern bool IsPackagedAssetPath(string path);
@@ -89,10 +72,9 @@ namespace UnityEditor.PackageManager
         private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
     }
 
-
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerImmutableAssets.h")]
     [StaticAccessor("PackageManager::ImmutableAssets", StaticAccessorType.DoubleColon)]
-    class ImmutableAssets
+    internal class ImmutableAssets
     {
         public static extern void SetAssetsAllowedToBeModified(string[] assetsAllowedToBeModified);
     }

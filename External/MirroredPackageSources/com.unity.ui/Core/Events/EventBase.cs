@@ -3,12 +3,22 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// The base class for all UIElements events.
+    /// </summary>
     public abstract class EventBase : IDisposable
     {
         private static long s_LastTypeId = 0;
 
+        /// <summary>
+        /// Registers an event class to the event type system.
+        /// </summary>
+        /// <returns>The type ID.</returns>
         protected static long RegisterEventType() { return ++s_LastTypeId; }
 
+        /// <summary>
+        /// Retrieves the type ID for this event instance.
+        /// </summary>
         public virtual long eventTypeId => - 1;
 
         [Flags]
@@ -39,6 +49,9 @@ namespace UnityEngine.UIElements
         static ulong s_NextEventId = 0;
 
         // Read-only state
+        /// <summary>
+        /// The time when the event was created.
+        /// </summary>
         public long timestamp { get; private set; }
 
         internal ulong eventId { get; private set; }
@@ -97,11 +110,17 @@ namespace UnityEngine.UIElements
             processed = true;
         }
 
+        /// <summary>
+        /// Whether this event type bubbles up in the event propagation path.
+        /// </summary>
         public bool bubbles
         {
             get { return (propagation & EventPropagation.Bubbles) != 0; }
         }
 
+        /// <summary>
+        /// Whether this event is sent down the event propagation path during the TrickleDown phase.
+        /// </summary>
         public bool tricklesDown
         {
             get { return (propagation & EventPropagation.TricklesDown) != 0; }
@@ -112,6 +131,9 @@ namespace UnityEngine.UIElements
 
         IEventHandler m_Target;
 
+        /// <summary>
+        /// The target visual element that received this event. Unlike currentTarget, this target does not change when the event is sent to other elements along the propagation path.
+        /// </summary>
         public IEventHandler target
         {
             get { return m_Target; }
@@ -132,6 +154,9 @@ namespace UnityEngine.UIElements
             return skipElements.Contains(h);
         }
 
+        /// <summary>
+        /// Whether StopPropagation() was called for this event.
+        /// </summary>
         public bool isPropagationStopped
         {
             get { return (lifeCycleStatus & LifeCycleStatus.PropagationStopped) != LifeCycleStatus.None; }
@@ -148,11 +173,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Stops propagating this event. The event is not sent to other elements along the propagation path. This method does not prevent other event handlers from executing on the current target.
+        /// </summary>
         public void StopPropagation()
         {
             isPropagationStopped = true;
         }
 
+        /// <summary>
+        /// Whether StopImmediatePropagation() was called for this event.
+        /// </summary>
         public bool isImmediatePropagationStopped
         {
             get { return (lifeCycleStatus & LifeCycleStatus.ImmediatePropagationStopped) != LifeCycleStatus.None; }
@@ -169,12 +200,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Immediately stops the propagation of the event. The event is not sent to other elements along the propagation path. This method prevents other event handlers from executing on the current target.
+        /// </summary>
         public void StopImmediatePropagation()
         {
             isPropagationStopped = true;
             isImmediatePropagationStopped = true;
         }
 
+        /// <summary>
+        /// Return true if the default actions should not be executed for this event.
+        /// </summary>
         public bool isDefaultPrevented
         {
             get { return (lifeCycleStatus & LifeCycleStatus.DefaultPrevented) != LifeCycleStatus.None; }
@@ -191,6 +228,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Whether the default actions are prevented from being executed for this event.
+        /// </summary>
         public void PreventDefault()
         {
             if ((propagation & EventPropagation.Cancellable) == EventPropagation.Cancellable)
@@ -200,10 +240,16 @@ namespace UnityEngine.UIElements
         }
 
         // Propagation state
+        /// <summary>
+        /// The current propagation phase.
+        /// </summary>
         public PropagationPhase propagationPhase { get; internal set; }
 
         IEventHandler m_CurrentTarget;
 
+        /// <summary>
+        /// The current target of the event. This is the VisualElement, in the propagation path, for which event handlers are currently being executed.
+        /// </summary>
         public virtual IEventHandler currentTarget
         {
             get { return m_CurrentTarget; }
@@ -226,6 +272,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Whether the event is being dispatched to a visual element. An event cannot be redispatched while it being dispatched. If you need to recursively dispatch an event, it is recommended that you use a copy of the event.
+        /// </summary>
         public bool dispatch
         {
             get { return (lifeCycleStatus & LifeCycleStatus.Dispatching) != LifeCycleStatus.None; }
@@ -335,6 +384,9 @@ namespace UnityEngine.UIElements
         }
 
         // We aim to make this internal.
+        /// <summary>
+        /// The IMGUIEvent at the source of this event. The source can be null since not all events are generated by IMGUI.
+        /// </summary>
         public /*internal*/ Event imguiEvent
         {
             get { return imguiEventIsValid ? m_ImguiEvent : null; }
@@ -358,12 +410,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The original mouse position of the IMGUI event, before it is transformed to the current target local coordinates.
+        /// </summary>
         public Vector2 originalMousePosition { get; private set; }
 
         internal EventDebugger eventLogger { get; set; }
 
         internal bool log => eventLogger != null;
 
+        /// <summary>
+        /// Resets all event members to their initial values.
+        /// </summary>
         protected virtual void Init()
         {
             LocalInit();
@@ -406,12 +464,18 @@ namespace UnityEngine.UIElements
             eventLogger = null;
         }
 
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
         protected EventBase()
         {
             m_ImguiEvent = null;
             LocalInit();
         }
 
+        /// <summary>
+        /// Whether the event is allocated from a pool of events.
+        /// </summary>
         protected bool pooled
         {
             get { return (lifeCycleStatus & LifeCycleStatus.Pooled) != LifeCycleStatus.None; }
@@ -429,9 +493,15 @@ namespace UnityEngine.UIElements
         }
 
         internal abstract void Acquire();
+        /// <summary>
+        /// Implementation of IDisposable.
+        /// </summary>
         public abstract void Dispose();
     }
 
+    /// <summary>
+    /// Generic base class for events, implementing event pooling and automatic registration to the event type system.
+    /// </summary>
     public abstract class EventBase<T> : EventBase where T : EventBase<T>, new()
     {
         static readonly long s_TypeId = RegisterEventType();
@@ -444,11 +514,18 @@ namespace UnityEngine.UIElements
             m_RefCount = 0;
         }
 
+        /// <summary>
+        /// Retrieves the type ID for this event instance.
+        /// </summary>
+        /// <returns>The type ID.</returns>
         public static long TypeId()
         {
             return s_TypeId;
         }
 
+        /// <summary>
+        /// Resets all event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -460,6 +537,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Gets an event from the event pool. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <returns>An initialized event.</returns>
         public static T GetPooled()
         {
             T t = s_Pool.Get();
@@ -498,6 +579,12 @@ namespace UnityEngine.UIElements
             m_RefCount++;
         }
 
+        /// <summary>
+        /// Implementation of IDispose.
+        /// </summary>
+        /// <remarks>
+        /// If the event was instantiated from an event pool, the event is released when Dispose is called.
+        /// </remarks>
         public sealed override void Dispose()
         {
             if (--m_RefCount == 0)
@@ -506,6 +593,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Retrieves the type ID for this event instance.
+        /// </summary>
         public override long eventTypeId => s_TypeId;
     }
 }

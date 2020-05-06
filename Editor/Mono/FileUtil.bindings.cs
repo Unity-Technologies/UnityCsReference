@@ -115,7 +115,7 @@ namespace UnityEditor
         [FreeFunction("GetPathNameExtensionManaged")]
         internal static extern string GetPathExtension(string path);
 
-        [FreeFunction("DeletePathNameExtension")]
+        [FreeFunction("DeletePathNameExtensionManaged")]
         internal static extern string GetPathWithoutExtension(string path);
 
         [FreeFunction]

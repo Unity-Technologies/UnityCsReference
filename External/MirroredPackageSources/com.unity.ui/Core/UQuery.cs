@@ -22,6 +22,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// UQuery is a set of extension methods allowing you to select individual or collection of visualElements inside a complex hierarchy.
+    /// </summary>
     public static class UQuery
     {
         //This scheme saves us 20 bytes instead of saving a Func<object, bool> directly (12 vs 32 bytes)
@@ -179,6 +182,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Query object containing all the selection rules. Can be saved and rerun later without re-allocating memory.
+    /// </summary>
     public struct UQueryState<T> : IEquatable<UQueryState<T>> where T : VisualElement
     {
         //this makes it non-thread safe. But saves on allocations...
@@ -196,11 +202,20 @@ namespace UnityEngine.UIElements
             m_Matchers = matchers;
         }
 
+        /// <summary>
+        /// Creates a new QueryState with the same selection rules, applied on another VisualElement.
+        /// </summary>
+        /// <param name="element">The element on which to apply the selection rules.</param>
+        /// <returns>A new QueryState with the same selection rules, applied on this element.</returns>
         public UQueryState<T> RebuildOn(VisualElement element)
         {
             return new UQueryState<T>(element, m_Matchers);
         }
 
+        /// <summary>
+        /// The first element matching all the criteria, or null if none was found.
+        /// </summary>
+        /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public T First()
         {
             s_First.Run(m_Element, m_Matchers);
@@ -211,6 +226,10 @@ namespace UnityEngine.UIElements
             return match;
         }
 
+        /// <summary>
+        /// The last element matching all the criteria, or null if none was found.
+        /// </summary>
+        /// <returns>The last element matching all the criteria, or null if none was found.</returns>
         public T Last()
         {
             s_Last.Run(m_Element, m_Matchers);
@@ -239,6 +258,10 @@ namespace UnityEngine.UIElements
 
         private static readonly ListQueryMatcher s_List = new ListQueryMatcher();
 
+        /// <summary>
+        /// Adds all elements satisfying selection rules to the list.
+        /// </summary>
+        /// <param name="results">Adds all elements satisfying selection rules to the list.</param>
         public void ToList(List<T> results)
         {
             s_List.matches = results;
@@ -246,6 +269,10 @@ namespace UnityEngine.UIElements
             s_List.Reset();
         }
 
+        /// <summary>
+        /// Returns a list containing elements satisfying selection rules.
+        /// </summary>
+        /// <returns>A list containing elements satisfying selection rules.</returns>
         public List<T> ToList()
         {
             List<T> result = new List<T>();
@@ -253,6 +280,11 @@ namespace UnityEngine.UIElements
             return result;
         }
 
+        /// <summary>
+        /// Selects the n th element matching all the criteria, or null if not enough elements were found.
+        /// </summary>
+        /// <param name="index">The index of the matched element.</param>
+        /// <returns>The match element at the specified index.</returns>
         public T AtIndex(int index)
         {
             s_Index.matchIndex = index;
@@ -282,6 +314,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Invokes function on all elements matching the query.
+        /// </summary>
+        /// <param name="funcCall">The action to be invoked with each matching element.</param>
         public void ForEach(Action<T> funcCall)
         {
             var act = s_Action;
@@ -323,6 +359,11 @@ namespace UnityEngine.UIElements
                 return false;
             }
         }
+        /// <summary>
+        /// Invokes function on all elements matching the query.
+        /// </summary>
+        /// <param name="result">Each return value will be added to this list.</param>
+        /// <param name="funcCall">The function to be invoked with each matching element.</param>
         public void ForEach<T2>(List<T2> result, Func<T, T2> funcCall)
         {
             var matcher = DelegateQueryMatcher<T2>.s_Instance;
@@ -346,6 +387,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Invokes function on all elements matching the query.
+        /// </summary>
+        /// <param name="funcCall">The action to be invoked with each matching element.</param>
         public List<T2> ForEach<T2>(Func<T, T2> funcCall)
         {
             List<T2> result = new List<T2>();
@@ -388,6 +433,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Utility Object that contructs a set of selection rules to be ran on a root visual element.
+    /// </summary>
     public struct UQueryBuilder<T> : IEquatable<UQueryBuilder<T>> where T : VisualElement
     {
         private List<StyleSelector> m_StyleSelectors;
@@ -402,6 +450,10 @@ namespace UnityEngine.UIElements
         private int pseudoStatesMask;
         private int negatedPseudoStatesMask;
 
+        /// <summary>
+        /// Initializes a QueryBuilder.
+        /// </summary>
+        /// <param name="visualElement">The root element on which to condfuct the search query.</param>
         public UQueryBuilder(VisualElement visualElement)
             : this()
         {
@@ -413,18 +465,27 @@ namespace UnityEngine.UIElements
             pseudoStatesMask = negatedPseudoStatesMask = 0;
         }
 
+        /// <summary>
+        /// Selects all elements with the given class. Not to be confused with Type (see OfType<>()).
+        /// </summary>
         public UQueryBuilder<T> Class(string classname)
         {
             AddClass(classname);
             return this;
         }
 
+        /// <summary>
+        /// Selects element with this name.
+        /// </summary>
         public UQueryBuilder<T> Name(string id)
         {
             AddName(id);
             return this;
         }
 
+        /// <summary>
+        /// Selects all elements that are descendants of currently matching ancestors.
+        /// </summary>
         public UQueryBuilder<T2> Descendents<T2>(string name = null, params string[] classNames) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -434,6 +495,9 @@ namespace UnityEngine.UIElements
             return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
         }
 
+        /// <summary>
+        /// Selects all elements that are descendants of currently matching ancestors.
+        /// </summary>
         public UQueryBuilder<T2> Descendents<T2>(string name = null, string classname = null) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -443,6 +507,9 @@ namespace UnityEngine.UIElements
             return AddRelationship<T2>(StyleSelectorRelationship.Descendent);
         }
 
+        /// <summary>
+        /// Selects all direct child elements of elements matching the previous rules.
+        /// </summary>
         public UQueryBuilder<T2> Children<T2>(string name = null, params string[] classes) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -452,6 +519,9 @@ namespace UnityEngine.UIElements
             return AddRelationship<T2>(StyleSelectorRelationship.Child);
         }
 
+        /// <summary>
+        /// Selects all direct child elements of elements matching the previous rules.
+        /// </summary>
         public UQueryBuilder<T2> Children<T2>(string name = null, string className = null) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -461,6 +531,12 @@ namespace UnityEngine.UIElements
             return AddRelationship<T2>(StyleSelectorRelationship.Child);
         }
 
+        /// <summary>
+        /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
+        /// </summary>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public UQueryBuilder<T2> OfType<T2>(string name = null, params string[] classes) where T2 : VisualElement
         {
             AddType<T2>();
@@ -469,6 +545,12 @@ namespace UnityEngine.UIElements
             return AddRelationship<T2>(StyleSelectorRelationship.None);
         }
 
+        /// <summary>
+        /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
+        /// </summary>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public UQueryBuilder<T2> OfType<T2>(string name = null, string className = null) where T2 : VisualElement
         {
             AddType<T2>();
@@ -484,6 +566,11 @@ namespace UnityEngine.UIElements
             return this;
         }
 
+        /// <summary>
+        /// Selects all elements satifying the predicate.
+        /// </summary>
+        /// <param name="selectorPredicate">Predicate that must return true for selected elements.</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public UQueryBuilder<T> Where(Func<T, bool> selectorPredicate)
         {
             //we can't use a static instance as in the QueryState<T>.ForEach below since the query might be long lived
@@ -530,73 +617,116 @@ namespace UnityEngine.UIElements
             return this;
         }
 
+        /// <summary>
+        /// Selects all elements that are active.
+        /// </summary>
+        /// <returns>A QueryBuilder with the selection rules.</returns>
         public UQueryBuilder<T> Active()
         {
             return AddPseudoState(PseudoStates.Active);
         }
 
+        /// <summary>
+        /// Selects all elements that are not active.
+        /// </summary>
         public UQueryBuilder<T> NotActive()
         {
             return AddNegativePseudoState(PseudoStates.Active);
         }
 
+        /// <summary>
+        /// Selects all elements that are not visible.
+        /// </summary>
         public UQueryBuilder<T> Visible()
         {
             return Where(e => e.visible);
         }
 
+        /// <summary>
+        /// Selects all elements that are not visible.
+        /// </summary>
         public UQueryBuilder<T> NotVisible()
         {
             return Where(e => !e.visible);
         }
 
+        /// <summary>
+        /// Selects all elements that are hovered.
+        /// </summary>
         public UQueryBuilder<T> Hovered()
         {
             return AddPseudoState(PseudoStates.Hover);
         }
 
+        /// <summary>
+        /// Selects all elements that are not hovered.
+        /// </summary>
         public UQueryBuilder<T> NotHovered()
         {
             return AddNegativePseudoState(PseudoStates.Hover);
         }
 
+        /// <summary>
+        /// Selects all elements that are checked.
+        /// </summary>
         public UQueryBuilder<T> Checked()
         {
             return AddPseudoState(PseudoStates.Checked);
         }
 
+        /// <summary>
+        /// Selects all elements that npot checked.
+        /// </summary>
         public UQueryBuilder<T> NotChecked()
         {
             return AddNegativePseudoState(PseudoStates.Checked);
         }
 
+        /// <summary>
+        /// Selects all elements that are not selected.
+        /// </summary>
         [Obsolete("Use Checked() instead")]
         public UQueryBuilder<T> Selected()
         {
             return AddPseudoState(PseudoStates.Checked);
         }
 
+        /// <summary>
+        /// Selects all elements that are not selected.
+        /// </summary>
         [Obsolete("Use NotChecked() instead")]
         public UQueryBuilder<T> NotSelected()
         {
             return AddNegativePseudoState(PseudoStates.Checked);
         }
 
+        /// <summary>
+        /// Selects all elements that are enabled.
+        /// </summary>
         public UQueryBuilder<T> Enabled()
         {
             return AddNegativePseudoState(PseudoStates.Disabled);
         }
 
+        /// <summary>
+        /// Selects all elements that are not enabled.
+        /// </summary>
         public UQueryBuilder<T> NotEnabled()
         {
             return AddPseudoState(PseudoStates.Disabled);
         }
 
+        /// <summary>
+        /// Selects all elements that are enabled.
+        /// </summary>
         public UQueryBuilder<T> Focused()
         {
             return AddPseudoState(PseudoStates.Focus);
         }
 
+        /// <summary>
+        /// Selects all elements that don't currently own the focus.
+        /// </summary>
         public UQueryBuilder<T> NotFocused()
         {
             return AddNegativePseudoState(PseudoStates.Focus);
@@ -662,6 +792,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Compiles the selection rules into a QueryState object.
+        /// </summary>
         public UQueryState<T> Build()
         {
             FinishSelector();
@@ -684,41 +817,75 @@ namespace UnityEngine.UIElements
             return !(builder1 == builder2);
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Build().First().
+        /// </summary>
+        /// <returns>The first element matching all the criteria, or null if none was found.</returns>
+        /// <seealso cref="UQueryState{T}.First"/>
         public T First()
         {
             return Build().First();
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Build().Last().
+        /// </summary>
+        /// <returns>The last element matching all the criteria, or null if none was found.</returns>
         public T Last()
         {
             return Build().Last();
         }
 
+        /// <summary>
+        /// Convenience method. shorthand for Build().ToList.
+        /// </summary>
+        /// <returns>A list containing elements satisfying selection rules.</returns>
         public List<T> ToList()
         {
             return Build().ToList();
         }
 
+        /// <summary>
+        /// Convenience method. Shorthand gor Build().ToList().
+        /// </summary>
+        /// <param name="results">Adds all elements satisfying selection rules to the list.</param>
         public void ToList(List<T> results)
         {
             Build().ToList(results);
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Build().AtIndex().
+        /// </summary>
+        /// <seealso cref="UQueryState{T}.AtIndex"/>
         public T AtIndex(int index)
         {
             return Build().AtIndex(index);
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Build().ForEach().
+        /// </summary>
+        /// <param name="result">Each return value will be added to this list.</param>
+        /// <param name="funcCall">The function to be invoked with each matching element.</param>
         public void ForEach<T2>(List<T2> result, Func<T, T2> funcCall)
         {
             Build().ForEach(result, funcCall);
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Build().ForEach().
+        /// </summary>
+        /// <param name="funcCall">The function to be invoked with each matching element.</param>
         public List<T2> ForEach<T2>(Func<T, T2> funcCall)
         {
             return Build().ForEach(funcCall);
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Build().ForEach().
+        /// </summary>
+        /// <param name="funcCall">The function to be invoked with each matching element.</param>
         public void ForEach(Action<T> funcCall)
         {
             Build().ForEach(funcCall);
@@ -762,6 +929,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// UQuery is a set of extension methods allowing you to select individual or collection of visualElements inside a complex hierarchy.
+    /// </summary>
     public static class UQueryExtensions
     {
         private static UQueryState<VisualElement> SingleElementEmptyQuery = new UQueryBuilder<VisualElement>(null).Build();
@@ -775,16 +945,37 @@ namespace UnityEngine.UIElements
         private static UQueryState<VisualElement> SingleElementTypeAndClassQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Class(String.Empty).Build();
         private static UQueryState<VisualElement> SingleElementTypeAndNameAndClassQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Name(String.Empty).Class(String.Empty).Build();
 
+        /// <summary>
+        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static T Q<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
             return e.Query<T>(name, classes).Build().First();
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static VisualElement Q(this VisualElement e, string name = null, params string[] classes)
         {
             return e.Query<VisualElement>(name, classes).Build().First();
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static T Q<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {
             if (typeof(T) == typeof(VisualElement))
@@ -833,6 +1024,13 @@ namespace UnityEngine.UIElements
             return element;
         }
 
+        /// <summary>
+        /// Convenience overload, shorthand for Query<T>.Build().First().
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static VisualElement Q(this VisualElement e, string name = null, string className = null)
         {
             UQueryState<VisualElement> query;
@@ -870,28 +1068,61 @@ namespace UnityEngine.UIElements
             return element;
         }
 
+        /// <summary>
+        /// Initializes a QueryBuilder with the specified selection rules.
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, params string[] classes)
         {
             return e.Query<VisualElement>(name, classes);
         }
 
+        /// <summary>
+        /// Initializes a QueryBuilder with the specified selection rules.
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, string className = null)
         {
             return e.Query<VisualElement>(name, className);
         }
 
+        /// <summary>
+        /// Initializes a QueryBuilder with the specified selection rules.
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
             var queryBuilder = new UQueryBuilder<VisualElement>(e).OfType<T>(name, classes);
             return queryBuilder;
         }
 
+        /// <summary>
+        /// Initializes a QueryBuilder with the specified selection rules.
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <param name="name">If specified, will select elements with this name.</param>
+        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {
             var queryBuilder = new UQueryBuilder<VisualElement>(e).OfType<T>(name, className);
             return queryBuilder;
         }
 
+        /// <summary>
+        /// Initializes a QueryBuilder with the specified selection rules.
+        /// </summary>
+        /// <param name="e">Root VisualElement on which the selector will be applied.</param>
+        /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e)
         {
             return new UQueryBuilder<VisualElement>(e);

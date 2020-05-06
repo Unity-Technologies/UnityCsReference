@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine.Serialization;
+
+using Toolbar = UnityEditor.UIElements.Toolbar;
 
 namespace UnityEditor.UIElements.Debugger
 {

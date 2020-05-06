@@ -3,8 +3,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either an integer or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleInt : IStyleValue<int>, IEquatable<StyleInt>
     {
+        /// <summary>
+        /// The integer value.
+        /// </summary>
         public int value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(int); }
@@ -15,16 +21,25 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from either an integer or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleInt(int v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either an integer or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleInt(StyleKeyword keyword)
             : this(default(int), keyword)
         {}

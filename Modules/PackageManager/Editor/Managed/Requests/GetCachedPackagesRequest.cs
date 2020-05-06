@@ -8,7 +8,7 @@ using System.Linq;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    internal sealed class GetCachedPackagesRequest : Request<CachedPackageInfo[]>
+    internal sealed partial class GetCachedPackagesRequest : Request<CachedPackageInfo[]>
     {
         /// <summary>
         /// Constructor to support serialization
@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override CachedPackageInfo[] GetResult()
         {
-            return NativeClient.GetGetCachedPackagesOperationData(Id);
+            return GetOperationData(Id);
         }
     }
 }

@@ -32,19 +32,55 @@ namespace UnityEngine.UIElements
     // "flex-grow:1" is to make elements stretch horizontally.
     // "align-self:flex-start" prevent the content-container from shrinking below the content size vertically.
     // "overflow:scroll" on the content-viewport and content-container is to not restrict measured elements in any direction.
+
+    /// <summary>
+    /// Mode configuring the <see cref="ScrollView"/> for the intended usage.
+    /// </summary>
+    /// <remarks>
+    /// The default is <see cref="ScrollViewMode.Vertical"/>.
+    /// </remarks>
     public enum ScrollViewMode
     {
+        /// <summary>
+        /// Configure <see cref="ScrollView"/> for vertical scrolling.
+        /// </summary>
+        /// <remarks>
+        /// Require elements with an height.
+        /// </remarks>
         Vertical,
+        /// <summary>
+        /// Configure <see cref="ScrollView"/> for horizontal scrolling.
+        /// </summary>
+        /// <remarks>
+        /// Require elements with a width.
+        /// If <see cref="ScrollView"/> is set to flex-grow or if it's parent is set to <see cref="FlexDirection.Row"/> elements height stretch else they require a height.
+        /// </remarks>
         Horizontal,
+        /// <summary>
+        /// Configure <see cref="ScrollView"/> for vertical and horizontal scrolling.
+        /// </summary>
+        /// <remarks>
+        /// Require elements with an height.
+        /// The difference with the vertical mode is that content will not wrap.
+        /// </remarks>
         VerticalAndHorizontal
     }
 
+    /// <summary>
+    /// Displays its contents inside a scrollable frame.
+    /// </summary>
     public class ScrollView : VisualElement
     {
+        /// <summary>
+        /// Instantiates a <see cref="ScrollView"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<ScrollView, UxmlTraits>
         {
         }
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="ScrollView"/>.
+        /// </summary>
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlEnumAttributeDescription<ScrollViewMode> m_ScrollViewMode =
@@ -76,6 +112,12 @@ namespace UnityEngine.UIElements
             {name = "elasticity", defaultValue = k_DefaultElasticity};
 
 
+            /// <summary>
+            /// Initialize <see cref="ScrollView"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -94,6 +136,9 @@ namespace UnityEngine.UIElements
 
         private bool m_ShowHorizontal;
 
+        /// <summary>
+        /// Should the horizontal scroller be visible.
+        /// </summary>
         public bool showHorizontal
         {
             get { return m_ShowHorizontal; }
@@ -106,6 +151,9 @@ namespace UnityEngine.UIElements
 
         private bool m_ShowVertical;
 
+        /// <summary>
+        /// Should the vertical scroller be visible.
+        /// </summary>
         public bool showVertical
         {
             get { return m_ShowVertical; }
@@ -132,6 +180,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The current scrolling position.
+        /// </summary>
         public Vector2 scrollOffset
         {
             get { return new Vector2(horizontalScroller.value, verticalScroller.value); }
@@ -146,12 +197,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// This property is controlling the scrolling speed of the horizontal scroller.
+        /// </summary>
         public float horizontalPageSize
         {
             get { return horizontalScroller.slider.pageSize; }
             set { horizontalScroller.slider.pageSize = value; }
         }
 
+        /// <summary>
+        /// This property is controlling the scrolling speed of the vertical scroller.
+        /// </summary>
         public float verticalPageSize
         {
             get { return verticalScroller.slider.pageSize; }
@@ -172,6 +229,12 @@ namespace UnityEngine.UIElements
         private bool hasInertia => scrollDecelerationRate > 0f;
         private static readonly float k_DefaultScrollDecelerationRate = 0.135f;
         private float m_ScrollDecelerationRate = k_DefaultScrollDecelerationRate;
+        /// <summary>
+        /// Controls the rate at which the scrolling movement slows after a user scrolls using a touch interaction.
+        /// </summary>
+        /// <remarks>
+        /// The deceleration rate is the speed reduction per second. A value of 0.5 halves the speed each second. A value of 0 stops the scrolling immediately.
+        /// </remarks>
         public float scrollDecelerationRate
         {
             get { return m_ScrollDecelerationRate; }
@@ -181,20 +244,41 @@ namespace UnityEngine.UIElements
         // For elastic behavior: how long it takes to go back to original position.
         private static readonly float k_DefaultElasticity = 0.1f;
         private float m_Elasticity = k_DefaultElasticity;
+        /// <summary>
+        /// The amount of elasticity to use when a user tries to scroll past the boundaries of the scroll view.
+        /// </summary>
+        /// <remarks>
+        /// Elasticity is only used when <see cref="touchScrollBehavior"/> is set to Elastic.
+        /// </remarks>
         public float elasticity
         {
             get { return m_Elasticity;}
             set { m_Elasticity = Mathf.Max(0f, value); }
         }
 
+        /// <summary>
+        /// The behavior to use when a user tries to scroll past the end of the ScrollView content using a touch interaction.
+        /// </summary>
         public enum TouchScrollBehavior
         {
+            /// <summary>
+            /// The content position can move past the ScrollView boundaries.
+            /// </summary>
             Unrestricted,
+            /// <summary>
+            /// The content position can overshoot the ScrollView boundaries, but then "snaps" back within them.
+            /// </summary>
             Elastic,
+            /// <summary>
+            /// The content position is clamped to the ScrollView boundaries.
+            /// </summary>
             Clamped,
         }
 
         private TouchScrollBehavior m_TouchScrollBehavior;
+        /// <summary>
+        /// The behavior to use when a user tries to scroll past the boundaries of the ScrollView content using a touch interaction.
+        /// </summary>
         public TouchScrollBehavior touchScrollBehavior
         {
             get { return m_TouchScrollBehavior; }
@@ -228,6 +312,10 @@ namespace UnityEngine.UIElements
             this.IncrementVersion(VersionChangeType.Repaint);
         }
 
+        /// <summary>
+        /// Scroll to a specific child element.
+        /// </summary>
+        /// <param name="child">The child to scroll to.</param>
         public void ScrollTo(VisualElement child)
         {
             if (child == null)
@@ -306,30 +394,63 @@ namespace UnityEngine.UIElements
             return deltaDistance;
         }
 
+        /// <summary>
+        /// Represents the visible part of contentContainer.
+        /// </summary>
         public VisualElement contentViewport { get; private set; } // Represents the visible part of contentContainer
 
+        /// <summary>
+        /// Horizontal scrollbar.
+        /// </summary>
         public Scroller horizontalScroller { get; private set; }
+        /// <summary>
+        /// Vertical Scrollbar.
+        /// </summary>
         public Scroller verticalScroller { get; private set; }
 
         private VisualElement m_ContentContainer;
 
+        /// <summary>
+        /// Contains full content, potentially partially visible.
+        /// </summary>
         public override VisualElement contentContainer // Contains full content, potentially partially visible
         {
             get { return m_ContentContainer; }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string ussClassName = "unity-scroll-view";
+        /// <summary>
+        /// USS class name of viewport elements in elements of this type.
+        /// </summary>
         public static readonly string viewportUssClassName = ussClassName + "__content-viewport";
+        /// <summary>
+        /// USS class name of content elements in elements of this type.
+        /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content-container";
+        /// <summary>
+        /// USS class name of horizontal scrollers in elements of this type.
+        /// </summary>
         public static readonly string hScrollerUssClassName = ussClassName + "__horizontal-scroller";
+        /// <summary>
+        /// USS class name of vertical scrollers in elements of this type.
+        /// </summary>
         public static readonly string vScrollerUssClassName = ussClassName + "__vertical-scroller";
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
         public static readonly string verticalHorizontalVariantUssClassName = ussClassName + "--vertical-horizontal";
         public static readonly string scrollVariantUssClassName = ussClassName + "--scroll";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public ScrollView() : this(ScrollViewMode.Vertical) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public ScrollView(ScrollViewMode scrollViewMode)
         {
             AddToClassList(ussClassName);

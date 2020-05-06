@@ -178,7 +178,7 @@ namespace UnityEditor
         private bool m_InspectOptimizedGUIBlocks = false;
 
         //TODO: figure out proper minimum values and make sure the window also has compatible minimum size
-        readonly SplitterState m_InstructionListDetailSplitter = new SplitterState(new float[] { 30, 70 }, new int[] { 32, 32 }, null);
+        readonly SplitterState m_InstructionListDetailSplitter = SplitterState.FromRelative(new float[] { 30, 70 }, new float[] { 32, 32 }, null);
 
         //Internal Tool for now. Uncomment it to enable it.
         [MenuItem("Window/Analysis/IMGUI Debugger &5", false, 102, false)] // TODO: DEBUG ONLY - REVERT ME

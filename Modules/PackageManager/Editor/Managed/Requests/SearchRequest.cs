@@ -9,7 +9,7 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    public sealed class SearchRequest : Request<PackageInfo[]>
+    public sealed partial class SearchRequest : Request<PackageInfo[]>
     {
         [SerializeField]
         private string m_PackageIdOrName;
@@ -35,12 +35,15 @@ namespace UnityEditor.PackageManager.Requests
         internal SearchRequest(long operationId, NativeStatusCode initialStatus, string packageIdOrName)
             : base(operationId, initialStatus)
         {
+            // This class is used to wrap both "GetPackageInfo" and "GetAllPackageInfo" operations.
+            // When used for the latter, packageIdOrName == string.Empty. Aside from that, the SearchRequest
+            // class does not care whether it's "searching" for a single PackageInfo or all "searchable" packages.
             m_PackageIdOrName = packageIdOrName;
         }
 
         protected override PackageInfo[] GetResult()
         {
-            return NativeClient.GetGetPackageInfoOperationData(Id).Where(p => p.type != ShimPackageType).ToArray();
+            return GetOperationData(Id).Where(p => p.type != ShimPackageType).ToArray();
         }
     }
 }

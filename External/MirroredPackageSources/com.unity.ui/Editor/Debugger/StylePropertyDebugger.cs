@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEditor.UIElements.Debugger;
 using Cursor = UnityEngine.UIElements.Cursor;
+using Toolbar = UnityEditor.UIElements.Toolbar;
 
 namespace UnityEditor.UIElements.Debugger
 {

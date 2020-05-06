@@ -11,12 +11,33 @@ namespace UnityEngine.UIElements
         StyleKeyword keyword { get; set; }
     }
 
+    /// <summary>
+    /// Keyword that can be used on any style value types.
+    /// </summary>
     public enum StyleKeyword
     {
+        /// <summary>
+        /// Means that there's no keyword defined for that property.
+        /// </summary>
         Undefined, // No keyword defined
+        /// <summary>
+        /// Means that an inline style from <see cref="IStyle"/> has no value or keyword.
+        /// </summary>
+        /// <remarks>
+        /// This can also be used to remove an inline style previously set on a property.
+        /// </remarks>
         Null, // No inline style value
+        /// <summary>
+        /// For style properties accepting auto.
+        /// </summary>
         Auto,
+        /// <summary>
+        /// For style properties accepting none.
+        /// </summary>
         None,
+        /// <summary>
+        /// The initial (or default) value of a style property.
+        /// </summary>
         Initial // Default value
     }
 

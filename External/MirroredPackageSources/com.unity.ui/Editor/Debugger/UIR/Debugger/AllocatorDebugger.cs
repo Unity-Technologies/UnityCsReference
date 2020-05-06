@@ -28,7 +28,7 @@ namespace UnityEditor.UIElements.Debugger
             base.OnEnable();
             titleContent = new GUIContent("Allocator Debugger");
 
-            var root = rootVisualElement;
+            var root =  rootVisualElement;
             root.AddStyleSheetPath("UIRAllocatorDebugger");
 
             m_IMGUIToolbar = new IMGUIContainer(OnGUIToolbar);

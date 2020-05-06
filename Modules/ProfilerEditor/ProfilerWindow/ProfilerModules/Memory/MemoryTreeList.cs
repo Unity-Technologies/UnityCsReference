@@ -67,12 +67,12 @@ namespace UnityEditor
         protected virtual void SetupSplitter()
         {
             float[] splitterRelativeSizes = new float[1];
-            int[] splitterMinWidths = new int[1];
+            float[] splitterMinWidths = new float[1];
 
             splitterRelativeSizes[0] = kNameColumnSize;
             splitterMinWidths[0] = 100;
 
-            m_Splitter = new SplitterState(splitterRelativeSizes, splitterMinWidths, null);
+            m_Splitter = SplitterState.FromRelative(splitterRelativeSizes, splitterMinWidths, null);
         }
 
         public void OnGUI()
@@ -356,7 +356,7 @@ namespace UnityEditor
         protected override void SetupSplitter()
         {
             float[] splitterRelativeSizes = new float[3];
-            int[] splitterMinWidths = new int[3];
+            float[] splitterMinWidths = new float[3];
 
             splitterRelativeSizes[0] = kNameColumnSize;
             splitterMinWidths[0] = 100;
@@ -365,7 +365,7 @@ namespace UnityEditor
             splitterRelativeSizes[2] = kColumnSize;
             splitterMinWidths[2] = 50;
 
-            m_Splitter = new SplitterState(splitterRelativeSizes, splitterMinWidths, null);
+            m_Splitter = SplitterState.FromRelative(splitterRelativeSizes, splitterMinWidths, null);
         }
 
         protected override void DrawHeader()

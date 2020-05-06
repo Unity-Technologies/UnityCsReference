@@ -3,8 +3,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either a <see cref="Length"/> or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleLength : IStyleValue<Length>, IEquatable<StyleLength>
     {
+        /// <summary>
+        /// The <see cref="Length"/> value.
+        /// </summary>
         public Length value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(Length); }
@@ -15,20 +21,32 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from either a <see cref="Length"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleLength(float v)
             : this(new Length(v, LengthUnit.Pixel), StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="Length"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleLength(Length v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="Length"/> or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleLength(StyleKeyword keyword)
             : this(default(Length), keyword)
         {}

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A textfield is a rectangular area where the user can edit a string.
+    /// </summary>
     public class TextField : TextInputBaseField<string>
     {
         // This property to alleviate the fact we have to cast all the time
@@ -11,11 +14,23 @@ namespace UnityEngine.UIElements
         // This is to save the value of the tabindex of the visual input to achieve the IMGUI behaviour of tabbing on multiline TextField.
         int m_VisualInputTabIndex;
 
+        /// <summary>
+        /// Instantiates a <see cref="TextField"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<TextField, UxmlTraits> {}
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="TextField"/>.
+        /// </summary>
         public new class UxmlTraits : TextInputBaseField<string>.UxmlTraits
         {
             UxmlBoolAttributeDescription m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
 
+            /// <summary>
+            /// Initialize <see cref="TextField"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 TextField field = ((TextField)ve);
@@ -24,6 +39,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Set this to true to allow multiple lines in the textfield and false if otherwise.
+        /// </summary>
         public bool multiline
         {
             get { return textInput.multiline; }
@@ -31,24 +49,57 @@ namespace UnityEngine.UIElements
         }
 
 
+        /// <summary>
+        /// Selects text in the textfield between cursorIndex and selectionIndex.
+        /// </summary>
+        /// <param name="selectionIndex">The selection end position.</param>
         public void SelectRange(int rangeCursorIndex, int selectionIndex)
         {
             textInput.SelectRange(rangeCursorIndex, selectionIndex);
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-text-field";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Creates a new textfield.
+        /// </summary>
         public TextField()
             : this(null) {}
 
+        /// <summary>
+        /// Creates a new textfield.
+        /// </summary>
+        /// <param name="maxLength">The maximum number of characters this textfield can hold. If 0, there is no limit.</param>
+        /// <param name="multiline">Set this to true to allow multiple lines in the textfield and false if otherwise.</param>
+        /// <param name="isPasswordField">Set this to true to mask the characters and false if otherwise.</param>
+        /// <param name="maskChar">The character used for masking in a password field.</param>
         public TextField(int maxLength, bool multiline, bool isPasswordField, char maskChar)
             : this(null, maxLength, multiline, isPasswordField, maskChar) {}
 
+        /// <summary>
+        /// Creates a new textfield.
+        /// </summary>
         public TextField(string label)
             : this(label, kMaxLengthNone, false, false, kMaskCharDefault) {}
 
+        /// <summary>
+        /// Creates a new textfield.
+        /// </summary>
+        /// <param name="maxLength">The maximum number of characters this textfield can hold. If 0, there is no limit.</param>
+        /// <param name="multiline">Set this to true to allow multiple lines in the textfield and false if otherwise.</param>
+        /// <param name="isPasswordField">Set this to true to mask the characters and false if otherwise.</param>
+        /// <param name="maskChar">The character used for masking in a password field.</param>
         public TextField(string label, int maxLength, bool multiline, bool isPasswordField, char maskChar)
             : base(label, maxLength, maskChar, new TextInput())
         {
@@ -62,6 +113,12 @@ namespace UnityEngine.UIElements
             this.isPasswordField = isPasswordField;
         }
 
+        /// <summary>
+        /// The string currently being exposed by the field.
+        /// </summary>
+        /// <remarks>
+        /// Note that changing this will not trigger a change event to be sent.
+        /// </remarks>
         public override string value
         {
             get { return base.value; }

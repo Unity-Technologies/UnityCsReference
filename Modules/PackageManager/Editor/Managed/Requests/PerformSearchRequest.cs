@@ -8,7 +8,7 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    internal sealed class PerformSearchRequest : Request<SearchResults>
+    internal sealed partial class PerformSearchRequest : Request<SearchResults>
     {
         [SerializeField]
         private SearchOptions m_Options;
@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override SearchResults GetResult()
         {
-            return NativeClient.GetSearchOperationData(Id);
+            return GetOperationData(Id);
         }
     }
 }

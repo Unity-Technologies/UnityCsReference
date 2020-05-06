@@ -328,8 +328,8 @@ namespace UnityEditor
 
             Rect dockAreaRect = new Rect(0, 0, position.width, position.height);
             Rect containerWindowPosition = window.position;
-            containerWindowPosition.width = Mathf.Ceil(containerWindowPosition.width);
-            containerWindowPosition.height = Mathf.Ceil(containerWindowPosition.height);
+            containerWindowPosition.width = GUIUtility.RoundToPixelGrid(containerWindowPosition.width);
+            containerWindowPosition.height = GUIUtility.RoundToPixelGrid(containerWindowPosition.height);
 
             DrawDockAreaBackground(dockAreaRect);
 
@@ -1029,11 +1029,11 @@ namespace UnityEditor
                 return m_BorderSize;
 
             Rect containerWindowPosition = window.position;
-            containerWindowPosition.width = Mathf.FloorToInt(containerWindowPosition.width);
-            containerWindowPosition.height = Mathf.FloorToInt(containerWindowPosition.height);
+            containerWindowPosition.width = GUIUtility.RoundToPixelGrid(containerWindowPosition.width);
+            containerWindowPosition.height = GUIUtility.RoundToPixelGrid(containerWindowPosition.height);
 
             bool customBorder = floatingWindow && windowPosition.y == 0;
-            bool isBottomTab = windowPosition.yMax == containerWindowPosition.height;
+            bool isBottomTab = Mathf.Abs(windowPosition.yMax - containerWindowPosition.height) < 0.02f;
 
             // Reset
             m_BorderSize.left = m_BorderSize.right = m_BorderSize.top = m_BorderSize.bottom = 0;
@@ -1041,7 +1041,7 @@ namespace UnityEditor
             Rect r = windowPosition;
             if (r.xMin != 0)
                 m_BorderSize.left += (int)kSideBorders;
-            if (r.xMax != Mathf.FloorToInt(window.position.width))
+            if (Mathf.Abs(r.xMax - GUIUtility.RoundToPixelGrid(window.position.width)) > 0.02f)
                 m_BorderSize.right += (int)kSideBorders;
 
             m_BorderSize.top = (int)kTabHeight + (customBorder ? kFloatingWindowTopBorderWidth : 0);

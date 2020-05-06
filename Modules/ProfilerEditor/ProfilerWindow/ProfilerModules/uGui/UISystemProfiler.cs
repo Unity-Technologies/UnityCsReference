@@ -14,7 +14,7 @@ namespace UnityEditor
 {
     internal class UISystemProfiler
     {
-        private readonly SplitterState m_TreePreviewHorizontalSplitState = new SplitterState(new[] {70f, 30f}, new[] {100, 100}, null);
+        private readonly SplitterState m_TreePreviewHorizontalSplitState = SplitterState.FromRelative(new[] {70f, 30f}, new[] {100f, 100f}, null);
 
         private Material m_CompositeOverdrawMaterial;
         private MultiColumnHeaderState m_MulticolumnHeaderState;

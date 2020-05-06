@@ -3,12 +3,24 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// This is the direction of the <see cref="Slider"/> and <see cref="SliderInt"/>.
+    /// </summary>
     public enum SliderDirection
     {
+        /// <summary>
+        /// An horizontal slider is made with a SliderDirection Horizontal.
+        /// </summary>
         Horizontal,
+        /// <summary>
+        /// An vertical slider is made with a SliderDirection Vertical.
+        /// </summary>
         Vertical
     }
 
+    /// <summary>
+    /// This is a base class for the Slider fields.
+    /// </summary>
     public abstract class BaseSlider<TValueType> : BaseField<TValueType>
         where TValueType : System.IComparable<TValueType>
     {
@@ -17,6 +29,9 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         private TValueType m_LowValue;
+        /// <summary>
+        /// This is the minimum value that the slider encodes.
+        /// </summary>
         public TValueType lowValue
         {
             get { return m_LowValue; }
@@ -34,6 +49,9 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         private TValueType m_HighValue;
+        /// <summary>
+        /// This is the maximum value that the slider encodes.
+        /// </summary>
         public TValueType highValue
         {
             get { return m_HighValue; }
@@ -49,9 +67,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// This is the range from the minimum value to the maximum value of the slider.
+        /// </summary>
         public TValueType range { get { return SliderRange(); } }
 
         private float m_PageSize;
+        /// <summary>
+        /// This is a generic page size used to change the value when clicking in the slider.
+        /// </summary>
         public virtual float pageSize
         {
             get { return m_PageSize; }
@@ -91,6 +115,9 @@ namespace UnityEngine.UIElements
             return Clamp(newValue, lowest, highest);
         }
 
+        /// <summary>
+        /// The actual value of the slider.
+        /// </summary>
         public override TValueType value
         {
             get { return base.value; }
@@ -111,6 +138,9 @@ namespace UnityEngine.UIElements
         }
 
         private SliderDirection m_Direction;
+        /// <summary>
+        /// This is the actual property to contain the direction of the slider.
+        /// </summary>
         public SliderDirection direction
         {
             get { return m_Direction; }
@@ -133,14 +163,38 @@ namespace UnityEngine.UIElements
 
         internal const float kDefaultPageSize = 0.0f;
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-base-slider";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed horizontally.
+        /// </summary>
         public static readonly string horizontalVariantUssClassName = ussClassName + "--horizontal";
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed vertically.
+        /// </summary>
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
+        /// <summary>
+        /// USS class name of tracker elements in elements of this type.
+        /// </summary>
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
+        /// <summary>
+        /// USS class name of dragger elements in elements of this type.
+        /// </summary>
         public static readonly string draggerUssClassName = ussClassName + "__dragger";
+        /// <summary>
+        /// USS class name of the dragger border element in elements of this type.
+        /// </summary>
         public static readonly string draggerBorderUssClassName = ussClassName + "__dragger-border";
 
         internal BaseSlider(string label, TValueType start, TValueType end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
@@ -272,6 +326,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Method used to adjust the dragelement. Mainly used in a scroller.
+        /// </summary>
+        /// <param name="factor">The factor used to adjust the drag element, where a value > 1 will make it invisible.</param>
         public void AdjustDragElement(float factor)
         {
             // Any factor greater or equal to 1f eliminates the need for a drag element

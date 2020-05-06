@@ -9,7 +9,7 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    public sealed class PackRequest : Request<PackOperationResult>
+    public sealed partial class PackRequest : Request<PackOperationResult>
     {
         private PackRequest()
         {
@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override PackOperationResult GetResult()
         {
-            return NativeClient.GetPackOperationData(Id);
+            return GetOperationData(Id);
         }
     }
 }

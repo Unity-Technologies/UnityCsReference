@@ -33,6 +33,15 @@ namespace UnityEngine.UIElements
         public RectInt location;
     }
 
+    /// <summary>
+    /// An asset that represents a vector image.
+    /// </summary>
+    /// <remarks>
+    /// VectorImage is an opaque type. You cannot use it to author vector images. To author vector images, use the SVGImporter in the Vector Graphics package.
+    ///
+    /// To get the latest Vector Graphics package documentation, see the Packages Documentation page in the <a href="https://docs.unity3d.com/Manual/PackagesList.html">Unity Manual</a>.
+    ///
+    /// </remarks>
     [Serializable]
     public class VectorImage : ScriptableObject
     {

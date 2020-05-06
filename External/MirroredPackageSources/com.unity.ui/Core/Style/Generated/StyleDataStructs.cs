@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
         public StyleEnum<Visibility> visibility;
         public StyleEnum<WhiteSpace> whiteSpace;
 
-        public static bool operator ==(InheritedData lhs, InheritedData rhs)
+        public static bool operator==(InheritedData lhs, InheritedData rhs)
         {
             return lhs.color == rhs.color &&
                 lhs.fontSize == rhs.fontSize &&
@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
                 lhs.whiteSpace.keyword == rhs.whiteSpace.keyword;
         }
 
-        public static bool operator !=(InheritedData lhs, InheritedData rhs)
+        public static bool operator!=(InheritedData lhs, InheritedData rhs)
         {
             return !(lhs == rhs);
         }
@@ -126,7 +126,7 @@ namespace UnityEngine.UIElements
         public StyleEnum<TextOverflowPosition> unityTextOverflowPosition;
         public StyleLength width;
 
-        public static bool operator ==(NonInheritedData lhs, NonInheritedData rhs)
+        public static bool operator==(NonInheritedData lhs, NonInheritedData rhs)
         {
             return lhs.alignContent.value == rhs.alignContent.value &&
                 lhs.alignContent.keyword == rhs.alignContent.keyword &&
@@ -198,7 +198,7 @@ namespace UnityEngine.UIElements
                 lhs.width == rhs.width;
         }
 
-        public static bool operator !=(NonInheritedData lhs, NonInheritedData rhs)
+        public static bool operator!=(NonInheritedData lhs, NonInheritedData rhs)
         {
             return !(lhs == rhs);
         }

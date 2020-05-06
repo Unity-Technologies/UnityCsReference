@@ -1,19 +1,61 @@
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Interface for mouse events.
+    /// </summary>
     public interface IMouseEvent
     {
+        /// <summary>
+        /// Flag set holding the pressed modifier keys (Alt, Ctrl, Shift, Windows/Command).
+        /// </summary>
         EventModifiers modifiers { get; }
+        /// <summary>
+        /// The mouse position in the panel coordinate system.
+        /// </summary>
         Vector2 mousePosition { get; }
+        /// <summary>
+        /// The mouse position in the current target coordinate system.
+        /// </summary>
         Vector2 localMousePosition { get; }
+        /// <summary>
+        /// Mouse position difference between the last mouse event and this one.
+        /// </summary>
         Vector2 mouseDelta { get; }
+        /// <summary>
+        /// The number of times the button is pressed.
+        /// </summary>
         int clickCount { get; }
+        /// <summary>
+        /// Integer that indicates which mouse button is pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// </summary>
         int button { get; }
+        /// <summary>
+        /// A bitmask that describes the currently pressed buttons.
+        /// </summary>
+        /// <remarks>
+        /// Pressing a mouse button sets a bit; releasing the button clears it. The left mouse button sets/clears Bit 0. The right mouse button sets/clears Bit 1. The middle mouse button sets/clears Bit 2. Additional buttons set/clear other bits.
+        /// </remarks>
         int pressedButtons { get; }
 
+        /// <summary>
+        /// Return true if the Shift key is pressed.
+        /// </summary>
         bool shiftKey { get; }
+        /// <summary>
+        /// Return true if the Ctrl key is pressed.
+        /// </summary>
         bool ctrlKey { get; }
+        /// <summary>
+        /// Return true if the Windows/Command key is pressed.
+        /// </summary>
         bool commandKey { get; }
+        /// <summary>
+        /// Return true if the Alt key is pressed.
+        /// </summary>
         bool altKey { get; }
+        /// <summary>
+        /// Returns true if the platform-specific action key is pressed. This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </summary>
         bool actionKey { get; }
     }
 
@@ -24,36 +66,78 @@ namespace UnityEngine.UIElements
         IPointerEvent sourcePointerEvent { get; set; }
     }
 
+    /// <summary>
+    /// The base class for mouse events.
+    /// </summary>
     public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal where T : MouseEventBase<T>, new()
     {
+        /// <summary>
+        /// Flags that hold pressed modifier keys (Alt, Ctrl, Shift, Windows/Cmd).
+        /// </summary>
         public EventModifiers modifiers { get; protected set; }
+        /// <summary>
+        /// The mouse position in the screen coordinate system.
+        /// </summary>
         public Vector2 mousePosition { get; protected set; }
+        /// <summary>
+        /// The mouse position in the current target coordinate system.
+        /// </summary>
         public Vector2 localMousePosition { get; internal set; }
+        /// <summary>
+        /// The difference of the mouse position between the previous mouse event and the current mouse event.
+        /// </summary>
         public Vector2 mouseDelta { get; protected set; }
+        /// <summary>
+        /// The number of times the button is pressed.
+        /// </summary>
         public int clickCount { get; protected set; }
+        /// <summary>
+        /// Integer that indicates which mouse button is pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// </summary>
         public int button { get; protected set; }
+        /// <summary>
+        /// A bitmask that describes the currently pressed buttons.
+        /// </summary>
+        /// <remarks>
+        /// Pressing a mouse button sets a bit; releasing the button clears it. The left mouse button sets/clears Bit 0. The right mouse button sets/clears Bit 1. The middle mouse button sets/clears Bit 2. Additional buttons set/clear other bits.
+        /// </remarks>
         public int pressedButtons { get; protected set; }
 
+        /// <summary>
+        /// Returns true if the Shift key is pressed.
+        /// </summary>
         public bool shiftKey
         {
             get { return (modifiers & EventModifiers.Shift) != 0; }
         }
 
+        /// <summary>
+        /// Returns true if the Ctrl key is pressed.
+        /// </summary>
         public bool ctrlKey
         {
             get { return (modifiers & EventModifiers.Control) != 0; }
         }
 
+        /// <summary>
+        /// Returns true if the Windows/Cmd key is pressed.
+        /// </summary>
         public bool commandKey
         {
             get { return (modifiers & EventModifiers.Command) != 0; }
         }
 
+        /// <summary>
+        /// Returns true if the Alt key is pressed.
+        /// </summary>
         public bool altKey
         {
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
+        /// <summary>
+        /// Returns true if the platform-specific action key is pressed. This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </summary>
         public bool actionKey
         {
             get
@@ -75,6 +159,9 @@ namespace UnityEngine.UIElements
 
         IPointerEvent IMouseEventInternal.sourcePointerEvent { get; set; }
 
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -96,6 +183,9 @@ namespace UnityEngine.UIElements
             ((IMouseEventInternal)this).sourcePointerEvent = null;
         }
 
+        /// <summary>
+        /// The current target of the event. The current target is the element in the propagation path for which event handlers are currently being executed.
+        /// </summary>
         public override IEventHandler currentTarget
         {
             get { return base.currentTarget; }
@@ -153,6 +243,11 @@ namespace UnityEngine.UIElements
             base.PostDispatch(panel);
         }
 
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">An IMGUI mouse event.</param>
+        /// <returns>An initialized event.</returns>
         public static T GetPooled(Event systemEvent)
         {
             T e = GetPooled();
@@ -172,6 +267,15 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="position">The mouse position.</param>
+        /// <param name="button">The mouse button pressed.</param>
+        /// <param name="clickCount">The number of consecutive mouse clicks received.</param>
+        /// <param name="delta">The relative movement of the mouse compared to the mouse position when the last event was received.</param>
+        /// <param name="modifiers">The modifier keys held down during the event.</param>
+        /// <returns>An initialized event.</returns>
         public static T GetPooled(Vector2 position, int button, int clickCount, Vector2 delta,
             EventModifiers modifiers = EventModifiers.None)
         {
@@ -210,6 +314,11 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="triggerEvent">The event that sent this event.</param>
+        /// <returns>An initialized event.</returns>
         public static T GetPooled(IMouseEvent triggerEvent)
         {
             T e = EventBase<T>.GetPooled(triggerEvent as EventBase);
@@ -235,6 +344,11 @@ namespace UnityEngine.UIElements
 
         // This function is protected so that only specific subclasses can offer the
         // functionality from specific IPointerEvent types.
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="pointerEvent">The pointer event that sent this event.</param>
+        /// <returns>An initialized event.</returns>
         protected static T GetPooled(IPointerEvent pointerEvent)
         {
             T e = GetPooled();
@@ -273,8 +387,16 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Mouse down event.
+    /// </summary>
     public class MouseDownEvent : MouseEventBase<MouseDownEvent>
     {
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">An IMGUI mouse event.</param>
+        /// <returns>An initialized event.</returns>
         public new static MouseDownEvent GetPooled(Event systemEvent)
         {
             if (systemEvent != null)
@@ -304,8 +426,16 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Mouse up event.
+    /// </summary>
     public class MouseUpEvent : MouseEventBase<MouseUpEvent>
     {
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">An IMGUI mouse event.</param>
+        /// <returns>An initialized event.</returns>
         public new static MouseUpEvent GetPooled(Event systemEvent)
         {
             if (systemEvent != null)
@@ -341,8 +471,16 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Mouse move event.
+    /// </summary>
     public class MouseMoveEvent : MouseEventBase<MouseMoveEvent>
     {
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">An IMGUI mouse event.</param>
+        /// <returns>An initialized event.</returns>
         public new static MouseMoveEvent GetPooled(Event systemEvent)
         {
             // For a MouseMove event type, systemEvent.button reflects
@@ -364,14 +502,28 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// The event sent when clicking the right mouse button.
+    /// </summary>
     public class ContextClickEvent : MouseEventBase<ContextClickEvent>
     {
     }
 
+    /// <summary>
+    /// Mouse wheel event.
+    /// </summary>
     public class WheelEvent : MouseEventBase<WheelEvent>
     {
+        /// <summary>
+        /// The amount of scrolling applied with the mouse wheel.
+        /// </summary>
         public Vector3 delta { get; private set; }
 
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">A wheel IMGUI event.</param>
+        /// <returns>An initialized event.</returns>
         public new static WheelEvent GetPooled(Event systemEvent)
         {
             WheelEvent e = MouseEventBase<WheelEvent>.GetPooled(systemEvent);
@@ -383,6 +535,9 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -394,14 +549,23 @@ namespace UnityEngine.UIElements
             delta = Vector3.zero;
         }
 
+        /// <summary>
+        /// Constructor. Use GetPooled() to get an event from a pool of reusable events.
+        /// </summary>
         public WheelEvent()
         {
             LocalInit();
         }
     }
 
+    /// <summary>
+    /// Event sent when the mouse pointer enters an element or one of its descendent elements. The event is cancellable, it does not trickle down, and it does not bubble up.
+    /// </summary>
     public class MouseEnterEvent : MouseEventBase<MouseEnterEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -413,14 +577,23 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable;
         }
 
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
         public MouseEnterEvent()
         {
             LocalInit();
         }
     }
 
+    /// <summary>
+    /// Event sent when the mouse pointer exits an element and all its descendent elements. The event is cancellable, it does not trickle down, and it does not bubble up.
+    /// </summary>
     public class MouseLeaveEvent : MouseEventBase<MouseLeaveEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -432,14 +605,23 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable;
         }
 
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
         public MouseLeaveEvent()
         {
             LocalInit();
         }
     }
 
+    /// <summary>
+    /// Event sent when the mouse pointer enters a window. The event is cancellable, it does not trickle down, and it does not bubble up.
+    /// </summary>
     public class MouseEnterWindowEvent : MouseEventBase<MouseEnterWindowEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -451,6 +633,9 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Cancellable;
         }
 
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
         public MouseEnterWindowEvent()
         {
             LocalInit();
@@ -469,8 +654,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Event sent when the mouse pointer exits a window. The event is cancellable, it does not trickle down, and it does not bubble up.
+    /// </summary>
     public class MouseLeaveWindowEvent : MouseEventBase<MouseLeaveWindowEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -483,11 +674,19 @@ namespace UnityEngine.UIElements
             ((IMouseEventInternal)this).recomputeTopElementUnderMouse = false;
         }
 
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
         public MouseLeaveWindowEvent()
         {
             LocalInit();
         }
 
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">An IMGUI MouseLeaveWindow event.</param>
+        /// <returns>An initialized event.</returns>
         public new static MouseLeaveWindowEvent GetPooled(Event systemEvent)
         {
             if (systemEvent != null)
@@ -508,21 +707,44 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Event sent when the mouse pointer enters an element. The event trickles down, it bubbles up, and it is cancellable.
+    /// </summary>
     public class MouseOverEvent : MouseEventBase<MouseOverEvent>
     {
     }
 
+    /// <summary>
+    /// Event sent when the mouse pointer exits an element. The event trickles down, it bubbles up, and it is cancellable.
+    /// </summary>
     public class MouseOutEvent : MouseEventBase<MouseOutEvent>
     {
     }
 
+    /// <summary>
+    /// The event sent when a contextual menu requires menu items.
+    /// </summary>
     public class ContextualMenuPopulateEvent : MouseEventBase<ContextualMenuPopulateEvent>
     {
+        /// <summary>
+        /// The menu to populate.
+        /// </summary>
         public DropdownMenu menu { get; private set; }
+        /// <summary>
+        /// The event that triggered the ContextualMenuPopulateEvent.
+        /// </summary>
         public EventBase triggerEvent { get; private set; }
 
         ContextualMenuManager m_ContextualMenuManager;
 
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="triggerEvent">The event that triggered the display of the contextual menu.</param>
+        /// <param name="menu">The menu to populate.</param>
+        /// <param name="target">The element that triggered the display of the contextual menu.</param>
+        /// <param name="menuManager">The menu manager that displays the menu.</param>
+        /// <returns>An initialized event.</returns>
         public static ContextualMenuPopulateEvent GetPooled(EventBase triggerEvent, DropdownMenu menu, IEventHandler target, ContextualMenuManager menuManager)
         {
             ContextualMenuPopulateEvent e = GetPooled(triggerEvent);
@@ -577,6 +799,9 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -595,6 +820,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public ContextualMenuPopulateEvent()
         {
             LocalInit();

@@ -3,8 +3,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either a float or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleFloat : IStyleValue<float>, IEquatable<StyleFloat>
     {
+        /// <summary>
+        /// The float value.
+        /// </summary>
         public float value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(float); }
@@ -15,16 +21,25 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from either a float or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleFloat(float v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a float or a <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleFloat(StyleKeyword keyword)
             : this(default(float), keyword)
         {}

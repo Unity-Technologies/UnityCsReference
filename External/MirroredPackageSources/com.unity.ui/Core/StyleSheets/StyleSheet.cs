@@ -4,6 +4,26 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style sheets are applied to visual elements in order to control the layout and visual appearance of the user interface.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="StyleSheet"/> class holds the imported data of USS files in your project.
+    /// Once loaded, a style sheet can be attached to a <see cref="VisualElement"/> object to affect the element itself and its descendants.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// <![CDATA[
+    /// public class MyEditorWindow : EditorWindow
+    /// {
+    ///     void OnEnable()
+    ///     {
+    ///         rootVisualElement.styleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/styles.uss"));
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
     [Serializable]
     public class StyleSheet : ScriptableObject
     {
@@ -53,6 +73,9 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private int m_ContentHash;
 
+        /// <summary>
+        /// A hash value computed from the stylesheet content.
+        /// </summary>
         public int contentHash
         {
             get { return m_ContentHash; }

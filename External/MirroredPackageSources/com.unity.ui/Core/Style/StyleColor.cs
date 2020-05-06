@@ -3,8 +3,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either a <see cref="Color"/> or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleColor : IStyleValue<Color>, IEquatable<StyleColor>
     {
+        /// <summary>
+        /// The <see cref="Color"/> value.
+        /// </summary>
         public Color value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : Color.clear; }
@@ -15,16 +21,25 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from either a <see cref="Color"/> or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleColor(Color v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from either a <see cref="Color"/> or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleColor(StyleKeyword keyword)
             : this(Color.clear, keyword)
         {}

@@ -235,7 +235,7 @@ namespace UnityEditorInternal.Profiling
             }
             m_DetailedCallsView.frameItemEvent += FrameItem;
             if (m_DetailedViewSpliterState == null || m_DetailedViewSpliterState.relativeSizes == null || m_DetailedViewSpliterState.relativeSizes.Length == 0)
-                m_DetailedViewSpliterState = new SplitterState(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450, 50 }, null);
+                m_DetailedViewSpliterState = SplitterState.FromRelative(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450f, 50f }, null);
             if (!m_Serialized)
                 m_DetailedViewType = (DetailedViewType)SessionState.GetInt(detailedViewTypeStatePrefKey, (int)DetailedViewType.None);
 

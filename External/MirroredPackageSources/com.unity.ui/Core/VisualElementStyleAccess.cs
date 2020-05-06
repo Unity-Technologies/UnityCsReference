@@ -4,9 +4,22 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Base class for objects that are part of the UIElements visual tree.
+    /// </summary>
+    /// <remarks>
+    /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
+    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
+    /// </remarks>
     public partial class VisualElement
     {
         internal InlineStyleAccess inlineStyleAccess;
+        /// <summary>
+        /// Reference to the style object of this element.
+        /// </summary>
+        /// <remarks>
+        /// Contains data computed from USS files or inline styles written to this object in C#.
+        /// </remarks>
         public IStyle style
         {
             get
@@ -18,8 +31,14 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Returns the custom style properties accessor for this element.
+        /// </summary>
         public ICustomStyle customStyle => computedStyle;
 
+        /// <summary>
+        /// Returns a <see cref="VisualElementStyleSheetSet"/> that manipulates style sheets attached to this element.
+        /// </summary>
         public VisualElementStyleSheetSet styleSheets => new VisualElementStyleSheetSet(this);
 
         internal List<StyleSheet> styleSheetList;

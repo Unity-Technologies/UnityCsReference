@@ -2,14 +2,29 @@ using System;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// This is the <see cref="Toggle"/> field.
+    /// </summary>
     public class Toggle : BaseField<bool>
     {
+        /// <summary>
+        /// Instantiates a <see cref="Toggle"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Toggle, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Toggle"/>.
+        /// </summary>
         public new class UxmlTraits : BaseFieldTraits<bool, UxmlBoolAttributeDescription>
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
+            /// <summary>
+            /// Initialize <see cref="Toggle"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -17,11 +32,29 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-toggle";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
+        /// <summary>
+        /// USS class name of elements of this type, when there is no text.
+        /// </summary>
         public static readonly string noTextVariantUssClassName = ussClassName + "--no-text";
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
+        /// <summary>
+        /// USS class name of text elements in elements of this type.
+        /// </summary>
         public static readonly string textUssClassName = ussClassName + "__text";
 
         private Label m_Label;
@@ -51,6 +84,9 @@ namespace UnityEngine.UIElements
             this.AddManipulator(new Clickable(OnClickEvent));
         }
 
+        /// <summary>
+        /// Optional text after the toggle.
+        /// </summary>
         public string text
         {
             get { return m_Label?.text; }

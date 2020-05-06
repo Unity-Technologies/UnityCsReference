@@ -1,10 +1,16 @@
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Collapsable section of UI.
+    /// </summary>
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
         internal static readonly string ussFoldoutDepthClassName = "unity-foldout--depth-";
         internal static readonly int ussFoldoutMaxDepth = 4;
 
+        /// <summary>
+        /// Instantiates a <see cref="Foldout"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Foldout, UxmlTraits> {}
 
         public new class UxmlTraits : BindableElement.UxmlTraits
@@ -51,6 +57,9 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private bool m_Value;
 
+        /// <summary>
+        /// Contains the collapse state. True if the Foldout is open and the contents are visible. False if it's collapsed.
+        /// </summary>
         public bool value
         {
             get
@@ -79,8 +88,17 @@ namespace UnityEngine.UIElements
             contentContainer.style.display = newValue ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string ussClassName = "unity-foldout";
+        /// <summary>
+        /// USS class name of toggle elements in elements of this type.
+        /// </summary>
         public static readonly string toggleUssClassName = ussClassName + "__toggle";
+        /// <summary>
+        /// USS class name of content element in a Foldout.
+        /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content";
 
         internal override void OnViewDataReady()

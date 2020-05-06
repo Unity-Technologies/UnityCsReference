@@ -4,12 +4,24 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A <see cref="VisualElement"/> representing a source texture.
+    /// </summary>
     public class Image : VisualElement
     {
+        /// <summary>
+        /// Instantiates an <see cref="Image"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Image, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Image"/>.
+        /// </summary>
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
+            /// <summary>
+            /// Returns an empty enumerable, as images generally do not have children.
+            /// </summary>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
@@ -27,6 +39,9 @@ namespace UnityEngine.UIElements
         private bool m_TintColorIsInline;
 
 
+        /// <summary>
+        /// The texture to display in this image.  You cannot set this and <see cref="Image.vectorImage"/> at the same time.
+        /// </summary>
         public Texture image
         {
             get { return m_Image; }
@@ -50,6 +65,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The <see cref="VectorImage"/> to display in this image.  You cannot set this and <see cref="Image.image"/> at the same time.
+        /// </summary>
         public VectorImage vectorImage
         {
             get { return m_VectorImage; }
@@ -73,6 +91,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The source rectangle inside the texture relative to the top left corner.
+        /// </summary>
         public Rect sourceRect
         {
             get { return GetSourceRect(); }
@@ -82,12 +103,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The base texture coordinates of the Image relative to the bottom left corner.
+        /// </summary>
         public Rect uv
         {
             get { return m_UV; }
             set { m_UV = value; }
         }
 
+        /// <summary>
+        /// ScaleMode used to display the Image.
+        /// </summary>
         public ScaleMode scaleMode
         {
             get { return m_ScaleMode; }
@@ -102,6 +129,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Tinting color for this Image.
+        /// </summary>
         public Color tintColor
         {
             get
@@ -119,8 +149,14 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string ussClassName = "unity-image";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Image()
         {
             AddToClassList(ussClassName);

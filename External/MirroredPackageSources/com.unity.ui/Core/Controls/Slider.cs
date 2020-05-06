@@ -3,10 +3,19 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A slider containing floating point values.
+    /// </summary>
     public class Slider : BaseSlider<float>
     {
+        /// <summary>
+        /// Instantiates a <see cref="Slider"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Slider, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Slider"/>.
+        /// </summary>
         public new class UxmlTraits : BaseFieldTraits<float, UxmlFloatAttributeDescription>
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value" };
@@ -14,6 +23,12 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "page-size", defaultValue = kDefaultPageSize };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Horizontal };
 
+            /// <summary>
+            /// Initialize <see cref="Slider"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 var f = (Slider)ve;
@@ -29,16 +44,34 @@ namespace UnityEngine.UIElements
 
         internal const float kDefaultHighValue = 10.0f;
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-slider";
+        /// <summary>
+        /// USS class name of labels in elements of this type.
+        /// </summary>
         public new static readonly string labelUssClassName = ussClassName + "__label";
+        /// <summary>
+        /// USS class name of input elements in elements of this type.
+        /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Slider()
             : this((string)null, 0, kDefaultHighValue) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Slider(float start, float end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : this(null, start, end, direction, pageSize) {}
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Slider(string label, float start = 0, float end = kDefaultHighValue, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, start, end, direction, pageSize)
         {

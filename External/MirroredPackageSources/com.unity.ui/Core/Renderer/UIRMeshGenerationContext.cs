@@ -5,12 +5,36 @@ using UnityEngine.TextCore;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Represents a vertex of geometry for drawing content of <see cref="VisualElement"/>.
+    /// </summary>
     public struct Vertex
     {
+        /// <summary>
+        /// A special value representing the near clipping plane. Always use this value as the vertex position's z component when building 2D (flat) UI geometry.
+        /// </summary>
         public readonly static float nearZ = UIRUtility.k_MeshPosZ;
 
+        /// <summary>
+        /// Describes the vertex's position.
+        /// </summary>
+        /// <remarks>
+        /// Note this value is a <see cref="Vector3"/>. If the vertex represents flat UI geometry, set the z component of this position field to <see cref="Vertex.nearZ"/>. The position value is relative to the <see cref="VisualElement"/>'s local rectangle top-left corner. The coordinate system is X+ to the right, and Y+ goes down. The unit of position is <see cref="VisualElement"/> points. When the vertices are indexed, the triangles described must follow clock-wise winding order given that Y+ goes down.
+        /// </remarks>
         public Vector3 position;
+        /// <summary>
+        /// A color value for the vertex.
+        /// </summary>
+        /// <remarks>
+        /// This value is multiplied by any other color information of the <see cref="VisualElement"/> (e.g. texture). Use <see cref="Color.white"/> to disable tinting on the vertex.
+        /// </remarks>
         public Color32 tint;
+        /// <summary>
+        /// The UV coordinate of the vertex.
+        /// </summary>
+        /// <remarks>
+        /// This is used to sample the required region of the associated texture if any. Values outside of [0,1] are currently not supported and could lead to undefined results.
+        /// </remarks>
         public Vector2 uv;
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
         internal Color32 idsFlags; //XYZ (xform,clip,opacity) (W flags)
@@ -18,15 +42,95 @@ namespace UnityEngine.UIElements
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
 
+    /// <summary>
+    /// A class that represents the vertex and index data allocated for drawing the content of a <see cref="VisualElement"/>.
+    /// </summary>
+    /// <remarks>
+    /// You can use this object to fill the values for the vertices and indices only during a callback to the <see cref="VisualElement.generateVisualContent"/> delegate. Do not store the passed <see cref="MeshWriteData"/> outside the scope of <see cref="VisualElement.generateVisualContent"/> as Unity could recycle it for other callbacks.
+    /// </remarks>
     public class MeshWriteData
     {
         internal MeshWriteData() {}  // Don't want users to instatiate this class themselves
 
+        /// <summary>
+        /// The number of vertices successfully allocated for <see cref="VisualElement"/> content drawing.
+        /// </summary>
         public int vertexCount { get { return m_Vertices.Length; } }
+
+        /// <summary>
+        /// The number of indices successfully allocated for <see cref="VisualElement"/> content drawing.
+        /// </summary>
         public int indexCount { get { return m_Indices.Length; } }
+
+        /// <summary>
+        /// A rectangle describing the UV region holding the texture passed to <see cref="MeshGenerationContext.Allocate"/>.
+        /// </summary>
+        /// <remarks>
+        /// Internally, the texture passed to <see cref="MeshGenerationContext.Allocate"/> may either be used directly or is automatically integrated within a larger atlas. It is therefore required to use this property to scale and offset the UVs for the generated vertices in order to sample the correct texels.
+        /// Correct use of <see cref="MeshWriteData.uvRegion"/> is simple: given an input UV in [0,1] range, multiply the UV by (<see cref="uvRegion.width"/>,<see cref="uvRegion.height"/>) then add <see cref="uvRegion.xMin,uvRegion.yMin"/> and store the result in <see cref="Vertex.uv"/>.
+        /// </remarks>
         public Rect uvRegion { get { return m_UVRegion;  } }
+
+        /// <summary>
+        /// Assigns the value of the next vertex of the allocated vertices list.
+        /// </summary>
+        /// <param name="vertex">The value of the next vertex.</param>
+        /// <remarks>
+        /// Used to iteratively fill the values of the allocated vertices via repeated calls to this function until all values have been provided. This way of filling vertex data is mutually exclusive with the use of <see cref="SetAllVertices"/>.
+        /// After each invocation to this function, the internal counter for the next vertex is automatically incremented.
+        /// When this method is called, it is not possible to use <see cref="SetAllVertices"/> to fill the vertices.
+        ///
+        /// Note that calling <see cref="SetNextVertex"/> fewer times than the allocated number of vertices will leave the remaining vertices with random values as <see cref="MeshGenerationContext.Allocate"/> does not initialize the returned data to 0 to avoid redundant work.
+        /// </remarks>
         public void SetNextVertex(Vertex vertex) { m_Vertices[currentVertex++] = vertex; }
+
+        /// <summary>
+        /// Assigns the value of the next index of the allocated indices list.
+        /// </summary>
+        /// <param name="index">The value of the next index.</param>
+        /// <remarks>
+        /// Used to iteratively fill the values of the allocated indices via repeated calls to this function until all values have been provided. This way of filling index data is mutually exclusive with the use of <see cref="SetAllIndices"/>.
+        /// After each invocation to this function, the internal counter for the next index is automatically incremented.
+        /// When this method is called, it is not possible to use <see cref="SetAllIndices"/> to fill the indices.
+        /// The index values provided refer directly to the vertices allocated in the same <see cref="MeshWriteData"/> object. Thus, an index of 0 means the first vertex and index 1 means the second vertex and so on.
+        /// </remarks>
+        /// <remarks>
+        /// Note that calling <see cref="SetNextIndex"/> fewer times than the allocated number of indices will leave the remaining indices with random values as <see cref="MeshGenerationContext.Allocate"/> does not initialize the returned data to 0 to avoid redundant work.
+        /// </remarks>
         public void SetNextIndex(UInt16 index) { m_Indices[currentIndex++] = index; }
+
+        /// <summary>
+        /// Fills the values of the allocated vertices with values copied directly from an array.
+        /// When this method is called, it is not possible to use <see cref="SetNextVertex"/> to fill the allocated vertices array.
+        /// </summary>
+        /// <param name="vertices">The array of vertices to copy from. The length of the array must match the allocated vertex count.</param>
+        /// <remarks>
+        /// When this method is called, it is not possible to use <see cref="SetNextVertex"/> to fill the vertices.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// public class MyVisualElement : VisualElement
+        /// {
+        ///     void MyGenerateVisualContent(MeshGenerationContext mgc)
+        ///     {
+        ///         var meshWriteData = mgc.Allocate(4, 6);
+        ///         // meshWriteData has been allocated with 6 indices for 2 triangles
+        ///
+        ///         // ... set the vertices
+        ///
+        ///         // Set indices for the first triangle
+        ///         meshWriteData.SetNextIndex(0);
+        ///         meshWriteData.SetNextIndex(1);
+        ///         meshWriteData.SetNextIndex(2);
+        ///
+        ///         // Set indices for the second triangle
+        ///         meshWriteData.SetNextIndex(2);
+        ///         meshWriteData.SetNextIndex(1);
+        ///         meshWriteData.SetNextIndex(3);
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
         public void SetAllVertices(Vertex[] vertices)
         {
             if (currentVertex == 0)
@@ -37,6 +141,14 @@ namespace UnityEngine.UIElements
             else throw new InvalidOperationException("SetAllVertices may not be called after using SetNextVertex");
         }
 
+        /// <summary>
+        /// Fills the values of the allocated vertices with values copied directly from an array.
+        /// When this method is called, it is not possible to use <see cref="SetNextVertex"/> to fill the allocated vertices array.
+        /// </summary>
+        /// <param name="vertices">The array of vertices to copy from. The length of the array must match the allocated vertex count.</param>
+        /// <remarks>
+        /// When this method is called, it is not possible to use <see cref="SetNextVertex"/> to fill the vertices.
+        /// </remarks>
         public void SetAllVertices(NativeSlice<Vertex> vertices)
         {
             if (currentVertex == 0)
@@ -47,6 +159,13 @@ namespace UnityEngine.UIElements
             else throw new InvalidOperationException("SetAllVertices may not be called after using SetNextVertex");
         }
 
+        /// <summary>
+        /// Fills the values of the allocated indices with values copied directly from an array. Each 3 consecutive indices form a single triangle.
+        /// </summary>
+        /// <param name="indices">The array of indices to copy from. The length of the array must match the allocated index count.</param>
+        /// <remarks>
+        /// When this method is called, it is not possible to use <see cref="SetNextIndex"/> to fill the indices.
+        /// </remarks>
         public void SetAllIndices(UInt16[] indices)
         {
             if (currentIndex == 0)
@@ -57,6 +176,13 @@ namespace UnityEngine.UIElements
             else throw new InvalidOperationException("SetAllIndices may not be called after using SetNextIndex");
         }
 
+        /// <summary>
+        /// Fills the values of the allocated indices with values copied directly from an array. Each 3 consecutive indices form a single triangle.
+        /// </summary>
+        /// <param name="indices">The array of indices to copy from. The length of the array must match the allocated index count.</param>
+        /// <remarks>
+        /// When this method is called, it is not possible to use <see cref="SetNextIndex"/> to fill the indices.
+        /// </remarks>
         public void SetAllIndices(NativeSlice<UInt16> indices)
         {
             if (currentIndex == 0)
@@ -376,15 +502,31 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Offers functionality for generating visual content of a <see cref="VisualElement"/> during the <see cref="generateVisualContent"/> callback.
+    /// </summary>
     public class MeshGenerationContext
     {
         [Flags]
         internal enum MeshFlags { None, UVisDisplacement, IsSVGGradients, IsCustomSVGGradients }
 
+        /// <summary>
+        /// The element for which <see cref="VisualElement.generateVisualContent"/> was invoked.
+        /// </summary>
         public VisualElement visualElement { get { return painter.visualElement; } }
 
         internal MeshGenerationContext(IStylePainter painter) { this.painter = painter; }
 
+        /// <summary>
+        /// Allocates the specified number of vertices and indices required to express geometry for drawing the content of a <see cref="VisualElement"/>.
+        /// </summary>
+        /// <param name="vertexCount">The number of vertices to allocate. The maximum is 65535 (or UInt16.MaxValue).</param>
+        /// <param name="indexCount">The number of triangle list indices to allocate. Each 3 indices represent one triangle, so this value should be multiples of 3.</param>
+        /// <param name="texture">An optional texture to be applied on the triangles allocated. Pass null to rely on vertex colors only.</param>
+        /// <remarks>
+        /// See <see cref="Vertex.position"/> for details on geometry generation conventions. If a valid texture was passed, then the returned <see cref="MeshWriteData"/> will also describe a rectangle for the UVs to use to sample the passed texture. This is needed because textures passed to this API can be internally copied into a larger atlas.
+        /// </remarks>
+        /// <returns>An object that gives access to the newely allocated data. If the returned vertex count is 0, then allocation failed (the system ran out of memory).</returns>
         public MeshWriteData Allocate(int vertexCount, int indexCount, Texture texture = null)
         {
             return painter.DrawMesh(vertexCount, indexCount, texture, null, MeshFlags.None);

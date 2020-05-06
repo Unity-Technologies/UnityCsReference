@@ -1,21 +1,35 @@
-//#define DEBUG_IMGUI_CONTAINER_EVENTS
 using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Element that draws IMGUI content.
+    /// </summary>
     public class IMGUIContainer : VisualElement, IDisposable
     {
+        /// <summary>
+        /// Instantiates an <see cref="IMGUIContainer"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<IMGUIContainer, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="IMGUIContainer"/>.
+        /// </summary>
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
             public UxmlTraits()
             {
                 focusIndex.defaultValue = 0;
                 focusable.defaultValue = true;
             }
 
+            /// <summary>
+            /// Returns an empty enumerable, as IMGUIContainer cannot have VisualElement children.
+            /// </summary>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
@@ -24,6 +38,12 @@ namespace UnityEngine.UIElements
 
         // Set this delegate to have your IMGUI code execute inside the container
         private Action m_OnGUIHandler;
+        /// <summary>
+        /// The function that is called to render and handle IMGUI events.
+        /// </summary>
+        /// <remarks>
+        /// The function is assigned to onGUIHandler and is similar to <see cref="MonoBehaviour.OnGUI"/>.
+        /// </remarks>
         public Action onGUIHandler
         {
             get { return m_OnGUIHandler; }
@@ -61,9 +81,11 @@ namespace UnityEngine.UIElements
 
         // If true, skip OnGUI() calls when outside the viewport
         private bool m_CullingEnabled = false;
-
         // If true, the IMGUIContainer received Focus through delgation
         private bool m_IsFocusDelegated = false;
+        /// <summary>
+        /// When this property is set to true, <see cref="onGUIHandler"/> is not called when the Element is outside the viewport.
+        /// </summary>
         public bool cullingEnabled
         {
             get { return m_CullingEnabled; }
@@ -106,6 +128,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// ContextType of this IMGUIContrainer. Currently only supports ContextType.Editor.
+        /// </summary>
         public ContextType contextType { get; set; }
 
         // The following 2 flags indicate the following :
@@ -122,13 +147,23 @@ namespace UnityEngine.UIElements
 
         public override bool canGrabFocus => focusOnlyIfHasFocusableControls ? hasFocusableControls && base.canGrabFocus : base.canGrabFocus;
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public static readonly string ussClassName = "unity-imgui-container";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public IMGUIContainer()
             : this(null)
         {
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="onGUIHandler">The function assigned to <see cref="onGUIHandler"/>.</param>
         public IMGUIContainer(Action onGUIHandler)
         {
             isIMGUIContainer = true;
@@ -437,6 +472,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Marks layout as dirty to trigger a redraw.
+        /// </summary>
         public void MarkDirtyLayout()
         {
             m_RefreshCachedLayout = true;

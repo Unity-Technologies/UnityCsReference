@@ -3,14 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Security;
-using System.Security.Cryptography;
-using System.Xml;
-using System.Text;
-using System.Text.RegularExpressions;
+
 namespace UnityEditor.VisualStudioIntegration
 {
     interface ISolutionSynchronizationSettings
@@ -38,7 +32,7 @@ namespace UnityEditor.VisualStudioIntegration
         {
             get
             {
-                return string.Join("\r\n", new[]
+                return string.Join(Environment.NewLine, new[]
                 {
                     @"",
                     @"Microsoft Visual Studio Solution File, Format Version {0}",
@@ -65,7 +59,7 @@ namespace UnityEditor.VisualStudioIntegration
         {
             get
             {
-                return string.Join("\r\n", new[]
+                return string.Join(Environment.NewLine, new[]
                 {
                     @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""",
                     @"EndProject"
@@ -77,7 +71,7 @@ namespace UnityEditor.VisualStudioIntegration
         {
             get
             {
-                return string.Join("\r\n", new[]
+                return string.Join(Environment.NewLine, new[]
                 {
                     @"        {{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU",
                     @"        {{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU",
@@ -94,34 +88,34 @@ namespace UnityEditor.VisualStudioIntegration
                 @"<?xml version=""1.0"" encoding=""utf-8""?>",
                 @"<Project ToolsVersion=""{0}"" DefaultTargets=""Build"" xmlns=""{6}"">",
                 @"  <PropertyGroup>",
-                @"    <LangVersion>{10}</LangVersion>",
-                @"    <CscToolPath>{13}</CscToolPath>",
-                @"    <CscToolExe>{14}</CscToolExe>",
+                @"    <LangVersion>{11}</LangVersion>",
+                @"    <CscToolPath>{14}</CscToolPath>",
+                @"    <CscToolExe>{15}</CscToolExe>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup>",
                 @"    <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>",
                 @"    <Platform Condition="" '$(Platform)' == '' "">AnyCPU</Platform>",
                 @"    <ProductVersion>{1}</ProductVersion>",
                 @"    <SchemaVersion>2.0</SchemaVersion>",
-                @"    <RootNamespace>{8}</RootNamespace>",
+                @"    <RootNamespace>{9}</RootNamespace>",
                 @"    <ProjectGuid>{{{2}}}</ProjectGuid>",
                 @"    <OutputType>Library</OutputType>",
                 @"    <AppDesignerFolder>Properties</AppDesignerFolder>",
                 @"    <AssemblyName>{7}</AssemblyName>",
-                @"    <TargetFrameworkVersion>{9}</TargetFrameworkVersion>",
+                @"    <TargetFrameworkVersion>{10}</TargetFrameworkVersion>",
                 @"    <FileAlignment>512</FileAlignment>",
-                @"    <BaseDirectory>{11}</BaseDirectory>",
+                @"    <BaseDirectory>{12}</BaseDirectory>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "">",
                 @"    <DebugSymbols>true</DebugSymbols>",
                 @"    <DebugType>full</DebugType>",
                 @"    <Optimize>false</Optimize>",
-                @"    <OutputPath>Temp\bin\Debug\</OutputPath>",
+                @"    <OutputPath>{8}</OutputPath>",
                 @"    <DefineConstants>{5}</DefineConstants>",
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{13}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "">",
                 @"    <DebugType>pdbonly</DebugType>",
@@ -130,7 +124,7 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{13}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>",
             };
 
@@ -145,29 +139,19 @@ namespace UnityEditor.VisualStudioIntegration
                 @"  </PropertyGroup>",
             };
 
-            var itemGroupStart = new[]
-            {
-                @"  <ItemGroup>",
-            };
-
             var systemReferences = new string[]
             {
+                @"  <ItemGroup>",
                 @"    <Reference Include=""System"" />",
                 @"    <Reference Include=""System.Xml"" />",
                 @"    <Reference Include=""System.Core"" />",
                 @"    <Reference Include=""System.Runtime.Serialization"" />",
                 @"    <Reference Include=""System.Xml.Linq"" />",
+                @"  </ItemGroup>"
             };
 
             var footer = new string[]
             {
-                @"    <Reference Include=""UnityEngine"">",
-                @"      <HintPath>{3}</HintPath>",
-                @"    </Reference>",
-                @"    <Reference Include=""UnityEditor"">",
-                @"      <HintPath>{4}</HintPath>",
-                @"    </Reference>",
-                @"  </ItemGroup>",
                 @"  <ItemGroup>",
                 @""
             };
@@ -175,16 +159,16 @@ namespace UnityEditor.VisualStudioIntegration
             string[] text;
 
             if (language == ScriptingLanguage.CSharp)
-                text = header.Concat(forceExplicitReferences).Concat(itemGroupStart).Concat(footer).ToArray();
+                text = header.Concat(forceExplicitReferences).Concat(footer).ToArray();
             else
-                text = header.Concat(itemGroupStart).Concat(systemReferences).Concat(footer).ToArray();
+                text = header.Concat(systemReferences).Concat(footer).ToArray();
 
-            return string.Join("\r\n", text);
+            return string.Join(Environment.NewLine, text);
         }
 
         public virtual string GetProjectFooterTemplate(ScriptingLanguage language)
         {
-            return string.Join("\r\n", new[]
+            return string.Join(Environment.NewLine, new[]
             {
                 @"  </ItemGroup>",
                 @"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",

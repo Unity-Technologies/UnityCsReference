@@ -2,15 +2,30 @@ using System;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// A clickable button.
+    /// </summary>
     public class Button : TextElement
     {
+        /// <summary>
+        /// Instantiates a <see cref="Button"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<Button, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="Button"/>.
+        /// </summary>
         public new class UxmlTraits : TextElement.UxmlTraits {}
 
+        /// <summary>
+        /// USS class name of elements of this type.
+        /// </summary>
         public new static readonly string ussClassName = "unity-button";
         private Clickable m_Clickable;
 
+        /// <summary>
+        /// Clickable MouseManipulator for this Button.
+        /// </summary>
         public Clickable clickable
         {
             get
@@ -33,6 +48,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Obsolete. Use <see cref="Button.clicked"/> instead.
+        /// </summary>
         [Obsolete("onClick is obsolete. Use clicked instead (UnityUpgradable) -> clicked", true)]
         public event Action onClick
         {
@@ -46,6 +64,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Callback triggered when the button is clicked.
+        /// </summary>
+        /// <seealso cref="Clickable.clicked"/>
         public event Action clicked
         {
             add
@@ -68,10 +90,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Constructs a Button.
+        /// </summary>
         public Button() : this(null)
         {
         }
 
+        /// <summary>
+        /// Constructs a Button.
+        /// </summary>
+        /// <param name="clickEvent">Action triggered when the button is clicked.</param>
         public Button(System.Action clickEvent)
         {
             AddToClassList(ussClassName);

@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
+using UnityEngine.UIElements.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.Experimental;
 
 namespace UnityEditor.UIElements.Debugger
 {

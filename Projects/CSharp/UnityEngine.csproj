@@ -13,6 +13,9 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\AssemblyInfo.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\BindableElement.cs</Link>
     </Compile>
@@ -351,6 +354,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaders.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaders.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRTessellation.cs</Link>
@@ -1527,6 +1533,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElementsNative\UIElementsUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\AlignmentUtils.cs">
+      <Link>Modules\UIElements\AlignmentUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>

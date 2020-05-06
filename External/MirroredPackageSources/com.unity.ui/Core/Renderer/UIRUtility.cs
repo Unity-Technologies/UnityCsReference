@@ -2,8 +2,8 @@ namespace UnityEngine.UIElements
 {
     internal static class UIRUtility
     {
-        public static readonly string k_DefaultShaderName = "Hidden/Internal-UIRDefault";
-        public static readonly string k_DefaultWorldSpaceShaderName = "Hidden/Internal-UIRDefaultWorld";
+        public static readonly string k_DefaultShaderName = UIR.Shaders.k_Runtime;
+        public static readonly string k_DefaultWorldSpaceShaderName = UIR.Shaders.k_RuntimeWorld;
 
         public const float k_ClearZ = 0.99f; // At the far plane like standard Unity rendering
         public const float k_MeshPosZ = 0.0f; // The correct z value to use to draw a shape

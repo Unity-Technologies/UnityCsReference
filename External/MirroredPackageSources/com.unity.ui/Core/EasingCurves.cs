@@ -1,5 +1,11 @@
 namespace UnityEngine.UIElements.Experimental
 {
+    /// <summary>
+    /// A collection of easing curves to be used with ValueAnimations.
+    /// </summary>
+    /// <remarks>
+    /// Easing curves control the rate of change of a value over time.
+    /// </remarks>
     public static class Easing
     {
         private const float HalfPi = Mathf.PI / 2;

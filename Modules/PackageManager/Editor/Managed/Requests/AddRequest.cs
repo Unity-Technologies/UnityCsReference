@@ -7,7 +7,7 @@ using System;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    public sealed class AddRequest : Request<PackageInfo>
+    public sealed partial class AddRequest : Request<PackageInfo>
     {
         /// <summary>
         /// Constructor to support serialization
@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override PackageInfo GetResult()
         {
-            return NativeClient.GetAddOperationData(Id);
+            return GetOperationData(Id);
         }
     }
 }

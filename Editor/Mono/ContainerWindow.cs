@@ -119,7 +119,7 @@ namespace UnityEditor
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, false);
-            rootView.position = new Rect(0, 0, Mathf.Ceil(m_PixelRect.width), Mathf.Ceil(m_PixelRect.height));
+            rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
             rootView.Reflow();
         }
 
@@ -165,7 +165,7 @@ namespace UnityEditor
 
             // Fit window to screen - needs to be done after bringing the window live
             position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
-            rootView.position = new Rect(0, 0, Mathf.Ceil(m_PixelRect.width), Mathf.Ceil(m_PixelRect.height));
+            rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
 
             rootView.Reflow();
 
@@ -322,7 +322,13 @@ namespace UnityEditor
         {
             if (rootView == null)
                 return;
-            rootView.position = new Rect(0, 0, Mathf.Ceil(position.width), Mathf.Ceil(position.height));
+
+            // Depending on the context, GUIUtility.pixelsPerPoint isn't reliable at this point, so we must not round.
+            // Anyway the backend is responsible of providing a window size that is aligned with the pixel grid, so it
+            // shouldn't be necessary. In the past position.width and position.height were rounded. When moving a window
+            // from a monitor that had a given scaling to another monitor with a different scaling, this could cause the
+            // original pixelsPerPoint to be used. As a result, black borders could appear for the first frame.
+            rootView.position = new Rect(0, 0, position.width, position.height);
 
             // save position
             Save();

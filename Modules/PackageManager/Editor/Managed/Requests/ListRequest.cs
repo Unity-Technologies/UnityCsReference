@@ -8,7 +8,7 @@ using System.Linq;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    public sealed class ListRequest : Request<PackageCollection>
+    public sealed partial class ListRequest : Request<PackageCollection>
     {
         /// <summary>
         /// Constructor to support serialization
@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override PackageCollection GetResult()
         {
-            var operationStatus = NativeClient.GetListOperationData(Id);
+            var operationStatus = GetOperationData(Id);
             var packageList = operationStatus.packageList.Where(p => p.type != ShimPackageType);
             return new PackageCollection(packageList, operationStatus.error);
         }

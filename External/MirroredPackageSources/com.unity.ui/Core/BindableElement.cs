@@ -3,19 +3,34 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Element that can be bound to a property.
+    /// </summary>
     public class BindableElement : VisualElement, IBindable
     {
+        /// <summary>
+        /// Instantiates a <see cref="BindableElement"/> using the data read from a UXML file.
+        /// </summary>
         public new class UxmlFactory : UxmlFactory<BindableElement, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="BindableElement"/>.
+        /// </summary>
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_PropertyPath;
 
+            /// <summary>
+            /// Constructor.
+            /// </summary>
             public UxmlTraits()
             {
                 m_PropertyPath = new UxmlStringAttributeDescription { name = "binding-path" };
             }
 
+            /// <summary>
+            /// Initialize <see cref="EnumField"/> properties using values from the attribute bag.
+            /// </summary>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -32,7 +47,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Binding object that will be updated.
+        /// </summary>
         public IBinding binding { get; set; }
+        /// <summary>
+        /// Path of the target property to be bound.
+        /// </summary>
         public string bindingPath { get; set; }
     }
 }

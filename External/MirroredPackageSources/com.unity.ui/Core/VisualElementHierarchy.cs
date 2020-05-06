@@ -1,4 +1,3 @@
-//#define ENABLE_CAPTURE_DEBUG
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,8 +5,19 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Base class for objects that are part of the UIElements visual tree.
+    /// </summary>
+    /// <remarks>
+    /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
+    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
+    /// </remarks>
     public partial class VisualElement
     {
+        /// <summary>
+        ///  Access to this element physical hierarchy
+        ///
+        /// </summary>
         public Hierarchy hierarchy
         {
             get; private set;
@@ -46,12 +56,19 @@ namespace UnityEngine.UIElements
         // Logical container where child elements are added.
         // usually same as this element, but can be overridden by more complex types
         // see ScrollView.contentContainer for an example
+        /// <summary>
+        ///  child elements are added to this element, usually this
+        ///
+        /// </summary>
         public virtual VisualElement contentContainer
         {
             get { return this; }
         }
 
         // IVisualElementHierarchy container
+        /// <summary>
+        /// Add an element to this element's contentContainer
+        /// </summary>
         public void Add(VisualElement child)
         {
             if (child == null)
@@ -71,6 +88,9 @@ namespace UnityEngine.UIElements
             child.m_LogicalParent = this;
         }
 
+        /// <summary>
+        /// Insert an element into this element's contentContainer
+        /// </summary>
         public void Insert(int index, VisualElement element)
         {
             if (element == null)
@@ -90,6 +110,9 @@ namespace UnityEngine.UIElements
             element.m_LogicalParent = this;
         }
 
+        /// <summary>
+        /// Removes this child from the hierarchy
+        /// </summary>
         public void Remove(VisualElement element)
         {
             if (contentContainer == this)
@@ -102,6 +125,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Remove the child element located at this position from this element's contentContainer
+        /// </summary>
         public void RemoveAt(int index)
         {
             if (contentContainer == this)
@@ -114,6 +140,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Remove all child elements from this element's contentContainer
+        /// </summary>
         public void Clear()
         {
             if (contentContainer == this)
@@ -126,6 +155,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Retrieves the child element at position
+        /// </summary>
         public VisualElement ElementAt(int index)
         {
             return this[index];
@@ -144,6 +176,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        ///  Number of child elements in this object's contentContainer
+        ///
+        /// </summary>
         public int childCount
         {
             get
@@ -156,6 +192,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Retrieves the child index of the specified VisualElement.
+        /// </summary>
+        /// <param name="element">The child to return the index for.</param>
+        /// <returns>The index of the child, or -1 if the child is not found.</returns>
         public int IndexOf(VisualElement element)
         {
             if (contentContainer == this)
@@ -165,6 +206,9 @@ namespace UnityEngine.UIElements
             return contentContainer?.IndexOf(element) ?? -1;
         }
 
+        /// <summary>
+        /// Returns the elements from its contentContainer
+        /// </summary>
         public IEnumerable<VisualElement> Children()
         {
             if (contentContainer == this)
@@ -174,6 +218,10 @@ namespace UnityEngine.UIElements
             return contentContainer?.Children();
         }
 
+        /// <summary>
+        /// Reorders child elements from this VisualElement contentContainer.
+        /// </summary>
+        /// <param name="comp">Sorting criteria.</param>
         public void Sort(Comparison<VisualElement> comp)
         {
             if (contentContainer == this)
@@ -186,6 +234,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Brings this element to the end of its parent children list. The element will be visually in front of any overlapping sibling elements.
+        /// </summary>
         public void BringToFront()
         {
             if (hierarchy.parent == null)
@@ -194,6 +245,9 @@ namespace UnityEngine.UIElements
             hierarchy.parent.hierarchy.BringToFront(this);
         }
 
+        /// <summary>
+        /// Sends this element to the beginning of its parent children list. The element will be visually behind any overlapping sibling elements.
+        /// </summary>
         public void SendToBack()
         {
             if (hierarchy.parent == null)
@@ -202,6 +256,13 @@ namespace UnityEngine.UIElements
             hierarchy.parent.hierarchy.SendToBack(this);
         }
 
+        /// <summary>
+        /// Places this element right before the sibling element in their parent children list. If the element and the sibling position overlap, the element will be visually behind of its sibling.
+        /// </summary>
+        /// <param name="sibling">The sibling element.</param>
+        /// <remarks>
+        /// The elements must be siblings.
+        /// </remarks>
         public void PlaceBehind(VisualElement sibling)
         {
             if (sibling == null)
@@ -217,6 +278,13 @@ namespace UnityEngine.UIElements
             hierarchy.parent.hierarchy.PlaceBehind(this, sibling);
         }
 
+        /// <summary>
+        /// Places this element right after the sibling element in their parent children list. If the element and the sibling position overlap, the element will be visually in front of its sibling.
+        /// </summary>
+        /// <param name="sibling">The sibling element.</param>
+        /// <remarks>
+        /// The elements must be siblings.
+        /// </remarks>
         public void PlaceInFront(VisualElement sibling)
         {
             if (sibling == null)
@@ -232,10 +300,17 @@ namespace UnityEngine.UIElements
             hierarchy.parent.hierarchy.PlaceInFront(this, sibling);
         }
 
+        /// <summary>
+        /// Hierarchy is a struct allowing access to the hierarchy of visual elements
+        /// </summary>
         public struct Hierarchy
         {
             private readonly VisualElement m_Owner;
 
+            /// <summary>
+            ///  Access the physical parent of this element in the hierarchy
+            ///
+            /// </summary>
             public VisualElement parent
             {
                 get { return m_Owner.m_PhysicalParent; }
@@ -246,6 +321,9 @@ namespace UnityEngine.UIElements
                 m_Owner = element;
             }
 
+            /// <summary>
+            /// Add an element to this element's contentContainer
+            /// </summary>
             public void Add(VisualElement child)
             {
                 if (child == null)
@@ -254,6 +332,9 @@ namespace UnityEngine.UIElements
                 Insert(childCount, child);
             }
 
+            /// <summary>
+            /// Insert an element into this element's contentContainer
+            /// </summary>
             public void Insert(int index, VisualElement child)
             {
                 if (child == null)
@@ -294,6 +375,9 @@ namespace UnityEngine.UIElements
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
+            /// <summary>
+            /// Removes this child from the hierarchy
+            /// </summary>
             public void Remove(VisualElement child)
             {
                 if (child == null)
@@ -306,6 +390,9 @@ namespace UnityEngine.UIElements
                 RemoveAt(index);
             }
 
+            /// <summary>
+            /// Remove the child element located at this position from this element's contentContainer
+            /// </summary>
             public void RemoveAt(int index)
             {
                 if (index < 0 || index >= childCount)
@@ -335,6 +422,9 @@ namespace UnityEngine.UIElements
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
+            /// <summary>
+            /// Remove all child elements from this element's contentContainer
+            /// </summary>
             public void Clear()
             {
                 if (childCount > 0)
@@ -446,6 +536,10 @@ namespace UnityEngine.UIElements
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
+            /// <summary>
+            ///  Number of child elements in this object's contentContainer
+            ///
+            /// </summary>
             public int childCount
             {
                 get
@@ -462,16 +556,27 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            /// <summary>
+            /// Retrieves the index of the specified VisualElement in the Hierarchy.
+            /// </summary>
+            /// <param name="element">The element to return the index for.</param>
+            /// <returns>The index of the element, or -1 if the element is not found.</returns>
             public int IndexOf(VisualElement element)
             {
                 return m_Owner.m_Children.IndexOf(element);
             }
 
+            /// <summary>
+            /// Retrieves the child element at position
+            /// </summary>
             public VisualElement ElementAt(int index)
             {
                 return this[index];
             }
 
+            /// <summary>
+            /// Returns the elements from its contentContainer
+            /// </summary>
             public IEnumerable<VisualElement> Children()
             {
                 return m_Owner.m_Children;
@@ -491,6 +596,10 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            /// <summary>
+            /// Reorders child elements from this VisualElement contentContainer.
+            /// </summary>
+            /// <param name="comp">Sorting criteria.</param>
             public void Sort(Comparison<VisualElement> comp)
             {
                 if (childCount > 0)
@@ -567,6 +676,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Removes this element from its parent hierarchy
+        /// </summary>
+        /// <summary>
         /// Will remove this element from its hierarchy
         /// </summary>
         public void RemoveFromHierarchy()
@@ -577,6 +689,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Walks up the hierarchy, starting from this element, and returns the first VisualElement of this type
+        /// </summary>
         public T GetFirstOfType<T>() where T : class
         {
             T casted = this as T;
@@ -585,6 +700,9 @@ namespace UnityEngine.UIElements
             return GetFirstAncestorOfType<T>();
         }
 
+        /// <summary>
+        /// Walks up the hierarchy, starting from this element's parent, and returns the first VisualElement of this type
+        /// </summary>
         public T GetFirstAncestorOfType<T>() where T : class
         {
             VisualElement ancestor = hierarchy.parent;
@@ -631,6 +749,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Finds the lowest commont ancestor between two VisualElements inside the VisualTree hierarchy
+        /// </summary>
         public VisualElement FindCommonAncestor(VisualElement other)
         {
             if (other == null)

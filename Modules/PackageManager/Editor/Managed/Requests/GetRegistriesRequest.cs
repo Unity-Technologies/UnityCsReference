@@ -7,7 +7,7 @@ using System;
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    internal sealed class GetRegistriesRequest : Request<RegistryInfo[]>
+    internal sealed partial class GetRegistriesRequest : Request<RegistryInfo[]>
     {
         /// <summary>
         /// Constructor to support serialization
@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.Requests
 
         protected override RegistryInfo[] GetResult()
         {
-            return NativeClient.GetGetRegistriesOperationData(Id);
+            return GetOperationData(Id);
         }
     }
 }

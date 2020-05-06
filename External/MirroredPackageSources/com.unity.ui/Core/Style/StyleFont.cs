@@ -5,8 +5,14 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Style value that can be either a <see cref="Font"/> or a <see cref="StyleKeyword"/>.
+    /// </summary>
     public struct StyleFont : IStyleValue<Font>, IEquatable<StyleFont>
     {
+        /// <summary>
+        /// The <see cref="Font"/> value.
+        /// </summary>
         public Font value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : null; }
@@ -17,16 +23,25 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// The style keyword.
+        /// </summary>
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
             set { m_Keyword = value; }
         }
 
+        /// <summary>
+        /// Creates from a <see cref="Font"/> or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleFont(Font v)
             : this(v, StyleKeyword.Undefined)
         {}
 
+        /// <summary>
+        /// Creates from a <see cref="Font"/> or <see cref="StyleKeyword"/>.
+        /// </summary>
         public StyleFont(StyleKeyword keyword)
             : this(null, keyword)
         {}

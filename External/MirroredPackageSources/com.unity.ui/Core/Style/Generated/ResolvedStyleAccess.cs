@@ -7,11 +7,21 @@
 /******************************************************************************/
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Base class for objects that are part of the UIElements visual tree.
+    /// </summary>
+    /// <remarks>
+    /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
+    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
+    /// </remarks>
     public partial class VisualElement : IResolvedStyle
     {
         // this allows us to not expose all styles accessors directly on VisualElement class
         // but still let the VisualElement be in control of proxying inline styles modifications
         // we avoid an extra allocation when returning that property and it's nice from an API perspective
+        /// <summary>
+        /// Returns the <see cref="VisualElement"/> resolved style values.
+        /// </summary>
         public IResolvedStyle resolvedStyle => this;
 
         Align IResolvedStyle.alignContent => computedStyle.alignContent.value;

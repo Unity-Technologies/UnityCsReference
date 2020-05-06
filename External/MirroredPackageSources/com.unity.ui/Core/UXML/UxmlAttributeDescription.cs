@@ -5,38 +5,80 @@ using System.Linq;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Base class for describing an XML attribute.
+    /// </summary>
     public abstract class UxmlAttributeDescription
     {
         protected const string xmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         protected UxmlAttributeDescription()
         {
             use = Use.Optional;
             restriction = null;
         }
 
+        /// <summary>
+        /// An enum to describe attribute use.
+        /// </summary>
         public enum Use
         {
+            /// <summary>
+            /// There is no restriction on the use of this attribute with the element.
+            /// </summary>
             None = 0,
+            /// <summary>
+            /// The attribute is optional for the element.
+            /// </summary>
             Optional = 1,
+            /// <summary>
+            /// The attribute should not appear for the element.
+            /// </summary>
             Prohibited = 2,
+            /// <summary>
+            /// The attribute must appear in the element tag.
+            /// </summary>
             Required = 3
         }
 
+        /// <summary>
+        /// The attribute name.
+        /// </summary>
         public string name { get; set; }
 
         string[] m_ObsoleteNames;
 
+        /// <summary>
+        /// A list of obsolete names for this attribute.
+        /// </summary>
         public IEnumerable<string> obsoleteNames
         {
             get { return m_ObsoleteNames; }
             set { m_ObsoleteNames = value.ToArray(); }
         }
 
+        /// <summary>
+        /// Attribute type.
+        /// </summary>
         public string type { get; protected set; }
+        /// <summary>
+        /// Attribute namespace.
+        /// </summary>
         public string typeNamespace { get; protected set; }
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public abstract string defaultValueAsString { get; }
+        /// <summary>
+        /// Whether the attribute is optional, required or prohibited.
+        /// </summary>
         public Use use { get; set; }
+        /// <summary>
+        /// Restrictions on the possible values of the attribute.
+        /// </summary>
         public UxmlTypeRestriction restriction { get; set; }
 
         internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value)
@@ -133,6 +175,15 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        /// <summary>
+        /// Tries to get the attribute value from the attribute bag.
+        /// </summary>
+        /// <param name="bag">A bag containg attributes and their values as strings.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="converterFunc">A function to convert a string value to type T.</param>
+        /// <param name="defaultValue">The value to return if the attribute is not found in the bag.</param>
+        /// <param name="value">If the attribute could be retrieved, the retrieved value converted by the conversion function or the default value if the retrieved value could not de converted.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         protected bool TryGetValueFromBag<T>(IUxmlAttributes bag, CreationContext cc, Func<string, T, T> converterFunc, T defaultValue, ref T value)
         {
             string stringValue;
@@ -153,6 +204,17 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        /// <summary>
+        /// Get the attribute value from the attribute bag.
+        /// </summary>
+        /// <param name="bag">A bag containg attributes and their values as strings.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="converterFunc">A function to convert a string value to type T.</param>
+        /// <param name="defaultValue">The value to return if the attribute is not found in the bag.</param>
+        /// <remarks>
+        /// The attribute is looked up using <see cref="name"/>. If it is not found, each <see cref="obsoleteNames"/> is tried in turn, from first to last.
+        /// </remarks>
+        /// <returns>The attribute value from the bag, or defaultValue if the attribute is not found.</returns>
         protected T GetValueFromBag<T>(IUxmlAttributes bag, CreationContext cc, Func<string, T, T> converterFunc, T defaultValue)
         {
             if (converterFunc == null)
@@ -170,17 +232,38 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Base class for all the uxml specific attributes.
+    /// </summary>
     public abstract class TypedUxmlAttributeDescription<T> : UxmlAttributeDescription
     {
+        /// <summary>
+        /// Use this method to obtain the actual value of the attribute.
+        /// </summary>
+        /// <param name="bag">The bag of attributes where to get the actual value.</param>
+        /// <param name="cc">The creation context.</param>
+        /// <returns>The value of type T.</returns>
         public abstract T GetValueFromBag(IUxmlAttributes bag, CreationContext cc);
 
+        /// <summary>
+        /// The default value to be used for that specific attribute.
+        /// </summary>
         public T defaultValue { get; set; }
 
+        /// <summary>
+        /// The string representation of the default value of the uxml attribute.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
     }
 
+    /// <summary>
+    /// Describes a XML <c>string</c> attribute.
+    /// </summary>
     public class UxmlStringAttributeDescription : TypedUxmlAttributeDescription<string>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlStringAttributeDescription()
         {
             type = "string";
@@ -188,21 +271,43 @@ namespace UnityEngine.UIElements
             defaultValue = "";
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue; } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override string GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, t) => s, defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref string value)
         {
             return TryGetValueFromBag(bag, cc, (s, t) => s , defaultValue, ref value);
         }
     }
 
+    /// <summary>
+    /// Describes a XML <c>float</c> attribute.
+    /// </summary>
     public class UxmlFloatAttributeDescription : TypedUxmlAttributeDescription<float>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlFloatAttributeDescription()
         {
             type = "float";
@@ -210,13 +315,29 @@ namespace UnityEngine.UIElements
             defaultValue = 0.0f;
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override float GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, f) => ConvertValueToFloat(s, f), defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref float value)
         {
             return TryGetValueFromBag(bag, cc, (s, f) => ConvertValueToFloat(s, f), defaultValue, ref value);
@@ -231,8 +352,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Describes a XML <c>double</c> attribute.
+    /// </summary>
     public class UxmlDoubleAttributeDescription : TypedUxmlAttributeDescription<double>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlDoubleAttributeDescription()
         {
             type = "double";
@@ -240,13 +367,29 @@ namespace UnityEngine.UIElements
             defaultValue = 0.0;
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override double GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, d) => ConvertValueToDouble(s, d), defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref double value)
         {
             return TryGetValueFromBag(bag, cc, (s, d) => ConvertValueToDouble(s, d), defaultValue, ref value);
@@ -261,8 +404,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Describes a XML <c>int</c> attribute.
+    /// </summary>
     public class UxmlIntAttributeDescription : TypedUxmlAttributeDescription<int>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlIntAttributeDescription()
         {
             type = "int";
@@ -270,13 +419,29 @@ namespace UnityEngine.UIElements
             defaultValue = 0;
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override int GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, i) => ConvertValueToInt(s, i), defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref int value)
         {
             return TryGetValueFromBag(bag, cc, (s, i) => ConvertValueToInt(s, i), defaultValue, ref value);
@@ -292,8 +457,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Describes a XML <c>long</c> attribute.
+    /// </summary>
     public class UxmlLongAttributeDescription : TypedUxmlAttributeDescription<long>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlLongAttributeDescription()
         {
             type = "long";
@@ -301,13 +472,29 @@ namespace UnityEngine.UIElements
             defaultValue = 0;
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override long GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, l) => ConvertValueToLong(s, l), defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref long value)
         {
             return TryGetValueFromBag(bag, cc, (s, l) => ConvertValueToLong(s, l), defaultValue, ref value);
@@ -322,8 +509,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Describes a XML <c>bool</c> attribute.
+    /// </summary>
     public class UxmlBoolAttributeDescription : TypedUxmlAttributeDescription<bool>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlBoolAttributeDescription()
         {
             type = "boolean";
@@ -331,13 +524,29 @@ namespace UnityEngine.UIElements
             defaultValue = false;
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString().ToLower(); } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override bool GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, b) => ConvertValueToBool(s, b), defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref bool value)
         {
             return TryGetValueFromBag(bag, cc, (s, b) => ConvertValueToBool(s, b), defaultValue, ref value);
@@ -353,8 +562,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Describes a XML attribute representing a <see cref="Color"/> as a <c>string</c>.
+    /// </summary>
     public class UxmlColorAttributeDescription : TypedUxmlAttributeDescription<Color>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlColorAttributeDescription()
         {
             type = "string";
@@ -362,13 +577,29 @@ namespace UnityEngine.UIElements
             defaultValue = new Color(0, 0, 0, 1);
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override Color GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, color) => ConvertValueToColor(s, color), defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Color value)
         {
             return TryGetValueFromBag(bag, cc, (s, color) => ConvertValueToColor(s, color), defaultValue, ref value);
@@ -383,8 +614,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Describes an XML <c>System.Type</c> attribute.
+    /// </summary>
     public class UxmlTypeAttributeDescription<TBase> : TypedUxmlAttributeDescription<Type>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlTypeAttributeDescription()
         {
             type = "string";
@@ -392,16 +629,32 @@ namespace UnityEngine.UIElements
             defaultValue = null;
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString
         {
             get { return defaultValue == null ? "null" : defaultValue.FullName; }
         }
 
+        /// <summary>
+        /// Method that retrieves an attribute's value from an attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The attribute bag.</param>
+        /// <param name="cc">The context in which the method retrieves attribute values.</param>
+        /// <returns>The attribute's value. If the method cannot find the value, returns <see cref="defaultValue"/>.</returns>
         public override Type GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, type1) => ConvertValueToType(s, type1), defaultValue);
         }
 
+        /// <summary>
+        /// Method that tries to retrieve an attribute's value from an attribute bag.. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The attribute bag.</param>
+        /// <param name="cc">The context in which the method retrieves attribute values.</param>
+        /// <param name="value">The attribute's value.</param>
+        /// <returns>True if the method can retrieve the attribute's value. False otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Type value)
         {
             return TryGetValueFromBag(bag, cc, (s, type1) => ConvertValueToType(s, type1), defaultValue, ref value);
@@ -430,8 +683,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Describes a XML attribute representing an <c>enum</c> as a <c>string</c>.
+    /// </summary>
     public class UxmlEnumAttributeDescription<T> : TypedUxmlAttributeDescription<T> where T : struct, IConvertible
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public UxmlEnumAttributeDescription()
         {
             if (!typeof(T).IsEnum)
@@ -455,13 +714,29 @@ namespace UnityEngine.UIElements
             restriction = enumRestriction;
         }
 
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
         public override T GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
         {
             return GetValueFromBag(bag, cc, (s, convertible) => ConvertValueToEnum(s, convertible), defaultValue);
         }
 
+        /// <summary>
+        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value could be retrieved, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref T value)
         {
             return TryGetValueFromBag(bag, cc, (s, convertible) => ConvertValueToEnum(s, convertible), defaultValue, ref value);

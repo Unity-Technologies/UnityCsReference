@@ -69,11 +69,6 @@ namespace UnityEditor.PackageManager.UI
 
         [NonSerialized]
         private IOProxy m_IOProxy;
-        internal void ResolveDependencies(IOProxy ioProxy)
-        {
-            m_IOProxy = ioProxy;
-        }
-
         internal Sample(IOProxy ioProxy, string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
         {
             this.displayName = displayName;

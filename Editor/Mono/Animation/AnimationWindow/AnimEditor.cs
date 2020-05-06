@@ -1400,7 +1400,7 @@ namespace UnityEditor
         // Called once during initialization of m_State
         private void InitializeHorizontalSplitter()
         {
-            m_HorizontalSplitter = new SplitterState(new float[] { kHierarchyMinWidth, kHierarchyMinWidth * 3 }, new int[] { kHierarchyMinWidth, kHierarchyMinWidth }, null);
+            m_HorizontalSplitter = SplitterState.FromRelative(new float[] { kHierarchyMinWidth, kHierarchyMinWidth * 3 }, new float[] { kHierarchyMinWidth, kHierarchyMinWidth }, null);
             m_HorizontalSplitter.realSizes[0] = kHierarchyMinWidth;
             m_HorizontalSplitter.realSizes[1] = kHierarchyMinWidth;
         }

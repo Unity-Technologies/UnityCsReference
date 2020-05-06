@@ -1,4 +1,3 @@
-//#define ENABLE_CAPTURE_DEBUG
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -24,9 +23,18 @@ namespace UnityEngine.UIElements
         Root      = 1 << 7,     // set on the root visual element
     }
 
+    /// <summary>
+    /// Describes the picking behavior.
+    /// </summary>
     public enum PickingMode
     {
+        /// <summary>
+        /// Picking enabled. Default Value.
+        /// </summary>
         Position, // todo better name
+        /// <summary>
+        /// Disables picking.
+        /// </summary>
         Ignore
     }
 
@@ -61,10 +69,23 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Base class for objects that are part of the UIElements visual tree.
+    /// </summary>
+    /// <remarks>
+    /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
+    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
+    /// </remarks>
     public partial class VisualElement : Focusable, ITransform
     {
+        /// <summary>
+        /// Instantiates a <see cref="VisualElement"/> using the data read from a UXML file.
+        /// </summary>
         public class UxmlFactory : UxmlFactory<VisualElement, UxmlTraits> {}
 
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="VisualElement"/>.
+        /// </summary>
         public class UxmlTraits : UIElements.UxmlTraits
         {
             protected UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_NameAttributeName };
@@ -74,8 +95,14 @@ namespace UnityEngine.UIElements
             UxmlEnumAttributeDescription<UsageHints> m_UsageHints = new UxmlEnumAttributeDescription<UsageHints> { name = "usage-hints" };
 
             // focusIndex is obsolete. It has been replaced by tabIndex and focusable.
+            /// <summary>
+            /// The focus index attribute.
+            /// </summary>
             protected UxmlIntAttributeDescription focusIndex { get; set; } = new UxmlIntAttributeDescription { name = null, obsoleteNames = new[] { "focus-index", "focusIndex" }, defaultValue = -1 };
             UxmlIntAttributeDescription m_TabIndex = new UxmlIntAttributeDescription { name = "tabindex", defaultValue = 0 };
+            /// <summary>
+            /// The focusable attribute.
+            /// </summary>
             protected UxmlBoolAttributeDescription focusable { get; set; } = new UxmlBoolAttributeDescription { name = "focusable", defaultValue = false };
 
 #pragma warning disable 414
@@ -85,11 +112,20 @@ namespace UnityEngine.UIElements
             UxmlStringAttributeDescription m_Style = new UxmlStringAttributeDescription { name = "style" };
 #pragma warning restore
 
+            /// <summary>
+            /// Returns an enumerable containing <c>UxmlChildElementDescription(typeof(VisualElement))</c>, since VisualElements can contain other VisualElements.
+            /// </summary>
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield return new UxmlChildElementDescription(typeof(VisualElement)); }
             }
 
+            /// <summary>
+            /// Initialize <see cref="VisualElement"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
@@ -142,6 +178,9 @@ namespace UnityEngine.UIElements
         private static List<string> s_EmptyClassList = new List<string>(0);
 
         internal static readonly PropertyName userDataPropertyKey = new PropertyName("--unity-user-data");
+        /// <summary>
+        /// USS class name of local disabled elements.
+        /// </summary>
         public static readonly string disabledUssClassName = "unity-disabled";
 
         string m_Name;
@@ -152,6 +191,12 @@ namespace UnityEngine.UIElements
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
+        /// <summary>
+        /// Used for view data persistence (ie. tree expanded states, scroll position, zoom level).
+        /// </summary>
+        /// <remarks>
+        /// This is the key used to save/load the view data from the view data store. Not setting this key will disable persistence for this <see cref="VisualElement"/>.
+        /// </remarks>
         public string viewDataKey
         {
             get { return m_ViewDataKey; }
@@ -176,6 +221,9 @@ namespace UnityEngine.UIElements
         // the VisualTreeViewDataUpdater traverses the visual tree.
         internal bool enableViewDataPersistence { get; private set; }
 
+        /// <summary>
+        /// This property can be used to associate application-specific user data with this VisualElement.
+        /// </summary>
         public object userData
         {
             get { return GetPropertyInternal(userDataPropertyKey); }
@@ -207,6 +255,13 @@ namespace UnityEngine.UIElements
             get { return panel?.focusController; }
         }
 
+        /// <summary>
+        /// A combination of hint values that specify high-level intended usage patterns for the <see cref="VisualElement"/>.
+        /// This property can only be set when the <see cref="VisualElement"/> is not yet part of a <see cref="Panel"/>. Once part of a <see cref="Panel"/>, this property becomes effectively read-only, and attempts to change it will throw an exception.
+        /// The specification of proper <see cref="UsageHints"/> drives the system to make better decisions on how to process or accelerate certain operations based on the anticipated usage pattern.
+        /// Note that those hints do not affect behavioral or visual results, but only affect the overall performance of the panel and the elements within.
+        /// Generally it advised to always consider specifying the proper <see cref="UsageHints"/>, but keep in mind that some <see cref="UsageHints"/> may be internally ignored under certain conditions (e.g. due to hardware limitations on the target platform).
+        /// </summary>
         public UsageHints usageHints
         {
             get
@@ -244,6 +299,7 @@ namespace UnityEngine.UIElements
         }
 
         internal Rect lastLayout;
+        internal Rect lastPadding;
         internal RenderChainVEData renderChainData;
 
         Vector3 m_Position = Vector3.zero;
@@ -739,6 +795,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Determines if this element can be pick during mouseEvents or <see cref="IPanel.Pick"/> queries.
+        /// </summary>
         public PickingMode pickingMode { get; set; }
 
         // does not guarantee uniqueness
@@ -987,6 +1046,13 @@ namespace UnityEngine.UIElements
                 IncrementVersion(VersionChangeType.ViewData);
         }
 
+        /// <summary>
+        /// Sends an event to the event handler.
+        /// </summary>
+        /// <param name="e">The event to send.</param>
+        /// <remarks>
+        /// This forwards the event to the event dispatcher.
+        /// </remarks>
         public sealed override void SendEvent(EventBase e)
         {
             elementPanel?.SendEvent(e);
@@ -1045,14 +1111,34 @@ namespace UnityEngine.UIElements
         }
 
         //Returns true if 'this' can be enabled relative to the enabled state of its panel
+        /// <summary>
+        /// Returns true if the <see cref="VisualElement"/> is enabled in its own hierarchy.
+        /// </summary>
+        /// <remarks>
+        ///  This flag verifies if the element is enabled globally. A parent disabling its child VisualElement affects this variable.
+        /// </remarks>
         public bool enabledInHierarchy
         {
             get { return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled; }
         }
 
         //Returns the local enabled state
+        /// <summary>
+        /// Returns true if the <see cref="VisualElement"/> is enabled locally.
+        /// </summary>
+        /// <remarks>
+        /// This flag isn't changed if the VisualElement is disabled implicitely by one of its parents. To verify this, use enabledInHierarchy.
+        /// </remarks>
         public bool enabledSelf { get; private set;}
 
+        /// <summary>
+        /// Changes the <see cref="VisualElement"/> enabled state. A disabled VisualElement does not receive most events.
+        /// </summary>
+        /// <param name="value">New enabled state</param>
+        /// <remarks>
+        /// The method disables the local flag of the VisualElement and implicitly disables its children.
+        /// It does not affect the local enabled flag of each child.
+        /// </remarks>
         public void SetEnabled(bool value)
         {
             if (enabledSelf == value) return;
@@ -1088,11 +1174,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Triggers a repaint of the <see cref="VisualElement"/> on the next frame.
+        /// </summary>
         public void MarkDirtyRepaint()
         {
             IncrementVersion(VersionChangeType.Repaint);
         }
 
+        /// <summary>
+        /// Called when the <see cref="VisualElement"/> visual contents need to be (re)generated.
+        /// </summary>
+        /// <remarks>
+        /// When handled, it is possible to generate custom geometry in the content region of the <see cref="VisualElement"/>.
+        ///                     This delegate is called only when the <see cref="VisualElement"/> has been detected to need to regenerate its visual contents. It is not called every frame when refreshing the panel. The content generated is cached and remains intact until a property on the <see cref="VisualElement"/> affecting visuals has changed or <see cref="VisualElement.MarkDirtyRepaint"/> is called.
+        ///                     While executing code in a handler to this delegate, refrain from making changes to any property of the <see cref="VisualElement"/>. A correct handler should treat the <see cref="VisualElement"/> as 'read-only' and generate the geometry without causing side-effects. Changes done to the <see cref="VisualElement"/> during this event could be missed or lag appearance at best.
+        /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
@@ -1258,10 +1355,26 @@ namespace UnityEngine.UIElements
             return rect.Overlaps(rectangle, true);
         }
 
+        /// <summary>
+        /// The modes available to measure <see cref="VisualElement"/> sizes.
+        /// </summary>
+        /// <remarks>
+        /// This enum value is passed to <see cref="UIElements.VisualElement.DoMeasure"/>. This lets UI elements indicate their natural size during the layout algorithm.
+        /// </remarks>
+        /// <seealso cref="VisualElement.MeasureTextSize"/>
         public enum MeasureMode
         {
+            /// <summary>
+            /// The element should give its preferred width/height without any constraint.
+            /// </summary>
             Undefined = YogaMeasureMode.Undefined,
+            /// <summary>
+            /// The element should give the width/height that is passed in and derive the opposite site from this value (for example, calculate text size from a fixed width).
+            /// </summary>
             Exactly = YogaMeasureMode.Exactly,
+            /// <summary>
+            /// At Most. The element should give its preferred width/height but no more than the value passed.
+            /// </summary>
             AtMost = YogaMeasureMode.AtMost
         }
 
@@ -1302,7 +1415,8 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(node == yogaNode, "YogaNode instance mismatch");
             Vector2 size = DoMeasure(width, (MeasureMode)widthMode, height, (MeasureMode)heightMode);
-            return MeasureOutput.Make(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
+            float ppp = scaledPixelsPerPoint;
+            return MeasureOutput.Make(AlignmentUtils.RoundToPixelGrid(size.x, ppp), AlignmentUtils.RoundToPixelGrid(size.y, ppp));
         }
 
         internal void SetSize(Vector2 size)
@@ -1424,6 +1538,10 @@ namespace UnityEngine.UIElements
             return GetType().Name + " " + name + " " + layout + " world rect: " + worldBound;
         }
 
+        /// <summary>
+        /// Retrieve the classes for this element.
+        /// </summary>
+        /// <returns>A class list.</returns>
         public IEnumerable<string> GetClasses()
         {
             return m_ClassList;
@@ -1471,6 +1589,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Toggles between adding and removing the given class name from the class list.
+        /// </summary>
+        /// <param name="className">The class name to add or remove from the class list.</param>
+        /// <remarks>
+        /// Checks for the given class name in the element class list. If the class name is found, it is removed from the class list. If the class name is not found, the class name is added to the class list.
+        /// </remarks>
         public void ToggleInClassList(string className)
         {
             if (ClassListContains(className))
@@ -1479,6 +1604,14 @@ namespace UnityEngine.UIElements
                 AddToClassList(className);
         }
 
+        /// <summary>
+        /// Enables or disables the class with the given name.
+        /// </summary>
+        /// <param name="className">The name of the class to enable or disable.</param>
+        /// <param name="enable">A boolean flag that adds or removes the class name from the class list. If true, EnableInClassList adds the class name to the class list. If false, EnableInClassList removes the class name from the class list.</param>
+        /// <remarks>
+        /// If enable is true, EnableInClassList adds the class name to the class list. If enable is false, EnableInClassList removes the class name from the class list.
+        /// </remarks>
         public void EnableInClassList(string className, bool enable)
         {
             if (enable)
@@ -1498,6 +1631,12 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        /// <summary>
+        /// Searchs up the hierachy of this VisualElement and retrieves stored userData, if any is found.
+        /// </summary>
+        /// <remarks>
+        /// This will ignore the current userData and return the first parent's non-null userData
+        /// </remarks>
         public object FindAncestorUserData()
         {
             VisualElement p = parent;
@@ -1593,6 +1732,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// VisualElementExtensions is a set of extension methods useful for VisualElement.
+    /// </summary>
     public static class VisualElementExtensions
     {
         // transforms a point assumed in Panel space to the referential inside of the element bound (local)
@@ -1672,6 +1814,9 @@ namespace UnityEngine.UIElements
             styleAccess.bottom = 0.0f;
         }
 
+        /// <summary>
+        /// The given VisualElement's left and right edges will be aligned with the corresponding edges of the parent element.
+        /// </summary>
         public static void StretchToParentWidth(this VisualElement elem)
         {
             if (elem == null)
@@ -1685,6 +1830,11 @@ namespace UnityEngine.UIElements
             styleAccess.right = 0.0f;
         }
 
+        /// <summary>
+        /// Add a manipulator associated to a VisualElement.
+        /// </summary>
+        /// <param name="ele">VisualElement associated to the manipulator.</param>
+        /// <param name="manipulator">Manipulator to be added to the VisualElement.</param>
         public static void AddManipulator(this VisualElement ele, IManipulator manipulator)
         {
             if (manipulator != null)
@@ -1693,6 +1843,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Remove a manipulator associated to a VisualElement.
+        /// </summary>
+        /// <param name="ele">VisualElement associated to the manipulator.</param>
+        /// <param name="manipulator">Manipulator to be removed from the VisualElement.</param>
         public static void RemoveManipulator(this VisualElement ele, IManipulator manipulator)
         {
             if (manipulator != null)

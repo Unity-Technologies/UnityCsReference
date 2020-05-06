@@ -1,15 +1,27 @@
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Interface for drag and drop events.
+    /// </summary>
     public interface IDragAndDropEvent
     {
     }
 
+    /// <summary>
+    /// Base class for drag and drop events.
+    /// </summary>
     public abstract class DragAndDropEventBase<T> : MouseEventBase<T>, IDragAndDropEvent where T : DragAndDropEventBase<T>, new()
     {
     }
 
+    /// <summary>
+    /// The event sent to a dragged element when the drag and drop process ends.
+    /// </summary>
     public class DragExitedEvent : DragAndDropEventBase<DragExitedEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -21,11 +33,19 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles;
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public DragExitedEvent()
         {
             LocalInit();
         }
 
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">An IMGUI drag exited event.</param>
+        /// <returns>An initialized event.</returns>
         public new static DragExitedEvent GetPooled(Event systemEvent)
         {
             // We get DragExitedEvent if the drag operation ends or if the mouse exits the window during the drag.
@@ -51,8 +71,14 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Use the DragEnterEvent class to manage events that occur when dragging enters an element or one of its descendants. The DragEnterEvent is cancellable, it does not trickle down, and it does not bubble up.
+    /// </summary>
     public class DragEnterEvent : DragAndDropEventBase<DragEnterEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -64,14 +90,23 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.TricklesDown;
         }
 
+        /// <summary>
+        /// Constructor. Avoid renewing events. Instead, use GetPooled() to get an event from a pool of reusable events.
+        /// </summary>
         public DragEnterEvent()
         {
             LocalInit();
         }
     }
 
+    /// <summary>
+    /// Use the DragLeaveEvent class to manage events sent when dragging leaves an element or one of its descendants. The DragLeaveEvent is cancellable, it does not trickle down, and it does not bubble up.
+    /// </summary>
     public class DragLeaveEvent : DragAndDropEventBase<DragLeaveEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
         protected override void Init()
         {
             base.Init();
@@ -83,14 +118,25 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.TricklesDown;
         }
 
+        /// <summary>
+        /// Constructor. Avoid renewing events. Instead, use GetPooled() to get an event from a pool of reusable events.
+        /// </summary>
         public DragLeaveEvent()
         {
             LocalInit();
         }
     }
 
+    /// <summary>
+    /// The event sent when the element being dragged enters a possible drop target.
+    /// </summary>
     public class DragUpdatedEvent : DragAndDropEventBase<DragUpdatedEvent>
     {
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="systemEvent">An IMGUI drag updated event.</param>
+        /// <returns>An initialized event.</returns>
         public new static DragUpdatedEvent GetPooled(Event systemEvent)
         {
             // During a drag operation, if mouse exits window, we get a DragExitedEvent, which releases the mouse button.
@@ -125,6 +171,9 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// The event sent to an element when another element is dragged and dropped on the element.
+    /// </summary>
     public class DragPerformEvent : DragAndDropEventBase<DragPerformEvent>
     {
     }

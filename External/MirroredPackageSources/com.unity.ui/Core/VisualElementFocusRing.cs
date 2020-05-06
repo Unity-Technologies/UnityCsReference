@@ -3,16 +3,28 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Define focus change directions for the VisualElementFocusRing.
+    /// </summary>
     public class VisualElementFocusChangeDirection : FocusChangeDirection
     {
         static readonly VisualElementFocusChangeDirection s_Left = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 1);
 
+        /// <summary>
+        /// The focus is moving to the left.
+        /// </summary>
         public static FocusChangeDirection left => s_Left;
 
         static readonly VisualElementFocusChangeDirection s_Right = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 2);
 
+        /// <summary>
+        /// The focus is moving to the right.
+        /// </summary>
         public static FocusChangeDirection right => s_Right;
 
+        /// <summary>
+        /// Last value for the direction defined by this class.
+        /// </summary>
         protected new static VisualElementFocusChangeDirection lastValue { get { return s_Right; } }
 
         protected VisualElementFocusChangeDirection(int value) : base(value)
@@ -20,15 +32,35 @@ namespace UnityEngine.UIElements
         }
     }
 
+    /// <summary>
+    /// Implementation of a linear focus ring. Elements are sorted according to their focusIndex.
+    /// </summary>
     public class VisualElementFocusRing : IFocusRing
     {
+        /// <summary>
+        /// Ordering of elements in the focus ring.
+        /// </summary>
         public enum DefaultFocusOrder
         {
+            /// <summary>
+            /// Order elements using a depth-first pre-order traversal of the element tree.
+            /// </summary>
             ChildOrder,
+            /// <summary>
+            /// Order elements according to their position, first by X, then by Y.
+            /// </summary>
             PositionXY,
+            /// <summary>
+            /// Order elements according to their position, first by Y, then by X.
+            /// </summary>
             PositionYX
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="root">The root of the element tree for which we want to build a focus ring.</param>
+        /// <param name="dfo">Default ordering of the elements in the ring.</param>
         public VisualElementFocusRing(VisualElement root, DefaultFocusOrder dfo = DefaultFocusOrder.ChildOrder)
         {
             defaultFocusOrder = dfo;
@@ -38,6 +70,9 @@ namespace UnityEngine.UIElements
 
         readonly VisualElement root;
 
+        /// <summary>
+        /// The focus order for elements having 0 has a focusIndex.
+        /// </summary>
         public DefaultFocusOrder defaultFocusOrder { get; set; }
 
         class FocusRingRecord
@@ -246,6 +281,9 @@ namespace UnityEngine.UIElements
             return -1;
         }
 
+        /// <summary>
+        /// Get the direction of the focus change for the given event. For example, when the Tab key is pressed, focus should be given to the element to the right in the focus ring.
+        /// </summary>
         public FocusChangeDirection GetFocusChangeDirection(Focusable currentFocusable, EventBase e)
         {
             if (e == null)
@@ -283,6 +321,9 @@ namespace UnityEngine.UIElements
             return FocusChangeDirection.none;
         }
 
+        /// <summary>
+        /// Get the next element in the given direction.
+        /// </summary>
         public Focusable GetNextFocusable(Focusable currentFocusable, FocusChangeDirection direction)
         {
             if (direction == FocusChangeDirection.none || direction == FocusChangeDirection.unspecified)

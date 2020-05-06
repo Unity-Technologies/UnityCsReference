@@ -10,11 +10,23 @@ namespace UnityEngine.UIElements
     // it is the registrar's responsibility to read the TimerState to determine the actual event timing
     // and make sure things like animation are smooth and time based.
     // a delayMs of 0 and intervalMs of 0 will be interpreted as "as often as possible" this should be used sparingly and the work done should be very small
+    /// <summary>
+    /// Contains timing information of scheduler events.
+    /// </summary>
     public struct TimerState : IEquatable<TimerState>
     {
+        /// <summary>
+        /// Start time in milliseconds, or last callback time for repeatable <see cref="IScheduledItem"/>.
+        /// </summary>
         public long start { get; set; }
+        /// <summary>
+        /// Current time in milliseconds.
+        /// </summary>
         public long now { get; set; }
 
+        /// <summary>
+        /// Time difference in milliseconds between <see cref="now"/> and the previous callback.
+        /// </summary>
         public long deltaTime
         {
             get
@@ -23,11 +35,21 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Compare this object with another object and return true if they are equal.
+        /// </summary>
+        /// <param name="obj">The object to compare with.</param>
+        /// <returns>True if the objects are equal.</returns>
         public override bool Equals(object obj)
         {
             return obj is TimerState && Equals((TimerState)obj);
         }
 
+        /// <summary>
+        /// Compare this object with another object and return true if they are equal.
+        /// </summary>
+        /// <param name="other">The object to compare with.</param>
+        /// <returns>True if the objects are equal.</returns>
         public bool Equals(TimerState other)
         {
             return start == other.start &&

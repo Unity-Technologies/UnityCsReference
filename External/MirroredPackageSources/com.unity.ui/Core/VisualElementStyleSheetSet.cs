@@ -3,6 +3,15 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// This structure manipulates the set of <see cref="StyleSheet"/> objects attached to the owner <see cref="VisualElement"/>.
+    /// </summary>
+    /// <remarks>
+    ///
+    ///                 <see cref="VisualElementStyleSheetSet"/> instances cannot be created directly.
+    ///                 Use the <see cref="VisualElement.styleSheets"/> property accessor to work with the style sheets of an element.
+    ///
+    /// </remarks>
     public struct VisualElementStyleSheetSet : IEquatable<VisualElementStyleSheetSet>
     {
         private readonly VisualElement m_Element;
@@ -12,6 +21,9 @@ namespace UnityEngine.UIElements
             m_Element = element;
         }
 
+        /// <summary>
+        /// Adds a style sheet for the owner element.
+        /// </summary>
         public void Add(StyleSheet styleSheet)
         {
             if (styleSheet == null)
@@ -30,6 +42,9 @@ namespace UnityEngine.UIElements
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
         }
 
+        /// <summary>
+        /// Removes all style sheets for the owner element.
+        /// </summary>
         public void Clear()
         {
             if (m_Element.styleSheetList == null)
@@ -39,6 +54,9 @@ namespace UnityEngine.UIElements
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
         }
 
+        /// <summary>
+        /// Removes a style sheet for the owner element.
+        /// </summary>
         public bool Remove(StyleSheet styleSheet)
         {
             if (styleSheet == null)
@@ -77,6 +95,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Looks for the specified <see cref="StyleSheet"/>
+        /// </summary>
+        /// <returns>True if the style sheet is attached to the owner element, false otherwise.</returns>
         public bool Contains(StyleSheet styleSheet)
         {
             if (styleSheet == null)
@@ -89,6 +111,10 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        /// <summary>
+        /// Number of style sheets attached to the owner element.
+        ///
+        /// </summary>
         public int count
         {
             get

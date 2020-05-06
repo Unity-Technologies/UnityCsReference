@@ -5,9 +5,18 @@ using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Describes in which context a VisualElement hierarchy is being ran.
+    /// </summary>
     public enum ContextType
     {
+        /// <summary>
+        /// Currently running in an Unity Player.
+        /// </summary>
         Player = 0,
+        /// <summary>
+        /// Currently running in the Unity Editor.
+        /// </summary>
         Editor = 1
     }
 
@@ -39,11 +48,27 @@ namespace UnityEngine.UIElements
         Opacity = 1 << 12,
     }
 
+    /// <summary>
+    /// Offers a set of values that describe the intended usage patterns of a specific <see cref="VisualElement"/>.
+    /// </summary>
     [Flags]
     public enum UsageHints
     {
+        /// <summary>
+        /// No particular hints applicable.
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Marks a <see cref="VisualElement"/> that changes its transformation often (i.e. position, rotation or scale).
+        /// When specified, this flag hints the system to optimize rendering of the <see cref="VisualElement"/> for recurring transformation changes. The VisualElement's vertex transformation will be done by the GPU when possible on the target platform.
+        /// Please note that the number of VisualElements to which this hint effectively applies can be limited by target platform capabilities. For such platforms, it is recommended to prioritize use of this hint to only the VisualElements with the highest frequency of transformation changes.
+        /// </summary>
         DynamicTransform = 1 << 0,
+        /// <summary>
+        /// Marks a <see cref="VisualElement"/> that hosts many children with <see cref="DynamicTransform"/> applied on them.
+        /// A common use-case of this hint is a VisualElement that represents a "viewport" within which there are many <see cref="DynamicTransform"/> VisualElements that can move individually in addition to the "viewport" element also often changing its transformation. However, if the contents of the aforementioned "viewport" element are mostly static (not moving) then it is enough to use the <see cref="DynamicTransform"/> hint on that element instead of <see cref="GroupTransform"/>.
+        /// Internally, an element hinted with <see cref="GroupTransform"/> will force a separate draw batch with its world transformation value, but in the same time it will avoid changing the transforms of all its descendants whenever a transformation change occurs on the <see cref="GroupTransform"/> element.
+        /// </summary>
         GroupTransform = 1 << 1
     }
 
@@ -115,16 +140,45 @@ namespace UnityEngine.UIElements
     }
 
     // Passed-in to every element of the visual tree
+    /// <summary>
+    /// Interface for classes implementing UI panels.
+    /// </summary>
     public interface IPanel : IDisposable
     {
+        /// <summary>
+        /// Root of the VisualElement hierarchy.
+        /// </summary>
         VisualElement visualTree { get; }
+        /// <summary>
+        /// This Panel EventDispatcher.
+        /// </summary>
         EventDispatcher dispatcher { get; }
+        /// <summary>
+        /// Describes in which context a VisualElement hierarchy is being ran.
+        /// </summary>
         ContextType contextType { get; }
+        /// <summary>
+        /// Return the focus controller for this panel.
+        /// </summary>
         FocusController focusController { get; }
+        /// <summary>
+        /// Returns the top element at this position. Will not return elements with pickingMode set to <see cref="PickingMode.Ignore"/>.
+        /// </summary>
+        /// <param name="point">World coordinates.</param>
+        /// <returns>Top VisualElement at the position. Null if none was found.</returns>
         VisualElement Pick(Vector2 point);
 
+        /// <summary>
+        /// Returns all elements at this position. Will not return elements with pickingMode set to <see cref="PickingMode.Ignore"/>.
+        /// </summary>
+        /// <param name="point">World coordinates.</param>
+        /// <param name="picked">All Visualelements overlapping this position.</param>
+        /// <returns>Top VisualElement at the position. Null if none was found.</returns>
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
+        /// <summary>
+        /// The Contextual menu manager for the panel.
+        /// </summary>
         ContextualMenuManager contextualMenuManager { get; }
     }
 
@@ -598,31 +652,23 @@ namespace UnityEngine.UIElements
                 var child = root.hierarchy[i];
                 var result = PerformPick(child, point, picked);
                 if (returnedChild == null && result != null && result.visible)
-                    returnedChild = result;
-            }
-
-            if (picked != null && root.enabledInHierarchy && root.visible && root.pickingMode == PickingMode.Position && containsPoint)
-            {
-                picked.Add(root);
-            }
-
-            if (returnedChild != null)
-                return returnedChild;
-
-            switch (root.pickingMode)
-            {
-                case PickingMode.Position:
                 {
-                    if (containsPoint && root.enabledInHierarchy && root.visible)
+                    if (picked == null)
                     {
-                        return root;
+                        return result;
                     }
+                    returnedChild = result;
                 }
-                break;
-                case PickingMode.Ignore:
-                    break;
             }
-            return null;
+
+            if (root.enabledInHierarchy && root.visible && root.pickingMode == PickingMode.Position && containsPoint)
+            {
+                picked?.Add(root);
+                if (returnedChild == null)
+                    returnedChild = root;
+            }
+
+            return returnedChild;
         }
 
         public override VisualElement PickAll(Vector2 point, List<VisualElement> picked)
@@ -785,6 +831,14 @@ namespace UnityEngine.UIElements
             // if the renderTarget is not set, we simply render on whatever target is currently set
             if (targetTexture == null)
             {
+                // This is called after the camera(s) are done rendering, so the
+                // last camera viewport will leak here.  The "overlay" panels should
+                // render on the whole framebuffer, so we force a fullscreen viewport here.
+                var rt = RenderTexture.active;
+                int width = rt != null ? rt.width : Screen.width;
+                int height = rt != null ? rt.height : Screen.height;
+                GL.Viewport(new Rect(0, 0, width, height));
+
                 clearFlags = PanelClearFlags.Depth;
                 base.Repaint(e);
                 return;
