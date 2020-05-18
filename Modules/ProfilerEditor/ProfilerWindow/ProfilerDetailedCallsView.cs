@@ -468,7 +468,7 @@ namespace UnityEditorInternal.Profiling
                         headerContent = (m_Type == CallsTreeView.Type.Callers ? Styles.callersLabel : Styles.calleesLabel),
                         headerTextAlignment = TextAlignment.Left,
                         sortedAscending = true,
-                        sortingArrowAlignment = TextAlignment.Center,
+                        sortingArrowAlignment = TextAlignment.Right,
                         width = 150, minWidth = 150,
                         autoResize = true, allowToggleVisibility = false
                     },

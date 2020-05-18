@@ -24,6 +24,10 @@ namespace UnityEditorInternal
         public float m_DataScale;
         public ChartViewData m_Data;
         public ChartSeriesViewData[] m_Series;
+        // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
+        // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
+        // Shared scale is only used for line charts and should only be used when every series shares the same data unit.
+        public bool m_SharedScale;
 
         private static string[] s_LocalizedChartNames = null;
 

@@ -24,8 +24,8 @@ namespace UnityEditorInternal.Profiling
         {
             base.OnEnable(profilerWindow);
 
-            m_TimelineGUI = new ProfilerTimelineGUI(m_ProfilerWindow);
-            m_TimelineGUI.OnEnable(this, false);
+            m_TimelineGUI = new ProfilerTimelineGUI();
+            m_TimelineGUI.OnEnable(this, profilerWindow, false);
             m_TimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
         }
 
@@ -45,7 +45,7 @@ namespace UnityEditorInternal.Profiling
         {
             if (m_TimelineGUI != null && m_ViewType == ProfilerViewType.Timeline)
             {
-                m_TimelineGUI.DoGUI(m_ProfilerWindow.GetActiveVisibleFrameIndex(), position);
+                m_TimelineGUI.DoGUI(m_ProfilerWindow.GetActiveVisibleFrameIndex(), position, fetchData, ref m_UpdateViewLive);
             }
             else
             {

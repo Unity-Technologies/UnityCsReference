@@ -1074,8 +1074,8 @@ namespace UnityEditor
                 {
                     var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
-                        "Save and Restart", "Discard Changes and Restart", "Cancel Changing API");
-                    if (result == 2)
+                        "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
+                    if (result == 1)
                     {
                         doRestart = false; // Cancel was selected
                     }
@@ -1085,7 +1085,13 @@ namespace UnityEditor
                         if (result == 0) // Save and Restart was selected
                         {
                             for (int i = 0; i < dirtyScenes.Count; ++i)
-                                EditorSceneManager.SaveScene(dirtyScenes[i]);
+                            {
+                                var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
+                                if (saved == false)
+                                {
+                                    doRestart = false;
+                                }
+                            }
                         }
                         else // Discard Changes and Restart was selected
                         {
