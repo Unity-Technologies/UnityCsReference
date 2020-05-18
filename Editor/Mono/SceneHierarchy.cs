@@ -803,9 +803,9 @@ namespace UnityEditor
                 GUIUtility.hotControl = 0;
 
                 GenericMenu menu = new GenericMenu();
-                var context = m_CustomParentForNewGameObjects != null ? new[] { m_CustomParentForNewGameObjects.gameObject } : null;
                 var targetSceneHandle = m_CustomParentForNewGameObjects != null ? m_CustomParentForNewGameObjects.gameObject.scene.handle : kInvalidSceneHandle;
-                AddCreateGameObjectItemsToMenu(menu, context, true, false, targetSceneHandle);
+                // The context should be null, just like it is in the main menu. Case 1185434.
+                AddCreateGameObjectItemsToMenu(menu, null, true, false, targetSceneHandle);
                 menu.DropDown(rect);
 
                 Event.current.Use();
