@@ -454,7 +454,7 @@ namespace UnityEditor
             get
             {
                 if (m_Targets.Length == 1 || !m_AllowMultiObjectAccess)
-                    return target.name;
+                    return ObjectNames.GetInspectorTitle(target);
                 else
                     return m_Targets.Length + " " + ObjectNames.NicifyVariableName(ObjectNames.GetTypeName(target)) + "s";
             }

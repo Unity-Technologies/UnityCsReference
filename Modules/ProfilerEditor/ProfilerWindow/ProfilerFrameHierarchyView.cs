@@ -235,7 +235,7 @@ namespace UnityEditorInternal.Profiling
             }
             m_DetailedCallsView.frameItemEvent += FrameItem;
             if (m_DetailedViewSpliterState == null || m_DetailedViewSpliterState.relativeSizes == null || m_DetailedViewSpliterState.relativeSizes.Length == 0)
-                m_DetailedViewSpliterState = new SplitterState(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450, 50 }, null);
+                m_DetailedViewSpliterState = SplitterState.FromRelative(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450f, 50f }, null);
             if (!m_Serialized)
                 m_DetailedViewType = (DetailedViewType)SessionState.GetInt(detailedViewTypeStatePrefKey, (int)DetailedViewType.None);
 
@@ -243,9 +243,9 @@ namespace UnityEditorInternal.Profiling
             m_Initialized = true;
         }
 
-        public override void OnEnable(CPUorGPUProfilerModule cpuModule, bool isGpuView)
+        public override void OnEnable(CPUorGPUProfilerModule cpuModule, IProfilerWindowController profilerWindow, bool isGpuView)
         {
-            base.OnEnable(cpuModule, isGpuView);
+            base.OnEnable(cpuModule, profilerWindow, isGpuView);
             if (m_DetailedCallsView != null)
                 m_DetailedCallsView.profilerSampleNameProvider = cpuModule;
         }
@@ -361,7 +361,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public void DoGUI(HierarchyFrameDataView frameDataView)
+        public void DoGUI(HierarchyFrameDataView frameDataView, bool fetchData, ref bool updateViewLive)
         {
             using (m_DoGUIMarker.Auto())
             {
@@ -384,7 +384,7 @@ namespace UnityEditorInternal.Profiling
                 // Hierarchy view area
                 GUILayout.BeginVertical();
 
-                DrawToolbar(frameDataView, showDetailedView);
+                DrawToolbar(frameDataView, showDetailedView, ref updateViewLive);
 
                 if (!string.IsNullOrEmpty(dataAvailabilityMessage))
                 {
@@ -392,7 +392,10 @@ namespace UnityEditorInternal.Profiling
                 }
                 else if (!isDataAvailable)
                 {
-                    GUILayout.Label(BaseStyles.noData, BaseStyles.label);
+                    if (!fetchData && !updateViewLive)
+                        GUILayout.Label(BaseStyles.liveUpdateMessage, BaseStyles.label);
+                    else
+                        GUILayout.Label(BaseStyles.noData, BaseStyles.label);
                 }
                 else if (!isSearchAllowed)
                 {
@@ -445,25 +448,28 @@ namespace UnityEditorInternal.Profiling
             treeView.searchString = m_SearchField.OnToolbarGUI(rect, treeView.searchString);
         }
 
-        void DrawToolbar(HierarchyFrameDataView frameDataView, bool showDetailedView)
+        void DrawToolbar(HierarchyFrameDataView frameDataView, bool showDetailedView, ref bool updateViewLive)
         {
             EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
 
-            if (frameDataView.valid)
+            if (frameDataView != null && frameDataView.valid)
                 DrawViewTypePopup((frameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) != 0 ? ProfilerViewType.Hierarchy : ProfilerViewType.RawHierarchy);
+            else
+                DrawViewTypePopup(ProfilerViewType.Hierarchy);
 
+            DrawLiveUpdateToggle(ref updateViewLive);
             if (!gpuView)
             {
-                using (new EditorGUI.DisabledScope(!frameDataView.valid))
+                using (new EditorGUI.DisabledScope(!(frameDataView != null && frameDataView.valid)))
                 {
-                    EditorGUILayout.Space(); // workaround: Remove double lines
                     DrawThreadPopup(frameDataView);
                 }
             }
 
+
             GUILayout.FlexibleSpace();
 
-            if (frameDataView.valid)
+            if (frameDataView != null && frameDataView.valid)
                 DrawCPUGPUTime(frameDataView.frameTimeMs, frameDataView.frameGpuTimeMs);
 
             GUILayout.FlexibleSpace();
@@ -557,7 +563,7 @@ namespace UnityEditorInternal.Profiling
 
         private void DrawThreadPopup(HierarchyFrameDataView frameDataView)
         {
-            if (!frameDataView.valid)
+            if (!(frameDataView != null && frameDataView.valid))
             {
                 var disabledValues = new string[] { m_ThreadName };
                 EditorGUILayout.AdvancedPopup(0, disabledValues, BaseStyles.threadSelectionToolbarDropDown, GUILayout.MinWidth(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));

@@ -184,20 +184,20 @@ namespace UnityEditor
 
             if (m_LayoutStripsOnTop.m_VerticalSplitter == null || m_LayoutStripsOnTop.m_VerticalSplitter.realSizes.Length != 2)
             {
-                m_LayoutStripsOnTop.m_VerticalSplitter = new SplitterState(new int[] { 65, 35 }, new int[] { 85, 105 }, null);
+                m_LayoutStripsOnTop.m_VerticalSplitter = SplitterState.FromAbsolute(new float[] { 65, 35 }, new float[] { 85, 105 }, null);
             }
 
             if (m_LayoutStripsOnTop.m_HorizontalSplitter == null || m_LayoutStripsOnTop.m_HorizontalSplitter.realSizes.Length != 4)
-                m_LayoutStripsOnTop.m_HorizontalSplitter = new SplitterState(new int[] { 60, 60, 60, 60 }, new int[] { 85, 85, 85, 85 }, null);
+                m_LayoutStripsOnTop.m_HorizontalSplitter = SplitterState.FromAbsolute(new float[] { 60, 60, 60, 60 }, new float[] { 85, 85, 85, 85 }, null);
 
             if (m_LayoutStripsOnRight == null)
                 m_LayoutStripsOnRight = new Layout();
 
             if (m_LayoutStripsOnRight.m_HorizontalSplitter == null || m_LayoutStripsOnRight.m_HorizontalSplitter.realSizes.Length != 2)
-                m_LayoutStripsOnRight.m_HorizontalSplitter = new SplitterState(new int[] { 30, 70 }, new int[] { 160, 160 }, null);
+                m_LayoutStripsOnRight.m_HorizontalSplitter = SplitterState.FromAbsolute(new float[] { 30, 70 }, new float[] { 160, 160 }, null);
 
             if (m_LayoutStripsOnRight.m_VerticalSplitter == null || m_LayoutStripsOnRight.m_VerticalSplitter.realSizes.Length != 4)
-                m_LayoutStripsOnRight.m_VerticalSplitter = new SplitterState(new int[] { 60, 60, 60, 60 }, new int[] { 100, 85, 85, 85 }, null);
+                m_LayoutStripsOnRight.m_VerticalSplitter = SplitterState.FromAbsolute(new float[] { 60, 60, 60, 60 }, new float[] { 100, 85, 85, 85 }, null);
 
             if (m_AudioGroupTreeState == null)
                 m_AudioGroupTreeState = new TreeViewState();

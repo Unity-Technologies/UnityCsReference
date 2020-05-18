@@ -11,7 +11,7 @@ namespace UnityEditor.UIElements
     {
 
         // Add submenu after GUI Skin
-        [MenuItem("Assets/Create/UIElements/USS File", false, 603, false)]
+        [MenuItem("Assets/Create/UI Toolkit/Style Sheet", false, 603, false)]
         public static void CreateUSSFile()
         {
             if (CommandService.Exists(nameof(CreateUSSFile)))

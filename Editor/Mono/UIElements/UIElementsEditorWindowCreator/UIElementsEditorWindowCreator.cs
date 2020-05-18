@@ -30,7 +30,7 @@ namespace UnityEditor.UIElements
         bool m_IsUxmlEnable = true;
 
 
-        [MenuItem("Assets/Create/UIElements/Editor Window", false, 701, false)]
+        [MenuItem("Assets/Create/UI Toolkit/Editor Window", false, 701, false)]
         public static void CreateTemplateEditorWindow()
         {
             if (CommandService.Exists(nameof(CreateTemplateEditorWindow)))
@@ -44,7 +44,7 @@ namespace UnityEditor.UIElements
 
         public static void OpenCreateTemplateEditorWindow()
         {
-            var editorWindow = GetWindow<UIElementsEditorWindowCreator>(true, "UIElements Editor Window Creator");
+            UIElementsEditorWindowCreator editorWindow = GetWindow<UIElementsEditorWindowCreator>(true, "UI Toolkit Editor Window Creator");
             editorWindow.maxSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
             editorWindow.minSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
             editorWindow.init();
@@ -72,7 +72,7 @@ namespace UnityEditor.UIElements
             // After the c# file has been created and the domain.reload executed, we want to close the window
             if (m_CSharpName != "" && ClassExists())
             {
-                EditorApplication.ExecuteMenuItem("Window/UIElements/" + m_CSharpName);
+                EditorApplication.ExecuteMenuItem("Window/Project/" + m_CSharpName);
                 EditorApplication.CallbackFunction handler = null;
                 handler = () =>
                 {

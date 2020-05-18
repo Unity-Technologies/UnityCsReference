@@ -185,6 +185,9 @@ namespace UnityEditor
         private bool m_AllowAlphaNumericHierarchy = false;
         private bool m_EnableCodeCoverage = false;
         private bool m_EnableCodeCoverageChangedInThisSession = false;
+        private readonly string kEnablingCodeCoverageMessage = L10n.Tr("Enabling Code Coverage will not take effect until Unity is restarted. Note that Code Coverage lowers Editor performance.");
+        private readonly string kDisablingCodeCoverageMessage = L10n.Tr("Disabling Code Coverage will not take effect until Unity is restarted.");
+        private readonly string kCodeCoverageEnabledMessage = L10n.Tr("Code Coverage collection is enabled for this Unity session. Note that Code Coverage lowers Editor performance.");
         private bool m_Create3DObjectsAtOrigin = false;
         private float m_ProgressDialogDelay = 3.0f;
 
@@ -593,8 +596,22 @@ namespace UnityEditor
             m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
             if (m_EnableCodeCoverage != Coverage.enabled)
             {
-                EditorGUILayout.HelpBox((m_EnableCodeCoverage ? "Enabling " : "Disabling ") + "Code Coverage will not take effect until Unity is restarted.", MessageType.Warning);
+                if (m_EnableCodeCoverage)
+                {
+                    EditorGUILayout.HelpBox(kEnablingCodeCoverageMessage, MessageType.Warning);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox(kDisablingCodeCoverageMessage, MessageType.Warning);
+                }
                 m_EnableCodeCoverageChangedInThisSession = true;
+            }
+            else
+            {
+                if (Coverage.enabled)
+                {
+                    EditorGUILayout.HelpBox(kCodeCoverageEnabledMessage, MessageType.Warning);
+                }
             }
 
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(GeneralProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);

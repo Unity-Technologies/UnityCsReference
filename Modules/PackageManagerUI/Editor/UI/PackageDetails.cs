@@ -678,6 +678,11 @@ namespace UnityEditor.PackageManager.UI
 
                 downloadProgress.UpdateProgress(operation);
             }
+            else
+            {
+                UIUtils.SetElementDisplay(downloadProgress, false);
+            }
+
 
             var importable = displayVersion.HasTag(PackageTag.Importable);
             UIUtils.SetElementDisplay(importButton, importable);

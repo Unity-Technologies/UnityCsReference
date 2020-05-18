@@ -208,7 +208,10 @@ namespace UnityEditor.VersionControl
             foreach (var path in assets)
             {
                 var asset = GetAssetByPath(path);
-                assetList.Add(asset);
+                if (asset == null)
+                {
+                    asset = new Asset(path);
+                }
             }
 
             return CheckCallbackAndCheckout(assetList, mode, changeset);
@@ -260,10 +263,7 @@ namespace UnityEditor.VersionControl
 
         static public Task Checkout(string asset, CheckoutMode mode, ChangeSet changeset)
         {
-            var assetList = new AssetList();
-            assetList.Add(GetAssetByPath(asset));
-
-            return CheckCallbackAndCheckout(assetList, mode, changeset);
+            return Checkout(new string[] { asset }, mode, changeset);
         }
 
         static public Task Checkout(UnityEngine.Object asset, CheckoutMode mode)

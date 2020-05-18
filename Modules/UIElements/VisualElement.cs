@@ -1306,7 +1306,8 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(node == yogaNode, "YogaNode instance mismatch");
             Vector2 size = DoMeasure(width, (MeasureMode)widthMode, height, (MeasureMode)heightMode);
-            return MeasureOutput.Make(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
+            float ppp = scaledPixelsPerPoint;
+            return MeasureOutput.Make(AlignmentUtils.RoundToPixelGrid(size.x, ppp), AlignmentUtils.RoundToPixelGrid(size.y, ppp));
         }
 
         internal void SetSize(Vector2 size)

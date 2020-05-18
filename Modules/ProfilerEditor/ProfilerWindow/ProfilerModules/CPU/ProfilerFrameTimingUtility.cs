@@ -39,10 +39,12 @@ namespace UnityEditorInternal.Profiling
             var frame = ProfilerDriver.GetPreviousFrameIndex(fromFrameIndex);
             while ((frame >= toFrameIndex) && (frame != -1))
             {
-                var frameData = ProfilerDriver.GetRawFrameDataView(frame, 0);
-                timeOffset -= frameData.frameTimeMs;
+                using (var frameData = ProfilerDriver.GetRawFrameDataView(frame, 0))
+                {
+                    timeOffset -= frameData.frameTimeMs;
 
-                frame = ProfilerDriver.GetPreviousFrameIndex(frame);
+                    frame = ProfilerDriver.GetPreviousFrameIndex(frame);
+                }
             }
 
             return timeOffset;
@@ -55,10 +57,12 @@ namespace UnityEditorInternal.Profiling
             var frame = fromFrameIndex;
             while ((frame < toFrameIndex) && (frame != -1))
             {
-                var frameData = ProfilerDriver.GetRawFrameDataView(frame, 0);
-                timeOffset += frameData.frameTimeMs;
+                using (var frameData = ProfilerDriver.GetRawFrameDataView(frame, 0))
+                {
+                    timeOffset += frameData.frameTimeMs;
 
-                frame = ProfilerDriver.GetNextFrameIndex(frame);
+                    frame = ProfilerDriver.GetNextFrameIndex(frame);
+                }
             }
 
             return timeOffset;

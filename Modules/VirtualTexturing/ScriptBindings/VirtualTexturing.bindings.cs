@@ -19,7 +19,9 @@ namespace UnityEngine.Rendering
         [StaticAccessor("VirtualTexturing::System", StaticAccessorType.DoubleColon)]
         public static class System
         {
-            extern public static void Update();
+            extern internal static bool enabled { get; }
+
+            [NativeThrows] extern public static void Update();
 
             public const int AllMips = int.MaxValue;
 
@@ -29,8 +31,7 @@ namespace UnityEngine.Rendering
             extern public static void GetTextureStackSize([NotNull] Material mat, int stackNameId, out int width, out int height);
 
             // Apply the virtualtexturing settings to the renderer. This may be an expensive operation so it should be done very sparingly (e.g. during a level load/startup).
-            [NativeThrows]
-            extern public static void ApplyVirtualTexturingSettings(VirtualTexturingSettings settings);
+            [NativeThrows] extern public static void ApplyVirtualTexturingSettings([NotNull] VirtualTexturingSettings settings);
         }
 
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
@@ -38,6 +39,8 @@ namespace UnityEngine.Rendering
         [NativeConditional("UNITY_EDITOR")]
         public static class EditorHelpers
         {
+            [NativeThrows] extern internal static int tileSize { get; }
+
             [NativeHeader("Runtime/Shaders/SharedMaterialData.h")]
             internal struct StackValidationResult
             {
@@ -45,24 +48,21 @@ namespace UnityEngine.Rendering
                 public string errorMessage;
             }
 
-            extern internal static int tileSize { get; }
+            [NativeThrows] extern public static bool ValidateTextureStack([NotNull] Texture[] textures, out string errorMessage);
 
-            [NativeThrows]
-            extern public static bool ValidateTextureStack([NotNull] Texture[] textures, out string errorMessage);
-
-            extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
+            [NativeThrows] extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
 
             [NativeConditional("UNITY_EDITOR", "{}")]
-            extern public static GraphicsFormat[] QuerySupportedFormats();
+            [NativeThrows] extern public static GraphicsFormat[] QuerySupportedFormats();
         }
 
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
         [StaticAccessor("VirtualTexturing::Debugging", StaticAccessorType.DoubleColon)]
         public static class Debugging
         {
-            extern public static int GetNumHandles();
-            extern public static void GrabHandleInfo([Out] out Handle debugHandle, int index);
-            extern public static string GetInfoDump();
+            [NativeThrows] extern public static int GetNumHandles();
+            [NativeThrows] extern public static void GrabHandleInfo([Out] out Handle debugHandle, int index);
+            [NativeThrows] extern public static string GetInfoDump();
 
             [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingDebugHandle.h")]
             [StructLayout(LayoutKind.Sequential)]
@@ -76,9 +76,9 @@ namespace UnityEngine.Rendering
                 public Material material; //Material to initialize with gpu data. If null this is skipped.
             }
 
-            extern public static bool debugTilesEnabled { get; set; }
-            extern public static bool resolvingEnabled { get; set; }
-            extern public static bool flushEveryTickEnabled { get; set; }
+            [NativeThrows] extern public static bool debugTilesEnabled { get; set; }
+            [NativeThrows] extern public static bool resolvingEnabled { get; set; }
+            [NativeThrows] extern public static bool flushEveryTickEnabled { get; set; }
         }
 
         [NativeHeader("Modules/VirtualTexturing/Public/VirtualTextureResolver.h")]
@@ -89,6 +89,10 @@ namespace UnityEngine.Rendering
 
             public Resolver()
             {
+                if (System.enabled == false)
+                {
+                    throw new InvalidOperationException("Virtual texturing is not enabled in the player settings.");
+                }
                 m_Ptr = InitNative();
             }
 
@@ -225,8 +229,8 @@ namespace UnityEngine.Rendering
                 extern internal static void BindToMaterial(ulong handle, [NotNull] Material material, string name);
                 extern internal static void BindGlobally(ulong handle, string name);
 
-                [NativeThrows] extern public static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
-                [NativeThrows] extern public static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
+                [NativeThrows] extern internal static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
+                [NativeThrows] extern internal static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -264,9 +268,11 @@ namespace UnityEngine.Rendering
                         GraphicsFormat.R32_SFloat,
                         GraphicsFormat.A2B10G10R10_UNormPack32
                     };
+
+                    var formatUsage = (gpuGeneration == 1) ? FormatUsage.Render : FormatUsage.Sample;
                     for (int i = 0; i < layers.Length; ++i)
                     {
-                        if (SystemInfo.GetCompatibleFormat(layers[i], FormatUsage.Render) != layers[i])
+                        if (SystemInfo.GetCompatibleFormat(layers[i], formatUsage) != layers[i])
                         {
                             throw new ArgumentException($"Requested format {layers[i]} on layer {i} is not supported on this platform");
                         }
@@ -345,6 +351,11 @@ namespace UnityEngine.Rendering
 
                 public static void CompleteRequests(NativeSlice<TextureStackRequestHandle<T>> requestHandles, NativeSlice<RequestStatus> status)
                 {
+                    if (System.enabled == false)
+                    {
+                        throw new InvalidOperationException("Virtual texturing is not enabled in the player settings.");
+                    }
+
                     if (requestHandles != null && status != null)
                     {
                         if (requestHandles.Length != status.Length)
@@ -371,6 +382,11 @@ namespace UnityEngine.Rendering
 
                 public static void GetRequestParameters(NativeSlice<TextureStackRequestHandle<T>> handles, NativeSlice<T> requests)
                 {
+                    if (System.enabled == false)
+                    {
+                        throw new InvalidOperationException("Virtual texturing is not enabled in the player settings.");
+                    }
+
                     if (handles != null && requests != null)
                     {
                         if (handles.Length != requests.Length)
@@ -470,11 +486,11 @@ namespace UnityEngine.Rendering
                     var layer = GetLayer(layerIdx);
 
                     NativeArray<T> dstDataAsColor;
-                    AtomicSafetyHandle m_Safety = AtomicSafetyHandle.GetTempMemoryHandle();
+                    AtomicSafetyHandle safety = AtomicSafetyHandle.Create();
                     unsafe
                     {
-                        dstDataAsColor = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(layer.data, layer.dataSize, Allocator.Temp);
-                        NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref dstDataAsColor, m_Safety);
+                        dstDataAsColor = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(layer.data, layer.dataSize, Allocator.None);
+                        NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref dstDataAsColor, safety);
                     }
                     var dstWidth = layer.scanlineSize / UnsafeUtility.SizeOf<T>();
                     for (int i = 0; i < height; ++i)
@@ -482,6 +498,7 @@ namespace UnityEngine.Rendering
                         NativeArray<T>.Copy(colorData, i * width, dstDataAsColor, i * dstWidth, width);
                     }
                     dstDataAsColor.Dispose();
+                    AtomicSafetyHandle.Release(safety);
                 }
             }
 
@@ -538,6 +555,11 @@ namespace UnityEngine.Rendering
 
                 public TextureStackBase(string _name, CreationParameters _creationParams, bool gpuGeneration)
                 {
+                    if (System.enabled == false)
+                    {
+                        throw new InvalidOperationException("Virtual texturing is not enabled in the player settings.");
+                    }
+
                     name = _name;
                     creationParams = _creationParams;
                     creationParams.borderSize = borderSize;

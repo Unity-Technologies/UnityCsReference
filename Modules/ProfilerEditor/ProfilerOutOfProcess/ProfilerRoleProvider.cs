@@ -137,7 +137,7 @@ namespace UnityEditor
             static void SetupProfiledConnection(int connId)
             {
                 ProfilerDriver.connectedProfiler = ProfilerDriver.GetAvailableProfilers().FirstOrDefault(id => id == connId);
-                Menu.SetChecked("Edit/Record", s_SlaveProfilerWindow.IsRecording());
+                Menu.SetChecked("Edit/Record", s_SlaveProfilerWindow.IsSetToRecord());
                 Menu.SetChecked("Edit/Deep Profiling", ProfilerDriver.deepProfiling);
                 EditorApplication.UpdateMainWindowTitle();
                 s_SlaveProfilerWindow.Repaint();
@@ -157,7 +157,7 @@ namespace UnityEditor
                 s_SlaveProfilerWindow.Focus();
                 s_SlaveProfilerWindow.SetRecordingEnabled(!ProfilerDriver.enabled);
                 InternalEditorUtility.RepaintAllViews();
-                return s_SlaveProfilerWindow.IsRecording();
+                return s_SlaveProfilerWindow.IsSetToRecord();
             }
 
             static void SetProfilerWindowTitle(ApplicationTitleDescriptor desc)
@@ -237,8 +237,8 @@ namespace UnityEditor
             [UsedImplicitly, CommandHandler("Profiler/Record", CommandHint.Menu)]
             static void OnRecordCommand(CommandExecuteContext ctx)
             {
-                s_SlaveProfilerWindow.SetRecordingEnabled(!s_SlaveProfilerWindow.IsRecording());
-                Menu.SetChecked("Edit/Record", s_SlaveProfilerWindow.IsRecording());
+                s_SlaveProfilerWindow.SetRecordingEnabled(!s_SlaveProfilerWindow.IsSetToRecord());
+                Menu.SetChecked("Edit/Record", s_SlaveProfilerWindow.IsSetToRecord());
             }
 
             [UsedImplicitly, CommandHandler("Profiler/EnableDeepProfiling", CommandHint.Menu)]

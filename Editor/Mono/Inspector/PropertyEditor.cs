@@ -18,7 +18,6 @@ using UnityEngine.UIElements;
 using UnityEditor.SceneManagement;
 
 using Object = UnityEngine.Object;
-using Overflow = UnityEngine.UIElements.Overflow;
 using AssetImporterEditor = UnityEditor.Experimental.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
 
@@ -376,7 +375,8 @@ namespace UnityEditor
 
         protected void SetTitle(Object obj)
         {
-            var titleTooltip = obj.name ?? obj.ToString();
+            var objTitle = ObjectNames.GetInspectorTitle(obj);
+            var titleTooltip = objTitle;
             if (!String.IsNullOrEmpty(m_AssetGUID))
                 titleTooltip = AssetDatabase.GUIDToAssetPath(m_AssetGUID);
             else
@@ -384,6 +384,8 @@ namespace UnityEditor
                 var go = obj as GameObject;
                 if (go)
                     titleTooltip = EditorUtility.GetHierarchyPath(go);
+                else if (obj is Component c)
+                    titleTooltip = $"{EditorUtility.GetHierarchyPath(c.gameObject)} ({objTitle})";
             }
 
             titleContent = EditorGUIUtility.TrTextContentWithIcon(obj.name, titleTooltip, "UnityEditor.InspectorWindow");

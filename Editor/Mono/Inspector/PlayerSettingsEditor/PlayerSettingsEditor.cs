@@ -190,7 +190,12 @@ namespace UnityEditor
             public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
             public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
-            public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Support for virtual texturing", "If enabled virtual texturing may be used in this project.");
+            public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Enable Virtual Texturing*", "Enable support for Virtual Texturing. Changing this value requires an Editor restart.");
+            public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
+            public static readonly GUIContent virtualTexturingUnsupportedAPI = EditorGUIUtility.TrTextContent("The target graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API', and remove OpenGL ES 2/3 and OpenGLCore.");
+            public static readonly GUIContent virtualTexturingUnsupportedAPIWin = EditorGUIUtility.TrTextContent("The target Windows graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Windows', and remove OpenGL ES 2/3 and OpenGLCore.");
+            public static readonly GUIContent virtualTexturingUnsupportedAPIMac = EditorGUIUtility.TrTextContent("The target Mac graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Mac', and remove OpenGLCore.");
+            public static readonly GUIContent virtualTexturingUnsupportedAPILinux = EditorGUIUtility.TrTextContent("The target Linux graphics API does not support Virtual Texturing. To target compatible graphics APIs, uncheck 'Auto Graphics API for Linux', and remove OpenGLCore.");
 
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
@@ -636,16 +641,6 @@ namespace UnityEditor
             Rect rect = EditorGUILayout.GetControlRect();
             rect = EditorGUI.PrefixLabel(rect, 0, SettingsContent.cursorHotspot);
             EditorGUI.PropertyField(rect, m_CursorHotspot, GUIContent.none);
-
-            Rect vtPropRect = EditorGUILayout.GetControlRect();
-            vtPropRect = EditorGUI.PrefixLabel(vtPropRect, 0, SettingsContent.virtualTexturingSupportEnabled);
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.PropertyField(vtPropRect, m_VirtualTexturingSupportEnabled, GUIContent.none);
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(this.target, "Change virtual texture setting");
-                PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
-            }
         }
 
         public bool BeginSettingsBox(int nr, GUIContent header)
@@ -1089,8 +1084,8 @@ namespace UnityEditor
                 {
                     var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
-                        "Save and Restart", "Discard Changes and Restart", "Cancel Changing API");
-                    if (result == 2)
+                        "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
+                    if (result == 1)
                     {
                         doRestart = false; // Cancel was selected
                     }
@@ -1100,7 +1095,13 @@ namespace UnityEditor
                         if (result == 0) // Save and Restart was selected
                         {
                             for (int i = 0; i < dirtyScenes.Count; ++i)
-                                EditorSceneManager.SaveScene(dirtyScenes[i]);
+                            {
+                                var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
+                                if (saved == false)
+                                {
+                                    doRestart = false;
+                                }
+                            }
                         }
                         else // Discard Changes and Restart was selected
                         {
@@ -1879,7 +1880,125 @@ namespace UnityEditor
                     EditorApplication.RequestRepaintAllViews();
             }
 
+            // Virtual Texturing settings
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
+            {
+                Rect vtPropRect = EditorGUILayout.GetControlRect();
+                vtPropRect = EditorGUI.PrefixLabel(vtPropRect, 0, SettingsContent.virtualTexturingSupportEnabled);
+
+                EditorGUI.BeginChangeCheck();
+                bool selectedValue = m_VirtualTexturingSupportEnabled.boolValue;
+                EditorGUI.PropertyField(vtPropRect, m_VirtualTexturingSupportEnabled, GUIContent.none);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    bool doApply = false;
+                    var dirtyScenes = new List<Scene>(EditorSceneManager.sceneCount);
+                    for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
+                    {
+                        var scene = EditorSceneManager.GetSceneAt(i);
+                        if (scene.isDirty)
+                            dirtyScenes.Add(scene);
+                    }
+                    if (dirtyScenes.Count != 0)
+                    {
+                        var result = EditorUtility.DisplayDialogComplex("Changing Virtual Texturing support",
+                            "Enabling or disabling Virtual Texturing requires a restart of the Editor.",
+                            "Save and Restart", "Cancel", "Discard Changes and Restart");
+                        if (result == 1)
+                        {
+                            doApply = false; // Cancel was selected
+                        }
+                        else
+                        {
+                            doApply = true;
+                            if (result == 0) // Save and Restart was selected
+                            {
+                                for (int i = 0; i < dirtyScenes.Count; ++i)
+                                {
+                                    bool saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
+                                    if (saved == false)
+                                    {
+                                        doApply = false;
+                                    }
+                                }
+                            }
+                            else // Discard Changes and Restart was selected
+                            {
+                                for (int i = 0; i < dirtyScenes.Count; ++i)
+                                    EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        doApply = EditorUtility.DisplayDialog("Changing Virtual Texturing support",
+                            "Enabling or disabling Virtual Texturing requires a restart of the Editor.",
+                            "Restart Editor", "Cancel");
+                    }
+                    if (doApply)
+                    {
+                        PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
+                        EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                        GUIUtility.ExitGUI();
+                    }
+                    else
+                    {
+                        m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
+                    }
+                }
+            }
+
+            if (PlayerSettings.GetVirtualTexturingSupportEnabled())
+            {
+                // Test Platform compatibility
+                bool platformSupportsVT = UnityEngine.Rendering.VirtualTexturingEditor.Building.IsPlatformSupportedForPlayer(platform.defaultTarget);
+                if (!platformSupportsVT)
+                {
+                    EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedPlatformWarning.text, MessageType.Warning);
+                }
+
+                // Test for all three 'Automatic Graphics API for X' checkboxes and report API/Platform-specific error
+                if (targetGroup == BuildTargetGroup.Standalone)
+                {
+                    if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows, true) ||
+                        VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows64, true))
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIWin.text, MessageType.Warning);
+                    }
+
+                    if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneLinux64, true))
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPILinux.text, MessageType.Warning);
+                    }
+
+                    if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneOSX, true))
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIMac.text, MessageType.Warning);
+                    }
+                }
+                else
+                {
+                    if (platformSupportsVT && VirtualTexturingInvalidGfxAPI(platform.defaultTarget, false))
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPI.text, MessageType.Warning);
+                    }
+                }
+            }
+
             EditorGUILayout.Space();
+        }
+
+        private bool VirtualTexturingInvalidGfxAPI(BuildTarget target, bool checkEditor)
+        {
+            GraphicsDeviceType[] gfxTypes = PlayerSettings.GetGraphicsAPIs(target);
+
+            bool supportedAPI = true;
+            foreach (GraphicsDeviceType api in gfxTypes)
+            {
+                supportedAPI &= UnityEngine.Rendering.VirtualTexturingEditor.Building.IsRenderAPISupported(api, target, checkEditor);
+            }
+
+            return !supportedAPI;
         }
 
         private void OtherSectionIdentificationGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)

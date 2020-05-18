@@ -18,7 +18,7 @@ namespace UnityEditor
     {
         class Content
         {
-            public static GUIContent unityRemote = EditorGUIUtility.TrTextContent("Unity Remote");
+            public static GUIContent unityRemote = EditorGUIUtility.TrTextContent("Unity Remote (Deprecated)");
             public static GUIContent device = EditorGUIUtility.TrTextContent("Device");
             public static GUIContent compression = EditorGUIUtility.TrTextContent("Compression");
             public static GUIContent resolution = EditorGUIUtility.TrTextContent("Resolution");

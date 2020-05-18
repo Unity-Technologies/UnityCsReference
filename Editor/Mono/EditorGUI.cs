@@ -5807,9 +5807,11 @@ namespace UnityEditor
 
         internal static bool UseVTMaterial(Texture texture)
         {
+            if (PlayerSettings.GetVirtualTexturingSupportEnabled() == false)
+                return false;
             Texture2D tex2d = texture as Texture2D;
             int tileSize = VirtualTexturing.EditorHelpers.tileSize;
-            return PlayerSettings.GetVirtualTexturingSupportEnabled() && tex2d != null && tex2d.vtOnly && tex2d.width > tileSize && tex2d.height > tileSize;
+            return tex2d != null && tex2d.vtOnly && tex2d.width > tileSize && tex2d.height > tileSize;
         }
 
         internal static Rect MultiFieldPrefixLabel(Rect totalPosition, int id, GUIContent label, int columns)

@@ -81,7 +81,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("CONTEXT/Component/Properties...")]
+        [MenuItem("CONTEXT/Component/Properties...", false, 99999)]
         private static void OnOpenPropertiesToComponent(MenuCommand command)
         {
             var component = command.context as Component;

@@ -29,6 +29,7 @@ namespace UnityEditor
         {
             public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the selected Lightmap Encoding and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent invalidVirtualTexturingSettingMessage = EditorGUIUtility.TrTextContent("Cannot build player because Virtual Texturing is enabled, but the target platform or graphics API does not support Virtual Texturing. Go to Player Settings to resolve the incompatibility.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIContent compilingMessage = EditorGUIUtility.TrTextContent("Cannot build player while editor is importing assets or compiling scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIStyle title = EditorStyles.boldLabel;
             public GUIStyle evenRow = "CN EntryBackEven";
@@ -454,6 +455,28 @@ namespace UnityEditor
             }
         }
 
+        static bool IsVirtualTexturingSettingsValid(BuildPlatform platform)
+        {
+            if (!PlayerSettings.GetVirtualTexturingSupportEnabled())
+            {
+                return true;
+            }
+
+            if (!UnityEngine.Rendering.VirtualTexturingEditor.Building.IsPlatformSupportedForPlayer(platform.defaultTarget))
+            {
+                return false;
+            }
+
+            GraphicsDeviceType[] gfxTypes = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+            bool supportedAPI = true;
+            foreach (GraphicsDeviceType api in gfxTypes)
+            {
+                supportedAPI &= UnityEngine.Rendering.VirtualTexturingEditor.Building.IsRenderAPISupported(api, platform.defaultTarget, false);
+            }
+
+            return supportedAPI;
+        }
+
         // Major.Minor.Micro followed by one of abxfp followed by an identifier, optionally suffixed with " (revisionhash)"
         static Regex s_VersionPattern = new Regex(@"(?<shortVersion>\d+\.\d+\.\d+(?<suffix>((?<alphabeta>[abx])|[fp])[^\s]*))( \((?<revision>[a-fA-F\d]+)\))?",
             RegexOptions.Compiled);
@@ -854,6 +877,12 @@ namespace UnityEditor
                 enableBuildAndRunButton = false;
                 enableBuildButton = false;
                 EditorGUILayout.HelpBox(styles.invalidLightmapEncodingMessage);
+            }
+            else if (!IsVirtualTexturingSettingsValid(platform) && enableBuildButton && enableBuildAndRunButton)
+            {
+                enableBuildAndRunButton = false;
+                enableBuildButton = false;
+                EditorGUILayout.HelpBox(styles.invalidVirtualTexturingSettingMessage);
             }
 
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)

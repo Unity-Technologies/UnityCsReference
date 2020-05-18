@@ -159,7 +159,7 @@ namespace UnityEditor
             if (Unsupported.IsDeveloperMode())
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Use UIElements Default Inspector"), useUIElementsDefaultInspector, SetUseUIEDefaultInspector);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Use UI Toolkit Default Inspector"), useUIElementsDefaultInspector, SetUseUIEDefaultInspector);
             }
 
             m_LockTracker.AddItemsToMenu(menu);

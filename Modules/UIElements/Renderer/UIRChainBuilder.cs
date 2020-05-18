@@ -961,7 +961,7 @@ namespace UnityEngine.UIElements.UIR
             bool realDevice = device as UIRenderDevice != null;
             float y_off = 12;
             var rc = new Rect(30, 60, 1000, 100);
-            GUI.Box(new Rect(20, 40, 200, realDevice ? 380 : 256), "UIElements Draw Stats");
+            GUI.Box(new Rect(20, 40, 200, realDevice ? 380 : 256), "UI Toolkit Draw Stats");
             GUI.Label(rc, "Elements added\t: " + m_Stats.elementsAdded); rc.y += y_off;
             GUI.Label(rc, "Elements removed\t: " + m_Stats.elementsRemoved); rc.y += y_off;
             GUI.Label(rc, "Mesh allocs allocated\t: " + m_Stats.newMeshAllocations); rc.y += y_off;
