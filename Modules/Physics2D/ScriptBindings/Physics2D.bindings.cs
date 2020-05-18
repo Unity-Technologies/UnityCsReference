@@ -716,7 +716,7 @@ namespace UnityEngine
         // Get whether collisions between specific colliders are ignored or not.
         [StaticAccessor("PhysicsScene2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetIgnoreCollision_Binding")]
-        extern public static bool GetIgnoreCollision([Writable] Collider2D collider1, [Writable] Collider2D collider2);
+        extern public static bool GetIgnoreCollision([NotNull][Writable] Collider2D collider1, [NotNull][Writable] Collider2D collider2);
 
         // Ignore collisions between specific layers.
         [ExcludeFromDocs]

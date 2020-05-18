@@ -73,6 +73,8 @@ namespace UnityEditor
             public static readonly GUIStyle profilerGraphBackground = "ProfilerScrollviewBackground";
             public static readonly GUIStyle profilerDetailViewBackground = "ProfilerDetailViewBackground";
 
+            public static readonly GUILayoutOption chartWidthOption = GUILayout.Width(Chart.kSideWidth - 1);
+
             static Styles()
             {
                 profilerGraphBackground.overflow.left = -(int)Chart.kSideWidth;
@@ -246,7 +248,7 @@ namespace UnityEditor
 
         public bool IsRecording()
         {
-            return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
+            return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || ProfilerDriver.profileEditor || !ProfilerDriver.IsConnectionEditor());
         }
 
         public bool IsSetToRecord()
@@ -408,6 +410,11 @@ namespace UnityEditor
             ProfilerChart newChart = (i == ProfilerArea.UIDetails)
                 ? new UISystemProfilerChart(chartType, scale, length)
                 : new ProfilerChart(i, chartType, scale, length);
+
+            if (i == ProfilerArea.NetworkMessages || i == ProfilerArea.NetworkOperations)
+            {
+                newChart.m_SharedScale = true;
+            }
             newChart.selected += OnChartSelected;
             newChart.closed += OnChartClosed;
             return newChart;
@@ -870,10 +877,12 @@ namespace UnityEditor
                     maxValues[i] = maxValue;
                 }
             }
-            if (chart.m_Area == ProfilerArea.NetworkMessages || chart.m_Area == ProfilerArea.NetworkOperations)
+            if (chart.m_SharedScale && chart.m_Type == Chart.ChartType.Line)
             {
+                // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
+                // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
                 for (int i = 0, count = chart.m_Series.Length; i < count; ++i)
-                    chart.m_Series[i].rangeAxis = new Vector2(0f, 0.9f * totalMaxValue);
+                    chart.m_Series[i].rangeAxis = new Vector2(0f, (1.05f + i * 0.05f) * totalMaxValue);
                 chart.m_Data.maxValue = totalMaxValue;
             }
             chart.m_Data.Assign(chart.m_Series, firstEmptyFrame, firstFrame);
@@ -964,7 +973,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             // Graph types
-            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, GUILayout.Width(Chart.kSideWidth - 1));
+            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, Styles.chartWidthOption);
             if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
             {
                 int length = m_Charts.Length;
@@ -1148,23 +1157,26 @@ namespace UnityEditor
             }
 
 
-            if (GUILayout.Toggle(m_CurrentFrame == -1, Styles.currentFrame, EditorStyles.toolbarButton))
+            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex < 0))
             {
-                if (!m_CurrentFrameEnabled)
+                if (GUILayout.Toggle(ProfilerDriver.lastFrameIndex >= 0 && m_CurrentFrame == -1, Styles.currentFrame, EditorStyles.toolbarButton))
                 {
-                    SetCurrentFrame(-1);
-                    m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
-                    m_CurrentFrameEnabled = true;
+                    if (!m_CurrentFrameEnabled)
+                    {
+                        SetCurrentFrame(-1);
+                        m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
+                        m_CurrentFrameEnabled = true;
+                    }
                 }
-            }
-            else if (m_CurrentFrame == -1)
-            {
-                m_CurrentFrameEnabled = false;
-                PrevFrame();
-            }
-            else if (m_CurrentFrameEnabled && m_CurrentFrame >= 0)
-            {
-                m_CurrentFrameEnabled = false;
+                else if (m_CurrentFrame == -1)
+                {
+                    m_CurrentFrameEnabled = false;
+                    PrevFrame();
+                }
+                else if (m_CurrentFrameEnabled && m_CurrentFrame >= 0)
+                {
+                    m_CurrentFrameEnabled = false;
+                }
             }
 
             // Frame number

@@ -53,7 +53,7 @@ namespace UnityEngine
         {
             get
             {
-                fixed(uint* ptr1 = &m_u32_1)
+                fixed(uint* ptr1 = &m_u32_2)
                 return *(ulong*)ptr1;
             }
         }
@@ -83,13 +83,13 @@ namespace UnityEngine
             return Internal_Hash128ToString(this);
         }
 
-        [FreeFunction("StringToHash128")]
+        [FreeFunction("StringToHash128", IsThreadSafe = true)]
         public static extern Hash128 Parse(string hashString);
 
-        [FreeFunction("Hash128ToString")]
+        [FreeFunction("Hash128ToString", IsThreadSafe = true)]
         internal static extern string Internal_Hash128ToString(Hash128 hash128);
 
-        [FreeFunction("ComputeHash128FromString")]
+        [FreeFunction("ComputeHash128FromString", IsThreadSafe = true)]
         public static extern Hash128 Compute(string hashString);
 
         public override bool Equals(object obj)
