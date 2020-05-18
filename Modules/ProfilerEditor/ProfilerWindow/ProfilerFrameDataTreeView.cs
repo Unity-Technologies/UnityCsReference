@@ -556,6 +556,10 @@ namespace UnityEditorInternal
             var id = selectedIds.Count > 0 ? selectedIds[0] : -1;
             if (selectionChanged != null)
                 selectionChanged.Invoke(id);
+
+            if (selectedIds.Count > 0)
+                // Selection change event handling will set this path and cause a selection migration, which is unnecessary and will fail in Raw Hierarchy
+                m_LegacySelectedItemMarkerNamePath = null;
         }
 
         protected override void ExpandedStateChanged()

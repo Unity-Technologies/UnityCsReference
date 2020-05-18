@@ -57,7 +57,7 @@ namespace UnityEditor.VisualStudioIntegration
             }
 
             s_UnityVSBridgeToLoad = bridgeFile;
-            InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileNameWithoutExtension(bridgeFile), bridgeFile);
+            InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileNameWithoutExtension(bridgeFile), bridgeFile);
         }
 
         private static bool IsVSForMac(string externalEditor, out Version vsfmVersion)
@@ -172,7 +172,7 @@ namespace UnityEditor.VisualStudioIntegration
                 return;
             }
             s_UnityVSBridgeToLoad = bridgeFile;
-            InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileNameWithoutExtension(bridgeFile), bridgeFile);
+            InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileNameWithoutExtension(bridgeFile), bridgeFile);
         }
 
         static bool IsVisualStudio(string externalEditor, out VisualStudioVersion vsVersion)
