@@ -610,14 +610,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
 
+                if ((settings.CompilationOptions &
+                     EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) ==
+                    EditorScriptCompilationOptions.BuildingUseDeterministicCompilation)
+                {
+                    scriptAssembly.CompilerOptions.UseDeterministicCompilation = true;
+                }
+
                 scriptAssembly.CompilerOptions.CodeOptimization = (buildingForEditor
                     && settings.EditorCodeOptimization == CodeOptimization.Release
                     || !buildingForEditor && !settings.BuildingDevelopmentBuild)
                     ? CodeOptimization.Release : CodeOptimization.Debug;
-
-                // Script files must always be passed in the same order to the compiler.
-                // Otherwise player builds might fail for partial classes.
-                Array.Sort(scriptAssembly.Files, StringComparer.Ordinal);
             }
 
             // Don't add the auto-referenced engine assemblies if the assembly either has the flag set, or

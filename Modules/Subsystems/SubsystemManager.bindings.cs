@@ -11,6 +11,7 @@ namespace UnityEngine
     [NativeHeader("Modules/Subsystems/SubsystemManager.h")]
     public static partial class SubsystemManager
     {
+        // ReSharper disable once UnusedMember.Local - called by native code
         [RequiredByNativeCode]
         static void ReloadSubsystemsStarted()
         {
@@ -21,6 +22,7 @@ namespace UnityEngine
                 beforeReloadSubsystems();
         }
 
+        // ReSharper disable once UnusedMember.Local - called by native code
         [RequiredByNativeCode]
         static void ReloadSubsystemsCompleted()
         {
@@ -31,6 +33,7 @@ namespace UnityEngine
                 afterReloadSubsystems();
         }
 
+        // ReSharper disable once UnusedMember.Local - called by native code
         [RequiredByNativeCode]
         static void InitializeIntegratedSubsystem(IntPtr ptr, IntegratedSubsystem subsystem)
         {
@@ -39,6 +42,7 @@ namespace UnityEngine
             s_IntegratedSubsystems.Add(subsystem);
         }
 
+        // ReSharper disable once UnusedMember.Local - called by native code
         [RequiredByNativeCode]
         static void ClearSubsystems()
         {

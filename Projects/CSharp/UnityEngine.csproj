@@ -1939,9 +1939,6 @@
     <Compile Include="..\..\Runtime\Export\Camera\ReflectionProbe.bindings.cs">
       <Link>Runtime\Export\Camera\ReflectionProbe.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Camera\ScriptableCamera.bindings.cs">
-      <Link>Runtime\Export\Camera\ScriptableCamera.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\ScriptableRuntimeReflectionSystem.cs">
       <Link>Runtime\Export\Camera\ScriptableRuntimeReflectionSystem.cs</Link>
     </Compile>
@@ -2673,6 +2670,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\YieldOperation.cs">
       <Link>Runtime\Export\Scripting\YieldOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\SearchService\ObjectSelectorHandlerAttribute.cs">
+      <Link>Runtime\Export\SearchService\ObjectSelectorHandlerAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Security\Security.cs">
       <Link>Runtime\Export\Security\Security.cs</Link>

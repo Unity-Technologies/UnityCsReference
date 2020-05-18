@@ -626,8 +626,16 @@ namespace UnityEditor
         // Show modal editor window. Other windows will not be accessible until this one is closed.
         public void ShowModal()
         {
-            ShowWithMode(ShowMode.AuxWindow);
-            MakeModal();
+            // It is normally bad to have different behavior on different platforms,
+            // but in this case Linux is espcially picky about converting modal dialogs.
+            // the only way we can ensure that without major API changes in window creation is to open them with this type.
+            if (Application.platform == RuntimePlatform.LinuxEditor)
+                ShowModalUtility();
+            else
+            {
+                ShowWithMode(ShowMode.AuxWindow);
+                MakeModal();
+            }
         }
 
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
@@ -893,6 +901,30 @@ namespace UnityEditor
             return (windows.Length > 0) ? (T)windows[0] : ScriptableObject.CreateInstance<T>();
         }
 
+        bool m_HasUnsavedChanges = false;
+        public bool hasUnsavedChanges
+        {
+            get
+            {
+                return m_HasUnsavedChanges;
+            }
+            protected set
+            {
+                if (m_HasUnsavedChanges != value)
+                {
+                    m_HasUnsavedChanges = value;
+                    m_Parent?.window?.UnsavedStateChanged();
+                }
+            }
+        }
+
+        public string saveChangesMessage { get; protected set; }
+
+        public virtual void SaveChanges()
+        {
+            hasUnsavedChanges = false;
+        }
+
         // Close the editor window.
         public void Close()
         {
@@ -1084,6 +1116,7 @@ namespace UnityEditor
             m_EnableViewDataPersistence = true;
             m_RequestedViewDataSave = false;
             titleContent.text = GetType().ToString();
+            saveChangesMessage = $"{GetType()} has unsaved changes.";
 
             UpdateWindowMenuListing();
         }
@@ -1119,6 +1152,7 @@ namespace UnityEditor
             cw.Show(ShowMode.NormalWindow, loadPosition, showImmediately, setFocus: true);
             //Need this, as show my change the size of the window, due to screen constraints
             cw.OnResize();
+            cw.UnsavedStateChanged();
         }
 
         // This is such a hack, but will do for now

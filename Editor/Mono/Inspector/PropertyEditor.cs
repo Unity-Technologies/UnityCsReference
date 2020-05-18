@@ -1506,13 +1506,16 @@ namespace UnityEditor
                 var editor = editors[editorIndex];
                 Object editorTarget = editor.targets[0];
 
-                string editorTitle = editorTarget == null ? "Nothing Selected" : $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                EditorElement editorContainer;
+                if (editorTarget && (editorTarget?.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    continue;
 
                 try
                 {
-                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
+                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {
+                        string editorTitle = editorTarget == null ?
+                            "Nothing Selected" :
+                            $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
                         editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
                         editorsElement.Add(editorContainer);
                     }

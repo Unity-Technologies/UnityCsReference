@@ -739,6 +739,12 @@ namespace UnityEditor
             // range of appropriate values
             internal float RoundSpeedToNearestSignificantDecimal(float value)
             {
+                if (value <= speedMin)
+                    return speedMin;
+
+                if (value >= speedMax)
+                    return speedMax;
+
                 float rng = speedMax - speedMin;
                 int min_rnd = speedMin < .01f ? 3 : speedMin < .1f ? 2 : speedMin < 1f ? 1 : 0;
                 int rng_rnd = rng < 1f ? 2 : rng < 10f ? 1 : 0;

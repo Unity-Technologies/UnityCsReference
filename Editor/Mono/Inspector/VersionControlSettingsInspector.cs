@@ -29,8 +29,8 @@ namespace UnityEditor
             public static GUIContent vcsReconnect = new GUIContent("Reconnect");
             public static GUIContent workOffline = new GUIContent("Work Offline",
                 "Enable asset modifications even when not connected to a version control server. Requires manual integration into VCS system afterwards.");
-            public static GUIContent allowAsyncUpdate = new GUIContent("Allow Async Update",
-                "Enable asynchronous file status queries (use with slow server connections).");
+            public static GUIContent allowAsyncUpdate = new GUIContent("Async Status",
+                "Enable asynchronous file status queries (useful with slow server connections).");
             public static GUIContent showFailedCheckouts = new GUIContent("Show Failed Checkouts",
                 "Show dialogs for failed 'Check Out' operations.");
             public static GUIContent overwriteFailedCheckoutAssets =

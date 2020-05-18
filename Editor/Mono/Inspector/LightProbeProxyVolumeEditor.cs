@@ -29,6 +29,7 @@ namespace UnityEditor
         private SerializedProperty m_ProbePositionMode;
         private SerializedProperty m_RefreshMode;
         private SerializedProperty m_QualityMode;
+        private SerializedProperty m_DataFormat;
 
         // Should match gizmo color in GizmoDrawers.cpp!
         internal static Color kGizmoLightProbeProxyVolumeColor = new Color(0xFF / 255f, 0xE5 / 255f, 0x94 / 255f, 0x80 / 255f);
@@ -56,11 +57,13 @@ namespace UnityEditor
             public static GUIContent probePositionText = EditorGUIUtility.TrTextContent("Probe Position Mode", "The mode in which the interpolated probe positions are generated.\n\nCellCorner - divide the volume in cells and generate interpolated probe positions in the corner/edge of the cells.\n\nCellCenter - divide the volume in cells and generate interpolated probe positions in the center of the cells.");
             public static GUIContent refreshModeText = EditorGUIUtility.TrTextContent("Refresh Mode");
             public static GUIContent qualityText = EditorGUIUtility.TrTextContent("Quality", "Affects the total number of evaluated Spherical Harmonics(SH) bands for Renderers that use a Light Probe Proxy Volume:\n\nLow Quality - uses only 2 bands (L0 and L1) sampled from a LPPV texture. This option might improve the performance by not breaking batching.\n\nNormal Quality - uses all the bands to evaluate the SH. L0 and L1 are sampled from a LPPV texture and L2 is constant per Renderer.");
+            public static GUIContent dataFormatText = EditorGUIUtility.TrTextContent("Data Format", "Affects the format of the LPPV texture.");
             public static GUIContent[] bbMode = (Enum.GetNames(typeof(LightProbeProxyVolume.BoundingBoxMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static GUIContent[] resMode = (Enum.GetNames(typeof(LightProbeProxyVolume.ResolutionMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static GUIContent[] probePositionMode = (Enum.GetNames(typeof(LightProbeProxyVolume.ProbePositionMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static GUIContent[] refreshMode = (Enum.GetNames(typeof(LightProbeProxyVolume.RefreshMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static GUIContent[] qualityMode = (Enum.GetNames(typeof(LightProbeProxyVolume.QualityMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
+            public static GUIContent[] dataFormat = (Enum.GetNames(typeof(LightProbeProxyVolume.DataFormat)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static GUIContent resProbesPerUnit = EditorGUIUtility.TrTextContent("Density", "Density in probes per world unit.");
             public static GUIContent componentUnusedNote = EditorGUIUtility.TrTextContent("In order to use the component on this game object, the Light Probes property should be set to 'Use Proxy Volume' in Renderer.");
             public static GUIContent noRendererNode = EditorGUIUtility.TrTextContent("The component is unused by this game object because there is no Renderer component attached.");
@@ -167,7 +170,7 @@ namespace UnityEditor
             m_ProbePositionMode = serializedObject.FindProperty("m_ProbePositionMode");
             m_RefreshMode = serializedObject.FindProperty("m_RefreshMode");
             m_QualityMode = serializedObject.FindProperty("m_QualityMode");
-
+            m_DataFormat = serializedObject.FindProperty("m_DataFormat");
             m_BoundsHandle.handleColor = kGizmoLightProbeProxyVolumeHandleColor;
             m_BoundsHandle.wireframeColor = Color.clear;
 
@@ -234,6 +237,8 @@ namespace UnityEditor
             EditorGUILayout.Popup(m_RefreshMode, Styles.refreshMode,  Styles.refreshModeText);
 
             EditorGUILayout.Popup(m_QualityMode, Styles.qualityMode, Styles.qualityText);
+
+            EditorGUILayout.Popup(m_DataFormat, Styles.dataFormat, Styles.dataFormatText);
 
             EditorGUILayout.Popup(m_BoundingBoxMode, Styles.bbMode, Styles.bbModeText);
 

@@ -13,14 +13,20 @@ namespace UnityEditor.PackageManager.UI
     {
         [SerializeField]
         private ConnectInfo m_ConnectInfo;
+        [SerializeField]
+        private bool m_IsUserInfoReady;
 
         public virtual event Action<bool> onUserLoginStateChange = delegate {};
+        public virtual bool isUserInfoReady => m_IsUserInfoReady;
+        public virtual bool isConnectInfoReady => m_ConnectInfo.ready;
         public virtual bool isUserLoggedIn => m_ConnectInfo.ready && m_ConnectInfo.loggedIn;
 
         public void OnEnable()
         {
             m_ConnectInfo = UnityConnect.instance.connectInfo;
+            m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
             UnityConnect.instance.StateChanged += OnStateChanged;
+            UnityConnect.instance.UserStateChanged += OnUserStateChanged;
         }
 
         public void OnDisable()
@@ -46,6 +52,11 @@ namespace UnityEditor.PackageManager.UI
 
             if (loginChanged)
                 onUserLoginStateChange?.Invoke(m_ConnectInfo.loggedIn);
+        }
+
+        private void OnUserStateChanged(UserInfo newInfo)
+        {
+            m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
         }
     }
 }

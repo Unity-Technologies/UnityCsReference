@@ -13,9 +13,9 @@ namespace UnityEditor.UIElements.Samples
 {
     internal class UIElementsSamples : EditorWindow
     {
-        private static readonly string s_StyleSheetPath = "StyleSheets/UIElementsSamples/UIElementsSamples.uss";
-        private static readonly string s_DarkStyleSheetPath = "StyleSheets/UIElementsSamples/UIElementsSamplesDark.uss";
-        private static readonly string s_LightStyleSheetPath = "StyleSheets/UIElementsSamples/UIElementsSamplesLight.uss";
+        private static readonly string s_StyleSheetPath = "UIPackageResources/StyleSheets/UIElementsSamples/UIElementsSamples.uss";
+        private static readonly string s_DarkStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsSamples/UIElementsSamplesDark.uss";
+        private static readonly string s_LightStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsSamples/UIElementsSamplesLight.uss";
 
         private readonly string k_SplitterClassName = "unity-samples-explorer";
         private readonly int k_SplitterLeftPaneStartingWidth = 200;

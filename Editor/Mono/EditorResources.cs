@@ -265,7 +265,7 @@ namespace UnityEditor.Experimental
             var catalogFiles = new List<string>
             {
                 "StyleSheets/Extensions/base/common.uss",
-                "StyleSheets/Variables/Public/common.uss",
+                "UIPackageResources/StyleSheets/Default/Variables/Public/common.uss",
                 "StyleSheets/Northstar/common.uss"
             };
 
@@ -277,7 +277,7 @@ namespace UnityEditor.Experimental
             }
 
             catalogFiles.Add(useDarkTheme ? "StyleSheets/Extensions/base/dark.uss" : "StyleSheets/Extensions/base/light.uss");
-            catalogFiles.Add(useDarkTheme ? "StyleSheets/Northstar/Palette/dark.uss" : "StyleSheets/Northstar/Palette/light.uss");
+            catalogFiles.Add(useDarkTheme ? "UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss" : "UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss");
             return catalogFiles;
         }
 

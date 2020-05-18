@@ -106,7 +106,7 @@ namespace UnityEditor
         [FreeFunction]
         public static extern string GetProjectRelativePath(string path);
 
-        [FreeFunction]
+        [FreeFunction(Name = "GetLastPathNameComponentManaged")]
         internal static extern string GetLastPathNameComponent(string path);
 
         [FreeFunction(Name = "DeleteLastPathNameComponentManaged")]

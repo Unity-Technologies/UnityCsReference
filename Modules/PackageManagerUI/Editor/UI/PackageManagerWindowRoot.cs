@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,9 +18,6 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private PackageFilterTab? m_FilterToSelectAfterLoad;
 
-        [SerializeField]
-        private float m_SplitPaneLeftWidth;
-
         private ResourceLoader m_ResourceLoader;
         private SelectionProxy m_Selection;
         private PackageFiltering m_PackageFiltering;
@@ -27,13 +25,15 @@ namespace UnityEditor.PackageManager.UI
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private UnityConnectProxy m_UnityConnectProxy;
         private void ResolveDependencies(ResourceLoader resourceLoader,
             SelectionProxy selection,
             PackageFiltering packageFiltering,
             PackageManagerPrefs packageManagerPrefs,
             PackageDatabase packageDatabase,
             PageManager pageManager,
-            PackageManagerProjectSettingsProxy settingsProxy)
+            PackageManagerProjectSettingsProxy settingsProxy,
+            UnityConnectProxy unityConnectProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_Selection = selection;
@@ -42,6 +42,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageDatabase = packageDatabase;
             m_PageManager = pageManager;
             m_SettingsProxy = settingsProxy;
+            m_UnityConnectProxy = unityConnectProxy;
         }
 
         public PackageManagerWindowRoot(ResourceLoader resourceLoader,
@@ -50,9 +51,10 @@ namespace UnityEditor.PackageManager.UI
                                         PackageManagerPrefs packageManagerPrefs,
                                         PackageDatabase packageDatabase,
                                         PageManager pageManager,
-                                        PackageManagerProjectSettingsProxy settingsProxy)
+                                        PackageManagerProjectSettingsProxy settingsProxy,
+                                        UnityConnectProxy unityConnectProxy)
         {
-            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy);
+            ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy);
 
             styleSheets.Add(m_ResourceLoader.GetMainWindowStyleSheet());
 
@@ -92,9 +94,6 @@ namespace UnityEditor.PackageManager.UI
             if (newTab != PackageFilterTab.All && m_PageManager.GetRefreshTimestamp(PackageFilterTab.All) == 0)
                 DelayRefresh(PackageFilterTab.All);
 
-            mainContainer.leftWidth = m_SplitPaneLeftWidth;
-            mainContainer.onSizeChanged += width => { m_SplitPaneLeftWidth = width; };
-
             EditorApplication.focusChanged += OnFocusChanged;
             m_Selection.onSelectionChanged += RefreshSelectedInInspectorClass;
 
@@ -107,7 +106,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void DelayRefresh(PackageFilterTab tab)
         {
-            if (m_PackageManagerPrefs.numItemsPerPage == null)
+            if (m_PackageManagerPrefs.numItemsPerPage == null ||
+                tab == PackageFilterTab.AssetStore && !m_UnityConnectProxy.isUserInfoReady)
             {
                 EditorApplication.delayCall += () => DelayRefresh(tab);
                 return;
@@ -312,6 +312,6 @@ namespace UnityEditor.PackageManager.UI
         private PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
         private PackageManagerToolbar packageManagerToolbar { get { return cache.Get<PackageManagerToolbar>("topMenuToolbar"); } }
         private PackageStatusBar packageStatusbar { get { return cache.Get<PackageStatusBar>("packageStatusBar"); } }
-        private SplitView mainContainer { get { return cache.Get<SplitView>("mainContainer"); } }
+        private VisualSplitter mainContainer { get { return cache.Get<VisualSplitter>("mainContainer"); } }
     }
 }

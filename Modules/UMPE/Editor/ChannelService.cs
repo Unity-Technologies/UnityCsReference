@@ -6,37 +6,37 @@ using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace Unity.MPE
+namespace UnityEditor.MPE
 {
-    delegate void ChannelHandler(int clientId, byte[] binaryData);
-
-    internal static partial class ChannelService
+    [MovedFrom("Unity.MPE")]
+    public static partial class ChannelService
     {
-        internal static Dictionary<int, List<ChannelHandler>> s_Handlers = new Dictionary<int, List<ChannelHandler>>();
+        internal static Dictionary<int, List<Action<int, byte[]>>> s_Handlers = new Dictionary<int, List<Action<int, byte[]>>>();
 
-        public static Action GetOrCreateChannel(string channelName, ChannelHandler handler)
+        public static Action GetOrCreateChannel(string channelName, Action<int, byte[]> handler)
         {
             if (Internal_GetOrCreateChannel(channelName) == -1)
             {
                 throw new Exception("Cannot create channel: " + channelName);
             }
-            return On(channelName, handler);
+            return RegisterMessageHandler(channelName, handler);
         }
 
-        public static Action On(string channelName, ChannelHandler handler)
+        public static Action RegisterMessageHandler(string channelName, Action<int, byte[]> handler)
         {
             var channel = GetChannelFromName(channelName);
-            if (ChannelInfo.InvalidChannel == channel)
+            if (ChannelInfo.invalidChannel == channel)
             {
                 throw new Exception("Channel doesn't exists or is not open.");
             }
 
-            List<ChannelHandler> handlers = null;
-            if (!s_Handlers.TryGetValue(channel.channelId, out handlers))
+            List<Action<int, byte[]>> handlers = null;
+            if (!s_Handlers.TryGetValue(channel.id, out handlers))
             {
-                handlers = new List<ChannelHandler> { handler };
-                s_Handlers.Add(channel.channelId, handlers);
+                handlers = new List<Action<int, byte[]>> { handler };
+                s_Handlers.Add(channel.id, handlers);
             }
             else if (handlers.Contains(handler))
             {
@@ -49,24 +49,24 @@ namespace Unity.MPE
 
             return () =>
             {
-                Off(channelName, handler);
+                UnregisterMessageHandler(channelName, handler);
             };
         }
 
-        public static void Off(string channelName, ChannelHandler handler)
+        public static void UnregisterMessageHandler(string channelName, Action<int, byte[]> handler)
         {
             var channel = GetChannelFromName(channelName);
-            if (ChannelInfo.InvalidChannel == channel)
+            if (ChannelInfo.invalidChannel == channel)
             {
                 return;
             }
-            List<ChannelHandler> handlers = null;
-            if (s_Handlers.TryGetValue(channel.channelId, out handlers))
+            List<Action<int, byte[]>> handlers = null;
+            if (s_Handlers.TryGetValue(channel.id, out handlers))
             {
                 handlers.Remove(handler);
                 if (handlers.Count == 0)
                 {
-                    s_Handlers.Remove(channel.channelId);
+                    s_Handlers.Remove(channel.id);
                 }
             }
         }
@@ -74,12 +74,12 @@ namespace Unity.MPE
         public static void CloseChannel(string channelName)
         {
             var channel = GetChannelFromName(channelName);
-            if (ChannelInfo.InvalidChannel == channel)
+            if (ChannelInfo.invalidChannel == channel)
             {
                 return;
             }
 
-            s_Handlers.Remove(channel.channelId);
+            s_Handlers.Remove(channel.id);
             Internal_CloseChannel(channelName);
         }
 
@@ -98,17 +98,17 @@ namespace Unity.MPE
             var channelInfos = GetChannelList();
             foreach (var channelInfo in channelInfos)
             {
-                if (channelInfo.channelName == channelName)
+                if (channelInfo.name == channelName)
                     return channelInfo;
             }
 
-            return ChannelInfo.InvalidChannel;
+            return ChannelInfo.invalidChannel;
         }
 
         [UsedImplicitly, RequiredByNativeCode]
         private static void IncomingChannelServiceData(int channelId, int clientId, byte[] data)
         {
-            List<ChannelHandler> handlers = null;
+            List<Action<int, byte[]>> handlers = null;
             if (!s_Handlers.TryGetValue(channelId, out handlers))
             {
                 return;
@@ -128,13 +128,14 @@ namespace Unity.MPE
         }
     }
 
-    struct ChannelScope : IDisposable
+    [MovedFrom("Unity.MPE")]
+    public struct ChannelScope : IDisposable
     {
         private bool m_CloseChannelOnExit;
         private string m_ChannelName;
         private Action m_Off;
 
-        public ChannelScope(string channelName, ChannelHandler handler, bool closeChannelOnExit = true)
+        public ChannelScope(string channelName, Action<int, byte[]> handler, bool closeChannelOnExit = true)
         {
             m_CloseChannelOnExit = closeChannelOnExit;
             m_ChannelName = channelName;

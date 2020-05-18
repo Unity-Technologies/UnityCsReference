@@ -48,7 +48,7 @@ namespace UnityEditor
 
         static SyncVS()
         {
-            s_Enabled = Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER;
+            s_Enabled = UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Master;
             if (!s_Enabled)
                 return;
             Synchronizer = new SolutionSynchronizer(Directory.GetParent(Application.dataPath).FullName, new SolutionSynchronizationSettings());

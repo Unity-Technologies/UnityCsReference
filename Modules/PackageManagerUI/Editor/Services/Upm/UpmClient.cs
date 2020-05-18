@@ -211,7 +211,7 @@ namespace UnityEditor.PackageManager.UI
             if (packageInfo != null)
             {
                 m_IOProxy.DirectoryDelete(packageInfo.resolvedPath, true);
-                AssetDatabase.Refresh();
+                Resolve();
             }
         }
 

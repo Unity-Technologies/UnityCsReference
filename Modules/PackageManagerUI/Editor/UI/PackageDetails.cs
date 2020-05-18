@@ -799,6 +799,7 @@ namespace UnityEditor.PackageManager.UI
                 UIUtils.SetElementDisplay(cancelButton, false);
                 UIUtils.SetElementDisplay(pauseButton, false);
                 UIUtils.SetElementDisplay(resumeButton, false);
+                UIUtils.SetElementDisplay(downloadProgress, false);
             }
         }
 

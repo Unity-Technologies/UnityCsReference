@@ -250,7 +250,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             rootVisualElement = root;
 
-            VisualTreeAsset template = EditorGUIUtility.Load("UXML/UIElementsDebugger/UIElementsEventsDebugger.uxml") as VisualTreeAsset;
+            VisualTreeAsset template = EditorGUIUtility.Load("UIPackageResources/UXML/UIElementsDebugger/UIElementsEventsDebugger.uxml") as VisualTreeAsset;
             template.CloneTree(rootVisualElement);
 
             var toolbar = rootVisualElement.MandatoryQ("toolbar");
@@ -258,7 +258,7 @@ namespace UnityEditor.UIElements.Debugger
 
             base.Initialize(debuggerWindow);
 
-            rootVisualElement.AddStyleSheetPath("StyleSheets/UIElementsDebugger/UIElementsEventsDebugger.uss");
+            rootVisualElement.AddStyleSheetPath("UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsEventsDebugger.uss");
 
             var eventsDebugger = rootVisualElement.MandatoryQ("eventsDebugger");
             eventsDebugger.StretchToParentSize();

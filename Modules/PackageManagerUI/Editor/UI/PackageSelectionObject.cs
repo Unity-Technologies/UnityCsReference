@@ -8,21 +8,11 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI
 {
     [ExcludeFromPreset]
+    [Serializable]
     internal class PackageSelectionObject : ScriptableObject
     {
-        [Serializable]
-        public class Data
-        {
-            public string name;
-            public string displayName;
-            public string packageUniqueId;
-            public string versionUniqueId;
-        }
-
-        public string displayName => m_Data?.displayName;
-        public string packageUniqueId => m_Data?.packageUniqueId;
-        public string versionUniqueId => m_Data?.versionUniqueId;
-
-        public Data m_Data;
+        public string displayName;
+        public string packageUniqueId;
+        public string versionUniqueId;
     }
 }

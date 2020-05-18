@@ -500,7 +500,7 @@ namespace UnityEditor
 
         private void DoTagsField(GameObject go)
         {
-            string tagName = go.tag ?? "Undefined";
+            string tagName = go.tag;
             EditorGUIUtility.labelWidth = Styles.tagFieldWidth;
             Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.tagPopup);
             EditorGUI.BeginProperty(tagRect, GUIContent.none, m_Tag);

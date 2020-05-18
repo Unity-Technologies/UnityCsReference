@@ -3163,6 +3163,15 @@
     <Compile Include="..\..\Editor\Mono\Search\DefaultImplementations.cs">
       <Link>Editor\Mono\Search\DefaultImplementations.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\ObjectSelector.cs">
+      <Link>Editor\Mono\Search\ObjectSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\Project.cs">
+      <Link>Editor\Mono\Search\Project.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\Scene.cs">
+      <Link>Editor\Mono\Search\Scene.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Search\SearchService.cs">
       <Link>Editor\Mono\Search\SearchService.cs</Link>
     </Compile>
@@ -3907,6 +3916,9 @@
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildOutput.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildOutput.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGenerator.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGenerator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildReferenceMap.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildReferenceMap.bindings.cs</Link>
     </Compile>
@@ -4480,9 +4492,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\SimplePage.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\SimplePage.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\SplitView.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Common\SplitView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ToolbarWindowMenu.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\ToolbarWindowMenu.cs</Link>
     </Compile>
@@ -4606,6 +4615,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ErrorCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\ErrorCode.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Events.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Events.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\GitInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\GitInfo.cs</Link>
     </Compile>
@@ -4644,6 +4656,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManifestImporterEditor.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageManifestImporterEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageRegistrationDiffEventArgs.cs">
+      <Link>Modules\PackageManager\Editor\Managed\PackageRegistrationDiffEventArgs.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageSource.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageSource.cs</Link>

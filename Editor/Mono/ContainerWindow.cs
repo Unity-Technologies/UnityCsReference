@@ -25,6 +25,9 @@ namespace UnityEditor
         [SerializeField] bool m_Maximized;
 
         internal bool m_DontSaveToLayout = false;
+        private bool m_HasUnsavedChanges = false;
+        private List<EditorWindow> m_UnsavedEditorWindows;
+
         private int m_ButtonCount;
         private float m_TitleBarWidth;
 
@@ -40,7 +43,6 @@ namespace UnityEditor
         {
             // Title Bar Buttons (Non)
             public static GUIStyle buttonMin = "WinBtnMinMac";
-            public static GUIStyle buttonInactive = "WinBtnInactiveMac";
             public static GUIStyle buttonClose = macEditor ? "WinBtnCloseMac" : "WinBtnClose";
             public static GUIStyle buttonMax = macEditor ? "WinBtnMaxMac" : "WinBtnMax";
             public static GUIStyle buttonRestore = macEditor ? "WinBtnRestoreMac" : "WinBtnRestore";
@@ -64,6 +66,7 @@ namespace UnityEditor
         public ContainerWindow()
         {
             m_PixelRect = new Rect(0, 0, 400, 300);
+            m_UnsavedEditorWindows = new List<EditorWindow>();
         }
 
         internal void __internalAwake()
@@ -196,6 +199,73 @@ namespace UnityEditor
             Internal_SetMinMaxSizes(min, max);
         }
 
+        internal bool InternalRequestClose()
+        {
+            if (hasUnsavedChanges)
+            {
+                return PrivateRequestClose(m_UnsavedEditorWindows);
+            }
+
+            return true;
+        }
+
+        internal bool InternalRequestClose(EditorWindow dockedTab)
+        {
+            if (dockedTab.hasUnsavedChanges)
+            {
+                var unsaved = new List<EditorWindow>() { dockedTab };
+                return PrivateRequestClose(unsaved);
+            }
+
+            return true;
+        }
+
+        private bool PrivateRequestClose(List<EditorWindow> allUnsaved)
+        {
+            Debug.Assert(allUnsaved.Count > 0);
+
+            const int kSave = 0;
+            const int kCancel = 1;
+            const int kDiscard = 2;
+
+            int option = 1; // Cancel
+
+            if (allUnsaved.Count == 1)
+            {
+                option = EditorUtility.DisplayDialogComplex(L10n.Tr("Unsaved Changes Detected"),
+                    allUnsaved.First().saveChangesMessage,
+                    L10n.Tr("Save"),
+                    L10n.Tr("Cancel"),
+                    L10n.Tr("Discard"));
+            }
+            else
+            {
+                string unsavedChangesMessage = string.Join("\n", allUnsaved.Select(v => v.saveChangesMessage).ToArray());
+
+                option = EditorUtility.DisplayDialogComplex(L10n.Tr("Unsaved Changes Detected"),
+                    unsavedChangesMessage,
+                    L10n.Tr("Save All"),
+                    L10n.Tr("Cancel"),
+                    L10n.Tr("Discard All"));
+            }
+
+            switch (option)
+            {
+                case kSave:
+                    foreach (var w in allUnsaved)
+                        w.SaveChanges();
+                    break;
+                case kCancel:
+                case kDiscard:
+                    break;
+                default:
+                    Debug.LogError("Unrecognized option.");
+                    break;
+            }
+
+            return option != kCancel;
+        }
+
         internal void InternalCloseWindow()
         {
             Save();
@@ -206,6 +276,37 @@ namespace UnityEditor
             }
 
             DestroyImmediate(this, true);
+        }
+
+        private static List<EditorWindow> FindUnsavedChanges(View view)
+        {
+            var unsavedChanges = new List<EditorWindow>();
+
+            foreach (View v in view.allChildren)
+            {
+                switch (v)
+                {
+                    case DockArea dockArea:
+                        foreach (var windowClose in dockArea.m_Panes.OfType<EditorWindow>())
+                            if (windowClose.hasUnsavedChanges)
+                                unsavedChanges.Add(windowClose);
+                        break;
+                    case HostView hostView:
+                        if (hostView.actualView?.hasUnsavedChanges ?? false)
+                            unsavedChanges.Add(hostView.actualView);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return unsavedChanges;
+        }
+
+        public void UnsavedStateChanged()
+        {
+            m_UnsavedEditorWindows = FindUnsavedChanges(rootView);
+            hasUnsavedChanges = m_UnsavedEditorWindows.Count > 0;
         }
 
         public void Close()
@@ -256,7 +357,7 @@ namespace UnityEditor
 
         public bool IsMainWindow()
         {
-            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Master)
                 return m_ShowMode == (int)ShowMode.MainWindow && m_DontSaveToLayout == false;
             return false;
         }
@@ -346,11 +447,47 @@ namespace UnityEditor
             }
         }
 
+        // The title of the window, including unsaved changes markings, if any.
+        public string displayedTitle { get; private set; }
+
+        private void UpdateTitle()
+        {
+            displayedTitle = hasUnsavedChanges ? m_Title + "*" : m_Title;
+            Internal_SetTitle(displayedTitle);
+        }
+
         // The title of the window
         public string title
         {
-            get { return m_Title; }
-            set { m_Title = value; Internal_SetTitle(value); }
+            get
+            {
+                return m_Title;
+            }
+            set
+            {
+                if (m_Title != value)
+                {
+                    m_Title = value;
+                    UpdateTitle();
+                }
+            }
+        }
+
+        public bool hasUnsavedChanges
+        {
+            get
+            {
+                return m_HasUnsavedChanges;
+            }
+            private set
+            {
+                if (m_HasUnsavedChanges != value)
+                {
+                    m_HasUnsavedChanges = value;
+                    Internal_SetHasUnsavedChanges(value);
+                    UpdateTitle();
+                }
+            }
         }
 
         // Array of all visible ContainerWindows, from frontmost to last
@@ -449,8 +586,11 @@ namespace UnityEditor
                     BeginTitleBarButtons(windowPosition);
                     if (TitleBarButton(close))
                     {
-                        Close();
-                        GUIUtility.ExitGUI();
+                        if (InternalRequestClose())
+                        {
+                            Close();
+                            GUIUtility.ExitGUI();
+                        }
                     }
 
                     var canMaximize = m_MaxSize.x == 0 || m_MaxSize.y == 0 || m_MaxSize.x >= Screen.currentResolution.width || m_MaxSize.y >= Screen.currentResolution.height;

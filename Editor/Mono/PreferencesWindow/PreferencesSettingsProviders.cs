@@ -73,14 +73,14 @@ namespace UnityEditor
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
             public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
-            public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame throttling (milliseconds)", "Number of milliseconds to wait between each editor frames.");
-            public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Define how the editor application gets updated and throttled.");
+            public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
+            public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
             public static readonly GUIContent[] interactionModes =
             {
-                EditorGUIUtility.TrTextContent("Default", "The editor application will be throttled up to 4 ms per frame."),
-                EditorGUIUtility.TrTextContent("No throttling", "The editor application will not be throttled and run as fast as possible."),
-                EditorGUIUtility.TrTextContent("Monitor Refresh Rate", "The editor will wait up to the monitor refresh rate in milliseconds (i.e. ~16 ms)."),
-                EditorGUIUtility.TrTextContent("Custom", "Specify how many milliseconds at most the application will be idle per frame."),
+                EditorGUIUtility.TrTextContent("Default", "The Editor can idle up to 4 ms per frame."),
+                EditorGUIUtility.TrTextContent("No Throttling", "The Editor does not idle. It runs as fast as possible."),
+                EditorGUIUtility.TrTextContent("Monitor Refresh Rate", "The Editor can idle up to whatever the monitor's refresh rate is, in milliseconds."),
+                EditorGUIUtility.TrTextContent("Custom", "You specify how many milliseconds per frame the Editor can idle."),
             };
             public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
             public static readonly GUIContent enableSnapping = EditorGUIUtility.TrTextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.");
@@ -193,6 +193,9 @@ namespace UnityEditor
         private bool m_AllowAlphaNumericHierarchy = false;
         private bool m_EnableCodeCoverage = false;
         private bool m_EnableCodeCoverageChangedInThisSession = false;
+        private readonly string kEnablingCodeCoverageMessage = L10n.Tr("Enabling Code Coverage will not take effect until Unity is restarted. Note that Code Coverage lowers Editor performance.");
+        private readonly string kDisablingCodeCoverageMessage = L10n.Tr("Disabling Code Coverage will not take effect until Unity is restarted.");
+        private readonly string kCodeCoverageEnabledMessage = L10n.Tr("Code Coverage collection is enabled for this Unity session. Note that Code Coverage lowers Editor performance.");
         private bool m_Create3DObjectsAtOrigin = false;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
@@ -280,7 +283,7 @@ namespace UnityEditor
         [UsedImplicitly, SettingsProvider]
         internal static SettingsProvider CreateGICacheProvider()
         {
-            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_SLAVE && !Unity.MPE.ProcessService.HasCapability("enable-gi"))
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Slave && !UnityEditor.MPE.ProcessService.HasCapability("enable-gi"))
                 return null;
             var settings = new PreferencesProvider("Preferences/GI Cache", GetSearchKeywordsFromGUIContentProperties<GICacheProperties>());
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGICache); };
@@ -623,8 +626,22 @@ namespace UnityEditor
             m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
             if (m_EnableCodeCoverage != Coverage.enabled)
             {
-                EditorGUILayout.HelpBox((m_EnableCodeCoverage ? "Enabling " : "Disabling ") + "Code Coverage will not take effect until Unity is restarted.", MessageType.Warning);
+                if (m_EnableCodeCoverage)
+                {
+                    EditorGUILayout.HelpBox(kEnablingCodeCoverageMessage, MessageType.Warning);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox(kDisablingCodeCoverageMessage, MessageType.Warning);
+                }
                 m_EnableCodeCoverageChangedInThisSession = true;
+            }
+            else
+            {
+                if (Coverage.enabled)
+                {
+                    EditorGUILayout.HelpBox(kCodeCoverageEnabledMessage, MessageType.Warning);
+                }
             }
 
             if (Application.platform == RuntimePlatform.WindowsEditor)
@@ -662,9 +679,9 @@ namespace UnityEditor
         private void DrawInteractionModeOptions()
         {
             const int defaultIdleTimeMs = 4;
-            int monitorRefreshDelayMs = (int)(1f / Math.Max(Screen.currentResolution.refreshRate, 1) * 1000f);
             const string idleTimePrefKeyName = "ApplicationIdleTime";
             const string interactionModePrefKeyName = "InteractionMode";
+            var monitorRefreshDelayMs = (int)(1f / Math.Max(Screen.currentResolution.refreshRate, 1) * 1000f);
             var idleTimeMs = EditorPrefs.GetInt(idleTimePrefKeyName, defaultIdleTimeMs);
             var interactionModeOption = (InteractionMode)EditorPrefs.GetInt(interactionModePrefKeyName, (int)InteractionMode.Default);
 
@@ -883,6 +900,7 @@ namespace UnityEditor
                         if (!string.IsNullOrEmpty(path))
                         {
                             m_GICacheSettings.m_CachePath = path;
+                            WritePreferences();
                         }
                     }
                     GUILayout.EndHorizontal();

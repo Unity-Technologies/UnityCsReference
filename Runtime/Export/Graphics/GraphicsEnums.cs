@@ -800,6 +800,12 @@ namespace UnityEngine
             Low = 0,
             Normal = 1,
         }
+
+        public enum DataFormat
+        {
+            HalfFloat = 0,
+            Float = 1,
+        }
     }
 
     public enum CustomRenderTextureInitializationSource

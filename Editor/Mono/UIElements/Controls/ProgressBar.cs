@@ -54,7 +54,7 @@ namespace UnityEditor.UIElements
 
         public ProgressBar()
         {
-            var tpl = EditorGUIUtility.Load("UXML/ProgressBar.uxml") as VisualTreeAsset;
+            var tpl = EditorGUIUtility.Load("UIPackageResources/UXML/ProgressBar.uxml") as VisualTreeAsset;
             AddToClassList(ussClassName);
             var container = tpl.Instantiate();
             container.AddToClassList(containerUssClassName);

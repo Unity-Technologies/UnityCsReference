@@ -15,6 +15,7 @@ namespace UnityEditor.ShortcutManagement
         IContextManager m_ContextManager;
         IConflictResolverView m_ConflictResolverView;
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
+        List<object> m_Contexts = new List<object>();
         bool m_UnresolvedConflictPending;
 
 
@@ -34,6 +35,11 @@ namespace UnityEditor.ShortcutManagement
             m_UnresolvedConflictPending = true;
 
             m_Entries.AddRange(entries);
+
+            foreach (var entry in entries)
+            {
+                m_Contexts.Add(m_ContextManager.GetContextInstanceOfType(entry.context));
+            }
             m_ConflictResolverView.Show(this, keyCombinationSequence, m_Entries);
         }
 
@@ -79,8 +85,10 @@ namespace UnityEditor.ShortcutManagement
             if (entry.type == ShortcutType.Clutch)
                 throw new InvalidOperationException("Clutches cannot be activated through conflict resolution");
 
+            var entryIndex = m_Entries.IndexOf(entry);
+
             var args = new ShortcutArguments();
-            args.context = m_ContextManager.GetContextInstanceOfType(entry.context);
+            args.context = m_Contexts[entryIndex];
             args.stage = ShortcutStage.End;
             entry.action(args);
         }
@@ -88,6 +96,7 @@ namespace UnityEditor.ShortcutManagement
         void Cleanup()
         {
             m_Entries.Clear();
+            m_Contexts.Clear();
         }
     }
 }

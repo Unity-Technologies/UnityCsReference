@@ -5,11 +5,9 @@
 using System;
 using System.Linq;
 using JetBrains.Annotations;
-using UnityEditor;
 using UnityEditorInternal;
-using UnityEngine;
 
-namespace Unity.MPE
+namespace UnityEditor.MPE
 {
     enum DataServiceEvent
     {
@@ -52,16 +50,16 @@ namespace Unity.MPE
             s_ImportedAssets = new string[] {};
         }
 
-        [UsedImplicitly, RoleProvider(ProcessLevel.UMP_MASTER, ProcessEvent.UMP_EVENT_AFTER_DOMAIN_RELOAD)]
+        [UsedImplicitly, RoleProvider(ProcessLevel.Master, ProcessEvent.AfterDomainReload)]
         private static void InitializeMaster()
         {
             s_ImportRefreshEnabled = true;
         }
 
-        [UsedImplicitly, RoleProvider(ProcessLevel.UMP_SLAVE, ProcessEvent.UMP_EVENT_AFTER_DOMAIN_RELOAD)]
+        [UsedImplicitly, RoleProvider(ProcessLevel.Slave, ProcessEvent.AfterDomainReload)]
         private static void InitializeSlave()
         {
-            EventService.On(nameof(DataServiceEvent.AUTO_REFRESH), (eventType, data) =>
+            EventService.RegisterEventHandler(nameof(DataServiceEvent.AUTO_REFRESH), (eventType, data) =>
             {
                 string[] paths = data.Cast<string>().ToArray();
                 Console.WriteLine($"Slave need to refresh the following assets: {String.Join(", ", paths)}");

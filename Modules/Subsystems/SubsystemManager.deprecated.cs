@@ -32,7 +32,10 @@ namespace UnityEngine
 
 #pragma warning restore CS0618
 
+// event never invoked warning (invoked indirectly from native code)
+#pragma warning disable CS0067
         public static event Action reloadSubsytemsStarted;
         public static event Action reloadSubsytemsCompleted;
+#pragma warning restore CS0067
     }
 }

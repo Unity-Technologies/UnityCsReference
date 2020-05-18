@@ -848,6 +848,15 @@ namespace UnityEditor
             set;
         }
 
+        internal static extern bool UseDeterministicCompilation
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
         internal static extern bool gcWBarrierValidation
         {
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]

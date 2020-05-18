@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI
         private PaginatedPage[] m_SerializedPaginatedPage = new PaginatedPage[0];
 
         [SerializeField]
-        private PackageSelectionObject.Data[] m_SerializedPackageSelectionData = new PackageSelectionObject.Data[0];
+        private int[] m_SerializedPackageSelectionInstanceIds = new int[0];
 
         [NonSerialized]
         private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new Dictionary<string, PackageSelectionObject>();
@@ -118,7 +118,7 @@ namespace UnityEditor.PackageManager.UI
             m_SerializedRefreshErrorsKeys = m_RefreshErrors.Keys.ToArray();
             m_SerializedRefreshErrorsValues = m_RefreshErrors.Values.ToArray();
 
-            m_SerializedPackageSelectionData = m_PackageSelectionObjects.Select(kp => kp.Value.m_Data).ToArray();
+            m_SerializedPackageSelectionInstanceIds = m_PackageSelectionObjects.Select(kp => kp.Value.GetInstanceID()).ToArray();
         }
 
         public void OnAfterDeserialize()
@@ -136,27 +136,23 @@ namespace UnityEditor.PackageManager.UI
                 m_RefreshErrors[m_SerializedRefreshErrorsKeys[i]] = m_SerializedRefreshErrorsValues[i];
         }
 
-        public virtual PackageSelectionObject CreatePackageSelectionObject(IPackage package, IPackageVersion version = null)
+        public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false)
         {
             if (package == null)
                 return null;
 
             version = version ?? package.versions.primary;
             var packageSelectionObject = m_PackageSelectionObjects.Get(version.uniqueId);
-            if (packageSelectionObject != null)
-                return packageSelectionObject;
-
-            packageSelectionObject = ScriptableObject.CreateInstance<PackageSelectionObject>();
-            packageSelectionObject.name = version.uniqueId;
-            packageSelectionObject.m_Data = new PackageSelectionObject.Data
+            if (packageSelectionObject == null && createIfNotFound)
             {
-                name = version.uniqueId,
-                displayName = version.displayName,
-                packageUniqueId = package.uniqueId,
-                versionUniqueId = version.uniqueId
-            };
-
-            m_PackageSelectionObjects[version.uniqueId] = packageSelectionObject;
+                packageSelectionObject = ScriptableObject.CreateInstance<PackageSelectionObject>();
+                packageSelectionObject.hideFlags = HideFlags.DontSave;
+                packageSelectionObject.name = version.uniqueId;
+                packageSelectionObject.displayName = version.displayName;
+                packageSelectionObject.packageUniqueId = package.uniqueId;
+                packageSelectionObject.versionUniqueId = version.uniqueId;
+                m_PackageSelectionObjects[version.uniqueId] = packageSelectionObject;
+            }
             return packageSelectionObject;
         }
 
@@ -313,7 +309,7 @@ namespace UnityEditor.PackageManager.UI
             var currentPackageSelection = m_Selection.activeObject as PackageSelectionObject;
             if (forceSelectInInspector || currentPackageSelection != null)
             {
-                var packageSelectionObject = CreatePackageSelectionObject(package, version);
+                var packageSelectionObject = GetPackageSelectionObject(package, version, true);
                 if (m_Selection.activeObject != packageSelectionObject)
                     m_Selection.activeObject = packageSelectionObject;
             }
@@ -403,6 +399,16 @@ namespace UnityEditor.PackageManager.UI
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
             GetPageFromTab().OnPackagesChanged(added, removed, preUpdate, postUpdate);
+
+            foreach (var package in removed)
+            {
+                var packageSelectionObject = GetPackageSelectionObject(package);
+                if (packageSelectionObject != null)
+                {
+                    m_PackageSelectionObjects.Remove(packageSelectionObject.versionUniqueId);
+                    UnityEngine.Object.DestroyImmediate(packageSelectionObject);
+                }
+            }
         }
 
         private void OnProductListFetched(AssetStorePurchases productList, bool fetchDetailsCalled)
@@ -583,13 +589,11 @@ namespace UnityEditor.PackageManager.UI
 
         private void InitializeSelectionObjects()
         {
-            m_PackageSelectionObjects = new Dictionary<string, PackageSelectionObject>();
-            foreach (var data in m_SerializedPackageSelectionData)
+            foreach (var id in m_SerializedPackageSelectionInstanceIds)
             {
-                var packageSelectionObject = ScriptableObject.CreateInstance<PackageSelectionObject>();
-                packageSelectionObject.name = data.name;
-                packageSelectionObject.m_Data = data;
-                m_PackageSelectionObjects[packageSelectionObject.name] = packageSelectionObject;
+                var packageSelectionObject = UnityEngine.Object.FindObjectFromInstanceID(id) as PackageSelectionObject;
+                if (packageSelectionObject != null)
+                    m_PackageSelectionObjects[packageSelectionObject.name] = packageSelectionObject;
             }
         }
 

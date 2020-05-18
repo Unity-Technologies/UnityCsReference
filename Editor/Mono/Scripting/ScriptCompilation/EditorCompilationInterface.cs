@@ -448,6 +448,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (PlayerSettings.allowUnsafeCode)
                 options |= EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode;
 
+            if (PlayerSettings.UseDeterministicCompilation)
+                options |= EditorScriptCompilationOptions.BuildingUseDeterministicCompilation;
+
             return options;
         }
 

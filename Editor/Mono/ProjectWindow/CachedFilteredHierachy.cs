@@ -96,7 +96,7 @@ namespace UnityEditor
         FilterResult[] m_Results = new FilterResult[0];     // When filtering of folder we have all sub assets here
         FilterResult[] m_VisibleItems = new FilterResult[0]; // Subset of m_Results used for showing/hiding sub assets
 
-        SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.Scene.searchType);
+        SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.Scene);
 
         HierarchyType m_HierarchyType;
 
@@ -275,7 +275,7 @@ namespace UnityEditor
                 HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
                 m_SearchSessionHandler.BeginSession(() =>
                 {
-                    return new HierarchySearchContext
+                    return new SearchService.HierarchySearchContext
                     {
                         filter = m_SearchFilter,
                         rootProperty = property,
@@ -285,7 +285,7 @@ namespace UnityEditor
                 });
 
                 var searchQuery = m_SearchFilter.originalText;
-                var searchContext = (HierarchySearchContext)m_SearchSessionHandler.context;
+                var searchContext = (SearchService.HierarchySearchContext)m_SearchSessionHandler.context;
                 m_SearchSessionHandler.BeginSearch(searchQuery);
 
                 if (m_SearchFilter.sceneHandles != null &&

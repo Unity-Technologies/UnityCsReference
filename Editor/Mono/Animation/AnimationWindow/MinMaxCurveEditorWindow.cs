@@ -96,7 +96,7 @@ namespace UnityEditor
             if (m_CurvePresets == null)
             {
                 AnimationCurve max = m_CurveEditor.animationCurves[0].curve;
-                AnimationCurve min = m_CurveEditor.animationCurves.Length > 1 ? m_CurveEditor.animationCurves[1].curve : null;
+                AnimationCurve min = m_CurveEditor.animationCurves.Length > 1 ? m_CurveEditor.animationCurves[1].curve : new AnimationCurve();
 
                 // Selection callback for library window
                 System.Action<DoubleCurve> presetSelectedCallback = delegate(DoubleCurve presetCurve)
@@ -109,6 +109,9 @@ namespace UnityEditor
                     doubleCurve.maxCurve.keys = CurveEditorWindow.GetNormalizedKeys(presetCurve.maxCurve.keys, m_CurveEditor);
                     doubleCurve.maxCurve.postWrapMode = presetCurve.maxCurve.postWrapMode;
                     doubleCurve.maxCurve.preWrapMode = presetCurve.maxCurve.preWrapMode;
+
+                    m_MinCurve = doubleCurve.minCurve;
+                    m_MaxCurve = doubleCurve.maxCurve;
 
                     m_CurveEditor.SelectNone();
                     RefreshShownCurves();

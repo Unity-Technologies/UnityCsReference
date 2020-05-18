@@ -10,22 +10,21 @@ using UnityEditor;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace Unity.MPE
+namespace UnityEditor.MPE
 {
-    [UnityEngine.Internal.ExcludeFromDocs] public delegate object OnHandler(string eventType, object[] data);
-    [UnityEngine.Internal.ExcludeFromDocs] public delegate void OnVoidHandler(string eventType, object[] data);
-    [UnityEngine.Internal.ExcludeFromDocs] public delegate void PromiseHandler(Exception err, object[] data);
-    [UnityEngine.Internal.ExcludeFromDocs] public enum EventDataSerialization { StandardJson, JsonUtility };
+    [MovedFrom("Unity.MPE")]
+    public enum EventDataSerialization { StandardJson, JsonUtility };
 
-    [UnityEngine.Internal.ExcludeFromDocs]
+    [MovedFrom("Unity.MPE")]
     public static class EventService
     {
         internal class RequestData
         {
             public string eventType;
             public int id;
-            public List<PromiseHandler> promises;
+            public List<Action<Exception, object[]>> promises;
             public long offerStartTime;
             public bool isAcknowledged;
             public string data;
@@ -33,16 +32,16 @@ namespace Unity.MPE
             public object[] dataInfos;
         }
 
-        public const string kRequest = "request";
-        public const string kRequestAcknowledge = "requestAck";
-        public const string kRequestExecute = "requestExecute";
-        public const string kRequestResult = "requestResult";
+        private const string k_RequestMsg = "request";
+        private const string k_RequestAcknowledgeMsg = "requestAck";
+        private const string k_RequestExecuteMsg = "requestExecute";
+        private const string k_RequestResultMsg = "requestResult";
 
-        public const string kEvent = "event";
-        public const string kLog = "log";
-        public const long kRequestDefaultTimeout = 700;
+        private const string k_EventMsg = "event";
+        private const string k_LogMsg = "log";
+        private const long k_RequestDefaultTimeout = 700;
 
-        internal static Dictionary<string, List<OnHandler>> s_Events = new Dictionary<string, List<OnHandler>>();
+        internal static Dictionary<string, List<Func<string, object[], object>>> s_Events = new Dictionary<string, List<Func<string, object[], object>>>();
         internal static Dictionary<string, RequestData> s_Requests = new Dictionary<string, RequestData>();
         internal static ChannelClient m_Client;
 
@@ -53,11 +52,11 @@ namespace Unity.MPE
 
         public static void Start()
         {
-            if (m_Client != null || IsConnected)
+            if (m_Client != null || isConnected)
                 return;
 
             m_Client = ChannelClient.GetOrCreateClient("event");
-            m_Client.On(IncomingEvent);
+            m_Client.RegisterMessageHandler(IncomingEvent);
             m_Client.Start(false);
             int tickCount = 100;
             while (!m_Client.IsConnected() && --tickCount > 0)
@@ -77,22 +76,22 @@ namespace Unity.MPE
             EditorApplication.update -= Tick;
         }
 
-        public static Action On(string eventType, OnVoidHandler handler)
+        public static Action RegisterEventHandler(string eventType, Action<string, object[]> handler)
         {
-            return On(eventType, (type, args) =>
+            return RegisterEventHandler(eventType, (type, args) =>
             {
                 handler(type, args);
                 return null;
             });
         }
 
-        public static Action On(string eventType, OnHandler handler)
+        public static Action RegisterEventHandler(string eventType, Func<string, object[], object> handler)
         {
             // Note: User will need to register on domain reload...
-            List<OnHandler> handlers = null;
+            List<Func<string, object[], object>> handlers = null;
             if (!s_Events.TryGetValue(eventType, out handlers))
             {
-                handlers = new List<OnHandler> { handler};
+                handlers = new List<Func<string, object[], object>> { handler};
                 s_Events.Add(eventType, handlers);
             }
             else if (handlers.Contains(handler))
@@ -106,13 +105,13 @@ namespace Unity.MPE
 
             return () =>
             {
-                Off(eventType, handler);
+                UnregisterEventHandler(eventType, handler);
             };
         }
 
-        public static void Off(string eventType, OnHandler handler)
+        public static void UnregisterEventHandler(string eventType, Func<string, object[], object> handler)
         {
-            List<OnHandler> handlers = null;
+            List<Func<string, object[], object>> handlers = null;
             if (s_Events.TryGetValue(eventType, out handlers))
             {
                 handlers.Remove(handler);
@@ -128,7 +127,7 @@ namespace Unity.MPE
             s_Requests = new Dictionary<string, RequestData>();
         }
 
-        public static bool IsConnected => m_Client != null && m_Client.IsConnected();
+        public static bool isConnected => m_Client != null && m_Client.IsConnected();
 
         public static void Emit(string eventType, object args = null, int targetId = -1, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
@@ -141,7 +140,7 @@ namespace Unity.MPE
         public static void Emit(string eventType, object[] args, int targetId = -1, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
             const bool notifyWildcard = true;
-            var req = CreateRequest(kEvent, eventType, targetId, -1, args, eventDataSerialization);
+            var req = CreateRequest(k_EventMsg, eventType, targetId, -1, args, eventDataSerialization);
 
             // TODO: do we want to ensure that all local listeners received json as payload? This means we could recycle handlers... If so we need to serialize/deserialize... ugly. real ugly...
             var reqStr = Json.Serialize(req);
@@ -173,7 +172,7 @@ namespace Unity.MPE
             return true;
         }
 
-        public static void Request(string eventType, PromiseHandler promiseHandler, object args = null, long timeoutInMs = kRequestDefaultTimeout, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
+        public static void Request(string eventType, Action<Exception, object[]> promiseHandler, object args = null, long timeoutInMs = k_RequestDefaultTimeout, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
             if (args == null)
                 Request(eventType, promiseHandler, null, timeoutInMs, eventDataSerialization);
@@ -181,7 +180,7 @@ namespace Unity.MPE
                 Request(eventType, promiseHandler, new object[] { args }, timeoutInMs, eventDataSerialization);
         }
 
-        public static void Request(string eventType, PromiseHandler promiseHandler, object[] args, long timeoutInMs = kRequestDefaultTimeout, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
+        public static void Request(string eventType, Action<Exception, object[]> promiseHandler, object[] args, long timeoutInMs = k_RequestDefaultTimeout, EventDataSerialization eventDataSerialization = EventDataSerialization.JsonUtility)
         {
             RequestData request;
             if (s_Requests.TryGetValue(eventType, out request))
@@ -190,7 +189,7 @@ namespace Unity.MPE
                 return;
             }
 
-            request = new RequestData { eventType = eventType, promises = new List<PromiseHandler>(1), timeoutInMs = timeoutInMs };
+            request = new RequestData { eventType = eventType, promises = new List<Action<Exception, object[]>>(1), timeoutInMs = timeoutInMs };
             request.promises.Add(promiseHandler);
 
             if (HasHandlers(eventType))
@@ -219,7 +218,7 @@ namespace Unity.MPE
                 var requestId = m_Client.NewRequestId();
                 request.id = requestId;
 
-                var msg = CreateRequest(kRequest, eventType, -1, requestId, args, eventDataSerialization);
+                var msg = CreateRequest(k_RequestMsg, eventType, -1, requestId, args, eventDataSerialization);
                 m_Client.Send(Json.Serialize(msg));
 
                 s_Requests.Add(eventType, request);
@@ -230,7 +229,7 @@ namespace Unity.MPE
 
         public static void Log(string msg)
         {
-            var req = CreateRequestMsg(kLog, null, -1, -1, msg, null);
+            var req = CreateRequestMsg(k_LogMsg, null, -1, -1, msg, null);
             m_Client.Send(req);
         }
 
@@ -275,8 +274,7 @@ namespace Unity.MPE
                 return false;
             }
 
-            object dataObj = null;
-            msg.TryGetValue("data", out dataObj);
+            msg.TryGetValue("data", out var dataObj);
             object dataInfos = null;
             if (msg.TryGetValue("dataInfos", out dataInfos))
                 deserializedMessage.eventDataSerialization = EventDataSerialization.JsonUtility;
@@ -305,15 +303,15 @@ namespace Unity.MPE
 
             switch (msg.reqType)
             {
-                case kRequest: // Receiver
+                case k_RequestMsg: // Receiver
                     // We are able to answer this request. Acknowledge it to the sender:
                     if (HasHandlers(msg.eventType))
                     {
-                        var response = CreateRequestMsg(kRequestAcknowledge, msg.eventType, msg.senderId, msg.requestId, null, null);
+                        var response = CreateRequestMsg(k_RequestAcknowledgeMsg, msg.eventType, msg.senderId, msg.requestId, null, null);
                         m_Client.Send(response);
                     }
                     break;
-                case kRequestAcknowledge: // Request emitter
+                case k_RequestAcknowledgeMsg: // Request emitter
                     var pendingRequest = GetPendingRequest(msg.eventType, msg.requestId.Value);
                     if (pendingRequest != null)
                     {
@@ -321,21 +319,21 @@ namespace Unity.MPE
                         pendingRequest.isAcknowledged = true;
                         pendingRequest.offerStartTime = Stopwatch.GetTimestamp();
 
-                        var message = CreateRequestMsgWithDataString(kRequestExecute, msg.eventType, msg.senderId, msg.requestId, pendingRequest.data, pendingRequest.dataInfos);
+                        var message = CreateRequestMsgWithDataString(k_RequestExecuteMsg, msg.eventType, msg.senderId, msg.requestId, pendingRequest.data, pendingRequest.dataInfos);
                         m_Client.Send(message);
                     }
                     // else Request might potentially have timed out.
                     break;
-                case kRequestExecute: // Request receiver
+                case k_RequestExecuteMsg: // Request receiver
                 {
                     // We are fulfilling the request: send the execution results
                     const bool notifyWildcard = false;
                     var results = NotifyLocalListeners(msg.eventType, msg.data, notifyWildcard);
-                    var response = CreateRequest(kRequestResult, msg.eventType, msg.senderId, msg.requestId, results, msg.eventDataSerialization);
+                    var response = CreateRequest(k_RequestResultMsg, msg.eventType, msg.senderId, msg.requestId, results, msg.eventDataSerialization);
                     m_Client.Send(Json.Serialize(response));
                     break;
                 }
-                case kRequestResult: // Request emitter
+                case k_RequestResultMsg: // Request emitter
                     var pendingRequestAwaitingResult = GetPendingRequest(msg.eventType, msg.requestId.Value);
                     if (pendingRequestAwaitingResult != null)
                     {
@@ -345,7 +343,7 @@ namespace Unity.MPE
                         CleanRequest(msg.eventType);
                     }
                     break;
-                case kEvent:
+                case k_EventMsg:
                 {
                     const bool notifyWildcard = true;
                     NotifyLocalListeners(msg.eventType, msg.data, notifyWildcard);
@@ -404,13 +402,13 @@ namespace Unity.MPE
 
         private static bool HasHandlers(string eventType)
         {
-            List<OnHandler> handlers;
+            List<Func<string, object[], object>> handlers;
             return s_Events.TryGetValue(eventType, out handlers) && handlers.Count > 0;
         }
 
         public static void Tick()
         {
-            if (!IsConnected)
+            if (!isConnected)
                 return;
             m_Client.Tick();
 
@@ -435,7 +433,7 @@ namespace Unity.MPE
 
         private static object[] NotifyLocalListeners(string eventType, object[] data, bool notifyWildcard)
         {
-            List<OnHandler> handlers = null;
+            List<Func<string, object[], object>> handlers = null;
             var result = new object[0];
             if (s_Events.TryGetValue(eventType, out handlers))
             {

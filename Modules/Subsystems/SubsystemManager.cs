@@ -43,8 +43,11 @@ namespace UnityEngine
             }
         }
 
+// event never invoked warning (invoked indirectly from native code)
+#pragma warning disable CS0067
         public static event Action beforeReloadSubsystems;
         public static event Action afterReloadSubsystems;
+#pragma warning restore CS0067
 
         internal static IntegratedSubsystem GetIntegratedSubsystemByPtr(IntPtr ptr)
         {

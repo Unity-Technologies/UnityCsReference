@@ -25,9 +25,9 @@ namespace UnityEngine
     [NativeHeader("Runtime/Shaders/Shader.h")]
     [UsedByNativeCode]
     [RequireComponent(typeof(Transform))]
-    public partial class Camera : Behaviour
+    public sealed partial class Camera : Behaviour
     {
-        internal Camera() {}  //internal to prevent inheritence (see ScriptableCamera)
+        public Camera() {}
 
         [NativeProperty("Near")] extern public float nearClipPlane { get; set; }
         [NativeProperty("Far")]  extern public float farClipPlane  { get; set; }

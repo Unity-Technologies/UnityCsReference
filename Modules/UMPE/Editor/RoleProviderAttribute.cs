@@ -4,10 +4,11 @@
 
 using System;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace Unity.MPE
+namespace UnityEditor.MPE
 {
-    [UnityEngine.Internal.ExcludeFromDocs]
+    [MovedFrom("Unity.MPE")]
     [RequiredByNativeCode, AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public sealed class RoleProviderAttribute : Attribute
     {
@@ -15,7 +16,7 @@ namespace Unity.MPE
         {
             this.name = name;
             this.eventType = eventType;
-            this.level = ProcessLevel.UMP_UNDEFINED;
+            this.level = ProcessLevel.Undefined;
         }
 
         public RoleProviderAttribute(ProcessLevel level, ProcessEvent eventType)

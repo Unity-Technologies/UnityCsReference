@@ -231,6 +231,7 @@ namespace UnityEngine.Rendering
 
                 [NativeThrows] extern internal static void RequestRegion(ulong handle, Rect r, int mipMap, int numMips);
                 [NativeThrows] extern internal static void InvalidateRegion(ulong handle, Rect r, int mipMap, int numMips);
+                [NativeThrows] extern public static void EvictRegion(ulong handle, Rect r, int mipMap, int numMips);
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -631,6 +632,15 @@ namespace UnityEngine.Rendering
                         throw new InvalidOperationException($"Invalid ProceduralTextureStack {name}");
                     }
                     Binding.InvalidateRegion(handle, r, mipMap, numMips);
+                }
+
+                public void EvictRegion(Rect r, int mipMap, int numMips)
+                {
+                    if (IsValid() == false)
+                    {
+                        throw new InvalidOperationException($"Invalid ProceduralTextureStack {name}");
+                    }
+                    Binding.EvictRegion(handle, r, mipMap, numMips);
                 }
             }
 

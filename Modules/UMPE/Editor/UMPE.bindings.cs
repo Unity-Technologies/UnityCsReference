@@ -7,52 +7,83 @@ using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace Unity.MPE
+namespace UnityEditor.MPE
 {
-    [UnityEngine.Internal.ExcludeFromDocs]
+    [MovedFrom("Unity.MPE")]
     public enum ProcessEvent // Keep in sync with ProcessService.h
     {
-        UMP_EVENT_UNDEFINED = -1,
+        [Obsolete("... (UnityUpgradable) -> Undefined")]
+        UMP_EVENT_UNDEFINED = 0,
+        Undefined = 0,
+
+        [Obsolete("... (UnityUpgradable) -> Create")]
         UMP_EVENT_CREATE = 1,
+        Create = 1,
+
+        [Obsolete("... (UnityUpgradable) -> Initialize")]
         UMP_EVENT_INITIALIZE = 2,
+        Initialize = 2,
 
-        UMP_EVENT_AFTER_DOMAIN_RELOAD,
+        [Obsolete("... (UnityUpgradable) -> AfterDomainReload")]
+        UMP_EVENT_AFTER_DOMAIN_RELOAD = 3,
+        AfterDomainReload = 3,
 
-        UMP_EVENT_SHUTDOWN,
+        [Obsolete("... (UnityUpgradable) -> Shutdown")]
+        UMP_EVENT_SHUTDOWN = 4,
+        Shutdown = 4
     }
 
-    [UnityEngine.Internal.ExcludeFromDocs]
+    [MovedFrom("Unity.MPE")]
     public enum ProcessLevel // Keep in sync with ProcessService.h
     {
-        UMP_UNDEFINED,
-        UMP_MASTER,
-        UMP_SLAVE
+        [Obsolete("... (UnityUpgradable) -> Undefined")]
+        UMP_UNDEFINED = 0,
+        Undefined = 0,
+
+        [Obsolete("... (UnityUpgradable) -> Master")]
+        UMP_MASTER = 1,
+        Master = 1,
+
+        [Obsolete("... (UnityUpgradable) -> Slave")]
+        UMP_SLAVE = 2,
+        Slave = 2
     }
 
-    [UnityEngine.Internal.ExcludeFromDocs]
+    [MovedFrom("Unity.MPE")]
     public enum ProcessState // Keep in sync with ProcessService.h
     {
-        UMP_UNKNOWN_PROCESS,
-        UMP_FINISHED_SUCCESSFULLY,
-        UMP_FINISHED_WITH_ERROR,
-        UMP_RUNNING
+        [Obsolete("... (UnityUpgradable) -> UnknownProcess")]
+        UMP_UNKNOWN_PROCESS = 0,
+        UnknownProcess = 0,
+        [Obsolete("... (UnityUpgradable) -> FinishedSuccessfully")]
+        UMP_FINISHED_SUCCESSFULLY = 1,
+        FinishedSuccessfully = 1,
+        [Obsolete("... (UnityUpgradable) -> FinishedWithError")]
+        UMP_FINISHED_WITH_ERROR = 2,
+        FinishedWithError = 2,
+        [Obsolete("... (UnityUpgradable) -> Running")]
+        UMP_RUNNING = 3,
+        Running = 3
     }
 
+    [MovedFrom("Unity.MPE")]
     [Flags]
     internal enum RoleCapability
     {
-        UMP_CAP_NIL = 0,
-        UMP_CAP_MASTER = 1,
-        UMP_CAP_SLAVE = 2
+        None = 0,
+        Master = 1,
+        Slave = 2
     }
 
+    [MovedFrom("Unity.MPE")]
     [NativeType("Modules/UMPE/ChannelService.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ChannelInfo
+    public struct ChannelInfo : IEquatable<ChannelInfo>
     {
-        public static ChannelInfo InvalidChannel = new ChannelInfo()
+        public static ChannelInfo invalidChannel = new ChannelInfo()
         {
             m_ChannelId = -1
         };
@@ -63,23 +94,28 @@ namespace Unity.MPE
         [NativeName("channelId")]
         int m_ChannelId;
 
-        public string channelName => m_ChannelName;
+        public string name => m_ChannelName;
 
-        public int channelId => m_ChannelId;
+        public int id => m_ChannelId;
+
+        public bool Equals(ChannelInfo obj)
+        {
+            return this == obj;
+        }
 
         public override bool Equals(System.Object obj)
         {
-            return obj is ChannelInfo && this == (ChannelInfo)obj;
+            return obj is ChannelInfo info && this == info;
         }
 
         public override int GetHashCode()
         {
-            return channelName.GetHashCode() ^ channelId.GetHashCode();
+            return name.GetHashCode() ^ id.GetHashCode();
         }
 
         public static bool operator==(ChannelInfo x, ChannelInfo y)
         {
-            return x.channelId == y.channelId && x.channelName == y.channelName;
+            return x.id == y.id && x.name == y.name;
         }
 
         public static bool operator!=(ChannelInfo x, ChannelInfo y)
@@ -88,12 +124,13 @@ namespace Unity.MPE
         }
     }
 
+    [MovedFrom("Unity.MPE")]
     [NativeType("Modules/UMPE/ChannelService.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ChannelClientInfo
+    public struct ChannelClientInfo : IEquatable<ChannelClientInfo>
     {
-        public static ChannelClientInfo InvalidClient = new ChannelClientInfo()
+        public static ChannelClientInfo invalidClient = new ChannelClientInfo()
         {
             m_ChannelClientId = -1,
             m_ConnectionId = -1
@@ -108,25 +145,30 @@ namespace Unity.MPE
         [NativeName("connectionId")]
         int m_ConnectionId;
 
-        public string channelName => m_ChannelName;
+        public string name => m_ChannelName;
 
-        public int channelClientId => m_ChannelClientId;
+        public int clientId => m_ChannelClientId;
 
         public int connectionId => m_ConnectionId;
 
+        public bool Equals(ChannelClientInfo obj)
+        {
+            return this == obj;
+        }
+
         public override bool Equals(System.Object obj)
         {
-            return obj is ChannelClientInfo && this == (ChannelClientInfo)obj;
+            return obj is ChannelClientInfo info && Equals(info);
         }
 
         public override int GetHashCode()
         {
-            return channelName.GetHashCode() ^ channelClientId.GetHashCode() ^ connectionId.GetHashCode();
+            return name.GetHashCode() ^ clientId.GetHashCode() ^ connectionId.GetHashCode();
         }
 
         public static bool operator==(ChannelClientInfo x, ChannelClientInfo y)
         {
-            return x.channelName == y.channelName && x.channelClientId == y.channelClientId && x.connectionId == y.connectionId;
+            return x.name == y.name && x.clientId == y.clientId && x.connectionId == y.connectionId;
         }
 
         public static bool operator!=(ChannelClientInfo x, ChannelClientInfo y)
@@ -137,7 +179,7 @@ namespace Unity.MPE
 
     [NativeHeader("Modules/UMPE/ChannelService.h"),
      StaticAccessor("Unity::MPE::ChannelService", StaticAccessorType.DoubleColon)]
-    internal static partial class ChannelService
+    public static partial class ChannelService
     {
         public static extern string GetAddress();
         public static extern int GetPort();
@@ -157,7 +199,7 @@ namespace Unity.MPE
 
     [NativeHeader("Modules/UMPE/ChannelService.h"),
      StaticAccessor("Unity::MPE::ChannelClient", StaticAccessorType.DoubleColon)]
-    internal partial class ChannelClient
+    public partial class ChannelClient
     {
         internal static extern void Internal_Shutdown();
         internal static extern void Start(int clientId, bool autoTick);
@@ -173,7 +215,7 @@ namespace Unity.MPE
         public static extern ChannelClientInfo[] GetChannelClientList();
     }
 
-    [UnityEngine.Internal.ExcludeFromDocs]
+    [MovedFrom("Unity.MPE")]
     [NativeHeader("Modules/UMPE/ProcessService.h"),
      StaticAccessor("Unity::MPE::ProcessService", StaticAccessorType.DoubleColon)]
     public class ProcessService
@@ -192,8 +234,7 @@ namespace Unity.MPE
         public static extern int EnableProfileConnection(string dataPath);
         public static extern void DisableProfileConnection();
 
-        public delegate void SlaveProcessExitedHandler(int pid, ProcessState newState);
-        public static event SlaveProcessExitedHandler SlaveProcessExitedEvent;
+        public static event Action<int, ProcessState> SlaveProcessExitedEvent;
 
         [RequiredByNativeCode]
         private static void OnSlaveProcessExited(int pid, ProcessState newState)

@@ -9,7 +9,7 @@ using JetBrains.Annotations;
 using UnityEditorInternal;
 using UnityEditor.Profiling;
 using UnityEngine;
-using Unity.MPE;
+using UnityEditor.MPE;
 
 namespace UnityEditor
 {
@@ -48,7 +48,7 @@ namespace UnityEditor
             static string userPrefProfilerLayoutPath = Path.Combine(WindowLayout.layoutsDefaultModePreferencesPath, "Profiler.dwlt");
             static string systemProfilerLayoutPath = Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts/Profiler.dwlt");
 
-            [UsedImplicitly, RoleProvider(k_RoleName, ProcessEvent.UMP_EVENT_CREATE)]
+            [UsedImplicitly, RoleProvider(k_RoleName, ProcessEvent.Create)]
             static void InitializeProfilerSlaveProcess()
             {
                 if (!File.Exists(userPrefProfilerLayoutPath) ||
@@ -68,7 +68,7 @@ namespace UnityEditor
                 Console.WriteLine("[UMPE] Initialize Profiler Slave Process");
             }
 
-            [UsedImplicitly, RoleProvider(k_RoleName, ProcessEvent.UMP_EVENT_AFTER_DOMAIN_RELOAD)]
+            [UsedImplicitly, RoleProvider(k_RoleName, ProcessEvent.AfterDomainReload)]
             static void InitializeProfilerSlaveProcessDomain()
             {
                 Console.WriteLine("[UMPE] Initialize Profiler Slave Process Domain Triggered");
@@ -81,10 +81,10 @@ namespace UnityEditor
                 s_SlaveProfilerWindow = EditorWindow.GetWindow<ProfilerWindow>();
                 SetupProfilerWindow(s_SlaveProfilerWindow);
 
-                EventService.On(nameof(EventType.UmpProfilerRecordToggle), HandleToggleRecording);
-                EventService.On(nameof(EventType.UmpProfilerRequestRecordState), HandleRequestRecordState);
-                EventService.On(nameof(EventType.UmpProfilerPing), HandlePingEvent);
-                EventService.On(nameof(EventType.UmpProfilerExit), HandleExitEvent);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerRecordToggle), HandleToggleRecording);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerRequestRecordState), HandleRequestRecordState);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerPing), HandlePingEvent);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerExit), HandleExitEvent);
 
                 EditorApplication.update -= SetupProfilerDriver;
                 EditorApplication.update += SetupProfilerDriver;
@@ -251,33 +251,33 @@ namespace UnityEditor
         // Represents the code running in the main (master) editor process.
         static class MainEditorProcess
         {
-            [UsedImplicitly, RoleProvider(ProcessLevel.UMP_MASTER, ProcessEvent.UMP_EVENT_AFTER_DOMAIN_RELOAD)]
+            [UsedImplicitly, RoleProvider(ProcessLevel.Master, ProcessEvent.AfterDomainReload)]
             static void InitializeProfilerMasterProcess()
             {
                 EditorApplication.quitting += () =>
                 {
-                    if (!EventService.IsConnected)
+                    if (!EventService.isConnected)
                         return;
 
                     EventService.Emit(nameof(EventType.UmpProfilerExit), 0);
                     EventService.Tick(); // We really need the message to be sent now.
                 };
 
-                EventService.On(nameof(EventType.UmpProfilerAboutToQuit), OnProfilerExited);
-                EventService.On(nameof(EventType.UmpProfilerOpenPlayerConnection), OnOpenPlayerConnectionRequested);
-                EventService.On(nameof(EventType.UmpProfilerCurrentFrameChanged), OnProfilerCurrentFrameChanged);
-                EventService.On(nameof(EventType.UmpProfilerRecordingStateChanged), OnProfilerRecordingStateChanged);
-                EventService.On(nameof(EventType.UmpProfilerDeepProfileChanged), OnProfilerDeepProfileChanged);
-                EventService.On(nameof(EventType.UmpProfilerMemRecordModeChanged), OnProfilerMemoryRecordModeChanged);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerAboutToQuit), OnProfilerExited);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerOpenPlayerConnection), OnOpenPlayerConnectionRequested);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerCurrentFrameChanged), OnProfilerCurrentFrameChanged);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerRecordingStateChanged), OnProfilerRecordingStateChanged);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerDeepProfileChanged), OnProfilerDeepProfileChanged);
+                EventService.RegisterEventHandler(nameof(EventType.UmpProfilerMemRecordModeChanged), OnProfilerMemoryRecordModeChanged);
             }
 
             [UsedImplicitly, CommandHandler("ProfilerRecordToggle", CommandHint.Shortcut)]
             static void RecordToggle(CommandExecuteContext context)
             {
-                if (ProcessService.level == ProcessLevel.UMP_MASTER &&
+                if (ProcessService.level == ProcessLevel.Master &&
                     ProcessService.IsChannelServiceStarted() &&
-                    ProcessService.GetSlaveProcessState(s_SlaveProcessId) == ProcessState.UMP_RUNNING &&
-                    EventService.IsConnected)
+                    ProcessService.GetSlaveProcessState(s_SlaveProcessId) == ProcessState.Running &&
+                    EventService.isConnected)
                 {
                     EventService.Request(nameof(EventType.UmpProfilerRecordToggle), (err, args) =>
                     {
@@ -366,7 +366,7 @@ namespace UnityEditor
         {
             if (s_SlaveProcessId == -1)
                 return false;
-            return ProcessService.GetSlaveProcessState(s_SlaveProcessId) == ProcessState.UMP_RUNNING;
+            return ProcessService.GetSlaveProcessState(s_SlaveProcessId) == ProcessState.Running;
         }
 
         internal static int LaunchProfilerSlave()

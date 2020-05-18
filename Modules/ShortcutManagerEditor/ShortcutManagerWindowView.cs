@@ -312,6 +312,10 @@ namespace UnityEditor.ShortcutManagement
             var activeProfileDropdownButton = header.Q("activeProfileDropdownButton");
             activeProfileDropdownButton.AddToClassList(BasePopupField<string, string>.inputUssClassName);
             activeProfileDropdownButton.RegisterCallback<MouseDownEvent>(OnProfileContextMenuMouseDown);
+
+            var activeProfileDropdownArrow = activeProfileDropdownButton.Q("arrow");
+            activeProfileDropdownArrow.AddToClassList(BasePopupField<string, string>.arrowUssClassName);
+            activeProfileDropdownArrow.pickingMode = PickingMode.Ignore;
         }
 
         void OnCreateProfileClicked()
