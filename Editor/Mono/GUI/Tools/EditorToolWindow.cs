@@ -59,7 +59,10 @@ namespace UnityEditor.EditorTools
         {
             EditorTools.activeToolChanged += ToolChanged;
 
-            ToolChanged();
+            //active tool is null when opening the editor but activeToolChanged will be called soon after.
+            //This is quick enough that the user shouldn't notice.
+            if (EditorToolContext.activeTool)
+                ToolChanged();
         }
 
         void OnDisable()
@@ -82,7 +85,8 @@ namespace UnityEditor.EditorTools
 
         void OnGUI()
         {
-            m_Editor.OnInspectorGUI();
+            if (m_Editor != null)
+                m_Editor.OnInspectorGUI();
         }
     }
 }

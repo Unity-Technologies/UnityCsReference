@@ -373,6 +373,11 @@ namespace UnityEngine
         ASTC_HDR_10x10 = 70,
         ASTC_HDR_12x12 = 71,
 
+        // 16-bit raw integer formats
+        RG32 = 72,
+        RGB48 = 73,
+        RGBA64 = 74,
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Obsolete("Enum member TextureFormat.ASTC_RGB_4x4 has been deprecated. Use ASTC_4x4 instead (UnityUpgradable) -> ASTC_4x4")]
         ASTC_RGB_4x4 = 48,
@@ -799,6 +804,12 @@ namespace UnityEngine
         {
             Low = 0,
             Normal = 1,
+        }
+
+        public enum DataFormat
+        {
+            HalfFloat = 0,
+            Float = 1,
         }
     }
 

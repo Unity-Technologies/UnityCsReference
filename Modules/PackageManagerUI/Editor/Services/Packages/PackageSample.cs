@@ -69,14 +69,17 @@ namespace UnityEditor.PackageManager.UI
 
         [NonSerialized]
         private IOProxy m_IOProxy;
-        internal Sample(IOProxy ioProxy, string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
+        [NonSerialized]
+        private AssetDatabaseProxy m_AssetDatabase;
+        internal Sample(IOProxy ioProxy, AssetDatabaseProxy assetDatabase, string displayName, string description, string resolvedPath, string importPath, bool interactiveImport)
         {
+            m_IOProxy = ioProxy;
+            m_AssetDatabase = assetDatabase;
             this.displayName = displayName;
             this.description = description;
             this.resolvedPath = resolvedPath;
             this.importPath = importPath;
             this.interactiveImport = interactiveImport;
-            this.m_IOProxy = ioProxy;
         }
 
         /// <summary>
@@ -94,10 +97,9 @@ namespace UnityEditor.PackageManager.UI
                 var version = package.versions.installed;
                 if (!string.IsNullOrEmpty(packageVersion))
                     version = package.versions.FirstOrDefault(v => v.version?.ToString() == packageVersion);
-                if (version != null)
-                    return version.samples;
+                return packageDatabase.GetSamples(version);
             }
-            return new List<Sample>();
+            return Enumerable.Empty<Sample>();
         }
 
         /// <summary>
@@ -114,7 +116,7 @@ namespace UnityEditor.PackageManager.UI
             string[] unityPackages;
             var interactive = (options & ImportOptions.HideImportWindow) != ImportOptions.None ? false : interactiveImport;
             if ((unityPackages = m_IOProxy.DirectoryGetFiles(resolvedPath, "*.unitypackage")).Length == 1)
-                AssetDatabase.ImportPackage(unityPackages[0], interactive);
+                m_AssetDatabase.ImportPackage(unityPackages[0], interactive);
             else
             {
                 var prevImports = previousImports;
@@ -124,7 +126,7 @@ namespace UnityEditor.PackageManager.UI
                     m_IOProxy.RemovePathAndMeta(v, true);
 
                 m_IOProxy.DirectoryCopy(resolvedPath, importPath, true);
-                AssetDatabase.Refresh();
+                m_AssetDatabase.Refresh();
             }
             return true;
         }

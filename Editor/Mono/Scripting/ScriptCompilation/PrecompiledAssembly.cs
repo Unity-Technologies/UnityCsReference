@@ -50,6 +50,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         protected static extern PrecompiledAssembly[] GetUnityAssembliesNative(bool buildingForEditor, BuildTarget target);
     }
 
+    [NativeHeader("Editor/Src/ScriptCompilation/RoslynAnalyzers.bindings.h")]
     class PrecompiledAssemblyProvider : PrecompiledAssemblyProviderBase
     {
         private class UnityAssembliesKey
@@ -114,6 +115,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             return GetPrecompiledAssembliesDictionary(isEditor, buildTargetGroup, buildTarget).Values.ToArray();
         }
+
+        [FreeFunction("GetAllRoslynAnalyzerPaths")]
+        internal static extern string[] GetRoslynAnalyzerPaths();
 
         public override Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {

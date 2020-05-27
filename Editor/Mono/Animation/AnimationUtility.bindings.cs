@@ -383,7 +383,7 @@ namespace UnityEditor
         }
 
         extern public static AnimationEvent[] GetAnimationEvents([NotNull] AnimationClip clip);
-        extern public static void SetAnimationEvents([NotNull] AnimationClip clip, [NotNull] AnimationEvent[] events);
+        [NativeThrows] extern public static void SetAnimationEvents([NotNull] AnimationClip clip, [NotNull] AnimationEvent[] events);
 
         extern public static string CalculateTransformPath([NotNull] Transform targetTransform, Transform root);
 

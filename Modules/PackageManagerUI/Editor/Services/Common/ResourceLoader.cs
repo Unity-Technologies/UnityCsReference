@@ -20,9 +20,9 @@ namespace UnityEditor.PackageManager.UI
         private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
         private const string k_ExtensionDarkVariablesSheetPath = "StyleSheets/Extensions/base/dark.uss";
         private const string k_ExtensionLightVariablesSheetPath = "StyleSheets/Extensions/base/light.uss";
-        private const string s_PublicNorthstarCommonVariableStyleSheetPath = "StyleSheets/Variables/Public/common.uss";
-        private const string k_PublicNorthstarDarkVariablesSheetPath = "StyleSheets/Northstar/Palette/dark.uss";
-        private const string k_PublicNorthstarLightVariablesSheetPath = "StyleSheets/Northstar/Palette/light.uss";
+        private const string s_PublicNorthstarCommonVariableStyleSheetPath = "UIPackageResources/StyleSheets/Default/Variables/Public/common.uss";
+        private const string k_PublicNorthstarDarkVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss";
+        private const string k_PublicNorthstarLightVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss";
 
         private static readonly string[] k_PackageManagerStyleSheetPaths = new string[] {"StyleSheets/PackageManager/PackageDependencies.uss", "StyleSheets/PackageManager/PackageDetails.uss", "StyleSheets/PackageManager/PackageItem.uss",
                                                                                          "StyleSheets/PackageManager/PackageList.uss", "StyleSheets/PackageManager/PackageLoadBar.uss", "StyleSheets/PackageManager/PackageSampleList.uss", "StyleSheets/PackageManager/PackageStatusBar.uss",

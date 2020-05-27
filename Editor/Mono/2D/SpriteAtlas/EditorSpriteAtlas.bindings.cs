@@ -103,6 +103,8 @@ namespace UnityEditor.U2D
         extern internal static Hash128 GetStoredHash(this SpriteAtlas spriteAtlas);
         extern internal static TextureImporterPlatformSettings GetSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, string buildTarget, string secondaryTextureName);
         extern internal static void SetSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src, string secondaryTextureName);
+        extern internal static bool GetSecondaryColorSpace(this SpriteAtlas spriteAtlas, string secondaryTextureName);
+        extern internal static void SetSecondaryColorSpace(this SpriteAtlas spriteAtlas, string secondaryTextureName, bool srGB);
         extern internal static void DeleteSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, string secondaryTextureName);
     }
 }

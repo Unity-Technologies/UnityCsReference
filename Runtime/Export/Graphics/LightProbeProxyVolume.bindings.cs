@@ -39,6 +39,8 @@ namespace UnityEngine
 
         public extern LightProbeProxyVolume.QualityMode qualityMode { get; set; }
 
+        public extern LightProbeProxyVolume.DataFormat dataFormat { get; set; }
+
         public void Update()
         {
             SetDirtyFlag(true);

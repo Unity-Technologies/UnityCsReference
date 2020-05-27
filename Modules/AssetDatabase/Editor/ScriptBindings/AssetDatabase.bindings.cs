@@ -156,7 +156,6 @@ namespace UnityEditor
 
         [uei.ExcludeFromDocs] public static void ImportAsset(string path) { ImportAsset(path, ImportAssetOptions.Default); }
         extern public static void ImportAsset(string path, [uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
-
         extern public static bool CopyAsset(string path, string newPath);
         extern public static bool WriteImportSettingsIfDirty(string path);
         [NativeThrows]
@@ -212,6 +211,8 @@ namespace UnityEditor
         extern internal static Object LoadMainAssetAtGUID(GUID assetGUID);
 
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
+
+        extern public static System.Type GetTypeFromPathAndFileID(string assetPath, long localIdentifierInFile);
         extern public static bool IsMainAssetAtPathLoaded(string assetPath);
         extern public static Object[] LoadAllAssetRepresentationsAtPath(string assetPath);
         extern public static Object[] LoadAllAssetsAtPath(string assetPath);
@@ -304,6 +305,13 @@ namespace UnityEditor
                 res[labelsList[i]] = scoresList[i];
             }
             return res;
+        }
+
+        [FreeFunction("AssetDatabase::GetLabels")]
+        extern private static string[] GetLabelsInternal(GUID guid);
+        public static string[] GetLabels(GUID guid)
+        {
+            return GetLabelsInternal(guid);
         }
 
         extern public static string[] GetLabels(Object obj);

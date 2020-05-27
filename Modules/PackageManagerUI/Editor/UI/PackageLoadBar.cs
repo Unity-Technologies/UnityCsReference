@@ -166,7 +166,7 @@ namespace UnityEditor.PackageManager.UI
                         m_DoShowMaxLabel = false;
                     }
                 }
-                m_LoadedText = string.Format(L10n.Tr("{0} of {1} packages"), m_NumberOfPackagesShown, m_Total);
+                m_LoadedText = string.Format(L10n.Tr("{0} of {1}"), m_NumberOfPackagesShown, m_Total);
             }
             SetLabels();
         }
@@ -176,7 +176,7 @@ namespace UnityEditor.PackageManager.UI
             loadedLabel.text = m_LoadedText;
             loadMinLabel.text = m_Min.ToString();
             loadMaxLabel.text = m_Max.ToString();
-            loadMoreLabel.text = L10n.Tr("Load next");
+            loadMoreLabel.text = L10n.Tr("Load");
 
             UIUtils.SetElementDisplay(loadMoreLabel, m_DoShowLoadMoreLabel);
             UIUtils.SetElementDisplay(loadMinLabel, m_DoShowMinLabel);

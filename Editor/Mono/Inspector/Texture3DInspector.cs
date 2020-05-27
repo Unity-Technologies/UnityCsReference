@@ -56,7 +56,7 @@ namespace UnityEditor
             }
         }
 
-        internal static class MaterialProps
+        static class MaterialProps
         {
             public static readonly int colorRamp = Shader.PropertyToID("_ColorRamp");
             public static readonly int voxelSize = Shader.PropertyToID("_VoxelSize");
@@ -67,13 +67,15 @@ namespace UnityEditor
             public static readonly int quality = Shader.PropertyToID("_Quality");
             public static readonly int alpha = Shader.PropertyToID("_Alpha");
             public static readonly int positions = Shader.PropertyToID("_Positions");
-            public static readonly int position = Shader.PropertyToID("_Position");
-            public static readonly int direction = Shader.PropertyToID("_Direction");
             public static readonly int scale = Shader.PropertyToID("_Scale");
             public static readonly int offset = Shader.PropertyToID("_Offset");
             public static readonly int filterMode = Shader.PropertyToID("_FilterMode");
             public static readonly int ramp = Shader.PropertyToID("_Ramp");
-            public static readonly int occlusion = Shader.PropertyToID("_Occlusion");
+            public static readonly int CamToW = Shader.PropertyToID("_CamToW");
+            public static readonly int WToCam = Shader.PropertyToID("_WToCam");
+            public static readonly int ObjToW = Shader.PropertyToID("_ObjToW");
+            public static readonly int WToObj = Shader.PropertyToID("_WToObj");
+            public static readonly int isNormalMap = Shader.PropertyToID("_IsNormalMap");
         }
 
         static class Styles
@@ -122,7 +124,7 @@ namespace UnityEditor
         }
 
         static Texture2D s_TurboColorRamp;
-        internal static Texture2D TurboColorRamp
+        static Texture2D TurboColorRamp
         {
             get
             {
@@ -159,12 +161,9 @@ namespace UnityEditor
         public override string GetInfoString()
         {
             Texture3D tex = target as Texture3D;
-
-            string info = UnityString.Format("{0}x{1}x{2} {3} {4}",
-                tex.width, tex.height, tex.depth,
-                TextureUtil.GetTextureFormatString(tex.format),
-                EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex)));
-
+            var format = TextureUtil.GetTextureFormatString(tex.format);
+            var size = EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex));
+            string info = $"{tex.width}x{tex.height}x{tex.depth} {format} {size}";
             return info;
         }
 
@@ -218,25 +217,6 @@ namespace UnityEditor
             return EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor, controlRect, labelRect, controlId, value, EditorGUI.kFloatFieldFormatString, EditorStyles.numberField, true);
         }
 
-        float PreviewSlider(GUIContent content, float value, float min, float max, float sliderWidth, float floatFieldWidth)
-        {
-            float labelWidth = EditorStyles.label.CalcSize(content).x + 2;
-            Rect controlRect = EditorGUILayout.GetControlRect(GUILayout.Width(labelWidth + sliderWidth + floatFieldWidth));
-            int controlId = GUIUtility.GetControlID(FocusType.Keyboard);
-
-            Rect labelRect = new Rect(controlRect.position, new Vector2(labelWidth, controlRect.height));
-            controlRect.x += labelRect.width;
-            controlRect.width -= labelRect.width + 2;
-            GUI.Label(labelRect, content);
-
-            Rect sliderRect = new Rect(controlRect.position, new Vector2(sliderWidth, controlRect.height));
-            controlRect.x += sliderRect.width + 2;
-            controlRect.width -= sliderRect.width;
-            value = GUI.Slider(sliderRect, value, 0, min, max, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, true, 0);
-            value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor, controlRect, labelRect, controlId, value, EditorGUI.kFloatFieldFormatString, EditorStyles.numberField, true);
-            return Mathf.Clamp(value, min, max);
-        }
-
         public override void OnPreviewSettings()
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture || !SystemInfo.supports3DTextures)
@@ -247,8 +227,8 @@ namespace UnityEditor
             {
                 case Preview3DMode.Volume:
                     m_Ramp = GUILayout.Toggle(m_Ramp, Styles.ramp, EditorStyles.toolbarButton);
-                    m_QualityModifier = PreviewSlider(Styles.quality, m_QualityModifier, 0.5f, 8, s_SliderWidth, s_FloatWidth);
-                    m_MaxAlpha = PreviewSlider(Styles.alpha, m_MaxAlpha, 0.01f, 1, s_SliderWidth, s_FloatWidth);
+                    m_QualityModifier = PreviewSettingsSlider(Styles.quality, m_QualityModifier, 0.5f, 8, s_SliderWidth, s_FloatWidth, isInteger: false);
+                    m_MaxAlpha = PreviewSettingsSlider(Styles.alpha, m_MaxAlpha, 0.01f, 1, s_SliderWidth, s_FloatWidth, isInteger: false);
                     break;
 
                 case Preview3DMode.Slice:
@@ -317,6 +297,7 @@ namespace UnityEditor
             material.mainTexture = texture;
             material.SetVector(MaterialProps.voxelSize, voxelSize);
             material.SetVector(MaterialProps.invScale, inverseScale);
+            material.SetInt(MaterialProps.isNormalMap, IsNormalMap(texture) ? 1 : 0);
 
             if (customColorRamp != null)
             {
@@ -353,7 +334,7 @@ namespace UnityEditor
             PrepareGeneralPreview(material, texture, out inverseScale, out inverseResolution, customColorRamp);
             uint colorChannelCount = GraphicsFormatUtility.GetColorComponentCount(texture.graphicsFormat);
 
-            Vector3 voxelSize = material.GetVector("_VoxelSize");
+            Vector3 voxelSize = material.GetVector(MaterialProps.voxelSize);
             Vector3 textureResolution = GetTextureResolution(texture);
             Vector3 positions = new Vector3(slice.x / textureResolution.x, slice.y / textureResolution.y, slice.z / textureResolution.z);
             positions.x = Mathf.Clamp01(positions.x);
@@ -385,17 +366,23 @@ namespace UnityEditor
             float quality = inverseResolution / qualityModifier / 2;
             material.SetFloat(MaterialProps.quality, quality);
 
-            material.SetMatrix("_CamToW", camera.cameraToWorldMatrix);
-            material.SetMatrix("_WToCam", camera.worldToCameraMatrix);
-            material.SetMatrix("_ObjToW", trs);
-            material.SetMatrix("_WToObj", trs.inverse);
+            material.SetMatrix(MaterialProps.CamToW, camera.cameraToWorldMatrix);
+            material.SetMatrix(MaterialProps.WToCam, camera.worldToCameraMatrix);
+            material.SetMatrix(MaterialProps.ObjToW, trs);
+            material.SetMatrix(MaterialProps.WToObj, trs.inverse);
 
             return Convert.ToInt32(1 / inverseResolution * qualityModifier * 2);
         }
 
         void DrawPreview()
         {
+            if (!SystemInfo.supports3DTextures)
+                return;
             Texture3D texture = target as Texture3D;
+            if (texture == null)
+                return;
+            if (!SystemInfo.supportsCompressed3DTextures && GraphicsFormatUtility.IsCompressedTextureFormat(texture.format))
+                return;
 
             Quaternion rotation = Quaternion.Euler(-m_PreviewDir.y + s_InitialRotation.x, -m_PreviewDir.x + s_InitialRotation.y, 0);
 
@@ -435,6 +422,15 @@ namespace UnityEditor
                     EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "3D texture preview not supported");
                 return;
             }
+            Texture3D texture = target as Texture3D;
+            if (texture == null)
+                return;
+            if (!SystemInfo.supportsCompressed3DTextures && GraphicsFormatUtility.IsCompressedTextureFormat(texture.format))
+            {
+                if (Event.current.type == EventType.Repaint)
+                    EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "Compressed 3D texture preview is not supported");
+                return;
+            }
 
             InitPreviewUtility();
             Event e = Event.current;
@@ -457,10 +453,13 @@ namespace UnityEditor
 
         public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
         {
-            if (!ShaderUtil.hardwareSupportsRectRenderTexture)
+            if (!ShaderUtil.hardwareSupportsRectRenderTexture || !SystemInfo.supports3DTextures)
+                return null;
+            if (target == null)
                 return null;
 
             OnEnable();
+            m_QualityModifier *= 2;
 
             Rect r = new Rect(0, 0, width, height);
             m_PreviewUtility.BeginStaticPreview(r);

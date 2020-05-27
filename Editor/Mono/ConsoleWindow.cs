@@ -239,7 +239,7 @@ namespace UnityEditor
             if (ms_ConsoleWindow == null)
             {
                 ms_ConsoleWindow = ScriptableObject.CreateInstance<ConsoleWindow>();
-                if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
+                if (UnityEditor.MPE.ProcessService.level == MPE.ProcessLevel.Master)
                     ms_ConsoleWindow.Show(immediate);
                 else
                     ms_ConsoleWindow.ShowModalUtility();
@@ -508,7 +508,7 @@ namespace UnityEditor
 
             int currCount = LogEntries.GetCount();
 
-            if (m_ListView.totalRows != currCount && m_ListView.totalRows > 0)
+            if (m_ListView.totalRows != currCount)
             {
                 // scroll bar was at the bottom?
                 if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)

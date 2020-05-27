@@ -32,6 +32,7 @@ namespace UnityEngine
             switch (type)
             {
                 case EventType.Repaint:
+                case EventType.ExecuteCommand:
                     return true;
 
                 case EventType.KeyDown:

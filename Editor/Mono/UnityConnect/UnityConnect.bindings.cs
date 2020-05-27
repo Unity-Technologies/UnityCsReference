@@ -713,6 +713,13 @@ namespace UnityEditor.Connect
             get { return GetUserInfo_Internal(); }
         }
 
+        [NativeMethod("GetIsUserInfoReady")]
+        private static extern bool GetIsUserInfoReady_Internal();
+        public bool isUserInfoReady
+        {
+            get { return GetIsUserInfoReady_Internal(); }
+        }
+
         [NativeMethod("GetProjectInfo")]
         private static extern ProjectInfo GetProjectInfo_Internal();
         public ProjectInfo projectInfo

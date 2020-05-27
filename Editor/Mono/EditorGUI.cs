@@ -6451,19 +6451,21 @@ namespace UnityEditor
             if (type == SerializedPropertyType.Vector3 || type == SerializedPropertyType.Vector2 || type == SerializedPropertyType.Vector4 ||
                 type == SerializedPropertyType.Vector3Int || type == SerializedPropertyType.Vector2Int)
             {
-                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight + kVerticalSpacingMultiField;
+                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) +
+                    kSingleLineHeight;
             }
 
             if (type == SerializedPropertyType.Rect || type == SerializedPropertyType.RectInt)
             {
-                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField * 2;
+                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) +
+                    kSingleLineHeight * 2 + kVerticalSpacingMultiField;
             }
 
             // Bounds field has label on its own line even in wide mode because the words "center" and "extends"
             // would otherwise eat too much of the label space.
             if (type == SerializedPropertyType.Bounds || type == SerializedPropertyType.BoundsInt)
             {
-                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField * 2;
+                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) + kSingleLineHeight * 2;
             }
 
             return kSingleLineHeight;
@@ -7843,7 +7845,7 @@ namespace UnityEditor
             return PropertyFieldInternal(position, property, label, includeChildren);
         }
 
-        static class EnumNamesCache
+        internal static class EnumNamesCache
         {
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new Dictionary<Type, GUIContent[]>();
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
@@ -7870,10 +7872,14 @@ namespace UnityEditor
 
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
+                if (property.serializedObject.targetObject == null)
+                    return EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
+
                 var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
                 var typeHash = property.serializedObject.targetObject.GetType().GetHashCode();
                 var hashCode = typeHash ^ propertyHash;
                 GUIContent[] result;
+
                 if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(hashCode, out result))
                 {
                     return result;

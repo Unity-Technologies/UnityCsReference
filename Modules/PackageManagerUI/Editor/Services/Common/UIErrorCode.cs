@@ -10,14 +10,14 @@ namespace UnityEditor.PackageManager.UI
         //  in order for error code casting to work - these values must also precede any new
         //  error codes we add specifically for PackageManagerUI
         #region Core Error Codes
-        Unknown,
-        NotFound,
-        Forbidden,
-        InvalidParameter,
-        Conflict,
+        Unknown = ErrorCode.Unknown,
+        NotFound = ErrorCode.NotFound,
+        Forbidden = ErrorCode.Forbidden,
+        InvalidParameter = ErrorCode.InvalidParameter,
+        Conflict = ErrorCode.Conflict,
         #endregion
 
-        AssetStoreAuthorizationError,
+        AssetStoreAuthorizationError = 100,
         AssetStoreClientError,
         AssetStoreRestApiError,
         AssetStoreOperationError,

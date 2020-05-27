@@ -1957,8 +1957,14 @@
     <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\EdgeCollider2DEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DTool.cs">
+      <Link>Editor\Mono\Inspector\EdgeCollider2DTool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditMode.cs">
       <Link>Editor\Mono\Inspector\EditMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EditablePathTool.cs">
+      <Link>Editor\Mono\Inspector\EditablePathTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Editor.cs">
       <Link>Editor\Mono\Inspector\Editor.cs</Link>
@@ -2046,6 +2052,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LightingSettingsEditor.cs">
       <Link>Editor\Mono\Inspector\LightingSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\LineHandle.cs">
+      <Link>Editor\Mono\Inspector\LineHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LineRendererCurveEditor.cs">
       <Link>Editor\Mono\Inspector\LineRendererCurveEditor.cs</Link>
@@ -2145,6 +2154,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DEditor.cs">
       <Link>Editor\Mono\Inspector\PolygonCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DTool.cs">
+      <Link>Editor\Mono\Inspector\PolygonCollider2DTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PolygonEditorUtility.cs">
       <Link>Editor\Mono\Inspector\PolygonEditorUtility.cs</Link>
@@ -3109,9 +3121,6 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\GUIDReference.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ILPostProcessCompiledAssembly.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\ILPostProcessCompiledAssembly.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ILPostProcessing.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ILPostProcessing.cs</Link>
     </Compile>
@@ -3142,6 +3151,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesFactory.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\SemVersionRangesFactory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\TargetAssembly.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\TargetAssembly.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\TestRunnerHelpers.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\TestRunnerHelpers.cs</Link>
     </Compile>
@@ -3162,6 +3174,15 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Search\DefaultImplementations.cs">
       <Link>Editor\Mono\Search\DefaultImplementations.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\ObjectSelector.cs">
+      <Link>Editor\Mono\Search\ObjectSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\Project.cs">
+      <Link>Editor\Mono\Search\Project.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Search\Scene.cs">
+      <Link>Editor\Mono\Search\Scene.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Search\SearchService.cs">
       <Link>Editor\Mono\Search\SearchService.cs</Link>
@@ -3387,6 +3408,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\PropertyField.cs">
       <Link>Editor\Mono\UIElements\Controls\PropertyField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\SerializedPropertyBindingEvents.cs">
+      <Link>Editor\Mono\UIElements\Controls\SerializedPropertyBindingEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\TagField.cs">
       <Link>Editor\Mono\UIElements\Controls\TagField.cs</Link>
@@ -3859,6 +3883,9 @@
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\AudioImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\AudioImporter.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\CompiledAssemblies.bindings.cs">
+      <Link>Modules\AssetPipelineEditor\Public\CompiledAssemblies.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\ModelImporting\ModelImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\ModelImporting\ModelImporter.bindings.cs</Link>
     </Compile>
@@ -3873,6 +3900,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\PluginImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\PluginImporter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\RuleSetCache.bindings.cs">
+      <Link>Modules\AssetPipelineEditor\Public\RuleSetCache.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\ScriptedImporter.cs">
       <Link>Modules\AssetPipelineEditor\Public\ScriptedImporter.cs</Link>
@@ -3906,6 +3936,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildOutput.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildOutput.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGenerator.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildPlayerDataGenerator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildReferenceMap.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildReferenceMap.bindings.cs</Link>
@@ -4384,6 +4417,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\AssetDatabaseProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\AssetDatabaseProxy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs</Link>
     </Compile>
@@ -4480,9 +4516,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\SimplePage.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\SimplePage.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\SplitView.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\Common\SplitView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\ToolbarWindowMenu.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\ToolbarWindowMenu.cs</Link>
     </Compile>
@@ -4552,6 +4585,12 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManagerWindowRoot.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageManagerWindowRoot.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManifest.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageManifest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageManifestImporterEditor.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageManifestImporterEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs</Link>
     </Compile>
@@ -4606,6 +4645,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ErrorCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\ErrorCode.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Events.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Events.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\GitInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\GitInfo.cs</Link>
     </Compile>
@@ -4639,11 +4681,8 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManifest.cs">
-      <Link>Modules\PackageManager\Editor\Managed\PackageManifest.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManifestImporterEditor.cs">
-      <Link>Modules\PackageManager\Editor\Managed\PackageManifestImporterEditor.cs</Link>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageRegistrationDiffEventArgs.cs">
+      <Link>Modules\PackageManager\Editor\Managed\PackageRegistrationDiffEventArgs.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageSource.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageSource.cs</Link>
@@ -5781,13 +5820,20 @@
     <NoWarn>0169;0649;0626</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
+    <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
     <Reference Include="Unity.CompilationPipeline.Common">
       <HintPath>..\..\External\Unity.Compiler.Client\Unity.CompilationPipeline.Common.dll</HintPath>
     </Reference>

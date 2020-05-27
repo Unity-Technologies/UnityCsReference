@@ -29,7 +29,7 @@ namespace UnityEditor
 
         int m_RootInstanceID;
         string m_SearchString = "";
-        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.Scene.searchType);
+        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.Scene);
         SearchableEditorWindow.SearchModeHierarchyWindow m_SearchMode = 0; // 0 = All
         double m_LastFetchTime = 0.0;
         int m_DelayedFetches = 0;
@@ -274,7 +274,7 @@ namespace UnityEditor
 
             if (isSearching)
             {
-                m_SearchSessionHandler.BeginSession(() => new HierarchySearchContext {rootProperty = property});
+                m_SearchSessionHandler.BeginSession(() => new SearchService.HierarchySearchContext {rootProperty = property});
             }
 
             if (isSearching || subTreeWanted)
@@ -430,7 +430,7 @@ namespace UnityEditor
             int currentSceneHandle = -1;
             int row = 0;
             var searchFilter = SearchableEditorWindow.CreateFilter(searchString, (SearchableEditorWindow.SearchMode)m_SearchMode);
-            var searchContext = (HierarchySearchContext)m_SearchSessionHandler.context;
+            var searchContext = (SearchService.HierarchySearchContext)m_SearchSessionHandler.context;
             searchContext.filter = searchFilter;
             searchContext.rootProperty = property;
 

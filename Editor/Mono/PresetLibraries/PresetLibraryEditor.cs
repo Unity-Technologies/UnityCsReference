@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.IO;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEditorInternal;
 
@@ -367,9 +366,7 @@ namespace UnityEditor
                 rect = new Rect(rect.xMax - kCheckoutButtonMaxWidth - kCheckoutButtonMargin, rect.y + kCheckoutButtonMargin, kCheckoutButtonMaxWidth, rect.height - kCheckoutButtonMargin * 2);
 
             if (GUI.Button(rect, "Check out", EditorStyles.miniButton))
-            {
-                Provider.Checkout(new[] { pathWithExtension }, CheckoutMode.Asset);
-            }
+                AssetDatabase.MakeEditable(pathWithExtension);
         }
 
         void ListArea(Rect rect, PresetLibrary lib, object newPresetObject)
@@ -380,7 +377,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             if (m_PresetLibraryFileLocation == PresetFileLocation.ProjectFolder && evt.type == EventType.Repaint)
-                m_IsOpenForEdit = AssetDatabase.IsOpenForEdit(pathWithExtension, StatusQueryOptions.UseCachedIfPossible);
+                m_IsOpenForEdit = AssetDatabase.IsOpenForEdit(pathWithExtension);
             else if (m_PresetLibraryFileLocation == PresetFileLocation.PreferencesFolder)
                 m_IsOpenForEdit = true;
 

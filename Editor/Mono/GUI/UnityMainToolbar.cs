@@ -261,7 +261,7 @@ namespace UnityEditor
                 DoLayersDropDown(EditorToolGUI.GetThinArea(pos));
             }
 
-            if (Unity.MPE.ProcessService.level == Unity.MPE.ProcessLevel.UMP_MASTER)
+            if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Master)
             {
                 ReserveWidthLeft(space, ref pos);
 

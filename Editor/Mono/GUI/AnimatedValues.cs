@@ -84,7 +84,10 @@ namespace UnityEditor.AnimatedValues
             m_Start = newStart;
             m_Target = newTarget;
             if (!m_Animating)
+            {
+                EditorApplication.update -= Update;
                 EditorApplication.update += Update;
+            }
             m_Animating = true;
             m_LastTime = EditorApplication.timeSinceStartup;
             m_LerpPosition = 0;

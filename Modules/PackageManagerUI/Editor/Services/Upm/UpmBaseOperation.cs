@@ -84,7 +84,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (isInProgress)
             {
-                Debug.LogError(L10n.Tr("Unable to start the operation again while it's in progress. " +
+                Debug.LogError(L10n.Tr("[Package Manager Window] Unable to start the operation again while it's in progress. " +
                     "Please cancel the operation before re-start or wait until the operation is completed."));
                 return;
             }
@@ -115,9 +115,12 @@ namespace UnityEditor.PackageManager.UI
                 if (m_Request.Status == StatusCode.Success)
                     OnSuccess();
                 else if (m_Request.Status >= StatusCode.Failure)
-                    OnError((UIError)m_Request.Error);
+                {
+                    Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {m_Request.Error.message}");
+                    OnError(new UIError((UIErrorCode)m_Request.Error.errorCode, m_Request.Error.message, UIError.Attribute.IsDetailInConsole));
+                }
                 else
-                    Debug.LogError(string.Format(L10n.Tr("Unsupported progress state {0}"), m_Request.Status));
+                    Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unsupported progress state {0}."), m_Request.Status));
                 OnFinalize();
             }
         }
@@ -129,14 +132,13 @@ namespace UnityEditor.PackageManager.UI
                 this.error = error;
                 var message = L10n.Tr("Cannot perform upm operation");
                 message += string.IsNullOrEmpty(error.message) ? "." : $": {error.message} [{error.errorCode}].";
-                message += L10n.Tr("See console for more details");
 
-                Debug.LogError(message);
+                Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {message}");
                 onOperationError?.Invoke(this, error);
             }
             catch (Exception exception)
             {
-                Debug.LogError(string.Format(L10n.Tr("Package Manager Window had an error while reporting an error in an operation: {0}"), exception.Message));
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] An error occurred while reporting an error in an operation: {0}"), exception.Message));
             }
         }
 
@@ -150,7 +152,7 @@ namespace UnityEditor.PackageManager.UI
             }
             catch (Exception exception)
             {
-                Debug.LogError(string.Format(L10n.Tr("Package Manager Window had an error while completing an operation: {0}"), exception.Message));
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] An error occurred while completing an operation: {0}"), exception.Message));
             }
         }
 

@@ -6,7 +6,7 @@ using UnityEngine;
 using System;
 using UnityEditor;
 using UnityEditor.Profiling;
-using Unity.MPE;
+using UnityEditor.MPE;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -106,7 +106,7 @@ namespace UnityEditorInternal.Profiling
 
         protected void DrawLiveUpdateToggle(ref bool updateViewLive)
         {
-            using (new EditorGUI.DisabledScope(ProcessService.level != ProcessLevel.UMP_MASTER))
+            using (new EditorGUI.DisabledScope(ProcessService.level != ProcessLevel.Master))
             {
                 // This button is only needed in the Master Process
                 updateViewLive = GUILayout.Toggle(updateViewLive, BaseStyles.updateLive, EditorStyles.toolbarButton);

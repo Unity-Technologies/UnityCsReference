@@ -142,7 +142,7 @@ namespace UnityEditor
             get
             {
                 if (sizeType == GameViewSizeType.AspectRatio)
-                    return string.Format("{0}:{1}", width, height);
+                    return string.Format("{0}:{1} Aspect", width, height);
                 else if (sizeType == GameViewSizeType.FixedResolution)
                     return string.Format("{0}x{1}", width, height);
 
@@ -156,10 +156,24 @@ namespace UnityEditor
             if (width == 0 && height == 0)
                 return baseText;
 
+            var size = sizeText;
             if (string.IsNullOrEmpty(baseText))
-                return sizeText;
+                return size;
 
-            return baseText + " (" + sizeText + ")";
+            // if base text already contains what we would append, there's no point in
+            // appending it again
+            if (sizeType == GameViewSizeType.FixedResolution)
+            {
+                if (baseText.Contains($"{width}x{height}") || baseText.Contains($"{height}x{width}"))
+                    return baseText;
+            }
+            if (sizeType == GameViewSizeType.AspectRatio)
+            {
+                if (baseText.Contains($"{width}:{height}") || baseText.Contains($"{height}:{width}"))
+                    return baseText;
+            }
+
+            return baseText + " (" + size + ")";
         }
 
         private void Changed()

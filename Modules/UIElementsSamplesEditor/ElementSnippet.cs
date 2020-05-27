@@ -24,8 +24,8 @@ namespace UnityEditor.UIElements.Samples
         private static readonly string s_SampleBeginTag = "/// <sample>";
         private static readonly string s_SampleEndTag = "/// </sample>";
 
-        private static readonly string s_TextAssetsPath = "Snippets/Generated/";
-        private static readonly string s_AssetsPath = "Snippets/";
+        private static readonly string s_TextAssetsPath = "UIPackageResources/Snippets/Generated/";
+        private static readonly string s_AssetsPath = "UIPackageResources/Snippets/";
 
         internal virtual void Apply(VisualElement container)
         {

@@ -380,6 +380,11 @@ namespace UnityEditor
                         if (HasSubFolders(property))
                             folderItem.children = CreateChildListForCollapsedParent();
                     }
+                    else // expanded status does not get updated when deleting/moving folders. We need to check if the expanded folder still has subFolders when reading the AssetDatabase
+                    {
+                        if (!HasSubFolders(property))
+                            SetExpanded(folderItem, false);
+                    }
                 }
             }
 

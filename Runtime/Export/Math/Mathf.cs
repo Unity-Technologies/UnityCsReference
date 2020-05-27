@@ -8,6 +8,7 @@ using uei = UnityEngine.Internal;
 
 namespace UnityEngineInternal
 {
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public partial struct MathfInternal
     {
         public static volatile float FloatMinNormal = 1.17549435E-38f;
@@ -20,6 +21,7 @@ namespace UnityEngineInternal
 namespace UnityEngine
 {
     // A collection of common math functions.
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public partial struct Mathf
     {
         // Returns the sine of angle /f/ in radians.

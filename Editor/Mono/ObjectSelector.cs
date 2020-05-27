@@ -5,16 +5,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
+using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Audio;
-using UnityEngine.SceneManagement;
+using UnityEngine.SearchService;
 using UnityObject = UnityEngine.Object;
+using SelectorHandlerType = System.Func<UnityEditor.SearchService.ObjectSelectorTargetInfo, UnityEngine.Object[], UnityEditor.SearchService.ObjectSelectorSearchContext, bool>;
+using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace UnityEditor
 {
@@ -74,9 +78,10 @@ namespace UnityEditor
         ObjectListArea  m_ListArea;
         ObjectTreeForSelector m_ObjectTreeWithSearch = new ObjectTreeForSelector();
         UnityObject m_ObjectBeingEdited;
+        SerializedProperty m_EditedProperty;
 
         int m_LastSelectedInstanceId = 0;
-        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.ObjectSelector.searchType);
+        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.ObjectSelector);
 
         // Layout
         const float kMinTopSize = 250;
@@ -234,6 +239,11 @@ namespace UnityEditor
             get { return m_SearchFilter; }
             set
             {
+                if (SearchService.ObjectSelector.HasEngineOverride())
+                {
+                    SearchService.ObjectSelector.SetSearchFilter(value, (SearchService.ObjectSelectorSearchContext)m_SearchSessionHandler.context);
+                    return;
+                }
                 m_SearchFilter = value;
                 m_Debounce?.Execute();
             }
@@ -343,6 +353,7 @@ namespace UnityEditor
             UnityObject obj = property.hasMultipleDifferentValues ? null : property.objectReferenceValue;
 
             objectBeingEdited = property.serializedObject.targetObject;
+            m_EditedProperty = property;
 
             Show(obj, requiredType, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
@@ -396,39 +407,52 @@ namespace UnityEditor
             m_ModalUndoGroup = Undo.GetCurrentGroup();
 
             // Show custom selector if available
-            m_SearchSessionHandler.BeginSession(() =>
+            if (SearchService.ObjectSelector.HasEngineOverride())
             {
-                return new SearchService.ObjectSelector.SearchContext
+                m_SearchSessionHandler.BeginSession(() =>
                 {
-                    currentObject = obj,
-                    editedObject = objectBeingEdited,
-                    requiredTypes = new[] { requiredType },
-                    requiredTypeNames = new[] { m_RequiredType },
-                    allowedInstanceIds = allowedInstanceIDs,
-                    showedTypes = allowSceneObjects ? SearchService.ObjectSelector.ShowedTypes.All : SearchService.ObjectSelector.ShowedTypes.Assets
-                };
-            });
-            var searchContext = (SearchService.ObjectSelector.SearchContext)m_SearchSessionHandler.context;
-            Action<UnityObject> onSelectionChanged = selectedObj =>
-            {
-                m_LastSelectedInstanceId = selectedObj == null ? 0 : selectedObj.GetInstanceID();
-                NotifySelectionChanged(false);
-            };
-            Action<UnityObject, bool> onSelectorClosed = (selectedObj, canceled) =>
-            {
-                m_SearchSessionHandler.EndSession();
-                if (canceled)
+                    SelectorHandlerType selectorConstraint = null;
+                    if (m_EditedProperty != null)
+                    {
+                        selectorConstraint = GetSelectorHandlerFromProperty(m_EditedProperty);
+                    }
+                    return new SearchService.ObjectSelectorSearchContext
+                    {
+                        currentObject = obj,
+                        editedObjects = m_EditedProperty != null ? m_EditedProperty.serializedObject.targetObjects : new[] { objectBeingEdited },
+                        requiredTypes = new[] { requiredType },
+                        requiredTypeNames = new[] { m_RequiredType },
+                        allowedInstanceIds = allowedInstanceIDs,
+                        visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
+                        selectorConstraint = selectorConstraint
+                    };
+                });
+
+                var searchContext = (SearchService.ObjectSelectorSearchContext)m_SearchSessionHandler.context;
+                Action<UnityObject> onSelectionChanged = selectedObj =>
                 {
-                    // Undo changes we have done in the ObjectSelector
-                    Undo.RevertAllDownToGroup(m_ModalUndoGroup);
-                    m_LastSelectedInstanceId = 0;
-                }
-                else
                     m_LastSelectedInstanceId = selectedObj == null ? 0 : selectedObj.GetInstanceID();
-                NotifySelectorClosed(false);
-            };
-            if (SearchService.ObjectSelector.SelectObject(searchContext, onSelectorClosed, onSelectionChanged))
-                return;
+                    NotifySelectionChanged(false);
+                };
+                Action<UnityObject, bool> onSelectorClosed = (selectedObj, canceled) =>
+                {
+                    m_SearchSessionHandler.EndSession();
+                    if (canceled)
+                    {
+                        // Undo changes we have done in the ObjectSelector
+                        Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+                        m_LastSelectedInstanceId = 0;
+                    }
+                    else
+                        m_LastSelectedInstanceId = selectedObj == null ? 0 : selectedObj.GetInstanceID();
+
+                    m_EditedProperty = null;
+                    NotifySelectorClosed(false);
+                };
+
+                if (SearchService.ObjectSelector.SelectObject(searchContext, onSelectorClosed, onSelectionChanged))
+                    return;
+            }
 
             // Freeze to prevent flicker on OSX.
             // Screen will be updated again when calling
@@ -853,6 +877,7 @@ namespace UnityEditor
             m_ListArea?.InitSelection(new int[0]);
             m_ObjectTreeWithSearch.Clear();
             m_LastSelectedInstanceId = 0;
+            m_EditedProperty = null;
 
             Close();
             GUI.changed = true;
@@ -952,6 +977,177 @@ namespace UnityEditor
             m_OnObjectSelectorClosed?.Invoke(currentObject);
 
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
+        }
+
+        SelectorHandlerType GetSelectorHandlerFromProperty(SerializedProperty property)
+        {
+            var fieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out _);
+            if (fieldInfo == null)
+                return null;
+
+            return GetSelectorHandlerFromFieldInfo(fieldInfo);
+        }
+
+        static SelectorHandlerType GetSelectorHandlerFromFieldInfo(FieldInfo fieldInfo)
+        {
+            var customHandlerAttributes = fieldInfo.GetCustomAttributes(typeof(Attribute), false)
+                .Where(attr => !(attr is ObjectSelectorHandlerWithLabelsAttribute) && !(attr is ObjectSelectorHandlerWithTagsAttribute))
+                .Select(attr => GetCustomSelectorHandlerForAttribute(attr as Attribute))
+                .Where(attr => attr != null).ToList();
+            var handlersWithLabelsAttribute = fieldInfo.GetCustomAttributes(typeof(ObjectSelectorHandlerWithLabelsAttribute), false).OfType<ObjectSelectorHandlerWithLabelsAttribute>().ToList();
+            var handlersWithTagsAttribute = fieldInfo.GetCustomAttributes(typeof(ObjectSelectorHandlerWithTagsAttribute), false).OfType<ObjectSelectorHandlerWithTagsAttribute>().ToList();
+
+            var totalCount = customHandlerAttributes.Count + handlersWithLabelsAttribute.Count + handlersWithTagsAttribute.Count;
+            if (totalCount == 0)
+                return null;
+
+            if (totalCount > 1)
+            {
+                Debug.LogWarning($"Multiple {GetSelectorHandlerAttributeName()} attributes detected on member \"{fieldInfo.Name}\" of \"{fieldInfo.DeclaringType}\". Keeping only the first found.");
+            }
+
+            if (customHandlerAttributes.Count > 0)
+            {
+                var methodInfo = customHandlerAttributes[0];
+                if (!ValidateSelectorHandlerSignature(methodInfo))
+                    return null;
+
+                return CreateSelectorHandlerFunction(methodInfo);
+            }
+
+            if (handlersWithLabelsAttribute.Count > 0)
+            {
+                var handlerWithLabelsAttribute = handlersWithLabelsAttribute[0];
+                return CreateSelectorHandlerWithLabelsFunction(handlerWithLabelsAttribute.labels, handlerWithLabelsAttribute.matchAll);
+            }
+
+            if (handlersWithTagsAttribute.Count > 0)
+            {
+                var handlerWithTagsAttribute = handlersWithTagsAttribute[0];
+                return CreateSelectorHandlerWithTagsFunction(handlerWithTagsAttribute.tags);
+            }
+
+            return null;
+        }
+
+        static MethodInfo GetCustomSelectorHandlerForAttribute(Attribute attribute)
+        {
+            var methodsWithHandler = TypeCache.GetMethodsWithAttribute(typeof(ObjectSelectorHandlerAttribute));
+            foreach (var methodWithHandler in methodsWithHandler)
+            {
+                var selectorHandlerAttributes = methodWithHandler.GetCustomAttributes(typeof(ObjectSelectorHandlerAttribute), false).OfType<ObjectSelectorHandlerAttribute>();
+                foreach (var selectorHandlerAttribute in selectorHandlerAttributes)
+                {
+                    if (selectorHandlerAttribute.attributeType == attribute.GetType())
+                        return methodWithHandler;
+                }
+            }
+
+            return null;
+        }
+
+        static bool ValidateSelectorHandlerSignature(MethodInfo mi)
+        {
+            if (mi.ReturnType != typeof(bool))
+            {
+                Debug.LogWarning($"{GetSelectorHandlerAttributeName()} \"{mi.Name}\" must return a boolean.");
+                return false;
+            }
+
+            var paramTypes = new[] { typeof(ObjectSelectorTargetInfo), typeof(UnityObject[]), typeof(SearchService.ObjectSelectorSearchContext) };
+            var parameters = mi.GetParameters();
+            if (parameters.Length != paramTypes.Length)
+            {
+                Debug.LogWarning($"{GetSelectorHandlerAttributeName()} \"{mi.Name}\" must have {paramTypes.Length} parameters.");
+                return false;
+            }
+
+            for (var i = 0; i < paramTypes.Length; ++i)
+            {
+                var currentParam = parameters[i];
+                var currentType = paramTypes[i];
+                if (currentParam.ParameterType != currentType)
+                {
+                    Debug.LogWarning($"Parameter \"{currentParam.Name}\" of {GetSelectorHandlerAttributeName()} \"{mi.Name}\" must be of type \"{currentType}\".");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        static SelectorHandlerType CreateSelectorHandlerFunction(MethodInfo methodInfo)
+        {
+            return Delegate.CreateDelegate(typeof(SelectorHandlerType), methodInfo) as SelectorHandlerType;
+        }
+
+        static SelectorHandlerType CreateSelectorHandlerWithLabelsFunction(string[] requiredLabels, bool matchAll)
+        {
+            if (matchAll)
+            {
+                return (target, editedObjects, context) =>
+                {
+                    var assetGuid = target.globalObjectId.assetGUID;
+                    var labels = AssetDatabase.GetLabels(assetGuid);
+                    foreach (var label in requiredLabels)
+                    {
+                        if (!labels.Contains(label))
+                            return false;
+                    }
+                    return true;
+                };
+            }
+            else
+            {
+                return (target, editedObjects, context) =>
+                {
+                    var assetGuid = target.globalObjectId.assetGUID;
+                    var labels = AssetDatabase.GetLabels(assetGuid);
+                    foreach (var label in requiredLabels)
+                    {
+                        if (labels.Contains(label))
+                            return true;
+                    }
+                    return false;
+                };
+            }
+        }
+
+        static SelectorHandlerType CreateSelectorHandlerWithTagsFunction(string[] requiredTags)
+        {
+            return (target, editedObjects, context) =>
+            {
+                string tag = null;
+                if (target.targetObject == null)
+                    return false;
+                switch (target.targetObject)
+                {
+                    case GameObject go:
+                        tag = go.tag;
+                        break;
+                    case Component comp:
+                        tag = comp.tag;
+                        break;
+                    default:
+                        return false;
+                }
+
+                foreach (var t in requiredTags)
+                {
+                    if (tag == t)
+                        return true;
+                }
+                return false;
+            };
+        }
+
+        static string GetSelectorHandlerAttributeName()
+        {
+            var objectSelectorName = nameof(ObjectSelectorHandlerAttribute);
+            var index = objectSelectorName.LastIndexOf("Attribute");
+            if (index > -1)
+                objectSelectorName = objectSelectorName.Remove(index);
+            return objectSelectorName;
         }
     }
 }

@@ -10,7 +10,6 @@ using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
@@ -1775,10 +1774,7 @@ namespace UnityEditor.Experimental.SceneManagement
             if (!openForEdit)
             {
                 if (GUILayout.Button(Styles.checkoutButtonContent, Styles.button))
-                {
-                    Task task = Provider.Checkout(AssetDatabase.LoadAssetAtPath<GameObject>(assetPath), CheckoutMode.Both);
-                    task.Wait();
-                }
+                    AssetDatabase.MakeEditable(assetPath);
             }
         }
 

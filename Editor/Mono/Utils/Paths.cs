@@ -108,6 +108,11 @@ namespace UnityEditor.Utils
             return path.Replace('\\', '/');
         }
 
+        public static string TrimTrailingSlashes(this string path)
+        {
+            return path.TrimEnd(new[] { '/', '\\' });
+        }
+
         public static string SkipPathPrefix(string path, string prefix)
         {
             if (path.StartsWith(prefix))
@@ -122,7 +127,8 @@ namespace UnityEditor.Utils
 
         public static bool AreEqual(string pathA, string pathB, bool ignoreCase)
         {
-            if (pathA == "" && pathB == "")
+            if (pathA == "" && pathB == "" ||
+                pathA == null && pathB == null)
                 return true;
 
             if (String.IsNullOrEmpty(pathA) || String.IsNullOrEmpty(pathB))

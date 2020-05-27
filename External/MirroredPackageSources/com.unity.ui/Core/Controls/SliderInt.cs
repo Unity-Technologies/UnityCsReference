@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
             UxmlIntAttributeDescription m_LowValue = new UxmlIntAttributeDescription { name = "low-value" };
             UxmlIntAttributeDescription m_HighValue = new UxmlIntAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };
             UxmlIntAttributeDescription m_PageSize = new UxmlIntAttributeDescription { name = "page-size", defaultValue = (int)kDefaultPageSize };
+            UxmlBoolAttributeDescription m_ShowInputField = new UxmlBoolAttributeDescription { name = "show-input-field", defaultValue = kDefaultShowInputField };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Horizontal };
 
             /// <summary>
@@ -37,6 +38,7 @@ namespace UnityEngine.UIElements
                 f.highValue = m_HighValue.GetValueFromBag(bag, cc);
                 f.direction = m_Direction.GetValueFromBag(bag, cc);
                 f.pageSize = m_PageSize.GetValueFromBag(bag, cc);
+                f.showInputField = m_ShowInputField.GetValueFromBag(bag, cc);
 
                 base.Init(ve, bag, cc);
             }
@@ -113,6 +115,19 @@ namespace UnityEngine.UIElements
         internal override int SliderRange()
         {
             return Math.Abs(highValue - lowValue);
+        }
+
+        internal override int ParseStringToValue(string stringValue)
+        {
+            int result;
+            if (int.TryParse(stringValue, out result))
+            {
+                return result;
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         internal override void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)

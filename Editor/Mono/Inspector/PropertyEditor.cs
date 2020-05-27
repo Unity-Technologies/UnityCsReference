@@ -37,6 +37,7 @@ namespace UnityEditor
         bool IsMultiEditingSupported(Editor editor, Object target);
         bool WasEditorVisible(Editor[] editors, int editorIndex, Object target);
         bool ShouldCullEditor(Editor[] editors, int editorIndex);
+        void Repaint();
     }
 
     interface IPropertySourceOpener
@@ -305,14 +306,23 @@ namespace UnityEditor
             m_LabelGUI.OnLostFocus();
         }
 
-        private bool CloseIfEmpty()
+        protected virtual bool CloseIfEmpty()
         {
-            if ((!String.IsNullOrEmpty(m_AssetGUID) || m_InstanceID != 0) && !m_InspectedObject)
+            // It should never close if its tracker is not locked.
+            if (!tracker.isLocked)
             {
-                EditorApplication.delayCall += Close;
-                return true;
+                return false;
             }
-            return false;
+
+            // We can rely on the tracker to always keep valid Objects
+            // even after an assemblyreload or assetdatabase refresh.
+            List<Object> locked = new List<Object>();
+            tracker.GetObjectsLockedByThisTracker(locked);
+            if (locked.Any(o => o != null))
+                return false;
+
+            EditorApplication.delayCall += Close;
+            return true;
         }
 
         [UsedImplicitly]
@@ -683,7 +693,6 @@ namespace UnityEditor
                 });
             }
 
-            result.cullingEnabled = true;
             if (name != null)
             {
                 result.name = name;
@@ -1474,6 +1483,7 @@ namespace UnityEditor
 
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
+                editors[editorIndex].propertyViewer = this;
                 VisualElement prefabsComponentElement = new VisualElement() { name = "PrefabComponentElement" };
                 if (checkForRemovedComponents && editorIndex > targetGameObjectIndex)
                 {
@@ -1506,13 +1516,16 @@ namespace UnityEditor
                 var editor = editors[editorIndex];
                 Object editorTarget = editor.targets[0];
 
-                string editorTitle = editorTarget == null ? "Nothing Selected" : $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                EditorElement editorContainer;
+                if (editorTarget && (editorTarget?.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    continue;
 
                 try
                 {
-                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
+                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {
+                        string editorTitle = editorTarget == null ?
+                            "Nothing Selected" :
+                            $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
                         editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
                         editorsElement.Add(editorContainer);
                     }
@@ -1675,7 +1688,8 @@ namespace UnityEditor
             Object currentTarget = editors[editorIndex].target;
 
             // Editors that should always be hidden
-            if (currentTarget is ParticleSystemRenderer)
+            if (currentTarget is ParticleSystemRenderer
+                || currentTarget is UnityEngine.VFX.VFXRenderer)
                 return true;
 
             // Hide regular AssetImporters (but not inherited types)

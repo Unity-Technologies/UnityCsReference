@@ -794,15 +794,15 @@ namespace UnityEditorInternal
                         {
                             iter.SetRoot(frameIndex, threadInfo.threadIndex);
                             DoNativeProfilerTimeline(r, frameIndex, maxContextFramesToShow, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
+                        }
 
-                            // Save the y pos and height of the selected thread each time we draw, since it can change
-                            bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
-                            if (containsSelected)
-                            {
-                                m_SelectedThreadY = y;
-                                m_SelectedThreadYRange = rangeY;
-                                m_SelectedThread = threadInfo;
-                            }
+                        // Save the y pos and height of the selected thread each time we draw, since it can change
+                        bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
+                        if (containsSelected)
+                        {
+                            m_SelectedThreadY = y;
+                            m_SelectedThreadYRange = rangeY;
+                            m_SelectedThread = threadInfo;
                         }
 
                         y += r.height;
@@ -1132,15 +1132,15 @@ namespace UnityEditorInternal
             GUI.EndClip();
         }
 
-        public void DoTimeRulerGUI(Rect timeRulerRect, float sideWidth, float frameTime)
+        void DoTimeRulerGUI(Rect timeRulerRect, float sideWidth, float frameTime)
         {
-            Debug.Assert(m_TimeArea != null);
+            // m_TimeArea shouldn't ever be null when this method is called, but just to make sure in case the call to this changes.
+            if (Event.current.type != EventType.Repaint || m_TimeArea == null)
+                return;
+
             Rect sidebarLeftOfTimeRulerRect = new Rect(timeRulerRect.x - sideWidth, timeRulerRect.y, sideWidth, k_LineHeight);
             timeRulerRect.width -= m_TimeArea.vSliderWidth;
             Rect spaceRightOftimeRulerRect = new Rect(timeRulerRect.xMax, timeRulerRect.y, m_TimeArea.vSliderWidth, timeRulerRect.height);
-
-            if (m_TimeArea == null || Event.current.type != EventType.Repaint)
-                return;
 
             styles.leftPane.Draw(sidebarLeftOfTimeRulerRect, GUIContent.none, false, false, false, false);
 

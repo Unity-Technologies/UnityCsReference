@@ -7,17 +7,16 @@ using System.Collections.Generic;
 using UnityEngine.Scripting;
 using System.Text;
 using JetBrains.Annotations;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace Unity.MPE
+namespace UnityEditor.MPE
 {
-    delegate void ChannelClientHandler(string strData);
-    delegate void ChannelClientBinaryHandler(byte[] data);
-
-    internal partial class ChannelClient
+    [MovedFrom("Unity.MPE")]
+    public partial class ChannelClient
     {
         internal static Dictionary<int, ChannelClient> s_Clients = new Dictionary<int, ChannelClient>();
-        List<ChannelClientHandler> m_Handlers = new List<ChannelClientHandler>();
-        List<ChannelClientBinaryHandler> m_BinaryHandlers = new List<ChannelClientBinaryHandler>();
+        List<Action<string>> m_Handlers = new List<Action<string>>();
+        List<Action<byte[]>> m_BinaryHandlers = new List<Action<byte[]>>();
 
         public int clientId { get; }
         public string channelName { get; }
@@ -42,8 +41,8 @@ namespace Unity.MPE
 
         public void Close()
         {
-            m_Handlers = new List<ChannelClientHandler>();
-            m_BinaryHandlers = new List<ChannelClientBinaryHandler>();
+            m_Handlers = new List<Action<string>>();
+            m_BinaryHandlers = new List<Action<byte[]>>();
             Close(channelName);
         }
 
@@ -62,7 +61,7 @@ namespace Unity.MPE
             Send(clientId, data);
         }
 
-        public Action On(ChannelClientHandler handler)
+        public Action RegisterMessageHandler(Action<string> handler)
         {
             if (m_Handlers.Contains(handler))
                 throw new Exception("Channel Client Handler already registered");
@@ -71,16 +70,16 @@ namespace Unity.MPE
 
             return () =>
             {
-                Off(handler);
+                UnregisterMessageHandler(handler);
             };
         }
 
-        public void Off(ChannelClientHandler handler)
+        public void UnregisterMessageHandler(Action<string> handler)
         {
             m_Handlers.Remove(handler);
         }
 
-        public Action On(ChannelClientBinaryHandler handler)
+        public Action RegisterMessageHandler(Action<byte[]> handler)
         {
             if (m_BinaryHandlers.Contains(handler))
                 throw new Exception("Channel Client Handler already registered");
@@ -89,11 +88,11 @@ namespace Unity.MPE
 
             return () =>
             {
-                Off(handler);
+                UnregisterMessageHandler(handler);
             };
         }
 
-        public void Off(ChannelClientBinaryHandler handler)
+        public void UnregisterMessageHandler(Action<byte[]> handler)
         {
             m_BinaryHandlers.Remove(handler);
         }
@@ -115,7 +114,7 @@ namespace Unity.MPE
 
         public static void Close(string channelName)
         {
-            var clientId = GetChannelClientInfo(channelName).channelClientId;
+            var clientId = GetChannelClientInfo(channelName).clientId;
             if (clientId != -1)
             {
                 s_Clients.Remove(clientId);
@@ -126,7 +125,7 @@ namespace Unity.MPE
 
         public static ChannelClient GetOrCreateClient(string channelName)
         {
-            var id = GetChannelClientInfo(channelName).channelClientId;
+            var id = GetChannelClientInfo(channelName).clientId;
             if (id == -1)
             {
                 id = Internal_GetOrCreateClient(channelName);
@@ -198,25 +197,26 @@ namespace Unity.MPE
         }
     }
 
-    struct ChannelClientScope : IDisposable
+    [MovedFrom("Unity.MPE")]
+    public struct ChannelClientScope : IDisposable
     {
         private Action m_Off;
         private bool m_CloseClientOnExit;
 
         public ChannelClient client { get; private set; }
-        public ChannelClientScope(bool autoTick, string channelName, ChannelClientHandler handler, bool closeClientOnExit = true)
+        public ChannelClientScope(bool autoTick, string channelName, Action<string> handler, bool closeClientOnExit = true)
         {
             m_CloseClientOnExit = closeClientOnExit;
             client = ChannelClient.GetOrCreateClient(channelName);
-            m_Off = client.On(handler);
+            m_Off = client.RegisterMessageHandler(handler);
             client.Start(autoTick);
         }
 
-        public ChannelClientScope(bool autoTick, string channelName, ChannelClientBinaryHandler handler, bool closeClientOnExit = true)
+        public ChannelClientScope(bool autoTick, string channelName, Action<byte[]> handler, bool closeClientOnExit = true)
         {
             m_CloseClientOnExit = closeClientOnExit;
             client = ChannelClient.GetOrCreateClient(channelName);
-            m_Off = client.On(handler);
+            m_Off = client.RegisterMessageHandler(handler);
             client.Start(autoTick);
         }
 

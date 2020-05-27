@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -392,10 +393,11 @@ namespace UnityEditor
                         if (isSigned)
                         {
                             var definition = assemblyDefinitions[referenceAssemblyDefinitionIndex];
-                            if (definition.Name.Version.ToString() != reference.Version.ToString())
+
+                            if (definition.Name.Version.ToString() != reference.Version.ToString() && !IsInSameFolder(assemblyDefinition, referenceAssemblyDefinition))
                             {
                                 errors[index].Add(ErrorFlags.UnresolvableReference,
-                                    $"{assemblyDefinition.Name.Name} references strong named {reference.Name}, versions has to match. Assembly references: {reference.Version} Found in project: {definition.Name.Version}.");
+                                    $"{assemblyDefinition.Name.Name} references strong named {reference.Name} in a different folder, versions has to match. Assembly references: {reference.Version} Found in project: {definition.Name.Version}.");
                             }
                         }
 
@@ -411,6 +413,13 @@ namespace UnityEditor
             }
 
             assemblyAndReferences[index].referenceIndicies = referenceIndieces.ToArray();
+        }
+
+        private static bool IsInSameFolder(AssemblyDefinition first, AssemblyDefinition second)
+        {
+            var firstAssemblyPath = Path.GetDirectoryName(first.MainModule.FileName);
+            var secondAssemblyPath = Path.GetDirectoryName(second.MainModule.FileName);
+            return firstAssemblyPath.Equals(secondAssemblyPath, StringComparison.Ordinal);
         }
 
         private static bool IsSigned(AssemblyNameReference reference)

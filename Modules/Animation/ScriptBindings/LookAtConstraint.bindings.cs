@@ -52,7 +52,7 @@ namespace UnityEngine.Animations
             SetSourcesInternal(this, sources);
         }
 
-        [FreeFunction("ConstraintBindings::SetSources")]
+        [FreeFunction("ConstraintBindings::SetSources", ThrowsException = true)]
         private static extern void SetSourcesInternal([NotNull] LookAtConstraint self, List<ConstraintSource> sources);
 
         public extern int AddSource(ConstraintSource source);

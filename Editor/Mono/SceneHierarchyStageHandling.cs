@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental.SceneManagement;
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -54,6 +55,10 @@ namespace UnityEditor
 
         void OnBeforeSwitchingAwayFromStage(Stage stage)
         {
+            // Clear parent object for the prefab stage if one was set
+            if (stage is PrefabStage)
+                SceneHierarchy.SetDefaultParentForSession(stage.GetSceneAt(stage.sceneCount - 1).guid, 0);
+
             stage.SaveHierarchyState(m_SceneHierarchyWindow);
         }
 

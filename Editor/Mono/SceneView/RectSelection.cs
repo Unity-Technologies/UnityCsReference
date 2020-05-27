@@ -4,16 +4,13 @@
 
 using System;
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
-using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Linq;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    // Handles picking/selection in the scene view (both "click" type and "drag-rect" type)
     internal class RectSelection
     {
         Vector2 m_SelectStartPoint;
@@ -23,12 +20,12 @@ namespace UnityEditor
         Dictionary<GameObject, bool> m_LastSelection;
         enum SelectionType { Normal, Additive, Subtractive }
         Object[] m_CurrentSelection = null;
-        EditorWindow m_Window;
+        readonly EditorWindow m_Window;
 
         internal static event Action rectSelectionStarting = delegate {};
         internal static event Action rectSelectionFinished = delegate {};
 
-        static int s_RectSelectionID = GUIUtility.GetPermanentControlID();
+        static readonly int s_RectSelectionID = GUIUtility.GetPermanentControlID();
 
         public RectSelection(EditorWindow window)
         {
@@ -143,10 +140,45 @@ namespace UnityEditor
                                 // For control/cmd, we check if ANY of the selected GO is hovered by mouse and then subtract. Otherwise additive.
                                 // Control/cmd takes priority over shift.
                                 GameObject hovered = HandleUtility.PickGameObject(evt.mousePosition, false);
-                                if (EditorGUI.actionKey ? Selection.gameObjects.Contains(hovered) : Selection.activeGameObject == hovered)
+
+                                var handledIt = false;
+                                // shift-click deselects only if the active GO is exactly what we clicked on
+                                if (!EditorGUI.actionKey && Selection.activeGameObject == hovered)
+                                {
                                     UpdateSelection(m_SelectionStart, hovered, SelectionType.Subtractive, m_RectSelecting);
-                                else
+                                    handledIt = true;
+                                }
+
+                                // ctrl-click deselects everything up to prefab root, that is already selected
+                                if (!handledIt && EditorGUI.actionKey)
+                                {
+                                    var selectedGos = Selection.gameObjects;
+                                    var hoveredRoot = HandleUtility.FindSelectionBaseForPicking(hovered);
+                                    var deselectList = new List<Object>();
+                                    while (hovered != null)
+                                    {
+                                        if (selectedGos.Contains(hovered))
+                                            deselectList.Add(hovered);
+                                        if (hovered == hoveredRoot)
+                                            break;
+                                        var parent = hovered.transform.parent;
+                                        if (parent)
+                                            hovered = parent.gameObject;
+                                        else
+                                            break;
+                                    }
+                                    if (deselectList.Any())
+                                    {
+                                        UpdateSelection(m_SelectionStart, deselectList.ToArray(), SelectionType.Subtractive, m_RectSelecting);
+                                        handledIt = true;
+                                    }
+                                }
+
+                                // we did not deselect anything, so add the new thing into selection instead
+                                if (!handledIt)
+                                {
                                     UpdateSelection(m_SelectionStart, HandleUtility.PickGameObject(evt.mousePosition, true), SelectionType.Additive, m_RectSelecting);
+                                }
                             }
                             else // With no modifier keys, we do the "cycle through overlapped" picking logic in SceneViewPicking.cs
                             {
@@ -175,7 +207,7 @@ namespace UnityEditor
             Handles.EndGUI();
         }
 
-        private static void UpdateSelection(Object[] existingSelection, Object newObject, SelectionType type, bool isRectSelection)
+        static void UpdateSelection(Object[] existingSelection, Object newObject, SelectionType type, bool isRectSelection)
         {
             Object[] objs;
             if (newObject == null)
@@ -191,7 +223,7 @@ namespace UnityEditor
             UpdateSelection(existingSelection, objs, type, isRectSelection);
         }
 
-        private static void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type, bool isRectSelection)
+        static void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type, bool isRectSelection)
         {
             Object[] newSelection;
             switch (type)
@@ -237,7 +269,7 @@ namespace UnityEditor
 
         // When rect selecting, we update the selected objects based on which modifier keys are currently held down,
         // so the window needs to repaint.
-        internal void SendCommandsOnModifierKeys()
+        void SendCommandsOnModifierKeys()
         {
             m_Window.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.ModifierKeysChanged));
         }

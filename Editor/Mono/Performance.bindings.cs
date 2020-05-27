@@ -46,5 +46,6 @@ namespace UnityEditor.Profiling
 
         internal static extern int StartTracker(string trackerName);
         internal static extern void StopTracker(int trackerToken);
+        internal static extern bool IsTrackerActive(int trackerToken);
     }
 }

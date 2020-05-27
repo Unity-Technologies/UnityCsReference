@@ -218,9 +218,9 @@ namespace UnityEditor.UIElements.Debugger
     [Serializable]
     internal class UIElementsDebuggerImpl : PanelDebugger, IGlobalPanelDebugger
     {
-        const string k_DefaultStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebugger.uss";
-        const string k_DefaultDarkStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerDark.uss";
-        const string k_DefaultLightStyleSheetPath = "StyleSheets/UIElementsDebugger/UIElementsDebuggerLight.uss";
+        const string k_DefaultStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsDebugger.uss";
+        const string k_DefaultDarkStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsDebuggerDark.uss";
+        const string k_DefaultLightStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsDebuggerLight.uss";
 
         private VisualElement m_Root;
         private ToolbarToggle m_PickToggle;

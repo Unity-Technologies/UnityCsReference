@@ -14,8 +14,8 @@ namespace UnityEditor.UIElements
 {
     class UIElementsEditorWindowCreator : EditorWindow
     {
-        const string k_UIElementsEditorWindowCreatorStyleSheetPath = "StyleSheets/UIElementsEditorWindowCreator.uss";
-        const string k_UIElementsEditorWindowCreatorUxmlPath = "UXML/UIElementsEditorWindowCreator.uxml";
+        const string k_UIElementsEditorWindowCreatorStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsEditorWindowCreator.uss";
+        const string k_UIElementsEditorWindowCreatorUxmlPath = "UIPackageResources/UXML/UIElementsEditorWindowCreator.uxml";
 
         VisualElement m_Root;
         VisualElement m_ErrorMessageBox;

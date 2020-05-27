@@ -3,16 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.AnimatedValues;
-using UnityEditor.Modules;
 using UnityEngine;
 using UnityEditor.Build;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System;
 using UnityEditor.Experimental.AssetImporters;
 using Object = UnityEngine.Object;
-using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 
 namespace UnityEditor
@@ -60,6 +56,7 @@ namespace UnityEditor
             StreamingMipmaps = 1 << 10,
             SingleChannelComponent = 1 << 11,
             PngGamma = 1 << 12,
+            ElementsAtlas = 1 << 14,
         }
 
         private struct TextureInspectorTypeGUIProperties
@@ -153,6 +150,7 @@ namespace UnityEditor
 
         readonly AnimBool m_ShowBumpGenerationSettings = new AnimBool();
         readonly AnimBool m_ShowCubeMapSettings = new AnimBool();
+        readonly AnimBool m_ShowElementsAtlasSettings = new AnimBool();
         readonly AnimBool m_ShowGenericSpriteSettings = new AnimBool();
         readonly AnimBool m_ShowMipMapSettings = new AnimBool();
         readonly AnimBool m_ShowSpriteMeshTypeOption = new AnimBool();
@@ -194,8 +192,10 @@ namespace UnityEditor
             };
 
             public readonly GUIContent textureShape = EditorGUIUtility.TrTextContent("Texture Shape", "What shape is this texture?");
-            private readonly GUIContent textureShape2D = EditorGUIUtility.TrTextContent("2D", "Texture is 2D.");
-            private readonly  GUIContent textureShapeCube = EditorGUIUtility.TrTextContent("Cube", "Texture is a Cubemap.");
+            readonly GUIContent textureShape2D = EditorGUIUtility.TrTextContent("2D", "Texture is 2D.");
+            readonly GUIContent textureShapeCube = EditorGUIUtility.TrTextContent("Cube", "Texture is a Cubemap.");
+            readonly GUIContent textureShape2DArray = EditorGUIUtility.TrTextContent("2D Array", "Texture is a 2D Array.");
+            readonly GUIContent textureShape3D = EditorGUIUtility.TrTextContent("3D", "Texture is 3D.");
             public readonly Dictionary<TextureImporterShape, GUIContent[]> textureShapeOptionsDictionnary = new Dictionary<TextureImporterShape, GUIContent[]>();
             public readonly Dictionary<TextureImporterShape, int[]> textureShapeValuesDictionnary = new Dictionary<TextureImporterShape, int[]>();
 
@@ -347,23 +347,30 @@ namespace UnityEditor
             public readonly GUIContent ignorePngGamma = EditorGUIUtility.TrTextContent("Ignore PNG file gamma", "Ignore the Gamma value attribute in PNG files, this setting has no effect on other file formats.");
             public readonly GUIContent readWriteWarning = EditorGUIUtility.TrTextContent("Textures larger than 8192 can not be Read/Write enabled. Value will be ignored.");
 
+            public readonly GUIContent flipbookColumns = EditorGUIUtility.TrTextContent("Columns", "Source image is divided into this amount of columns.");
+            public readonly GUIContent flipbookRows = EditorGUIUtility.TrTextContent("Rows", "Source image is divided into this amount of rows.");
+
             public Styles()
             {
                 // This is far from ideal, but it's better than having tons of logic in the GUI code itself.
-                // The combination should not grow too much anyway since only Texture3D will be added later.
+                // The combination should not grow too much.
                 GUIContent[] s2D_Options = { textureShape2D };
                 GUIContent[] sCube_Options = { textureShapeCube };
                 GUIContent[] s2D_Cube_Options = { textureShape2D, textureShapeCube };
+                GUIContent[] sAll_Options = { textureShape2D, textureShapeCube, textureShape2DArray, textureShape3D };
                 textureShapeOptionsDictionnary.Add(TextureImporterShape.Texture2D, s2D_Options);
                 textureShapeOptionsDictionnary.Add(TextureImporterShape.TextureCube, sCube_Options);
                 textureShapeOptionsDictionnary.Add(TextureImporterShape.Texture2D | TextureImporterShape.TextureCube, s2D_Cube_Options);
+                textureShapeOptionsDictionnary.Add(TextureImporterShape.Texture2D | TextureImporterShape.TextureCube | TextureImporterShape.Texture2DArray | TextureImporterShape.Texture3D, sAll_Options);
 
                 int[] s2D_Values = { (int)TextureImporterShape.Texture2D };
                 int[] sCube_Values = { (int)TextureImporterShape.TextureCube };
                 int[] s2D_Cube_Values = { (int)TextureImporterShape.Texture2D, (int)TextureImporterShape.TextureCube };
+                int[] sAll_Values = { (int)TextureImporterShape.Texture2D, (int)TextureImporterShape.TextureCube, (int)TextureImporterShape.Texture2DArray, (int)TextureImporterShape.Texture3D };
                 textureShapeValuesDictionnary.Add(TextureImporterShape.Texture2D, s2D_Values);
                 textureShapeValuesDictionnary.Add(TextureImporterShape.TextureCube, sCube_Values);
                 textureShapeValuesDictionnary.Add(TextureImporterShape.Texture2D | TextureImporterShape.TextureCube, s2D_Cube_Values);
+                textureShapeValuesDictionnary.Add(TextureImporterShape.Texture2D | TextureImporterShape.TextureCube | TextureImporterShape.Texture2DArray | TextureImporterShape.Texture3D, sAll_Values);
             }
         }
 
@@ -438,6 +445,9 @@ namespace UnityEditor
 
         SerializedProperty m_SpriteMode;
 
+        SerializedProperty m_FlipbookRows;
+        SerializedProperty m_FlipbookColumns;
+
         SerializedProperty m_SingleChannelComponent;
         List<TextureImporterType> m_TextureTypes;
         internal SpriteImportMode spriteImportMode
@@ -502,6 +512,9 @@ namespace UnityEditor
 
             m_SingleChannelComponent = serializedObject.FindProperty("m_SingleChannelComponent");
 
+            m_FlipbookRows = serializedObject.FindProperty("m_FlipbookRows");
+            m_FlipbookColumns = serializedObject.FindProperty("m_FlipbookColumns");
+
             m_TextureTypes = new List<TextureImporterType>();
             foreach (var o in targets)
             {
@@ -514,13 +527,17 @@ namespace UnityEditor
         {
             // This is where we decide what GUI elements are displayed depending on the texture type.
             // TODO: Maybe complement the bitfield with a list to add a concept of order in the display. Not sure if necessary...
-            TextureImporterShape shapeCapsAll = TextureImporterShape.Texture2D | TextureImporterShape.TextureCube;
+            TextureImporterShape shapeCapsAll =
+                TextureImporterShape.Texture2D |
+                TextureImporterShape.TextureCube |
+                TextureImporterShape.Texture2DArray |
+                TextureImporterShape.Texture3D;
 
-            m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , shapeCapsAll);
-            m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , shapeCapsAll);
@@ -530,7 +547,7 @@ namespace UnityEditor
             m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                 TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
-            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
                 , shapeCapsAll);
@@ -557,10 +574,12 @@ namespace UnityEditor
             m_GUIElementMethods.Add(TextureInspectorGUIElement.Sprite, this.SpriteGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.Cookie, this.CookieGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.CubeMapping, this.CubemapMappingGUI);
+            m_GUIElementMethods.Add(TextureInspectorGUIElement.ElementsAtlas, this.ElementsAtlasGui);
 
             // This list dictates the order in which the GUI Elements are displayed.
             // It could be different for each TextureImporterType but let's keep it simple for now.
             m_GUIElementsDisplayOrder.Clear();
+            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.ElementsAtlas);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.CubeMapping);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.CubeMapConvolution);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Cookie);
@@ -591,15 +610,18 @@ namespace UnityEditor
             BuildTargetList();
 
             m_ShowBumpGenerationSettings.valueChanged.AddListener(Repaint);
+            m_ShowBumpGenerationSettings.value = m_ConvertToNormalMap.intValue > 0;
             m_ShowCubeMapSettings.valueChanged.AddListener(Repaint);
             m_ShowCubeMapSettings.value = (TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.TextureCube;
+            m_ShowElementsAtlasSettings.valueChanged.AddListener(Repaint);
+            m_ShowElementsAtlasSettings.value = (TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2DArray || (TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture3D;
             //@TODO change to use spriteMode enum when available
             m_ShowGenericSpriteSettings.valueChanged.AddListener(Repaint);
             m_ShowGenericSpriteSettings.value = m_SpriteMode.intValue != 0;
             m_ShowSpriteMeshTypeOption.valueChanged.AddListener(Repaint);
             m_ShowSpriteMeshTypeOption.value = ShouldShowSpriteMeshTypeOption();
             m_ShowMipMapSettings.valueChanged.AddListener(Repaint);
-            m_ShowMipMapSettings.value = m_EnableMipMap.boolValue;
+            m_ShowMipMapSettings.value = m_EnableMipMap.boolValue && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.Texture3D;
 
             InitializeGUI();
 
@@ -653,6 +675,9 @@ namespace UnityEditor
             m_TextureShape.intValue = (int)settings.textureShape;
 
             m_SingleChannelComponent.intValue = (int)settings.singleChannelComponent;
+
+            m_FlipbookRows.intValue = settings.flipbookRows;
+            m_FlipbookColumns.intValue = settings.flipbookColumns;
         }
 
         internal TextureImporterSettings GetSerializedPropertySettings()
@@ -772,6 +797,11 @@ namespace UnityEditor
             if (!m_IgnorePngGamma.hasMultipleDifferentValues)
                 settings.ignorePngGamma = m_IgnorePngGamma.intValue > 0;
 
+            if (!m_FlipbookRows.hasMultipleDifferentValues)
+                settings.flipbookRows = m_FlipbookRows.intValue;
+            if (!m_FlipbookColumns.hasMultipleDifferentValues)
+                settings.flipbookColumns = m_FlipbookColumns.intValue;
+
             return settings;
         }
 
@@ -839,6 +869,40 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
         }
 
+        void ElementsAtlasGui(TextureInspectorGUIElement guiElements)
+        {
+            var shape = (TextureImporterShape)m_TextureShape.intValue;
+            var isLayerShape = shape == TextureImporterShape.Texture2DArray || shape == TextureImporterShape.Texture3D;
+            m_ShowElementsAtlasSettings.target = isLayerShape;
+            if (EditorGUILayout.BeginFadeGroup(m_ShowElementsAtlasSettings.faded) && isLayerShape)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_FlipbookColumns, s_Styles.flipbookColumns);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var val = m_FlipbookColumns.intValue;
+                    val = Mathf.Clamp(val, 1, m_TextureWidth);
+                    m_FlipbookColumns.intValue = val;
+                }
+                if (m_TextureWidth % m_FlipbookColumns.intValue != 0)
+                    EditorGUILayout.HelpBox($"Image width {m_TextureWidth} does not divide into {m_FlipbookColumns.intValue} columns exactly", MessageType.Warning, true);
+
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_FlipbookRows, s_Styles.flipbookRows);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var val = m_FlipbookRows.intValue;
+                    val = Mathf.Clamp(val, 1, m_TextureHeight);
+                    m_FlipbookRows.intValue = val;
+                }
+                if (m_TextureHeight % m_FlipbookRows.intValue != 0)
+                    EditorGUILayout.HelpBox($"Image height {m_TextureHeight} does not divide into {m_FlipbookRows.intValue} rows exactly", MessageType.Warning, true);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFadeGroup();
+        }
+
         void ColorSpaceGUI(TextureInspectorGUIElement guiElements)
         {
             ToggleFromInt(m_sRGBTexture, s_Styles.sRGBTexture);
@@ -867,8 +931,13 @@ namespace UnityEditor
 
         void StreamingMipmapsGUI(TextureInspectorGUIElement guiElements)
         {
-            ToggleFromInt(m_StreamingMipmaps, s_Styles.streamingMipmaps);
+            // only 2D/Cubemap shapes support streaming mipmaps right now
+            var shape = (TextureImporterShape)m_TextureShape.intValue;
+            var shapeHasStreaming = shape == TextureImporterShape.Texture2D || shape == TextureImporterShape.TextureCube;
+            if (!shapeHasStreaming)
+                return;
 
+            ToggleFromInt(m_StreamingMipmaps, s_Styles.streamingMipmaps);
             if (m_StreamingMipmaps.boolValue && !m_StreamingMipmaps.hasMultipleDifferentValues)
             {
                 EditorGUI.indentLevel++;
@@ -1030,7 +1099,12 @@ namespace UnityEditor
         {
             ToggleFromInt(m_EnableMipMap, s_Styles.generateMipMaps);
 
-            m_ShowMipMapSettings.target = m_EnableMipMap.boolValue && !m_EnableMipMap.hasMultipleDifferentValues;
+            m_ShowMipMapSettings.target =
+                m_EnableMipMap.boolValue &&
+                !m_EnableMipMap.hasMultipleDifferentValues &&
+                // 3D textures don't use any of mipmap settings, just the "yes/no" flag
+                (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.Texture3D;
+
             if (EditorGUILayout.BeginFadeGroup(m_ShowMipMapSettings.faded))
             {
                 EditorGUI.indentLevel++;
@@ -1146,7 +1220,8 @@ namespace UnityEditor
             // Aniso
             bool showAniso = (FilterMode)m_FilterMode.intValue != FilterMode.Point
                 && m_EnableMipMap.intValue > 0
-                && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.TextureCube;
+                && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.TextureCube
+                && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.Texture2D;
             using (new EditorGUI.DisabledScope(!showAniso))
             {
                 EditorGUI.BeginChangeCheck();

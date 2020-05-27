@@ -161,7 +161,7 @@ namespace UnityEditor
 
         double m_NextDirtyCheck = 0;
 
-        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.Project.searchType);
+        readonly SearchService.SearchSessionHandler m_SearchSessionHandler = new SearchService.SearchSessionHandler(SearchService.SearchEngineScope.Project);
 
         // Callbacks
         System.Action m_RepaintWantedCallback;
@@ -292,7 +292,7 @@ namespace UnityEditor
             {
                 m_SearchSessionHandler.BeginSession(() =>
                 {
-                    return new SearchService.Project.SearchContext
+                    return new SearchService.ProjectSearchContext
                     {
                         requiredTypeNames = searchFilter.classNames,
                         requiredTypes = searchFilter.classNames.Select(name =>
@@ -301,7 +301,7 @@ namespace UnityEditor
                     };
                 });
                 m_SearchSessionHandler.BeginSearch(searchQuery);
-                var searchContext = (SearchService.Project.SearchContext)m_SearchSessionHandler.context;
+                var searchContext = (SearchService.ProjectSearchContext)m_SearchSessionHandler.context;
                 // Asynchronous searches return new results. Accumulate those results when using ShowObjectsInList.
                 var results = SearchService.Project.Search(searchQuery, searchContext, newResults =>
                 {

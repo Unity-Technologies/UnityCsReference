@@ -386,7 +386,7 @@ namespace UnityEditor
                 }
             }
 
-            if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
+            if (m_VertSplit == null || !m_VertSplit.IsValid())
                 m_VertSplit = SplitterState.FromRelative(new[] { EditorPrefs.GetFloat(k_VertSplitterPercentageElement0PrefKey, 50f), EditorPrefs.GetFloat(k_VertSplitterPercentageElement1PrefKey, 50f) }, new float[] { k_VertSplitterMinSizes, k_VertSplitterMinSizes }, null);
             // 2 times the min splitter size plus one line height for the toolbar up top
             minSize = new Vector2(Chart.kSideWidth + k_RightPaneMinSize, k_VertSplitterMinSizes * m_VertSplit.minSizes.Length + k_LineHeight);

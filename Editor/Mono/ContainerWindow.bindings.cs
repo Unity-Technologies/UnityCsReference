@@ -92,6 +92,9 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "Internal_SetTitle", HasExplicitThis = true)]
         private extern void Internal_SetTitle(string title);
 
+        [FreeFunction(k_ScriptingPrefix + "Internal_SetHasUnsavedChanges", HasExplicitThis = true)]
+        private extern void Internal_SetHasUnsavedChanges(bool hasUnsavedChanges);
+
         [FreeFunction(k_ScriptingPrefix + "SetBackgroundColor", HasExplicitThis = true)]
         private extern void SetBackgroundColor(Color color);
 

@@ -54,8 +54,9 @@ namespace UnityEditor.PackageManager.UI
             var packageDatabase = container.Resolve<PackageDatabase>();
             var pageManager = container.Resolve<PageManager>();
             var settingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
+            var unityConnectProxy = container.Resolve<UnityConnectProxy>();
 
-            m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy);
             rootVisualElement.Add(m_Root);
 
             m_Root.OnEnable();

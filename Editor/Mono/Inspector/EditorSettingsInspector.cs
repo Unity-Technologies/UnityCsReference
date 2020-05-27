@@ -19,7 +19,7 @@ namespace UnityEditor
     {
         class Content
         {
-            public static GUIContent unityRemote = EditorGUIUtility.TrTextContent("Unity Remote");
+            public static GUIContent unityRemote = EditorGUIUtility.TrTextContent("Unity Remote (Deprecated)");
             public static GUIContent device = EditorGUIUtility.TrTextContent("Device");
             public static GUIContent compression = EditorGUIUtility.TrTextContent("Compression");
             public static GUIContent resolution = EditorGUIUtility.TrTextContent("Resolution");
@@ -66,6 +66,9 @@ namespace UnityEditor
             public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
             public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
             public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode");
+
+            public static GUIContent roslynAnalyzerSettings = EditorGUIUtility.TrTextContent("Roslyn Analyzer Settings");
+            public static GUIContent enableRoslynAnalyzers = EditorGUIUtility.TrTextContent("Enable Roslyn Analyzers");
 
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
@@ -192,6 +195,8 @@ namespace UnityEditor
         SerializedProperty m_EnableTextureStreamingInPlayMode;
         SerializedProperty m_EnableTextureStreamingInEditMode;
 
+        SerializedProperty m_EnableRoslynAnalyzers;
+
         SerializedProperty m_AsyncShaderCompilation;
         SerializedProperty m_CachingShaderPreprocessor;
         SerializedProperty m_DefaultBehaviorMode;
@@ -225,6 +230,8 @@ namespace UnityEditor
 
             m_EnableTextureStreamingInPlayMode = serializedObject.FindProperty("m_EnableTextureStreamingInPlayMode");
             m_EnableTextureStreamingInEditMode = serializedObject.FindProperty("m_EnableTextureStreamingInEditMode");
+
+            m_EnableRoslynAnalyzers = serializedObject.FindProperty("m_EnableRoslynAnalyzers");
 
             m_AsyncShaderCompilation = serializedObject.FindProperty("m_AsyncShaderCompilation");
             m_CachingShaderPreprocessor = serializedObject.FindProperty("m_CachingShaderPreprocessor");
@@ -481,6 +488,7 @@ namespace UnityEditor
             DoStreamingSettings();
             DoShaderCompilationSettings();
             DoEnterPlayModeSettings();
+            DoRoslynAnalyzerSettings();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -664,38 +672,6 @@ namespace UnityEditor
                             EditorSettings.cacheServerEnableTls = enableTls;
                     }
 
-                    EditorGUI.BeginChangeCheck();
-                    enableAuth = EditorGUILayout.Toggle(Content.cacheServerEnableAuthLabel, enableAuth);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        EditorSettings.cacheServerEnableAuth = enableAuth;
-                        if (enableAuth)
-                        {
-                            EditorSettings.cacheServerEnableTls = true;
-                        }
-                    }
-
-                    EditorGUI.indentLevel++;
-                    using (new EditorGUI.DisabledScope(!enableAuth))
-                    {
-                        int authModeIndex = Convert.ToInt32(EditorUserSettings.GetConfigValue("cacheServerAuthMode"));
-                        CreatePopupMenu(Content.mode.text, cacheServerAuthMode, authModeIndex, SetCacheServerAuthMode);
-
-                        string oldUserVal = EditorUserSettings.GetConfigValue("cacheServerAuthUser");
-                        var newUserVal = EditorGUILayout.TextField(Content.cacheServerAuthUserLabel, oldUserVal);
-                        if (newUserVal != oldUserVal)
-                        {
-                            EditorUserSettings.SetConfigValue("cacheServerAuthUser", newUserVal);
-                        }
-
-                        var oldPasswordVal = EditorUserSettings.GetConfigValue("cacheServerAuthPassword");
-                        var newPasswordVal = EditorGUILayout.PasswordField(Content.cacheServerAuthPasswordLabel, oldPasswordVal);
-                        if (newPasswordVal != oldPasswordVal)
-                        {
-                            EditorUserSettings.SetPrivateConfigValue("cacheServerAuthPassword", newPasswordVal);
-                        }
-                    }
-                    EditorGUI.indentLevel--;
                 }
             }
         }
@@ -716,6 +692,14 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Content.enablePlayModeTextureStreaming);
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInEditMode, Content.enableEditModeTextureStreaming);
+        }
+
+        private void DoRoslynAnalyzerSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label(Content.roslynAnalyzerSettings, EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, Content.enableRoslynAnalyzers);
         }
 
         private void DoShaderCompilationSettings()

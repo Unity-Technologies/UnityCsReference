@@ -29,8 +29,7 @@ namespace UnityEditor.UIElements.Debugger
             titleContent = new GUIContent("Allocator Debugger");
 
             var root =  rootVisualElement;
-            root.AddStyleSheetPath("UIRAllocatorDebugger");
-
+            root.AddStyleSheetPath("UIPackageResources/StyleSheets/UIElementsDebugger/UIRAllocatorDebugger.uss");
             m_IMGUIToolbar = new IMGUIContainer(OnGUIToolbar);
             m_ScrollView = new ScrollView() { style = { flexGrow = 1 }};
             m_StatsContainer = new VisualElement();

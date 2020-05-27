@@ -22,6 +22,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
         public string[] ExtraGeneralDefines { get; set; }
         public ICompilationExtension CompilationExtension { get; set; }
+        public string ProjectRootNamespace { get; set; }
 
         public CodeOptimization EditorCodeOptimization { get; set; }
 
@@ -73,6 +74,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] References { get; set; }
         public string[] Defines { get; set; }
         public string[] Files { get; set; }
+        public string RootNamespace { get; set; }
         public bool CallOnBeforeCompilationStarted { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public string GeneratedResponseFile { get; set; }

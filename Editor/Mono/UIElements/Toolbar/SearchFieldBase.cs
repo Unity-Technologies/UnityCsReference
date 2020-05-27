@@ -73,7 +73,7 @@ namespace UnityEditor.UIElements
 
         private void OnValueChanged(ChangeEvent<T> change)
         {
-            UpdateCancelButton();
+            UpdateCancelButton(); // We need to update it on value changed because in most cases the TextField is modified directly
         }
 
         protected abstract void ClearTextField();
@@ -92,6 +92,7 @@ namespace UnityEditor.UIElements
         public virtual void SetValueWithoutNotify(T newValue)
         {
             m_TextField.SetValueWithoutNotify(newValue);
+            UpdateCancelButton(); // We need to update it in that case because OnValueChanged will not be called
         }
 
         protected abstract bool FieldIsEmpty(T fieldValue);

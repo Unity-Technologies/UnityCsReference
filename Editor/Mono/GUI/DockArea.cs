@@ -39,6 +39,18 @@ namespace UnityEditor
             public static readonly GUIStyle dockTitleBarStyle = new GUIStyle("dockHeader");
         }
 
+        private struct GUIContentKey
+        {
+            public bool hasUnsavedChanges;
+            public string text;
+
+            public GUIContentKey(string text, bool hasUnsavedChanges)
+            {
+                this.hasUnsavedChanges = hasUnsavedChanges;
+                this.text = text;
+            }
+        }
+
         internal const int kFloatingWindowTopBorderWidth = 2;
         internal const float kTabHeight = 19;
         internal const float kDockHeight = 39;
@@ -60,7 +72,7 @@ namespace UnityEditor
         static internal View s_IgnoreDockingForView = null;
 
         private static DropInfo s_DropInfo = null;
-        private static readonly Hashtable s_GUIContents = new Hashtable();
+        private static Dictionary<GUIContentKey, GUIContent> s_GUIContents = new Dictionary<GUIContentKey, GUIContent>();
 
         [SerializeField] internal List<EditorWindow> m_Panes = new List<EditorWindow>();
         [SerializeField] internal int m_Selected;
@@ -186,6 +198,7 @@ namespace UnityEditor
 
             Invoke("OnAddedAsTab", pane);
             Repaint();
+            window?.UnsavedStateChanged();
         }
 
         public void RemoveTab(EditorWindow pane) { RemoveTab(pane, killIfEmpty: true); }
@@ -218,6 +231,7 @@ namespace UnityEditor
                 actualView = m_Panes[m_Selected];
 
             UpdateWindowTitle(actualView);
+            UpdateWindowHasUnsavedChanges(actualView);
 
             Repaint();
             pane.m_Parent = null;
@@ -226,10 +240,16 @@ namespace UnityEditor
             RegisterSelectedPane(sendEvents: true);
         }
 
-        private void UpdateWindowTitle(EditorWindow w)
+        private static void UpdateWindowTitle(EditorWindow w)
         {
             if (w && w.m_Parent && w.m_Parent.window && w.titleContent != null)
                 w.m_Parent.window.title = w.titleContent.text;
+        }
+
+        private static void UpdateWindowHasUnsavedChanges(EditorWindow w)
+        {
+            if (w && w.m_Parent && w.m_Parent.window)
+                w.m_Parent.window.UnsavedStateChanged();
         }
 
         private void KillIfEmpty()
@@ -602,7 +622,10 @@ namespace UnityEditor
             EditorWindow editorWindow = userData as EditorWindow;
             if (editorWindow != null)
             {
-                editorWindow.Close();
+                if (window.InternalRequestClose(editorWindow))
+                {
+                    editorWindow.Close();
+                }
             }
             else
             {
@@ -909,6 +932,7 @@ namespace UnityEditor
                                 s_DropInfo.dropArea.PerformDrop(s_DragPane, s_DropInfo, screenMousePos);
 
                                 UpdateWindowTitle(s_DragPane);
+                                UpdateWindowHasUnsavedChanges(s_DragPane);
                             }
                             else
                             {
@@ -981,23 +1005,38 @@ namespace UnityEditor
         private GUIContent GetTruncatedTabContent(int tabIndex)
         {
             var tabContent = m_Panes[tabIndex].titleContent;
-            if (tabContent.text.Length > 10)
-            {
-                var text = tabContent.text;
-                GUIContent gc = (GUIContent)s_GUIContents[text];
-                if (gc != null)
-                    return gc;
+            bool hasUnsavedChanges = m_Panes[tabIndex].hasUnsavedChanges;
+            string text = tabContent.text;
+            var key = new GUIContentKey(text, hasUnsavedChanges);
 
-                int cappedMaxChars = tabStyle.GetNumCharactersThatFitWithinWidth(text, Styles.tabMaxWidth);
-                if (text.Length > cappedMaxChars)
-                {
-                    gc = new GUIContent(text.Substring(0, Mathf.Max(3, Mathf.Min(cappedMaxChars - 2, text.Length))) + "\u2026", tabContent.image,
-                        String.IsNullOrEmpty(tabContent.tooltip) ? text : tabContent.tooltip);
-                    s_GUIContents[text] = gc;
-                    return gc;
-                }
+            if (s_GUIContents.ContainsKey(key))
+                return s_GUIContents[key];
+
+            // Guarantees the acuracy of the text measurement
+            if (hasUnsavedChanges)
+                text += "*";
+
+            int cappedMaxChars = tabStyle.GetNumCharactersThatFitWithinWidth(text, Styles.tabMaxWidth);
+            if (text.Length > cappedMaxChars)
+            {
+                // Save space for the '*'
+                int maxLength = hasUnsavedChanges ? cappedMaxChars - 3 : cappedMaxChars - 2;
+
+                text = text.Substring(0, Math.Max(3, Math.Min(maxLength, text.Length))) + "\u2026";
+
+                // Make sure there is always a '*'
+                if (hasUnsavedChanges)
+                    text += "*";
             }
-            return tabContent;
+
+            GUIContent gc = tabContent;
+
+            // Only update the entry if modified
+            if (text != tabContent.text)
+                gc = new GUIContent(text, tabContent.image, String.IsNullOrEmpty(tabContent.tooltip) ? tabContent.text : tabContent.tooltip);
+
+            s_GUIContents[key] = gc;
+            return gc;
         }
 
         private float DrawTab(Rect tabRegionRect, GUIStyle tabStyle, int tabIndex, float xPos)
@@ -1010,7 +1049,7 @@ namespace UnityEditor
             bool isActive = m_Panes[tabIndex] == EditorWindow.focusedWindow;
 
             if (isActive)
-                UpdateWindowTitle(m_Panes[tabIndex]);
+                UpdateWindowTitle(m_Panes[tabIndex]); // UnsavedChanges decoration already taken care of.
 
             Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);
             tabStyle.Draw(tabContentRect, tabContentRect.Contains(Event.current.mousePosition), isActive, tabIndex == selected, false);

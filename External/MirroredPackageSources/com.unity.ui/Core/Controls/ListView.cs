@@ -971,7 +971,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void ClearSelection()
         {
-            if (!HasValidDataAndBindings())
+            if (!HasValidDataAndBindings() || m_SelectedIds.Count == 0)
                 return;
 
             ClearSelectionWithoutValidation();

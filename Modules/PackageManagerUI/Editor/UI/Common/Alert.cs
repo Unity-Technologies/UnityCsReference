@@ -40,9 +40,13 @@ namespace UnityEditor.PackageManager.UI
 
         public void SetError(UIError error)
         {
-            var message = string.IsNullOrEmpty(error.message) ?
-                L10n.Tr("An error occurred. See console for more details.") :
-                string.Format(L10n.Tr("An error occurred ({0}). See console for more details."), error.message);
+            var message = string.IsNullOrEmpty(error.message) ? L10n.Tr("An error occurred.")
+                : string.Format(L10n.Tr("An error occurred: {0}"), error.message);
+
+            if ((UIError.Attribute.IsDetailInConsole & error.attribute) != 0)
+            {
+                message = string.Format(L10n.Tr("{0} See console for more details."), message);
+            }
 
             alertMessage.text = message;
             UIUtils.SetElementDisplay(this, true);

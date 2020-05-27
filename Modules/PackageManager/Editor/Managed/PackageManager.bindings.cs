@@ -68,8 +68,7 @@ namespace UnityEditor.PackageManager
         [NativeName("GetPredefinedHiddenByDefaultPackageTypes")]
         internal static extern string[] GetPredefinedHiddenByDefaultPackageTypes();
 
-        [NativeName("GetPackageByAssetPath")]
-        private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
+        private static extern PackageInfo GetPackageByAssetPath(string assetPath);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerImmutableAssets.h")]

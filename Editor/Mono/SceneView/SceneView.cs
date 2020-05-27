@@ -31,7 +31,6 @@ using Component = UnityEngine.Component;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
 
-
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Scene", useTypeNameAsIconName = true)]
@@ -137,7 +136,7 @@ namespace UnityEditor
             Transform parentObject = null;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             string activeSceneGUID = prefabStage != null ? prefabStage.scene.guid : EditorSceneManager.GetActiveScene().guid;
-            int id = SessionState.GetInt(SceneHierarchy.GetDefaultOriginKeyForScene(activeSceneGUID), 0);
+            int id = SceneHierarchy.GetDefaultParentForSession(activeSceneGUID);
             if (id != 0)
             {
                 var objectFromInstanceID = EditorUtility.InstanceIDToObject(id) as GameObject;
@@ -739,6 +738,12 @@ namespace UnityEditor
             // range of appropriate values
             internal float RoundSpeedToNearestSignificantDecimal(float value)
             {
+                if (value <= speedMin)
+                    return speedMin;
+
+                if (value >= speedMax)
+                    return speedMax;
+
                 float rng = speedMax - speedMin;
                 int min_rnd = speedMin < .01f ? 3 : speedMin < .1f ? 2 : speedMin < 1f ? 1 : 0;
                 int rng_rnd = rng < 1f ? 2 : rng < 10f ? 1 : 0;
@@ -986,7 +991,7 @@ namespace UnityEditor
 
         internal bool m_ShowSceneViewWindows = false;
         SceneViewOverlay m_SceneViewOverlay;
-        EditorCache m_DragEditorCache;
+        internal EditorCache m_DragEditorCache;
 
         // While Locking the view to object, we have different behaviour for different scenarios:
         // Smooth camera behaviour: User dragging the handles
@@ -3557,51 +3562,106 @@ namespace UnityEditor
 
         void CleanupEditorDragFunctions()
         {
-            if (m_DragEditorCache != null)
-                m_DragEditorCache.Dispose();
+            m_DragEditorCache?.Dispose();
             m_DragEditorCache = null;
         }
 
-        void CallEditorDragFunctions()
+        bool CallEditorDragFunctions(IList<Object> dragAndDropObjects)
         {
             Event evt = Event.current;
 
             SpriteUtility.OnSceneDrag(this);
 
-            if (evt.type == EventType.Used)
-                return;
-
-            if (DragAndDrop.objectReferences.Length == 0)
-                return;
+            if (evt.type == EventType.Used || dragAndDropObjects.Count == 0) return true;
 
             if (m_DragEditorCache == null)
                 m_DragEditorCache = new EditorCache(EditorFeatures.OnSceneDrag);
 
-            foreach (Object o in DragAndDrop.objectReferences)
+            bool allHandled = true;
+
+            // We iterate through dragged items backwards to preserve the alphabetical order
+            // of GameObjects when they are created in hierarchy once drag is performed
+            for (int i = dragAndDropObjects.Count - 1; i >= 0; i--)
             {
-                if (o == null)
+                if (dragAndDropObjects[i] == null)
                     continue;
 
-                EditorWrapper w = m_DragEditorCache[o];
-                if (w != null)
-                    w.OnSceneDrag(this);
+                EditorWrapper w = m_DragEditorCache[dragAndDropObjects[i]];
 
-                if (evt.type == EventType.Used)
-                    return;
+                if (w == null)
+                {
+                    allHandled = false;
+                    continue;
+                }
+                w.OnSceneDrag(this, dragAndDropObjects.Count - 1 - i);
             }
+
+            return allHandled;
+        }
+
+        internal static bool CanDoDrag(ICollection<Object> objects)
+        {
+            if (objects.Count < 2) return true;
+
+            int gameObjectCount = 0;
+            int assetCount = 0;
+            int materialCount = 0;
+
+            // Only allow dragging multiple GameObjects, or multiple non-GameObjects, but not mixed sets.
+            // For example when dragging GameObjects and Materials would sometimes apply material to
+            // already existing scene object, and other times to the object being spawned. It depends
+            // on the order in which the user selects those assets. We decided it was not an intuitive
+            // behavior and it should just not be allowed.
+            // Also we don't want multiple materials be dropped into scene because there is no case
+            // where we can handle it in a way that benefit the user. For example multiple skybox
+            // materials doesn't make sense and dropping multiple materials onto geometry will only
+            // drop the first material on the hovered material entry.
+            foreach (Object obj in objects)
+            {
+                if (obj.GetType() == typeof(GameObject))
+                {
+                    gameObjectCount++;
+                }
+                else
+                {
+                    assetCount++;
+                    if (obj.GetType() == typeof(Material))
+                    {
+                        materialCount++;
+                    }
+                }
+
+                if (gameObjectCount > 0 && assetCount > 0 || materialCount > 1) return false;
+            }
+
+            return true;
         }
 
         void HandleDragging()
         {
             Event evt = Event.current;
 
+            Object[] dragAndDropObjects = DragAndDrop.objectReferences;
+
             switch (evt.type)
             {
                 case EventType.DragPerform:
                 case EventType.DragUpdated:
-                    CallEditorDragFunctions();
+                    if (evt.type == EventType.DragPerform && GameObjectInspector.s_CyclicNestingDetected)
+                    {
+                        PrefabUtility.ShowCyclicNestingWarningDialog();
+                        return;
+                    }
 
-                    if (evt.type == EventType.Used)
+                    if (!CanDoDrag(dragAndDropObjects))
+                    {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+                        break;
+                    }
+
+                    bool allHandled = CallEditorDragFunctions(dragAndDropObjects);
+
+                    if (evt.type == EventType.Used || allHandled)
                         break;
 
                     bool isPerform = evt.type == EventType.DragPerform;
@@ -3626,7 +3686,7 @@ namespace UnityEditor
                     evt.Use();
                     break;
                 case EventType.DragExited:
-                    CallEditorDragFunctions();
+                    CallEditorDragFunctions(dragAndDropObjects);
                     CleanupEditorDragFunctions();
                     break;
             }

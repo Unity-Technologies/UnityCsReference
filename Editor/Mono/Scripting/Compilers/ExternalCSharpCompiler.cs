@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Unity.CompilationPipeline.Common;
@@ -104,8 +105,14 @@ namespace UnityEditor.Scripting.Compilers
                     line = x.line,
                     message = x.message,
                     type = x.type == Compilation.CompilerMessageType.Error ? CompilerMessageType.Error : CompilerMessageType.Warning,
+                    assemblyName = m_Assembly.Filename,
                 })
                 .ToArray();
+        }
+
+        public override ProcessStartInfo GetProcessStartInfo()
+        {
+            return null;
         }
     }
 }

@@ -24,8 +24,10 @@ namespace UnityEngine.UIElements
     public abstract class BaseSlider<TValueType> : BaseField<TValueType>
         where TValueType : System.IComparable<TValueType>
     {
+        internal VisualElement dragContainer { get; private set; }
         internal VisualElement dragElement { get; private set; }
         internal VisualElement dragBorderElement { get; private set; }
+        internal TextField inputTextField { get; private set; }
 
         [SerializeField]
         private TValueType m_LowValue;
@@ -80,6 +82,23 @@ namespace UnityEngine.UIElements
         {
             get { return m_PageSize; }
             set { m_PageSize = value; }
+        }
+
+        private bool m_ShowInputField = false;
+        public virtual bool showInputField
+        {
+            get
+            {
+                return m_ShowInputField;
+            }
+            set
+            {
+                if (m_ShowInputField != value)
+                {
+                    m_ShowInputField = value;
+                    UpdateTextFieldVisibility();
+                }
+            }
         }
 
         internal bool clamped { get; set; } = true;
@@ -162,6 +181,7 @@ namespace UnityEngine.UIElements
 
 
         internal const float kDefaultPageSize = 0.0f;
+        internal const bool kDefaultShowInputField = false;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -185,6 +205,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string verticalVariantUssClassName = ussClassName + "--vertical";
         /// <summary>
+        /// USS class name of container elements in elements of this type.
+        /// </summary>
+        public static readonly string dragContainerUssClassName = ussClassName + "__drag-container";
+        /// <summary>
         /// USS class name of tracker elements in elements of this type.
         /// </summary>
         public static readonly string trackerUssClassName = ussClassName + "__tracker";
@@ -196,6 +220,10 @@ namespace UnityEngine.UIElements
         /// USS class name of the dragger border element in elements of this type.
         /// </summary>
         public static readonly string draggerBorderUssClassName = ussClassName + "__dragger-border";
+        /// <summary>
+        /// USS class name of the text field element in elements of this type.
+        /// </summary>
+        public static readonly string textFieldClassName = ussClassName + "__text-field";
 
         internal BaseSlider(string label, TValueType start, TValueType end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, null)
@@ -211,23 +239,28 @@ namespace UnityEngine.UIElements
             pickingMode = PickingMode.Ignore;
 
             visualInput.pickingMode = PickingMode.Position;
+
+            dragContainer = new VisualElement() { name = "unity-drag-container" };
+            dragContainer.AddToClassList(dragContainerUssClassName);
+            visualInput.Add(dragContainer);
+
             var trackElement = new VisualElement() { name = "unity-tracker" };
             trackElement.AddToClassList(trackerUssClassName);
-            visualInput.Add(trackElement);
+            dragContainer.Add(trackElement);
 
             dragBorderElement = new VisualElement() { name = "unity-dragger-border" };
             dragBorderElement.AddToClassList(draggerBorderUssClassName);
-
-            visualInput.Add(dragBorderElement);
+            dragContainer.Add(dragBorderElement);
 
             dragElement = new VisualElement() { name = "unity-dragger" };
             dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             dragElement.AddToClassList(draggerUssClassName);
-
-            visualInput.Add(dragElement);
+            dragContainer.Add(dragElement);
 
             clampedDragger = new ClampedDragger<TValueType>(this, SetSliderValueFromClick, SetSliderValueFromDrag);
             visualInput.AddManipulator(clampedDragger);
+
+            UpdateTextFieldVisibility();
         }
 
         private void ClampValue()
@@ -239,6 +272,7 @@ namespace UnityEngine.UIElements
         internal abstract TValueType SliderLerpUnclamped(TValueType a, TValueType b, float interpolant);
         internal abstract float SliderNormalizeValue(TValueType currentValue, TValueType lowerValue, TValueType higherValue);
         internal abstract TValueType SliderRange();
+        internal abstract TValueType ParseStringToValue(string stringValue);
 
         // Handles slider drags
         void SetSliderValueFromDrag()
@@ -249,9 +283,11 @@ namespace UnityEngine.UIElements
             var delta = clampedDragger.delta;
 
             if (direction == SliderDirection.Horizontal)
-                ComputeValueAndDirectionFromDrag(visualInput.resolvedStyle.width, dragElement.resolvedStyle.width, m_DragElementStartPos.x + delta.x);
+                ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, m_DragElementStartPos.x + delta.x);
             else
-                ComputeValueAndDirectionFromDrag(visualInput.resolvedStyle.height, dragElement.resolvedStyle.height, m_DragElementStartPos.y + delta.y);
+                ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, m_DragElementStartPos.y + delta.y);
+
+            UpdateTextFieldValue();
         }
 
         void ComputeValueAndDirectionFromDrag(float sliderLength, float dragElementLength, float dragElementPos)
@@ -289,9 +325,11 @@ namespace UnityEngine.UIElements
                     // Manipulation becomes a free form drag
                     clampedDragger.dragDirection = ClampedDragger<TValueType>.DragDirection.Free;
                     if (direction == SliderDirection.Horizontal)
-                        ComputeValueAndDirectionFromDrag(visualInput.resolvedStyle.width, dragElement.resolvedStyle.width, m_DragElementStartPos.x);
+                        ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, m_DragElementStartPos.x);
                     else
-                        ComputeValueAndDirectionFromDrag(visualInput.resolvedStyle.height, dragElement.resolvedStyle.height, m_DragElementStartPos.y);
+                        ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, m_DragElementStartPos.y);
+
+                    UpdateTextFieldValue();
                     return;
                 }
 
@@ -299,9 +337,11 @@ namespace UnityEngine.UIElements
             }
 
             if (direction == SliderDirection.Horizontal)
-                ComputeValueAndDirectionFromClick(visualInput.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.transform.position.x, clampedDragger.lastMousePosition.x);
+                ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.transform.position.x, clampedDragger.lastMousePosition.x);
             else
-                ComputeValueAndDirectionFromClick(visualInput.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.transform.position.y, clampedDragger.lastMousePosition.y);
+                ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.transform.position.y, clampedDragger.lastMousePosition.y);
+
+            UpdateTextFieldValue();
         }
 
         internal virtual void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
@@ -346,13 +386,13 @@ namespace UnityEngine.UIElements
                 {
                     // Make sure the minimum width of drag element is honoured
                     float elemMinWidth = resolvedStyle.minWidth == StyleKeyword.Auto ? 0 : resolvedStyle.minWidth.value;
-                    inlineStyles.width = Mathf.Round(Mathf.Max(visualInput.layout.width * factor, elemMinWidth));
+                    inlineStyles.width = Mathf.Round(Mathf.Max(dragContainer.layout.width * factor, elemMinWidth));
                 }
                 else
                 {
                     // Make sure the minimum height of drag element is honoured
                     float elemMinHeight = resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : resolvedStyle.minHeight.value;
-                    inlineStyles.height = Mathf.Round(Mathf.Max(visualInput.layout.height * factor, elemMinHeight));
+                    inlineStyles.height = Mathf.Round(Mathf.Max(dragContainer.layout.height * factor, elemMinHeight));
                 }
             }
             dragBorderElement.visible = dragElement.visible;
@@ -396,7 +436,7 @@ namespace UnityEngine.UIElements
 
                 // This is the main calculation for the location of the thumbs / dragging element
                 float offsetForThumbFullWidth = -dragElement.resolvedStyle.marginLeft - dragElement.resolvedStyle.marginRight;
-                float totalWidth = visualInput.layout.width - dragElementWidth + offsetForThumbFullWidth;
+                float totalWidth = dragContainer.layout.width - dragElementWidth + offsetForThumbFullWidth;
                 float newLeft = normalizedPosition * totalWidth;
 
                 if (float.IsNaN(newLeft)) //This can happen when layout is not computed yet
@@ -415,7 +455,7 @@ namespace UnityEngine.UIElements
             {
                 float dragElementHeight = dragElement.resolvedStyle.height;
 
-                float totalHeight = visualInput.resolvedStyle.height - dragElementHeight;
+                float totalHeight = dragContainer.resolvedStyle.height - dragElementHeight;
                 float newTop = normalizedPosition * totalHeight;
 
                 if (float.IsNaN(newTop)) //This can happen when layout is not computed yet
@@ -444,6 +484,53 @@ namespace UnityEngine.UIElements
             {
                 UpdateDragElementPosition((GeometryChangedEvent)evt);
             }
+        }
+
+        private void UpdateTextFieldVisibility()
+        {
+            if (showInputField)
+            {
+                if (inputTextField == null)
+                {
+                    inputTextField = new TextField() {name = "unity-text-field"};
+                    inputTextField.AddToClassList(textFieldClassName);
+                    inputTextField.RegisterValueChangedCallback(OnTextFieldValueChange);
+                    inputTextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
+                    visualInput.Add(inputTextField);
+                    UpdateTextFieldValue();
+                }
+            }
+            else if (inputTextField != null && inputTextField.panel != null)
+            {
+                if (inputTextField.panel != null)
+                    inputTextField.RemoveFromHierarchy();
+
+                inputTextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
+                inputTextField.UnregisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
+                inputTextField = null;
+            }
+        }
+
+        private void UpdateTextFieldValue()
+        {
+            if (inputTextField == null)
+                return;
+
+            inputTextField.SetValueWithoutNotify(String.Format("{0:0.##}", value));
+        }
+
+        private void OnTextFieldFocusOut(FocusOutEvent evt)
+        {
+            UpdateTextFieldValue();
+        }
+
+        void OnTextFieldValueChange(ChangeEvent<string> evt)
+        {
+            value = GetClampedValue(ParseStringToValue(evt.newValue));
+            evt.StopPropagation();
+
+            if (elementPanel != null)
+                OnViewDataReady();
         }
     }
 }
