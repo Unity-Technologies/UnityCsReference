@@ -18,7 +18,6 @@ using UnityEngine.UIElements;
 using UnityEditor.SceneManagement;
 
 using Object = UnityEngine.Object;
-using Overflow = UnityEngine.UIElements.Overflow;
 using AssetImporterEditor = UnityEditor.Experimental.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
 
@@ -376,7 +375,8 @@ namespace UnityEditor
 
         protected void SetTitle(Object obj)
         {
-            var titleTooltip = obj.name ?? obj.ToString();
+            var objTitle = ObjectNames.GetInspectorTitle(obj);
+            var titleTooltip = objTitle;
             if (!String.IsNullOrEmpty(m_AssetGUID))
                 titleTooltip = AssetDatabase.GUIDToAssetPath(m_AssetGUID);
             else
@@ -384,6 +384,8 @@ namespace UnityEditor
                 var go = obj as GameObject;
                 if (go)
                     titleTooltip = EditorUtility.GetHierarchyPath(go);
+                else if (obj is Component c)
+                    titleTooltip = $"{EditorUtility.GetHierarchyPath(c.gameObject)} ({objTitle})";
             }
 
             titleContent = EditorGUIUtility.TrTextContentWithIcon(obj.name, titleTooltip, "UnityEditor.InspectorWindow");
@@ -681,7 +683,6 @@ namespace UnityEditor
                 });
             }
 
-            result.cullingEnabled = true;
             if (name != null)
             {
                 result.name = name;
@@ -1504,13 +1505,16 @@ namespace UnityEditor
                 var editor = editors[editorIndex];
                 Object editorTarget = editor.targets[0];
 
-                string editorTitle = editorTarget == null ? "Nothing Selected" : $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                EditorElement editorContainer;
+                if (editorTarget && (editorTarget?.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    continue;
 
                 try
                 {
-                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
+                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {
+                        string editorTitle = editorTarget == null ?
+                            "Nothing Selected" :
+                            $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
                         editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
                         editorsElement.Add(editorContainer);
                     }
@@ -1673,7 +1677,8 @@ namespace UnityEditor
             Object currentTarget = editors[editorIndex].target;
 
             // Editors that should always be hidden
-            if (currentTarget is ParticleSystemRenderer)
+            if (currentTarget is ParticleSystemRenderer
+                || currentTarget is UnityEngine.VFX.VFXRenderer)
                 return true;
 
             // Hide regular AssetImporters (but not inherited types)

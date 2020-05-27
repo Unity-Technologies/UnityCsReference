@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -61,6 +62,25 @@ namespace UnityEditor.PackageManager.UI
 
         [NonSerialized]
         private IPackageVersion m_Version;
+
+        void OnEnable()
+        {
+            PackageDatabase.instance.onPackagesChanged += OnPackagesChanged;
+        }
+
+        void OnDisable()
+        {
+            PackageDatabase.instance.onPackagesChanged -= OnPackagesChanged;
+        }
+
+        private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdated, IEnumerable<IPackage> postUpdate)
+        {
+            var selectedPackageUniqueId = packageSelectionObject?.packageUniqueId;
+            if (string.IsNullOrEmpty(selectedPackageUniqueId))
+                return;
+            if (added.Concat(removed).Concat(preUpdated).Any(p => p.uniqueId == selectedPackageUniqueId))
+                PackageDatabase.instance.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
+        }
 
         public override void OnInspectorGUI()
         {

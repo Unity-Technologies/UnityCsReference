@@ -86,7 +86,7 @@ namespace UnityEditor
         {
             // Ensure to save unsaved changes (regardless of hotcontrol etc)
             if (!m_SavingHasFailed && !hasMissingScripts)
-                SaveDirtyPrefabAssets();
+                SaveDirtyPrefabAssets(false);
         }
 
         void Update()
@@ -97,12 +97,12 @@ namespace UnityEditor
                 m_NextUpdate = time + 0.2;
 
                 if (readyToAutoSave && HasDirtyPrefabAssets())
-                    SaveDirtyPrefabAssets();
+                    SaveDirtyPrefabAssets(true);
             }
         }
 
         // Internal for testing framework
-        internal void SaveDirtyPrefabAssets()
+        internal void SaveDirtyPrefabAssets(bool rebuildInspectors)
         {
             if (assetTargets == null)
                 return;
@@ -159,7 +159,7 @@ namespace UnityEditor
                     // All inspectors needs to be rebuild to ensure property changes are reflected after saving the Prefab shown.
                     // (Saving clears the m_DirtyIndex of the target which is used for updating inspectors via SerializedObject::UpdateIfRequiredOrScript()
                     // and thus the cached dirty index in SerializedObject is not updated meaning the source object is not reloaded even though it changed)
-                    if (savedPrefab)
+                    if (savedPrefab && rebuildInspectors)
                         EditorUtility.ForceRebuildInspectors();
                 }
             }

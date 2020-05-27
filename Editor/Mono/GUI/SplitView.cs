@@ -72,17 +72,17 @@ namespace UnityEditor
 
         void SetupSplitter()
         {
-            int[] actualSizes = new int[children.Length];
-            int[] minSizes = new int[children.Length];
+            float[] actualSizes = new float[children.Length];
+            float[] minSizes = new float[children.Length];
 
             for (int j = 0; j < children.Length; j++)
             {
                 View c = (View)children[j];
-                actualSizes[j] = vertical ? (int)c.position.height : (int)c.position.width;
-                minSizes[j] = (int)(vertical ? c.minSize.y : c.minSize.x);
+                actualSizes[j] = GUIUtility.RoundToPixelGrid(vertical ? c.position.height : c.position.width);
+                minSizes[j] = GUIUtility.RoundToPixelGrid(vertical ? c.minSize.y : c.minSize.x);
             }
 
-            splitState = new SplitterState(actualSizes, minSizes, null);
+            splitState = SplitterState.FromAbsolute(actualSizes, minSizes, null);
             splitState.splitSize = 10;
         }
 
@@ -93,8 +93,8 @@ namespace UnityEditor
 
             float cursor = 0;
 
-            int total = 0;
-            foreach (int size in splitState.realSizes)
+            float total = 0;
+            foreach (float size in splitState.realSizes)
             {
                 total += size;
             }
@@ -107,7 +107,7 @@ namespace UnityEditor
             SavedGUIState state = SavedGUIState.Create();
 
             for (int i = 0; i < children.Length; i++)
-                cursor += PlaceView(i, cursor, Mathf.Round(splitState.realSizes[i] * scale));
+                cursor += PlaceView(i, cursor, GUIUtility.RoundToPixelGrid(splitState.realSizes[i] * scale));
 
             state.ApplyAndForget();
         }
@@ -156,7 +156,7 @@ namespace UnityEditor
 
             for (int k = 0; k < children.Length - 1; k++)
                 splitState.DoSplitter(k, k + 1, 0);
-            splitState.RelativeToRealSizes(vertical ? Mathf.RoundToInt(position.height) : Mathf.RoundToInt(position.width));
+            splitState.RelativeToRealSizes(vertical ? GUIUtility.RoundToPixelGrid(position.height) : GUIUtility.RoundToPixelGrid(position.width));
             SetupRectsFromSplitter();
         }
 
@@ -164,8 +164,8 @@ namespace UnityEditor
         {
             float width = position.width;
             float height = position.height;
-            float roundPos = Mathf.Round(pos);
-            float roundSize = Mathf.Round(size);
+            float roundPos = GUIUtility.RoundToPixelGrid(pos);
+            float roundSize = GUIUtility.RoundToPixelGrid(size);
             Rect newRect;
             if (vertical)
             {
@@ -672,7 +672,8 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (children.Length != 1) // is there a splitter
                     {
-                        int cursor = vertical ? (int)children[0].position.y : (int)children[0].position.x;
+                        float cursor = vertical ? children[0].position.y : children[0].position.x;
+                        cursor = GUIUtility.RoundToPixelGrid(cursor);
 
                         for (int i = 0; i < children.Length - 1; i++)
                         {
@@ -694,7 +695,7 @@ namespace UnityEditor
 
                             if (GUIUtility.HitTest(splitterRect, evt))
                             {
-                                splitState.splitterInitialOffset = (int)pos;
+                                splitState.splitterInitialOffset = GUIUtility.RoundToPixelGrid(pos);
                                 splitState.currentActiveSplitter = i;
                                 GUIUtility.hotControl = id;
                                 evt.Use();
@@ -708,11 +709,10 @@ namespace UnityEditor
                 case EventType.MouseDrag:
                     if (children.Length > 1 && (GUIUtility.hotControl == id) && (splitState.currentActiveSplitter >= 0))
                     {
-                        int diff = (int)pos - splitState.splitterInitialOffset;
-
-                        if (diff != 0)
+                        float diff = GUIUtility.RoundToPixelGrid(pos) - splitState.splitterInitialOffset;
+                        if (Mathf.Abs(diff) > 0.01f)
                         {
-                            splitState.splitterInitialOffset = (int)pos;
+                            splitState.splitterInitialOffset = GUIUtility.RoundToPixelGrid(pos);
                             splitState.DoSplitter(splitState.currentActiveSplitter, splitState.currentActiveSplitter + 1, diff);
                         }
 

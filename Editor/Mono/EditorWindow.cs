@@ -1154,13 +1154,14 @@ namespace UnityEditor
             }, null);
             Menu.AddSeparator($"{k_RootMenuItemName}/", menuIdx++);
 
+            int menuIndex = 1;
             foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
             {
                 var title = win.titleContent.text;
                 if (!String.IsNullOrEmpty(win.titleContent.tooltip) && win.titleContent.tooltip != title)
-                    title += " (" + win.titleContent.tooltip + ")";
+                    title = win.titleContent.tooltip;
                 title = title.Replace("/", "\\");
-                Menu.AddMenuItem($"{k_RootMenuItemName}/{title}", "", false, menuIdx++, () => win.Focus(), null);
+                Menu.AddMenuItem($"{k_RootMenuItemName}/{menuIndex++} {title}", "", false, menuIdx++, () => win.Focus(), null);
             }
             EditorUtility.Internal_UpdateAllMenus();
         }

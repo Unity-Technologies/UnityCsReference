@@ -284,6 +284,8 @@ namespace UnityEditor
 
             ModeService.modeChanged += OnEditorModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
+            targetSize = targetRenderSize;
         }
 
         public void OnDisable()
@@ -345,6 +347,11 @@ namespace UnityEditor
                 AllowCursorLockAndHide(false);
             }
             SetFocus(false);
+        }
+
+        internal override void OnResized()
+        {
+            targetSize = targetRenderSize;
         }
 
         // Call when number of available aspects can have changed (after deserialization or gui change)

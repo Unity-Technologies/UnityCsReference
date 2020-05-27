@@ -84,4 +84,12 @@ namespace UnityEditor.PackageManager
         [NativeName("GetPackageByAssetPath")]
         private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
     }
+
+
+    [NativeHeader("Modules/PackageManager/Editor/PackageManagerImmutableAssets.h")]
+    [StaticAccessor("PackageManager::ImmutableAssets", StaticAccessorType.DoubleColon)]
+    class ImmutableAssets
+    {
+        public static extern void SetAssetsAllowedToBeModified(string[] assetsAllowedToBeModified);
+    }
 }

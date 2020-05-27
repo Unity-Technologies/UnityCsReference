@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+//#define DEBUG_EDITOR_RESOURCES // ONLY NEEDED BY STYLING DEVS AND DESIGNERS.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -114,12 +116,14 @@ namespace UnityEditor.Experimental
     public partial class EditorResources
     {
         private const string k_PrefsUserFontKey = "user_editor_font";
+        const string k_GlobalStyleCatalogCacheFilePath = "Library/Style.catalog";
+
         private static StyleCatalog s_StyleCatalog;
         private static bool s_RefreshGlobalStyleCatalog = false;
 
         static class Constants
         {
-            public static bool isDarkTheme = EditorGUIUtility.isProSkin;
+            public static bool isDarkTheme => EditorGUIUtility.isProSkin;
         }
 
         // Global editor styles
@@ -313,7 +317,7 @@ namespace UnityEditor.Experimental
 
                 bool rebuildCatalog = true;
                 string catalogHash = ComputeCatalogHash(paths);
-                const string k_GlobalStyleCatalogCacheFilePath = "Library/Style.catalog";
+
                 if (!forceRebuild && File.Exists(k_GlobalStyleCatalogCacheFilePath))
                 {
                     using (var cacheCatalogStream = new FileStream(k_GlobalStyleCatalogCacheFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -387,22 +391,6 @@ namespace UnityEditor.Experimental
             return extendedStyles;
         }
 
-        /* ONLY NEEDED BY STYLING DEVS AND DESIGNERS.
-        [MenuItem("Theme/Refresh Styles &r", priority = 420)]
-        internal static void RefreshStyles()
-        {
-            Unsupported.ClearSkinCache();
-            EditorUtility.RequestScriptReload();
-            InternalEditorUtility.RepaintAllViews();
-            Debug.Log($"Style refreshed {DateTime.Now}");
-        }
-
-        [MenuItem("Theme/Switch Theme And Repaint", priority = 420)]
-        internal static void SwitchTheme()
-        {
-            AssetPreview.ClearTemporaryAssetPreviews();
-            InternalEditorUtility.SwitchSkinAndRepaintAllViews();
-        }*/
 
         private static void UpdateGUIStyleProperties(string name, GUIStyle style)
         {

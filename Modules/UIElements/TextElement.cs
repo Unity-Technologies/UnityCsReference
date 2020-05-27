@@ -240,6 +240,10 @@ namespace UnityEngine.UIElements
             if (elementScaling.x + elementScaling.y <= 0 || ve.scaledPixelsPerPoint <= 0)
                 return Vector2.zero;
 
+            float pixelsPerPoint = ve.scaledPixelsPerPoint;
+            float pixelOffset = 0.02f;
+            float pointOffset = pixelOffset / pixelsPerPoint;
+
             if (widthMode == MeasureMode.Exactly)
             {
                 measuredWidth = width;
@@ -250,8 +254,9 @@ namespace UnityEngine.UIElements
                 textParams.wordWrap = false;
                 textParams.richText = false;
 
-                //we make sure to round up as yoga could decide to round down and text would start wrapping
-                measuredWidth = Mathf.Ceil(textHandle.ComputeTextWidth(textParams, ve.scaledPixelsPerPoint));
+                // Case 1215962: round up as yoga could decide to round down and text would start wrapping
+                measuredWidth = textHandle.ComputeTextWidth(textParams, pixelsPerPoint);
+                measuredWidth = measuredWidth < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, pixelOffset);
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -269,7 +274,8 @@ namespace UnityEngine.UIElements
                 textParams.wordWrapWidth = measuredWidth;
                 textParams.richText = false;
 
-                measuredHeight = Mathf.Ceil(textHandle.ComputeTextHeight(textParams, ve.scaledPixelsPerPoint));
+                measuredHeight = textHandle.ComputeTextHeight(textParams, pixelsPerPoint);
+                measuredHeight = measuredHeight < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, pixelOffset);
 
                 if (heightMode == MeasureMode.AtMost)
                 {

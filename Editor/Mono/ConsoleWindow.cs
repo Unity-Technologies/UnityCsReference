@@ -128,7 +128,7 @@ namespace UnityEditor
 
         Vector2 m_TextScroll = Vector2.zero;
 
-        SplitterState spl = new SplitterState(new float[] {70, 30}, new int[] {32, 32}, null);
+        SplitterState spl = SplitterState.FromRelative(new float[] {70, 30}, new float[] {32, 32}, null);
 
         static bool ms_LoadedIcons = false;
         static internal Texture2D iconInfo, iconWarn, iconError;

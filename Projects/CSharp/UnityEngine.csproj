@@ -829,6 +829,9 @@
     <Compile Include="..\..\Modules\UIElementsNative\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElementsNative\UIElementsUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\AlignmentUtils.cs">
+      <Link>Modules\UIElements\AlignmentUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\BindableElement.cs">
       <Link>Modules\UIElements\BindableElement.cs</Link>
     </Compile>
@@ -1704,6 +1707,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs">
       <Link>Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VirtualTexturing\Managed\AssemblyInfo.cs">
+      <Link>Modules\VirtualTexturing\Managed\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VirtualTexturing\ScriptBindings\VirtualTexturing.bindings.cs">
       <Link>Modules\VirtualTexturing\ScriptBindings\VirtualTexturing.bindings.cs</Link>

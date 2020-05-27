@@ -34,7 +34,7 @@ namespace UnityEditor.UIElements
         // Folder, relative to the project root.
         internal const string k_SchemaFolder = "UIElementsSchema";
 
-        [MenuItem("Assets/Update UIElements Schema", false, 800)]
+        [MenuItem("Assets/Update UXML Schema", false, 800)]
         static void UpdateUXMLSchema()
         {
             if (CommandService.Exists(nameof(UpdateUXMLSchema)))

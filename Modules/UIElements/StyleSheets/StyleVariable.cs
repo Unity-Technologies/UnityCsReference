@@ -10,9 +10,16 @@ namespace UnityEngine.UIElements
 {
     internal struct StyleVariable
     {
-        public string name;
-        public StyleSheet sheet;
-        public StyleValueHandle[] handles;
+        public readonly string name;
+        public readonly StyleSheet sheet;
+        public readonly StyleValueHandle[] handles;
+
+        public StyleVariable(string name, StyleSheet sheet, StyleValueHandle[] handles)
+        {
+            this.name = name;
+            this.sheet = sheet;
+            this.handles = handles;
+        }
 
         public override int GetHashCode()
         {
@@ -31,23 +38,28 @@ namespace UnityEngine.UIElements
         public static readonly StyleVariableContext none = new StyleVariableContext();
 
         private int m_VariableHash;
-        private bool m_DirtyVariableHash = true;
         private List<StyleVariable> m_Variables;
 
         public int count => m_Variables.Count;
 
         public void Add(StyleVariable sv)
         {
-            m_DirtyVariableHash = true;
             m_Variables.Add(sv);
+
+            unchecked
+            {
+                m_VariableHash = m_Variables.Count == 0 ? sv.GetHashCode() : (m_VariableHash * 397) ^ sv.GetHashCode();
+            }
         }
 
-        public void InsertRange(int index, StyleVariableContext other)
+        public void AddInitialRange(StyleVariableContext other)
         {
             if (other.m_Variables.Count > 0)
             {
-                m_DirtyVariableHash = true;
-                m_Variables.InsertRange(index, other.m_Variables);
+                Debug.Assert(m_Variables.Count == 0);
+
+                m_VariableHash = other.m_VariableHash;
+                m_Variables.AddRange(other.m_Variables);
             }
         }
 
@@ -55,25 +67,21 @@ namespace UnityEngine.UIElements
         {
             if (m_Variables.Count > 0)
             {
-                m_DirtyVariableHash = true;
                 m_Variables.Clear();
+                m_VariableHash = 0;
             }
-        }
-
-        public void RemoveRange(int i, int c)
-        {
-            m_DirtyVariableHash = true;
-            m_Variables.RemoveRange(i, c);
         }
 
         public StyleVariableContext()
         {
             m_Variables = new List<StyleVariable>();
+            m_VariableHash = 0;
         }
 
         public StyleVariableContext(StyleVariableContext other)
         {
             m_Variables = new List<StyleVariable>(other.m_Variables);
+            m_VariableHash = other.m_VariableHash;
         }
 
         public bool TryFindVariable(string name, out StyleVariable v)
@@ -93,25 +101,7 @@ namespace UnityEngine.UIElements
 
         public int GetVariableHash()
         {
-            if (!m_DirtyVariableHash)
-                return m_VariableHash;
-
-            m_DirtyVariableHash = false;
-
-            if (m_Variables.Count == 0)
-            {
-                m_VariableHash = 0;
-                return m_VariableHash;
-            }
-
-            unchecked
-            {
-                m_VariableHash = m_Variables[0].GetHashCode();
-                for (int i = 1; i < m_Variables.Count; i++)
-                    m_VariableHash = (m_VariableHash * 397) ^ m_Variables[i].GetHashCode();
-
-                return m_VariableHash;
-            }
+            return m_VariableHash;
         }
     }
 

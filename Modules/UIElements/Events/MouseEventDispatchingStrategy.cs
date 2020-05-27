@@ -37,33 +37,42 @@ namespace UnityEngine.UIElements
                 return false;
 
             EventDispatchUtilities.PropagateEvent(evt);
-            if (evt.target is IMGUIContainer)
-            {
-                evt.propagateToIMGUI = true;
-                evt.skipElements.Add(evt.target);
-            }
 
             return IsDone(evt);
         }
 
         static bool SendEventToIMGUIContainer(EventBase evt, BaseVisualElementPanel panel)
         {
+            if (evt.imguiEvent == null)
+                return false;
+
+            // Root IMGUI is the container that handles all the GUIView/DockArea logic for EditorWindows.
+            var rootIMGUI = panel.rootIMGUIContainer;
+            if (rootIMGUI == null)
+                return false;
+
+            // If root IMGUI doesn't use event, send it to other IMGUIs down the line.
             if (evt.propagateToIMGUI ||
                 evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
-                evt.eventTypeId == MouseLeaveWindowEvent.TypeId()
+                evt.eventTypeId == MouseLeaveWindowEvent.TypeId() ||
+                evt.target == rootIMGUI
             )
             {
+                evt.skipElements.Add(evt.target);
                 EventDispatchUtilities.PropagateToIMGUIContainer(panel.visualTree, evt);
             }
+            // If non-root element doesn't use event, send it to root IMGUI.
+            // This is necessary for some behaviors like dropdown menus in IMGUI.
+            // See case : https://fogbugz.unity3d.com/f/cases/1223087/
             else
             {
-                // Send the events to the GUIView container so that it can process them.
-                // This is necessary for some behaviors like dropdown menus in IMGUI.
-                // See case : https://fogbugz.unity3d.com/f/cases/1223087/
-                var topLevelIMGUI = panel.rootIMGUIContainer;
-                if (topLevelIMGUI != null && !evt.Skip(topLevelIMGUI) && evt.imguiEvent != null)
+                evt.skipElements.Add(evt.target);
+                if (!evt.Skip(rootIMGUI))
                 {
-                    topLevelIMGUI.SendEventToIMGUI(evt, false);
+                    // Only permit switching the focus to another IMGUIContainer if the event target was not focusable
+                    // and was itself an IMGUIContainer
+                    bool canAffectFocus = evt.target is Focusable f && !f.focusable && f.isIMGUIContainer;
+                    rootIMGUI.SendEventToIMGUI(evt, canAffectFocus);
                 }
             }
 
@@ -74,21 +83,21 @@ namespace UnityEngine.UIElements
         {
             UpdateElementUnderMouse(evt, panel, out VisualElement elementUnderMouse);
 
-            if (evt.target == null && elementUnderMouse != null)
+            if (evt.target != null)
+            {
+                evt.propagateToIMGUI = false;
+            }
+            else if (elementUnderMouse != null)
             {
                 evt.propagateToIMGUI = false;
                 evt.target = elementUnderMouse;
             }
-            else if (evt.target == null && elementUnderMouse == null)
+            else
             {
                 // Event occured outside the window.
                 // Send event to visual tree root and
                 // don't modify evt.propagateToIMGUI.
                 evt.target = panel?.visualTree;
-            }
-            else if (evt.target != null)
-            {
-                evt.propagateToIMGUI = false;
             }
         }
 

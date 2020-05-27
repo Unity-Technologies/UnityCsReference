@@ -5725,6 +5725,9 @@
     <Compile Include="..\..\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
       <Link>Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\VirtualTexturingEditor\ScriptBindings\VirtualTexturingEditor.bindings.cs">
+      <Link>Modules\VirtualTexturingEditor\ScriptBindings\VirtualTexturingEditor.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\XREditor\Boot\XRBoot.bindings.cs">
       <Link>Modules\XREditor\Boot\XRBoot.bindings.cs</Link>
     </Compile>

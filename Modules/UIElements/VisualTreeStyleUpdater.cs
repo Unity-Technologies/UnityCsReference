@@ -279,6 +279,17 @@ namespace UnityEngine.UIElements
 
             foreach (var record in matchingSelectors)
             {
+                customPropertiesCount += record.complexSelector.rule.customPropertiesCount;
+            }
+
+            if (customPropertiesCount > 0)
+            {
+                // Element defines new variables, add the parents variables at the beginning of the processing context
+                m_ProcessVarContext.AddInitialRange(m_StyleMatchingContext.variableContext);
+            }
+
+            foreach (var record in matchingSelectors)
+            {
                 StyleRule rule = record.complexSelector.rule;
                 int specificity = record.complexSelector.specificity;
                 matchingRulesHash = (matchingRulesHash * 397) ^ rule.GetHashCode();
@@ -286,7 +297,6 @@ namespace UnityEngine.UIElements
 
                 if (rule.customPropertiesCount > 0)
                 {
-                    customPropertiesCount += rule.customPropertiesCount;
                     ProcessMatchedVariables(record.sheet, rule);
                 }
             }
@@ -298,8 +308,6 @@ namespace UnityEngine.UIElements
             int variablesHash = oldVariablesHash;
             if (customPropertiesCount > 0)
             {
-                // Element defines new variables, add the parents variables at the beginning of the processing context
-                m_ProcessVarContext.InsertRange(0, m_StyleMatchingContext.variableContext);
                 variablesHash = m_ProcessVarContext.GetVariableHash();
             }
             matchingRulesHash = (matchingRulesHash * 397) ^ variablesHash;
@@ -349,12 +357,11 @@ namespace UnityEngine.UIElements
             {
                 if (property.isCustomProperty)
                 {
-                    var sv = new StyleVariable()
-                    {
-                        name = property.name,
-                        sheet = sheet,
-                        handles = property.values
-                    };
+                    var sv = new StyleVariable(
+                        property.name,
+                        sheet,
+                        property.values
+                    );
                     m_ProcessVarContext.Add(sv);
                 }
             }

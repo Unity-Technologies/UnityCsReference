@@ -23,8 +23,8 @@ namespace UnityEditorInternal.Profiling
         {
             base.OnEnable(profilerWindow);
 
-            if (m_NetworkSplit == null || m_NetworkSplit.relativeSizes == null || m_NetworkSplit.relativeSizes.Length < 2)
-                m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
+            if (m_NetworkSplit == null || !m_NetworkSplit.IsValid())
+                m_NetworkSplit = SplitterState.FromRelative(new[] { 20f, 80f }, new[] { 100f, 100f }, null);
         }
 
         public override void DrawToolbar(Rect position)

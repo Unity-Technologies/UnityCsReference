@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI
 
         public ProgressBar()
         {
-            SetDisplay(false);
+            UIUtils.SetElementDisplay(this, false);
 
             var root = Resources.GetTemplate("ProgressBar.uxml");
             Add(root);
@@ -26,15 +26,10 @@ namespace UnityEditor.PackageManager.UI
             currentProgressBar.style.width = Length.Percent(0);
         }
 
-        private void SetDisplay(bool value)
-        {
-            UIUtils.SetElementDisplay(this, value);
-        }
-
         public void UpdateProgress(IOperation operation)
         {
             var showProgressBar = operation != null && operation.isProgressTrackable && operation.isInProgress;
-            SetDisplay(showProgressBar);
+            UIUtils.SetElementDisplay(this, showProgressBar);
             if (showProgressBar)
             {
                 var percentage = Mathf.Clamp01(operation.progressPercentage);

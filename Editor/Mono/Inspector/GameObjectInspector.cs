@@ -500,7 +500,7 @@ namespace UnityEditor
 
         private void DoTagsField(GameObject go)
         {
-            string tagName = go.tag ?? "Undefined";
+            string tagName = go.tag;
             EditorGUIUtility.labelWidth = Styles.tagFieldWidth;
             Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.tagPopup);
             EditorGUI.BeginProperty(tagRect, GUIContent.none, m_Tag);
@@ -931,6 +931,13 @@ namespace UnityEditor
                     Scene destinationScene = sceneView.customScene.IsValid() ? sceneView.customScene : SceneManager.GetActiveScene();
                     if (dragObject == null)
                     {
+                        // While dragging the instantiated prefab we do not want to record undo for this object
+                        // this will cause a remerge of the instance since changes are undone while dragging.
+                        // The DrivenRectTransformTracker by default records Undo when used when driving
+                        // UI components. This breaks our hideflag setup below due to a remerge of the dragged instance.
+                        // StartRecordingUndo() is called on DragExited. Fixes case 1223793.
+                        DrivenRectTransformTracker.StopRecordingUndo();
+
                         if (!EditorApplication.isPlaying || EditorSceneManager.IsPreviewScene(destinationScene))
                         {
                             dragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);
@@ -977,6 +984,10 @@ namespace UnityEditor
                     evt.Use();
                     break;
                 case EventType.DragPerform:
+                    // DragExited is always fired after DragPerform so we do no need to call StartRecordingUndo
+                    // in DragPerform
+                    DrivenRectTransformTracker.StartRecordingUndo();
+
 
                     var stage = StageNavigationManager.instance.currentStage;
                     if (stage is PrefabStage)

@@ -35,7 +35,7 @@ namespace UnityEditor
         protected GUIViewDebuggerWindow debuggerWindow => m_DebuggerWindow;
         private readonly GUIViewDebuggerWindow m_DebuggerWindow;
         Vector2 m_InstructionDetailsScrollPos = new Vector2();
-        readonly SplitterState m_InstructionDetailStacktraceSplitter = new SplitterState(new float[] { 80, 20 }, new int[] { 100, 100 }, null);
+        readonly SplitterState m_InstructionDetailStacktraceSplitter = SplitterState.FromRelative(new float[] { 80, 20 }, new float[] { 100, 100 }, null);
 
         protected BaseInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow)
         {

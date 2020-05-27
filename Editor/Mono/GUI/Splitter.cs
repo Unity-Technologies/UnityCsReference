@@ -6,64 +6,151 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 namespace UnityEditor
 {
     /// *undocumented*
     [System.Serializable]
-    internal class SplitterState
+    internal class SplitterState : ISerializationCallbackReceiver
     {
         const int defaultSplitSize = 6;
 
         public int ID;
-        public int splitterInitialOffset;
+        public float splitterInitialOffset;
         public int currentActiveSplitter = -1;
 
-        public int[] realSizes;
+        public float[] realSizes;
         public float[] relativeSizes; // these should always add up to 1
 
-        public int[] minSizes;
-        public int[] maxSizes;
+        public float[] minSizes;
+        public float[] maxSizes;
 
-        public int lastTotalSize = 0;
+        public float lastTotalSize = 0;
 
-        public int splitSize;
+        public float splitSize;
 
         public float xOffset;
 
+        [SerializeField]
+        int m_Version;
+
+#pragma warning disable CS0649
+        [SerializeField]
+        [FormerlySerializedAs("realSizes")]
+        int[] oldRealSizes;
+
+        [SerializeField]
+        [FormerlySerializedAs("minSizes")]
+        int[] oldMinSizes;
+
+        [SerializeField]
+        [FormerlySerializedAs("maxSizes")]
+        int[] oldMaxSizes;
+
+        [SerializeField]
+        [FormerlySerializedAs("splitSize")]
+        int oldSplitSize;
+#pragma warning restore CS0649
+
+        #region Old Constructors
+
+        // In the past, pixelsPerPoint was always 1, so points could be stored as ints. With the introduction of high-dpi
+        // and arbitrary scaling, the implementation has been changed to store floats. For backwards compatibility, the
+        // old constructors remain available but are NOT recommended anymore, since they imply a conversion from int[] to
+        // float[]. Consider using the static functions FromAbsolute and FromRelative instead.
+
         public SplitterState(params float[] relativeSizes)
         {
-            Init(relativeSizes, null, null, 0);
+            InitFromRelative(relativeSizes, null, null, 0);
         }
+
+        static System.Converter<int, float> s_ConverterDelegate = CastIntToFloat;
+        static float CastIntToFloat(int input) { return (float)input; }
 
         public SplitterState(int[] realSizes, int[] minSizes, int[] maxSizes)
         {
-            this.realSizes = realSizes;
-            this.minSizes = minSizes == null ? new int[realSizes.Length] : minSizes;
-            this.maxSizes = maxSizes == null ? new int[realSizes.Length] : maxSizes;
-            relativeSizes = new float[realSizes.Length];
-
-            this.splitSize = splitSize == 0 ? defaultSplitSize : splitSize;
-
-            RealToRelativeSizes();
+            InitFromAbsolute(
+                System.Array.ConvertAll(realSizes, s_ConverterDelegate),
+                minSizes == null ? null : System.Array.ConvertAll(minSizes, s_ConverterDelegate),
+                maxSizes == null ? null : System.Array.ConvertAll(maxSizes, s_ConverterDelegate));
         }
 
         public SplitterState(float[] relativeSizes, int[] minSizes, int[] maxSizes)
         {
-            Init(relativeSizes, minSizes, maxSizes, 0);
+            InitFromRelative(
+                relativeSizes,
+                minSizes == null ? null : System.Array.ConvertAll(minSizes, s_ConverterDelegate),
+                maxSizes == null ? null : System.Array.ConvertAll(maxSizes, s_ConverterDelegate),
+                0);
         }
 
         public SplitterState(float[] relativeSizes, int[] minSizes, int[] maxSizes, int splitSize)
         {
-            Init(relativeSizes, minSizes, maxSizes, splitSize);
+            InitFromRelative(
+                relativeSizes,
+                minSizes == null ? null : System.Array.ConvertAll(minSizes, s_ConverterDelegate),
+                maxSizes == null ? null : System.Array.ConvertAll(maxSizes, s_ConverterDelegate),
+                splitSize);
         }
 
-        private void Init(float[] relativeSizes, int[] minSizes, int[] maxSizes, int splitSize)
+        #endregion // Old Constructors
+
+        SplitterState(bool useless) {} // A parameterless constructor would conflict with the obsolete params constructor.
+
+        public static SplitterState FromAbsolute(float[] realSizes, float[] minSizes, float[] maxSizes)
+        {
+            var state = new SplitterState(false);
+            state.InitFromAbsolute(realSizes, minSizes, maxSizes);
+            return state;
+        }
+
+        public static SplitterState FromRelative(params float[] relativeSizes)
+        {
+            var state = new SplitterState(false);
+            state.InitFromRelative(relativeSizes, null, null, 0);
+            return state;
+        }
+
+        public static SplitterState FromRelative(float[] relativeSizes, float[] minSizes, float[] maxSizes)
+        {
+            var state = new SplitterState(false);
+            state.InitFromRelative(relativeSizes, minSizes, maxSizes, 0);
+            return state;
+        }
+
+        public static SplitterState FromRelative(float[] relativeSizes, float[] minSizes, float[] maxSizes, int splitSize)
+        {
+            var state = new SplitterState(false);
+            state.InitFromRelative(relativeSizes, minSizes, maxSizes, splitSize);
+            return state;
+        }
+
+        public bool IsValid()
+        {
+            return realSizes != null && minSizes != null && maxSizes != null && relativeSizes != null &&
+                realSizes.Length > 0 && minSizes.Length > 0 && maxSizes.Length > 0 && relativeSizes.Length > 0 &&
+                realSizes.Length == minSizes.Length && minSizes.Length == maxSizes.Length && maxSizes.Length == relativeSizes.Length;
+        }
+
+        void InitFromAbsolute(float[] realSizes, float[] minSizes, float[] maxSizes)
+        {
+            this.realSizes = realSizes;
+            this.minSizes = minSizes ?? new float[realSizes.Length];
+            this.maxSizes = maxSizes ?? new float[realSizes.Length];
+            relativeSizes = new float[realSizes.Length];
+
+            splitSize = splitSize == 0 ? defaultSplitSize : splitSize;
+
+            RealToRelativeSizes();
+        }
+
+        void InitFromRelative(float[] relativeSizes, float[] minSizes, float[] maxSizes, int splitSize)
         {
             this.relativeSizes = relativeSizes;
-            this.minSizes = minSizes == null ? new int[relativeSizes.Length] : minSizes;
-            this.maxSizes = maxSizes == null ? new int[relativeSizes.Length] : maxSizes;
-            realSizes = new int[relativeSizes.Length];
+            this.minSizes = minSizes == null ? new float[relativeSizes.Length] : minSizes;
+            this.maxSizes = maxSizes == null ? new float[relativeSizes.Length] : maxSizes;
+            realSizes = new float[relativeSizes.Length];
 
             this.splitSize = splitSize == 0 ? defaultSplitSize : splitSize;
 
@@ -108,13 +195,14 @@ namespace UnityEditor
                 relativeSizes[relativeSizes.Length - 1] += check;
         }
 
-        public void RelativeToRealSizes(int totalSpace)
+        public void RelativeToRealSizes(float totalSpace)
         {
-            int spaceToShare = totalSpace, k;
+            int k;
+            float spaceToShare = totalSpace;
 
             for (k = 0; k < relativeSizes.Length; k++)
             {
-                realSizes[k] = (int)Mathf.Round(relativeSizes[k] * totalSpace);
+                realSizes[k] = GUIUtility.RoundToPixelGrid(relativeSizes[k] * totalSpace);
 
                 if (realSizes[k] < minSizes[k])
                     realSizes[k] = minSizes[k];
@@ -128,8 +216,8 @@ namespace UnityEditor
                 {
                     if (realSizes[k] > minSizes[k])
                     {
-                        int spaceInThisOne = realSizes[k] - minSizes[k];
-                        int spaceToTake = -spaceToShare < spaceInThisOne ? -spaceToShare : spaceInThisOne;
+                        float spaceInThisOne = realSizes[k] - minSizes[k];
+                        float spaceToTake = -spaceToShare < spaceInThisOne ? -spaceToShare : spaceInThisOne;
 
                         spaceToShare += spaceToTake;
                         realSizes[k] -= spaceToTake;
@@ -150,16 +238,16 @@ namespace UnityEditor
             }
         }
 
-        public void DoSplitter(int i1, int i2, int diff)
+        public void DoSplitter(int i1, int i2, float diff)
         {
             // TODO: This does not handle all cases properly. Theres a hope we will not encounter those cases in the editor.
             // Needs to be fixed once its passed to users.
-            int h1 = realSizes[i1];
-            int h2 = realSizes[i2];
-            int m1 = minSizes[i1];
-            int m2 = minSizes[i2];
-            int x1 = maxSizes[i1];
-            int x2 = maxSizes[i2];
+            float h1 = realSizes[i1];
+            float h2 = realSizes[i2];
+            float m1 = minSizes[i1];
+            float m2 = minSizes[i2];
+            float x1 = maxSizes[i1];
+            float x2 = maxSizes[i2];
 
             bool diffed = false;
 
@@ -236,6 +324,31 @@ namespace UnityEditor
                 realSizes[i2] -= diff;
             }
         }
+
+        public void OnBeforeSerialize()
+        {
+            m_Version = 1;
+        }
+
+        static void ConvertOldArray(int[] oldArray, ref float[] newArray)
+        {
+            if ((newArray == null || newArray.Length == 0) && oldArray != null && oldArray.Length > 0)
+                newArray = System.Array.ConvertAll(oldArray, s_ConverterDelegate);
+        }
+
+        public void OnAfterDeserialize()
+        {
+            if (m_Version == 0)
+            {
+                // Case 1241206: Convert int to float
+                ConvertOldArray(oldMaxSizes, ref maxSizes);
+                ConvertOldArray(oldMinSizes, ref minSizes);
+                ConvertOldArray(oldRealSizes, ref realSizes);
+                splitSize = oldSplitSize;
+            }
+
+            m_Version = 1;
+        }
     }
 
     class SplitterGUILayout
@@ -257,8 +370,9 @@ namespace UnityEditor
 
                     if (width != state.lastTotalSize)
                     {
-                        state.RelativeToRealSizes((int)width);
-                        state.lastTotalSize = (int)width;
+                        float alignedWidth = GUIUtility.RoundToPixelGrid(width);
+                        state.RelativeToRealSizes(alignedWidth);
+                        state.lastTotalSize = alignedWidth;
 
                         // maintain constraints while resizing
                         for (k = 0; k < state.realSizes.Length - 1; k++)
@@ -271,7 +385,7 @@ namespace UnityEditor
                     {
                         float thisSize = state.realSizes[k];
 
-                        i.SetHorizontal(Mathf.Round(x), Mathf.Round(thisSize));
+                        i.SetHorizontal(GUIUtility.RoundToPixelGrid(x), GUIUtility.RoundToPixelGrid(thisSize));
                         x += thisSize + spacing;
                         k++;
                     }
@@ -308,8 +422,9 @@ namespace UnityEditor
 
                     if (height != state.lastTotalSize)
                     {
-                        state.RelativeToRealSizes((int)height);
-                        state.lastTotalSize = (int)height;
+                        float alignedHeight = GUIUtility.RoundToPixelGrid(height);
+                        state.RelativeToRealSizes(alignedHeight);
+                        state.lastTotalSize = alignedHeight;
 
                         // maintain constraints while resizing
                         for (k = 0; k < state.realSizes.Length - 1; k++)
@@ -322,7 +437,7 @@ namespace UnityEditor
                     {
                         float thisSize = state.realSizes[k];
 
-                        i.SetVertical(Mathf.Round(y), Mathf.Round(thisSize));
+                        i.SetVertical(GUIUtility.RoundToPixelGrid(y), GUIUtility.RoundToPixelGrid(thisSize));
                         y += thisSize + spacing;
                         k++;
                     }
@@ -363,7 +478,7 @@ namespace UnityEditor
 
         public static void BeginSplit(SplitterState state, GUIStyle style, bool vertical, params GUILayoutOption[] options)
         {
-            int pos;
+            float pos;
             var g = (GUISplitterGroup)GUILayoutUtility.BeginLayoutGroup(style, null, typeof(GUISplitterGroup));
             state.ID = GUIUtility.GetControlID(splitterHash, FocusType.Passive);
 
@@ -381,8 +496,8 @@ namespace UnityEditor
                 {
                     if ((Event.current.button == 0) && (Event.current.clickCount == 1))
                     {
-                        int cursor = g.isVertical ? (int)g.rect.y : (int)g.rect.x;
-                        pos = g.isVertical ? (int)Event.current.mousePosition.y : (int)Event.current.mousePosition.x;
+                        float cursor = GUIUtility.RoundToPixelGrid(g.isVertical ? g.rect.y : g.rect.x);
+                        pos = GUIUtility.RoundToPixelGrid(g.isVertical ? Event.current.mousePosition.y : Event.current.mousePosition.x);
 
                         for (int i = 0; i < state.relativeSizes.Length - 1; i++)
                         {
@@ -399,7 +514,7 @@ namespace UnityEditor
                                 break;
                             }
 
-                            cursor += (int)state.realSizes[i];
+                            cursor = GUIUtility.RoundToPixelGrid(cursor + state.realSizes[i]);
                         }
                     }
                     break;
@@ -408,8 +523,9 @@ namespace UnityEditor
                 {
                     if ((GUIUtility.hotControl == state.ID) && (state.currentActiveSplitter >= 0))
                     {
-                        pos = g.isVertical ? (int)Event.current.mousePosition.y : (int)Event.current.mousePosition.x;
-                        int diff = pos - state.splitterInitialOffset;
+                        pos = g.isVertical ? Event.current.mousePosition.y : Event.current.mousePosition.x;
+                        GUIUtility.RoundToPixelGrid(pos);
+                        float diff = pos - state.splitterInitialOffset;
 
                         if (diff != 0)
                         {
@@ -434,7 +550,7 @@ namespace UnityEditor
                 }
                 case EventType.Repaint:
                 {
-                    int cursor = g.isVertical ? (int)g.rect.y : (int)g.rect.x;
+                    float cursor = GUIUtility.RoundToPixelGrid(g.isVertical ? g.rect.y : g.rect.x);
 
                     for (var i = 0; i < state.relativeSizes.Length - 1; i++)
                     {

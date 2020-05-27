@@ -243,8 +243,8 @@ namespace UnityEditorInternal.Profiling
             m_TreeView = new ObjectsTreeView(m_TreeViewState, m_MultiColumnHeader);
             m_TreeView.frameItemEvent += frameItemEvent;
 
-            if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
-                m_VertSplit = new SplitterState(new[] { SessionState.GetFloat(splitter0StatePrefKey, 60f), SessionState.GetFloat(splitter1StatePrefKey, 40f) }, new[] { 50, 50 }, null);
+            if (m_VertSplit == null || !m_VertSplit.IsValid())
+                m_VertSplit = SplitterState.FromRelative(new[] { SessionState.GetFloat(splitter0StatePrefKey, 60f), SessionState.GetFloat(splitter1StatePrefKey, 40f) }, new[] { 50f, 50f }, null);
 
             m_Initialized = true;
         }

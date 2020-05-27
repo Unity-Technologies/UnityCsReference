@@ -468,7 +468,7 @@ namespace UnityEditorInternal.Profiling
                         headerContent = (m_Type == CallsTreeView.Type.Callers ? Styles.callersLabel : Styles.calleesLabel),
                         headerTextAlignment = TextAlignment.Left,
                         sortedAscending = true,
-                        sortingArrowAlignment = TextAlignment.Center,
+                        sortingArrowAlignment = TextAlignment.Right,
                         width = 150, minWidth = 150,
                         autoResize = true, allowToggleVisibility = false
                     },
@@ -554,8 +554,8 @@ namespace UnityEditorInternal.Profiling
             if (m_Initialized)
                 return;
 
-            if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
-                m_VertSplit = new SplitterState(new[] { SessionState.GetFloat(spillter0StatePrefKey, 40f), SessionState.GetFloat(spillter1StatePrefKey, 60f) }, new[] { 50, 50 }, null);
+            if (m_VertSplit == null || !m_VertSplit.IsValid())
+                m_VertSplit = SplitterState.FromRelative(new[] { SessionState.GetFloat(spillter0StatePrefKey, 40f), SessionState.GetFloat(spillter1StatePrefKey, 60f) }, new[] { 50f, 50f }, null);
 
             if (m_FrameDataView != null && m_FrameDataView.valid && m_SelectedID >= 0)
             {

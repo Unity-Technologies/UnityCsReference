@@ -287,7 +287,7 @@ namespace UnityEngine
 
         public extern string tag
         {
-            [FreeFunction("GameObjectBindings::GetTag", HasExplicitThis = true, ThrowsException = true)]
+            [FreeFunction("GameObjectBindings::GetTag", HasExplicitThis = true)]
             get;
             [FreeFunction("GameObjectBindings::SetTag", HasExplicitThis = true)]
             set;

@@ -191,6 +191,10 @@ namespace UnityEngine.XR
             extern public void GetBlitParameter(int blitParameterIndex, out XRBlitParams blitParameter);
         }
 
+        [NativeMethod(Name = "GetTextureForRenderPass", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public RenderTexture GetRenderTextureForRenderPass(int renderPass);
+
         [NativeMethod(Name = "GetPreferredMirrorViewBlitMode", IsThreadSafe = false)]
         [NativeConditional("ENABLE_XR")]
         extern public int GetPreferredMirrorBlitMode();

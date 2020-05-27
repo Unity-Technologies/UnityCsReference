@@ -259,9 +259,6 @@ namespace UnityEditor
 
             // Prepare data
             SetupData(true);
-
-            // End renaming if a rename was in progress
-            EndRename(true);
         }
 
         bool HasFocus()
