@@ -182,7 +182,7 @@ namespace UnityEditorInternal.Profiling
         public override void Clear()
         {
             base.Clear();
-            m_FrameDataHierarchyView.Clear();
+            m_FrameDataHierarchyView?.Clear();
         }
 
         public void Repaint()

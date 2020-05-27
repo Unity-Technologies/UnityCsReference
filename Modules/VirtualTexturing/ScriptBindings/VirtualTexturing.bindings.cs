@@ -223,7 +223,10 @@ namespace UnityEngine.Rendering
 
                 [NativeThrows] extern internal static int PopRequests(ulong handle, IntPtr requestHandles);
                 [NativeThrows][ThreadSafe] extern internal static void GetRequestParameters(IntPtr requestHandles, IntPtr requestParameters, int length);
+
+                // These are two version instead of just one function with fenceBuffer==null so the version without CommandBuffer is burst compatible
                 [NativeThrows][ThreadSafe] extern internal static void UpdateRequestState(IntPtr requestHandles, IntPtr requestUpdates, int length);
+                [NativeThrows][ThreadSafe] extern internal static void UpdateRequestStateWithCommandBuffer(IntPtr requestHandles, IntPtr requestUpdates, int length, CommandBuffer fenceBuffer);
 
                 extern internal static void BindToMaterialPropertyBlock(ulong handle, [NotNull] MaterialPropertyBlock material, string name);
                 extern internal static void BindToMaterial(ulong handle, [NotNull] Material material, string name);
@@ -257,9 +260,34 @@ namespace UnityEngine.Rendering
                     }
                     if (layers == null || layers.Length > MaxNumLayers)
                     {
-                        throw new ArgumentException($"layers is either invalid or has to many layers (maxNumLayers: {MaxNumLayers})");
+                        throw new ArgumentException($"layers is either invalid or has too many layers (maxNumLayers: {MaxNumLayers})");
                     }
-                    GraphicsFormat[] supportedFormats =
+                    GraphicsFormat[] supportedFormatsCPU =
+                    {
+                        GraphicsFormat.R8G8B8A8_SRGB,
+                        GraphicsFormat.R8G8B8A8_UNorm,
+                        GraphicsFormat.R32G32B32A32_SFloat,
+                        GraphicsFormat.R8G8_SRGB,
+                        GraphicsFormat.R8G8_UNorm,
+                        GraphicsFormat.R32_SFloat,
+                        GraphicsFormat.RGBA_DXT1_SRGB,
+                        GraphicsFormat.RGBA_DXT1_UNorm,
+                        GraphicsFormat.RGBA_DXT5_SRGB,
+                        GraphicsFormat.RGBA_DXT5_UNorm,
+                        GraphicsFormat.RGBA_BC7_SRGB,
+                        GraphicsFormat.RGBA_BC7_UNorm,
+                        GraphicsFormat.RG_BC5_SNorm,
+                        GraphicsFormat.RG_BC5_UNorm,
+                        GraphicsFormat.RGB_BC6H_SFloat,
+                        GraphicsFormat.RGB_BC6H_UFloat,
+                        GraphicsFormat.R16_SFloat,
+                        GraphicsFormat.R16_UNorm,
+                        GraphicsFormat.R16G16_SFloat,
+                        GraphicsFormat.R16G16_UNorm,
+                        GraphicsFormat.R16G16B16A16_SFloat,
+                        GraphicsFormat.R16G16B16A16_UNorm,
+                    };
+                    GraphicsFormat[] supportedFormatsGPU =
                     {
                         GraphicsFormat.R8G8B8A8_SRGB,
                         GraphicsFormat.R8G8B8A8_UNorm,
@@ -270,6 +298,9 @@ namespace UnityEngine.Rendering
                         GraphicsFormat.A2B10G10R10_UNormPack32
                     };
 
+                    //GPU PVT relies on Render usage to not cause fallback behaviour.
+                    //To allow CPU PVT Sample has to be supported on the format.
+
                     var formatUsage = (gpuGeneration == 1) ? FormatUsage.Render : FormatUsage.Sample;
                     for (int i = 0; i < layers.Length; ++i)
                     {
@@ -279,6 +310,8 @@ namespace UnityEngine.Rendering
                         }
 
                         bool valid = false;
+                        GraphicsFormat[] supportedFormats = (gpuGeneration == 1) ? supportedFormatsGPU : supportedFormatsCPU;
+
                         for (int j = 0; j < supportedFormats.Length; ++j)
                         {
                             if (layers[i] == supportedFormats[j])
@@ -287,6 +320,7 @@ namespace UnityEngine.Rendering
                                 break;
                             }
                         }
+
                         if (valid == false)
                         {
                             throw new ArgumentException($"Invalid textureformat on layer: {i}. Supported formats are: {supportedFormats}");
@@ -350,6 +384,14 @@ namespace UnityEngine.Rendering
                     }
                 }
 
+                public void CompleteRequest(RequestStatus status, CommandBuffer fenceBuffer)
+                {
+                    unsafe
+                    {
+                        Binding.UpdateRequestStateWithCommandBuffer((IntPtr)UnsafeUtility.AddressOf(ref this), (IntPtr)UnsafeUtility.AddressOf(ref status), 1, fenceBuffer);
+                    }
+                }
+
                 public static void CompleteRequests(NativeSlice<TextureStackRequestHandle<T>> requestHandles, NativeSlice<RequestStatus> status)
                 {
                     if (System.enabled == false)
@@ -368,6 +410,27 @@ namespace UnityEngine.Rendering
                     unsafe
                     {
                         Binding.UpdateRequestState((IntPtr)requestHandles.GetUnsafePtr(), (IntPtr)status.GetUnsafePtr(), requestHandles.Length);
+                    }
+                }
+
+                public static void CompleteRequests(NativeSlice<TextureStackRequestHandle<T>> requestHandles, NativeSlice<RequestStatus> status, CommandBuffer fenceBuffer)
+                {
+                    if (System.enabled == false)
+                    {
+                        throw new InvalidOperationException("Virtual texturing is not enabled in the player settings.");
+                    }
+
+                    if (requestHandles != null && status != null)
+                    {
+                        if (requestHandles.Length != status.Length)
+                        {
+                            throw new ArgumentException($"Array sizes do not match ({requestHandles.Length} handles, {status.Length} requests)");
+                        }
+                    }
+
+                    unsafe
+                    {
+                        Binding.UpdateRequestStateWithCommandBuffer((IntPtr)requestHandles.GetUnsafePtr(), (IntPtr)status.GetUnsafePtr(), requestHandles.Length, fenceBuffer);
                     }
                 }
 
@@ -482,7 +545,7 @@ namespace UnityEngine.Rendering
                     throw new IndexOutOfRangeException();
                 }
 
-                public void CopyPixelDataToLayer<T>(NativeArray<T> colorData, int layerIdx) where T : struct
+                public void CopyPixelDataToLayer<T>(NativeArray<T> colorData, int layerIdx, GraphicsFormat format) where T : struct
                 {
                     var layer = GetLayer(layerIdx);
 
@@ -493,10 +556,24 @@ namespace UnityEngine.Rendering
                         dstDataAsColor = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(layer.data, layer.dataSize, Allocator.None);
                         NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref dstDataAsColor, safety);
                     }
+
                     var dstWidth = layer.scanlineSize / UnsafeUtility.SizeOf<T>();
-                    for (int i = 0; i < height; ++i)
+                    int scanLines = height / (int)GraphicsFormatUtility.GetBlockHeight(format);
+                    int pitch = (width * (int)GraphicsFormatUtility.GetBlockSize(format)) / ((int)GraphicsFormatUtility.GetBlockWidth(format) * UnsafeUtility.SizeOf<T>());
+
+                    if (scanLines * pitch > colorData.Length)
                     {
-                        NativeArray<T>.Copy(colorData, i * width, dstDataAsColor, i * dstWidth, width);
+                        throw new ArgumentException($"Could not copy from ColorData in layer {layer}, {format}. The Provided source array is smaller than the tile content.");
+                    }
+
+                    if ((scanLines - 1) * dstWidth + pitch > dstDataAsColor.Length)
+                    {
+                        throw new ArgumentException($"Trying to write outside of the layer {layer} data buffer bounds. Is the provided format {format} correct?");
+                    }
+
+                    for (int i = 0; i < scanLines; ++i)
+                    {
+                        NativeArray<T>.Copy(colorData, i * pitch, dstDataAsColor, i * dstWidth, pitch);
                     }
                     dstDataAsColor.Dispose();
                     AtomicSafetyHandle.Release(safety);

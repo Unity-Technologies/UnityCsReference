@@ -12,8 +12,8 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class AssetStoreDownloadOperation : IOperation
     {
-        internal static readonly string k_LocalizedDownloadErrorMessage = "The download could not be completed. Please try again. See console for more details.";
-        internal static readonly string k_LocalizedAbortErrorMessage = "The download could not be aborted. Please try again.";
+        internal static readonly string k_DownloadErrorMessage = "The download could not be completed. Please try again.";
+        internal static readonly string k_AbortErrorMessage = "The download could not be aborted. Please try again.";
         internal static readonly string k_AssetStoreDownloadPrefix = "content__";
 
         [SerializeField]
@@ -113,7 +113,7 @@ namespace UnityEditor.PackageManager.UI
                     {
                         m_DownloadedBytes = 0;
                         m_State = DownloadState.Aborted;
-                        m_ErrorMessage = L10n.Tr("Download aborted");
+                        m_ErrorMessage = L10n.Tr("Download aborted.");
                         onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
                         onOperationFinalized?.Invoke(this);
                     }
@@ -134,9 +134,9 @@ namespace UnityEditor.PackageManager.UI
         private void OnErrorMessage(string errorMessage)
         {
             m_State = DownloadState.Error;
-            m_ErrorMessage = L10n.Tr(k_LocalizedDownloadErrorMessage);
-            Debug.LogError(errorMessage);
-            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage));
+            m_ErrorMessage = L10n.Tr(k_DownloadErrorMessage);
+            Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
+            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.IsDetailInConsole));
             onOperationFinalized?.Invoke(this);
         }
 
@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI
 
             // Pause here is the same as aborting the download, but we don't delete the file so we can resume from where we paused it from
             if (!m_AssetStoreUtils.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
-                Debug.LogError(k_LocalizedAbortErrorMessage);
+                Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {L10n.Tr(k_AbortErrorMessage)}");
         }
 
         public void Abort()
@@ -174,7 +174,7 @@ namespace UnityEditor.PackageManager.UI
 
             // the actual download state change from `downloading` to `aborted` happens in `OnDownloadProgress` callback
             if (!m_AssetStoreUtils.AbortDownload($"{k_AssetStoreDownloadPrefix}{m_ProductId}", downloadInfo.destination))
-                Debug.LogError(L10n.Tr(k_LocalizedAbortErrorMessage));
+                Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {L10n.Tr(k_AbortErrorMessage)}");
         }
 
         public void Download(bool resume)

@@ -39,7 +39,6 @@ namespace UnityEditor
         [SerializeField] GameViewSizeGroup m_HMD = new GameViewSizeGroup();
 
         [NonSerialized] GameViewSize m_Remote = null;
-        [NonSerialized] Vector2 m_LastStandaloneScreenSize = new Vector2(-1, -1);
         [NonSerialized] Vector2 m_LastRemoteScreenSize = new Vector2(-1, -1);
         [NonSerialized] int m_ChangeID = 0;
         [NonSerialized] static GameViewSizeGroupType s_GameViewSizeGroupType;
@@ -93,32 +92,14 @@ namespace UnityEditor
             Save(saveAsText);
         }
 
-        public bool IsDefaultStandaloneScreenSize(GameViewSizeGroupType gameViewSizeGroupType, int index)
-        {
-            return gameViewSizeGroupType == GameViewSizeGroupType.Standalone && GetDefaultStandaloneIndex() == index;
-        }
-
         public bool IsRemoteScreenSize(GameViewSizeGroupType gameViewSizeGroupType, int index)
         {
             return GetGroup(gameViewSizeGroupType).IndexOf(m_Remote) == index;
         }
 
-        public int GetDefaultStandaloneIndex()
-        {
-            return m_Standalone.GetBuiltinCount() - 1;
-        }
-
         // returns true if screen size was changed
         public void RefreshStandaloneAndRemoteDefaultSizes()
         {
-            if (InternalEditorUtility.defaultScreenWidth != m_LastStandaloneScreenSize.x ||
-                InternalEditorUtility.defaultScreenHeight != m_LastStandaloneScreenSize.y)
-            {
-                m_LastStandaloneScreenSize = new Vector2(InternalEditorUtility.defaultScreenWidth,
-                    InternalEditorUtility.defaultScreenHeight);
-                RefreshStandaloneDefaultScreenSize((int)m_LastStandaloneScreenSize.x, (int)m_LastStandaloneScreenSize.y);
-            }
-
             if (InternalEditorUtility.remoteScreenWidth != m_LastRemoteScreenSize.x ||
                 InternalEditorUtility.remoteScreenHeight != m_LastRemoteScreenSize.y)
             {
@@ -133,14 +114,6 @@ namespace UnityEditor
             {
                 RefreshRemoteScreenSize(UnityEngine.XR.XRSettings.eyeTextureWidth, UnityEngine.XR.XRSettings.eyeTextureHeight);
             }
-        }
-
-        public void RefreshStandaloneDefaultScreenSize(int width, int height)
-        {
-            GameViewSize gvs = m_Standalone.GetGameViewSize(GetDefaultStandaloneIndex());
-            gvs.height = height;
-            gvs.width = width;
-            Changed();
         }
 
         public void RefreshRemoteScreenSize(int width, int height)
@@ -172,14 +145,14 @@ namespace UnityEditor
 
             m_Remote = new GameViewSize(GameViewSizeType.FixedResolution, 0, 0, "Remote (Not Connected)");
 
-            // Shared
+            // Standalone
             GameViewSize kFree = new GameViewSize(GameViewSizeType.AspectRatio, 0, 0, "Free Aspect");
-            GameViewSize k5_4 = new GameViewSize(GameViewSizeType.AspectRatio, 5, 4, "");
-            GameViewSize k4_3 = new GameViewSize(GameViewSizeType.AspectRatio, 4, 3, "");
-            GameViewSize k3_2 = new GameViewSize(GameViewSizeType.AspectRatio, 3, 2, "");
             GameViewSize k16_10 = new GameViewSize(GameViewSizeType.AspectRatio, 16, 10, "");
             GameViewSize k16_9 = new GameViewSize(GameViewSizeType.AspectRatio, 16, 9, "");
-            GameViewSize kStandalone = new GameViewSize(GameViewSizeType.FixedResolution, 0, 0, "Standalone");
+            GameViewSize k_PC_1920x1080 = new GameViewSize(GameViewSizeType.FixedResolution, 1920, 1080, "Full HD");
+            GameViewSize k_PC_1366x768 = new GameViewSize(GameViewSizeType.FixedResolution, 1366, 768, "WXGA");
+            GameViewSize k_PC_2560x1440 = new GameViewSize(GameViewSizeType.FixedResolution, 2560, 1440, "QHD");
+            GameViewSize k_PC_3840x2160 = new GameViewSize(GameViewSizeType.FixedResolution, 3840, 2160, "4K UHD");
 
             // all mobiles
             GameViewSize k_4_3_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 3, 4, "4:3 Portrait");
@@ -230,7 +203,7 @@ namespace UnityEditor
             GameViewSize k_2960x1440_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2960, 1440, "2960x1440 Landscape");
 
 
-            m_Standalone.AddBuiltinSizes(kFree, k5_4, k4_3, k3_2, k16_10, k16_9, kStandalone);
+            m_Standalone.AddBuiltinSizes(kFree, k16_9, k16_10, k_PC_1920x1080, k_PC_1366x768, k_PC_2560x1440, k_PC_3840x2160);
 
             m_iOS.AddBuiltinSizes(kFree,
                 k_iPhone_750p_Portrait, k_iPhone_750p_Landscape,
@@ -288,12 +261,7 @@ namespace UnityEditor
 
         private static void RefreshDerivedGameViewSize(GameViewSizeGroupType groupType, int gameViewSizeIndex, GameViewSize gameViewSize)
         {
-            if (GameViewSizes.instance.IsDefaultStandaloneScreenSize(groupType, gameViewSizeIndex))
-            {
-                gameViewSize.width = (int)InternalEditorUtility.defaultScreenWidth;
-                gameViewSize.height = (int)InternalEditorUtility.defaultScreenHeight;
-            }
-            else if (GameViewSizes.instance.IsRemoteScreenSize(groupType, gameViewSizeIndex))
+            if (GameViewSizes.instance.IsRemoteScreenSize(groupType, gameViewSizeIndex))
             {
                 int width = 0;
                 int height = 0;

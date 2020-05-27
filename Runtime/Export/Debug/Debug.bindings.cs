@@ -20,7 +20,7 @@ namespace UnityEngine
         [ThreadAndSerializationSafe]
         internal static extern void Internal_Log(LogType level, LogOption options, string msg, Object obj);
         [ThreadAndSerializationSafe]
-        internal static extern void Internal_LogException(Exception exception, Object obj);
+        internal static extern void Internal_LogException(Exception ex, Object obj);
     }
 
     [NativeHeader("Runtime/Export/Debug/Debug.bindings.h")]

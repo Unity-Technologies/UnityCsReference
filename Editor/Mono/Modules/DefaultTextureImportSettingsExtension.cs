@@ -81,6 +81,7 @@ namespace UnityEditor.Modules
             bool formatOptionsAreDifferent = false;
 
             int formatForAll = 0;
+            var textureShape = TextureImporterShape.Texture2D;
 
             // TODO : This should not be calculated every refresh and be kept in a cache somewhere instead...
             for (int i = 0; i < editor.GetTargetCount(); i++)
@@ -122,6 +123,7 @@ namespace UnityEditor.Modules
                     formatValuesForAll = formatValues;
                     formatStringsForAll = formatStrings;
                     formatForAll = format;
+                    textureShape = settings.textureShape;
                 }
                 else
                 {
@@ -148,7 +150,7 @@ namespace UnityEditor.Modules
 
                 if (!mixedValues && !Array.Exists(formatValuesForAll, i => i == formatForAll))
                 {
-                    EditorGUILayout.HelpBox(string.Format(L10n.Tr("The selected format value {0} is not compatible on this platform, please change it to a valid one from the dropdown."), (TextureImporterFormat)formatForAll), MessageType.Error);
+                    EditorGUILayout.HelpBox(string.Format(L10n.Tr("The selected format value {0} is not compatible on this platform for the selected texture type, please change it to a valid one from the dropdown."), (TextureImporterFormat)formatForAll), MessageType.Error);
                 }
             }
 
@@ -173,7 +175,8 @@ namespace UnityEditor.Modules
             // Use Crunch Compression
             if (editor.model.isDefault &&
                 (TextureImporterFormat)formatForAll == TextureImporterFormat.Automatic &&
-                editor.model.platformTextureSettings.textureCompression != TextureImporterCompression.Uncompressed)
+                editor.model.platformTextureSettings.textureCompression != TextureImporterCompression.Uncompressed &&
+                (textureShape == TextureImporterShape.Texture2D || textureShape == TextureImporterShape.TextureCube)) // 2DArray & 3D don't support Crunch
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||

@@ -265,7 +265,6 @@ namespace UnityEditor.VisualStudioIntegration
                 SyncProject(assembly, allAssetProjectParts, ParseResponseFileData(assembly), allProjectAssemblies);
                 Profiler.EndSample();
             }
-
             Profiler.EndSample();
         }
 

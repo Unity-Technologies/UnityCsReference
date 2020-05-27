@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -39,6 +40,8 @@ namespace UnityEditor.Scripting.Compilers
         //do not change the return type, native unity depends on this one.
         public abstract CompilerMessage[] GetCompilerMessages();
 
+        public abstract ProcessStartInfo GetProcessStartInfo();
+
         internal static void AddResponseFileToArguments(List<string> arguments, string responseFileName, ApiCompatibilityLevel apiCompatibilityLevel)
         {
             var systemReferencesDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(apiCompatibilityLevel);
@@ -49,7 +52,7 @@ namespace UnityEditor.Scripting.Compilers
                 systemReferencesDirectories);
             foreach (var error in responseFileData.Errors)
             {
-                Debug.LogError($"{responseFileName} Parse Error : {error}");
+                UnityEngine.Debug.LogError($"{responseFileName} Parse Error : {error}");
             }
 
             arguments.AddRange(responseFileData.Defines.Distinct().Select(define => "/define:" + define));

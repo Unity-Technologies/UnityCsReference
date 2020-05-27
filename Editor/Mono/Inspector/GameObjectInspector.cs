@@ -907,9 +907,19 @@ namespace UnityEditor
         }
 
         // Handle dragging in scene view
-        public static GameObject dragObject;
+        public GameObject m_DragObject;
+        static bool s_ShouldClearSelection;
+        internal static bool s_CyclicNestingDetected;
+        static bool s_PlaceObject;
+        static Vector3 s_PlaceObjectPoint;
+        static Vector3 s_PlaceObjectNormal;
+        public void OnSceneDrag(SceneView sceneView, int index)
+        {
+            Event evt = Event.current;
+            OnSceneDragInternal(sceneView, index, evt.type, evt.mousePosition, evt.alt);
+        }
 
-        public void OnSceneDrag(SceneView sceneView)
+        internal void OnSceneDragInternal(SceneView sceneView, int index, EventType type, Vector2 mousePosition, bool alt)
         {
             GameObject go = target as GameObject;
             if (!PrefabUtility.IsPartOfPrefabAsset(go))
@@ -917,13 +927,11 @@ namespace UnityEditor
 
             var prefabAssetRoot = go.transform.root.gameObject;
 
-            Event evt = Event.current;
-            switch (evt.type)
+            switch (type)
             {
                 case EventType.DragUpdated:
-
                     Scene destinationScene = sceneView.customScene.IsValid() ? sceneView.customScene : SceneManager.GetActiveScene();
-                    if (dragObject == null)
+                    if (m_DragObject == null)
                     {
                         // While dragging the instantiated prefab we do not want to record undo for this object
                         // this will cause a remerge of the instance since changes are undone while dragging.
@@ -934,84 +942,106 @@ namespace UnityEditor
 
                         if (!EditorApplication.isPlaying || EditorSceneManager.IsPreviewScene(destinationScene))
                         {
-                            dragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);
-                            dragObject.name = go.name;
+                            m_DragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);
+                            m_DragObject.name = go.name;
                         }
                         else
                         {
                             // Instatiate as regular GameObject in Play Mode so runtime logic
                             // won't run into restrictions on restructuring Prefab instances.
-                            dragObject = Instantiate(prefabAssetRoot);
-                            SceneManager.MoveGameObjectToScene(dragObject, destinationScene);
+                            m_DragObject = Instantiate(prefabAssetRoot);
+                            SceneManager.MoveGameObjectToScene(m_DragObject, destinationScene);
                         }
-                        dragObject.hideFlags = HideFlags.HideInHierarchy;
-                    }
+                        m_DragObject.hideFlags = HideFlags.HideInHierarchy;
 
-                    if (HandleUtility.ignoreRaySnapObjects == null)
-                        HandleUtility.ignoreRaySnapObjects = dragObject.GetComponentsInChildren<Transform>();
+                        if (HandleUtility.ignoreRaySnapObjects == null)
+                            HandleUtility.ignoreRaySnapObjects = m_DragObject.GetComponentsInChildren<Transform>();
+                        else
+                            HandleUtility.ignoreRaySnapObjects = HandleUtility.ignoreRaySnapObjects.Union(m_DragObject.GetComponentsInChildren<Transform>()).ToArray();
+
+                        PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+                        if (prefabStage != null)
+                        {
+                            GameObject prefab = AssetDatabase.LoadMainAssetAtPath(prefabStage.assetPath) as GameObject;
+
+                            if (prefab != null)
+                            {
+                                if (PrefabUtility.CheckIfAddingPrefabWouldResultInCyclicNesting(prefab, target))
+                                {
+                                    s_CyclicNestingDetected = true;
+                                }
+                            }
+                        }
+                    }
 
                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                     Vector3 point, normal;
+                    float offset = 0;
 
-                    if (HandleUtility.PlaceObject(evt.mousePosition, out point, out normal))
+                    if (index == 0)
                     {
-                        float offset = 0;
+                        s_PlaceObject = HandleUtility.PlaceObject(mousePosition, out s_PlaceObjectPoint, out s_PlaceObjectNormal);
+                    }
+
+                    point = s_PlaceObjectPoint;
+                    normal = s_PlaceObjectNormal;
+
+                    if (s_PlaceObject)
+                    {
                         if (Tools.pivotMode == PivotMode.Center)
                         {
-                            float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, normal);
+                            float geomOffset = HandleUtility.CalcRayPlaceOffset(m_DragObject.GetComponentsInChildren<Transform>(), normal);
                             if (geomOffset != Mathf.Infinity)
-                                offset = Vector3.Dot(dragObject.transform.position, normal) - geomOffset;
+                                offset = Vector3.Dot(m_DragObject.transform.position, normal) - geomOffset;
                         }
-                        dragObject.transform.position = Matrix4x4.identity.MultiplyPoint(point + (normal * offset));
+                        m_DragObject.transform.position = Matrix4x4.identity.MultiplyPoint(point + (normal * offset));
                     }
                     else
-                        dragObject.transform.position = HandleUtility.GUIPointToWorldRay(evt.mousePosition).GetPoint(10);
+                        m_DragObject.transform.position = HandleUtility.GUIPointToWorldRay(mousePosition).GetPoint(10);
+
+                    if (alt)
+                    {
+                        if (offset != 0)
+                        {
+                            m_DragObject.transform.position = point;
+                        }
+                        m_DragObject.transform.position += prefabAssetRoot.transform.localPosition;
+                    }
 
                     // Use prefabs original z position when in 2D mode
                     if (sceneView.in2DMode)
                     {
-                        Vector3 dragPosition = dragObject.transform.position;
+                        Vector3 dragPosition = m_DragObject.transform.position;
                         dragPosition.z = prefabAssetRoot.transform.position.z;
-                        dragObject.transform.position = dragPosition;
+                        m_DragObject.transform.position = dragPosition;
                     }
 
-                    evt.Use();
+                    // Schedule selection clearing for when we start performing the actual drag action
+                    s_ShouldClearSelection = true;
                     break;
                 case EventType.DragPerform:
-                    if (!DragPerform(sceneView, dragObject, go))
-                        return;
-                    dragObject = null;
-                    evt.Use();
+                    DragPerform(sceneView, m_DragObject, go);
+                    m_DragObject = null;
                     break;
                 case EventType.DragExited:
                     // DragExited is always fired after DragPerform so we do no need to call StartRecordingUndo
                     // in DragPerform
                     DrivenRectTransformTracker.StartRecordingUndo();
 
-                    if (dragObject)
+                    if (m_DragObject)
                     {
-                        UnityObject.DestroyImmediate(dragObject, false);
+                        DestroyImmediate(m_DragObject, false);
                         HandleUtility.ignoreRaySnapObjects = null;
-                        dragObject = null;
-                        evt.Use();
+                        m_DragObject = null;
                     }
+                    s_ShouldClearSelection = false;
+                    s_CyclicNestingDetected = false;
                     break;
             }
         }
 
-        internal static bool DragPerform(SceneView sceneView, GameObject draggedObject, GameObject go)
+        internal static void DragPerform(SceneView sceneView, GameObject draggedObject, GameObject go)
         {
-            var stage = StageNavigationManager.instance.currentStage;
-            if (stage is PrefabStage)
-            {
-                var prefabAssetThatIsAddedTo = AssetDatabase.LoadMainAssetAtPath(stage.assetPath);
-                if (PrefabUtility.CheckIfAddingPrefabWouldResultInCyclicNesting(prefabAssetThatIsAddedTo, go))
-                {
-                    PrefabUtility.ShowCyclicNestingWarningDialog();
-                    return false;
-                }
-            }
-
             var defaultParentObject = SceneView.GetDefaultParentObjectIfSet();
             var parent = defaultParentObject != null ? defaultParentObject : sceneView.customParentForDraggedObjects;
 
@@ -1022,14 +1052,23 @@ namespace UnityEditor
             Undo.RegisterCreatedObjectUndo(draggedObject, "Place " + draggedObject.name);
             EditorUtility.SetDirty(draggedObject);
             DragAndDrop.AcceptDrag();
-            Selection.activeObject = draggedObject;
+            if (s_ShouldClearSelection)
+            {
+                Selection.objects = new[] { draggedObject };
+                s_ShouldClearSelection = false;
+            }
+            else
+            {
+                // Since this inspector code executes for each dragged GameObject we should retain
+                // selection to all of them by joining them to the previous selection list
+                Selection.objects = Selection.gameObjects.Union(new[] { draggedObject }).ToArray();
+            }
             HandleUtility.ignoreRaySnapObjects = null;
             if (SceneView.mouseOverWindow != null)
                 SceneView.mouseOverWindow.Focus();
             if (!Application.IsPlaying(draggedObject))
                 draggedObject.name = uniqueName;
-
-            return true;
+            s_CyclicNestingDetected = false;
         }
     }
 }

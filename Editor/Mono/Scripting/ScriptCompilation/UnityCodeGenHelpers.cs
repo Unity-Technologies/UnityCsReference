@@ -4,12 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using UnityEditor.Scripting.ScriptCompilation;
-using UnityEditorInternal;
-using UnityEngine;
-using UnityEngine.Scripting;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {

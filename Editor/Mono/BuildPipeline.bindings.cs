@@ -632,10 +632,7 @@ namespace UnityEditor
                 // Android: support connection from player to Editor in both cases
                 //          connecting to 127.0.0.1 (when both Editor and Android are on localhost using USB cable)
                 //          connecting to <ip of machine where the Editor is running>, the Android and PC has to be on the same subnet
-                // Update:  Disabling this for now, even though player-to-editor works fine on Android, but there are zillion not centralized places in testing framework
-                //          where it assumes Android can only listen. You can still pass BuildOptions.ConnectToHost, to force player-to-editor connection. But AutoConnect Profiler option
-                //          will keep using Listen mode for now
-                //targetPlatform == BuildTarget.Android ||
+                targetPlatform == BuildTarget.Android ||
                 // WebGL: only supports connecting from player to editor, so always use this when profiling is set up in WebGL.
                 targetPlatform == BuildTarget.WebGL ||
                 // WSA: When Editor and Windows Store Apps are running on the same device, only connection from Player-To-Editor works

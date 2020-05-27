@@ -48,7 +48,6 @@ namespace UnityEditor.PackageManager.UI
         public void ResolveDependencies(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
         {
             m_VersionList?.ResolveDependencies(assetStoreUtils, ioProxy);
-            m_UpmVersionList?.ResolveDependencies(ioProxy);
         }
 
         public AssetStorePackage(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, string productId, UIError error)
@@ -64,7 +63,7 @@ namespace UnityEditor.PackageManager.UI
             m_Images = new List<PackageImage>();
             m_Links = new List<PackageLink>();
             m_VersionList = new AssetStoreVersionList(assetStoreUtils, ioProxy);
-            m_UpmVersionList = new UpmVersionList(ioProxy);
+            m_UpmVersionList = new UpmVersionList();
 
             m_Labels = new List<string>();
             m_PurchasedTimeTicks = 0;
@@ -82,7 +81,7 @@ namespace UnityEditor.PackageManager.UI
             m_Images = productInfo?.images ?? new List<PackageImage>();
             m_Links = productInfo?.links ?? new List<PackageLink>();
             m_VersionList = new AssetStoreVersionList(assetStoreUtils, ioProxy);
-            m_UpmVersionList = new UpmVersionList(ioProxy);
+            m_UpmVersionList = new UpmVersionList();
             m_AssetStoreLink = productInfo?.assetStoreLink.url;
 
             var firstPublishedDateString = productInfo?.firstPublishedDate ?? string.Empty;
@@ -129,7 +128,7 @@ namespace UnityEditor.PackageManager.UI
             m_Labels = purchaseInfo?.tags;
             m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
-            m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList(ioProxy);
+            m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList();
             if (productInfo != null)
             {
                 foreach (var version in m_UpmVersionList.Cast<UpmPackageVersion>())
@@ -143,13 +142,13 @@ namespace UnityEditor.PackageManager.UI
 
             if (purchaseInfo == null)
             {
-                var errorMessage = L10n.Tr("Unable to get purchase details because you may not have purchased this package.");
+                var errorMessage = L10n.Tr("Unable to get asset purchase details because you may not have purchased this package.");
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, errorMessage));
             }
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Invalid product details.")));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to retrieve asset product details.")));
             else if (string.IsNullOrEmpty(package?.name))
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Invalid package info.")));
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to retrieve asset package info.")));
         }
 
         public override IPackage Clone()

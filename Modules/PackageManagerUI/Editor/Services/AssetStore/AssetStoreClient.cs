@@ -65,7 +65,7 @@ namespace UnityEditor.PackageManager.UI
                 callback?.Invoke(categories);
             }, error =>
                 {
-                    Debug.LogWarning("[PackageManagerUI] error while fetching categories: " + error.message);
+                    Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching categories: {0}"), error.message));
                     callback?.Invoke(new List<string>());
                 });
         }
@@ -80,7 +80,7 @@ namespace UnityEditor.PackageManager.UI
                 callback?.Invoke(labels);
             }, error =>
                 {
-                    Debug.LogWarning("[PackageManagerUI] error while fetching labels: " + error.message);
+                    Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching labels: {0}"), error.message));
                     callback?.Invoke(new List<string>());
                 });
         }
@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (!m_UnityConnect.isUserLoggedIn)
             {
-                onFetchDetailsError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, L10n.Tr("User not logged in")));
+                onFetchDetailsError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, L10n.Tr("User not logged in.")));
                 return;
             }
 
@@ -322,7 +322,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (updateDetails.ContainsKey("errorMessage"))
                 {
-                    Debug.Log("[PackageManagerUI] Error while getting product update details: " + updateDetails["errorMessage"]);
+                    Debug.Log(string.Format(L10n.Tr("[Package Manager Window] Error while getting product update details: {0}"), updateDetails["errorMessage"]));
                     return;
                 }
 

@@ -126,6 +126,13 @@ namespace UnityEditor
             return state;
         }
 
+        public bool IsValid()
+        {
+            return realSizes != null && minSizes != null && maxSizes != null && relativeSizes != null &&
+                realSizes.Length > 0 && minSizes.Length > 0 && maxSizes.Length > 0 && relativeSizes.Length > 0 &&
+                realSizes.Length == minSizes.Length && minSizes.Length == maxSizes.Length && maxSizes.Length == relativeSizes.Length;
+        }
+
         void InitFromAbsolute(float[] realSizes, float[] minSizes, float[] maxSizes)
         {
             this.realSizes = realSizes;

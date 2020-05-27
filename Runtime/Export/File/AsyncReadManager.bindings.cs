@@ -268,7 +268,7 @@ namespace Unity.IO.LowLevel.Unsafe
             return GetSummaryOfMetrics_Internal(metrics);
         }
 
-        [FreeFunction("GetAsyncReadManagerMetrics()->GetSummaryOfMetrics_FromContainer_Managed"), ThreadSafe]
+        [FreeFunction("GetAsyncReadManagerMetrics()->GetSummaryOfMetrics_FromContainer_Managed", ThrowsException = true), ThreadSafe]
         extern static internal AsyncReadManagerSummaryMetrics GetSummaryOfMetrics_FromContainer_Internal(List<AsyncReadManagerRequestMetric> metrics);
         static public AsyncReadManagerSummaryMetrics GetSummaryOfMetrics(List<AsyncReadManagerRequestMetric> metrics)
         {
@@ -283,7 +283,7 @@ namespace Unity.IO.LowLevel.Unsafe
             return GetSummaryOfMetricsWithFilters_Internal(metrics, metricsFilters);
         }
 
-        [FreeFunction("GetAsyncReadManagerMetrics()->GetSummaryOfMetricsWithFilters_FromContainer_Managed"), ThreadSafe]
+        [FreeFunction("GetAsyncReadManagerMetrics()->GetSummaryOfMetricsWithFilters_FromContainer_Managed", ThrowsException = true), ThreadSafe]
         extern static internal AsyncReadManagerSummaryMetrics GetSummaryOfMetricsWithFilters_FromContainer_Internal(List<AsyncReadManagerRequestMetric> metrics, AsyncReadManagerMetricsFilters metricsFilters);
         static public AsyncReadManagerSummaryMetrics GetSummaryOfMetrics(List<AsyncReadManagerRequestMetric> metrics, AsyncReadManagerMetricsFilters metricsFilters)
         {

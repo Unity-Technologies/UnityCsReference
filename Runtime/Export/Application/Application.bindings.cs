@@ -182,7 +182,6 @@ namespace UnityEngine
         }
 
         // Contains the path to a persistent data directory (RO).
-        [System.Security.SecurityCritical]
         extern public static string persistentDataPath
         {
             [FreeFunction("GetPersistentDataPathApplicationSpecific")]

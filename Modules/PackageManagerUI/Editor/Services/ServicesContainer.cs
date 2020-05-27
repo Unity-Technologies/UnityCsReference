@@ -18,6 +18,8 @@ namespace UnityEditor.PackageManager.UI
 
         private SelectionProxy m_SelectionProxy;
 
+        private AssetDatabaseProxy m_AssetDatabaseProxy;
+
         private IOProxy m_IOProxy;
 
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -77,6 +79,7 @@ namespace UnityEditor.PackageManager.UI
             m_HttpClientFactory = new HttpClientFactory();
             m_UnityOAuthProxy = new UnityOAuthProxy();
             m_SelectionProxy = new SelectionProxy();
+            m_AssetDatabaseProxy = new AssetDatabaseProxy();
             m_UnityConnectProxy = new UnityConnectProxy();
             m_ApplicationProxy = new ApplicationProxy();
             m_IOProxy = new IOProxy();
@@ -124,7 +127,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_PackageFiltering.ResolveDependencies(m_UnityConnectProxy, m_PackageManagerPrefs);
 
-            m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmClient, m_IOProxy);
+            m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetDatabaseProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmClient, m_IOProxy);
             m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
 
             m_DependenciesResolved = true;
@@ -172,6 +175,7 @@ namespace UnityEditor.PackageManager.UI
             Register(m_UnityConnectProxy);
             Register(m_SelectionProxy);
             Register(m_ApplicationProxy);
+            Register(m_AssetDatabaseProxy);
             Register(m_ResourceLoader);
             Register(m_IOProxy);
             Register(m_SettingsProxy);

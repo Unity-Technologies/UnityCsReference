@@ -63,6 +63,7 @@ namespace UnityEditor.Compilation
     public class Assembly
     {
         public string name { get; private set; }
+        public string rootNamespace { get; private set; }
         public string outputPath { get; private set; }
         public string[] sourceFiles { get; private set; }
         public string[] defines { get; private set; }
@@ -87,7 +88,8 @@ namespace UnityEditor.Compilation
             assemblyReferences,
             compiledAssemblyReferences,
             flags,
-            new ScriptCompilerOptions())
+            new ScriptCompilerOptions(),
+            string.Empty)
         {
         }
 
@@ -99,6 +101,27 @@ namespace UnityEditor.Compilation
                         string[] compiledAssemblyReferences,
                         AssemblyFlags flags,
                         ScriptCompilerOptions compilerOptions)
+            : this(name,
+            outputPath,
+            sourceFiles,
+            defines,
+            assemblyReferences,
+            compiledAssemblyReferences,
+            flags,
+            compilerOptions,
+            string.Empty)
+        {
+        }
+
+        public Assembly(string name,
+                        string outputPath,
+                        string[] sourceFiles,
+                        string[] defines,
+                        Assembly[] assemblyReferences,
+                        string[] compiledAssemblyReferences,
+                        AssemblyFlags flags,
+                        ScriptCompilerOptions compilerOptions,
+                        string rootNamespace)
         {
             this.name = name;
             this.outputPath = outputPath;
@@ -108,6 +131,7 @@ namespace UnityEditor.Compilation
             this.compiledAssemblyReferences = compiledAssemblyReferences;
             this.flags = flags;
             this.compilerOptions = compilerOptions;
+            this.rootNamespace = rootNamespace;
         }
     }
 
@@ -312,6 +336,12 @@ namespace UnityEditor.Compilation
             return GUIDReference.GUIDReferenceToGUID(reference);
         }
 
+        public static string GetAssemblyRootNamespaceFromScriptPath(string sourceFilePath)
+        {
+            var projectRootNamespace = UnityEditor.EditorSettings.projectGenerationRootNamespace;
+            return GetAssemblyRootNamespaceFromScriptPath(EditorCompilationInterface.Instance, projectRootNamespace, sourceFilePath);
+        }
+
         public static AssemblyDefinitionPlatform[] GetAssemblyDefinitionPlatforms()
         {
             if (assemblyDefinitionPlatforms == null)
@@ -471,7 +501,8 @@ namespace UnityEditor.Compilation
                     null,
                     compiledAssemblyReferences,
                     flags,
-                    compilerOptions);
+                    compilerOptions,
+                    scriptAssembly.RootNamespace);
             }
 
             var scriptAssemblyToAssembly = new Dictionary<ScriptAssembly, Assembly>();
@@ -539,6 +570,19 @@ namespace UnityEditor.Compilation
             {
                 var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromAssemblyReference(reference);
                 return customScriptAssembly.FilePath;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        internal static string GetAssemblyRootNamespaceFromScriptPath(EditorCompilation editorCompilation, string projectRootNamespace, string sourceFilePath)
+        {
+            try
+            {
+                var csa = editorCompilation.FindCustomScriptAssemblyFromScriptPath(sourceFilePath);
+                return csa != null ? csa.RootNamespace : projectRootNamespace;
             }
             catch (Exception)
             {

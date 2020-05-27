@@ -160,14 +160,14 @@ namespace Unity.Collections
         [WriteAccessRequired]
         public void Dispose()
         {
+            if (m_Buffer == null)
+            {
+                throw new ObjectDisposedException("The NativeArray is already disposed.");
+            }
+
             if (m_AllocatorLabel == Allocator.Invalid)
             {
                 throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
-            }
-
-            if (m_Buffer == null)
-            {
-                throw new InvalidOperationException("The NativeArray is already disposed.");
             }
 
             if (m_AllocatorLabel > Allocator.None)

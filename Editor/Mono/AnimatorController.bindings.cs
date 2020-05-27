@@ -32,7 +32,7 @@ namespace UnityEditor.Animations
         {
             [FreeFunction(Name = "AnimatorControllerBindings::GetLayers", HasExplicitThis = true)]
             get;
-            [FreeFunction(Name = "AnimatorControllerBindings::SetLayers", HasExplicitThis = true)]
+            [FreeFunction(Name = "AnimatorControllerBindings::SetLayers", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -40,7 +40,7 @@ namespace UnityEditor.Animations
         {
             [FreeFunction(Name = "AnimatorControllerBindings::GetParameters", HasExplicitThis = true)]
             get;
-            [FreeFunction(Name = "AnimatorControllerBindings::SetParameters", HasExplicitThis = true)]
+            [FreeFunction(Name = "AnimatorControllerBindings::SetParameters", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 

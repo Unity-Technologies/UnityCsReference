@@ -68,6 +68,12 @@ namespace UnityEditor
                 importPackageFailed(packageName, errorMessage);
         }
 
+        [RequiredByNativeCode]
+        private static bool Internal_IsOpenForEdit(string assetOrMetaFilePath)
+        {
+            return IsOpenForEdit(assetOrMetaFilePath);
+        }
+
         public static void IsOpenForEdit(string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, [uei.DefaultValue("StatusQueryOptions.UseCachedIfPossible")] StatusQueryOptions statusQueryOptions = StatusQueryOptions.UseCachedIfPossible)
         {
             if (assetOrMetaFilePaths == null)
@@ -79,11 +85,23 @@ namespace UnityEditor
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
+        [RequiredByNativeCode]
+        private static bool Internal_MakeEditable(string path)
+        {
+            return MakeEditable(path);
+        }
+
         public static bool MakeEditable(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             return MakeEditable(new[] {path});
+        }
+
+        [RequiredByNativeCode]
+        private static bool Internal_MakeEditable2(string[] paths, string prompt = null, List<string> outNotEditablePaths = null)
+        {
+            return MakeEditable(paths, prompt, outNotEditablePaths);
         }
 
         public static bool MakeEditable(string[] paths, string prompt = null, List<string> outNotEditablePaths = null)

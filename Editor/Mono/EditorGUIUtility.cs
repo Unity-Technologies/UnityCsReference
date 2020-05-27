@@ -669,17 +669,31 @@ namespace UnityEditor
             return LoadIconForSkin(name, skinIndex);
         }
 
+        static readonly List<string> k_UserSideSupportedImageExtensions = new List<string> {".png"};
+
         // Attempts to load a higher resolution icon if needed
         static Texture2D LoadGeneratedIconOrNormalIcon(string name)
         {
             Texture2D icon = null;
             if (GUIUtility.pixelsPerPoint > 1.0f)
             {
-                icon = InnerLoadGeneratedIconOrNormalIcon(name + "@2x");
-                if (icon != null)
+                var imageExtension = Path.GetExtension(name);
+                if (k_UserSideSupportedImageExtensions.Contains(imageExtension))
                 {
-                    icon.pixelsPerPoint = 2.0f;
+                    var newName = $"{Path.GetFileNameWithoutExtension(name)}@2x{imageExtension}";
+                    var dirName = Path.GetDirectoryName(name);
+                    if (!string.IsNullOrEmpty(dirName))
+                        newName = $"{dirName}/{newName}";
+
+                    icon = InnerLoadGeneratedIconOrNormalIcon(newName);
                 }
+                else
+                {
+                    icon = InnerLoadGeneratedIconOrNormalIcon(name + "@2x");
+                }
+
+                if (icon != null)
+                    icon.pixelsPerPoint = 2.0f;
             }
 
             if (icon == null)
@@ -726,8 +740,8 @@ namespace UnityEditor
             //Remap file name for dark skin
             var newName = "d_" + Path.GetFileName(name);
             var dirName = Path.GetDirectoryName(name);
-            if (!String.IsNullOrEmpty(dirName))
-                newName = String.Format("{0}/{1}", dirName, newName);
+            if (!string.IsNullOrEmpty(dirName))
+                newName = $"{dirName}/{newName}";
 
             Texture2D tex = LoadGeneratedIconOrNormalIcon(newName);
             if (!tex)

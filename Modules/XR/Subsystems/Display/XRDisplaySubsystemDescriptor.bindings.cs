@@ -12,8 +12,8 @@ namespace UnityEngine.XR
 {
     public struct XRMirrorViewBlitMode
     {
-        // *MUST* be in sync with the kUnityXRMirrorBlitNone
-        public const int None = 0;
+        // *MUST* be in sync with the kUnityXRMirrorBlitDefault
+        public const int Default = 0;
         // *MUST* be in sync with the kUnityXRMirrorBlitLeftEye
         public const int LeftEye = -1;
         // *MUST* be in sync with the kUnityXRMirrorBlitRightEye
@@ -24,6 +24,8 @@ namespace UnityEngine.XR
         public const int SideBySideOcclusionMesh = -4;
         // *MUST* be in sync with the kUnityXRMirrorBlitDistort
         public const int Distort = -5;
+        // *MUST* be in sync with the kUnityXRMirrorBlitNone
+        public const int None = -6;
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]

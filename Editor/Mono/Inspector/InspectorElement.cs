@@ -417,7 +417,7 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                inspector = new IMGUIContainer() { cullingEnabled = true };
+                inspector = new IMGUIContainer();
             }
 
             m_IgnoreOnInspectorGUIErrors = false;

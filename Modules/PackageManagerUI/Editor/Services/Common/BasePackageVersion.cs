@@ -56,7 +56,6 @@ namespace UnityEditor.PackageManager.UI
         public virtual PackageInfo packageInfo => null;
         public virtual IDictionary<string, string> categoryLinks => null;
         public virtual IEnumerable<UIError> errors => Enumerable.Empty<UIError>();
-        public virtual IEnumerable<Sample> samples => Enumerable.Empty<Sample>();
         public virtual IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
         public virtual IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
         public virtual SemVersion? supportedVersion => null;

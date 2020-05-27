@@ -247,6 +247,11 @@ namespace UnityEditor
             tracker.RebuildIfNecessary();
         }
 
+        protected override bool CloseIfEmpty()
+        {
+            return false;
+        }
+
         protected override void BeginRebuildContentContainers()
         {
             FlushAllOptimizedGUIBlocksIfNeeded();

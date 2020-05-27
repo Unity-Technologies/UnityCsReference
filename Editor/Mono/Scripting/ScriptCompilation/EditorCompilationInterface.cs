@@ -234,10 +234,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Instance.SetAllUnityAssemblies(unityAssemblies);
         }
 
+        // Burst package depends on this method, so we can't remove it.
         [RequiredByNativeCode]
         public static void SetCompileScriptsOutputDirectory(string directory)
         {
             Instance.SetCompileScriptsOutputDirectory(directory);
+        }
+
+        [RequiredByNativeCode]
+        public static void SetAssembliesOutputDirectories(string directory, string editorDirectory)
+        {
+            Instance.SetAssembliesOutputDirectories(directory, editorDirectory);
         }
 
         [RequiredByNativeCode]
@@ -338,19 +345,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static bool CompileCustomScriptAssemblies(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
         {
             return EmitExceptionAsError(() => Instance.CompileCustomScriptAssemblies(definesOptions, platformGroup, platform), false);
-        }
-
-        [RequiredByNativeCode]
-        public static bool ShouldRecompileNonCodeGenAssembliesAfterReload()
-        {
-            return EmitExceptionAsError(() => Instance.IsCodeGenAssemblyChanged, false);
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyAllNonCodeGenAssemblies()
-        {
-            var options = GetAdditionalEditorScriptCompilationOptions();
-            EmitExceptionAsError(() => Instance.DirtyAllNonCodeGenAssemblies(options));
         }
 
         [RequiredByNativeCode]

@@ -20,9 +20,9 @@ namespace UnityEditor
 
     internal class EditorWrapper : System.IDisposable
     {
-        Editor editor;
+        internal Editor editor;
 
-        public delegate void VoidDelegate(SceneView sceneView);
+        public delegate void VoidDelegate(SceneView sceneView, int index);
 
         public VoidDelegate OnSceneDrag;
 
@@ -71,7 +71,7 @@ namespace UnityEditor
             return true;
         }
 
-        private void DefaultOnSceneDrag(SceneView sceneView) {}
+        private void DefaultOnSceneDrag(SceneView sceneView, int index) {}
 
         public string name
         {
@@ -122,8 +122,6 @@ namespace UnityEditor
                     return m_EditorCache[o];
 
                 EditorWrapper w = EditorWrapper.Make(o, m_Requirements);
-
-
                 return m_EditorCache[o] = w;
             }
         }

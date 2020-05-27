@@ -139,9 +139,6 @@ namespace UnityEditor
                     EditorGUI.EndDisabledGroup();
 
                     ShowContacts(collider);
-
-                    // We need to repaint as some of the above properties can change without causing a repaint.
-                    Repaint();
                 }
                 else
                 {

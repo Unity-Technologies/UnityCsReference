@@ -40,8 +40,7 @@ namespace Unity.Burst.LowLevel
         [ThreadSafe]
         public static extern uint GetCurrentExecutionMode();
 
-        [FreeFunction("DefaultBurstLogCallback")]
-        [ThreadSafe]
+        [FreeFunction("DefaultBurstLogCallback", isThreadSafe: true)]
         public static extern unsafe void Log(void* userData, BurstLogType logType, byte* message, byte* filename, int lineNumber);
     }
 }

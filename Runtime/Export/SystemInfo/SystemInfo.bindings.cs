@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
+using System.Reflection;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
@@ -381,11 +381,25 @@ namespace UnityEngine
         }
 
         // The enums are only marked as obsolete in the editor.
-        static bool IsObsolete(Enum value)
+        /// <summary>
+        /// Determine if enum value is obsolete.
+        /// If multiple enum members refer to the same value,
+        /// the value is considered obsolete if all members are marked obsolete.
+        /// </summary>
+        internal static bool IsEnumValueObsolete(Enum value)
         {
-            var fieldInfo = value.GetType().GetField(value.ToString());
-            var attributes = (ObsoleteAttribute[])fieldInfo.GetCustomAttributes(typeof(ObsoleteAttribute), false);
-            return (attributes != null && attributes.Length > 0);
+            foreach (var enumMember in value.GetType().GetFields(BindingFlags.Static | BindingFlags.Public))
+            {
+                if (!object.Equals(enumMember.GetValue(null), value)) continue;
+
+                var isObsolete = enumMember.GetCustomAttributes(typeof(ObsoleteAttribute), false).Length != 0;
+                if (!isObsolete)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
 
@@ -394,7 +408,7 @@ namespace UnityEngine
             if (!Enum.IsDefined(value.GetType(), value))
                 return false;
 
-            if (IsObsolete(value))
+            if (IsEnumValueObsolete(value))
                 return false;
 
             return true;

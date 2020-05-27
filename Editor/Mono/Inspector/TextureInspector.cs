@@ -115,7 +115,7 @@ namespace UnityEditor
         }
         static Styles s_Styles;
 
-        enum PreviewMode
+        internal enum PreviewMode
         {
             RGB,
             R,
@@ -124,7 +124,7 @@ namespace UnityEditor
             A,
         }
 
-        private PreviewMode m_PreviewMode = PreviewMode.RGB;
+        internal PreviewMode m_PreviewMode = PreviewMode.RGB;
         public bool showAlpha
         {
             get { return m_PreviewMode == PreviewMode.A; }
@@ -951,6 +951,28 @@ namespace UnityEditor
             }
 
             return info;
+        }
+
+        internal static float PreviewSettingsSlider(GUIContent content, float value, float min, float max, float sliderWidth, float floatFieldWidth, bool isInteger)
+        {
+            var labelWidth = EditorStyles.label.CalcSize(content).x + 2;
+            var controlRect = EditorGUILayout.GetControlRect(GUILayout.Width(labelWidth + sliderWidth + floatFieldWidth));
+            var controlId = GUIUtility.GetControlID(FocusType.Keyboard);
+
+            var labelRect = new Rect(controlRect.position, new Vector2(labelWidth, controlRect.height));
+            controlRect.x += labelRect.width;
+            controlRect.width -= labelRect.width + 2;
+            GUI.Label(labelRect, content);
+
+            var sliderRect = new Rect(controlRect.position, new Vector2(sliderWidth, controlRect.height));
+            controlRect.x += sliderRect.width + 2;
+            controlRect.width -= sliderRect.width;
+            value = GUI.Slider(sliderRect, value, 0, min, max, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, true, 0);
+            if (isInteger)
+                value = Mathf.Round(EditorGUI.DoIntField(EditorGUI.s_RecycledEditor, controlRect, labelRect, controlId, Mathf.RoundToInt(value), EditorGUI.kIntFieldFormatString, EditorStyles.numberField, false, 0));
+            else
+                value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor, controlRect, labelRect, controlId, value, EditorGUI.kFloatFieldFormatString, EditorStyles.numberField, true);
+            return Mathf.Clamp(value, min, max);
         }
     }
 }

@@ -23,6 +23,7 @@ namespace UnityEditor
         internal class Styles
         {
             public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "The assembly name is used to generate a <name>.dll file on you disk.");
+            public static readonly GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root Namespace", "Specify the root namespace of the assembly.");
             public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints", "Specify a constraint in the assembly definition. The assembly definition only builds if this constraint returns True.");
             public static readonly GUIContent versionDefines = EditorGUIUtility.TrTextContent("Version Defines", "Specify which versions of a packages and modules to include in compilations.");
             public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References", "The list of assembly files that this assembly definition should reference.");
@@ -122,6 +123,7 @@ namespace UnityEditor
             public string path => AssetDatabase.GetAssetPath(asset);
 
             public string assemblyName;
+            public string rootNamespace;
             public AssemblyDefinitionAsset asset;
             public List<AssemblyDefinitionReference> references;
             public List<PrecompiledReference> precompiledReferences;
@@ -144,6 +146,7 @@ namespace UnityEditor
         ReorderableList m_DefineConstraints;
 
         SerializedProperty m_AssemblyName;
+        SerializedProperty m_RootNamespace;
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_UseGUIDs;
         SerializedProperty m_AutoReferenced;
@@ -163,6 +166,7 @@ namespace UnityEditor
             m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
             InitializeReorderableLists();
             m_SemVersionRanges = new SemVersionRangesFactory();
+            m_RootNamespace = extraDataSerializedObject.FindProperty("rootNamespace");
             m_AllowUnsafeCode = extraDataSerializedObject.FindProperty("allowUnsafeCode");
             m_UseGUIDs = extraDataSerializedObject.FindProperty("useGUIDs");
             m_AutoReferenced = extraDataSerializedObject.FindProperty("autoReferenced");
@@ -219,8 +223,9 @@ namespace UnityEditor
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 EditorGUILayout.PropertyField(m_AllowUnsafeCode, Styles.allowUnsafeCode);
                 EditorGUILayout.PropertyField(m_AutoReferenced, Styles.autoReferenced);
-                EditorGUILayout.PropertyField(m_OverrideReferences, Styles.overrideReferences);
                 EditorGUILayout.PropertyField(m_NoEngineReferences, Styles.noEngineReferences);
+                EditorGUILayout.PropertyField(m_OverrideReferences, Styles.overrideReferences);
+                EditorGUILayout.PropertyField(m_RootNamespace, Styles.rootNamespace);
 
                 EditorGUILayout.EndVertical();
                 GUILayout.Space(10f);
@@ -647,6 +652,7 @@ namespace UnityEditor
 
             state.asset = asset;
             state.assemblyName = data.name;
+            state.rootNamespace = data.rootNamespace;
             state.references = new List<AssemblyDefinitionReference>();
             state.precompiledReferences = new List<PrecompiledReference>();
             state.defineConstraints = new List<DefineConstraint>();
@@ -780,6 +786,7 @@ namespace UnityEditor
             CustomScriptAssemblyData data = new CustomScriptAssemblyData();
 
             data.name = state.assemblyName;
+            data.rootNamespace = state.rootNamespace;
 
             if (state.useGUIDs)
             {

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -63,17 +64,35 @@ namespace UnityEditor.PackageManager.UI
         private IPackageVersion m_Version;
 
         private SelectionProxy m_Selection;
+        private AssetDatabaseProxy m_AssetDatabase;
         private PackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_Selection = container.Resolve<SelectionProxy>();
+            m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
 
         void OnEnable()
         {
             ResolveDependencies();
+
+            m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
+        }
+
+        void OnDisable()
+        {
+            m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
+        }
+
+        private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdated, IEnumerable<IPackage> postUpdate)
+        {
+            var selectedPackageUniqueId = packageSelectionObject?.packageUniqueId;
+            if (string.IsNullOrEmpty(selectedPackageUniqueId))
+                return;
+            if (added.Concat(removed).Concat(preUpdated).Any(p => p.uniqueId == selectedPackageUniqueId))
+                m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
         }
 
         public override void OnInspectorGUI()
@@ -95,7 +114,7 @@ namespace UnityEditor.PackageManager.UI
 
                 var immutable = true;
                 m_ShouldBeEnabled = true;
-                if (!m_Version.isInstalled || AssetDatabase.GetAssetFolderInfo("Packages/" + m_Package.name, out var rootFolder, out immutable))
+                if (!m_Version.isInstalled || m_AssetDatabase.GetAssetFolderInfo("Packages/" + m_Package.name, out var rootFolder, out immutable))
                     m_ShouldBeEnabled = !immutable;
             }
 
@@ -136,7 +155,7 @@ namespace UnityEditor.PackageManager.UI
             if (GUILayout.Button(Styles.editPackage, EditorStyles.miniButton))
             {
                 var path = m_Version.packageInfo.assetPath;
-                var manifest = AssetDatabase.LoadAssetAtPath<PackageManifest>($"{path}/package.json");
+                var manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{path}/package.json");
                 if (manifest != null)
                     m_Selection.activeObject = manifest;
             }

@@ -51,38 +51,41 @@ namespace UnityEditor.PackageManager.UI
 
         private static List<PackageInfo> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
         {
-            PackageInfo info;
-            return newInfos.Values.Where(p => !oldInfos.TryGetValue(p.name, out info) || IsDifferent(info, p))
-                .Concat(oldInfos.Values.Where(p => !newInfos.TryGetValue(p.name, out info))).ToList();
+            return newInfos.Values.Where(p => !oldInfos.TryGetValue(p.name, out var info) || IsDifferent(info, p))
+                .Concat(oldInfos.Values.Where(p => !newInfos.ContainsKey(p.name))).ToList();
         }
 
-        // we want to only compare a subset of PackageInfo attributes
-        // because most attributes never change if their PackageId is the same.
-        private static bool IsDifferent(PackageInfo oldInfo, PackageInfo newInfo)
+        // For BuiltIn and Registry packages, we want to only compare a subset of PackageInfo attributes,
+        // as most attributes never change if their PackageId is the same. For other types of packages, always consider them different
+        private static bool IsDifferent(PackageInfo p1, PackageInfo p2)
         {
-            if (oldInfo.packageId != newInfo.packageId ||
-                oldInfo.version != newInfo.version ||
-                oldInfo.source != newInfo.source ||
-                oldInfo.resolvedPath != newInfo.resolvedPath ||
-                oldInfo.isDirectDependency != newInfo.isDirectDependency ||
-                oldInfo.isAssetStorePackage != newInfo.isAssetStorePackage ||
-                oldInfo.entitlements.isAllowed != newInfo.entitlements.isAllowed ||
-                oldInfo.name != newInfo.name ||
-                oldInfo.category != newInfo.category ||
-                oldInfo.displayName != newInfo.displayName ||
-                oldInfo.description != newInfo.description)
+            if (p1.packageId != p2.packageId ||
+                p1.isDirectDependency != p2.isDirectDependency ||
+                p1.version != p2.version ||
+                p1.source != p2.source ||
+                p1.resolvedPath != p2.resolvedPath ||
+                p1.status != p2.status ||
+                p1.isAssetStorePackage != p2.isAssetStorePackage ||
+                p1.entitlements.isAllowed != p2.entitlements.isAllowed ||
+                p1.registry?.id != p2.registry?.id ||
+                p1.registry?.name != p2.registry?.name ||
+                p1.registry?.url != p2.registry?.url ||
+                p1.registry?.isDefault != p2.registry?.isDefault ||
+                p1.versions.verified != p2.versions.verified ||
+                p1.versions.compatible.Length != p2.versions.compatible.Length || !p1.versions.compatible.SequenceEqual(p2.versions.compatible) ||
+                p1.versions.all.Length != p2.versions.all.Length || !p1.versions.all.SequenceEqual(p2.versions.all) ||
+                p1.errors.Length != p2.errors.Length || !p1.errors.SequenceEqual(p2.errors) ||
+                p1.dependencies.Length != p2.dependencies.Length || !p1.dependencies.SequenceEqual(p2.dependencies) ||
+                p1.resolvedDependencies.Length != p2.resolvedDependencies.Length || !p1.resolvedDependencies.SequenceEqual(p2.resolvedDependencies))
                 return true;
 
-            if (oldInfo.versions.compatible.Length != newInfo.versions.compatible.Length || !oldInfo.versions.compatible.SequenceEqual(newInfo.versions.compatible))
-                return true;
+            if (p1.source == PackageSource.BuiltIn || p1.source == PackageSource.Registry)
+                return false;
 
-            if (oldInfo.errors.Length != newInfo.errors.Length || !oldInfo.errors.SequenceEqual(newInfo.errors))
-                return true;
+            if (p1.source == PackageSource.Git)
+                return p1.git.hash != p2.git?.hash || p1.git.revision != p2.git?.revision;
 
-            if (oldInfo.dependencies.Length != newInfo.dependencies.Length || !oldInfo.dependencies.SequenceEqual(newInfo.dependencies))
-                return true;
-
-            return false;
+            return true;
         }
 
         public void OnBeforeSerialize()

@@ -70,6 +70,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     class CustomScriptAssemblyData
     {
         public string name;
+        public string rootNamespace;
         public string[] references;
 
         public string[] includePlatforms;
@@ -225,6 +226,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string FilePath { get; set; }
         public string PathPrefix { get; set; }
         public string Name { get; set; }
+        public string RootNamespace { get; set; }
         public string GUID { get; set; }
         public string[] References { get; set; }
         public string[] AdditionalPrefixes { get; set; }
@@ -387,6 +389,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 modifiedDirectory += AssetPath.Separator.ToString();
 
             customScriptAssembly.Name = name;
+            customScriptAssembly.RootNamespace = name ?? string.Empty;
             customScriptAssembly.FilePath = modifiedDirectory;
             customScriptAssembly.PathPrefix = modifiedDirectory;
             customScriptAssembly.References = new string[0];
@@ -407,6 +410,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var customScriptAssembly = new CustomScriptAssembly();
 
             customScriptAssembly.Name = customScriptAssemblyData.name;
+            customScriptAssembly.RootNamespace = customScriptAssemblyData.rootNamespace;
             customScriptAssembly.GUID = guid;
             customScriptAssembly.References = customScriptAssemblyData.references;
             customScriptAssembly.FilePath = path;

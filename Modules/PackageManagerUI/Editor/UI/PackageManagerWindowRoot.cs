@@ -262,8 +262,6 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationError(UIError error)
         {
-            Debug.Log(string.Format(L10n.Tr("[PackageManager] Error {0}"), error.message));
-
             packageManagerToolbar.SetEnabled(true);
             packageDetails.packageToolbarContainer.SetEnabled(true);
         }

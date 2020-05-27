@@ -633,6 +633,12 @@ namespace UnityEditor.U2D
                             m_HasChanged = true;
                         }
 
+                        string secondaryTextureName = m_PlatformSettingsOptions[m_SelectedPlatformSettings];
+                        EditorGUI.BeginChangeCheck();
+                        bool value = EditorGUILayout.Toggle(s_Styles.sRGBLabel, spriteAtlasAsset.GetSecondaryColorSpace(secondaryTextureName));
+                        if (EditorGUI.EndChangeCheck())
+                            spriteAtlasAsset.SetSecondaryColorSpace(secondaryTextureName, value);
+
                         HandlePlatformSettingUI(textFieldText);
                     }
                     EditorGUILayout.EndVertical();

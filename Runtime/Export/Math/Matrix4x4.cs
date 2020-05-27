@@ -16,6 +16,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [NativeClass("Matrix4x4f")]
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public partial struct Matrix4x4 : IEquatable<Matrix4x4>, IFormattable
     {
         // memory layout:

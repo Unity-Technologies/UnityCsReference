@@ -13,7 +13,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.VersionControl;
 using UnityEditor.Modules;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using Object = UnityEngine.Object;
@@ -351,14 +350,8 @@ namespace UnityEditor
                 if (buildSettingsLocked)
                 {
                     GUI.enabled = true;
-
-                    if (Provider.enabled && GUILayout.Button(styles.checkOut))
-                    {
-                        Asset asset = Provider.GetAssetByPath(kEditorBuildSettingsPath);
-                        var assetList = new AssetList();
-                        assetList.Add(asset);
-                        Provider.Checkout(assetList, CheckoutMode.Asset);
-                    }
+                    if (GUILayout.Button(styles.checkOut))
+                        AssetDatabase.MakeEditable(kEditorBuildSettingsPath);
                     GUILayout.Label(message);
                     GUI.enabled = false;
                 }
@@ -550,7 +543,7 @@ namespace UnityEditor
             return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
         }
 
-        static string GetUnityHubModuleDownloadURL()
+        static string GetUnityHubModuleDownloadURL(string moduleName)
         {
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
             string revision = "";
@@ -564,7 +557,10 @@ namespace UnityEditor
             if (versionMatch.Groups["revision"].Success)
                 revision = versionMatch.Groups["revision"].Value;
 
-            return string.Format("unityhub://{0}/{1}", shortVersion, revision);
+            if (s_ModuleNames.ContainsKey(moduleName))
+                moduleName = s_ModuleNames[moduleName];
+
+            return string.Format("unityhub://{0}/{1}/module={2}", shortVersion, revision, moduleName.ToLower());
         }
 
         bool IsModuleNotInstalled(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
@@ -644,7 +640,7 @@ namespace UnityEditor
                 {
                     if (GUILayout.Button(styles.installModuleWithHub, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                     {
-                        url = GetUnityHubModuleDownloadURL();
+                        url = GetUnityHubModuleDownloadURL(moduleName);
                         Help.BrowseURL(url);
                     }
                 }

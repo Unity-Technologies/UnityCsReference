@@ -205,8 +205,12 @@ namespace UnityEditor.PackageManager
             if (string.IsNullOrEmpty(assetPath))
                 throw new ArgumentException("Asset path cannot be null or empty.", "assetPath");
 
-            var result = new PackageInfo();
-            return TryGetForAssetPath(assetPath, result) ? result : null;
+            var packageInfo = GetPackageByAssetPath(assetPath);
+
+            // We assume the package is found only if the name field is set.
+            // This is because there is no straightforward way to make this nullable in native and,
+            // returning extra arguments with the [Out] attribute has expensive unmarshalling costs.
+            return string.IsNullOrEmpty(packageInfo.name) ? null : packageInfo;
         }
 
         public static PackageInfo FindForAssembly(Assembly assembly)

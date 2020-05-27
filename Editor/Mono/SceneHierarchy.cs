@@ -31,6 +31,7 @@ namespace UnityEditor
 
             public static GUIStyle lockButton = "IN LockButton";
 
+            public static GUIContent renamingEnabledContent = EditorGUIUtility.TrTextContent("Rename New Objects");
             public static GUIContent setOriginLabel = new GUIContent("Set as Default Parent");
             public static GUIContent clearOriginLabel = new GUIContent("Clear Default Parent");
         }
@@ -39,6 +40,8 @@ namespace UnityEditor
 
         int m_FrameRequestID;
         bool m_FrameRequestPing;
+
+        bool isNewGOInRenameMode { get; set; }
 
         Scene[] m_CustomScenes;
 
@@ -682,38 +685,10 @@ namespace UnityEditor
             // calling this callback when dragging e.g a prefab to the hierarchy (case 628939)
             if (draggedInstanceIds != null && draggedItemsFromOwnTreeView)
             {
-                // collect scene list before data reload
-                Dictionary<int, string> draggedInstanceIdPreviousScenes = new Dictionary<int, string>();
-                foreach (var key in draggedInstanceIds)
-                {
-                    var item = m_TreeView.data.FindItem(key);
-                    var goGUIItem = item as GameObjectTreeViewItem;
-                    if (goGUIItem != null)
-                    {
-                        var previousSceneGUID = goGUIItem.scene.guid;
-                        draggedInstanceIdPreviousScenes.Add(key, previousSceneGUID);
-                    }
-                }
-
                 ReloadData();
-
-                // use previously collected scene list to compare if items were dragged across scenes
-                // default origin setting for that object should only be cleared if yes
-                foreach (var key in draggedInstanceIds)
-                {
-                    var item = m_TreeView.data.FindItem(key);
-                    var goGUIItem = item as GameObjectTreeViewItem;
-
-                    var activeParentObjectValue = GameObjectTreeViewGUI.GetActiveParentObjectKeyIfFound(key);
-
-                    if (draggedInstanceIdPreviousScenes[key] != goGUIItem.scene.guid && !string.IsNullOrEmpty(activeParentObjectValue))
-                    {
-                        GameObjectTreeViewGUI.RemoveActiveParentObject(activeParentObjectValue);
-                        SessionState.SetInt(activeParentObjectValue, 0);
-                    }
-                }
                 treeView.SetSelection(draggedInstanceIds, true);
                 treeView.NotifyListenersThatSelectionChanged(); // behave as if selection was performed in treeview
+                GameObjectTreeViewGUI.RemoveInvalidActiveParentObjects();
                 Repaint();
                 GUIUtility.ExitGUI();
             }
@@ -805,9 +780,14 @@ namespace UnityEditor
 
         public void OnHierarchyChange()
         {
-            if (m_TreeView != null)
+            // Avoid end renaming once if gameObject is newly created and is set to enter rename mode
+            if (m_TreeView != null && !isNewGOInRenameMode)
+            {
                 m_TreeView.EndNameEditing(false);
+            }
+
             treeViewReloadNeeded = true;
+            isNewGOInRenameMode = false;
         }
 
         void OnEvent()
@@ -864,7 +844,7 @@ namespace UnityEditor
                 }
 
                 // The first item after the GameObject creation menu items
-                if (path.ToLower() == "GameObject/Center On Children".ToLower())
+                if (path.ToLower() == GameObjectUtility.GetFirstItemPathAfterGameObjectCreationMenuItems().ToLower())
                     return;
 
                 string menupath = path;
@@ -945,6 +925,21 @@ namespace UnityEditor
                     }
                 }
             }
+        }
+
+        bool GetIsCustomParentSelected()
+        {
+            if (m_CustomParentForNewGameObjects == null)
+                return false;
+
+            GameObject[] selected = Selection.gameObjects;
+            for (int i = 0; i < selected.Length; i++)
+            {
+                if (selected[i] == m_CustomParentForNewGameObjects.gameObject)
+                    return true;
+            }
+
+            return false;
         }
 
         bool GetIsNotEditable()
@@ -1130,16 +1125,16 @@ namespace UnityEditor
             {
                 menu.AddDisabledItem(Styles.setOriginLabel);
             }
-            else if (selectedObject && selectedObject.GetInstanceID() != SessionState.GetInt(GetDefaultOriginKeyForScene(selectedObject.scene.guid), 0))
+            else if (selectedObject && selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid))
             {
                 menu.AddItem(Styles.setOriginLabel, false, () =>
                 {
-                    SetDefaultParentObject();
+                    SetDefaultParentObject(false);
                 });
             }
             else
             {
-                menu.AddItem(Styles.clearOriginLabel, false, () => { SetDefaultParentObject(true); });
+                menu.AddItem(Styles.clearOriginLabel, false, () => { ClearDefaultParentObject(); });
             }
 
             // Prefab menu items that only make sense if a single object is selected.
@@ -1496,6 +1491,27 @@ namespace UnityEditor
             treeView.BeginNameEditing(0f);
         }
 
+        internal void RenameNewGO()
+        {
+            if (!SceneHierarchyWindow.s_EnterRenameModeForNewGO.value)
+            {
+                isNewGOInRenameMode = false;
+                return;
+            }
+
+            isNewGOInRenameMode = true;
+
+            // end renaming if any GO has active one
+            treeView.EndNameEditing(true);
+
+            if (m_EditorWindow != null)
+                m_EditorWindow.Focus();
+
+            treeViewReloadNeeded = true;
+            SyncIfNeeded();
+            RenameGO();
+        }
+
         void DeleteGO()
         {
             Unsupported.DeleteGameObjectSelection();
@@ -1541,7 +1557,7 @@ namespace UnityEditor
             EditorSceneManager.SetActiveScene(scene);
         }
 
-        internal static string GetDefaultOriginKeyForScene(string sceneGUID)
+        private static string GetDefaultParentKeyForScene(string sceneGUID)
         {
             return String.Format("DefaultParentObject-{0}", sceneGUID);
         }
@@ -1549,11 +1565,27 @@ namespace UnityEditor
         [Shortcut("Hierarchy View/Set as Default Parent")]
         private static void SetOriginShortcut()
         {
-            SetDefaultParentObject(false, true);
+            SetDefaultParentObject(true);
             SceneHierarchyWindow.lastInteractedHierarchyWindow?.Repaint();
         }
 
-        internal static void SetDefaultParentObject(bool clear = false, bool toggle = false)
+        internal static int GetDefaultParentForSession(string sceneGUID)
+        {
+            return SessionState.GetInt(GetDefaultParentKeyForScene(sceneGUID), 0);
+        }
+
+        internal static void SetDefaultParentForSession(string sceneGUID, int instanceID)
+        {
+            SessionState.SetInt(GetDefaultParentKeyForScene(sceneGUID), instanceID);
+        }
+
+        internal static void UpdateSessionStateInfoAndActiveParentObjectValuesForScene(string sceneGUID, int id)
+        {
+            SetDefaultParentForSession(sceneGUID, id);
+            GameObjectTreeViewGUI.UpdateActiveParentObjectValuesForScene(sceneGUID, id);
+        }
+
+        internal static void SetDefaultParentObject(bool toggle)
         {
             UnityEngine.GameObject lastSelectedObject = null;
             int id = 0;
@@ -1579,30 +1611,33 @@ namespace UnityEditor
             else
                 sceneGUID = EditorSceneManager.GetActiveScene().guid;
 
-            var defaultParentSettingTitle = GetDefaultOriginKeyForScene(sceneGUID);
-
-            if (clear)
-            {
-                SessionState.SetInt(defaultParentSettingTitle, 0);
-                GameObjectTreeViewGUI.UpdateActiveParentObjectValues(defaultParentSettingTitle, 0);
-                return;
-            }
-
-            int currentlySetID = SessionState.GetInt(GetDefaultOriginKeyForScene(sceneGUID), 0);
-            if (currentlySetID == 0 && toggle)
-            {
-                SessionState.SetInt(defaultParentSettingTitle, id);
-            }
-            else if (currentlySetID != 0 && toggle)
+            int currentlySetID = GetDefaultParentForSession(sceneGUID);
+            if (toggle && currentlySetID != 0)
             {
                 if (lastSelectedObject == null)
                     return;
 
                 id = 0;
             }
+            UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, id);
+        }
 
-            SessionState.SetInt(defaultParentSettingTitle, id);
-            GameObjectTreeViewGUI.UpdateActiveParentObjectValues(defaultParentSettingTitle, id);
+        internal static void ClearDefaultParentObject()
+        {
+            UnityEngine.GameObject lastSelectedObject = null;
+            var sceneGUID = "";
+
+            if (Selection.objects.Length > 0)
+            {
+                lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
+
+                if (lastSelectedObject)
+                    sceneGUID = lastSelectedObject.scene.guid;
+                else
+                    sceneGUID = EditorSceneManager.GetActiveScene().guid;
+            }
+
+            UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, 0);
         }
 
         private void LoadSelectedScenes(object userdata)
@@ -1879,6 +1914,8 @@ namespace UnityEditor
             menu.AddItem(EditorGUIUtility.TrTextContent("Collapse All"), false, CollapseAll);
             menu.AddSeparator("");
             m_LockTracker.AddItemsToMenu(menu);
+
+            menu.AddItem(Styles.renamingEnabledContent, SceneHierarchyWindow.s_EnterRenameModeForNewGO, SceneHierarchyWindow.SwitchEnterRenameModeForNewGO);
 
             if (Unsupported.IsDeveloperMode())
             {

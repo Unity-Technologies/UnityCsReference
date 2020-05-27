@@ -20,6 +20,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [NativeClass("Vector2f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public struct Vector2 : IEquatable<Vector2>, IFormattable
     {
         // X component of the vector.

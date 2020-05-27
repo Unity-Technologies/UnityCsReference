@@ -207,11 +207,10 @@ namespace UnityEditor
                         if (isRepaintEvent && renderer != null)
                         {
                             bool iconRendered = false;
+                            int instanceID = 0;
 
                             if (!multiEdit)
                             {
-                                int instanceID = 0;
-
                                 if (renderer.renderMode == ParticleSystemRenderMode.Mesh)
                                 {
                                     if (renderer.mesh != null)
@@ -247,15 +246,21 @@ namespace UnityEditor
                                         m_CachedMaterialDirtyCount = EditorUtility.GetDirtyCount(instanceID);
                                     }
                                 }
+                            }
 
-                                if (instanceID != 0)
+                            if (multiEdit || (renderer.gameObject.hideFlags & HideFlags.NotEditable) != 0)
+                            {
+                                // Presets should use the default material.
+                                instanceID = Material.GetDefaultParticleMaterial().GetInstanceID();
+                            }
+
+                            if (instanceID != 0)
+                            {
+                                Texture2D icon = AssetPreview.GetAssetPreview(instanceID);
+                                if (icon != null)
                                 {
-                                    Texture2D icon = AssetPreview.GetAssetPreview(instanceID);
-                                    if (icon != null)
-                                    {
-                                        GUI.DrawTexture(iconRect, icon, ScaleMode.StretchToFill, true);
-                                        iconRendered = true;
-                                    }
+                                    GUI.DrawTexture(iconRect, icon, ScaleMode.StretchToFill, true);
+                                    iconRendered = true;
                                 }
                             }
 

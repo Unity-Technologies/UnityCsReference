@@ -16,7 +16,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private const string k_EditorTestRunnerAssemblyName = "UnityEditor.TestRunner.dll";
         private const string k_EngineTestRunnerAssemblyName = "UnityEngine.TestRunner.dll";
 
-        public static bool ShouldAddTestRunnerReferences(EditorBuildRules.TargetAssembly targetAssembly)
+        public static bool ShouldAddTestRunnerReferences(TargetAssembly targetAssembly)
         {
             if (UnityCodeGenHelpers.IsCodeGen(targetAssembly.Filename))
             {
@@ -42,14 +42,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 && (PlayerSettings.playModeTestRunnerEnabled || (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly);
         }
 
-        public static IEnumerable<EditorBuildRules.TargetAssembly> GetReferences(IEnumerable<EditorBuildRules.TargetAssembly> assembliesCustomTargetAssemblies)
+        public static IEnumerable<TargetAssembly> GetReferences(IEnumerable<TargetAssembly> assembliesCustomTargetAssemblies)
         {
             return assembliesCustomTargetAssemblies.Where(x =>
                 x.Filename == k_EditorTestRunnerAssemblyName ||
                 x.Filename == k_EngineTestRunnerAssemblyName);
         }
 
-        public static bool ShouldAddNunitReferences(EditorBuildRules.TargetAssembly targetAssembly)
+        public static bool ShouldAddNunitReferences(TargetAssembly targetAssembly)
         {
             bool referencesNUnit = false;
 

@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value" };
             UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };
             UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "page-size", defaultValue = kDefaultPageSize };
+            UxmlBoolAttributeDescription m_ShowInputField = new UxmlBoolAttributeDescription { name = "show-input-field", defaultValue = kDefaultShowInputField };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Horizontal };
 
             /// <summary>
@@ -37,6 +38,7 @@ namespace UnityEngine.UIElements
                 f.highValue = m_HighValue.GetValueFromBag(bag, cc);
                 f.direction = m_Direction.GetValueFromBag(bag, cc);
                 f.pageSize = m_PageSize.GetValueFromBag(bag, cc);
+                f.showInputField = m_ShowInputField.GetValueFromBag(bag, cc);
 
                 base.Init(ve, bag, cc);
             }
@@ -82,7 +84,7 @@ namespace UnityEngine.UIElements
 
         internal override float SliderLerpUnclamped(float a, float b, float interpolant)
         {
-            return Mathf.LerpUnclamped(a, b, interpolant);
+            return Mathf.RoundToInt(Mathf.LerpUnclamped(a, b, interpolant) * 100f) / 100f;
         }
 
         internal override float SliderNormalizeValue(float currentValue, float lowerValue, float higherValue)
@@ -93,6 +95,19 @@ namespace UnityEngine.UIElements
         internal override float SliderRange()
         {
             return Math.Abs(highValue - lowValue);
+        }
+
+        internal override float ParseStringToValue(string stringValue)
+        {
+            float result;
+            if (float.TryParse(stringValue, out result))
+            {
+                return result;
+            }
+            else
+            {
+                return 0f;
+            }
         }
     }
 }

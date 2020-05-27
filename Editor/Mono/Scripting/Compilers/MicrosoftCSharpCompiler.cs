@@ -254,6 +254,11 @@ namespace UnityEditor.Scripting.Compilers
                 ).ToArray();
         }
 
+        public override ProcessStartInfo GetProcessStartInfo()
+        {
+            return process.GetProcessStartInfo();
+        }
+
         private bool CompilationHadFailure()
         {
             return (process.ExitCode != 0);

@@ -32,8 +32,6 @@ namespace UnityEditor.PackageManager.UI
 
         IEnumerable<UIError> errors { get; }
 
-        IEnumerable<Sample> samples { get; }
-
         SemVersion? version { get; }
 
         DateTime? publishedDate { get; }

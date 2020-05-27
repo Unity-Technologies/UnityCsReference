@@ -134,8 +134,8 @@ namespace UnityEditor
 //        [Obsolete("Lightmapping.giWorkflowMode is obsolete, use Lightmapping.lightingSettings.autoGenerate instead. ", false)]
         public static GIWorkflowMode giWorkflowMode
         {
-            get { return (GIWorkflowMode)GetLightingSettingsOrDefaultsFallback().giWorkflowMode; }
-            set { GetOrCreateLightingsSettings().giWorkflowMode = (LightingSettings.GIWorkflowMode)value; }
+            get { return GetLightingSettingsOrDefaultsFallback().autoGenerate ? GIWorkflowMode.Iterative : GIWorkflowMode.OnDemand; }
+            set { GetOrCreateLightingsSettings().autoGenerate = (value == GIWorkflowMode.Iterative); }
         }
 
 //        [Obsolete("Lightmapping.realtimeGI is obsolete, use Lightmapping.lightingSettings.realtimeGI instead. ", false)]
@@ -472,7 +472,7 @@ namespace UnityEditor
 
         [StaticAccessor("GetLightmapSettings()")]
         [NativeName("LightingSettingsDefaults_Scripting")]
-        internal static extern LightingSettings lightingSettingsDefaults { get; }
+        public static extern LightingSettings lightingSettingsDefaults { get; }
 
         // To be used by internal code when just reading settings, not settings them
         internal static LightingSettings GetLightingSettingsOrDefaultsFallback()
@@ -646,11 +646,11 @@ namespace UnityEditor.Experimental
 
         [NativeThrows]
         [FreeFunction]
-        public static extern bool BakeAsync(Scene scene);
+        public static extern bool BakeAsync(Scene targetScene);
 
         [NativeThrows]
         [FreeFunction]
-        public static extern bool Bake(Scene scene);
+        public static extern bool Bake(Scene targetScene);
 
         public static event Action additionalBakedProbesCompleted;
 

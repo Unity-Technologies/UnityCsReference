@@ -622,7 +622,7 @@ namespace UnityEditor.Modules
         {
             GUIContent[] platformDisplayNames = Modules.ModuleManager.GetDisplayNames(EditorUserBuildSettings.activeBuildTarget.ToString());
             BuildTargetGroup curPlatform = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
-            return curPlatform == BuildTargetGroup.Standalone || curPlatform == BuildTargetGroup.WSA || curPlatform == BuildTargetGroup.iOS
+            return curPlatform == BuildTargetGroup.Standalone || curPlatform == BuildTargetGroup.WSA || curPlatform == BuildTargetGroup.iOS || curPlatform == BuildTargetGroup.Android
                 || platformDisplayNames != null;
         }
 

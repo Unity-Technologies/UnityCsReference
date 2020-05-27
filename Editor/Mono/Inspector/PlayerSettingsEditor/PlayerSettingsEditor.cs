@@ -2056,6 +2056,9 @@ namespace UnityEditor
             PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
             PlayerSettings.vulkanEnablePreTransform = EditorGUILayout.Toggle(SettingsContent.vulkanEnablePreTransform, PlayerSettings.vulkanEnablePreTransform);
 
+            if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
+                settingsExtension.VulkanSectionGUI();
+
             EditorGUILayout.Space();
         }
 

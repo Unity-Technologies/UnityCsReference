@@ -110,7 +110,7 @@ namespace UnityEngine.UIElements
                 }
                 else if (m_Label != null)
                 {
-                    Remove(m_Label);
+                    m_Label.RemoveFromHierarchy();
                     AddToClassList(noTextVariantUssClassName);
                     m_Label = null;
                 }
@@ -136,11 +136,7 @@ namespace UnityEngine.UIElements
         {
             if ((evt as MouseUpEvent)?.button == (int)MouseButton.LeftMouse)
             {
-                var ce = (MouseUpEvent)evt;
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(ce.mousePosition)))
-                {
-                    OnClick();
-                }
+                OnClick();
             }
         }
 

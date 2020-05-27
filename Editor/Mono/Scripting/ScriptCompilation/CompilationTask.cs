@@ -4,12 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using UnityEditor.Scripting.Compilers;
 using System.IO;
 using Unity.Scripting.Compilation;
+using System.Diagnostics;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -17,13 +16,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
     enum CompilationTaskOptions
     {
         None = 0,
-        StopOnFirstError = (1 << 0),
-        RunPostProcessors = (1 << 1)
+        StopOnFirstError = (1 << 0)
     }
 
     // CompilationTask represents one complete rebuild of all the ScriptAssembly's that are passed in the constructor.
     // The ScriptAssembly's are built in correct order according to their ScriptAssembly dependencies.
-    class CompilationTask
+    class CompilationTask : IDisposable
     {
         enum CompilionTaskState
         {
@@ -32,7 +30,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Finished = 2
         }
 
-        HashSet<ScriptAssembly> pendingAssemblies;
+        List<ScriptAssembly> pendingAssemblies;
+        HashSet<ScriptAssembly> codeGenAssemblies;
+        HashSet<ScriptAssembly> compiledCodeGenAssemblies = new HashSet<ScriptAssembly>();
+        HashSet<ScriptAssembly> notCompiledCodeGenAssemblies = new HashSet<ScriptAssembly>();
         Dictionary<ScriptAssembly, CompilerMessage[]> compiledAssemblies = new Dictionary<ScriptAssembly, CompilerMessage[]>();
         Dictionary<ScriptAssembly, CompilerMessage[]> processedAssemblies = new Dictionary<ScriptAssembly, CompilerMessage[]>();
         Dictionary<ScriptAssembly, ScriptCompilerBase> compilerTasks = new Dictionary<ScriptAssembly, ScriptCompilerBase>();
@@ -49,6 +50,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         CompilionTaskState state = CompilionTaskState.Started;
         IILPostProcessing ilPostProcessing;
         private readonly CompilerFactory compilerFactory;
+        StreamWriter logWriter;
 
         public event Action<object> OnCompilationTaskStarted;
         public event Action<object> OnCompilationTaskFinished;
@@ -61,6 +63,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool CompileErrors { get; private set; }
 
         public CompilationTask(ScriptAssembly[] scriptAssemblies,
+                               ScriptAssembly[] codeGenAssemblies,
                                string buildOutputDirectory,
                                object context,
                                EditorScriptCompilationOptions options,
@@ -70,7 +73,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                CompilerFactory compilerFactory)
         {
             this.scriptAssemblies = scriptAssemblies;
-            pendingAssemblies = new HashSet<ScriptAssembly>(scriptAssemblies);
+            pendingAssemblies = new List<ScriptAssembly>();
+
+            if (codeGenAssemblies != null)
+                this.codeGenAssemblies = new HashSet<ScriptAssembly>(codeGenAssemblies);
+            else
+                this.codeGenAssemblies = new HashSet<ScriptAssembly>();
+
+            // Try to queue codegen assemblies for compilation first,
+            // so they get compiled as soon as possible.
+            if (codeGenAssemblies != null && codeGenAssemblies.Count() > 0)
+                pendingAssemblies.AddRange(codeGenAssemblies);
+
+            pendingAssemblies.AddRange(scriptAssemblies);
+
             CompileErrors = false;
             this.buildOutputDirectory = buildOutputDirectory;
             this.context = context;
@@ -79,6 +95,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             this.maxConcurrentCompilers = maxConcurrentCompilers;
             this.ilPostProcessing = ilPostProcessing;
             this.compilerFactory = compilerFactory;
+
+            try
+            {
+                logWriter = File.CreateText(LogFilePath);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Could not create text file {LogFilePath}\n{e}");
+            }
         }
 
         public ScriptAssembly[] ScriptAssemblies
@@ -89,9 +114,39 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        public HashSet<ScriptAssembly> CodeGenAssemblies
+        {
+            get
+            {
+                return codeGenAssemblies;
+            }
+        }
+
+        public bool AreAllCodegenAssembliesCompiled
+        {
+            get
+            {
+                return codeGenAssemblies.Count == compiledCodeGenAssemblies.Count;
+            }
+        }
+
+        string LogFilePath
+        {
+            get
+            {
+                return AssetPath.Combine(buildOutputDirectory, "CompilationLog.txt");
+            }
+        }
+
+        public void Dispose()
+        {
+            if (logWriter != null)
+                logWriter.Dispose();
+        }
+
         public bool IsCompiling
         {
-            get { return pendingAssemblies.Count > 0 || compilerTasks.Count > 0 || postProcessorTasks.Count > 0; }
+            get { return pendingAssemblies.Count > 0 || compilerTasks.Count > 0 || pendingPostProcessorTasks.Count > 0 || postProcessorTasks.Count > 0; }
         }
 
         public Dictionary<ScriptAssembly, CompilerMessage[]> CompilerMessages
@@ -181,10 +236,44 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     compiledAssemblies.Add(assembly, messagesList.ToArray());
 
-                    if (RunPostProcessors && !messagesList.Any(m => m.type == CompilerMessageType.Error))
+                    bool havePostProcessors = ilPostProcessing != null && ilPostProcessing.HasPostProcessors;
+                    bool isCodeGenAssembly = codeGenAssemblies.Contains(assembly);
+                    bool hasCompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
+
+                    if (isCodeGenAssembly)
                     {
-                        var postProcessorTask = new PostProcessorTask(assembly, messagesList, buildOutputDirectory, ilPostProcessing.PostProcess);
-                        pendingPostProcessorTasks.Add(postProcessorTask);
+                        if (hasCompileErrors)
+                            notCompiledCodeGenAssemblies.Add(assembly);
+                        else
+                            compiledCodeGenAssemblies.Add(assembly);
+                    }
+
+                    if (havePostProcessors &&
+                        notCompiledCodeGenAssemblies.Count == 0 &&
+                        !hasCompileErrors &&
+                        !isCodeGenAssembly)
+                    {
+                        var assemblySourcePath = AssetPath.Combine(buildOutputDirectory, assembly.Filename);
+                        var pdbSourcePath = AssetPath.Combine(buildOutputDirectory, assembly.PdbFilename);
+
+                        try
+                        {
+                            if (assemblySourcePath != assembly.FullPath)
+                                File.Copy(assemblySourcePath, assembly.FullPath, true);
+
+                            if (pdbSourcePath != assembly.PdbFullPath)
+                                File.Copy(pdbSourcePath, assembly.PdbFullPath, true);
+
+                            var postProcessorTask = new PostProcessorTask(assembly, messagesList, buildOutputDirectory, ilPostProcessing);
+                            pendingPostProcessorTasks.Add(postProcessorTask);
+                        }
+                        catch (IOException e)
+                        {
+                            UnityEngine.Debug.LogError($"Fail to copy {assemblySourcePath} or {pdbSourcePath} to {AssetPath.GetDirectoryName(assembly.FullPath)} before post processing the assembly. Skipping post processing.\n{e}");
+                            // OnCompilationFinished callbacks might add more compiler messages
+                            OnCompilationFinished?.Invoke(assembly, messagesList);
+                            processedAssemblies.Add(assembly, messagesList.ToArray());
+                        }
                     }
                     else
                     {
@@ -196,15 +285,82 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (!CompileErrors)
                         CompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
 
+                    // If a codgen / IL Post processor has compile errors, clear
+                    // pending assemblies waiting for compilation and assemblies
+                    // waiting to get post processed.
+                    if (isCodeGenAssembly && hasCompileErrors)
+                    {
+                        pendingPostProcessorTasks.Clear();
+                        pendingAssemblies.Clear();
+                    }
+
                     compilerTasks.Remove(assembly);
                     compiler.Dispose();
                 }
+
+
+            if (ilPostProcessing != null && ilPostProcessing.HasPostProcessors)
+            {
+                PollPostProcessors();
+            }
+
+            // If StopOnFirstError is set, do not queue assemblies for compilation in case of compile errors.
+            bool stopOnFirstError = (compilationTaskOptions & CompilationTaskOptions.StopOnFirstError) == CompilationTaskOptions.StopOnFirstError;
+
+            if (stopOnFirstError && CompileErrors)
+            {
+                foreach (var pendingAssembly in pendingAssemblies)
+                {
+                    if (UnityCodeGenHelpers.IsCodeGen(pendingAssembly.Filename))
+                        notCompiledCodeGenAssemblies.Add(pendingAssembly);
+                }
+
+                pendingAssemblies.Clear();
+
+                if (FinishedCompilation)
+                {
+                    HandleOnCompilationTaskFinished();
+                }
+
+                return FinishedCompilation;
+            }
+
+            // Queue pending assemblies for compilation if we have no running compilers or if compilers have finished.
+            if (compilerTasks.Count == 0 || (finishedCompilerTasks != null && finishedCompilerTasks.Count > 0))
+                QueuePendingAssemblies();
+
+            if (FinishedCompilation)
+            {
+                HandleOnCompilationTaskFinished();
+            }
+
+            return FinishedCompilation;
+        }
+
+        void PollPostProcessors()
+        {
+            if (pendingPostProcessorTasks.Count == 0 && postProcessorTasks.Count == 0)
+                return;
+
+            // Not all codegen assemblies have been compiled yet.
+            if (!AreAllCodegenAssembliesCompiled)
+            {
+                // If any codegen assemblies are not getting compiled, clear
+                // pending il post processing tasks.
+                if (notCompiledCodeGenAssemblies.Any())
+                    pendingPostProcessorTasks.Clear();
+
+                return;
+            }
 
             List<PostProcessorTask> startedPostProcessorTasks = null;
 
             // Check if any pending post processors can be run
             foreach (var postProcessorTask in pendingPostProcessorTasks)
             {
+                if (RunningMaxConcurrentProcesses)
+                    break;
+
                 var assembly = postProcessorTask.Assembly;
 
                 // We break out of this loop instead to continuing to ensure that
@@ -220,28 +376,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 startedPostProcessorTasks.Add(postProcessorTask);
 
-                var assemblySourcePath = AssetPath.Combine(buildOutputDirectory, assembly.Filename);
-                var pdbSourcePath = AssetPath.Combine(buildOutputDirectory, assembly.PdbFilename);
+                postProcessorTask.Start();
+                LogStartInfo($"# Starting IL post processing on {assembly.Filename}", postProcessorTask.GetProcessStartInfo());
 
-                try
-                {
-                    File.Copy(assemblySourcePath, assembly.FullPath, true);
-                    File.Copy(pdbSourcePath, assembly.PdbFullPath, true);
+                OnPostProcessingStarted?.Invoke(assembly);
 
-                    postProcessorTask.Poll();
-                    OnPostProcessingStarted?.Invoke(assembly);
-
-                    postProcessorTasks.Add(postProcessorTask);
-                }
-                catch (IOException e)
-                {
-                    var messagesList = postProcessorTask.CompilerMessages;
-
-                    UnityEngine.Debug.LogError($"Fail to copy {assemblySourcePath} or {pdbSourcePath} to {AssetPath.GetDirectoryName(assembly.FullPath)} before post processing the assembly. Skipping post processing.\n{e}");
-                    // OnCompilationFinished callbacks might add more compiler messages
-                    OnCompilationFinished?.Invoke(assembly, messagesList);
-                    processedAssemblies.Add(assembly, messagesList.ToArray());
-                }
+                postProcessorTasks.Add(postProcessorTask);
             }
 
             if (startedPostProcessorTasks != null)
@@ -267,7 +407,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (IsAnyProcessUsingAssembly(postProcessorTask.Assembly))
                     break;
 
-                var messagesList = postProcessorTask.CompilerMessages;
+                var messagesList = postProcessorTask.GetCompilerMessages();
 
                 // OnCompilationFinished callbacks might add more compiler messages
                 OnCompilationFinished?.Invoke(postProcessorTask.Assembly, messagesList);
@@ -285,71 +425,64 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (finishedPostProcessorTasks != null)
                 foreach (var finishedPostProcessorTask in finishedPostProcessorTasks)
                 {
+                    finishedPostProcessorTask.Dispose();
                     postProcessorTasks.Remove(finishedPostProcessorTask);
                 }
-
-            // If StopOnFirstError is set, do not queue assemblies for compilation in case of compile errors.
-            bool stopOnFirstError = (compilationTaskOptions & CompilationTaskOptions.StopOnFirstError) == CompilationTaskOptions.StopOnFirstError;
-
-            if (stopOnFirstError && CompileErrors)
-            {
-                pendingAssemblies.Clear();
-
-                if (FinishedCompilation)
-                {
-                    HandleOnCompilationTaskFinished();
-                }
-
-                return FinishedCompilation;
-            }
-
-            // Queue pending assemblies for compilation if we have no running compilers or if compilers have finished.
-            if (compilerTasks.Count == 0 || (finishedCompilerTasks != null && finishedCompilerTasks.Count > 0))
-                QueuePendingAssemblies();
-
-            if (FinishedCompilation)
-            {
-                HandleOnCompilationTaskFinished();
-            }
-
-            return FinishedCompilation;
-        }
-
-        bool RunPostProcessors
-        {
-            get
-            {
-                return (compilationTaskOptions & CompilationTaskOptions.RunPostProcessors) > 0;
-            }
         }
 
         bool FinishedCompilation
         {
             get
             {
-                return pendingAssemblies.Count == 0 && compilerTasks.Count == 0 && postProcessorTasks.Count == 0;
+                return pendingAssemblies.Count == 0 &&
+                    compilerTasks.Count == 0 &&
+                    postProcessorTasks.Count == 0 &&
+                    pendingPostProcessorTasks.Count == 0;
+            }
+        }
+
+        bool RunningMaxConcurrentProcesses
+        {
+            get
+            {
+                return (compilerTasks.Count + postProcessorTasks.Count) >= maxConcurrentCompilers;
             }
         }
 
         bool IsAnyProcessUsingAssembly(ScriptAssembly assembly)
         {
-            if (AnyRunningCompilerHasReference(assembly))
+            if (IsAnyRunningCompilerUsingAssembly(assembly))
                 return true;
 
-            if (ilPostProcessing != null &&
-                ilPostProcessing.IsAnyRunningPostProcessorUsingAssembly(assembly))
+            if (IsAnyRunningPostProcessorUsingAssembly(assembly))
                 return true;
 
             return false;
         }
 
-        bool AnyRunningCompilerHasReference(ScriptAssembly assembly)
+        bool IsAnyRunningCompilerUsingAssembly(ScriptAssembly assembly)
         {
             foreach (var compilerTask in compilerTasks)
             {
                 var compilerAssembly = compilerTask.Key;
 
                 if (compilerAssembly.ScriptAssemblyReferences.Contains(assembly))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool IsAnyRunningPostProcessorUsingAssembly(ScriptAssembly assembly)
+        {
+            foreach (var postProcessorTask in postProcessorTasks)
+            {
+                if (postProcessorTask.IsFinished)
+                    continue;
+
+                var postProcessorAssembly = postProcessorTask.Assembly;
+
+                if (postProcessorAssembly.ScriptAssemblyReferences.Contains(assembly))
                     return true;
             }
 
@@ -416,7 +549,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (removePendingAssemblies != null)
             {
                 foreach (var assembly in removePendingAssemblies)
+                {
                     pendingAssemblies.Remove(assembly);
+
+                    // If a codegen assembly was removed fro pending assemblies,
+                    // clear all pending compilation and post processing.
+                    if (codeGenAssemblies.Contains(assembly))
+                    {
+                        notCompiledCodeGenAssemblies.Add(assembly);
+                        pendingPostProcessorTasks.Clear();
+                        pendingAssemblies.Clear();
+                        assemblyCompileQueue = null;
+                        break;
+                    }
+                }
 
                 // All pending assemblies were removed and no assemblies
                 // were queued for compilation.
@@ -447,14 +593,38 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // Start compiler process
                 compiler.BeginCompiling();
 
+                LogStartInfo($"# Starting compiling {assembly.Filename}", compiler.GetProcessStartInfo());
+
                 if (OnCompilationStarted != null)
                     OnCompilationStarted(assembly, compilePhase);
 
-                if (compilerTasks.Count == maxConcurrentCompilers)
+                if (RunningMaxConcurrentProcesses)
                     break;
             }
 
             compilePhase++;
+        }
+
+        void LogStartInfo(string message, ProcessStartInfo startInfo)
+        {
+            try
+            {
+                if (startInfo == null)
+                {
+                    logWriter.WriteLine(message);
+                    logWriter.WriteLine($"Error: ProcessStartInfo is null");
+                    logWriter.Flush();
+                    return;
+                }
+
+                logWriter.WriteLine(message);
+                logWriter.WriteLine($"{startInfo.FileName} {startInfo.Arguments}");
+                logWriter.Flush();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Writing to {LogFilePath} falied\n{e}");
+            }
         }
     }
 }

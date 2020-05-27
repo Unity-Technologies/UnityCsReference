@@ -30,8 +30,7 @@ namespace UnityEditor
 
         internal static class GameObjectStyles
         {
-            public static GUIStyle disabledLabelSource = "PR DisabledLabel";
-            public static GUIStyle disabledLabel = new GUIStyle(disabledLabelSource);
+            public static GUIStyle disabledLabel = new GUIStyle("PR DisabledLabel");
             public static GUIStyle prefabLabel = "PR PrefabLabel";
             public static GUIStyle disabledPrefabLabel = "PR DisabledPrefabLabel";
             public static GUIStyle brokenPrefabLabel = "PR BrokenPrefabLabel";
@@ -63,37 +62,49 @@ namespace UnityEditor
         internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
         private Dictionary<int, Asset[]> m_HierarchyPrefabToAssetIDMap;
 
-        private static Dictionary<string, int> activeParentObjects;
+        private static Dictionary<string, int> s_ActiveParentObjectPerSceneGUID;
 
-        internal static void UpdateActiveParentObjectValues(string key, int id)
+        internal static void UpdateActiveParentObjectValuesForScene(string sceneGUID, int instanceID)
         {
-            activeParentObjects[key] = id;
-        }
-
-        internal static string GetActiveParentObjectKeyIfFound(int id)
-        {
-            // instance IDs are always unique so we can do this
-            var foundKey = activeParentObjects.FirstOrDefault(x => x.Value == id).Key;
-            return foundKey;
-        }
-
-        internal static void RemoveActiveParentObject(string key)
-        {
-            activeParentObjects.Remove(key);
+            if (instanceID == 0)
+                s_ActiveParentObjectPerSceneGUID.Remove(sceneGUID);
+            else
+                s_ActiveParentObjectPerSceneGUID[sceneGUID] = instanceID;
         }
 
         internal void GetActiveParentObjectValuesFromSessionInfo()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
-                var key = SceneHierarchy.GetDefaultOriginKeyForScene(SceneManager.GetSceneAt(i).guid);
-                var id = SessionState.GetInt(key, 0);
+                var key = SceneManager.GetSceneAt(i).guid;
+                var id = SceneHierarchy.GetDefaultParentForSession(SceneManager.GetSceneAt(i).guid);
                 if (id != 0)
-                    activeParentObjects.Add(key, id);
+                    s_ActiveParentObjectPerSceneGUID.Add(key, id);
             }
         }
 
-        internal GameObjectTreeViewDataSource dataSource
+        static bool DetectSceneGuidMismatchInActiveParentState(KeyValuePair<string, int> activeParentObject)
+        {
+            var go = EditorUtility.InstanceIDToObject(activeParentObject.Value) as GameObject;
+            if (go != null && go.scene.guid != activeParentObject.Key)
+            {
+                SceneHierarchy.SetDefaultParentForSession(activeParentObject.Key, 0);
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static void RemoveInvalidActiveParentObjects()
+        {
+            var itemsToRemove = s_ActiveParentObjectPerSceneGUID.Where(activeParent => DetectSceneGuidMismatchInActiveParentState(activeParent)).ToArray();
+            foreach (var itemToRemove in itemsToRemove)
+            {
+                SceneHierarchy.UpdateSessionStateInfoAndActiveParentObjectValuesForScene(itemToRemove.Key, 0);
+            }
+        }
+
+        GameObjectTreeViewDataSource dataSource
         {
             get { return (GameObjectTreeViewDataSource)m_TreeView.data; }
         }
@@ -117,7 +128,7 @@ namespace UnityEditor
             m_PrevScollPos = m_TreeView.state.scrollPos.y;
             m_PrevTotalHeight = m_TreeView.GetTotalRect().height;
             k_BaseIndent = SceneVisibilityHierarchyGUI.utilityBarWidth;
-            activeParentObjects = new Dictionary<string, int>();
+            s_ActiveParentObjectPerSceneGUID = new Dictionary<string, int>();
             GetActiveParentObjectValuesFromSessionInfo();
 
             m_HierarchyPrefabToAssetIDMap = new Dictionary<int, Asset[]>();
@@ -621,7 +632,7 @@ namespace UnityEditor
                     lineStyle = (colorCode < 4) ? GameObjectStyles.brokenPrefabLabel : GameObjectStyles.disabledBrokenPrefabLabel;
             }
 
-            if (activeParentObjects.ContainsValue(goItem.id))
+            if (s_ActiveParentObjectPerSceneGUID.ContainsValue(goItem.id))
             {
                 lineStyle = Styles.lineBoldStyle;
             }

@@ -206,11 +206,6 @@ namespace UnityEditor.SceneManagement
             }
 
             // User accepted to switch stage (and lose any data if not saved)
-
-            // Clear parent object for the prefab stage if one was set
-            if (previousStage.GetType() == typeof(PrefabStage))
-                SessionState.SetInt(SceneHierarchy.GetDefaultOriginKeyForScene(previousStage.GetSceneAt(previousStage.sceneCount - 1).guid), 0);
-
             // Here we save current Hierarchy and SceneView stage state
             beforeSwitchingAwayFromStage?.Invoke(previousStage);
 

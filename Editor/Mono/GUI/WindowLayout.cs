@@ -961,6 +961,7 @@ namespace UnityEditor
         {
             Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={keepMainWindow}");
 
+            bool mainWindowMaximized = false;
             Rect mainWindowPosition = new Rect();
             UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             foreach (ContainerWindow window in containers)
@@ -968,6 +969,7 @@ namespace UnityEditor
                 if (window.showMode == ShowMode.MainWindow)
                 {
                     mainWindowPosition = window.position;
+                    mainWindowMaximized = window.maximized;
                 }
             }
 
@@ -1104,6 +1106,8 @@ namespace UnityEditor
                 }
 
                 mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
+                if (mainWindow.maximized != mainWindowMaximized)
+                    mainWindow.ToggleMaximize();
 
                 // Make sure to restore the save to layout flag when loading a layout from a file.
                 if (keepMainWindow)
@@ -1357,9 +1361,10 @@ namespace UnityEditor
                 return;
             }
 
-            ModeService.ChangeModeById("default");
             FileUtil.DeleteFileOrDirectory(layoutsPreferencesPath);
             FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
+            FileUtil.DeleteFileOrDirectory(GetProjectLayoutPerMode("default"));
+            ModeService.ChangeModeById("default");
 
             LoadCurrentModeLayout(true);
             ReloadWindowLayoutMenu();

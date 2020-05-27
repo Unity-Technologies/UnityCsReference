@@ -23,6 +23,8 @@ namespace UnityEditor
         public static extern int GetNavMeshAreaFromName(string name);
         public static extern string[] GetNavMeshAreaNames();
 
+        internal static extern string GetFirstItemPathAfterGameObjectCreationMenuItems();
+
         public static extern string GetUniqueNameForSibling(Transform parent, string name);
 
         public static extern void EnsureUniqueNameForSibling(GameObject self);

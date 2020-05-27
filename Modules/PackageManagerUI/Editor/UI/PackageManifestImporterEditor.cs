@@ -13,7 +13,7 @@ using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor.PackageManager
+namespace UnityEditor.PackageManager.UI
 {
     [CustomEditor(typeof(PackageManifestImporter))]
     [CanEditMultipleObjects]
@@ -244,16 +244,12 @@ namespace UnityEditor.PackageManager
             var dependency = list.GetArrayElementAtIndex(index);
             var packageName = dependency.FindPropertyRelative("packageName");
             var version = dependency.FindPropertyRelative("version");
-            var organizationName = dependency.FindPropertyRelative("organizationName");
 
             var w = rect.width;
             rect.x += 4;
             rect.width = w / 3 * 2 - 2;
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
             packageName.stringValue = EditorGUI.DelayedTextField(rect, packageName.stringValue);
-
-            if (!IsNullOrEmptyTrim(organizationName.stringValue) && !PackageValidation.ValidateOrganizationName(organizationName.stringValue))
-                errorMessages.Add($"Invalid Dependency Package Organization Name '{organizationName.stringValue}'");
 
             if (!IsNullOrEmptyTrim(packageName.stringValue) && !PackageValidation.ValidateName(packageName.stringValue))
                 errorMessages.Add($"Invalid Dependency Package Name '{packageName.stringValue}'");
@@ -342,7 +338,7 @@ namespace UnityEditor.PackageManager
 
         private void PerformValidation()
         {
-            if (!PackageValidation.ValidateOrganizationName(m_OrganizationName.stringValue))
+            if (!PackageValidation.ValidateOrganizationName(m_OrganizationName.stringValue) && !IsNullOrEmptyTrim(m_OrganizationName.stringValue))
                 errorMessages.Add($"Invalid Package Organization Name '{m_OrganizationName.stringValue}'");
 
             if (!PackageValidation.ValidateName(m_Name.stringValue))
@@ -482,20 +478,25 @@ namespace UnityEditor.PackageManager
 
                     packageState.info.packageName.completeName = info["name"] as string;
 
-                    if (packageState.info.packageName.completeName.Split('.').Count() > 2)
+                    var packageNameSplit = packageState.info.packageName.completeName.Split('.');
+                    var packageNameSplitCount = packageNameSplit.Count();
+
+                    if (packageNameSplitCount > 2)
                     {
-                        packageState.info.packageName.domain = packageState.info.packageName.completeName.Split('.')[0];
-                        packageState.info.packageName.organizationName = packageState.info.packageName.completeName.Split('.')[1];
+                        packageState.info.packageName.domain = packageNameSplit[0];
+                        packageState.info.packageName.organizationName = packageNameSplit[1];
                         string domainAndOrganizationName = packageState.info.packageName.domain + "." + packageState.info.packageName.organizationName + ".";
                         packageState.name = packageState.info.packageName.completeName.Replace(domainAndOrganizationName, "");
                         packageState.info.packageName.name = packageState.name;
                     }
-                    else
+                    else if (packageNameSplitCount == 2)
                     {
-                        packageState.info.packageName.domain = "com";
-                        packageState.info.packageName.organizationName = "";
-                        packageState.info.packageName.name = packageState.info.packageName.completeName;
+                        packageState.info.packageName.organizationName = packageNameSplit[0];
+                        packageState.info.packageName.name = packageNameSplit[1];
                     }
+                    else
+                        packageState.info.packageName.name = packageState.info.packageName.completeName;
+
 
                     packageState.info.version = info["version"] as string;
 
@@ -579,10 +580,27 @@ namespace UnityEditor.PackageManager
             if (json == null)
                 return;
 
-            json["name"] = string.Join(".",
-                new[] { packageState.info.packageName.domain.Trim(),
-                        packageState.info.packageName.organizationName.Trim(),
-                        packageState.info.packageName.name.Trim() });
+            var domainTrimmed = packageState.info.packageName.domain.Trim();
+            var organizationNameTrimmed = packageState.info.packageName.organizationName.Trim();
+            var nameTrimmed = packageState.info.packageName.name.Trim();
+
+            if (string.IsNullOrEmpty(domainTrimmed) && string.IsNullOrEmpty(organizationNameTrimmed))
+            {
+                json["name"] = nameTrimmed;
+            }
+            else if (string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
+            {
+                json["name"] = string.Join(".",
+                    new[] { organizationNameTrimmed,
+                            nameTrimmed });
+            }
+            else if (!string.IsNullOrEmpty(domainTrimmed) && !string.IsNullOrEmpty(organizationNameTrimmed))
+            {
+                json["name"] = string.Join(".",
+                    new[] { domainTrimmed,
+                            organizationNameTrimmed,
+                            nameTrimmed });
+            }
 
             if (!IsNullOrEmptyTrim(packageState.info.displayName))
                 json["displayName"] = packageState.info.displayName.Trim();

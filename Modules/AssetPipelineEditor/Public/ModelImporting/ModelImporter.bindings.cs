@@ -181,16 +181,14 @@ namespace UnityEditor
         }
     }
 
-    [System.Obsolete("Use ModelImporterMaterialName, ModelImporter.materialName and ModelImporter.materialImportMode instead")]
+    [System.Obsolete("Use ModelImporterMaterialName, ModelImporter.materialName and ModelImporter.materialImportMode instead", true)]
     public enum ModelImporterGenerateMaterials
     {
-        [System.Obsolete("Use ModelImporter.materialImportMode=None instead")]
+        [System.Obsolete("Use ModelImporter.materialImportMode=None instead", true)]
         None = 0,
-
-        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnTextureName instead")]
+        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnTextureName instead", true)]
         PerTexture = 1,
-
-        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnModelNameAndMaterialName instead")]
+        [System.Obsolete("Use ModelImporter.materialImportMode=Import and ModelImporter.materialName=ModelImporterMaterialName.BasedOnModelNameAndMaterialName instead", true)]
         PerSourceMaterial = 2,
     }
 
@@ -233,11 +231,11 @@ namespace UnityEditor
     {
         [Tooltip("Do not import materials")]
         None = 0,
-        [InspectorName("Standard")]
+        [InspectorName("Standard (Legacy)")]
         [Tooltip("Use the standard Material import method.")]
         ImportStandard = 1,
-        [InspectorName("Import via MaterialDescription (Experimental)")]
-        [Tooltip("Use AssetPostprocessor.OnPreprocessMaterialDescription")]
+        [InspectorName("Import via MaterialDescription")]
+        [Tooltip("Use AssetPostprocessor.OnPreprocessMaterialDescription.")]
         ImportViaMaterialDescription = 2,
 
         [System.Obsolete("Use ImportStandard (UnityUpgradable) -> ImportStandard")]
@@ -430,18 +428,13 @@ namespace UnityEditor
     [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
     public partial class ModelImporter : AssetImporter
     {
-        [System.Obsolete("Use materialImportMode, materialName and materialSearch instead")]
-        public extern ModelImporterGenerateMaterials generateMaterials
-        {
-            get;
-            set;
-        }
-        [System.Obsolete("Use materialImportMode instead")]
-        public extern bool importMaterials
-        {
-            get;
-            set;
-        }
+        const string obsoleteGenerateMaterials = "generateMaterials has been  removed. Use materialImportMode, materialName and materialSearch instead.";
+        [System.Obsolete(obsoleteGenerateMaterials, true)]
+        public ModelImporterGenerateMaterials generateMaterials => throw new NotSupportedException(obsoleteGenerateMaterials);
+
+        const string obsoleteImportMaterials = "importMaterials has been  removed. Use materialImportMode instead.";
+        [System.Obsolete(obsoleteImportMaterials, true)]
+        public bool importMaterials => throw new NotSupportedException(obsoleteImportMaterials);
 
         public extern ModelImporterMaterialName materialName
         {

@@ -264,37 +264,22 @@ namespace UnityEditor.Scripting.Compilers
             // We're only interested in files that would be under VCS, i.e. project
             // assets or local packages. Incoming paths might use backward slashes; replace with
             // forward ones as that's what Unity/VCS functions operate on.
-            files = files.Select(f => f.Replace('\\', '/')).Where(Provider.PathIsVersioned).ToArray();
+            var versionedFiles = files.Select(f => f.Replace('\\', '/')).Where(Provider.PathIsVersioned).ToArray();
 
-            var assetList = new AssetList();
-            assetList.AddRange(files.Select(Provider.GetAssetByPath));
-
-            // Verify that all the files are also in assetList
-            // This is required to ensure the copy temp files to destination loop is only working on version controlled files
-            // Provider.GetAssetByPath() can fail i.e. the asset database GUID can not be found for the input asset path
-            foreach (var assetPath in files)
+            // Fail if the asset database GUID can not be found for the input asset path.
+            var assetPath = versionedFiles.FirstOrDefault(f => string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(f)));
+            if (assetPath != null)
             {
-                var foundAsset = assetList.Where(asset => (asset?.path == assetPath));
-                if (!foundAsset.Any())
-                {
-                    Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to add file to list): {0}"), assetPath);
-                    APIUpdaterManager.ReportExpectedUpdateFailure();
-                    return false;
-                }
+                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to add file to list): {0}"), assetPath);
+                APIUpdaterManager.ReportExpectedUpdateFailure();
+                return false;
             }
 
-            var checkoutTask = Provider.Checkout(assetList, CheckoutMode.Exact);
-            checkoutTask.Wait();
-
-            // Verify that all the files we need to operate on are now editable according to version control
-            // One of these states:
-            // 1) UnderVersionControl & CheckedOutLocal
-            // 2) UnderVersionControl & AddedLocal
-            // 3) !UnderVersionControl
-            var notEditable = assetList.Where(asset => asset.IsUnderVersionControl && !asset.IsState(Asset.States.CheckedOutLocal) && !asset.IsState(Asset.States.AddedLocal));
-            if (!checkoutTask.success || notEditable.Any())
+            var notEditableFiles = new List<string>();
+            if (!AssetDatabase.MakeEditable(versionedFiles, null, notEditableFiles))
             {
-                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to check out): {0}"), notEditable.Select(a => a.fullName + " (" + a.state + ")").Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
+                var notEditableList = notEditableFiles.Aggregate(string.Empty, (text, file) => text + $"\n\t{file}");
+                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to check out): {0}"), notEditableList);
                 APIUpdaterManager.ReportExpectedUpdateFailure();
                 return false;
             }

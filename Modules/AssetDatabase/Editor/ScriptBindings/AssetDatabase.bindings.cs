@@ -156,7 +156,6 @@ namespace UnityEditor
 
         [uei.ExcludeFromDocs] public static void ImportAsset(string path) { ImportAsset(path, ImportAssetOptions.Default); }
         extern public static void ImportAsset(string path, [uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
-
         extern public static bool CopyAsset(string path, string newPath);
         extern public static bool WriteImportSettingsIfDirty(string path);
         [NativeThrows]

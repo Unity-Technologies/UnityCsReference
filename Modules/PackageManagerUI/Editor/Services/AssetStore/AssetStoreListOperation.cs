@@ -76,7 +76,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (!m_UnityConnect.isUserLoggedIn)
             {
-                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
+                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in.")));
                 return;
             }
 
@@ -84,7 +84,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (!m_UnityConnect.isUserLoggedIn)
                 {
-                    OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in")));
+                    OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in.")));
                     return;
                 }
 
