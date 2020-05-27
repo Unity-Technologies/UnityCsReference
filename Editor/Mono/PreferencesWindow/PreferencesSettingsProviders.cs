@@ -151,6 +151,7 @@ namespace UnityEditor
         private bool m_DeveloperMode;
         private bool m_DeveloperModeDirty;
         private bool m_ScriptDebugInfoEnabled;
+        private string m_GpuDeviceInUse;
         private string m_GpuDevice;
         private string[] m_CachedGpuDevices;
         private bool m_ContentScaleChangedThisSession;
@@ -585,11 +586,25 @@ namespace UnityEditor
                 if (currentGpuDeviceIndex == -1)
                     currentGpuDeviceIndex = 0;
 
+                if (string.IsNullOrEmpty(m_GpuDeviceInUse))
+                {
+                    m_GpuDeviceInUse = m_CachedGpuDevices[currentGpuDeviceIndex];
+
+                    if (string.IsNullOrEmpty(m_GpuDevice))
+                    {
+                        m_GpuDevice = m_GpuDeviceInUse;
+                    }
+                }
+
                 var newGpuDeviceIndex = EditorGUILayout.Popup("Device To Use", currentGpuDeviceIndex, m_CachedGpuDevices);
                 if (currentGpuDeviceIndex != newGpuDeviceIndex)
                 {
                     m_GpuDevice = m_CachedGpuDevices[newGpuDeviceIndex];
-                    InternalEditorUtility.SetGpuDeviceAndRecreateGraphics(newGpuDeviceIndex - 1, m_GpuDevice);
+                }
+
+                if (m_GpuDevice != m_GpuDeviceInUse)
+                {
+                    EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
                 }
             }
 

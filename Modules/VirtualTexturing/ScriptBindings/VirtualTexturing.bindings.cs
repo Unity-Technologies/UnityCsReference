@@ -223,7 +223,10 @@ namespace UnityEngine.Rendering
 
                 [NativeThrows] extern internal static int PopRequests(ulong handle, IntPtr requestHandles);
                 [NativeThrows][ThreadSafe] extern internal static void GetRequestParameters(IntPtr requestHandles, IntPtr requestParameters, int length);
+
+                // These are two version instead of just one function with fenceBuffer==null so the version without CommandBuffer is burst compatible
                 [NativeThrows][ThreadSafe] extern internal static void UpdateRequestState(IntPtr requestHandles, IntPtr requestUpdates, int length);
+                [NativeThrows][ThreadSafe] extern internal static void UpdateRequestStateWithCommandBuffer(IntPtr requestHandles, IntPtr requestUpdates, int length, CommandBuffer fenceBuffer);
 
                 extern internal static void BindToMaterialPropertyBlock(ulong handle, [NotNull] MaterialPropertyBlock material, string name);
                 extern internal static void BindToMaterial(ulong handle, [NotNull] Material material, string name);
@@ -349,6 +352,14 @@ namespace UnityEngine.Rendering
                     }
                 }
 
+                public void CompleteRequest(RequestStatus status, CommandBuffer fenceBuffer)
+                {
+                    unsafe
+                    {
+                        Binding.UpdateRequestStateWithCommandBuffer((IntPtr)UnsafeUtility.AddressOf(ref this), (IntPtr)UnsafeUtility.AddressOf(ref status), 1, fenceBuffer);
+                    }
+                }
+
                 public static void CompleteRequests(NativeSlice<TextureStackRequestHandle<T>> requestHandles, NativeSlice<RequestStatus> status)
                 {
                     if (System.enabled == false)
@@ -367,6 +378,27 @@ namespace UnityEngine.Rendering
                     unsafe
                     {
                         Binding.UpdateRequestState((IntPtr)requestHandles.GetUnsafePtr(), (IntPtr)status.GetUnsafePtr(), requestHandles.Length);
+                    }
+                }
+
+                public static void CompleteRequests(NativeSlice<TextureStackRequestHandle<T>> requestHandles, NativeSlice<RequestStatus> status, CommandBuffer fenceBuffer)
+                {
+                    if (System.enabled == false)
+                    {
+                        throw new InvalidOperationException("Virtual texturing is not enabled in the player settings.");
+                    }
+
+                    if (requestHandles != null && status != null)
+                    {
+                        if (requestHandles.Length != status.Length)
+                        {
+                            throw new ArgumentException($"Array sizes do not match ({requestHandles.Length} handles, {status.Length} requests)");
+                        }
+                    }
+
+                    unsafe
+                    {
+                        Binding.UpdateRequestStateWithCommandBuffer((IntPtr)requestHandles.GetUnsafePtr(), (IntPtr)status.GetUnsafePtr(), requestHandles.Length, fenceBuffer);
                     }
                 }
 

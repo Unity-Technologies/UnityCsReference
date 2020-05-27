@@ -683,7 +683,6 @@ namespace UnityEditor
                 });
             }
 
-            result.cullingEnabled = true;
             if (name != null)
             {
                 result.name = name;
@@ -1506,13 +1505,16 @@ namespace UnityEditor
                 var editor = editors[editorIndex];
                 Object editorTarget = editor.targets[0];
 
-                string editorTitle = editorTarget == null ? "Nothing Selected" : $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                EditorElement editorContainer;
+                if (editorTarget && (editorTarget?.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    continue;
 
                 try
                 {
-                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
+                    if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {
+                        string editorTitle = editorTarget == null ?
+                            "Nothing Selected" :
+                            $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
                         editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
                         editorsElement.Add(editorContainer);
                     }
@@ -1675,7 +1677,8 @@ namespace UnityEditor
             Object currentTarget = editors[editorIndex].target;
 
             // Editors that should always be hidden
-            if (currentTarget is ParticleSystemRenderer)
+            if (currentTarget is ParticleSystemRenderer
+                || currentTarget is UnityEngine.VFX.VFXRenderer)
                 return true;
 
             // Hide regular AssetImporters (but not inherited types)

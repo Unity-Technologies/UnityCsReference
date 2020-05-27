@@ -640,7 +640,7 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             Material material = ObjectFieldWithPPtrHashID(nameLabel, null, typeof(Material), false) as Material;
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && material != null)
             {
                 m_ExternalObjects.arraySize++;
                 var pair = m_ExternalObjects.GetArrayElementAtIndex(m_ExternalObjects.arraySize - 1);

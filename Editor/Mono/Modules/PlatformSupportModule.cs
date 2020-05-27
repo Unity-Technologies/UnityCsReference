@@ -229,6 +229,8 @@ namespace UnityEditor.Modules
 
         bool ShouldShowVulkanSettings();
 
+        void VulkanSectionGUI();
+
         bool SupportsFrameTimingStatistics();
     }
 

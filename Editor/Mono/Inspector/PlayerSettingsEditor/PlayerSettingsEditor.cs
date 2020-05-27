@@ -2039,6 +2039,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
             PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
 
+            if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
+                settingsExtension.VulkanSectionGUI();
+
             EditorGUILayout.Space();
         }
 

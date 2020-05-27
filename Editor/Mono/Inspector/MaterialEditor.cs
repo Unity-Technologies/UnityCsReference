@@ -506,7 +506,7 @@ namespace UnityEditor
                 foreach (StackValidationResult validationResult in stackValidationResults)
                 {
                     string errorBoxText = ParseValidationResult(validationResult);
-                    EditorGUILayout.HelpBox(errorBoxText, MessageType.Warning);
+                    EditorGUILayout.HelpBox(errorBoxText, MessageType.Error);
                 }
 
                 // Reset the original indentation level

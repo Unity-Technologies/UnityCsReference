@@ -672,11 +672,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool buildingForEditor = settings.BuildingForEditor;
             bool noEngineReferences = (targetAssembly.Flags & AssemblyFlags.NoEngineReferences) == AssemblyFlags.NoEngineReferences;
 
+            bool shouldProcessPredefinedCustomTargets = assemblies.CustomTargetAssemblies != null && (targetAssembly.Type & TargetAssemblyType.Predefined) == TargetAssemblyType.Predefined;
+            var predefinedCustomTargetReferences = Enumerable.Empty<TargetAssembly>();
+            if (shouldProcessPredefinedCustomTargets && assemblies.PredefinedAssembliesCustomTargetReferences != null)
+                predefinedCustomTargetReferences = assemblies.PredefinedAssembliesCustomTargetReferences;
+
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) references, as long as the target
             // doesn't specify that it doesn't want them.
             if (!noEngineReferences)
             {
-                var unityReferences = GetUnityReferences(scriptAssembly, targetAssembly, assemblies.UnityAssemblies, settings.CompilationOptions, UnityReferencesOptions.None);
+                // Add predefined custom target references in a hash-set for fast lookup
+                var predefinedCustomTargetRefs = new HashSet<string>(predefinedCustomTargetReferences.Select(x => x.Filename));
+                var unityReferences = GetUnityReferences(scriptAssembly, targetAssembly, assemblies.UnityAssemblies, predefinedCustomTargetRefs, settings.CompilationOptions, UnityReferencesOptions.None);
                 references.AddRange(unityReferences);
             }
 
@@ -704,9 +711,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             // For predefined target assembly add references to custom target assemblies
-            if (assemblies.CustomTargetAssemblies != null && (targetAssembly.Type & TargetAssemblyType.Predefined) == TargetAssemblyType.Predefined)
+            if (shouldProcessPredefinedCustomTargets)
             {
-                foreach (var customTargetAssembly in assemblies.PredefinedAssembliesCustomTargetReferences ?? Enumerable.Empty<TargetAssembly>())
+                foreach (var customTargetAssembly in predefinedCustomTargetReferences)
                 {
                     ScriptAssembly scriptAssemblyReference;
 
@@ -795,6 +802,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static List<string> GetUnityReferences(ScriptAssembly scriptAssembly, TargetAssembly targetAssembly, PrecompiledAssembly[] unityAssemblies, EditorScriptCompilationOptions options, UnityReferencesOptions unityReferencesOptions)
         {
+            return GetUnityReferences(scriptAssembly, targetAssembly, unityAssemblies, null, options, unityReferencesOptions);
+        }
+
+        public static List<string> GetUnityReferences(ScriptAssembly scriptAssembly, TargetAssembly targetAssembly, PrecompiledAssembly[] unityAssemblies, HashSet<string> predefinedCustomTargetReferences, EditorScriptCompilationOptions options, UnityReferencesOptions unityReferencesOptions)
+        {
             var references = new List<string>();
 
             bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
@@ -815,12 +827,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (unityAssemblyFileName == scriptAssembly.Filename)
                         continue;
 
+                    // Custom targets may override Unity references, do not add them to avoid duplicated references.
+                    if (predefinedCustomTargetReferences != null && predefinedCustomTargetReferences.Contains(unityAssemblyFileName))
+                        continue;
+
                     // If this scriptAssembly/targetAssembly explicitly references another
                     // scriptAssembly that has actually overridden this unityAssembly, we should
                     // not add the unityAssembly to the references as well. It's possible
                     // that this scriptAssembly is using new APIs that don't exist in the shipped
                     // copy of the unityAssembly.
-                    if (targetAssembly.References.Any(ta => ta.Filename == unityAssemblyFileName))
+                    if (targetAssembly != null && targetAssembly.References.Any(ta => ta.Filename == unityAssemblyFileName))
                         continue;
                 }
 
