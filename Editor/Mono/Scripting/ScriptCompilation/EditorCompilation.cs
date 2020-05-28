@@ -1454,14 +1454,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             throw new InvalidOperationException($"Cannot find CustomScriptAssembly with reference '{reference}'");
         }
 
-        public CompileStatus CompileScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
+        public CompileStatus CompileScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, CompilationTaskOptions compilationTaskOptions = CompilationTaskOptions.StopOnFirstError)
         {
             var scriptAssemblySettings = CreateScriptAssemblySettings(platformGroup, platform, options);
 
             EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies = null;
             string[] notCompiledScripts = null;
 
-            var result = CompileScripts(scriptAssemblySettings, EditorTempPath, options, ref notCompiledTargetAssemblies, ref notCompiledScripts);
+            var result = CompileScripts(scriptAssemblySettings, EditorTempPath, options, compilationTaskOptions, ref notCompiledTargetAssemblies, ref notCompiledScripts);
 
             if (notCompiledTargetAssemblies != null)
             {
@@ -1499,7 +1499,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return targetAssembliesResult;
         }
 
-        internal CompileStatus CompileScripts(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, ref EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies, ref string[] notCompiledScripts)
+        internal CompileStatus CompileScripts(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, CompilationTaskOptions compilationTaskOptions, ref EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies, ref string[] notCompiledScripts)
         {
             DeleteUnusedAssemblies(scriptAssemblySettings);
 
@@ -1568,7 +1568,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!scriptAssemblies.Any())
                 return CompileStatus.Idle;
 
-            bool compiling = CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.StopOnFirstError, CompileScriptAssembliesOptions.none);
+            bool compiling = CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, compilationTaskOptions, CompileScriptAssembliesOptions.none);
 
             return compiling ? CompileStatus.CompilationStarted : CompileStatus.Idle;
         }
@@ -1585,6 +1585,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings, EditorBuildRules.TargetAssemblyType.Custom);
 
             return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.None, CompileScriptAssembliesOptions.skipSetupChecks);
+        }
+
+        internal bool CompileCustomNonCodegenScriptAssemblies(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
+        {
+            DeleteUnusedAssemblies();
+            DirtyAllNonCodeGenAssemblies(options);
+            return CompileScripts(options, platformGroup, platform, CompilationTaskOptions.None) == CompileStatus.CompilationStarted;
         }
 
         internal bool CompileScriptAssemblies(ScriptAssembly[] scriptAssemblies,
@@ -1764,6 +1771,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 "cs",
                 assembly.Files
             );
+        }
+
+        public bool AreAllCodegenAssembliesCompiled(EditorScriptCompilationOptions options, BuildTarget buildTarget)
+        {
+            var assembliesWithScripts = GetTargetAssembliesWithScriptsHashSet(options);
+
+            foreach (var targetAssembly in assembliesWithScripts)
+            {
+                if (!UnityCodeGenHelpers.IsCodeGen(targetAssembly.Filename) &&
+                    !UnityCodeGenHelpers.IsCodeGenTest(targetAssembly.Filename))
+                    continue;
+
+                if (!AssetPath.Exists(targetAssembly.FullPath(outputDirectory)))
+                    return false;
+            }
+
+            return true;
         }
 
         void AddUnitySpecificErrorMessages(ScriptAssembly assembly, List<CompilerMessage> messages)

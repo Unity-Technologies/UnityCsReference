@@ -2458,6 +2458,9 @@ namespace UnityEditor
                 m_LastFolders = m_SearchFilter.folders;
             }
 
+            // End any rename that might be in progress.
+            EndRenaming();
+
             RefreshSearchText();
             InitListArea();
         }

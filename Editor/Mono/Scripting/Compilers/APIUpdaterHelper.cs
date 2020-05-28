@@ -53,21 +53,25 @@ namespace UnityEditor.Scripting.Compilers
 
         public static void UpdateScripts(string responseFile, string sourceExtension, string[] sourceFiles)
         {
-            if (!APIUpdaterManager.WaitForVCSServerConnection(true))
-            {
-                return;
-            }
-
+            bool anyFileInAssetsFolder = false;
             var pathMappingsFilePath = Path.GetTempFileName();
-
             var filePathMappings = new List<string>(sourceFiles.Length);
             foreach (var source in sourceFiles)
             {
-                var f = CommandLineFormatter.PrepareFileName(source);
-                f = Paths.UnifyDirectorySeparator(f);
+                anyFileInAssetsFolder |= (source.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1);
 
-                if (f != source)
+                var f = CommandLineFormatter.PrepareFileName(source);
+                if (f != source) // assume path represents a virtual path and needs to be mapped.
+                {
+                    f = Paths.UnifyDirectorySeparator(f);
                     filePathMappings.Add(f + " => " + source);
+                }
+            }
+
+            // Only try to connect to VCS if there are files under VCS that need to be updated
+            if (anyFileInAssetsFolder && !APIUpdaterManager.WaitForVCSServerConnection(true))
+            {
+                return;
             }
 
             File.WriteAllLines(pathMappingsFilePath, filePathMappings.ToArray());
@@ -81,7 +85,7 @@ namespace UnityEditor.Scripting.Compilers
                     pathMappingsFilePath,
                     responseFile);
 
-                RunUpdatingProgram("ScriptUpdater.exe", arguments, tempOutputPath);
+                RunUpdatingProgram("ScriptUpdater.exe", arguments, tempOutputPath, anyFileInAssetsFolder);
             }
 #pragma warning disable CS0618 // Type or member is obsolete
             catch (Exception ex) when (!(ex is StackOverflowException) && !(ex is ExecutionEngineException))
@@ -107,7 +111,7 @@ namespace UnityEditor.Scripting.Compilers
                 + responseFile;  // Response file is always relative and without spaces, no need to quote.
         }
 
-        static void RunUpdatingProgram(string executable, string arguments, string tempOutputPath)
+        static void RunUpdatingProgram(string executable, string arguments, string tempOutputPath, bool anyFileInAssetsFolder)
         {
             var scriptUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/" + executable; // ManagedProgram will quote this path for us.
             var program = new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null, scriptUpdaterPath, arguments, false, null);
@@ -117,15 +121,15 @@ namespace UnityEditor.Scripting.Compilers
 
             Console.WriteLine(string.Join(Environment.NewLine, program.GetStandardOutput()));
 
-            HandleUpdaterReturnValue(program, tempOutputPath);
+            HandleUpdaterReturnValue(program, tempOutputPath, anyFileInAssetsFolder);
         }
 
-        static void HandleUpdaterReturnValue(ManagedProgram program, string tempOutputPath)
+        static void HandleUpdaterReturnValue(ManagedProgram program, string tempOutputPath, bool anyFileInAssetsFolder)
         {
             if (program.ExitCode == 0)
             {
                 Console.WriteLine(string.Join(Environment.NewLine, program.GetErrorOutput()));
-                CopyUpdatedFiles(tempOutputPath);
+                CopyUpdatedFiles(tempOutputPath, anyFileInAssetsFolder);
                 return;
             }
 
@@ -147,7 +151,7 @@ namespace UnityEditor.Scripting.Compilers
             APIUpdaterManager.ReportGroupedAPIUpdaterFailure(msg);
         }
 
-        static void CopyUpdatedFiles(string tempOutputPath)
+        static void CopyUpdatedFiles(string tempOutputPath, bool anyFileInAssetsFolder)
         {
             if (!Directory.Exists(tempOutputPath))
                 return;
@@ -155,7 +159,7 @@ namespace UnityEditor.Scripting.Compilers
             var files = Directory.GetFiles(tempOutputPath, "*.*", SearchOption.AllDirectories);
 
             var pathsRelativeToTempOutputPath = files.Select(path => path.Replace(tempOutputPath, ""));
-            if (Provider.enabled && !CheckoutAndValidateVCSFiles(pathsRelativeToTempOutputPath))
+            if (anyFileInAssetsFolder && Provider.enabled && !CheckoutAndValidateVCSFiles(pathsRelativeToTempOutputPath))
                 return;
 
             var destRelativeFilePaths = files.Select(sourceFileName => sourceFileName.Substring(tempOutputPath.Length)).ToArray();

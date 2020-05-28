@@ -291,7 +291,7 @@ namespace UnityEngine
         static GUILayoutGroup CreateGUILayoutGroupInstanceOfType(Type LayoutType)
         {
             if (!typeof(GUILayoutGroup).IsAssignableFrom(LayoutType))
-                throw new ArgumentException("LayoutType needs to be of type GUILayoutGroup");
+                throw new ArgumentException("LayoutType needs to be of type GUILayoutGroup", nameof(LayoutType));
             return (GUILayoutGroup)Activator.CreateInstance(LayoutType);
         }
 
@@ -312,7 +312,7 @@ namespace UnityEngine
                 default:
                     g = current.topLevel.GetNext() as GUILayoutGroup;
                     if (g == null)
-                        throw new ArgumentException("GUILayout: Mismatched LayoutGroup." + Event.current.type);
+                        throw new ExitGUIException("GUILayout: Mismatched LayoutGroup." + Event.current.type);
                     g.ResetCursor();
                     GUIDebugger.LogLayoutGroupEntry(g.rect, g.marginLeft, g.marginRight, g.marginTop, g.marginBottom, g.style, g.isVertical);
                     break;
@@ -358,7 +358,7 @@ namespace UnityEngine
                 default:
                     g = current.windows.GetNext() as GUILayoutGroup;
                     if (g == null)
-                        throw new ArgumentException("GUILayout: Mismatched LayoutGroup." + Event.current.type);
+                        throw new ExitGUIException("GUILayout: Mismatched LayoutGroup." + Event.current.type);
                     g.ResetCursor();
                     GUIDebugger.LogLayoutGroupEntry(g.rect, g.marginLeft, g.marginRight, g.marginTop, g.marginBottom, g.style, g.isVertical);
                     break;

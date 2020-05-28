@@ -84,7 +84,7 @@ namespace UnityEditor
         {
             DragAndDrop.PrepareStartDrag();
 
-            if (Event.current.control || Event.current.command)
+            if ((Event.current.control || Event.current.command) && !draggedItemIDs.Contains(draggedItem.id))
             {
                 draggedItemIDs.Add(draggedItem.id);
             }

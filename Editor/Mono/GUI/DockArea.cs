@@ -177,6 +177,8 @@ namespace UnityEditor
                 imguiContainer.tabIndex = -1;
                 imguiContainer.focusOnlyIfHasFocusableControls = false;
 
+                panel.rootIMGUIContainer = imguiContainer;
+
                 var root = panel.visualTree;
                 RegisterSplitterEvents(root);
                 m_SplitterGUIRoot = root;
@@ -189,6 +191,9 @@ namespace UnityEditor
             if (root != null)
                 UnregisterSplitterEvents(root);
             m_SplitterGUIRoot = null;
+
+            if (panel != null)
+                panel.rootIMGUIContainer = null;
 
             base.OnDisable();
         }

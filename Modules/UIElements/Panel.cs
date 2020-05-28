@@ -136,6 +136,7 @@ namespace UnityEngine.UIElements
         public abstract SavePersistentViewData saveViewData { get; set; }
         public abstract GetViewDataDictionary getViewDataDictionary { get; set; }
         public abstract int IMGUIContainersCount { get; set; }
+        public abstract IMGUIContainer rootIMGUIContainer { get; set; }
         public abstract FocusController focusController { get; set; }
 
 
@@ -471,6 +472,8 @@ namespace UnityEngine.UIElements
         }
 
         public override int IMGUIContainersCount { get; set; }
+
+        public override IMGUIContainer rootIMGUIContainer { get; set; }
 
         internal override uint version
         {

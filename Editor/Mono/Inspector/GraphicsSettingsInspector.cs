@@ -143,7 +143,6 @@ namespace UnityEditor
 
 
             bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
-
             if (usingSRP)
                 EditorGUILayout.HelpBox("A Scriptable Render Pipeline is in use, some settings will not be used and are hidden", MessageType.Info);
 
@@ -156,7 +155,17 @@ namespace UnityEditor
                 EditorGUILayout.Space();
             }
 
-            TierSettingsGUI();
+            // Hide tier settings for SRPs and close tier settings window if open
+            if (usingSRP)
+            {
+                TierSettingsWindow window = TierSettingsWindow.GetInstance();
+                if (window != null)
+                    window.Close();
+            }
+            else
+            {
+                TierSettingsGUI();
+            }
 
             GUILayout.Label(Styles.builtinSettings, EditorStyles.boldLabel);
             if (!usingSRP)

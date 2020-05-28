@@ -726,15 +726,15 @@ namespace UnityEditorInternal
                         {
                             iter.SetRoot(frameIndex, threadInfo.threadIndex);
                             DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
+                        }
 
-                            // Save the y pos and height of the selected thread each time we draw, since it can change
-                            bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
-                            if (containsSelected)
-                            {
-                                m_SelectedThreadY = y;
-                                m_SelectedThreadYRange = rangeY;
-                                m_SelectedThread = threadInfo;
-                            }
+                        // Save the y pos and height of the selected thread each time we draw, since it can change
+                        bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
+                        if (containsSelected)
+                        {
+                            m_SelectedThreadY = y;
+                            m_SelectedThreadYRange = rangeY;
+                            m_SelectedThread = threadInfo;
                         }
 
                         y += r.height;
