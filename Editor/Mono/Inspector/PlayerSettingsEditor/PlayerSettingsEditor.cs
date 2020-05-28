@@ -1902,6 +1902,9 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
             PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
 
+            if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
+                settingsExtension.VulkanSectionGUI();
+
             EditorGUILayout.Space();
         }
 
@@ -2179,7 +2182,7 @@ namespace UnityEditor
                         m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
                         m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
                         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                            EditorApplication.OpenProject(Environment.CurrentDirectory);
+                            EditorApplication.RestartEditorAndRecompileScripts();
                     }
                 }
                 EditorGUIUtility.ExitGUI();

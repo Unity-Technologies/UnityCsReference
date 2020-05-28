@@ -1284,7 +1284,7 @@ namespace UnityEditor
             win.title = "EyeDropper";
             win.hideFlags = HideFlags.DontSave;
             win.rootView = instance;
-            win.Show(ShowMode.PopupMenu, loadPosition: true, displayImmediately: false, setFocus: true);
+            win.Show(ShowMode.PopupMenu, loadPosition: true, displayImmediately: true, setFocus: true);
             instance.AddToAuxWindowList();
             win.SetInvisible();
             instance.SetMinMaxSizes(new Vector2(0, 0), new Vector2(kDummyWindowSize, kDummyWindowSize));
@@ -1296,7 +1296,10 @@ namespace UnityEditor
         public static void End()
         {
             if (s_Instance != null)
+            {
                 s_Instance.window.Close();
+                s_Instance = null;
+            }
         }
 
         static EyeDropper instance

@@ -281,6 +281,8 @@ namespace UnityEditor
 
             ModeService.modeChanged += OnEditorModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
+            targetSize = targetRenderSize;
         }
 
         public void OnDisable()
@@ -342,6 +344,11 @@ namespace UnityEditor
                 AllowCursorLockAndHide(false);
             }
             SetFocus(false);
+        }
+
+        internal override void OnResized()
+        {
+            targetSize = targetRenderSize;
         }
 
         // Call when number of available aspects can have changed (after deserialization or gui change)
@@ -549,19 +556,32 @@ namespace UnityEditor
                 }
 
                 SubsystemManager.GetInstances<XRDisplaySubsystem>(m_DisplaySubsystems);
-                XRDisplaySubsystem xrDisplay = GetActiveXRDisplay(m_DisplaySubsystems);
                 // Allow the user to select how the XR device will be rendered during "Play In Editor"
-                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) || xrDisplay != null)
+                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)) || (m_DisplaySubsystems.Count != 0 && !m_DisplaySubsystems[0].disableLegacyRenderer))
                 {
-                    GUIContent[] renderingModes = Styles.xrRenderingModes;
-                    if (xrDisplay != null)
-                        renderingModes = GetSupportedBlitModeContent(xrDisplay);
                     EditorGUI.BeginChangeCheck();
                     GameViewRenderMode currentGameViewRenderMode = UnityEngine.XR.XRSettings.gameViewRenderMode;
                     int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(((int)currentGameViewRenderMode) - 1, 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
                     if (EditorGUI.EndChangeCheck() && currentGameViewRenderMode != GameViewRenderMode.None)
                     {
                         SetXRRenderMode(selectedRenderMode);
+                    }
+                }
+                // Handles the case where XRSDK is being used without the shim layer
+                else if (m_DisplaySubsystems.Count != 0 && m_DisplaySubsystems[0].disableLegacyRenderer)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    int currentMirrorViewBlitMode = m_DisplaySubsystems[0].GetPreferredMirrorBlitMode();
+                    int currentRenderMode = XRTranslateMirrorViewBlitModeToRenderMode(currentMirrorViewBlitMode);
+                    int selectedRenderMode = EditorGUILayout.Popup(Mathf.Clamp(currentRenderMode , 0, Styles.xrRenderingModes.Length - 1), Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
+                    int selectedMirrorViewBlitMode = XRTranslateRenderModeToMirrorViewBlitMode(selectedRenderMode);
+                    if (EditorGUI.EndChangeCheck() || currentMirrorViewBlitMode == 0)
+                    {
+                        m_DisplaySubsystems[0].SetPreferredMirrorBlitMode(selectedMirrorViewBlitMode);
+                        if (selectedMirrorViewBlitMode != m_XRRenderMode)
+                            ClearTargetTexture();
+
+                        m_XRRenderMode = selectedMirrorViewBlitMode;
                     }
                 }
 
@@ -581,6 +601,36 @@ namespace UnityEditor
                 }
             }
             GUILayout.EndHorizontal();
+        }
+
+        private int XRTranslateMirrorViewBlitModeToRenderMode(int mirrorViewBlitMode)
+        {
+            switch (mirrorViewBlitMode)
+            {
+                default:
+                    return 0;
+                case XRMirrorViewBlitMode.RightEye:
+                    return 1;
+                case XRMirrorViewBlitMode.SideBySide:
+                    return 2;
+                case XRMirrorViewBlitMode.SideBySideOcclusionMesh:
+                    return 3;
+            }
+        }
+
+        private int XRTranslateRenderModeToMirrorViewBlitMode(int renderMode)
+        {
+            switch (renderMode)
+            {
+                default: // or 0
+                    return XRMirrorViewBlitMode.LeftEye;
+                case 1:
+                    return XRMirrorViewBlitMode.RightEye;
+                case 2:
+                    return XRMirrorViewBlitMode.SideBySide;
+                case 3:
+                    return XRMirrorViewBlitMode.SideBySideOcclusionMesh;
+            }
         }
 
         private GUIContent[] GetSupportedBlitModeContent(XRDisplaySubsystem display)
@@ -646,7 +696,7 @@ namespace UnityEditor
 
         private void ClearTargetTexture()
         {
-            if (m_RenderTexture.IsCreated())
+            if (m_RenderTexture && m_RenderTexture.IsCreated())
             {
                 var previousTarget = RenderTexture.active;
                 RenderTexture.active = m_RenderTexture;

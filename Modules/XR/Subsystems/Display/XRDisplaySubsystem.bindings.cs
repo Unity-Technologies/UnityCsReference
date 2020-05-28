@@ -160,9 +160,17 @@ namespace UnityEngine.XR
             extern public void GetBlitParameter(int blitParameterIndex, out XRBlitParams blitParameter);
         }
 
+        [NativeMethod(Name = "GetTextureForRenderPass", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public RenderTexture GetRenderTextureForRenderPass(int renderPass);
+
         [NativeMethod(Name = "GetPreferredMirrorViewBlitMode", IsThreadSafe = false)]
         [NativeConditional("ENABLE_XR")]
         extern public int GetPreferredMirrorBlitMode();
+
+        [NativeMethod(Name = "SetPreferredMirrorViewBlitMode", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public void SetPreferredMirrorBlitMode(int blitMode);
 
         [System.Obsolete("GetMirrorViewBlitDesc(RenderTexture, out XRMirrorViewBlitDesc) is deprecated. Use GetMirrorViewBlitDesc(RenderTexture, out XRMirrorViewBlitDesc, int) instead.", false)]
         public bool GetMirrorViewBlitDesc(RenderTexture mirrorRt, out XRMirrorViewBlitDesc outDesc)

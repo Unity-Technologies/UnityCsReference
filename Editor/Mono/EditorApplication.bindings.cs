@@ -238,5 +238,13 @@ namespace UnityEditor
         internal static extern void CloseAndRelaunch(string[] arguments);
 
         internal static extern void RequestCloseAndRelaunchWithCurrentArguments();
+        // Triggers the editor to restart, after which all scripts will be recompiled.
+        internal static void RestartEditorAndRecompileScripts()
+        {
+            // Clear the script assemblies so we compile after the restart.
+            EditorCompilationInterface.Instance.CleanScriptAssemblies();
+
+            RequestCloseAndRelaunchWithCurrentArguments();
+        }
     }
 }

@@ -554,7 +554,7 @@ namespace UnityEditorInternal.Profiling
             if (m_Initialized)
                 return;
 
-            if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
+            if (m_VertSplit == null || !m_VertSplit.IsValid())
                 m_VertSplit = new SplitterState(new[] { SessionState.GetFloat(spillter0StatePrefKey, 40f), SessionState.GetFloat(spillter1StatePrefKey, 60f) }, new[] { 50, 50 }, null);
 
             if (m_FrameDataView != null && m_FrameDataView.valid && m_SelectedID >= 0)

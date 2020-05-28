@@ -56,7 +56,7 @@ namespace UnityEngine
                 // Reset the scrollOffset to force its recomputation.
                 scrollOffset = Vector2.zero;
 
-                m_Position = value;
+                m_Position = GUIUtility.AlignRectToDevice(value);
 
                 UpdateScrollOffset();
             }
@@ -676,13 +676,15 @@ namespace UnityEngine
         int GetGraphicalLineStart(int p)
         {
             Vector2 point = style.GetCursorPixelPosition(localPosition, m_Content, p);
-            point.x = 0;
+            point.y += 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
+            point.x = localPosition.x;
             return style.GetCursorStringIndex(localPosition, m_Content, point);
         }
 
         int GetGraphicalLineEnd(int p)
         {
             Vector2 point = style.GetCursorPixelPosition(localPosition, m_Content, p);
+            point.y += 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
             point.x += 5000;
             return style.GetCursorStringIndex(localPosition, m_Content, point);
         }

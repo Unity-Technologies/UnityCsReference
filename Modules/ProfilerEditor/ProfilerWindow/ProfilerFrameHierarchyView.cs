@@ -234,7 +234,7 @@ namespace UnityEditorInternal.Profiling
                 m_DetailedCallsView.profilerSampleNameProvider = cpuModule;
             }
             m_DetailedCallsView.frameItemEvent += FrameItem;
-            if (m_DetailedViewSpliterState == null || m_DetailedViewSpliterState.relativeSizes == null || m_DetailedViewSpliterState.relativeSizes.Length == 0)
+            if (m_DetailedViewSpliterState == null || !m_DetailedViewSpliterState.IsValid())
                 m_DetailedViewSpliterState = new SplitterState(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450, 50 }, null);
             if (!m_Serialized)
                 m_DetailedViewType = (DetailedViewType)SessionState.GetInt(detailedViewTypeStatePrefKey, (int)DetailedViewType.None);
