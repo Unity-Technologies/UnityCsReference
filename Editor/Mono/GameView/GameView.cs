@@ -391,8 +391,7 @@ namespace UnityEditor
         {
             if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
-                RenderDoc.Load();
-                ShaderUtil.RecreateGfxDevice();
+                ShaderUtil.RequestLoadRenderDoc();
             }
         }
 

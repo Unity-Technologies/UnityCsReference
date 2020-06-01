@@ -1408,8 +1408,7 @@ namespace UnityEditor
         {
             if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
-                RenderDoc.Load();
-                ShaderUtil.RecreateGfxDevice();
+                ShaderUtil.RequestLoadRenderDoc();
             }
         }
 
@@ -3537,6 +3536,9 @@ namespace UnityEditor
                             Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
                             method.Invoke(editor, null);
                             Editor.m_AllowMultiObjectAccess = true;
+                            // This would mean that OnSceneGUI has changed the scene and it is not drawn
+                            if (s_CurrentDrawingSceneView == null)
+                                GUIUtility.ExitGUI();
                             if (EditorGUI.EndChangeCheck())
                                 editor.serializedObject.SetIsDifferentCacheDirty();
                         }
