@@ -61,7 +61,6 @@ namespace UnityEngine.Rendering
         public bool rendersUIOverlay { get; set; }
         public bool overridesEnvironmentLighting { get; set; } = false;
         public bool overridesFog { get; set; } = false;
-        public bool overridesShadowmask { get; set; } = false;
         public bool overridesRealtimeReflectionProbes { get; set; } = false;
         public bool overridesOtherLightingSettings { get; set; } = false;
         public bool editableMaterialRenderQueue { get; set; } = true;
@@ -69,6 +68,20 @@ namespace UnityEngine.Rendering
         public bool overridesMaximumLODLevel { get; set; } = false;
         public bool rendererProbes { get; set; } = true;
         public bool particleSystemInstancing { get; set; } = true;
+
+        // if this is overridden, please provide a message telling the user where to find it, otherwise it will be an empty string (to prevent confusion)
+        public bool overridesShadowmask { get; set; } = false;
+        public string overrideShadowmaskMessage { get; set; } = "";
+
+        public string shadowmaskMessage
+        {
+            get
+            {
+                if (!overridesShadowmask)
+                    return "The Shadowmask Mode used at run time can be set in the Quality Settings panel.";
+                return overrideShadowmaskMessage;
+            }
+        }
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {

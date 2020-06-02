@@ -741,20 +741,36 @@ namespace UnityEditor
 
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
         {
-            // Remove duplicates
-            defines = defines.Distinct().ToArray();
-
+            List<string> list = new List<string>();
             var joined = new StringBuilder();
+
+            if (defines == null)
+                throw new ArgumentNullException("Value cannot be null");
+
             foreach (var define in defines)
             {
-                var trimmed = define?.Trim(' ', ';');
-                if (!string.IsNullOrEmpty(trimmed))
-                {
-                    if (joined.Length != 0)
-                        joined.Append(';');
+                string[] split = define.Split(' ', ';');
 
-                    joined.Append(trimmed);
+                // Split each define element, since there can be multiple defines added
+                foreach (var item in split)
+                {
+                    if (!string.IsNullOrEmpty(item))
+                    {
+                        list.Add(item);
+                    }
                 }
+            }
+
+            // Remove duplicates
+            defines = list.Distinct().ToArray();
+
+            // Join all defines to one string
+            foreach (var define in defines)
+            {
+                if (joined.Length != 0)
+                    joined.Append(';');
+
+                joined.Append(define);
             }
 
             SetScriptingDefineSymbolsForGroup(targetGroup, joined.ToString());
@@ -849,6 +865,15 @@ namespace UnityEditor
         }
 
         internal static extern bool UseDeterministicCompilation
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
+        public static extern bool useReferenceAssemblies
         {
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
             get;

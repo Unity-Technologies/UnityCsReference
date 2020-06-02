@@ -11,6 +11,10 @@ namespace UnityEditor.PackageManager
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
     public static partial class Client
     {
+        [NativeHeader("Modules/PackageManager/Editor/PackageManagerLogger.h")]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
+        public static extern LogLevel LogLevel { get; set; }
+
         [FreeFunction("PackageManager::Add::StartOperation")]
         private static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 
@@ -68,8 +72,7 @@ namespace UnityEditor.PackageManager
         [NativeName("GetPredefinedHiddenByDefaultPackageTypes")]
         internal static extern string[] GetPredefinedHiddenByDefaultPackageTypes();
 
-        [NativeName("GetPackageByAssetPath")]
-        private static extern bool TryGetForAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
+        private static extern PackageInfo GetPackageByAssetPath(string assetPath);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerImmutableAssets.h")]

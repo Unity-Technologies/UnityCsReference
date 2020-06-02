@@ -268,11 +268,21 @@ namespace UnityEngine
 
         public void GetTexturePropertyNames(List<string> outNames)
         {
+            if (outNames == null)
+            {
+                throw new ArgumentNullException(nameof(outNames));
+            }
+
             GetTexturePropertyNamesInternal(outNames);
         }
 
         public void GetTexturePropertyNameIDs(List<int> outNames)
         {
+            if (outNames == null)
+            {
+                throw new ArgumentNullException(nameof(outNames));
+            }
+
             GetTexturePropertyNameIDsInternal(outNames);
         }
 

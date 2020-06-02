@@ -756,7 +756,7 @@ namespace UnityEditor.StyleSheets
             public static Texture2D GetTextureByDPIScale(string resourcePath, bool autoScale, float systemScale)
             {
                 Texture2D tex = null;
-                int scale = Mathf.RoundToInt(systemScale);
+                int scale = Mathf.CeilToInt(systemScale);
 
                 if (autoScale && systemScale > 1f)
                 {

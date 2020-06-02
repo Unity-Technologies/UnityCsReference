@@ -95,8 +95,6 @@ namespace UnityEditor
             }
         }
 
-        protected override bool needsApplyRevert => m_Properties.arraySize != 0 && base.needsApplyRevert;
-
         public override void OnEnable()
         {
             base.OnEnable();

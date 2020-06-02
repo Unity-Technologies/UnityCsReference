@@ -42,6 +42,8 @@ namespace UnityEditor.U2D
         extern internal void CopyMasterAtlasSettings();
         extern internal TextureImporterPlatformSettings GetSecondaryPlatformSettings(string buildTarget, string secondaryTextureName);
         extern internal void SetSecondaryPlatformSettings(TextureImporterPlatformSettings src, string secondaryTextureName);
+        extern internal bool GetSecondaryColorSpace(string secondaryTextureName);
+        extern internal void SetSecondaryColorSpace(string secondaryTextureName, bool srGB);
         extern internal void DeleteSecondaryPlatformSettings(string secondaryTextureName);
     }
 };

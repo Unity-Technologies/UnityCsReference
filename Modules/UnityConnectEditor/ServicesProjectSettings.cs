@@ -1242,6 +1242,10 @@ namespace UnityEditor.Connect
                             if (package.name.Equals(provider.serviceInstance.packageName))
                             {
                                 OnSearchPackageFound(package);
+                                if (m_LatestPackageVersionLabel != null)
+                                {
+                                    m_LatestPackageVersionLabel.text = GetUpdatablePackageVersion();
+                                }
                                 break;
                             }
                         }
@@ -1259,10 +1263,6 @@ namespace UnityEditor.Connect
             protected virtual void OnSearchPackageFound(PackageManager.PackageInfo package)
             {
                 latestPackageVersion = package.version;
-                if (m_LatestPackageVersionLabel != null)
-                {
-                    m_LatestPackageVersionLabel.text = package.version;
-                }
             }
 
             protected void ListingCurrentPackageProgress()
@@ -1336,12 +1336,12 @@ namespace UnityEditor.Connect
                 if (m_InstallLatestVersion != null)
                 {
                     m_InstallingNewPackage = false;
-                    m_InstallLatestVersion.clicked += InstallLatestPackage;
+                    m_InstallLatestVersion.clicked += InstallUpdatePackage;
                     m_InstallLatestVersion.style.display = DisplayStyle.None;
                 }
             }
 
-            void InstallLatestPackage()
+            void InstallUpdatePackage()
             {
                 var messageForDialog = L10n.Tr(packageInstallationHeadsup);
                 installPackageVersion = GetUpdatablePackageVersion();
@@ -1361,7 +1361,7 @@ namespace UnityEditor.Connect
                         L10n.Tr(k_ChoiceYes), L10n.Tr(k_ChoiceNo)))
                     {
                         m_InstallingNewPackage = true;
-                        m_AddRequest = Client.Add(provider.serviceInstance.packageName);
+                        m_AddRequest = Client.Add(provider.serviceInstance.packageName + "@" + installPackageVersion);
                         EditorApplication.update += AddPackageProgress;
                     }
                 }

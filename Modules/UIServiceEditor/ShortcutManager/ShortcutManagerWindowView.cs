@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using ExCSS.Model.Extensions;
 using UnityEditor.Experimental;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -547,7 +546,12 @@ namespace UnityEditor.ShortcutManagement
                 builder.AppendLine(entry.displayName);
             }
 
-            builder.TrimLastLine();
+            // Trim last empty lines
+            if (builder.Length > 0)
+            {
+                while (builder[builder.Length - 1] == '\r' || builder[builder.Length - 1] == '\n' || builder[builder.Length - 1] == '\t')
+                    builder.Remove(builder.Length - 1, 1);
+            }
 
             return builder.ToString();
         }

@@ -16,6 +16,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Math/Vector4.h")]
     [NativeClass("Vector4f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     // Representation of four-dimensional vectors.
     public partial struct Vector4 : IEquatable<Vector4>, IFormattable
     {

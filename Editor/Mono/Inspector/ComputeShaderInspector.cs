@@ -15,7 +15,7 @@ namespace UnityEditor
         private const float kSpace = 5f;
         Vector2 m_ScrollPosition = Vector2.zero;
 
-        private bool m_PreprocessOnly = false;
+        private static bool s_PreprocessOnly = false;
 
         // Compute kernel information is stored split by platform, then by kernels;
         // but for the inspector we want to show kernels, then platforms they are in.
@@ -93,12 +93,15 @@ namespace UnityEditor
         private void ShowCompiledCodeSection(ComputeShader cs)
         {
             ComputeShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(cs.GetInstanceID())) as ComputeShaderImporter;
-            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor && importer && importer.preprocessorOverride != PreprocessorOverride.ForceCachingPreprocessor))
-                m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
+            bool enablePreprocessOnly = EditorSettings.cachingShaderPreprocessor;
+            if (importer && importer.preprocessorOverride == PreprocessorOverride.ForceCachingPreprocessor)
+                enablePreprocessOnly = true;
+            using (new EditorGUI.DisabledScope(!enablePreprocessOnly))
+                s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
             GUILayout.Space(kSpace);
             if (GUILayout.Button(Styles.showCompiled, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
             {
-                ShaderUtil.OpenCompiledComputeShader(cs, true, m_PreprocessOnly);
+                ShaderUtil.OpenCompiledComputeShader(cs, true, enablePreprocessOnly && s_PreprocessOnly);
                 GUIUtility.ExitGUI();
             }
         }

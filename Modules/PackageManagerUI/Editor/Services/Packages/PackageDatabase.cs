@@ -29,6 +29,8 @@ namespace UnityEditor.PackageManager.UI
 
         private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
 
+        private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new Dictionary<string, IEnumerable<Sample>>();
+
         // a list of unique ids (could be specialUniqueId or packageId)
         [SerializeField]
         private List<string> m_SpecialInstallations = new List<string>();
@@ -39,8 +41,13 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private List<AssetStorePackage> m_SerializedAssetStorePackages = new List<AssetStorePackage>();
 
+        [SerializeField]
+        private List<PlaceholderPackage> m_SerializedPlaceholderPackages = new List<PlaceholderPackage>();
+
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
+        [NonSerialized]
+        private AssetDatabaseProxy m_AssetDatabase;
         [NonSerialized]
         private AssetStoreClient m_AssetStoreClient;
         [NonSerialized]
@@ -50,6 +57,7 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private IOProxy m_IOProxy;
         public void ResolveDependencies(UnityConnectProxy unityConnect,
+            AssetDatabaseProxy assetDatabase,
             AssetStoreUtils assetStoreUtils,
             AssetStoreClient assetStoreClient,
             AssetStoreDownloadManager assetStoreDownloadManager,
@@ -57,6 +65,7 @@ namespace UnityEditor.PackageManager.UI
             IOProxy ioProxy)
         {
             m_UnityConnect = unityConnect;
+            m_AssetDatabase = assetDatabase;
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_UpmClient = upmClient;
@@ -64,9 +73,6 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var package in m_SerializedAssetStorePackages)
                 package.ResolveDependencies(assetStoreUtils, ioProxy);
-
-            foreach (var package in m_SerializedUpmPackages)
-                package.ResolveDependencies(ioProxy);
         }
 
         public virtual bool isEmpty { get { return !m_Packages.Any(); } }
@@ -185,8 +191,61 @@ namespace UnityEditor.PackageManager.UI
             return dependsOnPackage;
         }
 
+        private IEnumerable<Sample> GetSamplesFromPackageInfo(PackageInfo packageInfo)
+        {
+            if (string.IsNullOrEmpty(packageInfo?.resolvedPath))
+                return Enumerable.Empty<Sample>();
+
+            var jsonPath = Path.Combine(packageInfo.resolvedPath, "package.json");
+            if (!m_IOProxy.FileExists(jsonPath))
+                return Enumerable.Empty<Sample>();
+
+            try
+            {
+                var packageJson = Json.Deserialize(m_IOProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
+                var samples = packageJson.GetList<IDictionary<string, object>>("samples");
+                return samples?.Select(sample =>
+                {
+                    var displayName = sample.GetString("displayName");
+                    var path = sample.GetString("path");
+                    var description = sample.GetString("description");
+                    var interactiveImport = sample.Get("interactiveImport", false);
+
+                    var resolvedSamplePath = Path.Combine(packageInfo.resolvedPath, path);
+                    var importPath = IOUtils.CombinePaths(
+                        Application.dataPath,
+                        "Samples",
+                        IOUtils.SanitizeFileName(packageInfo.displayName),
+                        packageInfo.version,
+                        IOUtils.SanitizeFileName(displayName)
+                    );
+                    return new Sample(m_IOProxy, m_AssetDatabase, displayName, description, resolvedSamplePath, importPath, interactiveImport);
+                });
+            }
+            catch (Exception)
+            {
+                return Enumerable.Empty<Sample>();
+            }
+        }
+
+        public virtual IEnumerable<Sample> GetSamples(IPackageVersion version)
+        {
+            if (version?.packageInfo == null || version.packageInfo.version != version.version?.ToString())
+                return Enumerable.Empty<Sample>();
+
+            if (m_ParsedSamples.TryGetValue(version.uniqueId, out var parsedSamples))
+                return parsedSamples;
+
+            var samples = GetSamplesFromPackageInfo(version.packageInfo);
+            m_ParsedSamples[version.uniqueId] = samples;
+            return samples;
+        }
+
         public void OnAfterDeserialize()
         {
+            foreach (var p in m_SerializedPlaceholderPackages)
+                m_Packages[p.uniqueId] = p;
+
             foreach (var p in m_SerializedUpmPackages)
                 m_Packages[p.uniqueId] = p;
 
@@ -198,6 +257,7 @@ namespace UnityEditor.PackageManager.UI
         {
             m_SerializedUpmPackages = new List<UpmPackage>();
             m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+            m_SerializedPlaceholderPackages = new List<PlaceholderPackage>();
 
             foreach (var package in m_Packages.Values)
             {
@@ -205,6 +265,8 @@ namespace UnityEditor.PackageManager.UI
                     m_SerializedAssetStorePackages.Add((AssetStorePackage)package);
                 else if (package is UpmPackage)
                     m_SerializedUpmPackages.Add((UpmPackage)package);
+                else if (package is PlaceholderPackage)
+                    m_SerializedPlaceholderPackages.Add((PlaceholderPackage)package);
             }
         }
 
@@ -247,6 +309,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_AssetStoreDownloadManager.onDownloadProgress += OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized += OnDownloadFinalized;
+            m_AssetStoreDownloadManager.onDownloadError += OnDownloadError;
             m_AssetStoreDownloadManager.onDownloadPaused += OnDownloadPaused;
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
@@ -265,6 +328,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_AssetStoreDownloadManager.onDownloadProgress -= OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized -= OnDownloadFinalized;
+            m_AssetStoreDownloadManager.onDownloadError -= OnDownloadError;
             m_AssetStoreDownloadManager.onDownloadPaused -= OnDownloadPaused;
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
@@ -298,11 +362,18 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var downloadOperation = operation as AssetStoreDownloadOperation;
-            if (downloadOperation.state == DownloadState.Error || downloadOperation.state == DownloadState.Aborted)
-                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage));
-            else if (downloadOperation.state == DownloadState.Completed)
+            if (downloadOperation.state == DownloadState.Completed)
                 m_AssetStoreClient.RefreshLocal();
             SetPackageProgress(package, PackageProgress.None);
+        }
+
+        private void OnDownloadError(IOperation operation, UIError error)
+        {
+            var package = GetPackage(operation.packageUniqueId);
+            if (package == null)
+                return;
+
+            AddPackageError(package, error);
         }
 
         private void OnDownloadPaused(IOperation operation)
@@ -314,7 +385,7 @@ namespace UnityEditor.PackageManager.UI
             SetPackageProgress(package, PackageProgress.Pausing);
         }
 
-        private void OnUserLoginStateChange(bool loggedIn)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             if (!loggedIn)
             {
@@ -558,7 +629,7 @@ namespace UnityEditor.PackageManager.UI
             var path = package.versions.primary.localPath;
             if (m_IOProxy.FileExists(path))
             {
-                AssetDatabase.ImportPackage(path, true);
+                m_AssetDatabase.ImportPackage(path, true);
             }
         }
     }

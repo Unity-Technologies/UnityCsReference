@@ -142,6 +142,9 @@ namespace UnityEditor.VersionControl
             if (IsState(state, States.Unversioned))
                 sb.Append("Unversioned, ");
 
+            if (IsState(state, States.Exclusive))
+                sb.Append("Exclusive, ");
+
             // remove trailing ", " if had any
             if (sb.Length > 2)
                 sb.Remove(sb.Length - 2, 2);

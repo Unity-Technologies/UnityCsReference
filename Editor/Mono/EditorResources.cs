@@ -123,7 +123,7 @@ namespace UnityEditor.Experimental
 
         static class Constants
         {
-            public static bool isDarkTheme = EditorGUIUtility.isProSkin;
+            public static bool isDarkTheme => EditorGUIUtility.isProSkin;
         }
 
         // Global editor styles

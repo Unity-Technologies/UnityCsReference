@@ -56,6 +56,8 @@ namespace UnityEditor
 
         private bool m_RequestedViewDataSave;
 
+        private static Action s_UpdateWindowMenuListingOff;
+
         internal SerializableJsonDictionary viewDataDictionary
         {
             get
@@ -940,6 +942,7 @@ namespace UnityEditor
             DockArea da = m_Parent as DockArea;
             if (da)
             {
+                m_Parent.Focus();
                 da.RemoveTab(this, true);
             }
             else
@@ -1169,7 +1172,8 @@ namespace UnityEditor
 
         internal static void UpdateWindowMenuListing()
         {
-            EditorApplication.CallDelayed(EditorWindow.BuildWindowMenuListing);
+            s_UpdateWindowMenuListingOff?.Invoke();
+            s_UpdateWindowMenuListingOff = EditorApplication.CallDelayed(BuildWindowMenuListing);
         }
 
         internal static void BuildWindowMenuListing()
@@ -1211,14 +1215,14 @@ namespace UnityEditor
                 renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            EditorUIService.instance.AddDefaultEditorStyleSheets(root);
             root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
             return root;
         }
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    internal class EditorWindowTitleAttribute : System.Attribute
+    public class EditorWindowTitleAttribute : System.Attribute
     {
         public string title { get; set; }
         public string icon { get; set; }

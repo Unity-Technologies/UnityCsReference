@@ -4,10 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 using UnityEditor.Connect;
-using UnityEditor.PackageManager.UI;
-using System.Linq;
 
 namespace UnityEditor
 {
@@ -43,14 +40,14 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            this.SetAntiAliasing(4);
+            this.antiAliasing = 4;
             titleContent = GetLocalizedTitleContent();
             var windowResource = EditorGUIUtility.Load("UXML/AssetStore/AssetStoreWindow.uxml") as VisualTreeAsset;
             if (windowResource != null)
             {
                 var root = windowResource.CloneTree();
 
-                var lightStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath) as StyleSheet;
+                var lightStyleSheet = EditorGUIUtility.Load(EditorUIService.instance.GetUIToolkitDefaultCommonLightStyleSheetPath()) as StyleSheet;
                 var assetStoreStyleSheet = EditorGUIUtility.Load("StyleSheets/AssetStore/AssetStoreWindow.uss") as StyleSheet;
                 var styleSheet = CreateInstance<StyleSheet>();
                 styleSheet.isUnityStyleSheet = true;
@@ -96,7 +93,7 @@ namespace UnityEditor
 
         private void OnLaunchPackageManagerButtonClicked()
         {
-            PackageManagerWindow.OpenPackageManager(null);
+            EditorUIService.instance.PackageManagerOpen();
         }
 
         private void SetMinMaxSizes()

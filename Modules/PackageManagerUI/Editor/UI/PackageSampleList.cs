@@ -14,11 +14,13 @@ namespace UnityEditor.PackageManager.UI
 
         private ResourceLoader m_ResourceLoader;
         private PackageManagerPrefs m_PackageManagerPrefs;
+        private PackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
+            m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -70,13 +72,14 @@ namespace UnityEditor.PackageManager.UI
             importButtonContainer.Clear();
             samplesListLowWidth.Clear();
 
-            if (version == null || version.samples == null || !version.samples.Any())
+            var samples = m_PackageDatabase.GetSamples(version);
+            if (samples?.Any() != true)
             {
                 UIUtils.SetElementDisplay(this, false);
                 return;
             }
             UIUtils.SetElementDisplay(this, true);
-            foreach (var sample in version.samples)
+            foreach (var sample in samples)
             {
                 var sampleItem = new PackageSampleItem(version, sample);
                 importStatusContainer.Add(sampleItem.importStatus);

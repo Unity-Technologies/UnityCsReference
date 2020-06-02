@@ -323,10 +323,21 @@ namespace UnityEditor
     }
 
 
+    internal enum NavMeshLodIndex
+    {
+        First,
+        Last,
+        Custom
+    }
+
     class TreeWizard : TerrainWizard
     {
+        internal const int kNavMeshLodFirst = -1;
+        internal const int kNavMeshLodLast = int.MaxValue;
+
         public GameObject   m_Tree;
         public float        m_BendFactor;
+        public int          m_NavMeshLod;
         private int         m_PrototypeIndex = -1;
         private bool        m_IsValidTree = false;
 
@@ -357,11 +368,14 @@ namespace UnityEditor
             {
                 m_Tree = null;
                 m_BendFactor = 0.0f;
+                m_NavMeshLod = kNavMeshLodLast;
             }
             else
             {
-                m_Tree = m_Terrain.terrainData.treePrototypes[m_PrototypeIndex].prefab;
-                m_BendFactor = m_Terrain.terrainData.treePrototypes[m_PrototypeIndex].bendFactor;
+                TreePrototype  treePrototype = m_Terrain.terrainData.treePrototypes[m_PrototypeIndex];
+                m_Tree =       treePrototype.prefab;
+                m_BendFactor = treePrototype.bendFactor;
+                m_NavMeshLod = treePrototype.navMeshLod;
             }
 
             m_IsValidTree = IsValidTree(m_Tree, m_PrototypeIndex, terrain);
@@ -382,6 +396,7 @@ namespace UnityEditor
                 newTrees[trees.Length] = new TreePrototype();
                 newTrees[trees.Length].prefab = m_Tree;
                 newTrees[trees.Length].bendFactor = m_BendFactor;
+                newTrees[trees.Length].navMeshLod = m_NavMeshLod;
                 m_PrototypeIndex = trees.Length;
                 m_Terrain.terrainData.treePrototypes = newTrees;
                 PaintTreesTool.instance.selectedTree = m_PrototypeIndex;
@@ -390,6 +405,7 @@ namespace UnityEditor
             {
                 trees[m_PrototypeIndex].prefab = m_Tree;
                 trees[m_PrototypeIndex].bendFactor = m_BendFactor;
+                trees[m_PrototypeIndex].navMeshLod = m_NavMeshLod;
 
                 m_Terrain.terrainData.treePrototypes = trees;
             }
@@ -424,7 +440,32 @@ namespace UnityEditor
                 }
             }
             if (!TerrainEditorUtility.IsLODTreePrototype(m_Tree))
+            {
                 m_BendFactor = EditorGUILayout.FloatField("Bend Factor", m_BendFactor);
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                LODGroup lodGroup = m_Tree.GetComponent<LODGroup>();
+
+                NavMeshLodIndex navMeshLodIndex = NavMeshLodIndex.Custom;
+                if (m_NavMeshLod == kNavMeshLodLast)
+                    navMeshLodIndex = NavMeshLodIndex.Last;
+                else if (m_NavMeshLod == kNavMeshLodFirst)
+                    navMeshLodIndex = NavMeshLodIndex.First;
+
+                navMeshLodIndex = (NavMeshLodIndex)EditorGUILayout.EnumPopup("NavMesh LOD Index", navMeshLodIndex, GUILayout.MinWidth(250));
+
+                if (navMeshLodIndex == NavMeshLodIndex.First)
+                    m_NavMeshLod = kNavMeshLodFirst;
+                else if (navMeshLodIndex == NavMeshLodIndex.Last)
+                    m_NavMeshLod = kNavMeshLodLast;
+                else
+                    m_NavMeshLod = EditorGUILayout.IntSlider(m_NavMeshLod, 0, Mathf.Max(0, lodGroup.lodCount - 1));
+
+                EditorGUILayout.EndHorizontal();
+            }
 
             bool changed = EditorGUI.EndChangeCheck();
 

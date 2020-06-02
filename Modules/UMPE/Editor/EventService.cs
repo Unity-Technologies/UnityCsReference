@@ -202,14 +202,7 @@ namespace UnityEditor.MPE
                 }
                 else
                 {
-                    if (results.Length == 1)
-                    {
-                        Resolve(request, results);
-                    }
-                    else
-                    {
-                        Resolve(request, results);
-                    }
+                    Resolve(request, results);
                 }
             }
             else

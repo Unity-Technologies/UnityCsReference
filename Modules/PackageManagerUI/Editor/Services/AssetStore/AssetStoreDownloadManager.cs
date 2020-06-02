@@ -195,7 +195,7 @@ namespace UnityEditor.PackageManager.UI
             UnRegisterDownloadDelegate();
         }
 
-        private void OnUserLoginStateChange(bool loggedIn)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             if (loggedIn)
             {

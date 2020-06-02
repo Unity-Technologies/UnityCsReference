@@ -5,6 +5,7 @@
 using UnityEngine;
 using System;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -12,6 +13,13 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class RenderTextureEditor : TextureInspector
     {
+        private Material m_Material;
+        private int m_Slice;
+
+        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMask");
+        static readonly int s_ShaderSliceIndex = Shader.PropertyToID("_SliceIndex");
+        static readonly int s_ShaderToSrgb = Shader.PropertyToID("_ToSRGB");
+
         private class Styles
         {
             public readonly GUIContent size = EditorGUIUtility.TrTextContent("Size", "Size of the render texture in pixels.");
@@ -36,8 +44,8 @@ namespace UnityEditor
             };
             public readonly int[] renderTextureAntiAliasingValues = { 1, 2, 4, 8 };
 
-            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TrTextContent("Cube"), EditorGUIUtility.TrTextContent("3D") };
-            public readonly int[] dimensionValues = { (int)UnityEngine.Rendering.TextureDimension.Tex2D, (int)UnityEngine.Rendering.TextureDimension.Cube, (int)UnityEngine.Rendering.TextureDimension.Tex3D };
+            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TextContent("2D Array"), EditorGUIUtility.TrTextContent("Cube"), EditorGUIUtility.TrTextContent("3D") };
+            public readonly int[] dimensionValues = { (int)UnityEngine.Rendering.TextureDimension.Tex2D, (int)UnityEngine.Rendering.TextureDimension.Tex2DArray, (int)UnityEngine.Rendering.TextureDimension.Cube, (int)UnityEngine.Rendering.TextureDimension.Tex3D };
         }
 
         static Styles s_Styles = null;
@@ -82,6 +90,9 @@ namespace UnityEditor
             m_Dimension = serializedObject.FindProperty("m_Dimension");
             m_sRGB = serializedObject.FindProperty("m_SRGB");
             m_UseDynamicScale = serializedObject.FindProperty("m_UseDynamicScale");
+
+            InitPreview();
+            SetShaderColorMask();
         }
 
         protected void OnRenderTextureGUI(GUIElements guiElements)
@@ -124,7 +135,7 @@ namespace UnityEditor
                     if (m_EnableCompatibleFormat.boolValue)
                         text += string.Format("Using {0} as a compatible format.", compatibleFormat.ToString());
                     else
-                        text += string.Format("You may enable Compatible Color Format to fallback automatically to a platform specific comptible format, {0} on this device.", compatibleFormat.ToString());
+                        text += string.Format("You may enable Compatible Color Format to fallback automatically to a platform specific compatible format, {0} on this device.", compatibleFormat.ToString());
                 }
                 EditorGUILayout.HelpBox(text, m_EnableCompatibleFormat.boolValue && compatibleFormat != GraphicsFormat.None ? MessageType.Warning : MessageType.Error);
             }
@@ -183,6 +194,104 @@ namespace UnityEditor
             OnRenderTextureGUI(s_AllGUIElements);
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        public override void OnPreviewSettings()
+        {
+            if (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex2DArray)
+            {
+                if (m_Material == null)
+                    InitPreview();
+
+                RenderTexture rt = (RenderTexture)target;
+                m_Material.mainTexture = rt;
+
+                if (rt.volumeDepth > 1)
+                {
+                    m_Slice = EditorGUILayout.IntSlider(m_Slice, 0, rt.volumeDepth - 1, GUILayout.Width(150));
+                    m_Material.SetInt(s_ShaderSliceIndex, m_Slice);
+                }
+            }
+
+            var prevColorMode = m_PreviewMode;
+            base.OnPreviewSettings();
+            if (m_PreviewMode != prevColorMode)
+                SetShaderColorMask();
+        }
+
+        void InitPreview()
+        {
+            if (m_Material == null)
+            {
+                m_Material = (Material)EditorGUIUtility.LoadRequired("Previews/Preview2DTextureArrayMaterial.mat");
+            }
+        }
+
+        void SetShaderColorMask()
+        {
+            var mode = m_PreviewMode;
+            var mask = 15;
+            switch (mode)
+            {
+                case PreviewMode.RGB: mask = 7; break;
+
+                case PreviewMode.R: mask = 1; break;
+                case PreviewMode.G: mask = 2; break;
+                case PreviewMode.B: mask = 4; break;
+                case PreviewMode.A: mask = 8; break;
+            }
+            m_Material.SetInt(s_ShaderColorMask, mask);
+        }
+
+        public override void OnPreviewGUI(Rect r, GUIStyle background)
+        {
+            if (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex2DArray)
+            {
+                if (!SystemInfo.supports2DArrayTextures)
+                {
+                    if (Event.current.type == EventType.Repaint)
+                        EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "2D texture array preview not supported");
+                    return;
+                }
+
+                RenderTexture rt = (RenderTexture)target;
+
+                if (Event.current.type == EventType.Repaint)
+                {
+                    InitPreview();
+                    m_Material.mainTexture = rt;
+
+                    // If multiple objects are selected, we might be using a slice level before the maximum
+                    int effectiveSlice = Mathf.Clamp(m_Slice, 0, rt.volumeDepth - 1);
+
+                    m_Material.SetInt(s_ShaderSliceIndex, effectiveSlice);
+                    m_Material.SetInt(s_ShaderToSrgb, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
+
+                    int texWidth = Mathf.Max(rt.width, 1);
+                    int texHeight = Mathf.Max(rt.height, 1);
+
+                    float zoomLevel = Mathf.Min(Mathf.Min(r.width / texWidth, r.height / texHeight), 1);
+                    Rect wantedRect = new Rect(r.x, r.y, texWidth * zoomLevel, texHeight * zoomLevel);
+                    PreviewGUI.BeginScrollView(r, m_Pos, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
+                    FilterMode oldFilter = rt.filterMode;
+                    TextureUtil.SetFilterModeNoDirty(rt, FilterMode.Point);
+
+                    EditorGUI.DrawPreviewTexture(wantedRect, rt, m_Material, ScaleMode.StretchToFill, 0, mipLevel);
+
+                    TextureUtil.SetFilterModeNoDirty(rt, oldFilter);
+
+                    m_Pos = PreviewGUI.EndScrollView();
+                    if (effectiveSlice != 0 || (int)mipLevel != 0)
+                    {
+                        EditorGUI.DropShadowLabel(new Rect(r.x, r.y + 10, r.width, 30),
+                            "Slice " + effectiveSlice + "\nMip " + mipLevel);
+                    }
+                }
+            }
+            else
+            {
+                base.OnPreviewGUI(r, background);
+            }
         }
 
         private bool RenderTextureHasDepth()

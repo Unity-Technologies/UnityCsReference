@@ -306,7 +306,7 @@ namespace UnityEngine
             if (content != null)
             {
                 var drawStates = new DrawStates(controlID, position.Contains(Event.current.mousePosition), false, false,
-                    GUIUtility.keyboardControl == controlID);
+                    GUIUtility.HasKeyFocus(controlID));
                 if (onDraw == null || !onDraw(this, position, content, drawStates))
                 Internal_DrawPrefixLabel(position, content, controlID, false);
             }

@@ -16,19 +16,29 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private string m_Message;
 
-        public UIError(UIErrorCode errorCode, string message)
+        [SerializeField]
+        private Attribute m_Attribute;
+
+        [Flags]
+        internal enum Attribute
+        {
+            None = 0,
+            IsDetailInConsole = 1 << 0,
+            IsWarning = 1 << 1,
+            IsClearable = 1 << 2
+        }
+
+        public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None)
         {
             m_ErrorCode = errorCode;
             m_Message = message;
+            m_Attribute = attribute;
         }
 
         public UIErrorCode errorCode => m_ErrorCode;
 
         public string message => m_Message;
 
-        public static explicit operator UIError(Error v)
-        {
-            return v == null ?  new UIError(UIErrorCode.Unknown, string.Empty) : new UIError((UIErrorCode)v.errorCode, v.message);
-        }
+        public Attribute attribute => m_Attribute;
     }
 }

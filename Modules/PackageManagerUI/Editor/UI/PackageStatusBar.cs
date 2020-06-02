@@ -123,10 +123,15 @@ namespace UnityEditor.PackageManager.UI
             }
 
             var errorMessage = string.Empty;
+            var refreshError = m_PageManager.GetRefreshError(tab);
+
             if (!m_Application.isInternetReachable)
                 errorMessage = L10n.Tr(k_OfflineErrorMessage);
-            else if (m_PageManager.GetRefreshError(tab) != null)
-                errorMessage = L10n.Tr("Error refreshing packages, see console");
+            else if (refreshError != null)
+            {
+                var seeConsoleNotif = (UIError.Attribute.IsDetailInConsole & refreshError.attribute) != 0 ? ", see console" : "";
+                errorMessage = L10n.Tr($"Error refreshing packages{seeConsoleNotif}");
+            }
 
             if (!string.IsNullOrEmpty(errorMessage))
             {

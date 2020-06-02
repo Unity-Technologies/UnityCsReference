@@ -10,7 +10,6 @@ using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
@@ -1712,7 +1711,7 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
+        internal static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
 
         void VisualizeOverridesToggle()
         {
@@ -1724,6 +1723,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 DrivenPropertyManager.UnregisterProperties(this);
                 RecordPatchedPropertiesForContent();
                 ApplyPatchedPropertiesToContent();
+                EditorApplication.RequestRepaintAllViews();
             }
         }
 
@@ -1775,10 +1775,7 @@ namespace UnityEditor.Experimental.SceneManagement
             if (!openForEdit)
             {
                 if (GUILayout.Button(Styles.checkoutButtonContent, Styles.button))
-                {
-                    Task task = Provider.Checkout(AssetDatabase.LoadAssetAtPath<GameObject>(assetPath), CheckoutMode.Both);
-                    task.Wait();
-                }
+                    AssetDatabase.MakeEditable(assetPath);
             }
         }
 

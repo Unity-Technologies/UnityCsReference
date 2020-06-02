@@ -18,13 +18,19 @@ namespace UnityEditor
 
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props)
         {
-            materialEditor.SetDefaultGUIWidths();
-
             MaterialProperty sunDiskModeProp = FindProperty("_SunDisk", props);
             SunDiskMode sunDiskMode = (SunDiskMode)sunDiskModeProp.floatValue;
 
+            float labelWidth = EditorGUIUtility.labelWidth;
+
             for (var i = 0; i < props.Length; i++)
             {
+                // dropdowns should have full width
+                if (props[i].type == MaterialProperty.PropType.Float)
+                    EditorGUIUtility.labelWidth = labelWidth;
+                else
+                    materialEditor.SetDefaultGUIWidths();
+
                 if ((props[i].flags & MaterialProperty.PropFlags.HideInInspector) != 0)
                     continue;
 

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEditor;
 
 namespace UnityEditorInternal

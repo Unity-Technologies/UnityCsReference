@@ -186,7 +186,7 @@ namespace UnityEditor.PackageManager.UI
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
-        private void OnUserLoginStateChange(bool loggedIn)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             ClearCache();
 

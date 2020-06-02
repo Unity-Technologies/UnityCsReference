@@ -6,14 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using UnityEngine.Scripting;
-using UnityEngine.Bindings;
-using UnityEngine.Rendering;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using StackValidationResult = UnityEngine.Rendering.VirtualTexturing.EditorHelpers.StackValidationResult;
 
@@ -69,6 +66,9 @@ namespace UnityEditor
             public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TrTextContent("Enable GPU Instancing");
             public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TrTextContent("Double Sided Global Illumination", "When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
             public static readonly GUIContent emissionLabel = EditorGUIUtility.TrTextContent("Emission");
+
+            public const string undoAssignMaterial = "Assign Material";
+            public const string undoAssignSkyboxMaterial = "Assign Skybox Material";
         }
 
         private static readonly List<MaterialEditor> s_MaterialEditors = new List<MaterialEditor>(4);
@@ -510,7 +510,7 @@ namespace UnityEditor
                 foreach (StackValidationResult validationResult in stackValidationResults)
                 {
                     string errorBoxText = ParseValidationResult(validationResult);
-                    EditorGUILayout.HelpBox(errorBoxText, MessageType.Warning);
+                    EditorGUILayout.HelpBox(errorBoxText, MessageType.Error);
                 }
 
                 // Reset the original indentation level
@@ -779,7 +779,10 @@ namespace UnityEditor
             float oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 0f;
 
-            float newValue = EditorGUI.PowerSlider(position, label, prop.floatValue, prop.rangeLimits.x, prop.rangeLimits.y, power);
+            // fix for case 1245429 where we sometimes get a rounding issue when converting between gamma and linear, which causes us to break the slider
+            float value = Mathf.Clamp(prop.floatValue, prop.rangeLimits.x, prop.rangeLimits.y);
+
+            float newValue = EditorGUI.PowerSlider(position, label, value, prop.rangeLimits.x, prop.rangeLimits.y, power);
             EditorGUI.showMixedValue = false;
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -1601,7 +1604,7 @@ namespace UnityEditor
             var imguicontainer = UIElementsUtility.GetCurrentIMGUIContainer();
             if (imguicontainer != null)
             {
-                var editorElement = imguicontainer.GetFirstAncestorOfType<EditorElement>();
+                var editorElement = imguicontainer.GetFirstAncestorOfType<IEditorElement>();
                 if (editorElement != null)
                 {
                     return GetAssociatedRenderersFromEditors(editorElement.Editors);
@@ -2253,7 +2256,7 @@ namespace UnityEditor
         }
 
         // Handle dragging of material onto renderers
-        internal void OnSceneDrag(SceneView sceneView)
+        internal void OnSceneDrag(SceneView sceneView, int index)
         {
             Event evt = Event.current;
 
@@ -2269,12 +2272,12 @@ namespace UnityEditor
                 ClearDragMaterialRendering();
             }
             else if (go && go.GetComponent<Renderer>())
-                HandleRenderer(go.GetComponent<Renderer>(), materialIndex, evt);
+                HandleRenderer(go.GetComponent<Renderer>(), materialIndex, target as Material, evt.type, evt.alt);
             else
                 ClearDragMaterialRendering();
         }
 
-        private void TryRevertDragChanges()
+        private static void TryRevertDragChanges()
         {
             if (s_previousDraggedUponRenderer != null)
             {
@@ -2291,13 +2294,14 @@ namespace UnityEditor
             }
         }
 
-        private void ClearDragMaterialRendering()
+        private static void ClearDragMaterialRendering()
         {
             TryRevertDragChanges();
             s_previousDraggedUponRenderer = null;
             s_previousMaterialValue = null;
         }
 
+        Material s_OriginalMaterial;
         internal void HandleSkybox(GameObject go, Event evt)
         {
             bool draggingOverBackground = !go;
@@ -2305,6 +2309,11 @@ namespace UnityEditor
 
             if (!draggingOverBackground || evt.type == EventType.DragExited)
             {
+                if (s_OriginalMaterial != null)
+                {
+                    RenderSettings.skybox = s_OriginalMaterial;
+                    s_OriginalMaterial = null;
+                }
                 evt.Use();
             }
             else
@@ -2323,9 +2332,13 @@ namespace UnityEditor
 
             if (applyAndConsumeEvent)
             {
-                Undo.RecordObject(FindObjectOfType<RenderSettings>(), "Assign Skybox Material");
-
+                if (s_OriginalMaterial == null)
+                {
+                    Undo.RecordObject(FindObjectOfType<RenderSettings>(), Styles.undoAssignSkyboxMaterial);
+                    s_OriginalMaterial = RenderSettings.skybox;
+                }
                 RenderSettings.skybox = target as Material;
+                if (evt.type == EventType.DragPerform) s_OriginalMaterial = null;
 
                 evt.Use();
             }
@@ -2334,30 +2347,29 @@ namespace UnityEditor
         static Renderer s_previousDraggedUponRenderer;
         static Material[] s_previousMaterialValue;
         static bool s_previousAlreadyHadPrefabModification;
-        internal void HandleRenderer(Renderer r, int materialIndex, Event evt)
+        internal static void HandleRenderer(Renderer r, int materialIndex, Material dragMaterial, EventType eventType, bool alt)
         {
             if (r.GetType().GetCustomAttributes(typeof(RejectDragAndDropMaterial), true).Length > 0)
                 return;
 
-            var applyAndConsumeEvent = false;
-            switch (evt.type)
+            var applyMaterial = false;
+            switch (eventType)
             {
                 case EventType.DragUpdated:
                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                    applyAndConsumeEvent = true;
+                    applyMaterial = true;
                     break;
 
                 case EventType.DragPerform:
                     DragAndDrop.AcceptDrag();
-                    applyAndConsumeEvent = true;
+                    applyMaterial = true;
 
                     ClearDragMaterialRendering();
-                    Undo.RecordObject(r, "Assign Material");
                     break;
             }
-            if (applyAndConsumeEvent)
+            if (applyMaterial)
             {
-                if (evt.type != EventType.DragPerform)
+                if (eventType != EventType.DragPerform)
                 {
                     ClearDragMaterialRendering();
                     s_previousDraggedUponRenderer = r;
@@ -2372,22 +2384,23 @@ namespace UnityEditor
                     }
                 }
 
+                Undo.RegisterCompleteObjectUndo(r, Styles.undoAssignMaterial);
                 var materials = r.sharedMaterials;
 
-                bool altIsDown = evt.alt;
                 bool isValidMaterialIndex = (materialIndex >= 0 && materialIndex < r.sharedMaterials.Length);
-                if (!altIsDown && isValidMaterialIndex)
+                if (!alt && isValidMaterialIndex)
                 {
-                    materials[materialIndex] = target as Material;
+                    materials[materialIndex] = dragMaterial;
                 }
                 else
                 {
                     for (int q = 0; q < materials.Length; ++q)
-                        materials[q] = target as Material;
+                        materials[q] = dragMaterial;
                 }
 
                 r.sharedMaterials = materials;
-                evt.Use();
+                // Since we can handle multiple objects being dragged, we cannot use the event here.
+                // This will fall under respective view message processing responsibilities.
             }
         }
 

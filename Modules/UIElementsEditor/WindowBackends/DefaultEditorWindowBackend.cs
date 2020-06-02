@@ -6,7 +6,6 @@ using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements

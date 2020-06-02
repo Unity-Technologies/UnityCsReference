@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
@@ -97,17 +96,30 @@ namespace UnityEditor
 
         public static class Styles
         {
-            public static GUIStyle toolbarDropDown = "TE ToolbarDropDown";
-            public static GUIStyle toolbar = "TE Toolbar";
-            public static GUIStyle boxBackground = "TE NodeBackground";
-            public static GUIStyle removeButton = "InvisibleButton";
-            public static GUIStyle elementBackground = "TE ElementBackground";
-            public static GUIStyle defaultTime = "TE DefaultTime";
-            public static GUIStyle draggingHandle = "WindowBottomResize";
+            public static readonly GUIStyle toolbarDropDown = "TE ToolbarDropDown";
+            public static readonly GUIStyle toolbar = "TE Toolbar";
+            public static readonly GUIStyle boxBackground = "TE NodeBackground";
+            public static readonly GUIStyle removeButton = "InvisibleButton";
+            public static readonly GUIStyle elementBackground = "TE ElementBackground";
+            public static readonly GUIStyle defaultTime = "TE DefaultTime";
+            public static readonly GUIStyle draggingHandle = "WindowBottomResize";
             // Drop field style that has extra overflow and is only visible when "on".
             // Used to draw a blue glow when dragging scripts into the ordering to
             // indicate that drag-and-drop is supported.
-            public static GUIStyle dropField = "TE DropField";
+            public static readonly GUIStyle dropField = "TE DropField";
+
+            public static readonly GUIStyle textfield = new GUIStyle(EditorStyles.textField)
+            {
+                padding = new RectOffset(2, 2, 1, 0),
+                contentOffset = new Vector2(0, -0.5f),
+                alignment = TextAnchor.UpperLeft
+            };
+
+            public static readonly GUIStyle label = new GUIStyle(EditorStyles.label)
+            {
+                padding = new RectOffset(1, 1, 2, 1),
+                alignment = TextAnchor.UpperLeft
+            };
         }
 
         [MenuItem("CONTEXT/MonoManager/Reset")]
@@ -263,7 +275,7 @@ namespace UnityEditor
         {
             var changedIndices = new List<int>();
             var changedScripts = new List<MonoScript>();
-            for (int i = 0; i < m_AllScripts.Length; i++)
+            for (var i = 0; i < m_AllScripts.Length; i++)
             {
                 if (MonoImporter.GetExecutionOrder(m_AllScripts[i]) != m_AllOrders[i])
                 {
@@ -272,39 +284,28 @@ namespace UnityEditor
                 }
             }
 
-            bool editable = true;
-
-            if (Provider.enabled)
+            var changedPaths = new List<string>(changedScripts.Count);
+            foreach (var script in changedScripts)
             {
-                var needToCheckout = new AssetList();
-                foreach (var s in changedScripts)
-                {
-                    var asset = Provider.GetAssetByPath(AssetDatabase.GetAssetPath(s));
-                    if (asset == null) // script might be outside of the project (e.g. in a package)
-                        continue;
-                    if (AssetDatabase.IsMetaFileOpenForEdit(s, StatusQueryOptions.UseCachedIfPossible))
-                        continue; // might not need a checkout (not connected, etc.)
-                    needToCheckout.Add(asset);
-                }
-                if (needToCheckout.Any())
-                {
-                    var task = Provider.Checkout(needToCheckout, CheckoutMode.Meta);
-                    task.Wait();
-                    editable = task.success;
-                }
+                var assetPath = AssetDatabase.GetAssetPath(script);
+                if (string.IsNullOrEmpty(assetPath)) // Script might be outside of the project (e.g. in a package).
+                    continue;
+                var metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(assetPath);
+                if (AssetDatabase.IsOpenForEdit(metaPath))
+                    continue; // No VCS enabled, not connected, already checked out, etc.
+                changedPaths.Add(metaPath);
             }
 
-            if (editable)
+            if (!AssetDatabase.MakeEditable(changedPaths.ToArray()))
             {
-                foreach (int index in changedIndices)
-                    MonoImporter.SetExecutionOrder(m_AllScripts[index], m_AllOrders[index]);
+                Debug.LogError("Could not make scrips editable for changing script execution order.");
+                return;
+            }
 
-                PopulateScriptArray();
-            }
-            else
-            {
-                Debug.LogError("Could not checkout scrips in version control for changing script execution order");
-            }
+            foreach (var index in changedIndices)
+                MonoImporter.SetExecutionOrder(m_AllScripts[index], m_AllOrders[index]);
+
+            PopulateScriptArray();
         }
 
         private void Revert()
@@ -385,10 +386,11 @@ namespace UnityEditor
 
                 Provider.Status(assetList).Wait();
 
-                foreach (Asset i in assetList)
+                const Asset.States kExclusiveLockedRemote = Asset.States.Exclusive | Asset.States.LockedRemote;
+                foreach (var asset in assetList)
                 {
-                    if (i.IsState(Asset.States.LockedRemote))
-                        lockedScripts.Add(pathToScript[i.metaPath]);
+                    if ((asset.state & kExclusiveLockedRemote) == kExclusiveLockedRemote)
+                        lockedScripts.Add(pathToScript[asset.metaPath]);
                 }
             }
 
@@ -642,7 +644,7 @@ namespace UnityEditor
 
         private Rect GetButtonLabelRect(Rect r)
         {
-            return new Rect(r.x + 20, r.y + 1, r.width - GetMinusButtonSize().x - 10 - 20 - (kIntFieldWidth + 5), r.height);
+            return new Rect(r.x + 20, r.y, r.width - GetMinusButtonSize().x - 10 - 20 - (kIntFieldWidth + 5), r.height);
         }
 
         private Rect GetAddRemoveButtonRect(Rect r)
@@ -677,13 +679,13 @@ namespace UnityEditor
                 Styles.draggingHandle.Draw(GetDraggingHandleRect(r), false, false, false, false);
             }
 
-            GUI.Label(GetButtonLabelRect(r), script.GetClass().FullName);
+            GUI.Label(GetButtonLabelRect(r), script.GetClass().FullName, Styles.label);
 
             int oldNr = GetExecutionOrder(script);
             Rect position = GetFieldRect(r);
             // associate control id with script so that removing an element when its text field is active will not potentially cause subsequent element to inherit value when list is reordered
             int id = GUIUtility.GetControlID(script.GetHashCode(), FocusType.Keyboard, position);
-            string intStr = EditorGUI.DelayedTextFieldInternal(position, id, GUIContent.none, oldNr.ToString(), "0123456789-", EditorStyles.textField);
+            string intStr = EditorGUI.DelayedTextFieldInternal(position, id, GUIContent.none, oldNr.ToString(), "0123456789-", Styles.textfield);
             int newNr = oldNr;
             if (System.Int32.TryParse(intStr, out newNr) && newNr != oldNr)
             {

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
@@ -19,12 +20,13 @@ namespace UnityEditor.PackageManager.UI
 
         public override IVersionList versions => m_VersionList;
 
-        public PlaceholderPackage(string uniqueId, string displayName, PackageType type = PackageType.None, PackageTag tag = PackageTag.None, PackageProgress progress = PackageProgress.None)
+        public PlaceholderPackage(string uniqueId, string displayName, PackageType type = PackageType.None, PackageTag tag = PackageTag.None, PackageProgress progress = PackageProgress.None, UIError error = null)
         {
             m_Type = type;
             m_UniqueId = uniqueId;
             m_Progress = progress;
-            m_VersionList = new PlaceholderVersionList(new PlaceholderPackageVersion(uniqueId, uniqueId, displayName, tag));
+            m_VersionList = new PlaceholderVersionList(new PlaceholderPackageVersion(uniqueId, uniqueId, displayName, tag, error));
+            m_Errors = new List<UIError>();
         }
 
         public override IPackage Clone()

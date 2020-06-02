@@ -77,6 +77,18 @@ namespace UnityEditor
         // pre-multiplied by the Handles.matrix)
         internal static bool CalcPositionOnConstraint(Camera camera, Vector2 guiPosition, Vector3 constraintOrigin, Vector3 constraintDir, out Vector3 position)
         {
+            if (CalcParamOnConstraint(camera, guiPosition, constraintOrigin, constraintDir, out float pointOnLineParam))
+            {
+                position = constraintOrigin + constraintDir * pointOnLineParam;
+                return true;
+            }
+
+            position = Vector3.zero;
+            return false;
+        }
+
+        internal static bool CalcParamOnConstraint(Camera camera, Vector2 guiPosition, Vector3 constraintOrigin, Vector3 constraintDir, out float parameterization)
+        {
             Vector3 constraintToCameraTangent = Vector3.Cross(constraintDir, camera.transform.position - constraintOrigin);
             Vector3 constraintPlaneNormal = Vector3.Cross(constraintDir, constraintToCameraTangent);
             Plane plane = new Plane(constraintPlaneNormal, constraintOrigin);
@@ -85,18 +97,11 @@ namespace UnityEditor
             if (Vector3.Dot(ray.direction, plane.normal) > k_MinRayConstraintDot && plane.Raycast(ray, out float distance))
             {
                 var pointOnPlane = ray.GetPoint(distance);
-                var pointOnLineParam = PointOnLineParameter(pointOnPlane, constraintOrigin, constraintDir);
-
-                if (!float.IsInfinity(pointOnLineParam))
-                {
-                    // As the mouse ray approaches perpendicular to the plane normal, the values become increasingly extreme.
-                    // We mitigate that effect here
-                    position = constraintOrigin + constraintDir * pointOnLineParam;
-                    return true;
-                }
+                parameterization = PointOnLineParameter(pointOnPlane, constraintOrigin, constraintDir);
+                return !float.IsInfinity(parameterization);
             }
 
-            position = Vector3.zero;
+            parameterization = 0f;
             return false;
         }
 
@@ -448,6 +453,33 @@ namespace UnityEditor
                 float d = DistanceToLineInternal(mouse, p1, p2);
                 if (d < dist)
                     dist = d;
+            }
+
+            return dist;
+        }
+
+        // Pixel distance from mouse pointer to a polyline.
+        internal static float DistanceToPolyLine(Vector3[] points, bool loop, out int index)
+        {
+            Matrix4x4 handleMatrix = Handles.matrix;
+            CameraProjectionCache cam = new CameraProjectionCache(Camera.current, Screen.height);
+            Vector2 mouse = Event.current.mousePosition;
+
+            Vector2 p1 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[0]));
+            Vector2 p2 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[1]));
+            float dist = DistanceToLineInternal(mouse, p1, p2);
+            index = 0;
+
+            for (int i = 2, c = points.Length; i < (loop ? c + 1 : c); i++)
+            {
+                p1 = p2;
+                p2 = cam.WorldToGUIPoint(handleMatrix.MultiplyPoint3x4(points[i % c]));
+                float d = DistanceToLineInternal(mouse, p1, p2);
+                if (d < dist)
+                {
+                    index = i - 1;
+                    dist = d;
+                }
             }
 
             return dist;

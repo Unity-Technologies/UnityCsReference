@@ -130,7 +130,7 @@ namespace UnityEngine
             get { return (AnimationEvent[])GetEventsInternal(); }
             set { SetEventsInternal(value); }
         }
-        [FreeFunction(Name = "AnimationClipBindings::SetEventsInternal", HasExplicitThis = true)]
+        [FreeFunction(Name = "AnimationClipBindings::SetEventsInternal", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetEventsInternal(System.Array value);
         [FreeFunction(Name = "AnimationClipBindings::GetEventsInternal", HasExplicitThis = true)]
         extern private System.Array GetEventsInternal();

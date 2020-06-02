@@ -508,7 +508,7 @@ namespace UnityEditor
 
             int currCount = LogEntries.GetCount();
 
-            if (m_ListView.totalRows != currCount && m_ListView.totalRows > 0)
+            if (m_ListView.totalRows != currCount)
             {
                 // scroll bar was at the bottom?
                 if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)

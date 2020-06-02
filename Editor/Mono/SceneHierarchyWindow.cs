@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using UnityEditor.ShortcutManagement;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -17,6 +18,8 @@ namespace UnityEditor
         static SceneHierarchyWindow s_LastInteractedHierarchy;
         public static List<SceneHierarchyWindow> GetAllSceneHierarchyWindows() { return s_SceneHierarchyWindows; }
         static List<SceneHierarchyWindow> s_SceneHierarchyWindows = new List<SceneHierarchyWindow>();
+
+        internal static SavedBool s_EnterRenameModeForNewGO = new SavedBool("SceneHierarchyWindow.RenameNewObjects", true);
 
         static class Styles
         {
@@ -308,6 +311,31 @@ namespace UnityEditor
         static bool ValidatePasteAsChild()
         {
             return CutCopyPasteUtility.CanPasteAsChild();
+        }
+
+        [UsedByNativeCode]
+        internal static void FrameAndRenameNewGameObject()
+        {
+            SceneHierarchyWindow hierarchyWindow = lastInteractedHierarchyWindow;
+
+            if (hierarchyWindow == null)
+                return;
+
+            SceneHierarchy sceneHierarchy = hierarchyWindow.m_SceneHierarchy;
+
+            GameObject go = Selection.activeGameObject;
+
+            if (go != null)
+            {
+                sceneHierarchy.treeView?.Frame(go.GetInstanceID(), true, false);
+            }
+
+            sceneHierarchy.RenameNewGO();
+        }
+
+        internal static void SwitchEnterRenameModeForNewGO()
+        {
+            s_EnterRenameModeForNewGO.value = !s_EnterRenameModeForNewGO.value;
         }
     }
 

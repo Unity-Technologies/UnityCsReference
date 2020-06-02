@@ -489,7 +489,7 @@ namespace UnityEditor.PackageManager.UI
             GetPageFromTab().LoadMore(numberOfPackages);
         }
 
-        private void OnUserLoginStateChange(bool loggedIn)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             var canRefresh = m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore &&
                 m_Application.isInternetReachable &&

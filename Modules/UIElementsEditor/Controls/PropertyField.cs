@@ -111,13 +111,20 @@ namespace UnityEditor.UIElements
                             EditorGUILayout.PropertyField(m_SerializedProperty, true);
 
                             m_SerializedProperty.serializedObject.ApplyModifiedProperties();
-                            EditorGUI.EndChangeCheck();
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                DispatchPropertyChangedEvent();
+                            }
                         }
                         finally
                         {
                             EditorGUIUtility.wideMode = originalWideMode;
                         }
                     });
+                }
+                else
+                {
+                    RegisterPropertyChangesOnCustomDrawerElement(customPropertyGUI);
                 }
                 hierarchy.Add(customPropertyGUI);
             }
@@ -256,6 +263,14 @@ namespace UnityEditor.UIElements
 
             field.labelElement.AddToClassList(labelUssClassName);
             field.visualInput.AddToClassList(inputUssClassName);
+
+            field.RegisterValueChangedCallback((evt) =>
+            {
+                if (evt.target == field)
+                {
+                    DispatchPropertyChangedEvent();
+                }
+            });
             return field;
         }
 
@@ -263,7 +278,7 @@ namespace UnityEditor.UIElements
         {
             var propertyType = property.propertyType;
 
-            if (EditorGUI.HasVisibleChildFields(property))
+            if (EditorGUI.HasVisibleChildFields(property, true))
                 return CreateFoldout(property);
 
             switch (propertyType)
@@ -380,6 +395,80 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.Generic:
                 default:
                     return null;
+            }
+        }
+
+        private void RegisterPropertyChangesOnCustomDrawerElement(VisualElement customPropertyDrawer)
+        {
+            // We dispatch this async in order to minimize the number of changeEvents we'll end up dispatching
+            customPropertyDrawer.RegisterCallback<ChangeEvent<SerializedProperty>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+
+            // Now we add property change events for known SerializedPropertyTypes. Since we don't know what this
+            // drawer can edit or what it will end up containing we need to register everything
+            customPropertyDrawer.RegisterCallback<ChangeEvent<int>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<bool>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<float>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<double>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<string>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Color>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<UnityEngine.Object>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            // SerializedPropertyType.LayerMask -> int
+            // SerializedPropertyType.Enum is handled either by string or
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Enum>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Vector2>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Vector3>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Vector4>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Rect>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            // SerializedPropertyType.ArraySize ->  int
+            // SerializedPropertyType.Character -> string
+            customPropertyDrawer.RegisterCallback<ChangeEvent<AnimationCurve>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Bounds>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Gradient>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Quaternion>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Vector2Int>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Vector3Int>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<Vector3Int>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<RectInt>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+            customPropertyDrawer.RegisterCallback<ChangeEvent<BoundsInt>>((changeEvent) => AsyncDispatchPropertyChangedEvent());
+        }
+
+        private int m_PropertyChangedCounter = 0;
+
+        void AsyncDispatchPropertyChangedEvent()
+        {
+            m_PropertyChangedCounter++;
+            schedule.Execute(() => ExecuteAsyncDispatchPropertyChangedEvent());
+        }
+
+        void ExecuteAsyncDispatchPropertyChangedEvent()
+        {
+            m_PropertyChangedCounter--;
+
+            if (m_PropertyChangedCounter <= 0)
+            {
+                DispatchPropertyChangedEvent();
+                m_PropertyChangedCounter = 0;
+            }
+        }
+
+        private void DispatchPropertyChangedEvent()
+        {
+            using (var evt = SerializedPropertyChangeEvent.GetPooled(m_SerializedProperty))
+            {
+                evt.target = this;
+                SendEvent(evt);
+            }
+        }
+
+        public void RegisterValueChangeCallback(EventCallback<SerializedPropertyChangeEvent> callback)
+        {
+            if (callback != null)
+            {
+                this.RegisterCallback<SerializedPropertyChangeEvent>((evt) =>
+                {
+                    if (evt.target == this)
+                        callback(evt);
+                });
             }
         }
     }

@@ -106,7 +106,7 @@ namespace UnityEditor.PackageManager.UI
             addOperation.onOperationError += (op, error) =>
             {
                 var packageId = string.IsNullOrEmpty(addOperation.packageId) ? addOperation.specialUniqueId : addOperation.packageId;
-                Debug.LogError(string.Format(L10n.Tr("Error adding package: {0}."), packageId));
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error adding package: {0}."), packageId));
             };
             onAddOperation(addOperation);
         }
@@ -165,13 +165,13 @@ namespace UnityEditor.PackageManager.UI
             var operation = offlineMode ? listOfflineOperation : listOperation;
             if (operation.isInProgress)
                 operation.Cancel();
-            var errorMessage = offlineMode ? L10n.Tr("Error fetching package list.") : L10n.Tr("Error fetching package list offline.");
+            var errorMessage = offlineMode ? L10n.Tr("Error fetching package list offline.") : L10n.Tr("Error fetching package list.");
             if (offlineMode)
                 operation.ListOffline(listOperation.lastSuccessTimestamp);
             else
                 operation.List();
             operation.onProcessResult += request => OnProcessListResult(request, offlineMode);
-            operation.onOperationError += (op, error) => Debug.LogError(errorMessage);
+            operation.onOperationError += (op, error) => Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
             onListOperation(operation);
         }
 
@@ -190,7 +190,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
             embedOperation.Embed(packageName, m_UpmCache.GetProductId(packageName));
             embedOperation.onProcessResult += OnProcessAddResult;
-            embedOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("Error embedding package: {0}."), embedOperation.packageName));
+            embedOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error embedding package: {0}."), embedOperation.packageName));
             onEmbedOperation(embedOperation);
         }
 
@@ -218,7 +218,7 @@ namespace UnityEditor.PackageManager.UI
         private void SetupRemoveOperation()
         {
             removeOperation.onProcessResult += OnProcessRemoveResult;
-            removeOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("Error removing package: {0}."), removeOperation.packageName));
+            removeOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error removing package: {0}."), removeOperation.packageName));
             onRemoveOperation(removeOperation);
         }
 
@@ -244,13 +244,13 @@ namespace UnityEditor.PackageManager.UI
             var operation = offlineMode ? searchOfflineOperation : searchOperation;
             if (operation.isInProgress)
                 operation.Cancel();
-            var errorMessage = offlineMode ? L10n.Tr("Error searching for packages.") : L10n.Tr("Error searching for packages offline.");
+            var errorMessage = offlineMode ? L10n.Tr("Error searching for packages offline.") : L10n.Tr("Error searching for packages.");
             if (offlineMode)
                 operation.SearchAllOffline(searchOperation.lastSuccessTimestamp);
             else
                 operation.SearchAll();
             operation.onProcessResult += request => OnProcessSearchAllResult(request, offlineMode);
-            operation.onOperationError += (op, error) => Debug.LogError(errorMessage);
+            operation.onOperationError += (op, error) => Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
             onSearchAllOperation(operation);
         }
 
@@ -304,9 +304,9 @@ namespace UnityEditor.PackageManager.UI
                 {
                     productId = m_UpmCache.GetProductId(packageInfo.name);
                     if (string.IsNullOrEmpty(productId))
-                        onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(m_IOProxy, packageInfo, false));
+                        onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false));
                     else
-                        onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(m_IOProxy, packageInfo, false));
+                        onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false));
                 }
             }
         }
@@ -411,16 +411,16 @@ namespace UnityEditor.PackageManager.UI
         private UpmPackage CreateUpmPackage(PackageInfo searchInfo, PackageInfo installedInfo, string packageName = null)
         {
             if (searchInfo == null && installedInfo == null)
-                return new UpmPackage(m_IOProxy, packageName, false, PackageType.Installable);
+                return new UpmPackage(packageName, false, PackageType.Installable);
 
             UpmPackage result;
             if (searchInfo == null)
-                result = new UpmPackage(m_IOProxy, installedInfo, true, false);
+                result = new UpmPackage(installedInfo, true, false);
             else
             {
-                result = new UpmPackage(m_IOProxy, searchInfo, false, true);
+                result = new UpmPackage(searchInfo, false, true);
                 if (installedInfo != null)
-                    result.AddInstalledVersion(new UpmPackageVersion(m_IOProxy, installedInfo, true));
+                    result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true));
             }
             return result;
         }

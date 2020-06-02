@@ -95,7 +95,7 @@ namespace UnityEngine.TestTools
     [NativeClass("ScriptingCoverage")]
     public static class Coverage
     {
-        public extern static bool enabled { get; }
+        public extern static bool enabled { get; set; }
 
         [FreeFunction("ScriptingCoverageGetCoverageForMethodInfoObject", ThrowsException = true)]
         private extern static CoveredSequencePoint[] GetSequencePointsFor_Internal(MethodBase method);

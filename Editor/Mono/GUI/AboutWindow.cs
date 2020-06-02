@@ -30,7 +30,13 @@ namespace UnityEditor
         {
             public static GUIContent thanksContent = new GUIContent("Special thanks to our beta users");
             public static GUIStyle thanksStyle = EditorStyles.FromUSS("About-Thanks-Label");
-            public static Uri thanksUri = new Uri("https://unity.com/releases/2020-1/thanks");
+            public static Uri thanksUri = new Uri($"https://unity.com/releases/{GetVersion()}/thanks");
+
+            private static string GetVersion()
+            {
+                var version = InternalEditorUtility.GetUnityVersion();
+                return $"{version.Major}-{version.Minor}";
+            }
         }
 
         private static void LoadLogos()

@@ -125,6 +125,7 @@ namespace UnityEditor.PackageManager.UI
 
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
+        private AssetDatabaseProxy m_AssetDatabase;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
@@ -136,6 +137,7 @@ namespace UnityEditor.PackageManager.UI
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
+            m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
@@ -190,7 +192,7 @@ namespace UnityEditor.PackageManager.UI
             var assetPath = displayVersion?.packageInfo?.assetPath;
             if (string.IsNullOrEmpty(assetPath))
                 return null;
-            return AssetDatabase.LoadMainAssetAtPath(Path.Combine(assetPath, "package.json"));
+            return m_AssetDatabase.LoadMainAssetAtPath(Path.Combine(assetPath, "package.json"));
         }
 
         public void OnEnable()
@@ -234,7 +236,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (!m_Application.isInternetReachable)
             {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection")));
+                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
                 m_PackageDatabase.AbortDownload(package);
                 RefreshDownloadStatesButtons();
                 return;
@@ -1087,7 +1089,7 @@ namespace UnityEditor.PackageManager.UI
             var downloadInProgress = m_PackageDatabase.IsDownloadInProgress(displayVersion);
             if (!downloadInProgress && !m_Application.isInternetReachable)
             {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection")));
+                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
                 return;
             }
 
@@ -1108,7 +1110,7 @@ namespace UnityEditor.PackageManager.UI
             var downloadInProgress = m_PackageDatabase.IsDownloadInProgress(displayVersion);
             if (!downloadInProgress && !m_Application.isInternetReachable)
             {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection")));
+                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
                 m_PackageDatabase.AbortDownload(package);
                 return;
             }
@@ -1130,7 +1132,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (!m_Application.isInternetReachable)
             {
-                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection")));
+                detailError.SetError(new UIError(UIErrorCode.NetworkError, L10n.Tr("No internet connection.")));
                 return;
             }
 

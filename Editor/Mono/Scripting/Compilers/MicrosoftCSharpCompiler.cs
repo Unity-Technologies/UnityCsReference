@@ -45,6 +45,12 @@ namespace UnityEditor.Scripting.Compilers
                 "/out:" + assemblyOutputPath
             };
 
+            if (assembly.CompilerOptions.EmitReferenceAssembly)
+            {
+                var referenceAssemblyOutputPath = PrepareFileName(AssetPath.Combine(tempBuildDirectory, assembly.ReferenceAssemblyFilename));
+                arguments.Add($"/refout:{referenceAssemblyOutputPath}");
+            }
+
             if (assembly.CompilerOptions.AllowUnsafeCode)
             {
                 arguments.Add("/unsafe");
@@ -252,6 +258,11 @@ namespace UnityEditor.Scripting.Compilers
                 CompilationHadFailure(),
                 assembly.Filename
                 ).ToArray();
+        }
+
+        public override ProcessStartInfo GetProcessStartInfo()
+        {
+            return process.GetProcessStartInfo();
         }
 
         private bool CompilationHadFailure()

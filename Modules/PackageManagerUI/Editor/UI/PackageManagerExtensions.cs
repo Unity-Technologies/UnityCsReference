@@ -69,7 +69,7 @@ namespace UnityEditor.PackageManager.UI
             }
             catch (Exception exception)
             {
-                Debug.LogError(string.Format(L10n.Tr("Package manager extension failed with error: {0}"), exception.Message));
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Package manager extension failed with error: {0}"), exception.Message));
             }
         }
     }

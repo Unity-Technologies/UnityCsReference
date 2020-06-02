@@ -517,6 +517,9 @@ namespace UnityEditor
         [NativeName("GetEditable")]
         private extern bool GetEditableInternal();
 
+        [NativeName("IsReorderable")]
+        internal extern bool IsReorderable();
+
         // Is this property animated? (RO)
         public bool isAnimated
         {

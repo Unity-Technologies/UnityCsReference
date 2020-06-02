@@ -12,6 +12,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public struct Vector3Int : IEquatable<Vector3Int>, IFormattable
     {
         public int x { get { return m_X; } set { m_X = value; } }

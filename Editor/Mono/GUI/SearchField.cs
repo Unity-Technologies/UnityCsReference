@@ -55,20 +55,22 @@ namespace UnityEditor.IMGUI.Controls
 
             float cancelButtonWidth = cancelButtonStyle.fixedWidth;
 
-            // Search field
-            Rect textRect = rect;
-            textRect.width -= cancelButtonWidth;
-            text = EditorGUI.TextFieldInternal(m_ControlID, textRect, text, style);
-
             // Cancel button
             Rect buttonRect = rect;
             buttonRect.x += rect.width - cancelButtonWidth;
             buttonRect.width = cancelButtonWidth;
-            if (GUI.Button(buttonRect, GUIContent.none, text != "" ? cancelButtonStyle : emptyCancelButtonStyle) && text != "")
+            if (Event.current.type == EventType.MouseUp && buttonRect.Contains(Event.current.mousePosition))
             {
                 text = "";
                 GUIUtility.keyboardControl = 0;
             }
+
+            // Search field
+            Rect textRect = rect;
+            text = EditorGUI.TextFieldInternal(m_ControlID, textRect, text, style);
+
+            GUI.Button(buttonRect, GUIContent.none,
+                text != "" ? cancelButtonStyle : emptyCancelButtonStyle);
             return text;
         }
 

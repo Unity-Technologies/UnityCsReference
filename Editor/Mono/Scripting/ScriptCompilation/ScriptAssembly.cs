@@ -22,6 +22,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
         public string[] ExtraGeneralDefines { get; set; }
         public ICompilationExtension CompilationExtension { get; set; }
+        public string ProjectRootNamespace { get; set; }
 
         public CodeOptimization EditorCodeOptimization { get; set; }
 
@@ -73,10 +74,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] References { get; set; }
         public string[] Defines { get; set; }
         public string[] Files { get; set; }
+        public string RootNamespace { get; set; }
         public bool CallOnBeforeCompilationStarted { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public string GeneratedResponseFile { get; set; }
         public DirtySource DirtySource { get; set; }
+        // Indicates whether the assembly had compile errors on last compilation
+        public bool HasCompileErrors { get; set; }
 
         public ScriptAssembly()
         {
@@ -85,6 +89,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
         public string PdbFullPath { get { return AssetPath.Combine(OutputDirectory, PdbFilename); } }
+
+        public string ReferenceAssemblyFilename
+        {
+            get
+            {
+                return $"{Filename}.ref";
+            }
+        }
 
         public string[] GetAllReferences()
         {

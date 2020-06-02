@@ -10,6 +10,7 @@ namespace UnityEngine.SubsystemsImplementation
     {
         public static void RegisterDescriptor(SubsystemDescriptorWithProvider descriptor)
         {
+            descriptor.ThrowIfInvalid();
             RegisterDescriptor(descriptor, s_StandaloneDescriptors);
         }
 

@@ -8,12 +8,7 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 using System;
-using UnityEngineInternal;
 using Object = UnityEngine.Object;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
-using UnityEngine.Scripting;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 

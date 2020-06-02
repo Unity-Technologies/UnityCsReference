@@ -112,15 +112,7 @@ namespace UnityEditor
                 }
             }
 
-            return GetDefault(model);
-        }
-
-        static IWindowBackend GetDefault(IWindowModel model)
-        {
-            if (model is IEditorWindowModel)
-                return new DefaultEditorWindowBackend();
-            else
-                return new DefaultWindowBackend();
+            return EditorUIService.instance.GetDefaultWindowBackend(model);
         }
     }
 }

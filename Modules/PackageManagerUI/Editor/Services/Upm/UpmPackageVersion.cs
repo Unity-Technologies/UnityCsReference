@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
@@ -27,7 +26,7 @@ namespace UnityEditor.PackageManager.UI
         UIError entitlementsError => !entitlements.isAllowed && isInstalled ?
         new UIError(UIErrorCode.UpmError, L10n.Tr("You do not have entitlements for this package.")) : null;
         public override IEnumerable<UIError> errors =>
-            m_PackageInfo.errors.Select(e => (UIError)e).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
+            m_PackageInfo.errors.Select(e => new UIError((UIErrorCode)e.errorCode, e.message)).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
 
         [SerializeField]
@@ -42,26 +41,6 @@ namespace UnityEditor.PackageManager.UI
         private bool m_IsFullyFetched;
         public override bool isFullyFetched => m_IsFullyFetched;
 
-        [NonSerialized]
-        private bool m_SamplesParsed;
-        [NonSerialized]
-        private List<Sample> m_Samples;
-        public override IEnumerable<Sample> samples
-        {
-            get
-            {
-                if (m_SamplesParsed)
-                    return m_Samples;
-
-                if (!isFullyFetched)
-                    return new List<Sample>();
-
-                m_Samples = GetSamplesFromPackageInfo(m_IOProxy, m_PackageInfo) ?? new List<Sample>();
-                m_SamplesParsed = true;
-                return m_Samples;
-            }
-        }
-
         public string sourcePath
         {
             get
@@ -72,43 +51,6 @@ namespace UnityEditor.PackageManager.UI
                 }
                 else
                     return null;
-            }
-        }
-
-        private static List<Sample> GetSamplesFromPackageInfo(IOProxy ioProxy, PackageInfo packageInfo)
-        {
-            if (string.IsNullOrEmpty(packageInfo?.resolvedPath))
-                return null;
-
-            var jsonPath = Path.Combine(packageInfo.resolvedPath, "package.json");
-            if (!ioProxy.FileExists(jsonPath))
-                return null;
-
-            try
-            {
-                var packageJson = Json.Deserialize(ioProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
-                var samples = packageJson.GetList<IDictionary<string, object>>("samples");
-                return samples?.Select(sample =>
-                {
-                    var displayName = sample.GetString("displayName");
-                    var path = sample.GetString("path");
-                    var description = sample.GetString("description");
-                    var interactiveImport = sample.Get("interactiveImport", false);
-
-                    var resolvedSamplePath = Path.Combine(packageInfo.resolvedPath, path);
-                    var importPath = IOUtils.CombinePaths(
-                        Application.dataPath,
-                        "Samples",
-                        IOUtils.SanitizeFileName(packageInfo.displayName),
-                        packageInfo.version,
-                        IOUtils.SanitizeFileName(displayName)
-                    );
-                    return new Sample(ioProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
-                }).ToList();
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
@@ -137,17 +79,8 @@ namespace UnityEditor.PackageManager.UI
 
         public override string versionId => m_Version.ToString();
 
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        public void ResolveDependencies(IOProxy ioProxy)
+        public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion? version, string displayName)
         {
-            m_IOProxy = ioProxy;
-        }
-
-        public UpmPackageVersion(IOProxy ioProxy, PackageInfo packageInfo, bool isInstalled, SemVersion? version, string displayName)
-        {
-            ResolveDependencies(ioProxy);
-
             m_Version = version;
             m_VersionString = m_Version?.ToString();
             m_DisplayName = displayName;
@@ -157,10 +90,8 @@ namespace UnityEditor.PackageManager.UI
             UpdatePackageInfo(packageInfo);
         }
 
-        public UpmPackageVersion(IOProxy ioProxy, PackageInfo packageInfo, bool isInstalled)
+        public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled)
         {
-            ResolveDependencies(ioProxy);
-
             SemVersionParser.TryParse(packageInfo.version, out m_Version);
             m_VersionString = m_Version?.ToString();
             m_DisplayName = packageInfo.displayName;
@@ -188,9 +119,6 @@ namespace UnityEditor.PackageManager.UI
 
             if (HasTag(PackageTag.BuiltIn))
                 m_Description = UpmPackageDocs.SplitBuiltinDescription(this)[0];
-
-            // reset sample parse status on package info update, such that the sample list gets regenerated
-            m_SamplesParsed = false;
 
             if (m_IsFullyFetched)
             {

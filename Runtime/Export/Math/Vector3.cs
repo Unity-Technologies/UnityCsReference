@@ -18,6 +18,7 @@ namespace UnityEngine
     [NativeClass("Vector3f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public partial struct Vector3 : IEquatable<Vector3>, IFormattable
     {
         // *Undocumented*

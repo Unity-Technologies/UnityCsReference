@@ -138,7 +138,7 @@ namespace UnityEditor
             return map;
         }
 
-        [FreeFunction("AssetImporterBindings::RegisterImporter")]
+        [FreeFunction("AssetImporterBindings::RegisterImporter", ThrowsException = true)]
         extern internal static  void RegisterImporter(Type importer, int importerVersion, int queuePos, string fileExt, bool supportsImportDependencyHinting, bool autoSelect, bool allowCaching);
 
         [FreeFunction("AssetImporterBindings::SupportsRemappedAssetType", HasExplicitThis = true, IsThreadSafe = true)]

@@ -18,124 +18,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
     // This class is intentionally immutable, avoid adding mutable state to it.
     static class EditorBuildRules
     {
-        [Flags]
-        internal enum TargetAssemblyType
-        {
-            Undefined = 0,
-            Predefined = 1,
-            Custom = 2
-        }
-
         internal enum UnityReferencesOptions
         {
             None = 0,
             ExcludeModules = 1,
-        }
-
-        internal enum EditorCompatibility
-        {
-            NotCompatibleWithEditor = 0,
-            CompatibleWithEditor = 1
-        }
-
-        [DebuggerDisplay("{Filename}")]
-        internal class TargetAssembly
-        {
-            public string Filename { get; private set; }
-            public SupportedLanguage Language { get; set; }
-            public AssemblyFlags Flags { get; private set; }
-            public string PathPrefix { get; private set; }
-            public string[] AdditionalPrefixes { get; set; }
-            public Func<string, int> PathFilter { get; private set; }
-            public Func<ScriptAssemblySettings, string[], bool> IsCompatibleFunc { get; private set; }
-            public List<TargetAssembly> References { get; set; }
-            public List<string> ExplicitPrecompiledReferences { get; set; }
-            public TargetAssemblyType Type { get; private set; }
-            public string[] Defines { get; set; }
-            public ScriptCompilerOptions CompilerOptions { get; set; }
-            public List<VersionDefine> VersionDefines { get; set; }
-            public int MaxPathLength { get; private set; }
-
-            public TargetAssembly()
-            {
-                References = new List<TargetAssembly>();
-                Defines = null;
-            }
-
-            public TargetAssembly(string name,
-                                  SupportedLanguage language,
-                                  AssemblyFlags flags,
-                                  TargetAssemblyType type,
-                                  string pathPrefix,
-                                  string[] additionalPrefixes,
-                                  Func<string, int> pathFilter,
-                                  Func<ScriptAssemblySettings, string[], bool> compatFunc,
-                                  ScriptCompilerOptions compilerOptions) : this()
-            {
-                Language = language;
-                Filename = name;
-                Flags = flags;
-                PathPrefix = pathPrefix;
-                AdditionalPrefixes = additionalPrefixes;
-                PathFilter = pathFilter;
-                IsCompatibleFunc = compatFunc;
-                Type = type;
-                CompilerOptions = compilerOptions;
-                ExplicitPrecompiledReferences = new List<string>();
-                VersionDefines = new List<VersionDefine>();
-
-                if (PathPrefix != null)
-                    MaxPathLength = PathPrefix.Length;
-                if (AdditionalPrefixes != null)
-                    MaxPathLength = UnityEngine.Mathf.Max(MaxPathLength, AdditionalPrefixes.Max(am => am.Length));
-            }
-
-            public string FullPath(string outputDirectory)
-            {
-                return AssetPath.Combine(outputDirectory, Filename);
-            }
-
-            public EditorCompatibility editorCompatibility
-            {
-                get
-                {
-                    bool isCompatibleWithEditor = IsCompatibleFunc == null ||
-                        IsCompatibleFunc(new ScriptAssemblySettings { BuildTarget = BuildTarget.NoTarget, CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor }, null);
-
-                    return isCompatibleWithEditor
-                        ? EditorCompatibility.CompatibleWithEditor
-                        : EditorCompatibility.NotCompatibleWithEditor;
-                }
-            }
-
-            public override string ToString()
-            {
-                return string.Format("{0} ({1})", Filename, Type);
-            }
-
-            protected bool Equals(TargetAssembly other)
-            {
-                return string.Equals(Filename, other.Filename) && Flags == other.Flags && Type == other.Type;
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != this.GetType()) return false;
-                return Equals((TargetAssembly)obj);
-            }
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    var hashCode = (Filename != null ? Filename.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (int)Flags;
-                    hashCode = (hashCode * 397) ^ (int)Type;
-                    return hashCode;
-                }
-            }
         }
 
         public class CompilationAssemblies
@@ -260,6 +146,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     ExplicitPrecompiledReferences = customAssembly.PrecompiledReferences?.ToList() ?? new List<string>(),
                     VersionDefines = customAssembly.VersionDefines != null
                         ? customAssembly.VersionDefines.ToList() : new List<VersionDefine>(),
+                    RootNamespace = customAssembly.RootNamespace
                 };
 
                 targetAssemblies.Add(targetAssembly);
@@ -587,6 +474,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.Language = targetAssembly.Language;
                 scriptAssembly.OriginPath = targetAssembly.PathPrefix;
                 scriptAssembly.Filename = targetAssembly.Filename;
+                scriptAssembly.RootNamespace = targetAssembly.Type == TargetAssemblyType.Predefined ? settings.ProjectRootNamespace : targetAssembly.RootNamespace;
                 scriptAssembly.DirtySource = dirtyTargetAssembly.DirtySource;
 
                 if (runUpdaterAssemblies != null && runUpdaterAssemblies.Contains(scriptAssembly.Filename))
@@ -609,6 +497,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
+
+                if (buildingForEditor && (settings.CompilationOptions & EditorScriptCompilationOptions.BuildingUseReferenceAssemblies) > 0)
+                    scriptAssembly.CompilerOptions.EmitReferenceAssembly = true;
 
                 if ((settings.CompilationOptions &
                      EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) ==
@@ -653,9 +544,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return scriptAssemblies;
         }
 
-        static bool IsPrecompiledAssemblyCompatibleWithScriptAssembly(PrecompiledAssembly compiledAssembly, ScriptAssembly scriptAssembly)
+        static bool IsPrecompiledAssemblyCompatibleWithBuildTarget(PrecompiledAssembly compiledAssembly, BuildTarget buildTarget)
         {
-            if (scriptAssembly.BuildTarget == BuildTarget.WSAPlayer)
+            if (buildTarget == BuildTarget.WSAPlayer)
             {
                 // Apparently this is used for IL2CPP too. TO DO: figure out why we need this (.winmd files end up not being referenced when this gets removed)
                 bool compiledAssemblyCompatibleWithDotNet = (compiledAssembly.Flags & AssemblyFlags.UseForDotNet) == AssemblyFlags.UseForDotNet;
@@ -675,11 +566,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool buildingForEditor = settings.BuildingForEditor;
             bool noEngineReferences = (targetAssembly.Flags & AssemblyFlags.NoEngineReferences) == AssemblyFlags.NoEngineReferences;
 
+            bool shouldProcessPredefinedCustomTargets = assemblies.CustomTargetAssemblies != null && (targetAssembly.Type & TargetAssemblyType.Predefined) == TargetAssemblyType.Predefined;
+            var predefinedCustomTargetReferences = Enumerable.Empty<TargetAssembly>();
+            if (shouldProcessPredefinedCustomTargets && assemblies.PredefinedAssembliesCustomTargetReferences != null)
+                predefinedCustomTargetReferences = assemblies.PredefinedAssembliesCustomTargetReferences;
+
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) references, as long as the target
             // doesn't specify that it doesn't want them.
             if (!noEngineReferences)
             {
-                var unityReferences = GetUnityReferences(scriptAssembly, targetAssembly, assemblies.UnityAssemblies, settings.CompilationOptions, UnityReferencesOptions.None);
+                // Add predefined custom target references in a hash-set for fast lookup
+                var predefinedCustomTargetRefs = new HashSet<string>(predefinedCustomTargetReferences.Select(x => x.Filename));
+                var unityReferences = GetUnityReferences(scriptAssembly, targetAssembly, assemblies.UnityAssemblies, predefinedCustomTargetRefs, settings.CompilationOptions, UnityReferencesOptions.None);
                 references.AddRange(unityReferences);
             }
 
@@ -707,9 +605,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             // For predefined target assembly add references to custom target assemblies
-            if (assemblies.CustomTargetAssemblies != null && (targetAssembly.Type & TargetAssemblyType.Predefined) == TargetAssemblyType.Predefined)
+            if (shouldProcessPredefinedCustomTargets)
             {
-                foreach (var customTargetAssembly in assemblies.PredefinedAssembliesCustomTargetReferences ?? Enumerable.Empty<TargetAssembly>())
+                foreach (var customTargetAssembly in predefinedCustomTargetReferences)
                 {
                     ScriptAssembly scriptAssemblyReference;
 
@@ -798,6 +696,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static List<string> GetUnityReferences(ScriptAssembly scriptAssembly, TargetAssembly targetAssembly, PrecompiledAssembly[] unityAssemblies, EditorScriptCompilationOptions options, UnityReferencesOptions unityReferencesOptions)
         {
+            return GetUnityReferences(scriptAssembly, targetAssembly, unityAssemblies, null, options, unityReferencesOptions);
+        }
+
+        public static List<string> GetUnityReferences(ScriptAssembly scriptAssembly, TargetAssembly targetAssembly, PrecompiledAssembly[] unityAssemblies, HashSet<string> predefinedCustomTargetReferences, EditorScriptCompilationOptions options, UnityReferencesOptions unityReferencesOptions)
+        {
             var references = new List<string>();
 
             bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
@@ -818,12 +721,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (unityAssemblyFileName == scriptAssembly.Filename)
                         continue;
 
+                    // Custom targets may override Unity references, do not add them to avoid duplicated references.
+                    if (predefinedCustomTargetReferences != null && predefinedCustomTargetReferences.Contains(unityAssemblyFileName))
+                        continue;
+
                     // If this scriptAssembly/targetAssembly explicitly references another
                     // scriptAssembly that has actually overridden this unityAssembly, we should
                     // not add the unityAssembly to the references as well. It's possible
                     // that this scriptAssembly is using new APIs that don't exist in the shipped
                     // copy of the unityAssembly.
-                    if (targetAssembly.References.Any(ta => ta.Filename == unityAssemblyFileName))
+                    if (targetAssembly != null && targetAssembly.References.Any(ta => ta.Filename == unityAssemblyFileName))
                         continue;
                 }
 
@@ -847,7 +754,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     // Add Unity runtime assemblies (UnityEngine.dll) to all assemblies
                     if (!unityAssemblyEditorOnly && !moduleExcludedForRuntimeCode)
                     {
-                        if (IsPrecompiledAssemblyCompatibleWithScriptAssembly(unityAssembly, scriptAssembly))
+                        if (IsPrecompiledAssemblyCompatibleWithBuildTarget(unityAssembly, scriptAssembly.BuildTarget))
                             references.Add(unityAssembly.Path);
                     }
                 }
@@ -872,7 +779,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     // Add all pre-compiled runtime assemblies as references to all script assemblies. Don't add pre-compiled editor assemblies as dependencies to runtime assemblies.
                     if (!compiledAssemblyEditorOnly || assemblyEditorOnly || (isCustomAssembly && buildingForEditor && editorCompatibility == EditorCompatibility.CompatibleWithEditor))
                     {
-                        if (IsPrecompiledAssemblyCompatibleWithScriptAssembly(precompiledAssembly, scriptAssembly))
+                        if (IsPrecompiledAssemblyCompatibleWithBuildTarget(precompiledAssembly, scriptAssembly.BuildTarget))
                             references.Add(precompiledAssembly.Path);
                     }
                 }

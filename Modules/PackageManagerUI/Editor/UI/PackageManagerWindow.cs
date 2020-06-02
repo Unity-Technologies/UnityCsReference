@@ -21,12 +21,20 @@ namespace UnityEditor.PackageManager.UI
         }
 
         /// <summary>
-        /// Open Package Manager Window and select specified package (if any)
+        /// Open Package Manager Window and select specified package(if any).
+        /// The string used to identify the package can be any of the following:
+        /// <list type="bullet">
+        /// <item><description>productId (e.g. 12345)</description></item>
+        /// <item><description>packageName (e.g. com.unity.x)</description></item>
+        /// <item><description>packageId (e.g. com.unity.x@1.0.0)</description></item>
+        /// <item><description>displayName (e.g. 2D Common)</description></item>
+        /// <item><description>null (no specific package to focus)</description></item>
+        /// </list>
         /// </summary>
-        /// <param name="packageNameOrDisplayName">Id or display name of package to select, can be null</param>
-        public static void Open(string packageNameOrDisplayName)
+        /// <param name="packageToSelect">packageToSelect can be identified by packageName, displayName, packageId, productId or null</param>
+        public static void Open(string packageToSelect)
         {
-            PackageManagerWindow.OpenPackageManager(packageNameOrDisplayName);
+            PackageManagerWindow.OpenPackageManager(packageToSelect);
         }
     }
 
@@ -106,23 +114,23 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
-        internal static void OpenPackageManager(string packageNameOrDisplayName)
+        internal static void OpenPackageManager(string packageToSelect)
         {
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
 
-            SelectPackageAndFilterStatic(packageNameOrDisplayName);
+            SelectPackageAndFilterStatic(packageToSelect);
 
             if (!isWindowAlreadyVisible)
             {
                 string packageId = null;
-                if (!string.IsNullOrEmpty(packageNameOrDisplayName))
+                if (!string.IsNullOrEmpty(packageToSelect))
                 {
                     var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
                     IPackageVersion version;
                     IPackage package;
-                    packageDatabase.GetPackageAndVersionByIdOrName(packageNameOrDisplayName, out package, out version);
+                    packageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out package, out version);
 
-                    packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? string.Format("{0}@primary", packageNameOrDisplayName);
+                    packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? string.Format("{0}@primary", packageToSelect);
                 }
                 PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
             }
@@ -139,11 +147,11 @@ namespace UnityEditor.PackageManager.UI
             upmCache.SetInstalledPackageInfos(PackageInfo.GetAll());
         }
 
-        internal static void SelectPackageAndFilterStatic(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
+        internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>(typeof(SceneView));
             instance.minSize = new Vector2(800, 250);
-            instance.m_Root.SelectPackageAndFilter(packageIdOrDisplayName, filterTab, refresh, searchText);
+            instance.m_Root.SelectPackageAndFilter(packageToSelect, filterTab, refresh, searchText);
             instance.Show();
         }
 

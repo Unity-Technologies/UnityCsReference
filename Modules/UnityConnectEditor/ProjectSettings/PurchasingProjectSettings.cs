@@ -500,7 +500,7 @@ namespace UnityEditor.Connect
                 PurchasingService.instance.GetLatestETag(PurchasingService.instance.OnGetLatestETag);
             }
 
-            //Begin Import Block
+            //Begin Migrate Block
             void SetupMigrateIapBlock()
             {
                 m_MigrateIapBlock.Q<Button>(k_MigrateBtn).clicked += InstallMigratePackage;
@@ -602,7 +602,7 @@ namespace UnityEditor.Connect
 
             protected override string GetUpdatablePackageVersion()
             {
-                if (!m_EligibleForMigration)
+                if (string.IsNullOrEmpty(m_LatestPreMigrationPackageVersion))
                 {
                     return base.GetUpdatablePackageVersion();
                 }
@@ -616,15 +616,37 @@ namespace UnityEditor.Connect
             {
                 base.OnSearchPackageFound(package);
 
-                foreach (var version in package.versions.compatible.Reverse())
+                m_EligibleForMigration = false;
+                m_LatestPreMigrationPackageVersion = string.Empty;
+                if (TryGetMajorVersion(currentPackageVersion, out var currentMajorVer))
                 {
-                    if (TryGetMajorVersion(version, out var currentMajorVer))
+                    if (currentMajorVer <= 2)
                     {
-                        if (currentMajorVer <= 2)
+                        foreach (var version in package.versions.compatible.Reverse())
                         {
-                            m_LatestPreMigrationPackageVersion = version;
+                            if (!IsPreviewVersion(version))
+                            {
+                                if (TryGetMajorVersion(version, out var majorVer))
+                                {
+                                    if (majorVer <= 2)
+                                    {
+                                        if (string.IsNullOrEmpty(m_LatestPreMigrationPackageVersion))
+                                        {
+                                            m_LatestPreMigrationPackageVersion = version;
+                                            break; //Should be the last version we need to test for, given Reverse order. Move if algorithm changes.
+                                        }
+                                    }
+                                    else if (majorVer >= 3)
+                                    {
+                                        if (!m_EligibleForMigration)
+                                        {
+                                            m_EligibleForMigration = true;
 
-                            break;
+                                            m_MigratePackageVersionLabel.text = latestPackageVersion;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -633,23 +655,12 @@ namespace UnityEditor.Connect
             protected override void PackageInformationUpdated()
             {
                 m_LookForAssetStoreImport = false;
-                m_EligibleForMigration = false;
 
                 if (packmanPackageInstalled && TryGetMajorVersion(currentPackageVersion, out var currentMajorVer))
                 {
                     if (currentMajorVer <= 2)
                     {
                         m_LookForAssetStoreImport = true;
-
-                        if (TryGetMajorVersion(latestPackageVersion, out var latestMajorVer))
-                        {
-                            if (latestMajorVer >= 3)
-                            {
-                                m_EligibleForMigration = true;
-
-                                m_MigratePackageVersionLabel.text = latestPackageVersion;
-                            }
-                        }
                     }
                 }
 
@@ -660,6 +671,12 @@ namespace UnityEditor.Connect
             bool TryGetMajorVersion(string versionName, out int majorVersion)
             {
                 return int.TryParse(versionName.Split('.')[0], out majorVersion);
+            }
+
+            bool IsPreviewVersion(string versionName)
+            {
+                var previewTag = "preview"; //TODO: update to an array if more nomenclature exists.
+                return versionName.Contains(previewTag);
             }
 
             void RequestImportOperation()

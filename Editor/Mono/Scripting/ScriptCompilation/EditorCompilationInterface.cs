@@ -234,10 +234,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Instance.SetAllUnityAssemblies(unityAssemblies);
         }
 
+        // Burst package depends on this method, so we can't remove it.
         [RequiredByNativeCode]
         public static void SetCompileScriptsOutputDirectory(string directory)
         {
             Instance.SetCompileScriptsOutputDirectory(directory);
+        }
+
+        [RequiredByNativeCode]
+        public static void SetAssembliesOutputDirectories(string directory, string editorDirectory)
+        {
+            Instance.SetAssembliesOutputDirectories(directory, editorDirectory);
         }
 
         [RequiredByNativeCode]
@@ -341,19 +348,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static bool ShouldRecompileNonCodeGenAssembliesAfterReload()
-        {
-            return EmitExceptionAsError(() => Instance.IsCodeGenAssemblyChanged, false);
-        }
-
-        [RequiredByNativeCode]
-        public static void DirtyAllNonCodeGenAssemblies()
-        {
-            var options = GetAdditionalEditorScriptCompilationOptions();
-            EmitExceptionAsError(() => Instance.DirtyAllNonCodeGenAssemblies(options));
-        }
-
-        [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyDirtyScripts()
         {
             return Instance.DoesProjectFolderHaveAnyDirtyScripts();
@@ -447,6 +441,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (PlayerSettings.allowUnsafeCode)
                 options |= EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode;
+
+            if (PlayerSettings.useReferenceAssemblies)
+                options |= EditorScriptCompilationOptions.BuildingUseReferenceAssemblies;
 
             if (PlayerSettings.UseDeterministicCompilation)
                 options |= EditorScriptCompilationOptions.BuildingUseDeterministicCompilation;

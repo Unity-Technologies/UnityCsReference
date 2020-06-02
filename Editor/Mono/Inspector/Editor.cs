@@ -378,6 +378,8 @@ namespace UnityEditor
         // used internally to know if this the first editor in the inspector window
         internal bool firstInspectedEditor { get; set; }
 
+        internal IPropertyView propertyViewer { get; set; }
+
         internal virtual bool HasLargeHeader()
         {
             return AssetDatabase.IsMainAsset(target) || AssetDatabase.IsSubAsset(target);
@@ -768,7 +770,13 @@ namespace UnityEditor
         }
 
         // Repaint any inspectors that shows this editor.
-        public void Repaint() { InspectorWindow.RepaintAllInspectors(); }
+        public void Repaint()
+        {
+            if (propertyViewer != null)
+                propertyViewer.Repaint();
+            else
+                InspectorWindow.RepaintAllInspectors();
+        }
 
         // Implement this function to make a custom IMGUI inspector.
         public virtual void OnInspectorGUI()

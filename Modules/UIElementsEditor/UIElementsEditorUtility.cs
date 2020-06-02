@@ -3,14 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using UnityEditor.Experimental;
-using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
-using StyleSheetCache = UnityEngine.UIElements.StyleSheets.StyleSheetCache;
 
 namespace UnityEditor.UIElements
 {

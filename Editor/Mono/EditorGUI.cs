@@ -5478,11 +5478,17 @@ namespace UnityEditor
                 eventType = Event.current.rawType;
             }
 
+            Rect clickRect = position;
+            if (!toggleOnLabelClick)
+            {
+                clickRect.width = style.padding.left;
+                clickRect.x += indent;
+            }
             switch (eventType)
             {
                 case EventType.MouseDown:
                     // If the mouse is inside the button, we say that we're the hot control
-                    if (position.Contains(Event.current.mousePosition) && Event.current.button == 0)
+                    if (clickRect.Contains(Event.current.mousePosition) && Event.current.button == 0)
                     {
                         GUIUtility.keyboardControl = GUIUtility.hotControl = id;
                         Event.current.Use();
@@ -5498,13 +5504,6 @@ namespace UnityEditor
                         Event.current.Use();
 
                         // toggle the passed-in value if the mouse was over the button & return true
-                        Rect clickRect = position;
-                        if (!toggleOnLabelClick)
-                        {
-                            clickRect.width = style.padding.left;
-                            clickRect.x += indent;
-                        }
-
                         if (clickRect.Contains(Event.current.mousePosition))
                         {
                             GUI.changed = true;
@@ -6451,19 +6450,21 @@ namespace UnityEditor
             if (type == SerializedPropertyType.Vector3 || type == SerializedPropertyType.Vector2 || type == SerializedPropertyType.Vector4 ||
                 type == SerializedPropertyType.Vector3Int || type == SerializedPropertyType.Vector2Int)
             {
-                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight + kVerticalSpacingMultiField;
+                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) +
+                    kSingleLineHeight;
             }
 
             if (type == SerializedPropertyType.Rect || type == SerializedPropertyType.RectInt)
             {
-                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField * 2;
+                return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) +
+                    kSingleLineHeight * 2 + kVerticalSpacingMultiField;
             }
 
             // Bounds field has label on its own line even in wide mode because the words "center" and "extends"
             // would otherwise eat too much of the label space.
             if (type == SerializedPropertyType.Bounds || type == SerializedPropertyType.BoundsInt)
             {
-                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField * 2;
+                return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) + kSingleLineHeight * 2;
             }
 
             return kSingleLineHeight;
@@ -6480,7 +6481,7 @@ namespace UnityEditor
             return ScriptAttributeUtility.GetHandler(property).CanCacheInspectorGUI(property);
         }
 
-        internal static bool HasVisibleChildFields(SerializedProperty property)
+        internal static bool HasVisibleChildFields(SerializedProperty property, bool isUIElements = false)
         {
             switch (property.propertyType)
             {
@@ -6494,6 +6495,9 @@ namespace UnityEditor
                 case SerializedPropertyType.BoundsInt:
                     return false;
             }
+
+            if (!isUIElements && PropertyHandler.IsNonStringArray(property)) return false;
+
             return property.hasVisibleChildren;
         }
 
@@ -7843,7 +7847,7 @@ namespace UnityEditor
             return PropertyFieldInternal(position, property, label, includeChildren);
         }
 
-        static class EnumNamesCache
+        internal static class EnumNamesCache
         {
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new Dictionary<Type, GUIContent[]>();
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
@@ -7870,10 +7874,14 @@ namespace UnityEditor
 
             internal static GUIContent[] GetEnumLocalizedGUIContents(SerializedProperty property)
             {
+                if (property.serializedObject.targetObject == null)
+                    return EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
+
                 var propertyHash = property.hashCodeForPropertyPathWithoutArrayIndex;
                 var typeHash = property.serializedObject.targetObject.GetType().GetHashCode();
                 var hashCode = typeHash ^ propertyHash;
                 GUIContent[] result;
+
                 if (s_SerializedPropertyEnumLocalizedGUIContents.TryGetValue(hashCode, out result))
                 {
                     return result;

@@ -22,41 +22,29 @@ namespace UnityEditor.PackageManager.UI
 
         public override IVersionList versions => m_VersionList;
 
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        public void ResolveDependencies(IOProxy ioProxy)
+        public UpmPackage(string name, bool isDiscoverable, PackageType type = PackageType.None)
         {
-            m_IOProxy = ioProxy;
-            m_VersionList?.ResolveDependencies(ioProxy);
-        }
-
-        public UpmPackage(IOProxy ioProxy, string name, bool isDiscoverable, PackageType type = PackageType.None)
-        {
-            ResolveDependencies(ioProxy);
-
             m_Progress = PackageProgress.None;
             m_Name = name;
             m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList(ioProxy);
+            m_VersionList = new UpmVersionList();
             m_Errors = new List<UIError>();
             m_Type = type;
         }
 
-        public UpmPackage(IOProxy ioProxy, PackageInfo info, bool isInstalled, bool isDiscoverable)
+        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable)
         {
-            ResolveDependencies(ioProxy);
-
             m_Progress = PackageProgress.None;
             m_Name = info.name;
             m_Errors = new List<UIError>();
             m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList(ioProxy, info, isInstalled);
+            m_VersionList = new UpmVersionList(info, isInstalled);
             m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
         }
 
         internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
         {
-            m_VersionList = new UpmVersionList(m_IOProxy, updatedVersions);
+            m_VersionList = new UpmVersionList(updatedVersions);
             ClearErrors();
         }
 

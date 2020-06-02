@@ -166,6 +166,9 @@ namespace UnityEditor
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler");
+            public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
+            public static readonly GUIContent scriptingDefineSymbolsApplyRevert = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent scriptingDefineSymbolsCopyDefines = EditorGUIUtility.TrTextContent("Copy Defines", "Copy applied defines");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -181,8 +184,10 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
+            public static readonly GUIContent scriptCompilationTitle = EditorGUIUtility.TrTextContent("Script Compilation");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
-            public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use deterministic compilation", "Compiling with Deterministic compilation flag");
+            public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
+            public static readonly GUIContent useReferenceAssembclies = EditorGUIUtility.TrTextContent("Use Roslyn Reference Assemblies", "Skips compilation of assembly references if the metadata of the modified assembly does not change.");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
@@ -233,6 +238,7 @@ namespace UnityEditor
         SavedInt m_SelectedSection = new SavedInt("PlayerSettings.ShownSection", -1);
 
         BuildPlatform[] validPlatforms;
+        BuildTargetGroup lastTargetGroup;
 
         // il2cpp
         SerializedProperty m_StripEngineCode;
@@ -359,6 +365,7 @@ namespace UnityEditor
 
         // Scripting
         SerializedProperty m_UseDeterministicCompilation;
+        SerializedProperty m_UseReferenceAssemblies;
 
         // Localization Cache
         string m_LocalizedTargetName;
@@ -373,6 +380,7 @@ namespace UnityEditor
             s_GraphicsDeviceLists[target].list = PlayerSettings.GetGraphicsAPIs(target).ToList();
         }
 
+        static ReorderableList s_ScriptingDefineSymbolsList;
         static ReorderableList s_ColorGamutList;
 
         public static void SyncColorGamuts()
@@ -382,10 +390,9 @@ namespace UnityEditor
 
         int selectedPlatform = 0;
         int scriptingDefinesControlID = 0;
-        bool scriptingDefinesFoldout = true;
-        int scriptingDefineSymbolsSize;
-        string[] scriptDefines;
-        const string kDefinesSizeStateName = "scriptingDefineSymbolsSize";
+        string[] appliedScriptingDefines;
+        List<string>  scriptDefinesList;
+        bool hasScriptDefinesBeenModified;
 
         ISettingEditorExtension[] m_SettingsExtensions;
 
@@ -467,6 +474,7 @@ namespace UnityEditor
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
             m_UseDeterministicCompilation = FindPropertyAssert("useDeterministicCompilation");
+            m_UseReferenceAssemblies = FindPropertyAssert("useReferenceAssemblies");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -531,6 +539,19 @@ namespace UnityEditor
             // we clear it just to be on the safe side:
             // we access this cache both from player settings editor and script side when changing api
             s_GraphicsDeviceLists.Clear();
+        }
+
+        void OnDisable()
+        {
+            if (hasScriptDefinesBeenModified)
+            {
+                if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to save changes?", "Apply", "Revert"))
+                {
+                    PlayerSettings.SetScriptingDefineSymbolsForGroup(lastTargetGroup, scriptDefinesList.ToArray());
+                }
+
+                hasScriptDefinesBeenModified = false;
+            }
         }
 
         public void SetValueChangeListeners(UnityAction action)
@@ -1508,6 +1529,7 @@ namespace UnityEditor
                 OtherSectionVulkanSettingsGUI(targetGroup, settingsExtension);
                 OtherSectionIdentificationGUI(targetGroup, settingsExtension);
                 OtherSectionConfigurationGUI(platform, targetGroup, settingsExtension);
+                OtherSectionScriptCompilationGUI(targetGroup);
                 OtherSectionOptimizationGUI(platform, targetGroup);
                 OtherSectionLoggingGUI();
                 OtherSectionLegacyGUI(targetGroup);
@@ -2056,6 +2078,9 @@ namespace UnityEditor
             PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
             PlayerSettings.vulkanEnablePreTransform = EditorGUILayout.Toggle(SettingsContent.vulkanEnablePreTransform, PlayerSettings.vulkanEnablePreTransform);
 
+            if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
+                settingsExtension.VulkanSectionGUI();
+
             EditorGUILayout.Space();
         }
 
@@ -2293,66 +2318,6 @@ namespace UnityEditor
             if (settingsExtension != null)
                 settingsExtension.ConfigurationSectionGUI();
 
-
-            // User script defines
-            {
-                EditorGUI.BeginChangeCheck();
-                if (scriptDefines == null)
-                {
-                    PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup, out scriptDefines);
-                    // Get define symbols size from SessionState since to have user's preferred array size
-                    scriptingDefineSymbolsSize = SessionState.GetInt(kDefinesSizeStateName, scriptingDefineSymbolsSize);
-                    if (scriptingDefineSymbolsSize == 0)
-                        scriptingDefineSymbolsSize = scriptDefines.Length;
-                }
-
-                scriptingDefinesFoldout = EditorGUILayout.Foldout(scriptingDefinesFoldout, SettingsContent.scriptingDefineSymbols, EditorStyles.titlebarFoldout);
-
-                if (scriptingDefinesFoldout)
-                {
-                    EditorGUI.indentLevel++;
-                    scriptingDefineSymbolsSize = Mathf.Clamp(EditorGUILayout.DelayedIntField("Size", scriptingDefineSymbolsSize), 1, 500);
-
-                    if (scriptingDefineSymbolsSize != scriptDefines.Length)
-                    {
-                        // Save define symbols size using SessionState since we want to have user's prefered array size,
-                        // otherwise it will be reset to current array size after domain reload
-                        SessionState.SetInt(kDefinesSizeStateName, scriptingDefineSymbolsSize);
-                        Array.Resize(ref scriptDefines, scriptingDefineSymbolsSize);
-                    }
-
-                    for (int i = 0; i < scriptingDefineSymbolsSize; i++)
-                    {
-                        scriptDefines[i] = EditorGUILayout.DelayedTextField("Define " + i, scriptDefines[i]);
-                    }
-                    EditorGUI.indentLevel--;
-                }
-
-                scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(this.target, SettingsContent.undoChangedScriptingDefineString);
-                    PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
-                }
-            }
-
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_AllowUnsafeCode, SettingsContent.allowUnsafeCode);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.allowUnsafeCode = m_AllowUnsafeCode.boolValue;
-                }
-            }
-
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_UseDeterministicCompilation, SettingsContent.useDeterministicCompilation);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.UseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
-                }
-            }
             // Active input handling
             int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
             int oldInputOption = inputOption;
@@ -2375,6 +2340,125 @@ namespace UnityEditor
             }
 
             EditorGUILayout.Space();
+        }
+
+        private void OtherSectionScriptCompilationGUI(BuildTargetGroup targetGroup)
+        {
+            // Configuration
+            GUILayout.Label(SettingsContent.scriptCompilationTitle, EditorStyles.boldLabel);
+
+            // User script defines
+            {
+                EditorGUI.BeginChangeCheck();
+
+                lastTargetGroup = targetGroup;
+
+                if (appliedScriptingDefines == null || s_ScriptingDefineSymbolsList == null)
+                {
+                    InitReorderableScriptingDefineSymbolsList(targetGroup);
+                }
+
+                s_ScriptingDefineSymbolsList.DoLayoutList();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+
+                var GUIState = GUI.enabled;
+
+                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
+                {
+                    EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
+                }
+
+                GUI.enabled = hasScriptDefinesBeenModified;
+
+                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton))
+                {
+                    UpdateScriptingDefineSymbolsLists();
+                }
+
+                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton))
+                {
+                    PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefinesList.ToArray());
+
+                    // Get Scripting Define Symbols without duplicates
+                    PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup, out appliedScriptingDefines);
+                    UpdateScriptingDefineSymbolsLists();
+                }
+
+                // Set previous GUIState
+                GUI.enabled = GUIState;
+                EditorGUILayout.EndHorizontal();
+
+                scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(this.target, SettingsContent.undoChangedScriptingDefineString);
+                }
+            }
+
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_AllowUnsafeCode, SettingsContent.allowUnsafeCode);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.allowUnsafeCode = m_AllowUnsafeCode.boolValue;
+                }
+            }
+
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_UseDeterministicCompilation, SettingsContent.useDeterministicCompilation);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.UseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
+                }
+            }
+
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_UseReferenceAssemblies, SettingsContent.useReferenceAssembclies);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.useReferenceAssemblies = m_UseReferenceAssemblies.boolValue;
+                }
+            }
+        }
+
+        void DrawTextField(Rect rect, int index)
+        {
+            // Handle list selection before the TextField grabs input
+            Event evt = Event.current;
+            if (evt.type == EventType.MouseDown && rect.Contains(evt.mousePosition))
+            {
+                if (s_ScriptingDefineSymbolsList.index != index)
+                {
+                    s_ScriptingDefineSymbolsList.index = index;
+                    s_ScriptingDefineSymbolsList.onSelectCallback?.Invoke(s_ScriptingDefineSymbolsList);
+                }
+            }
+
+            string define = scriptDefinesList[index];
+            scriptDefinesList[index] = GUI.TextField(rect, scriptDefinesList[index]);
+            if (!scriptDefinesList[index].Equals(define))
+                SetScriptingDefinesListDirty();
+        }
+
+        void AddScriptingDefineCallback(ReorderableList list)
+        {
+            scriptDefinesList.Add("");
+            SetScriptingDefinesListDirty();
+        }
+
+        void RemoveScriptingDefineCallback(ReorderableList list)
+        {
+            scriptDefinesList.RemoveAt(list.index);
+            SetScriptingDefinesListDirty();
+        }
+
+        void SetScriptingDefinesListDirty(ReorderableList list = null)
+        {
+            hasScriptDefinesBeenModified = true;
         }
 
         private void OtherSectionOptimizationGUI(BuildPlatform platform, BuildTargetGroup targetGroup)
@@ -2793,6 +2877,29 @@ namespace UnityEditor
                 }
             };
             return provider;
+        }
+
+        void InitReorderableScriptingDefineSymbolsList(BuildTargetGroup targetGroup)
+        {
+            // Get Scripting Define Symbols data
+            PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup, out appliedScriptingDefines);
+            scriptDefinesList = appliedScriptingDefines.ToList();
+
+            // Initialize Reorderable List
+            s_ScriptingDefineSymbolsList = new ReorderableList(scriptDefinesList, typeof(string), true, true, true, true);
+            s_ScriptingDefineSymbolsList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextField(rect, index);
+            s_ScriptingDefineSymbolsList.drawHeaderCallback = (rect) => GUI.Label(rect, SettingsContent.scriptingDefineSymbols, EditorStyles.label);
+            s_ScriptingDefineSymbolsList.onAddCallback = AddScriptingDefineCallback;
+            s_ScriptingDefineSymbolsList.onRemoveCallback = RemoveScriptingDefineCallback;
+            s_ScriptingDefineSymbolsList.onChangedCallback += SetScriptingDefinesListDirty;
+        }
+
+        void UpdateScriptingDefineSymbolsLists()
+        {
+            scriptDefinesList = appliedScriptingDefines.ToList();
+            s_ScriptingDefineSymbolsList.list = scriptDefinesList;
+            s_ScriptingDefineSymbolsList.DoLayoutList();
+            hasScriptDefinesBeenModified = false;
         }
     }
 }

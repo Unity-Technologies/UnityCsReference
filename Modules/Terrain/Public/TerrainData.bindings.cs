@@ -15,10 +15,13 @@ namespace UnityEngine
     {
         internal GameObject m_Prefab;
         internal float m_BendFactor;
+        internal int m_NavMeshLod;
 
         public GameObject prefab { get { return m_Prefab; } set { m_Prefab = value; } }
 
         public float bendFactor { get { return m_BendFactor; } set { m_BendFactor = value; } }
+
+        public int navMeshLod { get { return m_NavMeshLod; } set { m_NavMeshLod = value; } }
 
         public TreePrototype() {}
 
@@ -26,6 +29,7 @@ namespace UnityEngine
         {
             prefab = other.prefab;
             bendFactor = other.bendFactor;
+            navMeshLod = other.navMeshLod;
         }
 
         public override bool Equals(object obj)
@@ -50,7 +54,8 @@ namespace UnityEngine
                 return false;
 
             bool equals = prefab == other.prefab &&
-                bendFactor == other.bendFactor;
+                bendFactor == other.bendFactor &&
+                navMeshLod == other.navMeshLod;
 
             return equals;
         }
@@ -668,7 +673,7 @@ namespace UnityEngine
             [FreeFunction(k_ScriptingInterfacePrefix + "GetDetailPrototypes", HasExplicitThis = true)]
             get;
 
-            [FreeFunction(k_ScriptingInterfacePrefix + "SetDetailPrototypes", HasExplicitThis = true)]
+            [FreeFunction(k_ScriptingInterfacePrefix + "SetDetailPrototypes", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 
@@ -731,7 +736,7 @@ namespace UnityEngine
             [FreeFunction(k_ScriptingInterfacePrefix + "GetTreePrototypes", HasExplicitThis = true)]
             get;
 
-            [FreeFunction(k_ScriptingInterfacePrefix + "SetTreePrototypes", HasExplicitThis = true)]
+            [FreeFunction(k_ScriptingInterfacePrefix + "SetTreePrototypes", HasExplicitThis = true, ThrowsException = true)]
             set;
         }
 

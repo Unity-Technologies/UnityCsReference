@@ -55,7 +55,6 @@ namespace UnityEditor
         private GUIContent m_ProgressStatus = new GUIContent();
         private GUIContent m_ProgressPercentageStatus = new GUIContent();
         private bool m_CurrentProgressNotResponding = false;
-        private float m_LastElapsedTime = 0f;
 
         private ManagedDebuggerToggle m_ManagedDebuggerToggle = null;
         private CacheServerToggle m_CacheServerToggle = null;
@@ -73,7 +72,7 @@ namespace UnityEditor
         {
             get
             {
-                return Progress.running && m_LastElapsedTime > 0.5f;
+                return Progress.running;
             }
         }
 
@@ -192,11 +191,11 @@ namespace UnityEditor
             }
             else
             {
-                var canHide = ProgressWindow.canHideDetails;
+                var canHide = EditorUIService.instance.ProgressWindowCanHideDetails();
                 if (GUILayout.Button(canHide ? Styles.progressHideIcon : Styles.progressIcon, Styles.statusIcon))
                 {
                     if (canHide)
-                        ProgressWindow.HideDetails();
+                        EditorUIService.instance.ProgressWindowHideDetails();
                     else
                         Progress.ShowDetails();
                 }
@@ -345,7 +344,6 @@ namespace UnityEditor
             var taskCount = Progress.GetRunningProgressCount();
             if (taskCount == 0)
             {
-                m_LastElapsedTime = 0f;
                 m_ProgressStatus.text = String.Empty;
                 m_ProgressPercentageStatus.text = String.Empty;
             }
@@ -367,10 +365,6 @@ namespace UnityEditor
                     m_ProgressStatus.text = $"Multiple tasks ({taskCount}){remainingTimeText}";
                 else
                     m_ProgressStatus.text = $"{currentItem.name}{remainingTimeText}";
-
-                m_LastElapsedTime = Mathf.Max(m_LastElapsedTime, currentItem.elapsedTime);
-                if (m_CurrentProgressNotResponding)
-                    m_LastElapsedTime = float.MaxValue;
 
                 DelayCheckProgressUnresponsive();
             }

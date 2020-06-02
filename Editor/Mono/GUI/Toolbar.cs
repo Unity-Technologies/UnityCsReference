@@ -14,7 +14,6 @@ namespace UnityEditor
     class Toolbar : GUIView
     {
         const float k_ToolbarHeight = 30f;
-        static readonly Type k_DefaultToolbarType = typeof(UnityMainToolbar);
 
         static class Styles
         {
@@ -55,7 +54,7 @@ namespace UnityEditor
             get
             {
                 if (m_MainToolbar == null)
-                    m_MainToolbar = GetSingleton(k_DefaultToolbarType);
+                    m_MainToolbar = GetSingleton(EditorUIService.instance.GetDefaultToolbarType());
                 return m_MainToolbar;
             }
 
@@ -72,7 +71,7 @@ namespace UnityEditor
                     DestroyImmediate(m_MainToolbar);
                 }
 
-                m_MainToolbar = value == null ? GetSingleton(k_DefaultToolbarType) : value;
+                m_MainToolbar = value == null ? GetSingleton(EditorUIService.instance.GetDefaultToolbarType()) : value;
                 m_MainToolbar.m_Parent = this;
 
                 PositionChanged(this);
@@ -122,7 +121,7 @@ namespace UnityEditor
             get = this;
 
             if (m_MainToolbar == null)
-                m_MainToolbar = CreateInstance<UnityMainToolbar>();
+                m_MainToolbar = (EditorToolbar)CreateInstance(EditorUIService.instance.GetDefaultToolbarType());
 
             if (m_MainToolbar.rootVisualElement != null)
             {
@@ -183,7 +182,7 @@ namespace UnityEditor
         // @todo Remove when collab updates
         internal static void AddSubToolbar(SubToolbar subToolbar)
         {
-            UnityMainToolbar.AddSubToolbar(subToolbar);
+            EditorUIService.instance.AddSubToolbar(subToolbar);
         }
 
         // Repaints all views, called from C++ when playmode entering is aborted

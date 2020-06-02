@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.UI
             }
             else
             {
-                if (request.responseCode == 0)
+                if (request.responseCode == 0 && string.IsNullOrEmpty(request.text))
                     errorMessage = L10n.Tr("Failed to parse response.");
                 else
                 {

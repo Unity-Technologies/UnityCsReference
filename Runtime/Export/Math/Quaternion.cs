@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 namespace UnityEngine
 {
     [StructLayout(LayoutKind.Sequential)]
+    [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public partial struct Quaternion : IEquatable<Quaternion>, IFormattable
     {
         // X component of the Quaternion. Don't modify this directly unless you know quaternions inside out.

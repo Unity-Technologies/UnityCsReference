@@ -132,7 +132,7 @@ namespace UnityEditor
 
         public static void ShowDetails(bool shouldReposition = true)
         {
-            ProgressWindow.ShowDetails(shouldReposition);
+            EditorUIService.instance.ProgressWindowShowDetails(shouldReposition);
         }
 
         public static int RunTask(string name, string description, Func<int, object, IEnumerator> taskHandler, Options options = Options.None, int parentId = -1, object userData = null)

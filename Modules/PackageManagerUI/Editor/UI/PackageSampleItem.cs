@@ -13,10 +13,12 @@ namespace UnityEditor.PackageManager.UI
         private Sample m_Sample;
 
         private SelectionProxy m_Selection;
+        private AssetDatabaseProxy m_AssetDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_Selection = container.Resolve<SelectionProxy>();
+            m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
         }
 
         public PackageSampleItem(IPackageVersion version, Sample sample)
@@ -76,7 +78,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     // Highlight import path
                     var importRelativePath = m_Sample.importPath.Replace(Application.dataPath, "Assets");
-                    Object obj = AssetDatabase.LoadAssetAtPath(importRelativePath, typeof(Object));
+                    Object obj = m_AssetDatabase.LoadMainAssetAtPath(importRelativePath);
                     m_Selection.activeObject = obj;
                     EditorGUIUtility.PingObject(obj);
                 }

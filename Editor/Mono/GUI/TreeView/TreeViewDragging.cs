@@ -42,6 +42,13 @@ namespace UnityEditor.IMGUI.Controls
         protected DropData m_DropData = new DropData();
         const double k_DropExpandTimeout = 0.7;
 
+        static class Constants
+        {
+            public const string UndoActionName = "Drag";
+            public const string GetInsertionIndexNotFound = "Did not find targetItem,; should be a child of parentItem";
+            public const string UnhandledEnum = "Unhandled enum";
+        }
+
         public TreeViewDragging(TreeViewController treeView)
         {
             m_TreeView = treeView;
@@ -209,7 +216,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 break;
                 default:
-                    Assert.IsTrue(false, "Unhandled enum");
+                    Assert.IsTrue(false, Constants.UnhandledEnum);
                     break;
             }
 
@@ -295,6 +302,7 @@ namespace UnityEditor.IMGUI.Controls
                 newSelection[i] = (objs[i].GetInstanceID());
             }
             m_TreeView.NotifyListenersThatDragEnded(newSelection, draggedItemsFromOwnTreeView);
+            Undo.SetCurrentGroupName(Constants.UndoActionName);
         }
 
         protected virtual void HandleAutoExpansion(int itemControlID, TreeViewItem targetItem, Rect targetItemRect)
@@ -386,7 +394,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 else
                 {
-                    Debug.LogError("Did not find targetItem,; should be a child of parentItem");
+                    Debug.LogError(Constants.GetInsertionIndexNotFound);
                     insertionIndex = -1;
                 }
             }

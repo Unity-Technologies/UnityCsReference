@@ -422,7 +422,6 @@ namespace UnityEditor
         [NativeName("GetImportInspectorWarning")]
         internal extern string GetImportWarnings();
 
-        // Read texture import instructions into [[TextureImportInstructions]] class.
         public extern void ReadTextureImportInstructions(BuildTarget target, out TextureFormat desiredFormat, out ColorSpace colorSpace, out int compressionQuality);
 
         // This is pure backward compatibility codepath. It can be removed when we decide that the time has come

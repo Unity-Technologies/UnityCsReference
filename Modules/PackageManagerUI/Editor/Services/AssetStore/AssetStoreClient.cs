@@ -65,7 +65,7 @@ namespace UnityEditor.PackageManager.UI
                 callback?.Invoke(categories);
             }, error =>
                 {
-                    Debug.LogWarning("[PackageManagerUI] error while fetching categories: " + error.message);
+                    Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching categories: {0}"), error.message));
                     callback?.Invoke(new List<string>());
                 });
         }
@@ -80,7 +80,7 @@ namespace UnityEditor.PackageManager.UI
                 callback?.Invoke(labels);
             }, error =>
                 {
-                    Debug.LogWarning("[PackageManagerUI] error while fetching labels: " + error.message);
+                    Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching labels: {0}"), error.message));
                     callback?.Invoke(new List<string>());
                 });
         }
@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (!m_UnityConnect.isUserLoggedIn)
             {
-                onFetchDetailsError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, L10n.Tr("User not logged in")));
+                onFetchDetailsError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, L10n.Tr("User not logged in.")));
                 return;
             }
 
@@ -201,30 +201,33 @@ namespace UnityEditor.PackageManager.UI
             {
                 m_AssetStoreRestAPI.GetProductDetail(id, productDetail =>
                 {
-                    AssetStorePackage package =  null;
+                    IPackage package =  null;
                     var error = productDetail.GetString("errorMessage");
+                    var idString = id.ToString();
                     if (string.IsNullOrEmpty(error))
                     {
-                        var productInfo = AssetStoreProductInfo.ParseProductInfo(m_AssetStoreUtils, id.ToString(), productDetail);
+                        var productInfo = AssetStoreProductInfo.ParseProductInfo(m_AssetStoreUtils, idString, productDetail);
                         if (productInfo == null)
-                            package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, id.ToString(), new UIError(UIErrorCode.AssetStoreClientError, L10n.Tr("Error parsing product details.")));
+                            package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, idString, new UIError(UIErrorCode.AssetStoreClientError, L10n.Tr("Error parsing product details.")));
                         else
                         {
-                            var oldProductInfo = m_AssetStoreCache.GetProductInfo(productInfo.id);
+                            var oldProductInfo = m_AssetStoreCache.GetProductInfo(idString);
                             if (oldProductInfo == null || oldProductInfo.versionId != productInfo.versionId || oldProductInfo.versionString != productInfo.versionString)
                             {
                                 if (string.IsNullOrEmpty(productInfo.packageName))
-                                    package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, m_AssetStoreCache.GetPurchaseInfo(productInfo.id), productInfo, m_AssetStoreCache.GetLocalInfo(productInfo.id));
+                                    package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, m_AssetStoreCache.GetPurchaseInfo(idString), productInfo, m_AssetStoreCache.GetLocalInfo(idString));
                                 else
-                                    m_UpmClient.FetchForProduct(productInfo.id, productInfo.packageName);
+                                    m_UpmClient.FetchForProduct(idString, productInfo.packageName);
                                 m_AssetStoreCache.SetProductInfo(productInfo);
                             }
                         }
                     }
                     else
                     {
-                        m_AssetStoreCache.RemoveProductInfo(id.ToString());
-                        package = new AssetStorePackage(m_AssetStoreUtils, m_IOProxy, id.ToString(), new UIError(UIErrorCode.AssetStoreClientError, error));
+                        var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(idString);
+                        m_AssetStoreCache.RemoveProductInfo(idString);
+                        var uiError = new UIError(UIErrorCode.AssetStoreClientError, error);
+                        package = new PlaceholderPackage(idString, purchaseInfo?.displayName ?? string.Empty, PackageType.AssetStore, PackageTag.None, PackageProgress.None, uiError);
                     }
 
                     if (package != null)
@@ -303,7 +306,7 @@ namespace UnityEditor.PackageManager.UI
             m_AssetStoreCache.ClearCache();
         }
 
-        private void OnUserLoginStateChange(bool loggedIn)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             if (!loggedIn)
             {
@@ -322,7 +325,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (updateDetails.ContainsKey("errorMessage"))
                 {
-                    Debug.Log("[PackageManagerUI] Error while getting product update details: " + updateDetails["errorMessage"]);
+                    Debug.Log(string.Format(L10n.Tr("[Package Manager Window] Error while getting product update details: {0}"), updateDetails["errorMessage"]));
                     return;
                 }
 

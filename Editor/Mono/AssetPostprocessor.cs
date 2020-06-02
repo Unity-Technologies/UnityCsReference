@@ -72,7 +72,7 @@ namespace UnityEditor
         [Serializable]
         class AssetPostProcessorAnalyticsData
         {
-            public double importActionId;
+            public string importActionId;
             public List<AssetPostProcessorMethodCallAnalyticsData> postProcessorCalls = new List<AssetPostProcessorMethodCallAnalyticsData>();
         }
 
@@ -105,7 +105,8 @@ namespace UnityEditor
 
             Profiler.BeginSample("SyncVS.PostprocessSyncProject");
             #pragma warning disable 618
-            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other)
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other
+                || ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.SystemDefault)
             {
                 CodeEditorProjectSync.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
             }
@@ -237,7 +238,7 @@ namespace UnityEditor
         {
             m_ImportProcessors = new ArrayList();
             var analyticsEvent = new AssetPostProcessorAnalyticsData();
-            analyticsEvent.importActionId = AssetImporter.GetAtPath(pathName).GetImportStartTime();
+            analyticsEvent.importActionId = ((int)Math.Floor(AssetImporter.GetAtPath(pathName).GetImportStartTime() * 1000)).ToString();
             s_AnalyticsEventsStack.Push(analyticsEvent);
 
             // @TODO: This is just a temporary workaround for the import settings.
@@ -718,7 +719,7 @@ namespace UnityEditor
         static object InvokeMethod(MethodInfo method, object[] args)
         {
             object res = null;
-            using (new EditorPerformanceTracker(method.DeclaringType.FullName + "." + method.Name))
+            using (new EditorPerformanceTracker(method.DeclaringType.Name + "." + method.Name))
             {
                 res = method.Invoke(null, args);
             }
@@ -731,7 +732,7 @@ namespace UnityEditor
             MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (method != null)
             {
-                using (new EditorPerformanceTracker(target.GetType().FullName + "." + methodName))
+                using (new EditorPerformanceTracker(target.GetType().Name + "." + methodName))
                 {
                     method.Invoke(target, args);
                 }
@@ -746,7 +747,7 @@ namespace UnityEditor
             MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (method != null)
             {
-                using (new EditorPerformanceTracker(target.GetType().FullName + "." + methodName))
+                using (new EditorPerformanceTracker(target.GetType().Name + "." + methodName))
                 {
                     returnedObject = method.Invoke(target, args) as T;
                 }

@@ -407,7 +407,13 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
-            m_LogoList.DoLayoutList();
+            using (var vertical = new EditorGUILayout.VerticalScope())
+            using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_SplashScreenLogos))
+            {
+                m_LogoList.DoLayoutList();
+            }
+
+
             EditorGUILayout.Space();
 
             // Background
