@@ -131,12 +131,15 @@ namespace UnityEditor
 
             if (m_DirtyPrefabAssets.Count > 0)
             {
-                bool savedPrefab = false;
+                bool sourceFileChangedAfterSaving = false;
                 AssetDatabase.StartAssetEditing();
                 try
                 {
                     foreach (var rootGameObject in m_DirtyPrefabAssets)
                     {
+                        var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(rootGameObject));
+                        var hashBeforeSaving = AssetDatabase.GetSourceAssetFileHash(guid);
+
                         bool savedSuccesfully;
                         PrefabUtility.SavePrefabAsset(rootGameObject, out savedSuccesfully);
                         if (!savedSuccesfully)
@@ -149,7 +152,9 @@ namespace UnityEditor
                             break;
                         }
 
-                        savedPrefab |= savedSuccesfully;
+                        // Fix case 1239807: Prevent calling ForceRebuildInspectors() if the the user is dirtying the prefab asset on every CustomEditor::OnEnable() with a
+                        // value that is the same as before (so the artifact does not change). This fix avoids constant rebuilding of the Inspector window.
+                        sourceFileChangedAfterSaving |= AssetDatabase.GetSourceAssetFileHash(guid) != hashBeforeSaving;
                     }
                 }
                 finally
@@ -159,7 +164,7 @@ namespace UnityEditor
                     // All inspectors needs to be rebuild to ensure property changes are reflected after saving the Prefab shown.
                     // (Saving clears the m_DirtyIndex of the target which is used for updating inspectors via SerializedObject::UpdateIfRequiredOrScript()
                     // and thus the cached dirty index in SerializedObject is not updated meaning the source object is not reloaded even though it changed)
-                    if (savedPrefab && rebuildInspectors)
+                    if (sourceFileChangedAfterSaving && rebuildInspectors)
                         EditorUtility.ForceRebuildInspectors();
                 }
             }

@@ -111,6 +111,7 @@ namespace UnityEditor
             public readonly GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees. This only works if the shader supports _TreeInstanceColor (for example, Speedtree shaders do not use this)");
             public readonly GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Randomize tree rotation. This only works when the tree has an LOD group.");
             public readonly GUIContent treeRotationDisabled = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, so it will use the default impostor system and will not support rotation.");
+            public readonly GUIContent treeHasChildRenderers = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, but has a hierarchy of MeshRenderers, only MeshRenderer on root GameObject in the trees hierarchy will be used. Use a tree with LOD group if you want a tree with hierarchy of MeshRenderers.");
             public readonly GUIContent massPlaceTrees = EditorGUIUtility.TrTextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
             public readonly GUIContent treeContributeGI = EditorGUIUtility.TrTextContent("Tree Contribute Global Illumination", "The state of the Contribute GI flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the value of the flag, each tree instance receives its own light probe and no lightmap texels.");
 
@@ -1193,7 +1194,9 @@ namespace UnityEditor
 
             GUILayout.Space(5);
 
-            bool randomRotationEnabled = TerrainEditorUtility.IsLODTreePrototype(m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab);
+            GameObject prefab = m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab;
+
+            bool randomRotationEnabled = TerrainEditorUtility.IsLODTreePrototype(prefab);
             using (new EditorGUI.DisabledScope(!randomRotationEnabled))
             {
                 PaintTreesTool.instance.randomRotation = EditorGUILayout.Toggle(styles.treeRotation, PaintTreesTool.instance.randomRotation);
@@ -1201,10 +1204,19 @@ namespace UnityEditor
             if (!randomRotationEnabled)
                 EditorGUILayout.HelpBox(styles.treeRotationDisabled.text, MessageType.Info);
 
+            if (prefab != null)
+            {
+                MeshRenderer[] meshRenderers = prefab.GetComponentsInChildren<MeshRenderer>();
+                if (meshRenderers != null && meshRenderers.Length > 0)
+                {
+                    if (meshRenderers.Length > 1 || !prefab.GetComponent<MeshRenderer>())
+                        EditorGUILayout.HelpBox(styles.treeHasChildRenderers.text, MessageType.Warning);
+                }
+            }
+
             // TODO: we should check if the shaders assigned to this 'tree' support _TreeInstanceColor or not..  complicated check though
             PaintTreesTool.instance.treeColorAdjustment = EditorGUILayout.Slider(styles.treeColorVar, PaintTreesTool.instance.treeColorAdjustment, 0, 1);
 
-            GameObject prefab = m_Terrain.terrainData.treePrototypes[PaintTreesTool.instance.selectedTree].m_Prefab;
             if (prefab != null)
             {
                 StaticEditorFlags staticEditorFlags = GameObjectUtility.GetStaticEditorFlags(prefab);

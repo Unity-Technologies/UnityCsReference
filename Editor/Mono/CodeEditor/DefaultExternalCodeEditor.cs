@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Unity.CodeEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor
@@ -131,7 +132,7 @@ namespace UnityEditor
             string applicationPath = CodeEditor.CurrentEditorInstallation.Trim();
             if (applicationPath == CodeEditor.SystemDefaultPath)
             {
-                return false;
+                return InternalEditorUtility.OpenFileAtLineExternal("", -1, -1);
             }
 
             if (IsOSX)

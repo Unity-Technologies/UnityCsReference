@@ -310,6 +310,8 @@ namespace UnityEditor
         public event Action<CameraMode>     onCameraModeChanged;
         public event Action<bool>           gridVisibilityChanged;
 
+        private bool m_WasFocused = false;
+
         [Serializable]
         public class SceneViewState
         {
@@ -1189,7 +1191,7 @@ namespace UnityEditor
                 renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
-            UIElements.UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            EditorUIService.instance.AddDefaultEditorStyleSheets(root);
             root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
             root.style.position = Position.Absolute;
 
@@ -1643,6 +1645,8 @@ namespace UnityEditor
         {
             if (Selection.activeObject != null && m_LastLockedObject != Selection.activeObject)
                 viewIsLockedToObject = false;
+
+            m_WasFocused = false;
 
             Repaint();
         }
@@ -3697,6 +3701,7 @@ namespace UnityEditor
             // @TODO: Validation should be more accurate based on what the view supports
 
             bool execute = Event.current.type == EventType.ExecuteCommand;
+
             switch (Event.current.commandName)
             {
                 case EventCommandNames.Find:
@@ -3705,13 +3710,17 @@ namespace UnityEditor
                     Event.current.Use();
                     break;
                 case EventCommandNames.FrameSelected:
-                    if (execute)
+                    if (execute && Tools.s_ButtonDown != 1)
+                    {
                         FrameSelected(false);
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.FrameSelectedWithLock:
-                    if (execute)
+                    if (execute && Tools.s_ButtonDown != 1)
+                    {
                         FrameSelected(true);
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.SoftDelete:
@@ -3871,7 +3880,15 @@ namespace UnityEditor
             viewIsLockedToObject = lockView;
             FixNegativeSize();
 
-            Bounds bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot, true);
+            Bounds bounds;
+            if (!m_WasFocused)
+            {
+                bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot, true);
+            }
+            else
+            {
+                bounds = new Bounds(Tools.handlePosition, Vector3.one);
+            }
 
             // Check active editor for OnGetFrameBounds
             foreach (Editor editor in activeEditors)
@@ -3895,6 +3912,7 @@ namespace UnityEditor
                 }
             }
 
+            m_WasFocused = !m_WasFocused;
             return Frame(bounds, EditorApplication.isPlaying || instant);
         }
 
@@ -4001,6 +4019,9 @@ namespace UnityEditor
                             ResetOnSceneGUIState();
                         }
                     }
+                    // This would mean that OnSceneGUI has changed the scene and it is not drawn
+                    if (s_CurrentDrawingSceneView == null)
+                        GUIUtility.ExitGUI();
                 }
             }
 

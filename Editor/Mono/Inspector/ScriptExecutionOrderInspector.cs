@@ -386,10 +386,11 @@ namespace UnityEditor
 
                 Provider.Status(assetList).Wait();
 
-                foreach (Asset i in assetList)
+                const Asset.States kExclusiveLockedRemote = Asset.States.Exclusive | Asset.States.LockedRemote;
+                foreach (var asset in assetList)
                 {
-                    if (i.IsState(Asset.States.LockedRemote))
-                        lockedScripts.Add(pathToScript[i.metaPath]);
+                    if ((asset.state & kExclusiveLockedRemote) == kExclusiveLockedRemote)
+                        lockedScripts.Add(pathToScript[asset.metaPath]);
                 }
             }
 

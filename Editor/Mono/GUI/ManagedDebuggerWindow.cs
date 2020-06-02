@@ -113,12 +113,29 @@ namespace UnityEditor
                     }
                     else
                     {
-                        if (EditorUtility.DisplayDialog(
+                        int option = EditorUtility.DisplayDialogComplex(
                             "C# Debugger Attached",
-                            "Do you want to switch to debug mode to enable C# debugging?\nDebug mode reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.",
-                            "Switch to debug mode",
-                            "Cancel"))
+@"You're trying to attach a debugger, but Debug Mode is switched off in your Project.
+
+When Unity is in Debug Mode, C# performance is reduced, but you can attach a debugger.
+Switching to Debug Mode also recompiles and reloads all scripts.
+
+You can enable Debug Mode temporarily for this Editor session, switch it on
+for all projects until further notice, or cancel attaching the debugger.
+
+If you switch it on for all projects, you can change it later in the
+""Code Optimization on Startup"" setting in the Preferences window.",
+                            "Enable debugging for this session",
+                            "Cancel",
+                            "Enable debugging for all projects");
+
+                        if (option == 0)
                         {
+                            ToggleDebugState(CompilationPipeline.codeOptimization);
+                        }
+                        else if (option == 2)
+                        {
+                            EditorPrefs.SetBool("ScriptDebugInfoEnabled", true);
                             ToggleDebugState(CompilationPipeline.codeOptimization);
                         }
                         else

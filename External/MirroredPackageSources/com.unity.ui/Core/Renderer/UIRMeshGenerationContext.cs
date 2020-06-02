@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
         /// The UV coordinate of the vertex.
         /// </summary>
         /// <remarks>
-        /// This is used to sample the required region of the associated texture if any. Values outside of [0,1] are currently not supported and could lead to undefined results.
+        /// This is used to sample the required region of the associated texture if any. Values outside the <see cref="MeshWriteData.uvRegion"/> are currently not supported and could lead to undefined results.
         /// </remarks>
         public Vector2 uv;
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY

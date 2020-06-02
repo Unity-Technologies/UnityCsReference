@@ -188,14 +188,14 @@ namespace UnityEditor.IMGUI.Controls
                 EndClip();
             }
 
-            if (isAnimating)
-                HandleUtility.Repaint();
-
             // Capture time at intervals to ensure that expansion value is consistent across layout and repaint.
             // This fixes that the scroll view showed its scrollbars during expansion since using realtime
             // would give higher values on repaint than on layout event.
             if (isAnimating && Event.current.type == EventType.Repaint)
+            {
+                HandleUtility.Repaint();
                 m_Setup.CaptureTime();
+            }
         }
 
         public bool IsAnimating(int itemID)

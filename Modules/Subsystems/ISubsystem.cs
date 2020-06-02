@@ -4,13 +4,10 @@
 
 namespace UnityEngine
 {
-    public interface IRunning
+    public interface ISubsystem
     {
         bool running { get; }
-    }
 
-    public interface ISubsystem : IRunning
-    {
         void Start();
         void Stop();
         void Destroy();

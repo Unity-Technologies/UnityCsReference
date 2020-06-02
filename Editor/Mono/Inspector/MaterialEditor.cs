@@ -6,14 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using UnityEngine.Scripting;
-using UnityEngine.Bindings;
-using UnityEngine.Rendering;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using StackValidationResult = UnityEngine.Rendering.VirtualTexturing.EditorHelpers.StackValidationResult;
 
@@ -782,7 +779,10 @@ namespace UnityEditor
             float oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 0f;
 
-            float newValue = EditorGUI.PowerSlider(position, label, prop.floatValue, prop.rangeLimits.x, prop.rangeLimits.y, power);
+            // fix for case 1245429 where we sometimes get a rounding issue when converting between gamma and linear, which causes us to break the slider
+            float value = Mathf.Clamp(prop.floatValue, prop.rangeLimits.x, prop.rangeLimits.y);
+
+            float newValue = EditorGUI.PowerSlider(position, label, value, prop.rangeLimits.x, prop.rangeLimits.y, power);
             EditorGUI.showMixedValue = false;
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -1604,7 +1604,7 @@ namespace UnityEditor
             var imguicontainer = UIElementsUtility.GetCurrentIMGUIContainer();
             if (imguicontainer != null)
             {
-                var editorElement = imguicontainer.GetFirstAncestorOfType<EditorElement>();
+                var editorElement = imguicontainer.GetFirstAncestorOfType<IEditorElement>();
                 if (editorElement != null)
                 {
                     return GetAssociatedRenderersFromEditors(editorElement.Editors);

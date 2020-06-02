@@ -278,7 +278,7 @@ namespace UnityEditor.UIElements
         {
             var propertyType = property.propertyType;
 
-            if (EditorGUI.HasVisibleChildFields(property))
+            if (EditorGUI.HasVisibleChildFields(property, true))
                 return CreateFoldout(property);
 
             switch (propertyType)

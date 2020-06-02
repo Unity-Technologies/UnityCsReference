@@ -366,7 +366,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public IEnumerable<object> selectedItems => m_SelectedItems;
 
-        public override VisualElement contentContainer => m_ScrollView.contentContainer;
+        public override VisualElement contentContainer => null;
 
         private SelectionType m_SelectionType;
         /// <summary>
@@ -1199,7 +1199,7 @@ namespace UnityEngine.UIElements
                             item.style.display = DisplayStyle.None;
                         }
 
-                        Add(item);
+                        m_ScrollView.Add(item);
                     }
                 }
 
@@ -1228,13 +1228,13 @@ namespace UnityEngine.UIElements
             recycledItem.index = newIndex;
             recycledItem.id = newId;
             int indexInParent = newIndex - m_FirstVisibleIndex;
-            if (indexInParent == contentContainer.childCount)
+            if (indexInParent == m_ScrollView.contentContainer.childCount)
             {
                 recycledItem.element.BringToFront();
             }
             else
             {
-                recycledItem.element.PlaceBehind(contentContainer[indexInParent]);
+                recycledItem.element.PlaceBehind(m_ScrollView.contentContainer[indexInParent]);
             }
 
             bindItem(recycledItem.element, recycledItem.index);

@@ -498,6 +498,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 else
                     scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
 
+                if (buildingForEditor && (settings.CompilationOptions & EditorScriptCompilationOptions.BuildingUseReferenceAssemblies) > 0)
+                    scriptAssembly.CompilerOptions.EmitReferenceAssembly = true;
+
                 if ((settings.CompilationOptions &
                      EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) ==
                     EditorScriptCompilationOptions.BuildingUseDeterministicCompilation)

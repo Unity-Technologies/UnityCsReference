@@ -174,7 +174,7 @@ namespace UnityEditor
             {
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting while indirect light is baked into lightmaps and light probes."),
                 EditorGUIUtility.TrTextContent("Mixed lights provide baked direct and indirect lighting for static objects. Dynamic objects receive realtime direct lighting and cast shadows on static objects using the main directional light in the scene."),
-                EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. The Shadowmask Mode used at run time can be set in the Quality Settings panel.")
+                EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. ")
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("The Lightmapper is not supported by the current render pipeline. Fallback is ");
@@ -473,7 +473,7 @@ namespace UnityEditor
                             }
                             else if (enableBakedGI)
                             {
-                                EditorGUILayout.HelpBox(Styles.helpStringsMixed[m_MixedBakeMode.intValue].text, MessageType.Info);
+                                EditorGUILayout.HelpBox(Styles.helpStringsMixed[m_MixedBakeMode.intValue].text + EditorGUIUtility.TrTextContent(SupportedRenderingFeatures.active.shadowmaskMessage).text, MessageType.Info);
                             }
                         }
                     }

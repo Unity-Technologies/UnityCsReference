@@ -21,7 +21,7 @@ namespace UnityEngine.Rendering
         static extern unsafe void BeginRenderPass_Internal(IntPtr self, int width, int height, int samples, IntPtr colors, int colorCount, int depthAttachmentIndex);
 
         [FreeFunction("ScriptableRenderContext::BeginSubPass")]
-        static extern unsafe void BeginSubPass_Internal(IntPtr self, IntPtr colors, int colorCount, IntPtr inputs, int inputCount, bool isDepthReadOnly);
+        static extern unsafe void BeginSubPass_Internal(IntPtr self, IntPtr colors, int colorCount, IntPtr inputs, int inputCount, bool isDepthReadOnly, bool isStencilReadOnly);
 
         [FreeFunction("ScriptableRenderContext::EndSubPass")]
         static extern void EndSubPass_Internal(IntPtr self);
@@ -67,6 +67,8 @@ namespace UnityEngine.Rendering
         extern private void InvokeOnRenderObjectCallback_Internal();
 
         extern private void DrawGizmos_Internal(Camera camera, GizmoSubset gizmoSubset);
+
+        extern private void DrawWireOverlay_Impl(Camera camera);
 
         extern private void DrawUIOverlay_Internal(Camera camera);
 

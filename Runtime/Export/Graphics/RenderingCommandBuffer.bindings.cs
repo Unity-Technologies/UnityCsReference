@@ -790,7 +790,7 @@ namespace UnityEngine.Rendering
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            SetRenderTargetColorDepth_Internal(color, depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+            SetRenderTargetColorDepth_Internal(color, depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderTargetFlags.None);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth, int mipLevel)
@@ -799,7 +799,8 @@ namespace UnityEngine.Rendering
             if (mipLevel < 0)
                 throw new ArgumentException(String.Format("Invalid value for mipLevel ({0})", mipLevel));
             SetRenderTargetColorDepth_Internal(new RenderTargetIdentifier(color, mipLevel),
-                depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
+                RenderTargetFlags.None);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth, int mipLevel, CubemapFace cubemapFace)
@@ -808,7 +809,7 @@ namespace UnityEngine.Rendering
             if (mipLevel < 0)
                 throw new ArgumentException(String.Format("Invalid value for mipLevel ({0})", mipLevel));
             SetRenderTargetColorDepth_Internal(new RenderTargetIdentifier(color, mipLevel, cubemapFace),
-                depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderTargetFlags.None);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderTargetIdentifier depth, int mipLevel, CubemapFace cubemapFace, int depthSlice)
@@ -819,7 +820,7 @@ namespace UnityEngine.Rendering
             if (mipLevel < 0)
                 throw new ArgumentException(String.Format("Invalid value for mipLevel ({0})", mipLevel));
             SetRenderTargetColorDepth_Internal(new RenderTargetIdentifier(color, mipLevel, cubemapFace, depthSlice),
-                depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                depth, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderTargetFlags.None);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier color, RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
@@ -828,7 +829,7 @@ namespace UnityEngine.Rendering
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             if (colorLoadAction == RenderBufferLoadAction.Clear || depthLoadAction == RenderBufferLoadAction.Clear)
                 throw new ArgumentException("RenderBufferLoadAction.Clear is not supported");
-            SetRenderTargetColorDepth_Internal(color, depth, colorLoadAction, colorStoreAction, depthLoadAction, depthStoreAction);
+            SetRenderTargetColorDepth_Internal(color, depth, colorLoadAction, colorStoreAction, depthLoadAction, depthStoreAction, RenderTargetFlags.None);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier[] colors, Rendering.RenderTargetIdentifier depth)
@@ -839,7 +840,7 @@ namespace UnityEngine.Rendering
             if (colors.Length > SystemInfo.supportedRenderTargetCount)
                 throw new ArgumentException(string.Format("colors.Length is {0} and exceeds the maximum number of supported render targets ({1})", colors.Length, SystemInfo.supportedRenderTargetCount));
 
-            SetRenderTargetMulti_Internal(colors, depth, null, null, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+            SetRenderTargetMulti_Internal(colors, depth, null, null, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderTargetFlags.None);
         }
 
         public void SetRenderTarget(RenderTargetIdentifier[] colors, Rendering.RenderTargetIdentifier depth, int mipLevel, CubemapFace cubemapFace, int depthSlice)
@@ -886,9 +887,9 @@ namespace UnityEngine.Rendering
                 throw new ArgumentException("RenderBufferLoadAction.Clear is not supported");
 
             if (binding.colorRenderTargets.Length == 1) // non-MRT case respects mip/face/slice of color's RenderTargetIdentifier
-                SetRenderTargetColorDepth_Internal(binding.colorRenderTargets[0], binding.depthRenderTarget, binding.colorLoadActions[0], binding.colorStoreActions[0], binding.depthLoadAction, binding.depthStoreAction);
+                SetRenderTargetColorDepth_Internal(binding.colorRenderTargets[0], binding.depthRenderTarget, binding.colorLoadActions[0], binding.colorStoreActions[0], binding.depthLoadAction, binding.depthStoreAction, binding.flags);
             else
-                SetRenderTargetMulti_Internal(binding.colorRenderTargets, binding.depthRenderTarget, binding.colorLoadActions, binding.colorStoreActions, binding.depthLoadAction, binding.depthStoreAction);
+                SetRenderTargetMulti_Internal(binding.colorRenderTargets, binding.depthRenderTarget, binding.colorLoadActions, binding.colorStoreActions, binding.depthLoadAction, binding.depthStoreAction, binding.flags);
         }
 
         extern private void SetRenderTargetSingle_Internal(RenderTargetIdentifier rt,
@@ -897,11 +898,13 @@ namespace UnityEngine.Rendering
 
         extern private void SetRenderTargetColorDepth_Internal(RenderTargetIdentifier color, RenderTargetIdentifier depth,
             RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
-            RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction);
+            RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction,
+            RenderTargetFlags flags);
 
         extern private void SetRenderTargetMulti_Internal(RenderTargetIdentifier[] colors, Rendering.RenderTargetIdentifier depth,
             RenderBufferLoadAction[] colorLoadActions, RenderBufferStoreAction[] colorStoreActions,
-            RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction);
+            RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction,
+            RenderTargetFlags flags);
         extern private void SetRenderTargetColorDepthSubtarget(RenderTargetIdentifier color, RenderTargetIdentifier depth,
             RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
             RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction,

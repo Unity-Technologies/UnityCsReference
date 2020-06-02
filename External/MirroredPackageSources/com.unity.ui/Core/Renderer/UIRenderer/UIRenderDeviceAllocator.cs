@@ -343,7 +343,7 @@ namespace UnityEngine.UIElements.UIR
     {
         public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount, bool mockPage)
         {
-            vertexMaxCount = Math.Min(vertexMaxCount, 0xFFFF); // Because we use UInt16 as the index type
+            vertexMaxCount = Math.Min(vertexMaxCount, 1 << 16); // Because we use UInt16 as the index type
             vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, vertexMaxCount, maxQueuedFrameCount, 32, mockPage);
             indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, indexMaxCount, maxQueuedFrameCount, 32, mockPage);
         }

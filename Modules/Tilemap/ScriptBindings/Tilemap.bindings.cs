@@ -466,7 +466,11 @@ namespace UnityEngine.Tilemaps
             set;
         }
 
-        public extern bool HasTilemapChanges();
+        public extern bool hasTilemapChanges
+        {
+            [NativeMethod("HasTilemapChanges")]
+            get;
+        }
 
         [NativeMethod(Name = "ProcessTileChangeQueue")]
         public extern void ProcessTilemapChanges();

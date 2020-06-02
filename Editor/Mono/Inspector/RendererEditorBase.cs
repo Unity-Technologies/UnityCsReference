@@ -446,31 +446,7 @@ namespace UnityEditor
 
         protected void DrawMaterials()
         {
-            m_ShowMaterials.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowMaterials.value, Styles.materials);
-
-            if (m_ShowMaterials.value)
-            {
-                EditorGUI.indentLevel++;
-
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_MaterialsSize);
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    GUIUtility.ExitGUI();
-                    // stop processing the current event as the size of the list has changed
-                }
-
-                for (int i = 0; i < m_MaterialsSize.intValue; i++)
-                {
-                    EditorGUILayout.PropertyField(m_Materials.GetArrayElementAtIndex(i));
-                }
-
-                EditorGUI.indentLevel--;
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.PropertyField(m_Materials);
         }
 
         protected void DrawRenderingLayer()

@@ -79,19 +79,23 @@ namespace UnityEngine.UIElements.UIR
             };
         }
 
-        private const int k_MaxTextMeshVertices = ushort.MaxValue + 1;
-        private const int k_MaxTextMeshIndices = ushort.MaxValue + 1;
-        private static readonly int k_MaxTextQuadCount = Math.Min(k_MaxTextMeshVertices / 4, k_MaxTextMeshIndices / 6);
+        static int LimitTextVertices(int vertexCount, bool logTruncation = true)
+        {
+            const int maxTextMeshVertices = 0xC000; // Max 48k vertices. We leave room for masking, borders, background, etc.
+
+            if (vertexCount <= maxTextMeshVertices)
+                return vertexCount;
+
+            if (logTruncation)
+                Debug.LogError($"Generated text will be truncated because it exceeds {maxTextMeshVertices} vertices.");
+
+            return maxTextMeshVertices;
+        }
 
         internal static void MakeText(TextCore.MeshInfo meshInfo, Vector2 offset, AllocMeshData meshAlloc)
         {
-            int quadCount = meshInfo.vertexCount / 4;
-            if (quadCount > k_MaxTextQuadCount)
-            {
-                Debug.LogError("MakeText: text is too long and generates too many vertices");
-                quadCount = k_MaxTextQuadCount;
-            }
-
+            int vertexCount = LimitTextVertices(meshInfo.vertexCount);
+            int quadCount = vertexCount / 4;
             var mesh = meshAlloc.Allocate((uint)(quadCount * 4), (uint)(quadCount * 6));
 
             for (int q = 0, v = 0, i = 0; q < quadCount; ++q, v += 4, i += 6)
@@ -112,13 +116,8 @@ namespace UnityEngine.UIElements.UIR
 
         internal static void MakeText(NativeArray<TextVertex> uiVertices, Vector2 offset, AllocMeshData meshAlloc)
         {
-            int quadCount = uiVertices.Length / 4;
-            if (quadCount > k_MaxTextQuadCount)
-            {
-                Debug.LogError("MakeTextMeshHandle: text is too long and generates too many vertices");
-                quadCount = k_MaxTextQuadCount;
-            }
-
+            int vertexCount = LimitTextVertices(uiVertices.Length);
+            int quadCount = vertexCount / 4;
             var mesh = meshAlloc.Allocate((uint)(quadCount * 4), (uint)(quadCount * 6));
 
             for (int q = 0, v = 0; q < quadCount; ++q, v += 4)
@@ -142,8 +141,8 @@ namespace UnityEngine.UIElements.UIR
             Color32 xformClipPages, Color32 idsFlags, Color32 opacityPageSVGSettingIndex,
             NativeSlice<Vertex> vertices)
         {
-            Debug.Assert(vertices.Length == uiVertices.Length);
-            int vertexCount = uiVertices.Length;
+            int vertexCount = LimitTextVertices(uiVertices.Length, false);
+            Debug.Assert(vertexCount == vertices.Length);
             idsFlags.a = (byte)VertexFlags.IsText;
             for (int v = 0; v < vertexCount; v++)
             {

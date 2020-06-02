@@ -1647,7 +1647,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CompilationTaskOptions compilationTaskOptions,
             CompileScriptAssembliesOptions compileScriptAssembliesOptions)
         {
-            StopAllCompilation();
+            var lastCompilationTask = StopAllCompilation();
 
             bool skipSetupChecks = (compileScriptAssembliesOptions & CompileScriptAssembliesOptions.skipSetupChecks) == CompileScriptAssembliesOptions.skipSetupChecks;
 
@@ -1679,6 +1679,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (scriptAssembliesCodegen.Any())
             {
                 scriptAssembliesCodegen = scriptAssembliesCodegen.Where(a => a.DirtySource != DirtySource.DirtyReference).ToList();
+            }
+
+            // Transfer ScriptAssembly.HasCompileError from last compilation
+            // to current compilation. To make the them persistent across
+            // compilations within the same domain.
+
+            // This is required for when using Roslyn Reference Assemblies.
+            // Scenario: Two assemblies A, B and B depends on A.
+            // 1. Add Compile error in private method in both A and B
+            // 2. Compile errors are emitted for both A and B. (lastCompilationTask)
+            // 3. Fix compile error in A, also clears compile errors for B due to dependency.
+            // 4. Recompile A and A's reference assembly is unchanged.
+            // 5. Without copying the compile errors for B, B would not be recompiled.
+            if (lastCompilationTask != null)
+            {
+                TransferHasCompileErrors(lastCompilationTask.ScriptAssemblies,
+                    scriptAssemblies);
             }
 
             // Compile to tempBuildDirectory
@@ -1735,14 +1752,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
 
-                var hasCompileError = messages.Any(m => m.type == CompilerMessageType.Error);
-
                 changedAssemblies.Add(assembly.Filename);
 
                 if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
                     runScriptUpdaterAssemblies.Remove(assembly.Filename);
 
-                if (hasCompileError)
+                if (assembly.HasCompileErrors)
                 {
                     AddUnitySpecificErrorMessages(assembly, messages);
 
@@ -1792,6 +1807,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 "cs",
                 assembly.Files
             );
+        }
+
+        static void TransferHasCompileErrors(ScriptAssembly[] sourceAssemblies, ScriptAssembly[] destAssemblies)
+        {
+            var scriptAssemblyHasCompileErrors = new Dictionary<string, bool>(sourceAssemblies.Length);
+
+            foreach (var lastScriptAssembly in sourceAssemblies)
+            {
+                scriptAssemblyHasCompileErrors[lastScriptAssembly.Filename] = lastScriptAssembly.HasCompileErrors;
+            }
+
+            foreach (var currentScriptAssembly in destAssemblies)
+            {
+                bool hasCompileErrors = false;
+
+                scriptAssemblyHasCompileErrors.TryGetValue(currentScriptAssembly.Filename, out hasCompileErrors);
+
+                currentScriptAssembly.HasCompileErrors = hasCompileErrors;
+            }
         }
 
         void AddUnitySpecificErrorMessages(ScriptAssembly assembly, List<CompilerMessage> messages)
@@ -2009,22 +2043,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return compilationTask != null && compilationTask.IsCompiling;
         }
 
-        public void StopAllCompilation()
+        public CompilationTask StopAllCompilation()
         {
-            StopCompilationTask();
+            var currentCompilationTask = StopCompilationTask();
 
             if (compilationTask != null)
                 compilationTask.Dispose();
 
             compilationTask = null;
+            return currentCompilationTask;
         }
 
-        public void StopCompilationTask()
+        public CompilationTask StopCompilationTask()
         {
             if (compilationTask == null)
-                return;
+                return null;
 
             compilationTask.Stop();
+            return compilationTask;
         }
 
         public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)

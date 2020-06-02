@@ -69,7 +69,7 @@ namespace UnityEditor.PackageManager.UI
             m_PageManager.onRefreshOperationFinish -= Refresh;
         }
 
-        private void OnUserLoginStateChange(bool value)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             UpdateLoadBarMessage();
         }

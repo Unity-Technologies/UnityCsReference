@@ -4,11 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
-using System.IO;
+using UnityEngine.Profiling;
 using Unity.Scripting.Compilation;
-using System.Diagnostics;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -37,6 +38,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         Dictionary<ScriptAssembly, CompilerMessage[]> compiledAssemblies = new Dictionary<ScriptAssembly, CompilerMessage[]>();
         Dictionary<ScriptAssembly, CompilerMessage[]> processedAssemblies = new Dictionary<ScriptAssembly, CompilerMessage[]>();
         Dictionary<ScriptAssembly, ScriptCompilerBase> compilerTasks = new Dictionary<ScriptAssembly, ScriptCompilerBase>();
+        HashSet<ScriptAssembly> unchangedCompiledAssemblies = new HashSet<ScriptAssembly>();
         List<PostProcessorTask> postProcessorTasks = new List<PostProcessorTask>();
         List<PostProcessorTask> pendingPostProcessorTasks = new List<PostProcessorTask>();
 
@@ -61,6 +63,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public bool Stopped { get; private set; }
         public bool CompileErrors { get; private set; }
+
+        bool BuildingForEditor
+        {
+            get
+            {
+                return (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
+            }
+        }
+
+        bool UseReferenceAssemblies
+        {
+            get
+            {
+                return (options & EditorScriptCompilationOptions.BuildingUseReferenceAssemblies) == EditorScriptCompilationOptions.BuildingUseReferenceAssemblies;
+            }
+        }
 
         public CompilationTask(ScriptAssembly[] scriptAssemblies,
                                ScriptAssembly[] codeGenAssemblies,
@@ -234,6 +252,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var messages = compiler.GetCompilerMessages();
                     var messagesList = messages.ToList();
 
+                    assembly.HasCompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
                     compiledAssemblies.Add(assembly, messagesList.ToArray());
 
                     bool havePostProcessors = ilPostProcessing != null && ilPostProcessing.HasPostProcessors;
@@ -283,7 +302,34 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
 
                     if (!CompileErrors)
-                        CompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
+                        CompileErrors = assembly.HasCompileErrors;
+
+                    try
+                    {
+                        var referenceAssemblyPath = AssetPath.Combine(buildOutputDirectory, assembly.ReferenceAssemblyFilename);
+
+                        // If a reference assembly is built, check if it is unchanged
+                        // since the previous compilation.
+                        if (UseReferenceAssemblies &&
+                            BuildingForEditor &&
+                            File.Exists(referenceAssemblyPath))
+                        {
+                            Profiler.BeginSample("ReferenceAssemblyHelpers.IsReferenceAssemblyUnchanged");
+                            bool isUnchanged = ReferenceAssemblyHelpers.IsReferenceAssemblyUnchanged(assembly, buildOutputDirectory);
+                            Profiler.EndSample();
+
+                            if (isUnchanged)
+                            {
+                                unchangedCompiledAssemblies.Add(assembly);
+                            }
+                        }
+
+                        File.Delete(referenceAssemblyPath);
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogException(e);
+                    }
 
                     // If a codgen / IL Post processor has compile errors, clear
                     // pending assemblies waiting for compilation and assemblies
@@ -502,9 +548,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 bool compileAssembly = true;
 
+                int unchangedAssemblyReferencesCount = 0;
+
                 foreach (var reference in pendingAssembly.ScriptAssemblyReferences)
                 {
                     CompilerMessage[] messages;
+
+                    if (unchangedCompiledAssemblies.Contains(reference))
+                    {
+                        unchangedAssemblyReferencesCount++;
+                        continue;
+                    }
 
                     if (!compiledAssemblies.TryGetValue(reference, out messages))
                     {
@@ -535,6 +589,32 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         compileAssembly = false;
                         break;
                     }
+                }
+
+                // If the assembly exists and is up to date (no compile errors)
+                // and it was dirtied because it is a reference to one or more
+                // dirty assemblies and none of them changed, then we do not
+                // need to recompile the assembly.
+                // Most expensive checks at the bottom.
+                if (UseReferenceAssemblies &&
+                    BuildingForEditor &&
+                    !pendingAssembly.HasCompileErrors &&
+                    pendingAssembly.DirtySource == DirtySource.DirtyReference &&
+                    unchangedAssemblyReferencesCount > 0 &&
+                    unchangedAssemblyReferencesCount == pendingAssembly.ScriptAssemblyReferences.Length &&
+                    File.Exists(pendingAssembly.FullPath))
+                {
+                    var assemblyOutputPath = AssetPath.Combine(pendingAssembly.OutputDirectory, pendingAssembly.Filename);
+
+                    Console.WriteLine($"- Skipping compile {assemblyOutputPath} because all references are unchanged");
+
+                    unchangedCompiledAssemblies.Add(pendingAssembly);
+
+                    if (removePendingAssemblies == null)
+                        removePendingAssemblies = new List<ScriptAssembly>();
+
+                    removePendingAssemblies.Add(pendingAssembly);
+                    compileAssembly = false;
                 }
 
                 if (compileAssembly)

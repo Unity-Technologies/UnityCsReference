@@ -1711,7 +1711,7 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
+        internal static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
 
         void VisualizeOverridesToggle()
         {
@@ -1723,6 +1723,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 DrivenPropertyManager.UnregisterProperties(this);
                 RecordPatchedPropertiesForContent();
                 ApplyPatchedPropertiesToContent();
+                EditorApplication.RequestRepaintAllViews();
             }
         }
 

@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
-    internal class EditorElement : VisualElement
+    internal class EditorElement : VisualElement, IEditorElement
     {
         readonly IPropertyView inspectorWindow;
         Editor[] m_EditorCache;
@@ -34,7 +34,7 @@ namespace UnityEditor.UIElements
                 return m_EditorCache;
             }
         }
-        internal IEnumerable<Editor> Editors => m_Editors.AsEnumerable();
+        public IEnumerable<Editor> Editors => m_Editors.AsEnumerable();
 
         int m_EditorIndex;
         public Editor editor
@@ -130,7 +130,7 @@ namespace UnityEditor.UIElements
             UpdateInspectorVisibility();
         }
 
-        internal void Reinit(int editorIndex)
+        public void Reinit(int editorIndex)
         {
             PopulateCache();
             Object editorTarget = editor.targets[0];
@@ -164,7 +164,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal void AddPrefabComponent(VisualElement comp)
+        public void AddPrefabComponent(VisualElement comp)
         {
             if (m_PrefabElement != null)
             {

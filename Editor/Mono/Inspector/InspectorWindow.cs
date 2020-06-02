@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 using Object = UnityEngine.Object;
@@ -69,7 +68,7 @@ namespace UnityEditor
         {
             // Enable MSAA for UIElements inspectors, which is the only supported
             // antialiasing solution for UIElements.
-            this.SetAntiAliasing(4);
+            antiAliasing = 4;
 
             RefreshTitle();
             AddInspectorWindow(this);

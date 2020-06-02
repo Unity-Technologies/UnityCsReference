@@ -5,9 +5,7 @@
 using UnityEngine;
 using System.Runtime.InteropServices;
 using System;
-using UnityEditor.UIElements;
 using UnityEngine.Scripting;
-using UnityEngine.UIElements;
 
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;

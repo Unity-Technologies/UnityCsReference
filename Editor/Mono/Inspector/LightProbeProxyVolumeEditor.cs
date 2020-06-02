@@ -46,16 +46,16 @@ namespace UnityEditor
 
             public static GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel);
             public static GUIContent volumeResolutionText = EditorGUIUtility.TrTextContent("Proxy Volume Resolution", "Specifies the resolution of the 3D grid of interpolated light probes. Higher resolution/density means better lighting, but the CPU cost will increase.");
-            public static GUIContent resolutionXText = new GUIContent("X");
-            public static GUIContent resolutionYText = new GUIContent("Y");
-            public static GUIContent resolutionZText = new GUIContent("Z");
-            public static GUIContent sizeText = EditorGUIUtility.TrTextContent("Size");
+            public static GUIContent resolutionXText = EditorGUIUtility.TrTextContent("X", "The 3D grid resolution on the X axis.");
+            public static GUIContent resolutionYText = EditorGUIUtility.TrTextContent("Y", "The 3D grid resolution on the Y axis.");
+            public static GUIContent resolutionZText = EditorGUIUtility.TrTextContent("Z", "The 3D grid resolution on the Z axis.");
+            public static GUIContent sizeText = EditorGUIUtility.TrTextContent("Size", "The size of the Bounding Box relative to the Game Object.");
             public static GUIContent bbSettingsText = EditorGUIUtility.TrTextContent("Bounding Box Settings");
-            public static GUIContent originText = EditorGUIUtility.TrTextContent("Origin");
+            public static GUIContent originText = EditorGUIUtility.TrTextContent("Origin", "The origin of the Bounding Box relative to the Game Object.");
             public static GUIContent bbModeText = EditorGUIUtility.TrTextContent("Bounding Box Mode", "The mode in which the bounding box is computed. A 3D grid of interpolated light probes will be generated inside this bounding box.\n\nAutomatic Local - the local-space bounding box of the Renderer is used.\n\nAutomatic Global - a bounding box is computed which encloses the current Renderer and all the Renderers down the hierarchy that have the Light Probes property set to Use Proxy Volume. The bounding box will be world-space aligned.\n\nCustom - a custom bounding box is used. The bounding box is specified in the local-space of the game object.");
             public static GUIContent resModeText = EditorGUIUtility.TrTextContent("Resolution Mode", "The mode in which the resolution of the 3D grid of interpolated light probes is specified:\n\nAutomatic - the resolution on each axis is computed using a user-specified number of interpolated light probes per unit area (Density).\n\nCustom - the user can specify a different resolution on each axis.");
             public static GUIContent probePositionText = EditorGUIUtility.TrTextContent("Probe Position Mode", "The mode in which the interpolated probe positions are generated.\n\nCellCorner - divide the volume in cells and generate interpolated probe positions in the corner/edge of the cells.\n\nCellCenter - divide the volume in cells and generate interpolated probe positions in the center of the cells.");
-            public static GUIContent refreshModeText = EditorGUIUtility.TrTextContent("Refresh Mode");
+            public static GUIContent refreshModeText = EditorGUIUtility.TrTextContent("Refresh Mode", "An enum describing the way a Light Probe Proxy Volume refreshes in the Player.");
             public static GUIContent qualityText = EditorGUIUtility.TrTextContent("Quality", "Affects the total number of evaluated Spherical Harmonics(SH) bands for Renderers that use a Light Probe Proxy Volume:\n\nLow Quality - uses only 2 bands (L0 and L1) sampled from a LPPV texture. This option might improve the performance by not breaking batching.\n\nNormal Quality - uses all the bands to evaluate the SH. L0 and L1 are sampled from a LPPV texture and L2 is constant per Renderer.");
             public static GUIContent dataFormatText = EditorGUIUtility.TrTextContent("Data Format", "Affects the format of the LPPV texture.");
             public static GUIContent[] bbMode = (Enum.GetNames(typeof(LightProbeProxyVolume.BoundingBoxMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();

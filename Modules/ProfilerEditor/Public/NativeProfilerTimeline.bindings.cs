@@ -150,7 +150,7 @@ namespace UnityEditorInternal
     {
         public int frameIndex;
         public int threadIndex;
-        public int entryIndex;
+        public int sampleIndex;
         public float timeOffset;
         public Rect threadRect;
         public Rect shownAreaRect;
@@ -163,7 +163,7 @@ namespace UnityEditorInternal
         {
             frameIndex = -1;
             threadIndex = -1;
-            entryIndex = -1;
+            sampleIndex = -1;
             timeOffset = 0;
             threadRect = Rect.zero;
             shownAreaRect = Rect.zero;

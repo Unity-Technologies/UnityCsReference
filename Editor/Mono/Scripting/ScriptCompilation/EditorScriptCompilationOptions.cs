@@ -19,6 +19,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingIncludingTestAssemblies = 1 << 5,
         BuildingPredefinedAssembliesAllowUnsafeCode = 1 << 6,
         BuildingForHeadlessPlayer = 1 << 7,
-        BuildingUseDeterministicCompilation = 1 << 8,
+        BuildingUseReferenceAssemblies = 1 << 8,
+        BuildingUseDeterministicCompilation = 1 << 9,
     }
 }

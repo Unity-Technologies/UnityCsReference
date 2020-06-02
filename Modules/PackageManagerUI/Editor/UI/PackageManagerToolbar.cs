@@ -100,7 +100,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
         }
 
-        private void OnUserLoginStateChange(bool loggedIn)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             var page = m_PageManager.GetCurrentPage();
             EnableMenuForCapability(page.capability);

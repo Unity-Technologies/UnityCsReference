@@ -200,10 +200,6 @@ namespace UnityEditor
             rect.yMin += 1;
             rect.yMax -= 1;
 
-            // De-indent by the drag handle width, so the text field lines up with others in the inspector.
-            // Will have space in front of label for more space between it and the drag handle.
-            rect.xMin -= ReorderableList.Defaults.dragHandleWidth;
-
             string oldName = m_Tags.GetArrayElementAtIndex(index).stringValue;
             if (string.IsNullOrEmpty(oldName))
                 oldName = "(Removed)";
@@ -249,10 +245,6 @@ namespace UnityEditor
             rect.yMin += 1;
             rect.yMax -= 1;
 
-            // De-indent by the drag handle width, so the text field lines up with others in the inspector.
-            // Will have space in front of label for more space between it and the drag handle.
-            rect.xMin -= ReorderableList.Defaults.dragHandleWidth;
-
             bool oldEnabled = GUI.enabled;
             GUI.enabled = m_IsEditable && CanEditSortLayerEntry(index);
 
@@ -273,10 +265,6 @@ namespace UnityEditor
             // nicer looking with selected list row and a text field in it
             rect.yMin += 1;
             rect.yMax -= 1;
-
-            // De-indent by the drag handle width, so the text field lines up with others in the inspector.
-            // Will have space in front of label for more space between it and the drag handle.
-            rect.xMin -= ReorderableList.Defaults.dragHandleWidth;
 
             bool isUserLayer = index >= 8;
 

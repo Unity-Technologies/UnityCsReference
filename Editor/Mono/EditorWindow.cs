@@ -1215,7 +1215,7 @@ namespace UnityEditor
                 renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
-            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            EditorUIService.instance.AddDefaultEditorStyleSheets(root);
             root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
             return root;
         }

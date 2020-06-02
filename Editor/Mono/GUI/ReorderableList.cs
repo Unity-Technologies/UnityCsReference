@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
+using System.Linq;
 
 namespace UnityEditorInternal
 {
@@ -31,7 +32,6 @@ namespace UnityEditorInternal
         public delegate bool CanRemoveCallbackDelegate(ReorderableList list);
         public delegate bool CanAddCallbackDelegate(ReorderableList list);
         public delegate void DragCallbackDelegate(ReorderableList list);
-
 
         // draw callbacks
         public HeaderCallbackDelegate drawHeaderCallback;
@@ -57,7 +57,7 @@ namespace UnityEditorInternal
         public CanAddCallbackDelegate onCanAddCallback;
         public ChangedCallbackDelegate onChangedCallback;
 
-        private int m_ActiveElement = -1;
+        internal int m_ActiveElement = -1;
         private float m_DragOffset = 0;
         private GUISlideGroup m_SlideGroup;
 
@@ -73,14 +73,33 @@ namespace UnityEditorInternal
         public bool displayAdd;
         public bool displayRemove;
 
+        internal bool m_IsEditable;
+        internal bool m_HasPropertyDrawer;
+
         private int id = -1;
+
+        internal struct PropertyCacheEntry
+        {
+            public SerializedProperty property;
+            public float height;
+            public float offset;
+
+            public PropertyCacheEntry(SerializedProperty property, float height, float offset)
+            {
+                this.property = property;
+                this.height = height;
+                this.offset = offset;
+            }
+        }
+        List<PropertyCacheEntry> m_PropertyCache = new List<PropertyCacheEntry>();
+        internal bool IsCacheClear => m_PropertyCache.Count == 0;
 
         // class for default rendering and behavior of reorderable list - stores styles and is statically available as s_Defaults
         public class Defaults
         {
             public GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add to list");
             public GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to list");
-            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from list");
+            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection or last element from list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
             public readonly GUIStyle headerBackground = "RL Header";
             private readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
@@ -90,7 +109,13 @@ namespace UnityEditorInternal
             public readonly GUIStyle elementBackground = "RL Element";
             public const int padding = 6;
             public const int dragHandleWidth = 20;
+            internal const int propertyDrawerPadding = 8;
+            internal const int minHeaderHeight = 2;
             private static GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
+            internal static readonly string undoAdd = "Add Element To Array";
+            internal static readonly string undoRemove = "Remove Element From Array";
+            internal static readonly string undoMove = "Reorder Element In Array";
+            internal static readonly Rect infinityRect = new Rect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
 
             // draw the default footer
             public void DrawFooter(Rect rect, ReorderableList list)
@@ -122,44 +147,63 @@ namespace UnityEditorInternal
                             else
                                 DoAddButton(list);
 
-                            if (list.onChangedCallback != null)
-                                list.onChangedCallback(list);
+                            list.onChangedCallback?.Invoke(list);
+                            list.ClearCacheRecursive();
                         }
                     }
                 }
                 if (list.displayRemove)
                 {
-                    using (new EditorGUI.DisabledScope(
-                        list.index < 0 || list.index >= list.count ||
-                        (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))))
+                    using (new EditorGUI.DisabledScope(list.index < 0 || list.index >= list.count
+                        || (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))))
                     {
                         if (GUI.Button(removeRect, iconToolbarMinus, preButton))
                         {
                             if (list.onRemoveCallback == null)
+                            {
                                 DoRemoveButton(list);
+                            }
                             else
                                 list.onRemoveCallback(list);
 
-                            if (list.onChangedCallback != null)
-                                list.onChangedCallback(list);
+                            list.onChangedCallback?.Invoke(list);
+                            list.ClearCacheRecursive();
                         }
                     }
                 }
             }
 
             // default add button behavior
-            public void DoAddButton(ReorderableList list)
+            internal void DoAddButton(ReorderableList list, Object value)
             {
                 if (list.serializedProperty != null)
                 {
-                    list.serializedProperty.arraySize += 1;
+                    if (list.serializedProperty.hasMultipleDifferentValues &&
+                        !EditorUtility.DisplayDialog(L10n.Tr("Changing size of the array will copy new value to all other selected objects."),
+                            L10n.Tr("Unique values in the different selected object array size properties will be lost"),
+                            L10n.Tr("OK"),
+                            L10n.Tr("Cancel"))) return;
+
+                    SerializedProperty arraySize = list.m_Elements.FindPropertyRelative("Array.size");
+                    arraySize.intValue++;
+                    arraySize.serializedObject.ApplyModifiedProperties();
+
                     list.index = list.serializedProperty.arraySize - 1;
+
+                    if (value != null)
+                    {
+                        list.serializedProperty.GetArrayElementAtIndex(list.index).objectReferenceValue = value;
+                    }
+
+                    list.serializedProperty.serializedObject.ApplyModifiedProperties();
                 }
                 else
                 {
                     // this is ugly but there are a lot of cases like null types and default constructors
                     var elementType = list.list.GetType().GetElementType();
-                    if (elementType == typeof(string))
+                    if (value != null)
+                        list.index = list.list.Add(value);
+                    else if (elementType == typeof(string))
                         list.index = list.list.Add("");
                     else if (elementType != null && elementType.GetConstructor(Type.EmptyTypes) == null)
                         Debug.LogError("Cannot add element. Type " + elementType + " has no default constructor. Implement a default constructor or implement your own add behaviour.");
@@ -170,23 +214,47 @@ namespace UnityEditorInternal
                     else
                         Debug.LogError("Cannot add element of type Null.");
                 }
+                Undo.SetCurrentGroupName(undoAdd);
+            }
+
+            public void DoAddButton(ReorderableList list)
+            {
+                DoAddButton(list, null);
             }
 
             // default remove button behavior
             public void DoRemoveButton(ReorderableList list)
             {
+                int removeIndex = list.index;
+                if (removeIndex < 0 || removeIndex >= list.count) removeIndex = list.count - 1;
+
                 if (list.serializedProperty != null)
                 {
-                    list.serializedProperty.DeleteArrayElementAtIndex(list.index);
+                    list.serializedProperty.DeleteArrayElementAtIndex(removeIndex);
+
+                    if (removeIndex < list.count - 1)
+                    {
+                        SerializedProperty currentProperty = list.serializedProperty.GetArrayElementAtIndex(removeIndex);
+                        for (int i = removeIndex + 1; i < list.count; i++)
+                        {
+                            SerializedProperty nextProperty = list.serializedProperty.GetArrayElementAtIndex(i);
+                            currentProperty.isExpanded = nextProperty.isExpanded;
+                            currentProperty = nextProperty;
+                        }
+                    }
+                    list.serializedProperty.serializedObject.ApplyModifiedProperties();
                     if (list.index >= list.serializedProperty.arraySize - 1)
                         list.index = list.serializedProperty.arraySize - 1;
                 }
                 else
                 {
-                    list.list.RemoveAt(list.index);
+                    list.list.RemoveAt(removeIndex);
                     if (list.index >= list.list.Count - 1)
                         list.index = list.list.Count - 1;
                 }
+
+                list.GrabKeyboardFocus();
+                Undo.SetCurrentGroupName(undoRemove);
             }
 
             // draw the default header background
@@ -233,6 +301,20 @@ namespace UnityEditorInternal
             // draw the default element
             public void DrawElement(Rect rect, SerializedProperty element, System.Object listItem, bool selected, bool focused, bool draggable)
             {
+                DrawElement(rect, element, listItem, selected, focused, draggable, false);
+            }
+
+            public void DrawElement(Rect rect, SerializedProperty element, System.Object listItem, bool selected, bool focused, bool draggable, bool editable)
+            {
+                var prop = element ?? listItem as SerializedProperty;
+                if (editable)
+                {
+                    var handler = ScriptAttributeUtility.GetHandler(prop);
+                    handler.OnGUI(rect, prop, null, true);
+                    if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
+                    return;
+                }
+
                 EditorGUI.LabelField(rect, EditorGUIUtility.TempContent((element != null) ? element.displayName : listItem.ToString()));
             }
 
@@ -247,9 +329,15 @@ namespace UnityEditorInternal
         {
             get
             {
+                if (s_Defaults == null)
+                    s_Defaults = new Defaults();
+
                 return s_Defaults;
             }
         }
+
+        static List<ReorderableList> s_Instances = new List<ReorderableList>();
+        internal static void ClearExistingListCaches() => s_Instances.ForEach(list => list.ClearCache());
 
         // constructors
         public ReorderableList(IList elements, Type elementType)
@@ -288,12 +376,18 @@ namespace UnityEditorInternal
                 m_Draggable = false;
             if (m_Elements != null && m_Elements.isArray == false)
                 Debug.LogError("Input elements should be an Array SerializedProperty");
+
+            s_Instances.Add(this);
         }
 
         public SerializedProperty serializedProperty
         {
             get { return m_Elements; }
-            set { m_Elements = value; }
+            set
+            {
+                m_Elements = value;
+                m_SerializedObject = m_Elements.serializedObject;
+            }
         }
 
         public IList list
@@ -302,11 +396,12 @@ namespace UnityEditorInternal
             set { m_ElementList = value; }
         }
 
-
         // active element index accessor
         public int index
         {
-            get { return m_ActiveElement; }
+            // In order to always return a valid index to list element, we should
+            // return the last item if there are no active element
+            get { return m_ActiveElement >= 0 ? m_ActiveElement : count - 1; }
             set { m_ActiveElement = value; }
         }
 
@@ -318,6 +413,9 @@ namespace UnityEditorInternal
         public float footerHeight = 20;
         // show default background
         public bool showDefaultBackground = true;
+
+        private float HeaderHeight { get { return Mathf.Max(headerHeight, Defaults.minHeaderHeight); } }
+
         private float listElementTopPadding => headerHeight > 5 ? 4 : 1; // headerHeight is usually set to 3px when there is no header content. Therefore, we add a 1px top margin to match the 4px bottom margin
         private const float kListElementBottomPadding = 4;
 
@@ -328,6 +426,77 @@ namespace UnityEditorInternal
             set { m_Draggable = value; }
         }
 
+        internal void CacheIfNeeded(bool cacheCount = false)
+        {
+            if (cacheCount) m_Count = count;
+            m_PropertyCache.Capacity = Mathf.Max(m_PropertyCache.Capacity, m_Count - 1);
+            while (m_Count > m_PropertyCache.Count)
+            {
+                float offset;
+                if (m_Elements != null)
+                {
+                    SerializedProperty property;
+                    if (m_PropertyCache.Count == 0)
+                    {
+                        property = m_Elements.GetArrayElementAtIndex(0);
+                        offset = 0;
+                    }
+                    else
+                    {
+                        PropertyCacheEntry lastEntry = m_PropertyCache.Last();
+
+                        property = lastEntry.property.Copy();
+                        property.Next(false);
+                        offset = lastEntry.offset + lastEntry.height;
+                    }
+
+                    float height = elementHeight;
+                    if (elementHeightCallback != null)
+                    {
+                        height = elementHeightCallback(m_PropertyCache.Count);
+                    }
+                    else if (m_HasPropertyDrawer)
+                    {
+                        height = ScriptAttributeUtility.GetHandler(property).GetHeight(property, null, true);
+                    }
+                    m_PropertyCache.Add(new PropertyCacheEntry(property, height, offset));
+                }
+                else
+                {
+                    if (m_PropertyCache.Count == 0)
+                    {
+                        offset = 0;
+                    }
+                    else
+                    {
+                        PropertyCacheEntry lastEntry = m_PropertyCache.Last();
+                        offset = lastEntry.offset + lastEntry.height;
+                    }
+
+                    float height = elementHeight;
+                    m_PropertyCache.Add(new PropertyCacheEntry(null, height, offset));
+                }
+            }
+        }
+
+        internal void ClearCache()
+        {
+            m_PropertyCache.Clear();
+        }
+
+        internal void ClearCacheRecursive()
+        {
+            if (m_Elements != null)
+            {
+                ClearCache();
+                PropertyHandler.ClearListCacheIncludingChildren(m_Elements.propertyPath);
+            }
+            else
+            {
+                ClearCache();
+            }
+        }
+
         private Rect GetContentRect(Rect rect)
         {
             Rect r = rect;
@@ -336,6 +505,8 @@ namespace UnityEditorInternal
                 r.xMin += Defaults.dragHandleWidth;
             else
                 r.xMin += Defaults.padding;
+            if (m_HasPropertyDrawer)
+                r.xMin += Defaults.propertyDrawerPadding;
             r.xMax -= Defaults.padding;
             return r;
         }
@@ -347,24 +518,21 @@ namespace UnityEditorInternal
 
         private float GetElementYOffset(int index, int skipIndex)
         {
-            if (elementHeightCallback == null)
-                return index * elementHeight;
+            CacheIfNeeded();
 
-            float offset = 0;
-            for (int i = 0; i < index; i++)
+            float skipOffset = 0;
+            if (skipIndex >= 0 && skipIndex < index)
             {
-                if (i != skipIndex)
-                    offset += elementHeightCallback(i);
+                skipOffset = m_PropertyCache[skipIndex].height;
             }
-            return offset;
+
+            return m_PropertyCache[index].offset - skipOffset;
         }
 
         private float GetElementHeight(int index)
         {
-            if (elementHeightCallback == null)
-                return elementHeight;
-
-            return elementHeightCallback(index);
+            CacheIfNeeded();
+            return m_PropertyCache[index].height;
         }
 
         private Rect GetRowRect(int index, Rect listRect)
@@ -395,14 +563,12 @@ namespace UnityEditorInternal
                 return m_ElementList.Count;
             }
         }
+        int m_Count;
 
         public void DoLayoutList() //TODO: better API?
         {
-            if (s_Defaults == null)
-                s_Defaults = new Defaults();
-
             // do the custom or default header GUI
-            Rect headerRect = GUILayoutUtility.GetRect(0, headerHeight, GUILayout.ExpandWidth(true));
+            Rect headerRect = GUILayoutUtility.GetRect(0, HeaderHeight, GUILayout.ExpandWidth(true));
             //Elements area
             Rect listRect = GUILayoutUtility.GetRect(10, GetListElementHeight(), GUILayout.ExpandWidth(true));
             // do the footer GUI
@@ -410,63 +576,90 @@ namespace UnityEditorInternal
 
             // do the parts of our list
             DoListHeader(headerRect);
-            DoListElements(listRect);
+            DoListElements(listRect, Defaults.infinityRect);
             DoListFooter(footerRect);
         }
 
-        public void DoList(Rect rect) //TODO: better API?
+        public void DoList(Rect rect)
         {
-            if (s_Defaults == null)
-                s_Defaults = new Defaults();
+            DoList(rect, Defaults.infinityRect);
+        }
 
+        public void DoList(Rect rect, Rect visibleRect) //TODO: better API?
+        {
             // do the custom or default header GUI
-            Rect headerRect = new Rect(rect.x, rect.y, rect.width, headerHeight);
+            Rect headerRect = new Rect(rect.x, rect.y, rect.width, HeaderHeight);
             //Elements area
             Rect listRect = new Rect(rect.x, headerRect.y + headerRect.height, rect.width, GetListElementHeight());
             // do the footer GUI
             Rect footerRect = new Rect(rect.x, listRect.y + listRect.height, rect.width, footerHeight);
 
+            visibleRect.y -= headerRect.height;
+            visibleRect.height -= headerRect.height;
+
             // do the parts of our list
             DoListHeader(headerRect);
-            DoListElements(listRect);
+            DoListElements(listRect, visibleRect);
             DoListFooter(footerRect);
         }
 
         public float GetHeight()
         {
-            float totalheight = 0f;
-            totalheight += GetListElementHeight();
-            totalheight += headerHeight;
-            totalheight += footerHeight;
-            return totalheight;
+            float totalHeight = 0f;
+            totalHeight += HeaderHeight;
+            totalHeight += GetListElementHeight();
+            totalHeight += footerHeight;
+            return totalHeight;
         }
 
         private float GetListElementHeight()
         {
             float listElementPadding = kListElementBottomPadding + listElementTopPadding;
 
-            int arraySize = count;
-            if (arraySize == 0)
+            m_Count = count;
+            if (m_Count == 0)
             {
                 return elementHeight + listElementPadding;
             }
 
-            if (elementHeightCallback != null)
-            {
-                return GetElementYOffset(arraySize - 1) + GetElementHeight(arraySize - 1) + listElementPadding;
-            }
-
-            return (elementHeight * arraySize) + listElementPadding;
+            CacheIfNeeded(true);
+            return GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
         }
 
-        private void DoListElements(Rect listRect)
+        void EnsureValidProperty(SerializedProperty property)
         {
+            try
+            {
+                ScriptAttributeUtility.GetHandler(property);
+            }
+            catch
+            {
+                ClearCache();
+                CacheIfNeeded(true);
+            }
+        }
+
+        Rect lastRect = Rect.zero;
+        private void DoListElements(Rect listRect, Rect visibleRect)
+        {
+            if ((drawElementCallback != null || m_HasPropertyDrawer) && Event.current.type == EventType.Repaint && listRect != lastRect)
+            {
+                // Recalculate cache values in case their height changed due to window resize
+                lastRect = listRect;
+                ClearCacheRecursive();
+            }
+
+            CacheIfNeeded(true);
+
+            var prevIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+
             // How many elements? If none, make space for showing default line that shows no elements are present
-            var arraySize = count;
+            m_Count = count;
 
             // draw the background in repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
-                s_Defaults.boxBackground.Draw(listRect, false, false, false, false);
+                defaultBehaviours.boxBackground.Draw(listRect, false, false, false, false);
 
             // resize to the area that we want to draw our elements into
             listRect.yMin += listElementTopPadding; listRect.yMax -= kListElementBottomPadding;
@@ -484,16 +677,19 @@ namespace UnityEditorInternal
             // the content rect is what we will actually draw into -- it doesn't include the drag handle or padding
             var elementContentRect = elementRect;
 
-            if ((m_Elements != null && m_Elements.isArray || m_ElementList != null) && arraySize > 0)
+            bool handlingInput = Event.current.type == EventType.MouseDown;
+
+            if ((m_Elements != null && m_Elements.isArray || m_ElementList != null) && m_Count > 0)
             {
+                EditorGUI.BeginChangeCheck();
                 // If there are elements, we need to draw them -- we will do this differently depending on if we are dragging or not
                 if (IsDragging() && Event.current.type == EventType.Repaint)
                 {
                     // we are dragging, so we need to build the new list of target indices
-                    var targetIndex = CalculateRowIndex();
+                    var targetIndex = CalculateRowIndex(listRect);
 
                     m_NonDragTargetIndices.Clear();
-                    for (var i = 0; i < arraySize; i++)
+                    for (var i = 0; i < m_Count; i++)
                     {
                         if (i != m_ActiveElement)
                             m_NonDragTargetIndices.Add(i);
@@ -504,41 +700,39 @@ namespace UnityEditorInternal
                     var targetSeen = false;
                     for (var i = 0; i < m_NonDragTargetIndices.Count; i++)
                     {
+                        if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
+                        if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
+                        if (m_Elements != null) EnsureValidProperty(m_PropertyCache[i].property);
+
                         var nonDragTargetIndex = m_NonDragTargetIndices[i];
                         if (nonDragTargetIndex != -1)
                         {
                             elementRect.height = GetElementHeight(nonDragTargetIndex);
                             // update the position of the rect (based on element position and accounting for sliding)
-                            if (elementHeightCallback == null)
+                            elementRect.y = listRect.y + GetElementYOffset(nonDragTargetIndex, m_ActiveElement);
+                            if (targetSeen)
                             {
-                                // if elementHeightCallback is not set, we can use a simpler path to calculate YOffset.
-                                elementRect.y = listRect.y + GetElementYOffset(i, m_ActiveElement);
+                                elementRect.y += GetElementHeight(m_ActiveElement);
                             }
-                            else
-                            {
-                                elementRect.y = listRect.y + GetElementYOffset(nonDragTargetIndex, m_ActiveElement);
-                                if (targetSeen)
-                                {
-                                    elementRect.y += elementHeightCallback(m_ActiveElement);
-                                }
-                            }
-                            elementRect = m_SlideGroup.GetRect(nonDragTargetIndex, elementRect);
+
+                            Rect r = m_SlideGroup.GetRect(nonDragTargetIndex, elementRect);
+                            elementRect.y = r.y;
 
                             // actually draw the element
                             if (drawElementBackgroundCallback == null)
-                                s_Defaults.DrawElementBackground(elementRect, nonDragTargetIndex, false, false, m_Draggable);
+                                defaultBehaviours.DrawElementBackground(elementRect, nonDragTargetIndex, false, false, m_Draggable);
                             else
                                 drawElementBackgroundCallback(elementRect, nonDragTargetIndex, false, false);
 
-                            s_Defaults.DrawElementDraggingHandle(elementRect, i, false, false, m_Draggable);
+                            defaultBehaviours.DrawElementDraggingHandle(elementRect, i, false, false, m_Draggable);
 
                             elementContentRect = GetContentRect(elementRect);
                             if (drawElementCallback == null)
                             {
                                 if (m_Elements != null)
-                                    s_Defaults.DrawElement(elementContentRect, m_Elements.GetArrayElementAtIndex(nonDragTargetIndex), null, false, false, m_Draggable);
+                                    s_Defaults.DrawElement(elementContentRect, m_PropertyCache[nonDragTargetIndex].property, null, false, false, m_Draggable, m_IsEditable);
                                 else
-                                    s_Defaults.DrawElement(elementContentRect, null, m_ElementList[nonDragTargetIndex], false, false, m_Draggable);
+                                    defaultBehaviours.DrawElement(elementContentRect, null, m_ElementList[nonDragTargetIndex], false, false, m_Draggable, m_IsEditable);
                             }
                             else
                             {
@@ -552,17 +746,16 @@ namespace UnityEditorInternal
                     }
 
                     // finally get the position of the active element
-                    elementRect.y = m_DraggedY - m_DragOffset + listRect.y;
+                    elementRect.y = GetClampedDragPosition(listRect) - m_DragOffset + listRect.y;
                     elementRect.height = GetElementHeight(m_ActiveElement);
 
                     // actually draw the element
                     if (drawElementBackgroundCallback == null)
-                        s_Defaults.DrawElementBackground(elementRect, m_ActiveElement, true, true, m_Draggable);
+                        defaultBehaviours.DrawElementBackground(elementRect, m_ActiveElement, true, true, m_Draggable);
                     else
                         drawElementBackgroundCallback(elementRect, m_ActiveElement, true, true);
 
-                    s_Defaults.DrawElementDraggingHandle(elementRect, m_ActiveElement, true, true, m_Draggable);
-
+                    defaultBehaviours.DrawElementDraggingHandle(elementRect, m_ActiveElement, true, true, m_Draggable);
 
                     elementContentRect = GetContentRect(elementRect);
 
@@ -570,9 +763,9 @@ namespace UnityEditorInternal
                     if (drawElementCallback == null)
                     {
                         if (m_Elements != null)
-                            s_Defaults.DrawElement(elementContentRect, m_Elements.GetArrayElementAtIndex(m_ActiveElement), null, true, true, m_Draggable);
+                            s_Defaults.DrawElement(elementContentRect, m_PropertyCache[m_ActiveElement].property, null, true, true, m_Draggable, m_IsEditable);
                         else
-                            s_Defaults.DrawElement(elementContentRect, null, m_ElementList[m_ActiveElement], true, true, m_Draggable);
+                            defaultBehaviours.DrawElement(elementContentRect, null, m_ElementList[m_ActiveElement], true, true, m_Draggable, m_IsEditable);
                     }
                     else
                     {
@@ -582,8 +775,12 @@ namespace UnityEditorInternal
                 else
                 {
                     // if we aren't dragging, we just draw all of the elements in order
-                    for (int i = 0; i < arraySize; i++)
+                    for (int i = 0; i < m_Count; i++)
                     {
+                        if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
+                        if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
+                        if (m_Elements != null) EnsureValidProperty(m_PropertyCache[i].property);
+
                         bool activeElement = (i == m_ActiveElement);
                         bool focusedElement =  (i == m_ActiveElement && HasKeyboardControl());
 
@@ -593,10 +790,10 @@ namespace UnityEditorInternal
 
                         // draw the background
                         if (drawElementBackgroundCallback == null)
-                            s_Defaults.DrawElementBackground(elementRect, i, activeElement, focusedElement, m_Draggable);
+                            defaultBehaviours.DrawElementBackground(elementRect, i, activeElement, focusedElement, m_Draggable);
                         else
                             drawElementBackgroundCallback(elementRect, i, activeElement, focusedElement);
-                        s_Defaults.DrawElementDraggingHandle(elementRect, i, activeElement, focusedElement, m_Draggable);
+                        defaultBehaviours.DrawElementDraggingHandle(elementRect, i, activeElement, focusedElement, m_Draggable);
 
                         elementContentRect = GetContentRect(elementRect);
 
@@ -604,19 +801,32 @@ namespace UnityEditorInternal
                         if (drawElementCallback == null)
                         {
                             if (m_Elements != null)
-                                s_Defaults.DrawElement(elementContentRect, m_Elements.GetArrayElementAtIndex(i), null, activeElement, focusedElement, m_Draggable);
+                            {
+                                s_Defaults.DrawElement(elementContentRect, m_PropertyCache[i].property, null, activeElement, focusedElement, m_Draggable, m_IsEditable);
+                            }
                             else
-                                s_Defaults.DrawElement(elementContentRect, null, m_ElementList[i], activeElement, focusedElement, m_Draggable);
+                                defaultBehaviours.DrawElement(elementContentRect, null, m_ElementList[i], activeElement, focusedElement, m_Draggable, m_IsEditable);
                         }
                         else
                         {
                             drawElementCallback(elementContentRect, i, activeElement, focusedElement);
+                        }
+
+                        if (handlingInput && Event.current.type == EventType.Used)
+                        {
+                            m_ActiveElement = i;
+                            handlingInput = false;
                         }
                     }
                 }
 
                 // handle the interaction
                 DoDraggingAndSelection(listRect);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    ClearCacheRecursive();
+                }
             }
             else
             {
@@ -624,26 +834,28 @@ namespace UnityEditorInternal
                 elementRect.y = listRect.y;
                 // draw the background
                 if (drawElementBackgroundCallback == null)
-                    s_Defaults.DrawElementBackground(elementRect, -1, false, false, false);
+                    defaultBehaviours.DrawElementBackground(elementRect, -1, false, false, false);
                 else
                     drawElementBackgroundCallback(elementRect, -1, false, false);
-                s_Defaults.DrawElementDraggingHandle(elementRect, -1, false, false, false);
+                defaultBehaviours.DrawElementDraggingHandle(elementRect, -1, false, false, false);
 
                 elementContentRect = elementRect;
                 elementContentRect.xMin += Defaults.padding;
                 elementContentRect.xMax -= Defaults.padding;
                 if (drawNoneElementCallback == null)
-                    s_Defaults.DrawNoneElement(elementContentRect, m_Draggable);
+                    defaultBehaviours.DrawNoneElement(elementContentRect, m_Draggable);
                 else
                     drawNoneElementCallback(elementContentRect);
             }
+
+            EditorGUI.indentLevel = prevIndent;
         }
 
         private void DoListHeader(Rect headerRect)
         {
             // draw the background on repaint
             if (showDefaultBackground && Event.current.type == EventType.Repaint)
-                s_Defaults.DrawHeaderBackground(headerRect);
+                defaultBehaviours.DrawHeaderBackground(headerRect);
 
             // apply the padding to get the internal rect
             headerRect.xMin += Defaults.padding;
@@ -655,7 +867,7 @@ namespace UnityEditorInternal
             if (drawHeaderCallback != null)
                 drawHeaderCallback(headerRect);
             else if (m_DisplayHeader)
-                s_Defaults.DrawHeader(headerRect, m_SerializedObject, m_Elements, m_ElementList);
+                defaultBehaviours.DrawHeader(headerRect, m_SerializedObject, m_Elements, m_ElementList);
         }
 
         private void DoListFooter(Rect footerRect)
@@ -664,7 +876,7 @@ namespace UnityEditorInternal
             if (drawFooterCallback != null)
                 drawFooterCallback(footerRect);
             else if (displayAdd || displayRemove)
-                s_Defaults.DrawFooter(footerRect, this); // draw the footer if the add or remove buttons are required
+                defaultBehaviours.DrawFooter(footerRect, this); // draw the footer if the add or remove buttons are required
         }
 
         private void DoDraggingAndSelection(Rect listRect)
@@ -700,7 +912,9 @@ namespace UnityEditorInternal
 
                 case EventType.MouseDown:
 
-                    if (!listRect.Contains(Event.current.mousePosition) || (Event.current.button != 0 && Event.current.button != 1))
+                    if (!listRect.Contains(Event.current.mousePosition)
+                        || (Event.current.button != 0 && Event.current.button != 1)
+                        || m_Dragging && Event.current.button > 0)
                         break;
 
                     // clicking on the list should end editing any existing edits
@@ -734,11 +948,18 @@ namespace UnityEditorInternal
                     // Set m_Dragging state on first MouseDrag event after we got hotcontrol (to prevent animating elements when deleting elements by context menu)
                     m_Dragging = true;
 
-                    if (onMouseDragCallback != null)
-                        onMouseDragCallback(this);
+                    onMouseDragCallback?.Invoke(this);
 
                     // if we are dragging, update the position
                     UpdateDraggedY(listRect);
+
+                    // handle inspector auto-scroll
+                    if (PropertyEditor.CurrentPropertyEditor != null)
+                    {
+                        Vector2 mousePoistion = new Vector2(0, Mathf.Clamp(evt.mousePosition.y, listRect.y, listRect.y + listRect.height));
+                        mousePoistion = GUIUtility.GUIToScreenPoint(mousePoistion) - new Vector2(0, PropertyEditor.CurrentPropertyEditor.m_Pos.y);
+                        PropertyEditor.CurrentPropertyEditor.AutoScroll(mousePoistion);
+                    }
                     evt.Use();
                     break;
 
@@ -754,30 +975,32 @@ namespace UnityEditorInternal
                         break;
                     }
 
-                    // hotcontrol is only set when list is draggable
+                    // hot control is only set when list is draggable
                     if (GUIUtility.hotControl != id)
                         break;
+
                     evt.Use();
                     m_Dragging = false;
 
                     try
                     {
                         // What will be the index of this if we release?
-                        int targetIndex = CalculateRowIndex();
+                        int targetIndex = CalculateRowIndex(listRect);
                         if (m_ActiveElement != targetIndex)
                         {
                             // if the target index is different than the current index...
                             if (m_SerializedObject != null && m_Elements != null)
                             {
+                                Undo.RegisterCompleteObjectUndo(m_SerializedObject.targetObjects, Defaults.undoMove);
+
                                 // if we are working with Serialized Properties, we can handle it for you
                                 m_Elements.MoveArrayElement(m_ActiveElement, targetIndex);
-                                m_SerializedObject.ApplyModifiedProperties();
-                                m_SerializedObject.Update();
+                                m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                             }
                             else if (m_ElementList != null)
                             {
                                 // we are working with the IList, which is probably of a fixed length
-                                System.Object tempObject = m_ElementList[m_ActiveElement];
+                                object tempObject = m_ElementList[m_ActiveElement];
                                 for (int i = 0; i < m_ElementList.Count - 1; i++)
                                 {
                                     if (i >= m_ActiveElement)
@@ -794,22 +1017,30 @@ namespace UnityEditorInternal
                             var oldActiveElement = m_ActiveElement;
                             var newActiveElement = targetIndex;
 
+                            // Retain expanded state after reordering properties
+                            if (m_SerializedObject != null && m_Elements != null)
+                            {
+                                SerializedProperty prop1 = m_Elements.GetArrayElementAtIndex(oldActiveElement);
+                                SerializedProperty prop2 = m_Elements.GetArrayElementAtIndex(newActiveElement);
+                                bool tempExpanded = prop1.isExpanded;
+                                prop1.isExpanded = prop2.isExpanded;
+                                prop2.isExpanded = tempExpanded;
+                            }
+
                             // update the active element, now that we've moved it
                             m_ActiveElement = targetIndex;
                             // give the user a callback
                             if (onReorderCallbackWithDetails != null)
                                 onReorderCallbackWithDetails(this, oldActiveElement, newActiveElement);
-                            else if (onReorderCallback != null)
-                                onReorderCallback(this);
+                            else onReorderCallback?.Invoke(this);
 
-                            if (onChangedCallback != null)
-                                onChangedCallback(this);
+                            onChangedCallback?.Invoke(this);
+                            GUI.changed = true;
                         }
                         else
                         {
                             // if mouse up was on the same index as mouse down we fire a mouse up callback (useful if for beginning renaming on mouseup)
-                            if (onMouseUpCallback != null)
-                                onMouseUpCallback(this);
+                            onMouseUpCallback?.Invoke(this);
                         }
                     }
                     finally
@@ -822,6 +1053,7 @@ namespace UnityEditorInternal
                     }
                     break;
             }
+
             // if the index has changed and there is a selected callback, call it
             if ((m_ActiveElement != oldIndex || clicked) && onSelectCallback != null)
                 onSelectCallback(this);
@@ -835,43 +1067,56 @@ namespace UnityEditorInternal
 
         private void UpdateDraggedY(Rect listRect)
         {
-            m_DraggedY = Mathf.Clamp(Event.current.mousePosition.y - listRect.y, m_DragOffset, listRect.height - (GetElementHeight(m_ActiveElement) - m_DragOffset));
+            m_DraggedY = Event.current.mousePosition.y - listRect.y;
         }
 
-        private int CalculateRowIndex()
+        private float GetClampedDragPosition(Rect listRect)
         {
-            var rowIndex = GetRowIndex(m_DraggedY);
-            var yTop = m_DraggedY - m_DragOffset;
+            return Mathf.Clamp(m_DraggedY, m_DragOffset, listRect.height - (GetElementHeight(m_ActiveElement)) + m_DragOffset);
+        }
 
-            if (rowIndex != 0)
-                if (GetElementYOffset(rowIndex - 1) >= yTop)
-                    return rowIndex - 1;
+        private int CalculateRowIndex(Rect listRect)
+        {
+            var rowIndex = GetRowIndex(GetClampedDragPosition(listRect) - m_DragOffset, true);
 
-            var nextElement = rowIndex + 1;
-            var yBottom = m_DraggedY - m_DragOffset + GetElementHeight(m_ActiveElement);
-            if (rowIndex != count - 1)
-                if (GetElementYOffset(nextElement) + GetElementHeight(nextElement) <= yBottom)
-                    return rowIndex + 1;
+            var activeElementY = m_DraggedY - m_DragOffset;
+            var position = activeElementY - GetElementYOffset(m_ActiveElement);
+
+            if (position < 0)
+            {
+                while (rowIndex > 0 && GetElementYOffset(rowIndex - 1) + GetElementHeight(rowIndex - 1) / 2 > activeElementY)
+                    rowIndex--;
+            }
 
             return rowIndex;
         }
 
-        private int GetRowIndex(float localY)
+        // Used to determine the destination index of the dragged element
+        // or indexes of of elements that are not interacted with while drag is happening
+        private int GetRowIndex(float localY, bool skipActiveElement = false)
         {
-            if (elementHeightCallback == null)
-                return Mathf.Clamp(Mathf.FloorToInt(localY / elementHeight), 0, count - 1);
-
-            float rowYOffset = 0;
-            for (var i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
-                float rowYHeight = elementHeightCallback(i);
-                float rowYEnd = rowYOffset + rowYHeight;
-                if (localY >= rowYOffset && localY < rowYEnd)
+                float levelOffset = GetElementYOffset(i);
+
+                if (skipActiveElement)
                 {
-                    return i;
+                    if (i >= m_ActiveElement)
+                    {
+                        levelOffset += -GetElementHeight(m_ActiveElement) + GetElementHeight(i) / 2;
+                    }
+                    else if (i < m_ActiveElement)
+                    {
+                        levelOffset -= GetElementHeight(i) / 2;
+                    }
                 }
-                rowYOffset += rowYHeight;
+
+                if (levelOffset > localY)
+                {
+                    return --i;
+                }
             }
+
             return count - 1;
         }
 

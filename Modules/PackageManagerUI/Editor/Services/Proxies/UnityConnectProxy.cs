@@ -12,26 +12,25 @@ namespace UnityEditor.PackageManager.UI
     internal class UnityConnectProxy
     {
         [SerializeField]
-        private ConnectInfo m_ConnectInfo;
-        [SerializeField]
         private bool m_IsUserInfoReady;
 
-        public virtual event Action<bool> onUserLoginStateChange = delegate {};
+        [SerializeField]
+        private bool m_HasAccessToken;
+
+        public virtual event Action<bool, bool> onUserLoginStateChange = delegate {};
         public virtual bool isUserInfoReady => m_IsUserInfoReady;
-        public virtual bool isConnectInfoReady => m_ConnectInfo.ready;
-        public virtual bool isUserLoggedIn => m_ConnectInfo.ready && m_ConnectInfo.loggedIn;
+        public virtual bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
 
         public void OnEnable()
         {
-            m_ConnectInfo = UnityConnect.instance.connectInfo;
             m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
-            UnityConnect.instance.StateChanged += OnStateChanged;
+            m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
             UnityConnect.instance.UserStateChanged += OnUserStateChanged;
         }
 
         public void OnDisable()
         {
-            UnityConnect.instance.StateChanged -= OnStateChanged;
+            UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
         }
 
         public virtual string GetConfigurationURL(CloudConfigUrl config)
@@ -44,19 +43,16 @@ namespace UnityEditor.PackageManager.UI
             UnityConnect.instance.ShowLogin();
         }
 
-        private void OnStateChanged(ConnectInfo newInfo)
-        {
-            var loginChanged = newInfo.ready && m_ConnectInfo.loggedIn != newInfo.loggedIn;
-
-            m_ConnectInfo = newInfo;
-
-            if (loginChanged)
-                onUserLoginStateChange?.Invoke(m_ConnectInfo.loggedIn);
-        }
-
         private void OnUserStateChanged(UserInfo newInfo)
         {
+            var isUerInfoReadyOld = isUserInfoReady;
+            var isUserLoggedInOld = isUserLoggedIn;
+
             m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
+            m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+
+            if (isUerInfoReadyOld != isUserInfoReady || isUserLoggedIn != isUserLoggedInOld)
+                onUserLoginStateChange?.Invoke(isUserInfoReady, isUserLoggedIn);
         }
     }
 }

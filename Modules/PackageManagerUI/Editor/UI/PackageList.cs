@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI
             return packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
         }
 
-        private void OnUserLoginStateChange(bool loggedIn)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
                 RefreshList(false);
@@ -153,7 +153,9 @@ namespace UnityEditor.PackageManager.UI
             UIUtils.SetElementDisplay(scrollView, false);
             UIUtils.SetElementDisplay(emptyArea, true);
             UIUtils.SetElementDisplay(noPackagesLabel, false);
-            UIUtils.SetElementDisplay(loginContainer, true);
+            // when the editor first starts, we detect the user as not logged in (even though they are) because userInfo is not ready yet
+            // in this case, we want to delay showing the login window until the userInfo is ready
+            UIUtils.SetElementDisplay(loginContainer, m_UnityConnect.isUserInfoReady);
 
             m_PageManager.ClearSelection();
         }
@@ -193,10 +195,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshList(bool updateScrollPosition)
         {
-            var isAssetStore = m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore;
-            var isLoggedIn = m_UnityConnect.isUserLoggedIn;
-
-            if (isAssetStore && !isLoggedIn)
+            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore && !m_UnityConnect.isUserLoggedIn)
             {
                 HidePackagesShowLogin();
                 return;

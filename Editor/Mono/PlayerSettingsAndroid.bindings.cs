@@ -300,6 +300,12 @@ namespace UnityEditor
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
             internal static extern string ConvertAndroidKeystorePath(string keystoreName);
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            internal static extern string ConvertAndroidKeystoreNameToFullPath(string keystoreName);
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            internal static extern string ConvertAndroidKeystoreNameToPath(string keystoreName);
+
             // Android keystore name
             public static extern string keystoreName
             {

@@ -197,4 +197,10 @@ namespace UnityEngine
     public sealed class DelayedAttribute : PropertyAttribute
     {
     }
+
+    // Attribute to make lists and arrays reorderable
+    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public sealed class ReorderableAttribute : PropertyAttribute
+    {
+    }
 }

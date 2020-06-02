@@ -11,6 +11,10 @@ namespace UnityEditor.PackageManager
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
     public static partial class Client
     {
+        [NativeHeader("Modules/PackageManager/Editor/PackageManagerLogger.h")]
+        [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
+        public static extern LogLevel LogLevel { get; set; }
+
         [FreeFunction("PackageManager::Add::StartOperation")]
         private static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 

@@ -25,6 +25,7 @@ namespace UnityEditor.Compilation
     public class ScriptCompilerOptions
     {
         public bool AllowUnsafeCode { get; set; }
+        public bool EmitReferenceAssembly { get; set; }
 
         internal bool UseDeterministicCompilation { get; set; }
 

@@ -79,6 +79,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptCompilerOptions CompilerOptions { get; set; }
         public string GeneratedResponseFile { get; set; }
         public DirtySource DirtySource { get; set; }
+        // Indicates whether the assembly had compile errors on last compilation
+        public bool HasCompileErrors { get; set; }
 
         public ScriptAssembly()
         {
@@ -87,6 +89,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
         public string PdbFullPath { get { return AssetPath.Combine(OutputDirectory, PdbFilename); } }
+
+        public string ReferenceAssemblyFilename
+        {
+            get
+            {
+                return $"{Filename}.ref";
+            }
+        }
 
         public string[] GetAllReferences()
         {

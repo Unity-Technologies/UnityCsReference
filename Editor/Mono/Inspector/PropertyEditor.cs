@@ -11,7 +11,6 @@ using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
-using UnityEditor.UIElements;
 using UnityEditor.StyleSheets;
 using UnityEngine.Assertions.Comparers;
 using UnityEngine.UIElements;
@@ -114,6 +113,7 @@ namespace UnityEditor
         public EditorDragging editorDragging { get; }
         public bool useUIElementsDefaultInspector { get; internal set; } = false;
         public Editor lastInteractedEditor { get; set; }
+        internal static PropertyEditor CurrentPropertyEditor { get; private set; }
 
         public InspectorMode inspectorMode
         {
@@ -790,11 +790,31 @@ namespace UnityEditor
 
             rootVisualElement.RegisterCallback<DragUpdatedEvent>(DragOverBottomArea);
             rootVisualElement.RegisterCallback<DragPerformEvent>(DragPerformInBottomArea);
+            rootVisualElement.RegisterCallback<MouseEnterEvent>((e) => { CurrentPropertyEditor = this; });
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>((e) => { CurrentPropertyEditor = null; });
 
             EndRebuildContentContainers();
 
             Repaint();
             RefreshTitle();
+        }
+
+        internal void AutoScroll(Vector2 mousePosition)
+        {
+            if (m_ScrollView != null)
+            {
+                // implement auto-scroll for easier component drag'n'drop,
+                // we define a zone of height = k_AutoScrollZoneHeight
+                // at the top/bottom of the scrollView viewport,
+                // while dragging, when the mouse moves in these zones,
+                // we automatically scroll up/down
+                var localDragPosition = m_ScrollView.contentViewport.WorldToLocal(mousePosition);
+
+                if (localDragPosition.y < k_AutoScrollZoneHeight)
+                    m_ScrollView.verticalScroller.ScrollPageUp();
+                else if (localDragPosition.y > m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight)
+                    m_ScrollView.verticalScroller.ScrollPageDown();
+            }
         }
 
         private void DragOverBottomArea(DragUpdatedEvent dragUpdatedEvent)
@@ -803,21 +823,7 @@ namespace UnityEditor
             {
                 if (editorsElement != null && editorsElement.ContainsPoint(editorsElement.WorldToLocal(dragUpdatedEvent.mousePosition)))
                 {
-                    if (m_ScrollView != null)
-                    {
-                        // implement auto-scroll for easier component drag'n'drop,
-                        // we define a zone of height = k_AutoScrollZoneHeight
-                        // at the top/bottom of the scrollView viewport,
-                        // while dragging, when the mouse moves in these zones,
-                        // we automatically scroll up/down
-                        var localDragPosition = m_ScrollView.contentViewport.WorldToLocal(dragUpdatedEvent.mousePosition);
-
-                        if (localDragPosition.y < k_AutoScrollZoneHeight)
-                            m_ScrollView.verticalScroller.ScrollPageUp();
-                        else if (localDragPosition.y > m_ScrollView.contentViewport.rect.height - k_AutoScrollZoneHeight)
-                            m_ScrollView.verticalScroller.ScrollPageDown();
-                    }
-
+                    AutoScroll(dragUpdatedEvent.mousePosition);
                     return;
                 }
 
@@ -1438,7 +1444,7 @@ namespace UnityEditor
             if (editorsElement == null)
                 return;
 
-            Dictionary<int, EditorElement> mapping = null;
+            Dictionary<int, IEditorElement> mapping = null;
 
             var selection = new HashSet<int>(Selection.instanceIDs);
             if (m_DrawnSelection.SetEquals(selection))
@@ -1526,8 +1532,8 @@ namespace UnityEditor
                         string editorTitle = editorTarget == null ?
                             "Nothing Selected" :
                             $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                        editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
-                        editorsElement.Add(editorContainer);
+                        editorContainer = EditorUIService.instance.CreateEditorElement(editorIndex, this, editorTitle);
+                        editorsElement.Add(editorContainer as VisualElement);
                     }
 
                     if (prefabsComponentElement.childCount > 0)
@@ -1804,10 +1810,10 @@ namespace UnityEditor
                 GUI.DrawTexture(position, EditorGUIUtility.whiteTexture);
         }
 
-        private Dictionary<int, EditorElement> ProcessEditorElementsToRebuild(Editor[] editors)
+        private Dictionary<int, IEditorElement> ProcessEditorElementsToRebuild(Editor[] editors)
         {
-            Dictionary<int, EditorElement> editorToElementMap = new Dictionary<int, EditorElement>();
-            var currentElements = editorsElement.Children().OfType<EditorElement>().ToList();
+            Dictionary<int, IEditorElement> editorToElementMap = new Dictionary<int, IEditorElement>();
+            var currentElements = editorsElement.Children().OfType<IEditorElement>().ToList();
             if (editors.Length == 0)
             {
                 return null;

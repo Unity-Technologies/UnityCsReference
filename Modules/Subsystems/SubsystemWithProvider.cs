@@ -2,20 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-
 namespace UnityEngine.SubsystemsImplementation
 {
     public abstract class SubsystemWithProvider : ISubsystem
     {
-        internal bool m_Proxy;
-
         public void Start()
         {
             if (running)
                 return;
 
             OnStart();
+            providerBase.m_Running = true;
             running = true;
         }
 
@@ -27,6 +24,7 @@ namespace UnityEngine.SubsystemsImplementation
                 return;
 
             OnStop();
+            providerBase.m_Running = false;
             running = false;
         }
 
@@ -42,51 +40,46 @@ namespace UnityEngine.SubsystemsImplementation
         protected abstract void OnDestroy();
 
         public bool running { get; private set; }
+        internal SubsystemProvider providerBase { get; set; }
 
-        internal abstract void SetProvider(SubsystemProvider subsystemProvider);
-
-        internal abstract SubsystemDescriptorWithProvider GetDescriptor();
-        internal abstract void SetDescriptor(SubsystemDescriptorWithProvider descriptor);
+        internal abstract void Initialize(SubsystemDescriptorWithProvider descriptor, SubsystemProvider subsystemProvider);
+        internal abstract SubsystemDescriptorWithProvider descriptor { get; }
     }
 
-    public abstract class SubsystemWithProvider<TSubsystem, TSubsystemDescriptor, TProvider, TProviderToSubsystem> : SubsystemWithProvider
+    public abstract class SubsystemWithProvider<TSubsystem, TSubsystemDescriptor, TProvider> : SubsystemWithProvider
         where TSubsystem : SubsystemWithProvider, new()
         where TSubsystemDescriptor : SubsystemDescriptorWithProvider
-        where TProvider : SubsystemProvider<TSubsystem, TProviderToSubsystem>
-        where TProviderToSubsystem : IProviderToSubsystem<TSubsystem>
+        where TProvider : SubsystemProvider<TSubsystem>
     {
         public TSubsystemDescriptor subsystemDescriptor { get; private set; }
 
         protected internal TProvider provider { get; private set; }
 
+        protected virtual void OnCreate() {}
         protected override void OnStart() => provider.Start();
         protected override void OnStop() => provider.Stop();
         protected override void OnDestroy() => provider.Destroy();
 
-        internal override sealed void SetProvider(SubsystemProvider subsystemProvider)
+        internal override sealed void Initialize(SubsystemDescriptorWithProvider descriptor, SubsystemProvider provider)
         {
-            if (subsystemProvider is TProvider castedProvider)
-                provider = (TProvider)subsystemProvider;
-            else
-                throw new InvalidOperationException($"Expected provider of type {typeof(TProvider).Name}");
+            providerBase = provider;
+            this.provider = (TProvider)provider;
+            subsystemDescriptor = (TSubsystemDescriptor)descriptor;
+            OnCreate();
         }
 
-        internal override sealed SubsystemDescriptorWithProvider GetDescriptor()
-            => subsystemDescriptor;
-        internal override sealed void SetDescriptor(SubsystemDescriptorWithProvider descriptor)
-            => subsystemDescriptor = (TSubsystemDescriptor)descriptor;
+        internal override sealed SubsystemDescriptorWithProvider descriptor => subsystemDescriptor;
     }
 
     namespace Extensions
     {
         public static class SubsystemExtensions
         {
-            public static TProvider GetProvider<TSubsystem, TDescriptor, TProvider, TProviderToSubsystem>(
-                this SubsystemWithProvider<TSubsystem, TDescriptor, TProvider, TProviderToSubsystem> subsystem)
+            public static TProvider GetProvider<TSubsystem, TDescriptor, TProvider>(
+                this SubsystemWithProvider<TSubsystem, TDescriptor, TProvider> subsystem)
                 where TSubsystem : SubsystemWithProvider, new()
-                where TDescriptor : SubsystemDescriptorWithProvider
-                where TProvider : SubsystemProvider<TSubsystem, TProviderToSubsystem>
-                where TProviderToSubsystem : IProviderToSubsystem<TSubsystem>
+                where TDescriptor : SubsystemDescriptorWithProvider<TSubsystem, TProvider>
+                where TProvider : SubsystemProvider<TSubsystem>
             {
                 return subsystem.provider;
             }

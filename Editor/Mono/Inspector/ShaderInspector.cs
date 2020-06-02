@@ -59,7 +59,7 @@ namespace UnityEditor
         }
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
-        private bool m_PreprocessOnly = false;
+        private static bool s_PreprocessOnly = false;
 
         Vector2 m_ScrollPosition = Vector2.zero;
         private Material m_SrpCompatibilityCheckMaterial = null;
@@ -346,8 +346,11 @@ namespace UnityEditor
         {
             EditorGUILayout.BeginVertical();
             ShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(s.GetInstanceID())) as ShaderImporter;
-            using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor && importer && importer.preprocessorOverride != PreprocessorOverride.ForceCachingPreprocessor))
-                m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
+            bool enablePreprocessOnly = EditorSettings.cachingShaderPreprocessor;
+            if (importer && importer.preprocessorOverride == PreprocessorOverride.ForceCachingPreprocessor)
+                enablePreprocessOnly = true;
+            using (new EditorGUI.DisabledScope(!enablePreprocessOnly))
+                s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);
 
@@ -366,7 +369,7 @@ namespace UnityEditor
                 }
                 if (GUI.Button(modeRect, modeContent, EditorStyles.miniButton))
                 {
-                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, m_PreprocessOnly);
+                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, enablePreprocessOnly && s_PreprocessOnly);
                     GUIUtility.ExitGUI();
                 }
             }

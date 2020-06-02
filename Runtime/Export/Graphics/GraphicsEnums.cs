@@ -1561,6 +1561,16 @@ namespace UnityEngine.Rendering
         #pragma warning restore 0414
     }
 
+    // Keep in sync with C++ FormatSwizzle in Runtime/Graphics/Format.h
+    [Flags]
+    public enum RenderTargetFlags
+    {
+        None = 0,
+        ReadOnlyDepth = 1 << 0,
+        ReadOnlyStencil = 1 << 1,
+        ReadOnlyDepthStencil = ReadOnlyDepth | ReadOnlyStencil,
+    }
+
     public struct RenderTargetBinding
     {
         RenderTargetIdentifier[] m_ColorRenderTargets;
@@ -1572,12 +1582,15 @@ namespace UnityEngine.Rendering
         RenderBufferLoadAction m_DepthLoadAction;
         RenderBufferStoreAction m_DepthStoreAction;
 
+        RenderTargetFlags m_Flags;
+
         public RenderTargetIdentifier[] colorRenderTargets { get { return m_ColorRenderTargets; } set { m_ColorRenderTargets = value; } }
         public RenderTargetIdentifier depthRenderTarget { get { return m_DepthRenderTarget; } set { m_DepthRenderTarget = value; } }
         public RenderBufferLoadAction[] colorLoadActions { get { return m_ColorLoadActions; } set { m_ColorLoadActions = value; } }
         public RenderBufferStoreAction[] colorStoreActions { get { return m_ColorStoreActions; } set { m_ColorStoreActions = value; } }
         public RenderBufferLoadAction depthLoadAction { get { return m_DepthLoadAction; } set { m_DepthLoadAction = value; } }
         public RenderBufferStoreAction depthStoreAction { get { return m_DepthStoreAction; } set { m_DepthStoreAction = value; } }
+        public RenderTargetFlags flags { get { return m_Flags; } set { m_Flags = value; } }
 
         public RenderTargetBinding(RenderTargetIdentifier[] colorRenderTargets, RenderBufferLoadAction[] colorLoadActions, RenderBufferStoreAction[] colorStoreActions,
                                    RenderTargetIdentifier depthRenderTarget, RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction)
@@ -1590,6 +1603,8 @@ namespace UnityEngine.Rendering
 
             m_DepthLoadAction = depthLoadAction;
             m_DepthStoreAction = depthStoreAction;
+
+            m_Flags = RenderTargetFlags.None;
         }
 
         public RenderTargetBinding(RenderTargetIdentifier colorRenderTarget, RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
@@ -1611,6 +1626,8 @@ namespace UnityEngine.Rendering
 
             m_DepthLoadAction = setup.depthLoad;
             m_DepthStoreAction = setup.depthStore;
+
+            m_Flags = RenderTargetFlags.None;
         }
     }
 

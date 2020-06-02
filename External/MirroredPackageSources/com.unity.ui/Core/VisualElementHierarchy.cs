@@ -76,13 +76,19 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (contentContainer == this)
+            var container = contentContainer;
+
+            if (container == null)
+            {
+                throw new InvalidOperationException("You can't add directly to this VisualElement. Use hierarchy.Add() if you know what you're doing.");
+            }
+            else if (container == this)
             {
                 hierarchy.Add(child);
             }
             else
             {
-                contentContainer?.Add(child);
+                container?.Add(child);
             }
 
             child.m_LogicalParent = this;
@@ -215,7 +221,8 @@ namespace UnityEngine.UIElements
             {
                 return hierarchy.Children();
             }
-            return contentContainer?.Children();
+
+            return contentContainer?.Children() ?? s_EmptyList;
         }
 
         /// <summary>

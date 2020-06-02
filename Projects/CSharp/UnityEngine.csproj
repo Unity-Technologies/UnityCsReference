@@ -1324,20 +1324,11 @@
     <Compile Include="..\..\Modules\Subsystems\IntegratedSubsystemDescriptor.bindings.cs">
       <Link>Modules\Subsystems\IntegratedSubsystemDescriptor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Subsystems\StandaloneProvider.cs">
-      <Link>Modules\Subsystems\StandaloneProvider.cs</Link>
+    <Compile Include="..\..\Modules\Subsystems\Subsystem.deprecated.cs">
+      <Link>Modules\Subsystems\Subsystem.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystem.cs">
-      <Link>Modules\Subsystems\StandaloneSubsystem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystem.deprecated.cs">
-      <Link>Modules\Subsystems\StandaloneSubsystem.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystemDescriptor.cs">
-      <Link>Modules\Subsystems\StandaloneSubsystemDescriptor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Subsystems\StandaloneSubsystemDescriptor.deprecated.cs">
-      <Link>Modules\Subsystems\StandaloneSubsystemDescriptor.deprecated.cs</Link>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemDescriptor.deprecated.cs">
+      <Link>Modules\Subsystems\SubsystemDescriptor.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Subsystems\SubsystemDescriptorStore.bindings.cs">
       <Link>Modules\Subsystems\SubsystemDescriptorStore.bindings.cs</Link>
@@ -1348,6 +1339,9 @@
     <Compile Include="..\..\Modules\Subsystems\SubsystemDescriptorStore.deprecated.cs">
       <Link>Modules\Subsystems\SubsystemDescriptorStore.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemDescriptorWithProvider.cs">
+      <Link>Modules\Subsystems\SubsystemDescriptorWithProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Subsystems\SubsystemManager.bindings.cs">
       <Link>Modules\Subsystems\SubsystemManager.bindings.cs</Link>
     </Compile>
@@ -1356,6 +1350,15 @@
     </Compile>
     <Compile Include="..\..\Modules\Subsystems\SubsystemManager.deprecated.cs">
       <Link>Modules\Subsystems\SubsystemManager.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemProvider.cs">
+      <Link>Modules\Subsystems\SubsystemProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemProxy.cs">
+      <Link>Modules\Subsystems\SubsystemProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Subsystems\SubsystemWithProvider.cs">
+      <Link>Modules\Subsystems\SubsystemWithProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TerrainPhysics\TerrainPhysics.bindings.cs">
       <Link>Modules\TerrainPhysics\TerrainPhysics.bindings.cs</Link>
@@ -2130,6 +2133,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\BillboardRenderer.bindings.cs">
       <Link>Runtime\Export\Graphics\BillboardRenderer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\CustomRenderTextureManager.cs">
+      <Link>Runtime\Export\Graphics\CustomRenderTextureManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Display.bindings.cs">
       <Link>Runtime\Export\Graphics\Display.bindings.cs</Link>

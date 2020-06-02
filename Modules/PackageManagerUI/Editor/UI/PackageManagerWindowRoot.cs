@@ -266,19 +266,19 @@ namespace UnityEditor.PackageManager.UI
             packageDetails.packageToolbarContainer.SetEnabled(true);
         }
 
-        public void SelectPackageAndFilter(string packageIdOrDisplayName, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
+        public void SelectPackageAndFilter(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
-            if (!string.IsNullOrEmpty(packageIdOrDisplayName) || filterTab != null)
+            if (!string.IsNullOrEmpty(packageToSelect) || filterTab != null)
             {
                 if (filterTab == null)
                 {
-                    m_PackageDatabase.GetPackageAndVersionByIdOrName(packageIdOrDisplayName, out var package, out var version);
+                    m_PackageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version);
                     if (package != null)
                         filterTab = m_PageManager.FindTab(package, version);
                     else
                     {
-                        var packageIdOrDisplayNameSplit = packageIdOrDisplayName.Split('@');
-                        var versionString = packageIdOrDisplayNameSplit.Length == 2 ? packageIdOrDisplayNameSplit[1] : string.Empty;
+                        var packageToSelectSplit = packageToSelect.Split('@');
+                        var versionString = packageToSelectSplit.Length == 2 ? packageToSelectSplit[1] : string.Empty;
 
                         // Package is not found in PackageDatabase but we can determine if it's a preview package or not with it's version string.
                         SemVersionParser.TryParse(versionString, out var semVersion);
@@ -286,7 +286,7 @@ namespace UnityEditor.PackageManager.UI
                         {
                             Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
                             filterTab = m_PackageFiltering.currentFilterTab;
-                            packageIdOrDisplayName = null;
+                            packageToSelect = null;
                         }
                         else
                             filterTab = PackageFilterTab.All;
@@ -294,7 +294,7 @@ namespace UnityEditor.PackageManager.UI
                 }
 
                 m_FilterToSelectAfterLoad = filterTab;
-                m_PackageToSelectOnLoaded = packageIdOrDisplayName;
+                m_PackageToSelectOnLoaded = packageToSelect;
                 packageManagerToolbar.SetCurrentSearch(searchText);
 
                 if (refresh || m_PackageDatabase.isEmpty)

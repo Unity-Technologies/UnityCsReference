@@ -38,27 +38,51 @@ namespace UnityEngine.Rendering
             return new ScopedRenderPass(this);
         }
 
-        public unsafe void BeginSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthReadOnly = false)
+        public unsafe void BeginSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthReadOnly, bool isStencilReadOnly)
         {
             Validate();
-            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, (IntPtr)inputs.GetUnsafeReadOnlyPtr(), inputs.Length, isDepthReadOnly);
+            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, (IntPtr)inputs.GetUnsafeReadOnlyPtr(), inputs.Length, isDepthReadOnly, isStencilReadOnly);
         }
 
-        public unsafe void BeginSubPass(NativeArray<int> colors, bool isDepthReadOnly = false)
+        public unsafe void BeginSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthStencilReadOnly = false)
         {
             Validate();
-            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, IntPtr.Zero, 0, isDepthReadOnly);
+            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, (IntPtr)inputs.GetUnsafeReadOnlyPtr(), inputs.Length, isDepthStencilReadOnly, isDepthStencilReadOnly);
         }
 
-        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthReadOnly = false)
+        public unsafe void BeginSubPass(NativeArray<int> colors, bool isDepthReadOnly, bool isStencilReadOnly)
         {
-            BeginSubPass(colors, inputs, isDepthReadOnly);
+            Validate();
+            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, IntPtr.Zero, 0, isDepthReadOnly, isStencilReadOnly);
+        }
+
+        public unsafe void BeginSubPass(NativeArray<int> colors, bool isDepthStencilReadOnly = false)
+        {
+            Validate();
+            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, IntPtr.Zero, 0, isDepthStencilReadOnly, isDepthStencilReadOnly);
+        }
+
+        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthReadOnly, bool isStencilReadOnly)
+        {
+            BeginSubPass(colors, inputs, isDepthReadOnly, isStencilReadOnly);
             return new ScopedSubPass(this);
         }
 
-        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, bool isDepthReadOnly = false)
+        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthStencilReadOnly = false)
         {
-            BeginSubPass(colors, isDepthReadOnly);
+            BeginSubPass(colors, inputs, isDepthStencilReadOnly);
+            return new ScopedSubPass(this);
+        }
+
+        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, bool isDepthReadOnly, bool isStencilReadOnly)
+        {
+            BeginSubPass(colors, isDepthReadOnly, isStencilReadOnly);
+            return new ScopedSubPass(this);
+        }
+
+        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, bool isDepthStencilReadOnly = false)
+        {
+            BeginSubPass(colors, isDepthStencilReadOnly);
             return new ScopedSubPass(this);
         }
 
@@ -207,6 +231,12 @@ namespace UnityEngine.Rendering
         {
             Validate();
             DrawGizmos_Internal(camera, gizmoSubset);
+        }
+
+        public void DrawWireOverlay(Camera camera)
+        {
+            Validate();
+            DrawWireOverlay_Impl(camera);
         }
 
         public void DrawUIOverlay(Camera camera)

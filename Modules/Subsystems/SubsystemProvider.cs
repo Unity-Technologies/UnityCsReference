@@ -4,24 +4,18 @@
 
 namespace UnityEngine.SubsystemsImplementation
 {
-    public interface IProviderToSubsystem<TSubsystem> : IRunning
-        where TSubsystem : SubsystemWithProvider, new()
-    {}
-
     public abstract class SubsystemProvider
-    {}
-
-    public abstract class SubsystemProvider<TSubsystem, TProviderToSubsystem> : SubsystemProvider, IRunning
-        where TSubsystem : SubsystemWithProvider, new()
-        where TProviderToSubsystem : IProviderToSubsystem<TSubsystem>
     {
-        public bool running => subsystem.running;
+        public bool running => m_Running;
+        internal bool m_Running;
+    }
 
+    public abstract class SubsystemProvider<TSubsystem> : SubsystemProvider
+        where TSubsystem : SubsystemWithProvider, new()
+    {
         protected internal virtual bool TryInitialize() => true;
         public abstract void Start();
         public abstract void Stop();
         public abstract void Destroy();
-
-        protected internal TProviderToSubsystem subsystem { get; internal set; }
     }
 }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -19,6 +20,32 @@ namespace UnityEditor
 
         public bool hasPropertyDrawer { get { return propertyDrawer != null; } }
         internal PropertyDrawer propertyDrawer { get { return isCurrentlyNested ? null : m_PropertyDrawer; } }
+
+        internal static Dictionary<string, ReorderableListWrapper> s_reorderableLists = new Dictionary<string, ReorderableListWrapper>();
+        private static int s_LastInspectionTarget;
+        private static int s_LastInspectorNumComponents;
+
+        static PropertyHandler()
+        {
+            Undo.undoRedoPerformed += () =>
+            {
+                ReorderableList.ClearExistingListCaches();
+            };
+        }
+
+        public static void ClearCache()
+        {
+            s_reorderableLists.Clear();
+            s_LastInspectionTarget = 0;
+        }
+
+        public static void ClearListCacheIncludingChildren(string propertyPath)
+        {
+            foreach (var listEntry in s_reorderableLists)
+            {
+                if (listEntry.Key.Contains(propertyPath)) listEntry.Value.ClearCache();
+            }
+        }
 
         private bool isCurrentlyNested
         {
@@ -112,6 +139,8 @@ namespace UnityEditor
 
         internal bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren, Rect visibleArea)
         {
+            TestInvalidateCache();
+
             float oldLabelWidth, oldFieldWidth;
 
             float propHeight = position.height;
@@ -149,6 +178,21 @@ namespace UnityEditor
             }
             else
             {
+                if (IsNonStringArray(property))
+                {
+                    ReorderableListWrapper reorderableList;
+                    string key = ReorderableListWrapper.GetPropertyIdentifier(property);
+
+                    if (!s_reorderableLists.TryGetValue(key, out reorderableList))
+                    {
+                        throw new IndexOutOfRangeException($"collection with name \"{property.name}\" doesn't have ReorderableList assigned to it.");
+                    }
+
+                    reorderableList.Property = property;
+                    reorderableList.Draw(position, visibleArea);
+                    return false;
+                }
+
                 if (!includeChildren)
                     return EditorGUI.DefaultPropertyField(position, property, label);
 
@@ -215,6 +259,23 @@ namespace UnityEditor
         public float GetHeight(SerializedProperty property, GUIContent label, bool includeChildren)
         {
             float height = 0;
+
+            if (IsNonStringArray(property))
+            {
+                ReorderableListWrapper reorderableList;
+                string key = ReorderableListWrapper.GetPropertyIdentifier(property);
+
+                // If collection doesn't have a ReorderableList assigned to it, create one and assign it
+                if (!s_reorderableLists.TryGetValue(key, out reorderableList))
+                {
+                    reorderableList = new ReorderableListWrapper(property, IsArrayReorderable(property));
+                    s_reorderableLists[key] = reorderableList;
+                }
+
+                reorderableList.Property = property;
+                height = s_reorderableLists[key].GetHeight();
+                return height;
+            }
 
             if (m_DecoratorDrawers != null && !isCurrentlyNested)
                 foreach (DecoratorDrawer drawer in m_DecoratorDrawers)
@@ -304,6 +365,53 @@ namespace UnityEditor
         {
             foreach (object target in targets)
                 method.Invoke(target, new object[] {});
+        }
+
+        internal void TestInvalidateCache()
+        {
+            GameObject activeObject = Selection.activeObject as GameObject;
+            if (activeObject != null)
+            {
+                var components = activeObject.GetComponents(typeof(Component));
+                if (s_LastInspectionTarget != activeObject.GetInstanceID() ||
+                    s_LastInspectorNumComponents != components.Length)
+                {
+                    ClearCache();
+                    s_LastInspectionTarget = activeObject.GetInstanceID();
+                    s_LastInspectorNumComponents = components.Length;
+                }
+            }
+        }
+
+        internal static bool IsNonStringArray(SerializedProperty property)
+        {
+            // Strings should not be represented with ReorderableList, they will use custom drawer therefore we don't treat them as other arrays
+            return property.isArray && property.propertyType != SerializedPropertyType.String;
+        }
+
+        static bool IsArrayReorderable(SerializedProperty property)
+        {
+            FieldInfo listInfo = null;
+            Queue<string> propertyName = new Queue<string>(property.propertyPath.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
+            listInfo = property.serializedObject.targetObject.GetType().GetField(propertyName.Dequeue());
+
+            if (listInfo == null) return false;
+
+            // If we have a nested property we need to find it via reflection in order to verify
+            // if it has a non-reorderable attribute
+            while (propertyName.Count > 0)
+            {
+                Type t = listInfo.FieldType;
+                if (t.IsArray) t = t.GetElementType();
+                else if (t.IsArrayOrList()) t = t.GetGenericArguments().Single();
+                FieldInfo f = t.GetField(propertyName.Dequeue());
+                if (f != null)
+                {
+                    listInfo = f;
+                }
+            }
+
+            return TypeCache.GetFieldsWithAttribute(typeof(ReorderableAttribute)).Any(f => f.Equals(listInfo)) || property.IsReorderable();
         }
     }
 }

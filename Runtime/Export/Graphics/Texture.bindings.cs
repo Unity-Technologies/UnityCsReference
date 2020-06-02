@@ -770,7 +770,13 @@ namespace UnityEngine
         extern private static void Internal_CreateCustomRenderTexture([Writable] CustomRenderTexture rt);
 
         [NativeName("TriggerUpdate")]
-        extern public void Update(int count);
+        extern void TriggerUpdate(int count);
+
+        public void Update(int count)
+        {
+            CustomRenderTextureManager.InvokeTriggerUpdate(this, count);
+            TriggerUpdate(count);
+        }
 
         public void Update()
         {
@@ -778,7 +784,13 @@ namespace UnityEngine
         }
 
         [NativeName("TriggerInitialization")]
-        extern public void Initialize();
+        extern void TriggerInitialization();
+
+        public void Initialize()
+        {
+            TriggerInitialization();
+            CustomRenderTextureManager.InvokeTriggerInitialize(this);
+        }
 
         extern public void ClearUpdateZones();
 
@@ -799,6 +811,11 @@ namespace UnityEngine
         [FreeFunction(Name = "CustomRenderTextureScripting::SetUpdateZonesInternal", HasExplicitThis = true)]
         extern private void SetUpdateZonesInternal(CustomRenderTextureUpdateZone[] updateZones);
 
+        [FreeFunction(Name = "CustomRenderTextureScripting::GetDoubleBufferRenderTexture", HasExplicitThis = true)]
+        extern public RenderTexture GetDoubleBufferRenderTexture();
+
+        extern public void EnsureDoubleBufferConsistency();
+
         public void SetUpdateZones(CustomRenderTextureUpdateZone[] updateZones)
         {
             if (updateZones == null)
@@ -816,5 +833,6 @@ namespace UnityEngine
         extern public uint cubemapFaceMask { get; set; }
         extern public bool doubleBuffered { get; set; }
         extern public bool wrapUpdateZones { get; set; }
+        extern public float updatePeriod { get; set; }
     }
 }

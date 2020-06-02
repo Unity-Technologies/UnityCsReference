@@ -87,7 +87,7 @@ namespace UnityEngine
         {
             foreach (var subsystem in s_StandaloneSubsystems)
             {
-                if (subsystem.GetDescriptor() == descriptor)
+                if (subsystem.descriptor == descriptor)
                     return subsystem;
             }
 
