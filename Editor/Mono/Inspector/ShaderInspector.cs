@@ -59,7 +59,7 @@ namespace UnityEditor
         }
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
-        private bool m_PreprocessOnly = false;
+        private static bool s_PreprocessOnly = false;
 
         Vector2 m_ScrollPosition = Vector2.zero;
         private Material m_SrpCompatibilityCheckMaterial = null;
@@ -346,7 +346,7 @@ namespace UnityEditor
         {
             EditorGUILayout.BeginVertical();
             using (new EditorGUI.DisabledScope(!EditorSettings.cachingShaderPreprocessor))
-                m_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, m_PreprocessOnly);
+                s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);
 
@@ -365,7 +365,7 @@ namespace UnityEditor
                 }
                 if (GUI.Button(modeRect, modeContent, EditorStyles.miniButton))
                 {
-                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, m_PreprocessOnly);
+                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, s_PreprocessOnly);
                     GUIUtility.ExitGUI();
                 }
             }

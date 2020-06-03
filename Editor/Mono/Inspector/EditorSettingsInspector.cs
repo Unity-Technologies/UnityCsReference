@@ -44,7 +44,7 @@ namespace UnityEditor
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
-            public static GUIContent disableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Disable cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations.");
+            public static GUIContent enableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Enable baked cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations. Introduced in version 2020.1. ");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
 
@@ -193,6 +193,9 @@ namespace UnityEditor
             new PopupElement("ETCPACK Best"),
         };
 
+        SerializedProperty m_UseLegacyProbeSampleCount;
+        SerializedProperty m_DisableCookiesInLightmapper;
+
         SerializedProperty m_EnableTextureStreamingInPlayMode;
         SerializedProperty m_EnableTextureStreamingInEditMode;
 
@@ -207,6 +210,9 @@ namespace UnityEditor
         {
             DevDeviceList.Changed += OnDeviceListChanged;
             BuildRemoteDeviceList();
+
+            m_UseLegacyProbeSampleCount = serializedObject.FindProperty("m_UseLegacyProbeSampleCount");
+            m_DisableCookiesInLightmapper = serializedObject.FindProperty("m_DisableCookiesInLightmapper");
 
             m_EnableTextureStreamingInPlayMode = serializedObject.FindProperty("m_EnableTextureStreamingInPlayMode");
             m_EnableTextureStreamingInEditMode = serializedObject.FindProperty("m_EnableTextureStreamingInEditMode");
@@ -338,28 +344,21 @@ namespace UnityEditor
             GUI.enabled = editorEnabled;
 
             EditorGUI.BeginChangeCheck();
-            bool showRes = LightmapVisualization.showResolution;
-            showRes = EditorGUILayout.Toggle(Content.showLightmapResolutionOverlay, showRes);
+            EditorGUILayout.PropertyField(m_UseLegacyProbeSampleCount, Content.useLegacyProbeSampleCount);
             if (EditorGUI.EndChangeCheck())
-                LightmapVisualization.showResolution = showRes;
+                EditorApplication.RequestRepaintAllViews();
 
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, Content.enableCookiesInLightmapper, m_DisableCookiesInLightmapper);
             EditorGUI.BeginChangeCheck();
-            bool useLegacyProbeSampleCountValue = EditorSettings.useLegacyProbeSampleCount;
-            useLegacyProbeSampleCountValue = EditorGUILayout.Toggle(Content.useLegacyProbeSampleCount, useLegacyProbeSampleCountValue);
+            bool enableCookiesInLightmapperValue = !m_DisableCookiesInLightmapper.boolValue;
+            enableCookiesInLightmapperValue = EditorGUI.Toggle(rect, Content.enableCookiesInLightmapper, enableCookiesInLightmapperValue);
             if (EditorGUI.EndChangeCheck())
             {
+                m_DisableCookiesInLightmapper.boolValue = !enableCookiesInLightmapperValue;
                 EditorApplication.RequestRepaintAllViews();
-                EditorSettings.useLegacyProbeSampleCount = useLegacyProbeSampleCountValue;
             }
-
-            EditorGUI.BeginChangeCheck();
-            bool disableCookiesInLightmapperValue = EditorSettings.disableCookiesInLightmapper;
-            disableCookiesInLightmapperValue = EditorGUILayout.Toggle(Content.disableCookiesInLightmapper, disableCookiesInLightmapperValue);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorApplication.RequestRepaintAllViews();
-                EditorSettings.disableCookiesInLightmapper = disableCookiesInLightmapperValue;
-            }
+            EditorGUI.EndProperty();
 
             GUILayout.Space(10);
 
@@ -570,38 +569,6 @@ namespace UnityEditor
                             EditorSettings.cacheServerEnableTls = enableTls;
                     }
 
-                    EditorGUI.BeginChangeCheck();
-                    enableAuth = EditorGUILayout.Toggle(Content.cacheServerEnableAuthLabel, enableAuth);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        EditorSettings.cacheServerEnableAuth = enableAuth;
-                        if (enableAuth)
-                        {
-                            EditorSettings.cacheServerEnableTls = true;
-                        }
-                    }
-
-                    EditorGUI.indentLevel++;
-                    using (new EditorGUI.DisabledScope(!enableAuth))
-                    {
-                        int authModeIndex = Convert.ToInt32(EditorUserSettings.GetConfigValue("cacheServerAuthMode"));
-                        CreatePopupMenu(Content.mode.text, cacheServerAuthMode, authModeIndex, SetCacheServerAuthMode);
-
-                        string oldUserVal = EditorUserSettings.GetConfigValue("cacheServerAuthUser");
-                        var newUserVal = EditorGUILayout.TextField(Content.cacheServerAuthUserLabel, oldUserVal);
-                        if (newUserVal != oldUserVal)
-                        {
-                            EditorUserSettings.SetConfigValue("cacheServerAuthUser", newUserVal);
-                        }
-
-                        var oldPasswordVal = EditorUserSettings.GetConfigValue("cacheServerAuthPassword");
-                        var newPasswordVal = EditorGUILayout.PasswordField(Content.cacheServerAuthPasswordLabel, oldPasswordVal);
-                        if (newPasswordVal != oldPasswordVal)
-                        {
-                            EditorUserSettings.SetPrivateConfigValue("cacheServerAuthPassword", newPasswordVal);
-                        }
-                    }
-                    EditorGUI.indentLevel--;
                 }
             }
         }

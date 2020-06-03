@@ -988,8 +988,7 @@ namespace UnityEditorInternal
             positionInfoArgs.Reset();
             positionInfoArgs.frameIndex = frameIndex;
             positionInfoArgs.threadIndex = threadIndex;
-            // entryIndex is a MeshCache index which differs from sample index by 1 as root is not included into MeshCache.
-            positionInfoArgs.entryIndex = sampleIndex - 1;
+            positionInfoArgs.sampleIndex = sampleIndex;
             positionInfoArgs.timeOffset = timeOffset;
             positionInfoArgs.threadRect = threadRect;
             positionInfoArgs.shownAreaRect = shownAreaRect;
