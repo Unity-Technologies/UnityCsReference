@@ -341,6 +341,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static bool CompileCustomNonCodegenScriptAssemblies(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        {
+            return EmitExceptionAsError(() => Instance.CompileCustomNonCodegenScriptAssemblies(definesOptions, platformGroup, platform, extraScriptingDefines), false);
+        }
+
+        [RequiredByNativeCode]
         public static bool ShouldRecompileNonCodeGenAssembliesAfterReload()
         {
             return EmitExceptionAsError(() => Instance.IsCodeGenAssemblyChanged, false);
@@ -351,6 +357,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var options = GetAdditionalEditorScriptCompilationOptions();
             EmitExceptionAsError(() => Instance.DirtyAllNonCodeGenAssemblies(options));
+        }
+
+        [RequiredByNativeCode]
+        public static bool HasILPostProcessors()
+        {
+            return EmitExceptionAsError(() => Instance.ILPostProcessing.HasPostProcessors, false);
+        }
+
+        [RequiredByNativeCode]
+        public static bool AreAllCodegenAssembliesCompiled(EditorScriptCompilationOptions options, BuildTarget buildTarget)
+        {
+            return EmitExceptionAsError(() => Instance.AreAllCodegenAssembliesCompiled(options, buildTarget), false);
         }
 
         [RequiredByNativeCode]

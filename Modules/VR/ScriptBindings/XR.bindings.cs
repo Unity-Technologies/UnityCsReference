@@ -143,6 +143,7 @@ namespace UnityEngine.XR
     {
         [NativeName("DeviceConnected")]
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [Obsolete("This is obsolete, and should no longer be used. Instead, find the active XRDisplaySubsystem and check that the running property is true (for details, see XRDevice.isPresent documentation).", false)]
         extern public static bool isPresent { get; }
 
         extern public static UserPresenceState userPresence { get; }
