@@ -21,6 +21,7 @@ namespace UnityEngine.XR
     }
 
     // Offsets must match UnityXRTrackingOriginType in XRTypes.h
+    [Obsolete("This is obsolete, and should no longer be used.  Please use TrackingModeOriginFlags.")]
     public enum TrackingOriginMode
     {
         Device,
@@ -124,6 +125,7 @@ namespace UnityEngine.XR
         extern public static StereoRenderingMode stereoRenderingMode { get; }
     }
 
+    [Obsolete("This is obsolete, and should no longer be used.  Please use CommonUsages.userPresence.")]
     public enum UserPresenceState
     {
         Unsupported = -1,
@@ -132,6 +134,7 @@ namespace UnityEngine.XR
         Unknown = 2,
     }
 
+    [Obsolete("This is obsolete, and should no longer be used.  Please use InputTrackingModeFlags.")]
     public enum TrackingSpaceType
     {
         Stationary,
@@ -146,6 +149,7 @@ namespace UnityEngine.XR
         [Obsolete("This is obsolete, and should no longer be used. Instead, find the active XRDisplaySubsystem and check that the running property is true (for details, see XRDevice.isPresent documentation).", false)]
         extern public static bool isPresent { get; }
 
+        [Obsolete("This is obsolete, and should no longer be used.  Please use CommonUsages.userPresence.")]
         extern public static UserPresenceState userPresence { get; }
 
         [NativeName("DeviceName")]
@@ -155,6 +159,7 @@ namespace UnityEngine.XR
 
         [NativeName("DeviceModel")]
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [Obsolete("This is obsolete, and should no longer be used.  Please use InputDevice.name.")]
         extern public static string model { get; }
 
         [NativeName("DeviceRefreshRate")]
@@ -165,9 +170,11 @@ namespace UnityEngine.XR
         extern public static IntPtr GetNativePtr();
 
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [Obsolete("This is obsolete, and should no longer be used.  Please use XRInputSubsystem.GetTrackingOriginMode.")]
         extern public static TrackingSpaceType GetTrackingSpaceType();
 
         [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [Obsolete("This is obsolete, and should no longer be used.  Please use XRInputSubsystem.TrySetTrackingOriginMode.")]
         extern public static bool SetTrackingSpaceType(TrackingSpaceType trackingSpaceType);
 
         [NativeName("DisableAutoVRCameraTracking")]
@@ -186,6 +193,8 @@ namespace UnityEngine.XR
             [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
             set;
         }
+
+        [Obsolete("This is obsolete, and should no longer be used.  Please use XRInputSubsystem.GetTrackingOriginMode.")]
         extern public static TrackingOriginMode trackingOriginMode
         {
             get;

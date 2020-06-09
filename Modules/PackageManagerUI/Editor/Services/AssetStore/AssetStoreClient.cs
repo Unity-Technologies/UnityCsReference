@@ -120,6 +120,13 @@ namespace UnityEditor.PackageManager.UI
 
             public void ListPurchases(PurchasesQueryArgs queryArgs, bool fetchDetails = true)
             {
+                // patch fix to avoid User Not Logged In error when first opening the application with My Assets open
+                if (!ApplicationUtil.instance.isUserInfoReady)
+                {
+                    EditorApplication.delayCall += () => ListPurchases(queryArgs, fetchDetails);
+                    return;
+                }
+
                 RefreshLocalInfos();
                 if (queryArgs.startIndex == 0)
                     RefreshProductUpdateDetails();

@@ -13,8 +13,8 @@ namespace UnityEditorInternal.VR
     {
         private static bool IsTargetingCardboardOnIOS(BuildTarget target)
         {
-            return PlayerSettings.virtualRealitySupported && target == BuildTarget.iOS &&
-                UnityEditorInternal.VR.VREditor.IsVRDeviceEnabledForBuildTarget(target, "cardboard");
+            return target == BuildTarget.iOS && VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(target)) &&
+                VREditor.IsVRDeviceEnabledForBuildTarget(target, "cardboard");
         }
 
         public static void SetupBuildSettings(BuildTarget target, int osVerMajor)
@@ -27,7 +27,7 @@ namespace UnityEditorInternal.VR
 
         public static bool ShouldInjectVRDependenciesForBuildTarget(BuildTarget target)
         {
-            if (!PlayerSettings.virtualRealitySupported)
+            if (!VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(target)))
                 return false;
 
             VRDeviceInfoEditor[] enabledVRDevices = VREditor.GetEnabledVRDeviceInfo(target);

@@ -173,9 +173,10 @@ namespace UnityEditor.PackageManager.UI
         private void RefreshList(bool updateScrollPosition)
         {
             var isAssetStore = PackageFiltering.instance.currentFilterTab == PackageFilterTab.AssetStore;
+            var isLoginInfoReady = ApplicationUtil.instance.isUserInfoReady;
             var isLoggedIn = ApplicationUtil.instance.isUserLoggedIn;
 
-            if (isAssetStore && !isLoggedIn)
+            if (isAssetStore && isLoginInfoReady && !isLoggedIn)
             {
                 HidePackagesShowLogin();
                 return;

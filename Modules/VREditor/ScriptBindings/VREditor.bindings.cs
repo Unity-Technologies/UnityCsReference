@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -113,30 +114,35 @@ namespace UnityEditor
     {
         public class VROculus
         {
+            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
             public static bool sharedDepthBuffer
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.sharedDepthBuffer; }
                 set { UnityEditorInternal.PlayerSettingsOculus.sharedDepthBuffer = value; }
             }
 
+            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
             public static bool dashSupport
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.dashSupport; }
                 set { UnityEditorInternal.PlayerSettingsOculus.dashSupport = value; }
             }
 
+            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
             public static bool lowOverheadMode
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode; }
                 set { UnityEditorInternal.PlayerSettingsOculus.lowOverheadMode = value; }
             }
 
+            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
             public static bool protectedContext
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.protectedContext; }
                 set { UnityEditorInternal.PlayerSettingsOculus.protectedContext = value; }
             }
 
+            [Obsolete("This API is obsolete, and should no longer be used. Please update to the Unity Oculus XR Plugin package.")]
             public static bool v2Signing
             {
                 get { return UnityEditorInternal.PlayerSettingsOculus.v2Signing; }

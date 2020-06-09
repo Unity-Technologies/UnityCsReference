@@ -135,6 +135,7 @@ namespace UnityEditor
             ProgressWindow.ShowDetails(shouldReposition);
         }
 
+        [Obsolete("The Progress.RunTask API will be removed in 2020.2.")]
         public static int RunTask(string name, string description, Func<int, object, IEnumerator> taskHandler, Options options = Options.None, int parentId = -1, object userData = null)
         {
             var progressId = Start(name, description, options, parentId);

@@ -11,6 +11,7 @@ using UnityEngine.Rendering;
 using System.Linq;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using UnityEditorInternal.VR;
 using UnityEngine.XR;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
@@ -571,7 +572,8 @@ namespace UnityEditor
 
                 SubsystemManager.GetInstances(m_DisplaySubsystems);
                 // Allow the user to select how the XR device will be rendered during "Play In Editor"
-                if (PlayerSettings.virtualRealitySupported || (m_DisplaySubsystems.Count != 0 && !m_DisplaySubsystems[0].disableLegacyRenderer))
+                if (VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget))
+                    || (m_DisplaySubsystems.Count != 0 && !m_DisplaySubsystems[0].disableLegacyRenderer))
                 {
                     EditorGUI.BeginChangeCheck();
                     GameViewRenderMode currentGameViewRenderMode = UnityEngine.XR.XRSettings.gameViewRenderMode;

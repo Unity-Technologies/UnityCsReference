@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
+using UnityEditorInternal.VR;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
@@ -890,7 +891,7 @@ namespace UnityEditor
 
                         EditorGUILayout.PropertyField(m_DefaultScreenOrientation, SettingsContent.defaultScreenOrientation);
 
-                        if (PlayerSettings.virtualRealitySupported)
+                        if (VREditor.GetVREnabledOnTargetGroup(targetGroup))
                         {
                             EditorGUILayout.HelpBox(SettingsContent.vrOrientationInfo.text, MessageType.Warning);
                         }

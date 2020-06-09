@@ -1042,17 +1042,19 @@ namespace UnityEngine.XR
     public partial class InputTracking
     {
         [NativeConditional("ENABLE_VR", "Vector3f::zero")]
-        [Obsolete("This API has been marked as obsolete in code, and is no longer in use. Please use InputTracking.GetNodeStates and look for the XRNodeState with the corresponding XRNode type instead.")]
+        [Obsolete("This API is obsolete, and should no longer be used. Please use InputDevice.TryGetFeatureValue with the CommonUsages.devicePosition usage instead.")]
         extern public static Vector3 GetLocalPosition(XRNode node);
 
         [NativeConditional("ENABLE_VR", "Quaternionf::identity()")]
-        [Obsolete("This API has been marked as obsolete in code, and is no longer in use. Please use InputTracking.GetNodeStates and look for the XRNodeState with the corresponding XRNode type instead.")]
+        [Obsolete("This API is obsolete, and should no longer be used. Please use InputDevice.TryGetFeatureValue with the CommonUsages.deviceRotation usage instead.")]
         extern public static Quaternion GetLocalRotation(XRNode node);
 
         [NativeConditional("ENABLE_VR")]
+        [Obsolete("This API is obsolete, and should no longer be used. Please use XRInputSubsystem.TryRecenter() instead.")]
         extern public static void Recenter();
 
         [NativeConditional("ENABLE_VR")]
+        [Obsolete("This API is obsolete, and should no longer be used. Please use InputDevice.name with the device associated with that tracking data instead.")]
         extern public static string GetNodeName(ulong uniqueId);
 
         public static void GetNodeStates(List<XRNodeState> nodeStates)
@@ -1068,6 +1070,7 @@ namespace UnityEngine.XR
         extern private static void GetNodeStates_Internal([NotNull] List<XRNodeState> nodeStates);
 
         [NativeConditional("ENABLE_VR")]
+        [Obsolete("This API is obsolete, and should no longer be used. Please use the TrackedPoseDriver in the Legacy Input Helpers package for controlling a camera in XR.")]
         extern public static bool disablePositionalTracking
         {
             [NativeName("GetPositionalTrackingDisabled")]

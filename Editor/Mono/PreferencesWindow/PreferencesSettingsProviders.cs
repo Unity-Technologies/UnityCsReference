@@ -61,7 +61,6 @@ namespace UnityEditor
             public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
             public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Assets on Import");
-            public static readonly GUIContent osxColorPicker = EditorGUIUtility.TrTextContent("macOS Color Picker");
             public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
             public static readonly GUIContent showAssetStoreSearchHits = EditorGUIUtility.TrTextContent("Show Asset Store search hits");
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets");
@@ -143,7 +142,6 @@ namespace UnityEditor
 
         private bool m_ReopenLastUsedProjectOnStartup;
         private bool m_CompressAssetsOnImport;
-        private bool m_UseOSColorPicker;
         private bool m_EnableEditorAnalytics;
         private bool m_ShowAssetStoreSearchHits;
         private bool m_VerifySavingAssets;
@@ -502,9 +500,6 @@ namespace UnityEditor
 
             if (GUI.changed && m_CompressAssetsOnImport != oldCompressOnImport)
                 Unsupported.SetApplicationSettingCompressAssetsOnImport(m_CompressAssetsOnImport);
-
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                m_UseOSColorPicker = EditorGUILayout.Toggle(GeneralProperties.osxColorPicker, m_UseOSColorPicker);
 
             bool pro = UnityEngine.Application.HasProLicense();
             using (new EditorGUI.DisabledScope(!pro))
@@ -1059,7 +1054,6 @@ namespace UnityEditor
             }
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
-            EditorPrefs.SetBool("UseOSColorPicker", m_UseOSColorPicker);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
             EditorPrefs.SetBool("ShowAssetStoreSearchHits", m_ShowAssetStoreSearchHits);
             EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
@@ -1179,7 +1173,6 @@ namespace UnityEditor
 
             m_ReopenLastUsedProjectOnStartup = EditorPrefs.GetBool("ReopenLastUsedProjectOnStartup");
 
-            m_UseOSColorPicker = EditorPrefs.GetBool("UseOSColorPicker");
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
             m_ShowAssetStoreSearchHits = EditorPrefs.GetBool("ShowAssetStoreSearchHits", true);
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
