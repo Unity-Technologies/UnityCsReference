@@ -30,6 +30,8 @@ namespace UnityEditor.PackageManager.UI
 
         bool isUserLoggedIn { get; }
 
+        bool isUserInfoReady { get; }
+
         string userAppDataPath { get; }
 
         void ShowLogin();

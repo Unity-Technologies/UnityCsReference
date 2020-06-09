@@ -3875,6 +3875,9 @@ namespace UnityEditor
                         ResetOnSceneGUIState();
                     }
                 }
+                // This would mean that OnSceneGUI has changed the scene and it is not drawn
+                if (s_CurrentDrawingSceneView == null)
+                    GUIUtility.ExitGUI();
             }
 
             EditorToolContext.InvokeOnSceneGUICustomEditorTools();

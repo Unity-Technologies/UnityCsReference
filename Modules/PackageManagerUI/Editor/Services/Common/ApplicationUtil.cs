@@ -35,7 +35,7 @@ namespace UnityEditor.PackageManager.UI
             public event Action onEditorSelectionChanged = delegate {};
 
             [SerializeField]
-            private ConnectInfo m_ConnectInfo;
+            private bool m_HasAccessToken;
 
             [SerializeField]
             private bool m_IsInternetReachable;
@@ -46,8 +46,8 @@ namespace UnityEditor.PackageManager.UI
 
             private ApplicationUtilInternal()
             {
-                m_ConnectInfo = UnityConnect.instance.connectInfo;
-                UnityConnect.instance.StateChanged += OnStateChanged;
+                m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+                UnityConnect.instance.UserStateChanged += OnUserStateChanged;
 
                 m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
                 m_LastInternetCheck = EditorApplication.timeSinceStartup;
@@ -70,20 +70,10 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            private void OnStateChanged(ConnectInfo state)
+            private void OnUserStateChanged(UserInfo newInfo)
             {
-                var loginChanged = (m_ConnectInfo.ready && m_ConnectInfo.loggedIn && !state.loggedIn) ||
-                    (m_ConnectInfo.ready && !m_ConnectInfo.loggedIn && state.loggedIn);
-
-                var onlineChanged = (m_ConnectInfo.ready && m_ConnectInfo.online && !state.online) ||
-                    (m_ConnectInfo.ready && !m_ConnectInfo.online && state.online);
-
-                m_ConnectInfo = state;
-
-                if (loginChanged)
-                    onUserLoginStateChange?.Invoke(m_ConnectInfo.loggedIn);
-                if (onlineChanged)
-                    onInternetReachabilityChange?.Invoke(m_ConnectInfo.online);
+                m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+                onUserLoginStateChange?.Invoke(isUserLoggedIn);
             }
 
             private void OnEditorSelectionChanged()
@@ -116,7 +106,12 @@ namespace UnityEditor.PackageManager.UI
 
             public bool isUserLoggedIn
             {
-                get { return m_ConnectInfo.ready && m_ConnectInfo.loggedIn; }
+                get { return UnityConnect.instance.isUserInfoReady && m_HasAccessToken; }
+            }
+
+            public bool isUserInfoReady
+            {
+                get { return UnityConnect.instance.isUserInfoReady; }
             }
 
             public void ShowLogin()

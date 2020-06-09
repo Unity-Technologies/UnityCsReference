@@ -1168,7 +1168,7 @@ namespace UnityEditor
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    internal class EditorWindowTitleAttribute : System.Attribute
+    public class EditorWindowTitleAttribute : System.Attribute
     {
         public string title { get; set; }
         public string icon { get; set; }
